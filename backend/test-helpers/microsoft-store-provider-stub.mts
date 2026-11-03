@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
 import * as httpDispatchers from '../modules/utils/http.mts'
 import { processMicrosoftStoreMembershipVerification } from '../services/memberships/microsoft/process-verification.mts'
 import { MicrosoftStoreResponseError } from '../services/memberships/microsoft/response-error.mts'
@@ -19,7 +19,7 @@ type RecurrencesBody = { b2bKey: string; sbx?: string }
  * Serves the Microsoft Store token, Collections and Recurrence endpoints at the external-fetch
  * boundary, so the production client builds and parses every request. A MicrosoftStoreResponseError
  * thrown by an answer is returned as that HTTP status; any other error rejects the fetch.
- * Callers restore mocks and env after each test.
+ * The fetch spy is restored when the test finishes; callers unstub env.
  */
 export function stubMicrosoftStoreProvider(answers: MicrosoftStoreClient): void {
   vi.stubEnv('MICROSOFT_STORE_TENANT_ID', 'microsoft-store-test-tenant')
@@ -31,7 +31,8 @@ export function stubMicrosoftStoreProvider(answers: MicrosoftStoreClient): void 
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
     if (url.startsWith(TOKEN_URL_PREFIX))
       return Response.json({ access_token: 'microsoft-store-test-token', expires_in: 3600 })
-    const body: unknown = JSON.parse(String(init?.body))
+    if (typeof init?.body !== 'string') throw new Error('Expected a JSON request body')
+    const body: unknown = JSON.parse(init.body)
     try {
       if (url === COLLECTIONS_URL)
         return Response.json({ items: await collections(answers, body as CollectionsBody) })
@@ -45,7 +46,8 @@ export function stubMicrosoftStoreProvider(answers: MicrosoftStoreClient): void 
     }
     throw new Error(`Unexpected Microsoft Store provider URL ${url}`)
   }
-  vi.spyOn(httpDispatchers, 'getExternalFetch').mockReturnValue(providerFetch)
+  const spy = vi.spyOn(httpDispatchers, 'getExternalFetch').mockReturnValue(providerFetch)
+  onTestFinished(() => spy.mockRestore())
 }
 
 function collections(answers: MicrosoftStoreClient, request: CollectionsBody) {
@@ -68,7 +70,7 @@ function recurrences(answers: MicrosoftStoreClient, request: RecurrencesBody) {
 }
 
 /** Runs the production verification worker against a stubbed Microsoft Store. */
-export async function processMicrosoftStoreVerificationAgainst(
+export async function processWithMicrosoftStore(
   verificationId: string,
   answers: MicrosoftStoreClient,
 ): Promise<void> {

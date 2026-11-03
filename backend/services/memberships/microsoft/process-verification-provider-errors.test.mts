@@ -8,21 +8,18 @@ import {
 } from '@voucha/test-helpers'
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
-import { processMicrosoftStoreVerificationAgainst } from '@voucha/test-helpers/microsoft-store-provider-stub'
+import { processWithMicrosoftStore } from '@voucha/test-helpers/microsoft-store-provider-stub'
 import { MicrosoftStoreResponseError } from './response-error.mts'
 import type { MicrosoftStoreClient } from './types.mts'
 
 describe('Microsoft Store provider verification outcomes', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
-  })
+  afterEach(() => vi.unstubAllEnvs())
 
   it('terminalizes a confirmed invalid Store ID key response', async () => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreVerificationAgainst(
+    await processWithMicrosoftStore(
       verification.id,
       failingClient(new MicrosoftStoreResponseError(401, true)),
     )
@@ -54,15 +51,17 @@ describe('Microsoft Store provider verification outcomes', () => {
       new MicrosoftStoreResponseError(503, false),
       { status: 503, invalidStoreIdKey: false },
     ],
-    ['network timeout', new Error('Microsoft Store request timed out'), null],
+    [
+      'network timeout',
+      new Error('Microsoft Store request timed out'),
+      { message: 'Microsoft Store request timed out' },
+    ],
   ] as const)('retries a %s', async (_description, error, rejection) => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    const rejected = expect(
-      processMicrosoftStoreVerificationAgainst(verification.id, failingClient(error)),
-    ).rejects
-    await (rejection === null ? rejected.toBe(error) : rejected.toMatchObject(rejection))
+    const processing = processWithMicrosoftStore(verification.id, failingClient(error))
+    await expect(processing).rejects.toMatchObject(rejection)
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -75,7 +74,7 @@ describe('Microsoft Store provider verification outcomes', () => {
     const verification = await fixture.submit()
 
     await expect(
-      processMicrosoftStoreVerificationAgainst(verification.id, {
+      processWithMicrosoftStore(verification.id, {
         queryCollections: async () => [],
         queryRecurrences: async () => [
           {

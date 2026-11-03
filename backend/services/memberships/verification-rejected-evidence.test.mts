@@ -5,13 +5,10 @@ import { createTestMembershipVerificationForPriorEvidence } from '@voucha/test-h
 import { createMembershipVerification, getMembershipVerification } from './verifications.mts'
 import { getMembershipByUserId } from './index.mts'
 import { processGooglePlayMembershipVerification } from './google/process-verification.mts'
-import { processMicrosoftStoreVerificationAgainst } from '@voucha/test-helpers/microsoft-store-provider-stub'
+import { processWithMicrosoftStore } from '@voucha/test-helpers/microsoft-store-provider-stub'
 
 describe('provider verification of already rejected evidence', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
-  })
+  afterEach(() => vi.unstubAllEnvs())
 
   it.each(['google_play', 'microsoft_store'] as const)(
     'rejects a fresh %s delivery without accessing the provider again',
@@ -43,7 +40,7 @@ describe('provider verification of already rejected evidence', () => {
                 acknowledgeSubscription: unavailable,
               },
             })
-          : processMicrosoftStoreVerificationAgainst(id, {
+          : processWithMicrosoftStore(id, {
               queryCollections: unavailable,
               queryRecurrences: unavailable,
             })

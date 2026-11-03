@@ -6,7 +6,7 @@ import {
   getMembershipSourceIdByMembershipId,
 } from '../services/memberships/index.mts'
 import type { MicrosoftStoreClient } from '../services/memberships/microsoft/index.mts'
-import { processMicrosoftStoreVerificationAgainst } from './microsoft-store-provider-stub.mts'
+import { processWithMicrosoftStore } from './microsoft-store-provider-stub.mts'
 import {
   createTestNativeMembershipProviderProduct,
   createTestSku,
@@ -58,10 +58,7 @@ export async function createActiveMicrosoftStoreFixture(): Promise<{
       sku_id: skuId,
     },
   })
-  await processMicrosoftStoreVerificationAgainst(
-    verification.id,
-    clientFixture(productId, skuId, expiresAt),
-  )
+  await processWithMicrosoftStore(verification.id, clientFixture(productId, skuId, expiresAt))
   const membership = await getMembershipByUserId(user.id)
   if (!membership) throw new Error('Microsoft Store fixture was not projected')
   const sourceId = await getMembershipSourceIdByMembershipId(membership.id)

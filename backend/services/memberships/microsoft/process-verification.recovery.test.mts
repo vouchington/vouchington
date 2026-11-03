@@ -17,7 +17,7 @@ import {
 } from '@voucha/test-helpers/microsoft-store-memberships'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import { projectVerifiedProviderMembershipObservation } from '../provider-observation-projection.mts'
-import { processMicrosoftStoreVerificationAgainst } from '@voucha/test-helpers/microsoft-store-provider-stub'
+import { processWithMicrosoftStore } from '@voucha/test-helpers/microsoft-store-provider-stub'
 import { reconcileMicrosoftStoreSource } from './source-recovery.mts'
 import type { MicrosoftStoreClient } from './types.mts'
 
@@ -31,7 +31,7 @@ describe('Microsoft Store membership verification recovery', () => {
     const fixture = await createFixture()
     const recurrenceId = `recurrence-${randomUUID()}`
     const first = await fixture.submit(fixture.user)
-    await processMicrosoftStoreVerificationAgainst(first.id, fixture.client(recurrenceId))
+    await processWithMicrosoftStore(first.id, fixture.client(recurrenceId))
     const membership = await getMembershipByUserId(fixture.user.id)
     const sourceId = membership && (await getMembershipSourceIdByMembershipId(membership.id))
     if (!sourceId) throw new Error('Microsoft Store source was not projected')
@@ -40,7 +40,7 @@ describe('Microsoft Store membership verification recovery', () => {
 
     const replacementUser = await createTestUser()
     const replacement = await fixture.submit(replacementUser)
-    await processMicrosoftStoreVerificationAgainst(replacement.id, fixture.client(recurrenceId))
+    await processWithMicrosoftStore(replacement.id, fixture.client(recurrenceId))
 
     await expect(
       getMembershipVerification(replacementUser.id, replacement.id),
@@ -55,7 +55,7 @@ describe('Microsoft Store membership verification recovery', () => {
     const fixture = await createFixture()
     const verification = await fixture.submit(fixture.user, { publisher_user_id: null })
 
-    await processMicrosoftStoreVerificationAgainst(verification.id, fixture.client())
+    await processWithMicrosoftStore(verification.id, fixture.client())
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -67,9 +67,9 @@ describe('Microsoft Store membership verification recovery', () => {
     const verification = await fixture.submit(fixture.user)
     vi.stubEnv('VOUCHA_STORED_SECRET_ENCRYPTION_KEYS', undefined)
 
-    await expect(
-      processMicrosoftStoreVerificationAgainst(verification.id, fixture.client()),
-    ).rejects.toThrow('VOUCHA_STORED_SECRET_ENCRYPTION_KEYS')
+    await expect(processWithMicrosoftStore(verification.id, fixture.client())).rejects.toThrow(
+      'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS',
+    )
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -94,12 +94,9 @@ describe('Microsoft Store membership verification recovery', () => {
     }
     const firstRecurrenceId = `recurrence-${randomUUID()}`
     const first = await fixture.submit(fixture.user, evidence)
-    await processMicrosoftStoreVerificationAgainst(first.id, fixture.client(firstRecurrenceId))
+    await processWithMicrosoftStore(first.id, fixture.client(firstRecurrenceId))
     const second = await fixture.submit(fixture.user, evidence)
-    await processMicrosoftStoreVerificationAgainst(
-      second.id,
-      fixture.client(`recurrence-${randomUUID()}`),
-    )
+    await processWithMicrosoftStore(second.id, fixture.client(`recurrence-${randomUUID()}`))
 
     await expect(getMembershipVerification(fixture.user.id, first.id)).resolves.toMatchObject({
       status: 'verified',
@@ -127,7 +124,7 @@ describe('Microsoft Store membership verification recovery', () => {
       name: 'processMembershipVerification',
       data: { verificationId: recoveryId },
     })
-    await processMicrosoftStoreVerificationAgainst(recoveryId, recoveryClient)
+    await processWithMicrosoftStore(recoveryId, recoveryClient)
     await (await memberships.getJob(recoveryId))?.remove()
     expect(queryCollections).toHaveBeenCalledWith(expect.objectContaining({ key: collectionsKey }))
   })
@@ -163,10 +160,7 @@ describe('Microsoft Store membership verification recovery', () => {
     })
     const microsoftExpiry = new Date(Date.now() + 2 * 86_400_000)
     const verification = await fixture.submit(fixture.user)
-    await processMicrosoftStoreVerificationAgainst(
-      verification.id,
-      fixture.client(undefined, microsoftExpiry),
-    )
+    await processWithMicrosoftStore(verification.id, fixture.client(undefined, microsoftExpiry))
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
