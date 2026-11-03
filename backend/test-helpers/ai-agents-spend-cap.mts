@@ -114,12 +114,13 @@ export function interceptRegistryScriptsForTest(
 ) {
   const prototype = commandClientPrototype()
   const realInvokeScript = prototype.invokeScript
-  const invokeScript = vi
-    .spyOn(prototype, 'invokeScript')
-    .mockImplementation(async function (this: unknown, ...args: unknown[]) {
-      await before(args[1] as RegistryScriptOptions)
-      return realInvokeScript.apply(this, args)
-    })
+  const invokeScript = vi.spyOn(prototype, 'invokeScript').mockImplementation(async function (
+    this: unknown,
+    ...args: unknown[]
+  ) {
+    await before(args[1] as RegistryScriptOptions)
+    return realInvokeScript.apply(this, args)
+  })
   onTestFinished(() => {
     invokeScript.mockRestore()
   })

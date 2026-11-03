@@ -199,18 +199,14 @@ describe('daily AI spend-cap rollover with real GlideMQ', () => {
       const lease = await beginSpendCapDelayedJobRelease(day, registration.generation)
       if (!lease) throw new Error('Expected release lease')
 
-      await expect(
-        releaseSpendCapDelayedJobs(day, lease, queue, '0', false),
-      ).resolves.toEqual({
+      await expect(releaseSpendCapDelayedJobs(day, lease, queue, '0', false)).resolves.toEqual({
         released: 0,
         hasPending: true,
         cursor: '0',
       })
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(5)
 
-      await expect(
-        releaseSpendCapDelayedJobs(day, lease, queue, '0', true),
-      ).resolves.toEqual({
+      await expect(releaseSpendCapDelayedJobs(day, lease, queue, '0', true)).resolves.toEqual({
         released: 0,
         hasPending: false,
         cursor: '0',
@@ -247,14 +243,18 @@ describe('daily AI spend-cap rollover with real GlideMQ', () => {
       const lease = await beginSpendCapDelayedJobRelease(day, registration.generation)
       if (!lease) throw new Error('Expected release lease')
 
-      await expect(
-        releaseSpendCapDelayedJobs(day, lease, queue, '0', false),
-      ).resolves.toEqual({ released: 0, hasPending: true, cursor: '0' })
+      await expect(releaseSpendCapDelayedJobs(day, lease, queue, '0', false)).resolves.toEqual({
+        released: 0,
+        hasPending: true,
+        cursor: '0',
+      })
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(5)
 
-      await expect(
-        releaseSpendCapDelayedJobs(day, lease, queue, '0', true),
-      ).resolves.toEqual({ released: 0, hasPending: false, cursor: '0' })
+      await expect(releaseSpendCapDelayedJobs(day, lease, queue, '0', true)).resolves.toEqual({
+        released: 0,
+        hasPending: false,
+        cursor: '0',
+      })
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(3)
     } finally {
       await workerQueueCommandClient.unlink([registryKey])

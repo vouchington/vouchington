@@ -62,7 +62,9 @@ export async function releaseSpendCapDelayedJobs(
 ): Promise<SpendCapReleaseResult> {
   const RELEASE_BATCH_SIZE = getAiUsageWorkLimit('release_batch_size')
   const key = spendCapDelayedRegistryKey(day)
-  const [nextCursor, fields] = await workerQueueCommandClient.hscan(key, cursor, { count: RELEASE_BATCH_SIZE })
+  const [nextCursor, fields] = await workerQueueCommandClient.hscan(key, cursor, {
+    count: RELEASE_BATCH_SIZE,
+  })
   const entries = registryEntries(fields)
   const actions = await pMap(
     entries,
@@ -82,7 +84,11 @@ export async function releaseSpendCapDelayedJobs(
     }),
     promotePage(key, lease, day, promotions, queue.name),
   ])
-  return { released, hasPending: (await workerQueueCommandClient.hlen(key)) > 3, cursor: nextCursor }
+  return {
+    released,
+    hasPending: (await workerQueueCommandClient.hlen(key)) > 3,
+    cursor: nextCursor,
+  }
 }
 
 async function classifyReleaseEntry(
