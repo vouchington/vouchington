@@ -14,7 +14,7 @@ const enqueueProcessStripeEventJob = createEnqueueFunction<ProcessStripeEventDat
   { queue: memberships, queueName: QUEUE_NAME, jobName: STRIPE_EVENT_JOB_NAME },
 )
 
-export const enqueueBulkProcessStripeEvents = createBulkEnqueueFunction({
+const enqueueBulkProcessStripeEvents = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: STRIPE_EVENT_JOB_NAME,

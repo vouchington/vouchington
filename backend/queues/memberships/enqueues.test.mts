@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
-  enqueueBulkProcessStripeEvents,
   enqueueBulkProcessMembershipVerifications,
   enqueueBulkSendRenewalPriceIncreaseEmail,
   enqueueDeliverMembershipEntitlementEffects,
@@ -11,6 +10,7 @@ import {
   enqueueProcessStripeEvent,
   enqueueReconcileStripeMembershipCatalog,
 } from './enqueues.mts'
+import { enqueueOrReactivateBulkProcessStripeEvents } from './enqueues/stripe-events.mts'
 import {
   MEMBERSHIP_ENTITLEMENT_EFFECTS_INTERVAL_MS,
   MEMBERSHIP_GRANT_EXPIRY_INTERVAL_MS,
@@ -131,7 +131,7 @@ describe('membership enqueues', () => {
       isLiveMode: false,
     }
     const jobId = `stripe-event__${data.stripeEventRecordId}__${data.leaseToken}`
-    const [job] = await enqueueBulkProcessStripeEvents([data])
+    const [job] = await enqueueOrReactivateBulkProcessStripeEvents([data])
     expect(job).toMatchObject({
       id: jobId,
       data,
