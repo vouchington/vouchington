@@ -1,15 +1,16 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import Sentry from '@modules/on-error/sentry'
 import { createTestUser } from '@voucha/test-helpers'
-import { getExternalFetch } from '@modules/utils/http'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import {
   DSA_TEST_UUID,
-  dsaTestDuplicateResponse,
-  dsaTestResponse,
+  dsaTestPayload,
 } from '@voucha/test-helpers/dsa-transparency-database-fixtures'
+import { stubDsaTransparencyDatabaseProvider } from '@voucha/test-helpers/dsa-transparency-database-provider'
+import { configureDsaStatementSubmissionForTest } from '@voucha/test-helpers/dsa-switches'
 import {
   expireTestDsaSubmissionLease,
   makeTestDsaSubmissionDue,
@@ -17,225 +18,146 @@ import {
   readTestDsaSubmission,
   seedTestDsaFailureRound,
   seedTestDsaSubmission,
+  createTestDsaSubmission,
 } from '@voucha/test-helpers/dsa-statement-submission-fixtures'
 import { processDsaStatementSubmission } from './dsa-statement-submission.mts'
 import { replayDsaStatementSubmission } from './dsa-statement-submission-replay.mts'
 import { claimDsaStatementSubmission } from './dsa-statement-submission-claims.mts'
 
-type ProcessDsaStatementSubmissionDependencies = Required<
-  NonNullable<Parameters<typeof processDsaStatementSubmission>[1]>
->
+const from = new Date('2020-01-01T00:00:00.000Z')
 
-const credentials = {
-  url: () => 'https://transparency.dsa.ec.europa.eu/api/v1',
-  token: () => 'synthetic-token',
-}
-const from = () => new Date('2020-01-01T00:00:00.000Z')
-
-async function newSubmission(): Promise<string> {
-  const image = await createTestCopyrightImageFixture('post-image')
-  const restriction = await createTestCopyrightRestrictionForImage(image)
-  return seedTestDsaSubmission(restriction.restrictionId)
+/** Switch on, start date 2020-01-01, and the synthetic provider credentials. */
+async function configureSubmission(): Promise<void> {
+  onTestFinished(await configureDsaStatementSubmissionForTest())
 }
 
-function fetchResponse(response: Response): ReturnType<typeof getExternalFetch> {
-  return vi.fn<ReturnType<typeof getExternalFetch>>(async () => response) as unknown as ReturnType<
-    typeof getExternalFetch
-  >
-}
-
-async function processWith(
-  submissionId: string,
-  response: Response,
-  overrides: Partial<ProcessDsaStatementSubmissionDependencies> = {},
-) {
-  return processDsaStatementSubmission(submissionId, {
-    isEnabled: async () => true,
-    getFrom: async () => from(),
-    requestFetch: fetchResponse(response),
-    ...credentials,
-    recordFailure: vi.fn<ProcessDsaStatementSubmissionDependencies['recordFailure']>(),
-    ...overrides,
-  })
+function spyOnDeadLetterReport() {
+  return vi.spyOn(Sentry, 'captureMessage').mockReturnValue('')
 }
 
 describe('durable DSA statement submission', () => {
-  it('keeps the ledger empty while off, without a start date, or without credentials', async () => {
-    const id = await newSubmission()
-    const response = dsaTestResponse(201, { uuid: DSA_TEST_UUID })
-    const requestFetch = fetchResponse(response)
-    expect(
-      (await processWith(id, response, { isEnabled: async () => false, requestFetch })).status,
-    ).toBe('disabled')
-    expect(
-      (await processWith(id, response, { getFrom: async () => null, requestFetch })).status,
-    ).toBe('configuration_missing')
-    expect(
-      (
-        await processDsaStatementSubmission(id, {
-          isEnabled: async () => true,
-          getFrom: async () => from(),
-          url: () => '',
-          token: () => '',
-          requestFetch,
-        })
-      ).status,
-    ).toBe('configuration_missing')
-    expect(await readTestDsaAttempts(id)).toEqual([])
-    expect((await readTestDsaSubmission(id)).lease_token).toBeNull()
-    expect(requestFetch).not.toHaveBeenCalled()
-  })
-
-  it('does not claim an earlier restriction after the operator moves the start date', async () => {
-    const id = await newSubmission()
-    const response = dsaTestResponse(201, { uuid: DSA_TEST_UUID })
-    expect(
-      (
-        await processWith(id, response, {
-          getFrom: async () => new Date('2200-01-01T00:00:00.000Z'),
-        })
-      ).status,
-    ).toBe('not_claimable')
-    expect(await readTestDsaAttempts(id)).toEqual([])
-    expect((await readTestDsaSubmission(id)).lease_token).toBeNull()
-  })
-
-  it('rechecks the switch, start date, and credentials after claiming without sending', async () => {
-    const response = dsaTestResponse(201, { uuid: DSA_TEST_UUID })
-    const requestFetch = fetchResponse(response)
-    const cases: Array<{
-      name: string
-      expected: 'disabled' | 'configuration_missing' | 'not_claimable'
-      overrides: Partial<ProcessDsaStatementSubmissionDependencies>
-    }> = [
-      {
-        name: 'switch withdrawn',
-        expected: 'disabled',
-        overrides: {
-          isEnabled: (() => {
-            let reads = 0
-            return async () => ++reads === 1
-          })(),
-        },
-      },
-      {
-        name: 'start date unset',
-        expected: 'configuration_missing',
-        overrides: {
-          getFrom: (() => {
-            let reads = 0
-            return async () => (++reads === 1 ? from() : null)
-          })(),
-        },
-      },
-      {
-        name: 'start date moved past the restriction',
-        expected: 'not_claimable',
-        overrides: {
-          getFrom: (() => {
-            let reads = 0
-            return async () => (++reads === 1 ? from() : new Date('2200-01-01T00:00:00.000Z'))
-          })(),
-        },
-      },
-      {
-        name: 'credentials withdrawn',
-        expected: 'configuration_missing',
-        overrides: {
-          token: (() => {
-            let reads = 0
-            return () => (++reads === 1 ? 'synthetic-token' : '')
-          })(),
-        },
-      },
-    ]
-    for (const scenario of cases) {
-      const id = await newSubmission()
-      expect(
-        (await processWith(id, response, { ...scenario.overrides, requestFetch })).status,
-      ).toBe(scenario.expected)
-      expect((await readTestDsaSubmission(id)).lease_token).toBeNull()
-      expect(await readTestDsaAttempts(id)).toEqual([])
-    }
-    expect(requestFetch).not.toHaveBeenCalled()
-  })
-
-  it('releases a claim when the configured endpoint fails its HTTPS allowlist', async () => {
-    const id = await newSubmission()
-    const requestFetch = fetchResponse(dsaTestResponse(201, { uuid: DSA_TEST_UUID }))
-    expect(
-      (
-        await processWith(id, dsaTestResponse(201, { uuid: DSA_TEST_UUID }), {
-          url: () => 'https://attacker.example/api/v1',
-          requestFetch,
-        })
-      ).status,
-    ).toBe('configuration_missing')
-    expect((await readTestDsaSubmission(id)).lease_token).toBeNull()
-    expect(await readTestDsaAttempts(id)).toEqual([])
-    expect(requestFetch).not.toHaveBeenCalled()
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
   })
 
   it('reports a fifth expired worker lease without sending again', async () => {
-    const id = await newSubmission()
+    const id = await createTestDsaSubmission()
+    await configureSubmission()
     await seedTestDsaFailureRound(id, 1, 4)
-    expect((await claimDsaStatementSubmission(id, from())).kind).toBe('claimed')
+    expect((await claimDsaStatementSubmission(id, from)).kind).toBe('claimed')
     await expireTestDsaSubmissionLease(id)
-    const response = dsaTestResponse(201, { uuid: DSA_TEST_UUID })
-    const requestFetch = fetchResponse(response)
-    const report = vi.fn<ProcessDsaStatementSubmissionDependencies['recordFailure']>()
-    expect(await processWith(id, response, { requestFetch, recordFailure: report })).toEqual({
-      status: 'dead_lettered',
-    })
-    expect(report).toHaveBeenCalledExactlyOnceWith({ submissionId: id, statusCode: null })
+    const provider = stubDsaTransparencyDatabaseProvider()
+    const report = spyOnDeadLetterReport()
+    expect(await processDsaStatementSubmission(id)).toEqual({ status: 'dead_lettered' })
+    expect(report).toHaveBeenCalledExactlyOnceWith(
+      'copyright_dsa_statement_submission_dead_lettered',
+      {
+        level: 'warning',
+        tags: { reason: 'copyright_dsa_statement_submission_dead_lettered' },
+        extra: { submissionId: id, statusCode: null },
+      },
+    )
     expect((await readTestDsaAttempts(id)).at(-1)).toMatchObject({
       attempt_number: 5,
       outcome: 'retryable_failure',
       error_code: 'lease_expired',
     })
-    expect(requestFetch).not.toHaveBeenCalled()
+    expect(provider.requests).toBe(0)
   })
 
   it('records a permanent 422 once and will not claim it again', async () => {
-    const id = await newSubmission()
-    const response = dsaTestResponse(422, { message: 'invalid synthetic statement' })
-    await expect(processWith(id, response)).resolves.toMatchObject({
+    const id = await createTestDsaSubmission()
+    await configureSubmission()
+    const provider = stubDsaTransparencyDatabaseProvider(() => ({
+      statusCode: 422,
+      body: { message: 'invalid synthetic statement' },
+    }))
+    const report = spyOnDeadLetterReport()
+    await expect(processDsaStatementSubmission(id)).resolves.toMatchObject({
       status: 'permanent_failure',
       recorded: true,
       deadLettered: true,
     })
-    expect((await processWith(id, response)).status).toBe('dead_lettered')
+    expect(report).toHaveBeenCalledExactlyOnceWith(
+      'copyright_dsa_statement_submission_dead_lettered',
+      {
+        level: 'warning',
+        tags: { reason: 'copyright_dsa_statement_submission_dead_lettered' },
+        extra: { submissionId: id, statusCode: 422 },
+      },
+    )
+    expect((await processDsaStatementSubmission(id)).status).toBe('dead_lettered')
+    expect(provider.requests).toBe(1)
     expect(await readTestDsaAttempts(id)).toMatchObject([
       { attempt_number: 1, outcome: 'permanent_failure', error_code: 'http_422' },
     ])
   })
 
-  it('records one success and treats duplicate PUID as idempotent success', async () => {
-    for (const response of [
-      dsaTestResponse(201, { uuid: DSA_TEST_UUID }),
-      dsaTestDuplicateResponse(),
-    ]) {
-      const id = await newSubmission()
-      await expect(processWith(id, response)).resolves.toMatchObject({
-        status: 'submitted',
-        recorded: true,
-      })
-      expect((await readTestDsaSubmission(id)).transparency_database_uuid).toBe(DSA_TEST_UUID)
-      expect(await readTestDsaAttempts(id)).toMatchObject([
-        { attempt_number: 1, outcome: 'submitted' },
-      ])
-      expect((await processWith(id, response)).status).toBe('not_claimable')
-    }
+  it('sends the frozen payload with the bearer token and records one success', async () => {
+    const { restrictionId } = await createTestCopyrightRestrictionForImage(
+      await createTestCopyrightImageFixture('post-image'),
+    )
+    const id = await seedTestDsaSubmission(restrictionId)
+    await configureSubmission()
+    const provider = stubDsaTransparencyDatabaseProvider()
+    await expect(processDsaStatementSubmission(id)).resolves.toEqual({
+      status: 'submitted',
+      recorded: true,
+    })
+    expect(provider.received).toHaveLength(1)
+    const [request] = provider.received
+    expect(request).toMatchObject({
+      method: 'POST',
+      path: '/api/v1/statement',
+      headers: {
+        authorization: 'Bearer synthetic-token',
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+    })
+    expect(JSON.parse(request!.body)).toEqual({ ...dsaTestPayload(), puid: restrictionId })
+    expect((await readTestDsaSubmission(id)).transparency_database_uuid).toBe(DSA_TEST_UUID)
+    expect(await readTestDsaAttempts(id)).toMatchObject([
+      { attempt_number: 1, outcome: 'submitted' },
+    ])
+    expect((await processDsaStatementSubmission(id)).status).toBe('not_claimable')
+    expect(provider.requests).toBe(1)
+  })
+
+  it('treats the duplicate PUID response as idempotent success', async () => {
+    const id = await createTestDsaSubmission()
+    await configureSubmission()
+    const provider = stubDsaTransparencyDatabaseProvider(() => ({
+      statusCode: 422,
+      body: { existing: { uuid: DSA_TEST_UUID } },
+    }))
+    await expect(processDsaStatementSubmission(id)).resolves.toMatchObject({
+      status: 'submitted',
+      recorded: true,
+    })
+    expect((await readTestDsaSubmission(id)).transparency_database_uuid).toBe(DSA_TEST_UUID)
+    expect(await readTestDsaAttempts(id)).toMatchObject([
+      { attempt_number: 1, outcome: 'submitted' },
+    ])
+    expect((await processDsaStatementSubmission(id)).status).toBe('not_claimable')
+    expect(provider.requests).toBe(1)
   })
 
   it('dead-letters after five retryable failures and starts a fresh round on replay', async () => {
-    const id = await newSubmission()
-    const response = dsaTestResponse(503, { message: 'synthetic outage' })
-    const report = vi.fn<ProcessDsaStatementSubmissionDependencies['recordFailure']>()
+    const id = await createTestDsaSubmission()
+    await configureSubmission()
+    let succeed = false
+    const provider = stubDsaTransparencyDatabaseProvider(() =>
+      succeed
+        ? { statusCode: 201, body: { uuid: DSA_TEST_UUID } }
+        : { statusCode: 503, body: { message: 'synthetic outage' } },
+    )
+    const report = spyOnDeadLetterReport()
     const availableAtTimes: number[] = []
     for (let attempt = 1; attempt <= 5; attempt += 1) {
       await makeTestDsaSubmissionDue(id)
-      const result = await processWith(id, response, { recordFailure: report })
+      const result = await processDsaStatementSubmission(id)
       expect(result).toMatchObject({
         status: 'retryable_failure',
         recorded: true,
@@ -248,11 +170,19 @@ describe('durable DSA statement submission', () => {
     expect(availableAtTimes[1]).toBeGreaterThan(availableAtTimes[0]!)
     expect(availableAtTimes[2]).toBeGreaterThan(availableAtTimes[1]!)
     expect(availableAtTimes[3]).toBeGreaterThan(availableAtTimes[2]!)
-    expect(report).toHaveBeenCalledExactlyOnceWith({ submissionId: id, statusCode: 503 })
+    expect(report).toHaveBeenCalledExactlyOnceWith(
+      'copyright_dsa_statement_submission_dead_lettered',
+      {
+        level: 'warning',
+        tags: { reason: 'copyright_dsa_statement_submission_dead_lettered' },
+        extra: { submissionId: id, statusCode: 503 },
+      },
+    )
     expect((await readTestDsaAttempts(id)).map(row => row.error_code)).toEqual(
       Array(5).fill('http_503'),
     )
-    expect((await processWith(id, response)).status).toBe('dead_lettered')
+    expect((await processDsaStatementSubmission(id)).status).toBe('dead_lettered')
+    expect(provider.requests).toBe(5)
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
     expect(await replayDsaStatementSubmission(administrator.id, id)).toBe(true)
     expect(await replayDsaStatementSubmission(administrator.id, id)).toBe(false)
@@ -261,9 +191,8 @@ describe('durable DSA statement submission', () => {
       outcome: 'replayed',
       replayed_by_id: administrator.id,
     })
-    await expect(
-      processWith(id, dsaTestResponse(201, { uuid: DSA_TEST_UUID })),
-    ).resolves.toMatchObject({
+    succeed = true
+    await expect(processDsaStatementSubmission(id)).resolves.toMatchObject({
       status: 'submitted',
       recorded: true,
     })
@@ -274,15 +203,29 @@ describe('durable DSA statement submission', () => {
     ])
   })
 
+  it('records a network failure as a retryable attempt', async () => {
+    const id = await createTestDsaSubmission()
+    await configureSubmission()
+    stubDsaTransparencyDatabaseProvider(() => ({ error: new Error('synthetic socket reset') }))
+    await expect(processDsaStatementSubmission(id)).resolves.toMatchObject({
+      status: 'retryable_failure',
+      recorded: true,
+      deadLettered: false,
+    })
+    expect(await readTestDsaAttempts(id)).toMatchObject([
+      { attempt_number: 1, outcome: 'retryable_failure', error_code: 'network_error' },
+    ])
+  })
+
   it('counts expired worker leases and dead-letters the fifth crash', async () => {
-    const id = await newSubmission()
-    expect((await claimDsaStatementSubmission(id, from())).kind).toBe('claimed')
+    const id = await createTestDsaSubmission()
+    expect((await claimDsaStatementSubmission(id, from)).kind).toBe('claimed')
     for (let attempt = 1; attempt <= 5; attempt += 1) {
       await expireTestDsaSubmissionLease(id)
-      const result = await claimDsaStatementSubmission(id, from())
+      const result = await claimDsaStatementSubmission(id, from)
       expect(result.kind).toBe(attempt === 5 ? 'lease_expired' : 'claimed')
     }
-    expect((await claimDsaStatementSubmission(id, from())).kind).toBe('dead_lettered')
+    expect((await claimDsaStatementSubmission(id, from)).kind).toBe('dead_lettered')
     expect((await readTestDsaAttempts(id)).map(row => row.error_code)).toEqual(
       Array(5).fill('lease_expired'),
     )

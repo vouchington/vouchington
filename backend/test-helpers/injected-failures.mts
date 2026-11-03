@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import * as psql from '@data-stores/psql'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
 import { backgroundQueue } from './shared-background-queue.mts'
 
 /** Reject one write made through a caller-owned executor while preserving its transaction. */
@@ -127,22 +128,21 @@ export function runBeforePostgresStatementForTest(
   marker: string,
   beforeStatement: (transaction: QueryExecutor) => Promise<void>,
 ): () => void {
-  const realBegin = psql.beginTransaction
   let ran = false
-  const spy = vi.spyOn(psql, 'beginTransaction').mockImplementation(async options => {
-    const transaction = await realBegin(options)
-    return new Proxy(transaction, {
-      apply(target, thisArgument, argumentsList: Parameters<typeof transaction>) {
-        const [input] = argumentsList
-        const text = typeof input === 'string' ? input : input.text
-        if (ran || !text.includes(marker)) return Reflect.apply(target, thisArgument, argumentsList)
-        ran = true
-        return (async () => {
-          await beforeStatement(target)
-          return Reflect.apply(target, thisArgument, argumentsList)
-        })()
-      },
-    })
-  })
-  return () => spy.mockRestore()
+  return interceptPostgresTransactionsForTest(
+    transaction =>
+      new Proxy(transaction, {
+        apply(target, thisArgument, argumentsList: Parameters<typeof transaction>) {
+          const [input] = argumentsList
+          const text = typeof input === 'string' ? input : input.text
+          if (ran || !text.includes(marker))
+            return Reflect.apply(target, thisArgument, argumentsList)
+          ran = true
+          return (async () => {
+            await beforeStatement(target)
+            return Reflect.apply(target, thisArgument, argumentsList)
+          })()
+        },
+      }),
+  )
 }
