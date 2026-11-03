@@ -42,7 +42,7 @@ export async function processReconcileCopyrightAgentDispatches(
     const page = await deps.getPending({ ...(cursor ? { after: cursor } : {}), limit: batchSize })
     const dispatches = intakeEnabled ? page.results : page.results.filter(isInCaseDispatch)
     // oxlint-disable-next-line no-await-in-loop -- preserves at-least-once delivery before cursor advance.
-    errors.push(...(await dispatchCopyrightAgentPage(dispatches)))
+    errors.push(...(await dispatchCopyrightAgentPage(dispatches))) // no-mistakes-disable-line query-reached-per-item: capped at maxBatches pages and the cursor advances only after a page settles
     cursor = page.page_info.has_next_page ? (page.page_info.end_cursor ?? undefined) : undefined
     if (!cursor) break
   }
@@ -70,7 +70,7 @@ async function dispatchCopyrightAgentPage(
     if (item.kind !== 'form-effect') continue
     try {
       // oxlint-disable-next-line no-await-in-loop -- each durable legal effect may lock targets.
-      await applyNonSpamSignedInCopyrightFormScreening(item.submissionId)
+      await applyNonSpamSignedInCopyrightFormScreening(item.submissionId) // no-mistakes-disable-line query-reached-per-item: each durable legal effect locks its own submission targets and a page holds at most batchSize items
     } catch (err) {
       errors.push(err)
     }
