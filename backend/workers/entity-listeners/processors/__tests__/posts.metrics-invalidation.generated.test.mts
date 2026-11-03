@@ -113,7 +113,7 @@ describe('posts.metrics-invalidation.generated', () => {
     expect(cachedValue).toBeDefined()
   })
 
-  it('post_metrics cache is invalidated for all ancestors when a nested comment is created', async () => {
+  it('post_metrics cache is invalidated for the parent and root when a nested comment is created', async () => {
     const rootPostId = await insertTestPost({
       title: 'Root Post',
       slug: `root-post-${Date.now()}`,

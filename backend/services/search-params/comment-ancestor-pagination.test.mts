@@ -4,14 +4,14 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { prepareCommentAncestorPagination } from './comment-ancestor-pagination.mts'
 
 describe('bounded ancestor pagination', () => {
-  it('uses runtime bounds only when a cursor or limit requests a bounded window', () => {
+  it('always bounds the window by the runtime limits', () => {
     overrideDynamicConfigFieldsForTest(paginationConfig, { default_limit: 2, max_limit: 3 })
-    expect(prepareCommentAncestorPagination({}).pageQuery).toBeNull()
+    expect(prepareCommentAncestorPagination({}).pageQuery).toEqual({ after: undefined, limit: 2 })
     expect(prepareCommentAncestorPagination({ after: 'cursor' }).pageQuery).toEqual({
       after: 'cursor',
       limit: 2,
     })
-    expect(prepareCommentAncestorPagination({ limit: 5 }).pageQuery?.limit).toBe(3)
+    expect(prepareCommentAncestorPagination({ limit: 5 }).pageQuery.limit).toBe(3)
     expect(prepareCommentAncestorPagination({ limit: 5 }).validationQuery.limit).toBe(3)
   })
 })

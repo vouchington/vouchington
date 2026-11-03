@@ -209,7 +209,7 @@ describe('post.ancestors pagination', () => {
     expect(response.body.post.parent_post_id).toBe(ids.at(-1))
   })
 
-  it('keeps no-query ancestor requests on the legacy full-chain response during expansion', async () => {
+  it('bounds a request without paging parameters to the default window', async () => {
     const { ids, rootId } = await createCommentChain(8)
     const response = await createRequest()
       .get(`/api/v1/posts/${ids.at(-1)!}/ancestors`)
@@ -217,12 +217,8 @@ describe('post.ancestors pagination', () => {
 
     expect(response.body.results.map((result: { id: string }) => result.id)).toEqual([
       rootId,
-      ...ids,
+      ...ids.slice(-6),
     ])
-    expect(response.body.page_info).toEqual({
-      has_next_page: false,
-      end_cursor: null,
-      start_cursor: null,
-    })
+    expect(response.body.page_info.has_next_page).toBe(true)
   })
 })

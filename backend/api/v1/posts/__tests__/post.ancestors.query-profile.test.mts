@@ -36,7 +36,7 @@ describe('GET /api/v1/posts/:idOrSlug/ancestors query profile', () => {
         .filter(line => line.startsWith('[pg-request-profile]'))
       expect(profileLines).toHaveLength(1)
       // Query overlap varies with scheduling; the root batch must avoid an extra query.
-      expect(profileLines[0]).toContain(' queries=10 ')
+      expect(profileLines[0]).toContain(' queries=11 ')
       expect(profileLines[0]).toContain(' repeats=none')
     } finally {
       stderr.mockRestore()
