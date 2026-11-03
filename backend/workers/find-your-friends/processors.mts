@@ -19,16 +19,7 @@ export async function processFindYourFriendsDispatcher(
 ): Promise<{ count: number; hasMore: boolean }> {
   const limits = getFriendsDispatchLimits()
   const sweepStartedAt = data.sweepStartedAt ?? new Date().toISOString()
-  const upperIds =
-    data.upperIds ??
-    (Object.fromEntries(
-      await Promise.all(
-        (['facebook', 'x', 'github'] as const).map(async provider => [
-          provider,
-          await getFriendAccountSweepUpperId(provider),
-        ]),
-      ),
-    ) as Required<FriendsDispatchData>['upperIds'])
+  const upperIds = data.upperIds ?? (await readSweepUpperIds())
   const afterIds = { ...data.afterIds }
   const finishedProviders = [...(data.finishedProviders ?? [])]
   const providers = [
@@ -102,4 +93,13 @@ async function collectAndEnqueue(
     count += batch.length
   }
   return count
+}
+
+async function readSweepUpperIds(): Promise<Required<FriendsDispatchData>['upperIds']> {
+  const [facebook, x, github] = await Promise.all([
+    getFriendAccountSweepUpperId('facebook'),
+    getFriendAccountSweepUpperId('x'),
+    getFriendAccountSweepUpperId('github'),
+  ])
+  return { facebook, x, github }
 }

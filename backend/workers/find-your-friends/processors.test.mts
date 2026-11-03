@@ -121,4 +121,22 @@ describe('processFindYourFriendsDispatcher', () => {
       ).not.toEqual([])
     }
   })
+
+  it('starts a sweep by reading each provider upper id', async () => {
+    const window = createTestOAuthAccountSweepWindow()
+    await insertEligibleAccount('facebook', window.upperId)
+    overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
+      batch_size: 1,
+      max_rows_per_provider_per_run: 1,
+    })
+    const saved: FriendsDispatchData[] = []
+
+    await processFindYourFriendsDispatcher({}, async next => {
+      saved.push(next)
+    })
+
+    const facebookUpperId = saved[0]?.upperIds?.facebook
+    expect([window.upperId, facebookUpperId].toSorted().at(-1)).toBe(facebookUpperId)
+    expect(Object.keys(saved[0]?.upperIds ?? {}).toSorted()).toEqual(['facebook', 'github', 'x'])
+  })
 })
