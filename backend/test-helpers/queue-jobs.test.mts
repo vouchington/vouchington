@@ -1,6 +1,6 @@
 import { Queue } from 'glide-mq'
 import { afterEach, describe, expect, it } from 'vitest'
-import { promoteDelayedJobs } from './queue-jobs.mts'
+import { promoteDelayedJobs, readAllQueueJobs } from './queue-jobs.mts'
 
 describe('promoteDelayedJobs', () => {
   // No worker is attached to these queues, so a released job stays `waiting` where it can be read.
@@ -75,5 +75,21 @@ describe('promoteDelayedJobs', () => {
 
   it('reports zero when nothing is delayed', async () => {
     await expect(promoteDelayedJobs(newQueue())).resolves.toBe(0)
+  })
+})
+
+describe('readAllQueueJobs', () => {
+  it('orders jobs added in one millisecond by their numeric counter id, not as strings', async () => {
+    const states: Record<string, { id: string; timestamp: number }[]> = {
+      waiting: [{ id: '10', timestamp: 5 }],
+      active: [{ id: '9', timestamp: 5 }],
+      delayed: [{ id: 'custom', timestamp: 5 }],
+      completed: [{ id: '100', timestamp: 6 }],
+      failed: [{ id: '99', timestamp: 6 }],
+    }
+
+    const jobs = await readAllQueueJobs({ getJobs: async state => states[state] ?? [] })
+
+    expect(jobs.map(job => job.id)).toEqual(['9', '10', 'custom', '99', '100'])
   })
 })
