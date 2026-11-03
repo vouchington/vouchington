@@ -25,7 +25,7 @@ describe('valkey shutdown facade', () => {
 
     await expect(onGracefulShutdown.waitForInitialization()).resolves.toBeUndefined()
 
-    config.close()
+    await config.close()
   })
 
   it('waits for every dynamic config startup before reporting failures', async () => {
@@ -47,8 +47,8 @@ describe('valkey shutdown facade', () => {
       errors: [expect.any(Error)],
     })
 
-    invalid.close()
-    valid.close()
+    await invalid.close()
+    await valid.close()
   })
 
   it('closes GlideMQ instances once and the shared command client after them', async () => {
@@ -129,7 +129,11 @@ describe('valkey shutdown facade', () => {
 
   it('converts non-Error close failures before reporting them', async () => {
     const { onGracefulShutdown, registry } = await loadShutdown()
-    registry.registerGlideMQInstance({ close: () => Promise.reject('glide close failed') })
+    // Third-party close() implementations can reject with any value, not only an Error.
+    const nonErrorReason = 'glide close failed' as unknown as Error
+    registry.registerGlideMQInstance({
+      close: () => Promise.reject(nonErrorReason),
+    })
 
     await expect(onGracefulShutdown()).rejects.toMatchObject({
       errors: [expect.objectContaining({ message: 'glide close failed' })],
