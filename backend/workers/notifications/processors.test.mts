@@ -11,7 +11,6 @@ import {
 import type { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 import type { reconcileNotificationsForRssFeedItem } from '@services/notifications/reconcile-rss-feed-item'
 import type {
-  enqueueBulkDeliverNotificationPushIntents,
   enqueueContinueNotificationPushIntentReconciliation,
   enqueueDeliverNotificationPushIntent,
 } from '@queues/notifications/enqueues'
@@ -19,12 +18,22 @@ import { listAvailableNotificationPushIntents } from '@services/notifications-pu
 import { createTestUser, createTestUserDirect, insertTestBlock } from '@voucha/test-helpers'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { listNotifications } from '@services/notifications/list'
+import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { background } from '@queues/background/queues'
+import { NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB } from '@queues/background/enqueues/notifications-jobs'
 
 const mockReconcileNotificationsForPost = vi.fn<typeof reconcileNotificationsForPost>()
 const mockReconcileNotificationsForRssFeedItem =
   vi.fn<typeof reconcileNotificationsForRssFeedItem>()
-const mockEnqueueBulkDeliverNotificationPushIntents =
-  vi.fn<typeof enqueueBulkDeliverNotificationPushIntents>()
+
+async function queuedPushes(userIds: string[]) {
+  const jobs = await readAllQueueJobs(background)
+  return jobs
+    .filter(job => job.name === NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB.name)
+    .map(job => job.data as { userId: string; notificationId: string })
+    .filter(data => userIds.includes(data.userId))
+}
+
 describe('processFollowNotification', () => {
   it('does not notify a user blocked by the follower', async () => {
     const followee = await createTestUser()
@@ -43,12 +52,13 @@ describe('notification reconcile processors', () => {
   })
 
   it('enqueues post push delivery per created notification batch', async () => {
+    const [first, second, third] = [1, 2, 3].map(() => ({
+      user_id: crypto.randomUUID(),
+      id: crypto.randomUUID(),
+    }))
     mockReconcileNotificationsForPost.mockImplementation(async (_postId, options) => {
-      await options!.onCreatedNotifications!([
-        { user_id: 'user-1', id: 'notification-1' },
-        { user_id: 'user-2', id: 'notification-2' },
-      ])
-      await options!.onCreatedNotifications!([{ user_id: 'user-3', id: 'notification-3' }])
+      await options!.onCreatedNotifications!([first!, second!])
+      await options!.onCreatedNotifications!([third!])
       return { created: 3, pruned: 1 }
     })
 
@@ -57,19 +67,25 @@ describe('notification reconcile processors', () => {
       pruned: 1,
     })
 
-    expect(mockEnqueueBulkDeliverNotificationPushIntents).toHaveBeenNthCalledWith(1, [
-      { userId: 'user-1', notificationId: 'notification-1' },
-      { userId: 'user-2', notificationId: 'notification-2' },
-    ])
-    expect(mockEnqueueBulkDeliverNotificationPushIntents).toHaveBeenNthCalledWith(2, [
-      { userId: 'user-3', notificationId: 'notification-3' },
-    ])
+    const pushes = await queuedPushes([first!.user_id, second!.user_id, third!.user_id])
+    expect(pushes).toHaveLength(3)
+    expect(pushes).toEqual(
+      expect.arrayContaining([
+        { userId: first!.user_id, notificationId: first!.id },
+        { userId: second!.user_id, notificationId: second!.id },
+        { userId: third!.user_id, notificationId: third!.id },
+      ]),
+    )
   })
 
   it('enqueues RSS push delivery per created notification batch', async () => {
+    const [first, second] = [1, 2].map(() => ({
+      user_id: crypto.randomUUID(),
+      id: crypto.randomUUID(),
+    }))
     mockReconcileNotificationsForRssFeedItem.mockImplementation(async (_rssFeedItemId, options) => {
-      await options!.onCreatedNotifications!([{ user_id: 'user-4', id: 'notification-4' }])
-      await options!.onCreatedNotifications!([{ user_id: 'user-5', id: 'notification-5' }])
+      await options!.onCreatedNotifications!([first!])
+      await options!.onCreatedNotifications!([second!])
       return { created: 2, pruned: 0 }
     })
 
@@ -80,12 +96,14 @@ describe('notification reconcile processors', () => {
       pruned: 0,
     })
 
-    expect(mockEnqueueBulkDeliverNotificationPushIntents).toHaveBeenNthCalledWith(1, [
-      { userId: 'user-4', notificationId: 'notification-4' },
-    ])
-    expect(mockEnqueueBulkDeliverNotificationPushIntents).toHaveBeenNthCalledWith(2, [
-      { userId: 'user-5', notificationId: 'notification-5' },
-    ])
+    const pushes = await queuedPushes([first!.user_id, second!.user_id])
+    expect(pushes).toHaveLength(2)
+    expect(pushes).toEqual(
+      expect.arrayContaining([
+        { userId: first!.user_id, notificationId: first!.id },
+        { userId: second!.user_id, notificationId: second!.id },
+      ]),
+    )
   })
 })
 
@@ -191,7 +209,6 @@ describe('notification push-intent recovery', () => {
 })
 function runReconcilePostNotifications(data: { postId: string; afterUserId?: string }) {
   return processReconcilePostNotifications(data, {
-    enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
     reconcileNotificationsForPost: mockReconcileNotificationsForPost,
   })
 }
@@ -201,7 +218,6 @@ function runReconcileRssFeedItemNotifications(data: {
   afterUserId?: string
 }) {
   return processReconcileRssFeedItemNotifications(data, {
-    enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
     reconcileNotificationsForRssFeedItem: mockReconcileNotificationsForRssFeedItem,
   })
 }
