@@ -80,7 +80,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/copyright-action-reconciliation',
   'background/copyright-delivery-reconciliation',
   'background/copyright-dsa-statement-reconciliation',
-  'background/copyright-evidence-retention',
+  'background/copyright-case-purge-admission',
   'background/copyright-review-target-page',
   'background/notification-push-intent-recovery',
   'background/reconcile-image-quarantines',

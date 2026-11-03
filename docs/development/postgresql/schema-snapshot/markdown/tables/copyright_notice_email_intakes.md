@@ -56,10 +56,12 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_email_intakes_amazon_ses_message_id_key`: `CREATE UNIQUE INDEX copyright_notice_email_intakes_amazon_ses_message_id_key ON public.copyright_notice_email_intakes USING btree (amazon_ses_message_id)`
 - `copyright_notice_email_intakes_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intakes_pkey ON public.copyright_notice_email_intakes USING btree (id)`
 - `idx_copyright_notice_email_intakes__raw_media_type_id`: `CREATE INDEX idx_copyright_notice_email_intakes__raw_media_type_id ON public.copyright_notice_email_intakes USING btree (raw_media_type_id)`
-- `idx_copyright_notice_email_intakes__raw_storage_object_id`: `CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id ON public.copyright_notice_email_intakes USING btree (raw_storage_object_id) WHERE (raw_storage_object_id IS NOT NULL)`
+- `idx_copyright_notice_email_intakes__raw_storage_object_id`: `CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id ON public.copyright_notice_email_intakes USING btree (raw_storage_object_id, id) WHERE (raw_storage_object_id IS NOT NULL)`
 - `idx_copyright_notice_email_intakes__received_id`: `CREATE INDEX idx_copyright_notice_email_intakes__received_id ON public.copyright_notice_email_intakes USING btree (received_at, id)`
 
 **Triggers:**
 
+- `trigger_copyright_email_intake_object_reference_generation`: `CREATE TRIGGER trigger_copyright_email_intake_object_reference_generation AFTER INSERT OR DELETE OR UPDATE OF raw_storage_object_id ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_storage_reference_generation('raw_storage_object_id')`
+- `trigger_copyright_email_intakes_claimed_object_delete`: `CREATE TRIGGER trigger_copyright_email_intakes_claimed_object_delete BEFORE DELETE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_claimed_storage_reference_delete('raw_storage_object_id')`
 - `trigger_copyright_email_intakes_current_result`: `CREATE TRIGGER trigger_copyright_email_intakes_current_result BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_intake_current_recommendation()`
 - `trigger_copyright_email_intakes_require_storage_object`: `CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id')`

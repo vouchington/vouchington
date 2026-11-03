@@ -9,7 +9,6 @@ import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
 import type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 import { selectCopyrightParticipantStatements } from './participant-statements.mts'
-import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
 import {
@@ -106,10 +105,8 @@ export async function getCopyrightStaffEmailIntake(
   const row = rows[0]
   if (!row) return null
   const purpose = copyrightEmailIntakePurpose(row.amazon_ses_message_id)
-  const decryptLive = (ciphertext: string | null) => {
-    const live = liveCopyrightCiphertext(ciphertext)
-    return live ? decryptSecret(live, purpose) : null
-  }
+  const decryptLive = (ciphertext: string | null) =>
+    ciphertext ? decryptSecret(ciphertext, purpose) : null
   const senderEmail = decryptLive(row.sender_email_ciphertext)
   const subject = decryptLive(row.subject_ciphertext)
   const bodyText = decryptLive(row.body_ciphertext)

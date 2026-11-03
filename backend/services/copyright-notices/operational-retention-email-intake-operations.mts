@@ -1,6 +1,6 @@
 import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { deleteCopyrightEvidenceObjectVersionPage } from './retention-erasure-s3.mts'
+import { deleteCopyrightEvidenceObjectVersionPage } from './evidence-object-version-page.mts'
 
 /** A child page is capped independently; an incomplete intake stays at the cursor until the next page. */
 export async function deleteChildPage(

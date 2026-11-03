@@ -18,33 +18,19 @@ CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
   SELECT uuid_extract_timestamp(rationale.id) < retention_bound.eligible_before_at AND (
     (rationale.copyright_notice_id IS NOT NULL AND EXISTS (
       SELECT 1 FROM copyright_notices notice WHERE notice.id = rationale.copyright_notice_id
-        AND (
-          (notice.jurisdiction = 'us_dmca' AND rationale.rationale_ciphertext = 'erased'
-            AND EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
-              WHERE erasure.copyright_notice_id = notice.id))
-          OR (notice.jurisdiction IN ('eu_dsa', 'uk') AND NOT EXISTS (
-            SELECT 1 FROM preserved_cases held
-            WHERE held.notice_id = notice.id AND held.released_at IS NULL))
-        )
+        AND notice.jurisdiction IN ('eu_dsa', 'uk') AND NOT EXISTS (
+          SELECT 1 FROM preserved_cases held
+          WHERE held.notice_id = notice.id AND held.released_at IS NULL)
     ))
     OR (rationale.copyright_notice_email_intake_receipt_id IS NOT NULL AND (
-      (rationale.rationale_ciphertext = 'erased'
-        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id)
-        AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
-            AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
-              WHERE erasure.copyright_notice_id = link.copyright_notice_id)))
-      OR (EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+      (EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
           JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
           WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
             AND notice.jurisdiction IN ('eu_dsa', 'uk'))
         AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
           JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
           WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_receipt_id
-            AND ((notice.jurisdiction = 'us_dmca' AND NOT (rationale.rationale_ciphertext = 'erased'
-              AND EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
-                WHERE erasure.copyright_notice_id = notice.id)))
+            AND (notice.jurisdiction = 'us_dmca'
               OR EXISTS (SELECT 1 FROM preserved_cases held
               WHERE held.notice_id = notice.id AND held.released_at IS NULL))))
       OR (NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
@@ -69,6 +55,6 @@ CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
   ) FROM retention_bound
 $function$;
 COMMENT ON FUNCTION fn_copyright_decision_rationale_retention_eligible(copyright_decision_rationales, timestamptz)
-  IS 'Retires six-calendar-year attempted rationale independently of finite review history, preserving scoped legal holds and existing US case erasure requirements.';
+  IS 'Retires six-calendar-year attempted rationale independently of finite review history, preserving scoped legal holds. A US case rationale is never retired here: the case purge deletes it with the case.';
 `
 }

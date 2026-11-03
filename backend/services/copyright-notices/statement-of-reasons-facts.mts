@@ -1,10 +1,10 @@
+import { decryptSecret } from '@modules/token-secrets'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { aiGuidanceSql } from './automated-assessment-sql.mts'
 import type { CopyrightStatementInput } from './statement-of-reasons.mts'
 import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
-import { decryptCopyrightText } from './erased-ciphertext.mts'
 import { territorialLabels } from './territorial-labels.mts'
 
 export type CopyrightStatementFacts = Pick<
@@ -140,7 +140,7 @@ export function copyrightStatementFactsFromRows(
     explanation:
       row.public_explanation_ciphertext &&
       (row.jurisdiction === 'eu_dsa' || row.jurisdiction === 'uk')
-        ? (decryptCopyrightText(
+        ? (decryptSecret(
             row.public_explanation_ciphertext,
             `${territorialLabels(row.jurisdiction).publicExplanationPurpose}:${noticeId}`,
           ) ?? undefined)

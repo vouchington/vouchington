@@ -2,7 +2,6 @@ import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
-import { decryptCopyrightText, liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import { parseCopyrightFormGuidance } from './form-screening-guidance.mts'
 import { groupByNotice } from './read-models-staff-group.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
@@ -90,7 +89,7 @@ export async function selectStaffFormReview(
 
 function toFormReview(row: FormReviewRow): NonNullable<CopyrightStaffCase['form_review']> {
   const purpose = `copyright-form-screening:${row.intake_id}`
-  const guidance = liveCopyrightCiphertext(row.guidance_ciphertext)
+  const guidance = row.guidance_ciphertext
   return {
     intake_id: row.intake_id,
     source_kind: row.source_kind,
@@ -99,7 +98,7 @@ function toFormReview(row: FormReviewRow): NonNullable<CopyrightStaffCase['form_
           state: row.state,
           recommendation: row.recommendation,
           rationale: row.rationale_ciphertext
-            ? decryptCopyrightText(row.rationale_ciphertext, purpose)
+            ? decryptSecret(row.rationale_ciphertext, purpose)
             : null,
           guidance: guidance
             ? parseCopyrightFormGuidance(JSON.parse(decryptSecret(guidance, purpose)))

@@ -27,14 +27,7 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
     },
     evidenceRetentionDeletion: {
       description:
-        'Let the hourly sweep delete the stored evidence and claimant personal data of closed copyright cases once the retention period has passed, keeping only the minimal repeat-infringer record. Needs a retention period below and the evidence-bucket delete permission; read the copyright runbook before enabling.',
-    },
-    evidenceRetentionDays: {
-      description:
-        'Days a copyright case is kept after its last lifecycle event before the retention sweep may delete its evidence. 0 means unset: nothing is deleted even when the switch is on. Set only to an owner-approved period.',
-      minValue: 0,
-      maxValue: 3650,
-      integer: true,
+        'Pause or resume the approved copyright case purge after its legal clock and blocker checks. The worker needs evidence-bucket version deletion permission; read the copyright runbook before pausing or resuming.',
     },
     emailThreadGraphMaxRows: {
       description:

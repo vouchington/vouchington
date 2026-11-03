@@ -71,6 +71,7 @@ CREATE INDEX idx_copyright_notice_form_screening_attempts__latest ON copyright_n
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_copyright_screening_attempt_rewind() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
   IF TG_OP = 'DELETE' AND current_setting('app.copyright_operational_retention', true) = 'on' THEN
     RETURN OLD;
   END IF;

@@ -4,7 +4,6 @@ import { createSharedDbScopeObserver } from '@vouchington/postgres/query-telemet
 const sharedDbScopeTables = {
   listCopyrightStaffQueue: 'copyright_notices',
   readCopyrightReviewTargetBreaches: 'copyright_notices',
-  selectCopyrightRetentionErasureCandidates: 'copyright_notices',
   searchCopyrightStaffEmailIntakes: 'copyright_notice_email_intakes',
   promoteCopyrightEmailIntakeGraph: 'copyright_notice_email_message_ancestors',
   promoteCopyrightEmailIntakeGraphLocked: 'copyright_notice_email_intakes',

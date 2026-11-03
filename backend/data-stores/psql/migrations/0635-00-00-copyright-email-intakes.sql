@@ -308,6 +308,20 @@ BEGIN
     IF current_setting('app.copyright_operational_retention', true) = 'on' THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'copyright email intake deletion requires operational retention' USING ERRCODE = 'check_violation';
   END IF;
+  IF fn_copyright_case_purge_permitted(TG_TABLE_NAME)
+    AND (to_jsonb(OLD) - ARRAY['current_recommendation_identity_id',
+      'current_recommendation_output_ciphertext', 'recommendation_completed_at'])
+      IS NOT DISTINCT FROM
+      (to_jsonb(NEW) - ARRAY['current_recommendation_identity_id',
+        'current_recommendation_output_ciphertext', 'recommendation_completed_at'])
+    AND NEW.current_recommendation_identity_id IS NULL
+    AND NEW.current_recommendation_output_ciphertext IS NULL
+    AND NEW.recommendation_completed_at IS NULL
+    AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+      WHERE link.copyright_notice_email_intake_id = OLD.id
+        AND link.copyright_notice_id = NULLIF(
+          current_setting('app.copyright_case_purge_notice_id', true), '')::uuid)
+  THEN RETURN NEW; END IF;
   IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
     RETURN NEW;
   END IF;
@@ -333,6 +347,12 @@ CREATE TRIGGER trigger_copyright_email_intakes_current_result BEFORE UPDATE OR D
   EXECUTE FUNCTION fn_reject_copyright_email_intake_current_recommendation();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id');
+CREATE TRIGGER trigger_copyright_email_intakes_claimed_object_delete
+  BEFORE DELETE ON copyright_notice_email_intakes FOR EACH ROW
+  EXECUTE FUNCTION fn_reject_copyright_claimed_storage_reference_delete('raw_storage_object_id');
+CREATE TRIGGER trigger_copyright_email_intake_object_reference_generation
+  AFTER INSERT OR UPDATE OF raw_storage_object_id OR DELETE ON copyright_notice_email_intakes
+  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_storage_reference_generation('raw_storage_object_id');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_parses_immutable BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_parses FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -400,7 +420,7 @@ CREATE INDEX IF NOT EXISTS idx_copyright_notice_email_intakes__received_id
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intakes__raw_media_type_id ON copyright_notice_email_intakes (raw_media_type_id);
 CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id
-  ON copyright_notice_email_intakes (raw_storage_object_id)
+  ON copyright_notice_email_intakes (raw_storage_object_id, id)
   WHERE raw_storage_object_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

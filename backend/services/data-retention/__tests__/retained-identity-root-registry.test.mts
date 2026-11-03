@@ -17,6 +17,7 @@ import {
   readTestRetainedIdentityForeignKeys,
   type RetainedIdentityForeignKey,
 } from '@voucha/test-helpers/entities/retained-identity-foreign-keys'
+import { canStoreCopyrightNoticeCleanupCursorForTest } from '@voucha/test-helpers/entities/retained-identity-cleanup-cursor'
 import { ROOT_FAMILIES } from '../retained-identity-root-references.mts'
 import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
@@ -40,6 +41,10 @@ function unregisteredRetainedForeignKeys(
 }
 
 describe('retained identity cleanup registry', () => {
+  it('accepts the copyright notice family in cleanup cursors', async () => {
+    expect(await canStoreCopyrightNoticeCleanupCursorForTest()).toBe(true)
+  })
+
   it('lists every foreign key that targets a retained identity or classifier bridge', async () => {
     const foreignKeys = await readTestRetainedIdentityForeignKeys()
     expect(foreignKeys.length).toBeGreaterThan(0)
@@ -64,6 +69,21 @@ describe('retained identity cleanup registry', () => {
       target: 'post_publication_community_identities',
       owner: 'classifier_runs',
       column: 'community_identity_id',
+    })
+    expect(foreignKeys).toContainEqual({
+      target: 'retained_copyright_notice_identities',
+      owner: 'copyright_notices',
+      column: 'id',
+    })
+    expect(foreignKeys).toContainEqual({
+      target: 'retained_copyright_notice_identities',
+      owner: 'copyright_notice_party_identities',
+      column: 'copyright_notice_id',
+    })
+    expect(foreignKeys).toContainEqual({
+      target: 'retained_user_identities',
+      owner: 'copyright_notice_party_identities',
+      column: 'account_user_id',
     })
     expect(unregisteredRetainedForeignKeys(foreignKeys, ROOT_FAMILIES)).toEqual([])
   })

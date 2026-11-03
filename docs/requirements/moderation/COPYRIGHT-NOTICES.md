@@ -189,33 +189,29 @@ output indefinitely. Retained identities preserve protocol
 references without authorizing deleted records. Form intakes are created with a required notice
 foreign key, so there is no unlinked form-intake state to sweep.
 
-GDPR and UK GDPR need a retention period and real deletion or anonymisation when it ends. The US
-side must keep records for the repeat-infringer policy (17 USC 512(i)), restoration (512(g)), the
-three-year limitation period (17 USC 507(b)), and litigation holds. A sweep reconciles the two. It
-is off by default and deletes nothing until the owner approves a period.
+GDPR and UK GDPR need real deletion or anonymisation when the legal period ends. The US side must
+keep records while repeat-infringer review, restoration, limitation, or litigation work remains.
+The approved case clock retains each jurisdiction for six calendar years after its latest legal
+activity, including the final decision's complaint window. A new legal fact or hold release advances
+that clock. Detailed history has its own guarded partition retirement until the case is purged.
 
-- The private-evidence erasure sweep applies to `us_dmca` cases. EU and UK case outcomes remain
-  available while their owning rows exist; their detailed history follows the separate six-year
-  partition window.
-- Staff may preserve a case for overlapping written litigation threats or court and regulator requests. They can record a new hold after private evidence has been erased; the remaining legal case cannot expire until every hold is released. Explicit closure of a territorial escalation and resolution of a supervised complaint are separate decisions.
-- A party account's hold release and final deletion extend the case clock even after the account's shorter audit history has expired. The retained account identity carries these dates without granting access to the deleted account.
-- A case is never swept while any blocker exists: open queue work, an open deadline, an active
-  restriction, an operative incident, a pending delivery, a live guest capability, an unresolved
-  hold, a pending thread-linked email reply, or a preservation hold on a party account. Resolving
-  the reply restarts the retention period from its receipt or review.
-- Personal data and statements are overwritten and evidence object versions are deleted. The
-  minimal record survives: the notice, targets, dates, states, hashes, restrictions, deadlines,
-  hold and review outcomes, and repeat-infringer incidents, because the 512(i) count must not change.
-- Erasure fails closed: the database is overwritten only after every object version is confirmed
-  gone, and any failure rolls the case back for the next run. Agent results completed after erasure
-  cannot recreate case evidence.
-- Legal-record tables refuse UPDATE and DELETE except through one allowlisted erasure function. A
-  new copyright column holding ciphertext, a storage key, or a lookup token must be added to the
-  erasure list or recorded as kept; a test fails until it is.
-
-Enabling it needs an owner-approved period, the evidence-bucket delete permission, and a check that
-the account data export of an erased case completes. See the
-[runbook](../../runbooks/copyright-notices.md#evidence-retention-deletion).
+- Staff may preserve a case for overlapping written litigation threats or court and regulator
+  requests, including after evidence deletion has started. Each page checks the current hold and
+  account state before removing anything else.
+- A party account's hold release and final deletion extend the case clock even after the account's
+  shorter audit history has expired. The retained account identity carries these dates without
+  granting access to the deleted account.
+- Open queue work, a deadline, active restriction, operative incident, pending delivery, live guest
+  capability, unresolved complaint or dispute, pending thread-linked reply, or preservation hold
+  prevents case purge. Frozen statutory reports keep their published nonpersonal figures.
+- The case job removes every version and delete marker of exclusive evidence objects before it
+  deletes case rows. It keeps the initial replay anchors until the atomic case deletion, so an
+  identical application request still replays its original result while the case exists and can
+  start a new case after purge. A minimal SES provider receipt survives independently for delivery
+  replay.
+- Each job run reads and deletes a bounded page. A failed or interrupted page is retried from its
+  stable job identity; a new hold or legal fact restarts verification. The existing operator switch
+  can pause the purge during an incident. See the [runbook](../../runbooks/copyright-notices.md#copyright-case-purge).
 
 ## Activation gates
 

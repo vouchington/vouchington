@@ -118,8 +118,8 @@ export function copyrightStaffQueueKeysSql({
       FROM copyright_notice_delivery_work_items intent
       WHERE intent.state IN ('failed', 'bounced') AND intent.copyright_notice_id IS NOT NULL
         AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_retention_erasures erased
-          WHERE erased.copyright_notice_id = intent.copyright_notice_id
+          SELECT 1 FROM copyright_notices erased
+          WHERE erased.id = intent.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
         )
       UNION ALL
       SELECT target.copyright_notice_id, 'staydown_review', staydown_match.created_at

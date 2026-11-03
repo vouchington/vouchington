@@ -35,8 +35,7 @@ export function streamCopyrightCases(userId: string) {
       notice.jurisdiction, notice.received_at, notice.accepted_at, notice.provisional_withholding_at,
       (SELECT count(*)::integer FROM copyright_notice_targets counted
         WHERE counted.copyright_notice_id = notice.id) AS target_count,
-      (SELECT erasure.created_at FROM copyright_notice_retention_erasures erasure
-        WHERE erasure.copyright_notice_id = notice.id) AS erased_by_retention_at,
+      notice.evidence_erased_at AS erased_by_retention_at,
       claimant.id AS claimant_user_id,
       CASE WHEN claimant.id IS NOT NULL THEN
         COALESCE(claimant.display_account->>'name', claimant.username, 'Voucha member')

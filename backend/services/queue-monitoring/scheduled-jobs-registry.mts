@@ -14,7 +14,7 @@ const SCHEDULED_JOB_API_ORDER = [
   'copyright-delivery-reconciliation',
   'copyright-dsa-statement-reconciliation',
   'copyright-review-target-page',
-  'copyright-evidence-retention',
+  'copyright-case-purge-admission',
   'dispatchRssFeeds',
   'refreshRssFeedCrawlTiers',
   'refreshTopHashtags',

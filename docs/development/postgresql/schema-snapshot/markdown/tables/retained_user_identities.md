@@ -11,6 +11,7 @@ Not partitioned — growth: unbounded.
 | `id`                                       | `uuid`                     | no       |         |          |           |           |                                                                                                                                           |
 | `last_legal_preservation_hold_released_at` | `timestamp with time zone` | yes      |         |          |           |           | Latest released account legal hold, retained after bounded deletion of its audit row so case retention still waits its full legal period. |
 | `purged_at`                                | `timestamp with time zone` | yes      |         |          |           |           | Final hard deletion time of the account, retained for the legal clock of copyright cases naming this party.                               |
+| `is_copyright_case_clock_sync_pending`     | `boolean`                  | no       | `false` |          |           |           | Fences case purge while this account’s latest hold or purge clock is propagated through bounded notice pages.                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,6 +26,7 @@ _none_
 
 **Indexes:**
 
+- `idx_retained_user_identities__copyright_clock_pending`: `CREATE INDEX idx_retained_user_identities__copyright_clock_pending ON public.retained_user_identities USING btree (id) WHERE is_copyright_case_clock_sync_pending`
 - `retained_user_identities_pkey`: `CREATE UNIQUE INDEX retained_user_identities_pkey ON public.retained_user_identities USING btree (id)`
 
 **Triggers:**

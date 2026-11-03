@@ -132,6 +132,8 @@ export const ALLOWED_OWN_PRIMARY_UUID = new Set([
   'oauth_grant_retention_anchors.id',
   'post_publication_community_identities.id',
   'retained_api_key_identities.id',
+  // The finite notice owner survives root deletion while bounded party-link cleanup finishes.
+  'retained_copyright_notice_identities.id',
   'retained_image_identities.id',
   'retained_membership_identities.id',
   'retained_post_identities.id',

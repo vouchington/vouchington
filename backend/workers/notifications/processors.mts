@@ -43,7 +43,7 @@ export {
 export { processApplyCopyrightAction } from './processors/copyright-action.mts'
 export { processReconcileCopyrightActionIntents } from './processors/copyright-action-reconcile.mts'
 export { processCheckCopyrightReviewTarget } from './processors/copyright-review-target.mts'
-export { processSweepCopyrightEvidenceRetention } from './processors/copyright-evidence-retention.mts'
+export { processCopyrightCasePurgeAdmission } from './processors/copyright-case-purge-admission.mts'
 export {
   processSubmitDsaStatementOfReasons,
   processReconcileDsaStatementSubmissions,

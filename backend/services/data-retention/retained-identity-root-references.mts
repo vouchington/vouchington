@@ -5,6 +5,13 @@ import {
 import { COMMUNITY_BRIDGE_FAMILY } from './retained-community-bridge-family.mts'
 export const ROOT_FAMILIES = {
   community_bridge: COMMUNITY_BRIDGE_FAMILY,
+  copyright_notice: {
+    table: 'retained_copyright_notice_identities',
+    references: [
+      ['copyright_notices', 'id'],
+      ['copyright_notice_party_identities', 'copyright_notice_id'],
+    ],
+  },
   user: {
     table: 'retained_user_identities',
     references: RETAINED_USER_REFERENCES,

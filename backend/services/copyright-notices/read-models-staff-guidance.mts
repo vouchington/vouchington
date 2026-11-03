@@ -1,5 +1,4 @@
 import { decryptSecret } from '@modules/token-secrets'
-import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import { parseCopyrightCounterNoticeGuidance } from './counter-notice-guidance.mts'
 import { parseCopyrightLegalHoldGuidance } from './legal-hold-guidance.mts'
 import type {
@@ -23,10 +22,9 @@ export function parseStoredCopyrightSubmissionGuidance(
   submissionId: string,
   kind: 'counter_notice' | 'court_or_ccb_hold',
 ) {
-  const live = liveCopyrightCiphertext(ciphertext)
-  if (!live) return null
+  if (!ciphertext) return null
   const value: unknown = JSON.parse(
-    decryptSecret(live, `copyright-submission-guidance:${submissionId}`),
+    decryptSecret(ciphertext, `copyright-submission-guidance:${submissionId}`),
   )
   return kind === 'counter_notice'
     ? parseCopyrightCounterNoticeGuidance(value)

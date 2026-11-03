@@ -35,6 +35,7 @@ const COMPANION_ID_POLICIES = [
 
 const RETAINED_ID_POLICIES = [
   ['retained_user_identities', sharedParentUuidv7('users')],
+  ['retained_copyright_notice_identities', sharedParentUuidv7('copyright_notices')],
   ['retained_membership_identities', sharedParentUuidv7('memberships')],
   ['retained_api_key_identities', sharedParentUuidv7('api_keys')],
   ['retained_topic_identities', sharedParentUuidv7('topics')],

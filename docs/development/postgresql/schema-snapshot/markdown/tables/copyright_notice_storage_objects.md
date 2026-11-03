@@ -6,11 +6,13 @@ One private evidence-bucket object identity shared by every intake or artifact t
 
 Not partitioned — growth: unbounded.
 
-| Column        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                               |
-| ------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------- |
-| `id`          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                       |
-| `storage_key` | `text`                     | no       |                              |          |           |           | Unique private object-storage key; the row is deleted only after no intake or artifact references it. |
-| `created_at`  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                       |
+| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                               |
+| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                       |
+| `storage_key`          | `text`                     | no       |                              |          |           |           | Unique private object-storage key; the row is deleted only after no intake or artifact references it.                                                 |
+| `is_deletion_claimed`  | `boolean`                  | no       | `false`                      |          |           |           | One-way fence against new references while bounded physical version deletion is in progress; the existing reference remains until deletion completes. |
+| `reference_generation` | `bigint`                   | no       | `0`                          |          |           |           | Per-object mutation version for bounded ownership proof before the one-way deletion claim.                                                            |
+| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -20,6 +22,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
+- `copyright_notice_storage_objects_reference_generation_check`: `CHECK ((reference_generation >= 0))`
 - `copyright_notice_storage_objects_storage_key_check`: `CHECK ((((char_length(storage_key) >= 1) AND (char_length(storage_key) <= 1024)) AND (NOT starts_with(storage_key, 'erased:'::text))))`
 
 **Foreign keys:**

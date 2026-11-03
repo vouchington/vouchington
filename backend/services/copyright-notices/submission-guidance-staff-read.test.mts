@@ -19,7 +19,6 @@ import {
 } from './index.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { appendCopyrightSubmissionGuidance } from './submission-guidance.mts'
-import { eraseTestCopyrightSubmissionGuidanceForNotice } from '@voucha/test-helpers/copyright-submission-guidance-staff-read'
 
 describe('copyright submission guidance in the staff case projection', () => {
   useAutomaticProvisionalWithholding()
@@ -119,15 +118,6 @@ describe('copyright submission guidance in the staff case projection', () => {
       expect.objectContaining({ submission_id: hold.id, guidance: holdGuidance }),
     ])
 
-    await eraseTestCopyrightSubmissionGuidanceForNotice(aggregate.notice.id)
-    const erased = await readTestCopyrightStaffCase(aggregate.notice.id)
-    expect(erased?.counter_notices).toEqual([
-      expect.objectContaining({ submission_id: counter.submission.id, guidance: null }),
-    ])
-    expect(erased?.legal_holds).toEqual([
-      expect.objectContaining({ submission_id: hold.id, guidance: null }),
-    ])
-
     await reviewCopyrightCounterNotice({
       submissionId: counter.submission.id,
       currentUser: moderator,
@@ -137,7 +127,7 @@ describe('copyright submission guidance in the staff case projection', () => {
     const reviewed = await readTestCopyrightStaffCase(aggregate.notice.id)
     expect(reviewed?.counter_notices).toEqual([])
     expect(reviewed?.legal_holds).toEqual([
-      expect.objectContaining({ submission_id: hold.id, guidance: null }),
+      expect.objectContaining({ submission_id: hold.id, guidance: holdGuidance }),
     ])
   })
 })

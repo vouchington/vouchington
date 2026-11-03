@@ -50,6 +50,7 @@ RANGE partitioned on `id` (children: monthly, retention owner `cleanupPartitions
 - `copyright_territorial_decisions_pkey`: `CREATE UNIQUE INDEX copyright_territorial_decisions_pkey ON ONLY public.copyright_territorial_decisions USING btree (id)`
 - `idx_copyright_territorial_decisions__assessment`: `CREATE INDEX idx_copyright_territorial_decisions__assessment ON ONLY public.copyright_territorial_decisions USING btree (copyright_notice_submission_assessment_identity_id, id) WHERE (copyright_notice_submission_assessment_identity_id IS NOT NULL)`
 - `idx_copyright_territorial_decisions__decided_by`: `CREATE INDEX idx_copyright_territorial_decisions__decided_by ON ONLY public.copyright_territorial_decisions USING btree (decided_by_id) WHERE (decided_by_id IS NOT NULL)`
+- `idx_copyright_territorial_decisions__supersedes_page`: `CREATE INDEX idx_copyright_territorial_decisions__supersedes_page ON ONLY public.copyright_territorial_decisions USING btree (copyright_notice_id, id) WHERE (supersedes_decision_id IS NOT NULL)`
 - `uq_copyright_territorial_decisions__notice_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_decisions__notice_id ON ONLY public.copyright_territorial_decisions USING btree (copyright_notice_id, id)`
 
 **Triggers:**

@@ -37,6 +37,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_delivery_attem_work_item_id_attempt_number_key`: `CREATE UNIQUE INDEX copyright_notice_delivery_attem_work_item_id_attempt_number_key ON public.copyright_notice_delivery_attempts USING btree (work_item_id, attempt_number)`
 - `copyright_notice_delivery_attempts_pkey`: `CREATE UNIQUE INDEX copyright_notice_delivery_attempts_pkey ON public.copyright_notice_delivery_attempts USING btree (id)`
 - `copyright_notice_delivery_attempts_work_item_id_lease_token_key`: `CREATE UNIQUE INDEX copyright_notice_delivery_attempts_work_item_id_lease_token_key ON public.copyright_notice_delivery_attempts USING btree (work_item_id, lease_token)`
+- `idx_copyright_notice_delivery_attempts__work_item_id`: `CREATE INDEX idx_copyright_notice_delivery_attempts__work_item_id ON public.copyright_notice_delivery_attempts USING btree (work_item_id, id)`
 
 **Triggers:**
 

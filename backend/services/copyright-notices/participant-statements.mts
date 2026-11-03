@@ -3,7 +3,6 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { copyrightCorrespondencePurpose } from './correspondence.mts'
-import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 
 export type CopyrightParticipantStatement = {
   id: string
@@ -39,18 +38,11 @@ export async function selectCopyrightParticipantStatements(
           AND EXISTS (SELECT 1 FROM copyright_notices notice WHERE notice.id = intent.copyright_notice_id AND notice.claimant_user_id = ${userId})))
     ORDER BY intent.id
   `)
-  return rows.flatMap(row => {
-    const body = liveCopyrightCiphertext(row.body_ciphertext)
-    return body
-      ? [
-          {
-            id: row.id,
-            delivery_kind: row.delivery_kind,
-            state: row.state,
-            sent_at: row.sent_at,
-            text: decryptSecret(body, copyrightCorrespondencePurpose(row.correspondence_id)),
-          },
-        ]
-      : []
-  })
+  return rows.map(row => ({
+    id: row.id,
+    delivery_kind: row.delivery_kind,
+    state: row.state,
+    sent_at: row.sent_at,
+    text: decryptSecret(row.body_ciphertext, copyrightCorrespondencePurpose(row.correspondence_id)),
+  }))
 }

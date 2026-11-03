@@ -5433,6 +5433,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
+      '@queues/psql':
+        specifier: workspace:^
+        version: link:../../queues/psql
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
@@ -14392,6 +14395,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/data-retention':
         specifier: workspace:^
         version: link:../../services/data-retention

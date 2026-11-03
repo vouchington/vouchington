@@ -2,16 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import {
-  eraseTestCopyrightStatementBody,
-  readTestCopyrightStatementIntents,
-} from '@voucha/test-helpers/copyright-statement-notices'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
 
 describe('private participant statement projection', () => {
   useCopyrightIntakeEnvironment()
-  it('shows only the viewer statements, omits staff and skips erased bodies', async () => {
+  it('shows only the viewer statements, and omits staff', async () => {
     const [poster, claimant, other, moderator] = await Promise.all([
       createTestUser(),
       createTestUser(),
@@ -38,11 +34,6 @@ describe('private participant statement projection', () => {
     ])
     expect(await getCopyrightParticipantNoticeDetail(caseId, other)).toBeNull()
     expect((await getCopyrightParticipantNoticeDetail(caseId, moderator))?.statements).toEqual([])
-    const email = (await readTestCopyrightStatementIntents(caseId)).find(
-      row => row.recipient_role === 'poster' && row.channel === 'email',
-    )!
-    await eraseTestCopyrightStatementBody(email.id)
-    expect((await getCopyrightParticipantNoticeDetail(caseId, poster))?.statements).toEqual([])
   })
   it('never opens an unaccepted notice case for its notifier', async () => {
     const claimant = await createTestUser()

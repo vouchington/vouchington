@@ -1,6 +1,6 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { decryptExportedCopyrightJson } from './stream-copyright-erased.mts'
+import { decryptSecret } from '@modules/token-secrets'
 import {
   type AppealBody,
   type CounterNoticeBody,
@@ -11,7 +11,7 @@ import {
 
 type CopyrightExportRows = AsyncGenerator<Record<string, unknown>>
 
-type OwnSubmission<Body> = { ids: SubmissionIds; body: Body | null }
+type OwnSubmission<Body> = { ids: SubmissionIds; body: Body }
 
 /** Streams the appeals the user submitted as a signed-in poster, with their stated reason. */
 export async function* streamCopyrightAppeals(userId: string): CopyrightExportRows {
@@ -33,7 +33,7 @@ export async function* streamCopyrightCounterNotices(userId: string): CopyrightE
 /**
  * Only the user's own signed-in form submissions: staff-recorded submissions carry the staff
  * member's id in `submitted_by_id`, so the source filter keeps a moderator's export free of
- * other people's filings. A body the retention sweep erased comes back as null.
+ * other people's filings.
  */
 async function* streamOwnSubmissions<Body>(
   userId: string,
@@ -55,10 +55,9 @@ async function* streamOwnSubmissions<Body>(
         notice_id: row.notice_id,
         received_at: row.received_at,
       },
-      body: decryptExportedCopyrightJson<Body>(
-        row.body_ciphertext,
-        `copyright-submission:${row.submission_id}`,
-      ),
+      body: JSON.parse(
+        decryptSecret(row.body_ciphertext, `copyright-submission:${row.submission_id}`),
+      ) as Body,
     }
   }
 }

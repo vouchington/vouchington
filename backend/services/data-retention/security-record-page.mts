@@ -30,7 +30,6 @@ export async function cleanupSecuritySourcePageInTransaction(
     source === 'oauth_events' ||
     source === 'oauth_native_mints' ||
     source === 'oauth_clients' ||
-    source === 'copyright_rationales_erased' ||
     source === 'copyright_rationales_attempts'
   const keyset = idKeyed
     ? '($2::uuid IS NULL OR target.id > $2::uuid)'
@@ -84,7 +83,7 @@ export async function cleanupSecuritySourcePageInTransaction(
       [plan.cutoffAt.toISOString()],
     )
   }
-  if (source === 'copyright_rationales_erased' || source === 'copyright_rationales_attempts') {
+  if (source === 'copyright_rationales_attempts') {
     await query(
       `/* authorizeCopyrightRationaleRetention */ SELECT set_config('app.copyright_rationale_retention_cutoff', $1, true)`,
       [plan.cutoffAt.toISOString()],
