@@ -3,7 +3,6 @@ import { read } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import { enqueueBulkLanguageDetection } from '@queues/content-analysis/enqueues'
 import onError from '@modules/on-error'
-import { chunkArray } from '@services/rss-feed-items/processing-limits'
 import { updateRssFeedById } from './update.mts'
 import {
   extractFeedTitle,
@@ -112,7 +111,7 @@ export async function persistFeedMetadataAndReconcileLanguage(
  * when cleared) instead of a stale result.
  *
  * This path is rare (declared language only changes when the feed XML changes
- * its <language> element), and affected items are submitted in bounded batches.
+ * its <language> element), and affected items are read and submitted in keyset-paged batches.
  */
 async function reenqueueItemLanguageDetectionIfNeeded(
   rssFeedId: string,
@@ -124,19 +123,30 @@ async function reenqueueItemLanguageDetectionIfNeeded(
   const RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE = getRssFeedItemsWorkLimit('enqueue_batch_size')
   if (declaredLanguage === oldDeclaredLanguage) return
 
-  const { rows } = await readFn(
-    `/* reenqueueItemLanguageDetectionIfNeeded */
-     SELECT s.rss_feed_item_id AS id
-     FROM rss_feed_item_sources s
-     JOIN rss_feed_items i ON i.id = s.rss_feed_item_id
-     WHERE s.rss_feed_id = $1
-       AND i.deleted_at IS NULL`,
-    [rssFeedId],
-  )
-
-  const itemIds = (rows as { id: string }[]).map(row => row.id)
-  for (const chunk of chunkArray(itemIds, RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE)) {
-    // oxlint-disable-next-line no-await-in-loop -- bounded queue batches are submitted serially so a large feed cannot exceed Valkey request limits.
-    await enqueueBulkLanguageDetectionFn('rss_feed_item', chunk).catch(onError)
+  // Keyset pages over the (rss_feed_id, rss_feed_item_id) primary key keep each read to one
+  // enqueue batch; a short page means the feed has no more items.
+  let afterItemId: string | null = null
+  for (;;) {
+    /* oxlint-disable no-await-in-loop -- each page starts after the previous page's last item id. */
+    // no-mistakes-disable-next-line query-reached-per-item: each keyset page starts after the previous page's last item id, so the reads cannot be merged.
+    const { rows } = await readFn(
+      `/* reenqueueItemLanguageDetectionIfNeeded */
+       SELECT s.rss_feed_item_id AS id
+       FROM rss_feed_item_sources s
+       JOIN rss_feed_items i ON i.id = s.rss_feed_item_id
+       WHERE s.rss_feed_id = $1
+         AND ($2::uuid IS NULL OR s.rss_feed_item_id > $2::uuid)
+         AND i.deleted_at IS NULL
+       ORDER BY s.rss_feed_item_id
+       LIMIT $3`,
+      [rssFeedId, afterItemId, RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE],
+    )
+    const itemIds = (rows as { id: string }[]).map(row => row.id)
+    if (itemIds.length > 0) {
+      await enqueueBulkLanguageDetectionFn('rss_feed_item', itemIds).catch(onError)
+    }
+    /* oxlint-enable no-await-in-loop */
+    if (itemIds.length < RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE) return
+    afterItemId = itemIds[itemIds.length - 1]!
   }
 }

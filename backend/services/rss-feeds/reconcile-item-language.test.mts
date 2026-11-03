@@ -73,6 +73,8 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
     })
     expect(readImpl).toHaveBeenCalledWith(expect.stringContaining('rss_feed_item_sources'), [
       'feed-1',
+      null,
+      1000,
     ])
     expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledOnce()
     expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledWith('rss_feed_item', [
@@ -100,13 +102,15 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
       enqueue_batch_size: 2,
     })
     try {
-      readImpl.mockResolvedValueOnce({
+      const page = (ids: string[]) => ({
         command: 'SELECT',
         fields: [],
         oid: 0,
-        rowCount: 3,
-        rows: Array.from({ length: 3 }, (_, index) => ({ id: `item-${index}` })),
+        rowCount: ids.length,
+        rows: ids.map(id => ({ id })),
       })
+      readImpl.mockResolvedValueOnce(page(['item-0', 'item-1']))
+      readImpl.mockResolvedValueOnce(page(['item-2']))
 
       const secondBatch = Promise.withResolvers<void>()
       let enqueueCalls = 0
@@ -129,6 +133,8 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
       expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledTimes(2)
       expect(enqueueBulkLanguageDetectionImpl.mock.calls[0]![1]).toEqual(['item-0', 'item-1'])
       expect(enqueueBulkLanguageDetectionImpl.mock.calls[1]![1]).toEqual(['item-2'])
+      expect(readImpl.mock.calls[0]![1]).toEqual(['feed-1', null, 2])
+      expect(readImpl.mock.calls[1]![1]).toEqual(['feed-1', 'item-1', 2])
     } finally {
       restoreBatchSize()
     }

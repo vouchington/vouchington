@@ -3721,6 +3721,8 @@ rules:
           { reason: 'a program has a few rule sets' }
         referral_program_link_validation_rules.referral_program_link_validation_rule_set_id:
           { reason: 'a rule set has a few rules' }
+        hostname_path_boilerplate_removal_urls.hostname_path_boilerplate_removal_id:
+          { reason: 'the sole writer stores the at most 3 sampled candidate urls per removal' }
 
   - name: reject unsafe PostgreSQL query shapes
     rule: postgres-sql-shape-policy
