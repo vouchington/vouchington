@@ -8,6 +8,7 @@ import {
   runOAuthAccountConnectionPostCommitEffects,
 } from '../services/oauth-accounts/connect.mts'
 import { upsertOAuthAccount } from '../services/oauth-accounts/upsert.mts'
+import { readAllQueueJobs } from './queue-jobs.mts'
 import { deleteTestOAuthAuthorizationFixtures } from './entities/oauth-authorization-fixture-cleanup.mts'
 import { getTestUserRaw, setTestUserVoteWeightRecalculatedAt } from './entities/users-lifecycle.mts'
 import { createVoteWeightDispatchUserAt } from './vote-weight-dispatch.mts'
@@ -24,6 +25,16 @@ export function failOwnedVoteWeightEnqueue(userId: string, error: unknown) {
       return Promise.reject(error as Error)
     return realAdd.call(background, name, data, opts)
   })
+}
+
+/** Ids and payloads of the vote-weight recalculation jobs queued for one owned user. */
+export async function readOwnedVoteWeightRecalculationJobs(userId: string) {
+  return (await readAllQueueJobs(background)).flatMap(job =>
+    job.name === VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB.name &&
+    (job.data as { userId?: string }).userId === userId
+      ? [{ id: job.id, data: job.data }]
+      : [],
+  )
 }
 
 /** An owned future UUID range isolates a bounded dirty-marker page in the shared test database. */

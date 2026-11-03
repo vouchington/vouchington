@@ -12,10 +12,7 @@ import {
 } from '@vouchington/oauth-server'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { OAUTH_SCOPE_POLICY } from './validation.mts'
-import {
-  resolveClientIdMetadataDocument,
-  type ClientIdMetadataDependencies,
-} from './client-id-metadata-document.mts'
+import { resolveClientIdMetadataDocument } from './client-id-metadata-document.mts'
 import type { OAuthClient } from './types.mts'
 import { createProtocolClientLookup } from './protocol-client.mts'
 
@@ -124,12 +121,8 @@ export async function getOAuthClient(
 
 export async function getOAuthClientForAuthorization(
   clientId: string,
-  clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<OAuthClient | null> {
-  return (
-    (await resolveClientIdMetadataDocument(clientId, clientIdMetadataDependencies)) ??
-    getOAuthClient(clientId)
-  )
+  return (await resolveClientIdMetadataDocument(clientId)) ?? getOAuthClient(clientId)
 }
 
 export async function authenticateOAuthClient(

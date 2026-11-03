@@ -24,7 +24,6 @@ import type {
   OAuthAuthorizationRequestRow,
 } from './types.mts'
 import { getOAuthClientDisplayName } from './known-clients.mts'
-import type { ClientIdMetadataDependencies } from './client-id-metadata-document.mts'
 import { findOAuthProtectedResource } from './resources.mts'
 import { createProtocolClientLookup } from './protocol-client.mts'
 import { findNativeOAuthClientDocument } from './native-clients.mts'
@@ -96,22 +95,18 @@ export async function beginValidatedOAuthAuthorizationRequest(
 
 export async function validateOAuthAuthorizationRequest(
   input: AuthorizationParameters,
-  clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
   onClientLoaded?: (client: OAuthClient) => void,
 ): Promise<ValidatedOAuthAuthorizationRequest> {
   const foundClients: OAuthClient[] = []
   let clientLookup: Promise<OAuthClient | null> | undefined
-  const findClient = createProtocolClientLookup(
-    async (clientId, dependencies: Partial<ClientIdMetadataDependencies>) => {
-      const client = await (clientLookup ??= getOAuthClientForAuthorization(clientId, dependencies))
-      if (client && foundClients.length === 0) {
-        foundClients.push(client)
-        onClientLoaded?.(client)
-      }
-      return client
-    },
-    clientIdMetadataDependencies,
-  )
+  const findClient = createProtocolClientLookup(async clientId => {
+    const client = await (clientLookup ??= getOAuthClientForAuthorization(clientId))
+    if (client && foundClients.length === 0) {
+      foundClients.push(client)
+      onClientLoaded?.(client)
+    }
+    return client
+  }, undefined)
   // Native callback handling also applies to errors parsed before scope validation reaches
   // client lookup. Share this promise with validation so successful requests still load once.
   if (findNativeOAuthClientDocument(input.clientId)) await findClient(input.clientId)

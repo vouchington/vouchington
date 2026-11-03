@@ -3,6 +3,10 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { completeOAuthAuthorization } from '../authorization-completion.mts'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
+import {
+  failOwnedVoteWeightEnqueue,
+  readOwnedVoteWeightRecalculationJobs,
+} from '../../../test-helpers/vote-weight-dirty-marker.mts'
 import { drainOwnedTestAction } from '../../../test-helpers/post-commit-completion.mts'
 import {
   authenticatedFlowResult,
@@ -186,7 +190,9 @@ describe('OAuth authorization completion orchestration', () => {
       name: 'GitHub Friend',
     })
 
-    expect(dependencies.runConnectionEffects).toHaveBeenCalledWith(userId)
+    expect((await readOwnedVoteWeightRecalculationJobs(userId)).map(job => job.data)).toEqual([
+      { userId },
+    ])
     expect(dependencies.enqueueFriendSync).toHaveBeenCalledWith(
       'github',
       expect.objectContaining({
@@ -228,12 +234,14 @@ describe('OAuth authorization completion orchestration', () => {
         account: { provider_user_id: 'github-user' },
       })
       expect(dependencies.notifyAccountSecurityChange).toHaveBeenCalledOnce()
-      expect(dependencies.runConnectionEffects).toHaveBeenCalledWith(userId)
+      expect((await readOwnedVoteWeightRecalculationJobs(userId)).map(job => job.data)).toEqual([
+        { userId },
+      ])
       expect(dependencies.enqueueFriendSync).toHaveBeenCalledOnce()
     },
   )
 
-  it('returns a durable connection and continues friend sync when connection effects fail', async () => {
+  it('returns a durable connection and continues friend sync when the vote-weight enqueue fails', async () => {
     const userId = randomUUID()
     const accountId = randomUUID()
     const dependencies = completionDependencies({
@@ -249,18 +257,23 @@ describe('OAuth authorization completion orchestration', () => {
         provider_user_data: {},
       },
     })
-    vi.mocked(dependencies.runConnectionEffects).mockRejectedValue(
+    const failure = failOwnedVoteWeightEnqueue(
+      userId,
       Object.assign(new Error('Post-commit effect unavailable'), {
         tags: { suppressLogging: true },
       }),
     )
-
-    await expect(
-      completeOAuthAuthorization(completionOptions(), dependencies),
-    ).resolves.toMatchObject({
-      status: 'connected',
-      account: { provider_user_id: 'github-user' },
-    })
+    try {
+      await expect(
+        completeOAuthAuthorization(completionOptions(), dependencies),
+      ).resolves.toMatchObject({
+        status: 'connected',
+        account: { provider_user_id: 'github-user' },
+      })
+    } finally {
+      failure.mockRestore()
+    }
+    expect(await readOwnedVoteWeightRecalculationJobs(userId)).toEqual([])
     expect(dependencies.enqueueFriendSync).toHaveBeenCalledWith(
       'github',
       expect.objectContaining({

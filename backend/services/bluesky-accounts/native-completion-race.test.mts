@@ -14,6 +14,7 @@ import {
   suspendTestUser,
   testBlueskyLinkCompletionExists,
 } from '@voucha/test-helpers'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { holdTestUserRowLock } from '@voucha/test-helpers/user-row-lock'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { v7 } from 'uuid'
@@ -81,16 +82,23 @@ describe('native Bluesky callback timeout race', () => {
 
   it('persists the API-held handoff when timeout resolution wins the authorization lock race', async () => {
     const fixture = await createClaimedNativeFixture()
-    const gate = createLockGate()
-    const resolution = resolveNativeBlueskyCallbackFailure(fixture.flowId, fixture.tokenHash, {
-      afterAuthorizationLock: gate.hold,
-    })
-    await gate.entered
-    const persistence = persistNativeBlueskyLinkCompletion(fixture)
+    let persistence: Promise<void> | undefined
+    // Resolution holds the authorization row lock when its completion statement is about to run.
+    const restore = runBeforePostgresStatementForTest(
+      'resolveNativeBlueskyCallbackFailure:completion',
+      async () => {
+        persistence = persistNativeBlueskyLinkCompletion(fixture)
+      },
+    )
+    try {
+      await expect(
+        resolveNativeBlueskyCallbackFailure(fixture.flowId, fixture.tokenHash),
+      ).resolves.toBe('completed')
+    } finally {
+      restore()
+    }
 
-    gate.release()
-
-    await expect(resolution).resolves.toBe('completed')
+    expect(persistence).toBeInstanceOf(Promise)
     await expect(persistence).resolves.toBeUndefined()
     expect(await testBlueskyLinkCompletionExists(fixture.flowId)).toBe(true)
     expect(await getTestBlueskyLinkedAccountRow(fixture.did)).not.toBeNull()
@@ -259,24 +267,4 @@ async function createClaimedNativeFixture() {
     handle: account.handle!,
     tokenHash,
   }
-}
-
-function createLockGate(): {
-  hold: () => Promise<void>
-  entered: Promise<void>
-  release: () => void
-} {
-  let release!: () => void
-  const released = new Promise<void>(resolve => {
-    release = resolve
-  })
-  let signalEntered!: () => void
-  const entered = new Promise<void>(resolve => {
-    signalEntered = resolve
-  })
-  const hold = async () => {
-    signalEntered()
-    await released
-  }
-  return { hold, entered, release }
 }

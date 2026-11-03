@@ -8,9 +8,6 @@ const COMPLETION_TTL_MS = 10 * 60 * 1000
 export async function resolveNativeBlueskyCallbackFailure(
   flowId: string,
   tokenHash: string,
-  options: {
-    afterAuthorizationLock?: () => Promise<void>
-  } = {},
 ): Promise<'completed' | 'nonmatching' | 'rejected'> {
   await using query = await beginTransaction()
   const { rows } = await query<{
@@ -27,8 +24,6 @@ export async function resolveNativeBlueskyCallbackFailure(
   const authorization = rows[0]
   let result: 'completed' | 'nonmatching' | 'rejected' = 'rejected'
   if (authorization) {
-    await options.afterAuthorizationLock?.()
-
     const completion = await query<{
       valid_present: boolean
       matching_present: boolean
