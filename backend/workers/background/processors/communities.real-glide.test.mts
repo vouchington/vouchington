@@ -45,7 +45,7 @@ describe('community member metric invalidation background handler', () => {
         minimumReplayLsn: '0/0',
         upperBoundMembershipId: memberMembership.id,
       }
-      const idPrefix = `invalidateMemberUserMetrics__${community.id}__${rootData.generation}__`
+      const idPrefix = `communities.invalidateMemberUserMetrics__${community.id}__${rootData.generation}__`
 
       const walk = async () => {
         await enqueueInvalidateCommunityMemberUserMetrics(rootData)
