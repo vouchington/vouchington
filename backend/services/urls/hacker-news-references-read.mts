@@ -12,17 +12,26 @@ export type HackerNewsUrlItems = {
   comments: HackerNewsCommentReference[]
 }
 
-function uniqueBoundedUrlIds(urlIds: readonly string[]): string[] {
-  return [...new Set(urlIds)].slice(0, HACKER_NEWS_URL_BATCH_MAX)
+/** Unique URL ids in reads of at most HACKER_NEWS_URL_BATCH_MAX each; no id is ever dropped. */
+function urlIdChunks(urlIds: readonly string[]): string[][] {
+  const unique = [...new Set(urlIds)]
+  const chunks: string[][] = []
+  for (let i = 0; i < unique.length; i += HACKER_NEWS_URL_BATCH_MAX) {
+    chunks.push(unique.slice(i, i + HACKER_NEWS_URL_BATCH_MAX))
+  }
+  return chunks
 }
 
-/** Totals for URLs that Hacker News links at least once. One read for the whole batch. */
+/** Totals for URLs that Hacker News links at least once. One read per chunk of URL ids. */
 export async function getHackerNewsTotalsByUrlIds(
   urlIds: readonly string[],
   options: QueryOptions = {},
 ): Promise<Map<string, HackerNewsReferenceCounts>> {
-  const ids = uniqueBoundedUrlIds(urlIds)
-  if (ids.length === 0) return new Map()
+  const results = await Promise.all(urlIdChunks(urlIds).map(ids => readTotals(ids, options)))
+  return new Map(results.flat())
+}
+
+async function readTotals(ids: string[], options: QueryOptions) {
   const { rows } = await read(
     `/* getHackerNewsTotalsByUrlIds */
     SELECT url_id, story_count, comment_count
@@ -33,11 +42,12 @@ export async function getHackerNewsTotalsByUrlIds(
     [ids],
     options,
   )
-  return new Map(
-    rows.map(row => [
-      row.url_id as string,
-      { story_count: Number(row.story_count), comment_count: Number(row.comment_count) },
-    ]),
+  return rows.map(
+    row =>
+      [
+        row.url_id as string,
+        { story_count: Number(row.story_count), comment_count: Number(row.comment_count) },
+      ] as [string, HackerNewsReferenceCounts],
   )
 }
 
@@ -46,24 +56,9 @@ export async function getHackerNewsItemsByUrlIds(
   urlIds: readonly string[],
   options: QueryOptions = {},
 ): Promise<Map<string, HackerNewsUrlItems>> {
-  const ids = uniqueBoundedUrlIds(urlIds)
   const itemsByUrlId = new Map<string, HackerNewsUrlItems>()
-  if (ids.length === 0) return itemsByUrlId
-  const { rows } = await read(
-    `/* getHackerNewsItemsByUrlIds */
-    SELECT url_id, 'story' AS kind, hacker_news_item_id, points, reply_count,
-           NULL::bigint AS parent_story_item_id, posted_at
-    FROM url_hacker_news_stories
-    WHERE url_id = ANY($1::uuid[])
-    UNION ALL
-    SELECT url_id, 'comment', hacker_news_item_id, NULL, NULL, parent_story_item_id, posted_at
-    FROM url_hacker_news_comments
-    WHERE url_id = ANY($1::uuid[])
-  `,
-    [ids],
-    options,
-  )
-  for (const row of rows) {
+  const chunks = await Promise.all(urlIdChunks(urlIds).map(ids => readItemRows(ids, options)))
+  for (const row of chunks.flat()) {
     const urlId = row.url_id as string
     const items = itemsByUrlId.get(urlId) ?? { stories: [], comments: [] }
     itemsByUrlId.set(urlId, items)
@@ -84,4 +79,22 @@ export async function getHackerNewsItemsByUrlIds(
     }
   }
   return itemsByUrlId
+}
+
+async function readItemRows(ids: string[], options: QueryOptions) {
+  const { rows } = await read(
+    `/* getHackerNewsItemsByUrlIds */
+    SELECT url_id, 'story' AS kind, hacker_news_item_id, points, reply_count,
+           NULL::bigint AS parent_story_item_id, posted_at
+    FROM url_hacker_news_stories
+    WHERE url_id = ANY($1::uuid[])
+    UNION ALL
+    SELECT url_id, 'comment', hacker_news_item_id, NULL, NULL, parent_story_item_id, posted_at
+    FROM url_hacker_news_comments
+    WHERE url_id = ANY($1::uuid[])
+  `,
+    [ids],
+    options,
+  )
+  return rows
 }

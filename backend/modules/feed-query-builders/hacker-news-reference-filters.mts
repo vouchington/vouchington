@@ -8,8 +8,13 @@ const URL_HAS_REFERENCES = sql`(totals.story_count > 0 OR totals.comment_count >
 
 /**
  * Posts that show Hacker News references: the post's own link URL or a live, positively
- * voted related URL (the same predicate as `getPostIdsByUrlIds`) is referenced. Both legs probe
- * the totals primary key, so cost follows the candidate posts, not the totals table.
+ * voted related URL is referenced. The related leg accepts any such URL, while the card and
+ * detail reads (`getHackerNewsUrlIdsByPostIds`) keep only the top
+ * HACKER_NEWS_RELATED_URLS_PER_POST_MAX, so a post whose only referenced URL ranks lower
+ * matches the filter and shows no references.
+ *
+ * The partial index on `url_hacker_news_totals` (rows with a story or comment) exists so these
+ * checks and the RSS semi-join can find referenced URLs without scanning unreferenced totals.
  */
 export function buildPostHasHackerNewsReferences(): SQLStatement {
   return sql`(

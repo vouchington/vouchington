@@ -125,6 +125,12 @@ export function buildUnboundedUnpartitionedTables(
         'Admitted legal decision attempts grow with case and review activity; preservation holds can extend the six-calendar-year retention window, while target and retention indexes keep reads selective.',
       ],
       ...COPYRIGHT_RETENTION_UNBOUNDED_TABLES,
+      ...['url_hacker_news_comments', 'url_hacker_news_stories', 'url_hacker_news_totals'].map(
+        (table): [string, string] => [
+          table,
+          'At most 51 rows per URL (25 stories, 25 comments, one totals row). These are refetchable third-party facts; the lookup job in PR 3 owns the retention window, and cascade deletes never fire today because urls are never deleted.',
+        ],
+      ),
       [
         'oauth_grant_retention_anchors',
         'One non-authorizing retained identity per OAuth grant; live grants persist, and ended anchors remain until consent evidence expires.',

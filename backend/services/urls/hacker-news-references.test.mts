@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUrlWithHostname, insertHackerNewsReferencesForTest } from '@voucha/test-helpers'
 import {
@@ -8,7 +9,10 @@ import {
   getHackerNewsDetailsByEntity,
   getHackerNewsSummariesByEntity,
 } from './hacker-news-references.mts'
-import { HACKER_NEWS_STORY_CAP_PER_URL } from './hacker-news-references-types.mts'
+import {
+  HACKER_NEWS_STORY_CAP_PER_URL,
+  HACKER_NEWS_URL_BATCH_MAX,
+} from './hacker-news-references-types.mts'
 
 const story = (id: number, points = 10) => ({
   hacker_news_item_id: id,
@@ -99,6 +103,36 @@ describe('Hacker News references', () => {
     expect(detail.stories.map(s => s.hacker_news_item_id)).toEqual([3, 2])
     expect(detail.comments).toHaveLength(1)
     expect((await getHackerNewsTotalsByUrlIds([first, second])).size).toBe(2)
+  })
+
+  it('keeps references for URL ids beyond one read chunk', async () => {
+    const [early, late] = await Promise.all([
+      createTestUrlWithHostname(),
+      createTestUrlWithHostname(),
+    ])
+    await Promise.all([
+      insertHackerNewsReferencesForTest({
+        url_id: early,
+        story_count: 1,
+        comment_count: 0,
+        stories: [story(11)],
+      }),
+      insertHackerNewsReferencesForTest({
+        url_id: late,
+        story_count: 2,
+        comment_count: 0,
+        stories: [story(12), story(13)],
+      }),
+    ])
+    const filler = Array.from({ length: HACKER_NEWS_URL_BATCH_MAX + 5 }, () => randomUUID())
+    const entity = { first: [early, ...filler], last: [...filler, late] }
+
+    expect(await getHackerNewsSummariesByEntity(entity)).toEqual({
+      first: { story_count: 1, comment_count: 0 },
+      last: { story_count: 2, comment_count: 0 },
+    })
+    const details = await getHackerNewsDetailsByEntity(entity)
+    expect(details.last!.stories.map(s => s.hacker_news_item_id).toSorted()).toEqual([12, 13])
   })
 
   it('reads nothing for empty input', async () => {
