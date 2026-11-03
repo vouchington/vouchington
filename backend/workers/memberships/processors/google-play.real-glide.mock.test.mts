@@ -9,7 +9,6 @@ import {
 } from '@services/memberships'
 import {
   ingestGooglePlayRtdnPush,
-  processGooglePlayMembershipVerification,
   type GoogleOidcTrustMaterial,
   type GooglePlaySubscriptionsV2Client,
 } from '@services/memberships/google'
@@ -27,6 +26,7 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { getTestGooglePlayAcknowledgementId } from '@voucha/test-helpers/google-play-memberships'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -164,9 +164,10 @@ async function createRecoveryFixture(): Promise<{ acknowledgementId: string; sou
     trustedProviderContext: { environment: 'test', applicationId },
     evidence: { purchase_token: purchaseToken },
   })
-  await processGooglePlayMembershipVerification(verification.id, {
-    client: recoveryClient({ applicationId, productId, purchaseToken, userId: user.id }),
-  })
+  await processWithGooglePlay(
+    verification.id,
+    recoveryClient({ applicationId, productId, purchaseToken, userId: user.id }),
+  )
   const membership = await getMembershipByUserId(user.id)
   if (!membership) throw new Error('Expected verified Google Play membership')
   const [sourceId, acknowledgementId] = await Promise.all([

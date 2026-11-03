@@ -4,7 +4,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { createTestMembershipVerificationForPriorEvidence } from '@voucha/test-helpers/membership-verification-evidence'
 import { createMembershipVerification, getMembershipVerification } from './verifications.mts'
 import { getMembershipByUserId } from './index.mts'
-import { processGooglePlayMembershipVerification } from './google/process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import { processWithMicrosoftStore } from '@voucha/test-helpers/microsoft-store-provider-stub'
 
 describe('provider verification of already rejected evidence', () => {
@@ -34,11 +34,9 @@ describe('provider verification of already rejected evidence', () => {
       }
       const process = (id: string) =>
         provider === 'google_play'
-          ? processGooglePlayMembershipVerification(id, {
-              client: {
-                getSubscription: unavailable,
-                acknowledgeSubscription: unavailable,
-              },
+          ? processWithGooglePlay(id, {
+              getSubscription: unavailable,
+              acknowledgeSubscription: unavailable,
             })
           : processWithMicrosoftStore(id, {
               queryCollections: unavailable,

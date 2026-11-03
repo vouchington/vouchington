@@ -13,7 +13,7 @@ import { createTestGooglePlayRtdnEvidence } from '@voucha/test-helpers/google-pl
 import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/google-play-recovery'
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
 
 describe('Google Play bound RTDN permanent lookup loss', () => {
@@ -66,7 +66,7 @@ describe('Google Play bound RTDN permanent lookup loss', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: currentToken },
     })
-    await processGooglePlayMembershipVerification(verification.id, { client })
+    await processWithGooglePlay(verification.id, client)
     await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({ status: 'active' })
     expect(fetched).toEqual([currentToken, predecessorToken])
     fetched.length = 0
@@ -94,7 +94,7 @@ describe('Google Play bound RTDN permanent lookup loss', () => {
 
     await reconcileGooglePlayRtdnNotification({ evidenceId })
     const recoveryVerificationId = await expectQueuedVerification(user.id, applicationId)
-    await processGooglePlayMembershipVerification(recoveryVerificationId, { client })
+    await processWithGooglePlay(recoveryVerificationId, client)
     await (await memberships.getJob(recoveryVerificationId))?.remove()
     await reconcileGooglePlayRtdnNotification({ evidenceId })
 
@@ -133,22 +133,20 @@ describe('Google Play bound RTDN permanent lookup loss', () => {
         idempotencyKey: randomUUID(),
         evidence: { purchase_token: purchaseToken },
       })
-      await processGooglePlayMembershipVerification(verification.id, {
-        client: {
-          getSubscription: async () => ({
-            latestOrderId: `synthetic-order-${randomUUID()}`,
-            subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE',
-            acknowledgementState: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
-            testPurchase: {},
-            externalAccountIdentifiers: {
-              obfuscatedExternalAccountId: createHash('sha256').update(user.id).digest('hex'),
-            },
-            lineItems: [
-              { productId, expiryTime: new Date(Date.now() + 60 * 86_400_000).toISOString() },
-            ],
-          }),
-          acknowledgeSubscription: async () => undefined,
-        },
+      await processWithGooglePlay(verification.id, {
+        getSubscription: async () => ({
+          latestOrderId: `synthetic-order-${randomUUID()}`,
+          subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE',
+          acknowledgementState: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
+          testPurchase: {},
+          externalAccountIdentifiers: {
+            obfuscatedExternalAccountId: createHash('sha256').update(user.id).digest('hex'),
+          },
+          lineItems: [
+            { productId, expiryTime: new Date(Date.now() + 60 * 86_400_000).toISOString() },
+          ],
+        }),
+        acknowledgeSubscription: async () => undefined,
       })
       const membership = await getMembershipByUserId(user.id)
       if (!membership) throw new Error('Known Google Play source was not projected')
@@ -184,9 +182,7 @@ describe('Google Play bound RTDN permanent lookup loss', () => {
       }
       await reconcileGooglePlayRtdnNotification({ evidenceId })
       const recoveryVerificationId = await expectQueuedVerification(user.id, applicationId)
-      await processGooglePlayMembershipVerification(recoveryVerificationId, {
-        client: unavailableClient,
-      })
+      await processWithGooglePlay(recoveryVerificationId, unavailableClient)
       await (await memberships.getJob(recoveryVerificationId))?.remove()
       expect(fetches).toBe(1)
       await reconcileGooglePlayRtdnNotification({ evidenceId })

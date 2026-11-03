@@ -12,7 +12,7 @@ import {
   getMembershipVerification,
 } from '@services/memberships'
 import { GooglePlaySubscriptionLookupError } from '../configured-client.mts'
-import { processGooglePlayMembershipVerification } from '../process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from '../types.mts'
 
 describe('processGooglePlayMembershipVerification terminalization failure', () => {
@@ -58,7 +58,7 @@ describe('processGooglePlayMembershipVerification terminalization failure', () =
       async acknowledgeSubscription() {},
     }
     const seed = await submit()
-    await processGooglePlayMembershipVerification(seed.id, { client })
+    await processWithGooglePlay(seed.id, client)
     const membership = await getMembershipByUserId(user.id)
     expect(membership).toMatchObject({ status: 'active' })
     const verification = await submit()
@@ -66,7 +66,7 @@ describe('processGooglePlayMembershipVerification terminalization failure', () =
     await expect(
       withPostgresQueryFailureForTest(
         '/* findKnownGooglePlayCurrentSource */',
-        () => processGooglePlayMembershipVerification(verification.id, { client }),
+        () => processWithGooglePlay(verification.id, client),
         { command: 'SELECT' },
       ),
     ).rejects.toMatchObject({ code: '25P02' })

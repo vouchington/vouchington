@@ -1,7 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { processAppleMembershipVerification } from './apple/process-verification.mts'
-import { createConfiguredGooglePlaySubscriptionsV2Client } from './google/configured-client.mts'
 import { processGooglePlayMembershipVerification } from './google/process-verification.mts'
 import { processMicrosoftStoreMembershipVerification } from './microsoft/process-verification.mts'
 import { rejectUnavailableMembershipProvider } from './provider-unavailable.mts'
@@ -21,9 +20,7 @@ export async function processMembershipVerification(verificationId: string): Pro
       await processAppleMembershipVerification(verificationId)
       return
     case 'google_play':
-      await processGooglePlayMembershipVerification(verificationId, {
-        client: createConfiguredGooglePlaySubscriptionsV2Client(),
-      })
+      await processGooglePlayMembershipVerification(verificationId)
       return
     case 'microsoft_store':
       await processMicrosoftStoreMembershipVerification(verificationId)

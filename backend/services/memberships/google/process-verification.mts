@@ -7,7 +7,10 @@ import { ProviderMembershipSourceConflictError } from '../provider-source.mts'
 import { GooglePlayLineageConflictError, resolveGooglePlayTokenLineage } from './lineage.mts'
 import { preflightGooglePlayCurrentSubscription } from './process-preflight.mts'
 import { fetchGooglePlaySubscription } from './subscription-fetch.mts'
-import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
+import {
+  createConfiguredGooglePlaySubscriptionsV2Client,
+  GooglePlaySubscriptionLookupError,
+} from './configured-client.mts'
 import { terminalizeKnownGooglePlaySource } from './permanent-lookup-loss.mts'
 import { verifyGooglePlaySubscription } from './subscription-verifier.mts'
 import {
@@ -22,7 +25,6 @@ import {
   persistPendingGooglePlaySource,
   persistVerifiedGooglePlayObservation,
 } from './verification-finalization.mts'
-import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 export class GooglePlayPurchasePendingError extends Error {
   constructor() {
@@ -34,7 +36,6 @@ export class GooglePlayPurchasePendingError extends Error {
 /** Worker authority: fetches subscriptionsv2, then persists/projections its normalized source state. */
 export async function processGooglePlayMembershipVerification(
   verificationId: string,
-  dependencies: { client: GooglePlaySubscriptionsV2Client },
 ): Promise<void> {
   let submittedPurchaseToken: string | null = null
   let providerOrder: number | null = null
@@ -49,9 +50,10 @@ export async function processGooglePlayMembershipVerification(
     submittedPurchaseToken = purchaseToken
     // Release locks during provider reads; reload and lock pending state before finalization.
     await query.commit()
+    const client = createConfiguredGooglePlaySubscriptionsV2Client()
     providerOrder = await allocateGooglePlayObservationOrder()
     const currentSubscription = await fetchGooglePlaySubscription({
-      client: dependencies.client,
+      client,
       applicationId: context.applicationId,
       purchaseToken,
     })
@@ -67,7 +69,7 @@ export async function processGooglePlayMembershipVerification(
     if (preflight.reasonCode) return await reject(validation, preflight.reasonCode, validationQuery)
     await validationQuery.commit()
     const resolved = await resolveGooglePlayTokenLineage({
-      client: dependencies.client,
+      client,
       environment: context.environment,
       applicationId: context.applicationId,
       purchaseToken,

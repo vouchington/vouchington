@@ -6,7 +6,7 @@ import {
   createTestSku,
   createTestUser,
 } from '@voucha/test-helpers'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 
 describe('Google Play verification preflight', () => {
   afterEach(() => vi.unstubAllEnvs())
@@ -36,27 +36,25 @@ describe('Google Play verification preflight', () => {
       evidence: { purchase_token: currentToken },
     })
     const calls: string[] = []
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: {
-        getSubscription: async ({ purchaseToken }) => {
-          calls.push(purchaseToken)
-          if (purchaseToken !== currentToken) throw new Error('Linked token must not be fetched')
-          return {
-            latestOrderId: 'synthetic-order',
-            linkedPurchaseToken: `predecessor-${randomUUID()}`,
-            subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE',
-            acknowledgementState: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
-            testPurchase: {},
-            externalAccountIdentifiers: {
-              obfuscatedExternalAccountId: createHash('sha256').update(owner.id).digest('hex'),
-            },
-            lineItems: [
-              { productId, expiryTime: new Date(Date.now() + 60 * 86_400_000).toISOString() },
-            ],
-          }
-        },
-        acknowledgeSubscription: async () => undefined,
+    await processWithGooglePlay(verification.id, {
+      getSubscription: async ({ purchaseToken }) => {
+        calls.push(purchaseToken)
+        if (purchaseToken !== currentToken) throw new Error('Linked token must not be fetched')
+        return {
+          latestOrderId: 'synthetic-order',
+          linkedPurchaseToken: `predecessor-${randomUUID()}`,
+          subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE',
+          acknowledgementState: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
+          testPurchase: {},
+          externalAccountIdentifiers: {
+            obfuscatedExternalAccountId: createHash('sha256').update(owner.id).digest('hex'),
+          },
+          lineItems: [
+            { productId, expiryTime: new Date(Date.now() + 60 * 86_400_000).toISOString() },
+          ],
+        }
       },
+      acknowledgeSubscription: async () => undefined,
     })
     expect(calls).toEqual([currentToken])
     await expect(getMembershipVerification(submitter.id, verification.id)).resolves.toMatchObject({

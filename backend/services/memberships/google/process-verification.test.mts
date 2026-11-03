@@ -13,7 +13,7 @@ import {
   getTestGooglePlayTokenLineageSummary,
 } from '@voucha/test-helpers/google-play-memberships'
 import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/google-play-recovery'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import { reconcileGooglePlayActiveSource } from './active-source-recovery.mts'
 import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'
 
@@ -63,9 +63,9 @@ describe('Google Play membership verification and RTDN recovery', () => {
         evidence,
       })
     const first = await submit(owner.id)
-    await processGooglePlayMembershipVerification(first.id, { client })
+    await processWithGooglePlay(first.id, client)
     const replay = await submit(owner.id)
-    await processGooglePlayMembershipVerification(replay.id, { client })
+    await processWithGooglePlay(replay.id, client)
     await expect(getMembershipVerification(owner.id, replay.id)).resolves.toMatchObject({
       status: 'verified',
     })
@@ -73,11 +73,11 @@ describe('Google Play membership verification and RTDN recovery', () => {
     expect(await countObservations()).toBe(1)
     subscriptionState = 'SUBSCRIPTION_STATE_ON_HOLD'
     const held = await submit(owner.id)
-    await processGooglePlayMembershipVerification(held.id, { client })
+    await processWithGooglePlay(held.id, client)
     await expect(getMembershipByUserId(owner.id)).resolves.toMatchObject({ status: 'paused' })
     subscriptionState = 'SUBSCRIPTION_STATE_ACTIVE'
     const restored = await submit(owner.id)
-    await processGooglePlayMembershipVerification(restored.id, { client })
+    await processWithGooglePlay(restored.id, client)
     await expect(getMembershipByUserId(owner.id)).resolves.toMatchObject({
       plan: 'plus',
       status: 'active',
@@ -105,7 +105,7 @@ describe('Google Play membership verification and RTDN recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: replacementToken },
     })
-    await processGooglePlayMembershipVerification(replacement.id, { client: replacementClient })
+    await processWithGooglePlay(replacement.id, replacementClient)
     await expect(
       getTestGooglePlayTokenLineageSummary({
         firstPurchaseTokenLookupSha256: createHash('sha256').update(purchaseToken).digest('hex'),
@@ -137,7 +137,7 @@ describe('Google Play membership verification and RTDN recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: newestToken },
     })
-    await processGooglePlayMembershipVerification(newest.id, { client: newestClient })
+    await processWithGooglePlay(newest.id, newestClient)
     const membership = await getMembershipByUserId(owner.id)
     if (!membership) throw new Error('Google Play membership was not projected')
     const sourceId = await getMembershipSourceIdByMembershipId(membership.id)
@@ -154,14 +154,12 @@ describe('Google Play membership verification and RTDN recovery', () => {
       name: 'processMembershipVerification',
       data: { verificationId: recoveryVerificationId },
     })
-    await processGooglePlayMembershipVerification(recoveryVerificationId, {
-      client: newestClient,
-    })
+    await processWithGooglePlay(recoveryVerificationId, newestClient)
     await (await memberships.getJob(recoveryVerificationId))?.remove()
     expect(await countObservations()).toBe(3)
 
     const wrongOwner = await submit(other.id)
-    await processGooglePlayMembershipVerification(wrongOwner.id, { client })
+    await processWithGooglePlay(wrongOwner.id, client)
     await expect(getMembershipVerification(other.id, wrongOwner.id)).resolves.toMatchObject({
       status: 'rejected',
       reason_code: 'wrong_account',

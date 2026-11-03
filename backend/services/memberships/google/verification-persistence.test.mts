@@ -10,7 +10,7 @@ import {
 import { reacceptTestGooglePlayVerifiedEvidence } from '@voucha/test-helpers/google-play-memberships'
 import { createTestMalformedGooglePlayMembershipVerification } from '@voucha/test-helpers/google-play-memberships-persistence'
 import { GooglePlayLineageConflictError } from './lineage.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 describe('Google Play verification persistence', () => {
@@ -38,9 +38,7 @@ describe('Google Play verification persistence', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: `google-token-${randomUUID()}` },
     })
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: makeClient({ productId, userId: user.id }),
-    })
+    await processWithGooglePlay(verification.id, makeClient({ productId, userId: user.id }))
 
     await expect(
       reacceptTestGooglePlayVerifiedEvidence({ verificationId: verification.id }),
@@ -70,7 +68,7 @@ describe('Google Play verification persistence', () => {
       userId: user.id,
     })
 
-    await processGooglePlayMembershipVerification(verificationId, { client: unavailableClient() })
+    await processWithGooglePlay(verificationId, unavailableClient())
 
     await expect(getMembershipVerification(user.id, verificationId)).resolves.toMatchObject({
       status: 'rejected',
@@ -93,14 +91,12 @@ describe('Google Play verification persistence', () => {
     let providerCalls = 0
 
     await expect(
-      processGooglePlayMembershipVerification(verification.id, {
-        client: {
-          getSubscription: async () => {
-            providerCalls += 1
-            throw new Error('Decryption must fail before Google is called')
-          },
-          acknowledgeSubscription: async () => undefined,
+      processWithGooglePlay(verification.id, {
+        getSubscription: async () => {
+          providerCalls += 1
+          throw new Error('Decryption must fail before Google is called')
         },
+        acknowledgeSubscription: async () => undefined,
       }),
     ).rejects.toThrow('VOUCHA_STORED_SECRET_ENCRYPTION_KEYS')
 
@@ -148,14 +144,15 @@ describe('Google Play verification persistence', () => {
       evidence: { purchase_token: `google-token-${randomUUID()}` },
     })
 
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: makeClient({
+    await processWithGooglePlay(
+      verification.id,
+      makeClient({
         productId,
         userId: user.id,
         basePlanId: 'annual',
         offerId: 'intro',
       }),
-    })
+    )
 
     await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({ plan: 'pro' })
   })
@@ -182,9 +179,10 @@ describe('Google Play verification persistence', () => {
       trustedProviderContext: { environment: 'test', applicationId },
       evidence: { purchase_token: purchaseToken },
     })
-    await processGooglePlayMembershipVerification(first.id, {
-      client: makeClient({ productId, userId: user.id, orderId: 'GPA.first' }),
-    })
+    await processWithGooglePlay(
+      first.id,
+      makeClient({ productId, userId: user.id, orderId: 'GPA.first' }),
+    )
     const initial = await getMembershipByUserId(user.id)
     if (!initial) throw new Error('Expected initial Google Play membership')
     const next = await createMembershipVerification({
@@ -195,9 +193,10 @@ describe('Google Play verification persistence', () => {
       trustedProviderContext: { environment: 'test', applicationId },
       evidence: { purchase_token: purchaseToken },
     })
-    await processGooglePlayMembershipVerification(next.id, {
-      client: makeClient({ productId, userId: user.id, orderId: 'GPA.renewed' }),
-    })
+    await processWithGooglePlay(
+      next.id,
+      makeClient({ productId, userId: user.id, orderId: 'GPA.renewed' }),
+    )
 
     await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({
       started_at: initial.started_at,

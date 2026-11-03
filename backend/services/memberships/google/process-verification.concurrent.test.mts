@@ -8,7 +8,7 @@ import {
 import { countTestGooglePlayProviderObservations } from '@voucha/test-helpers/google-play-memberships'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import { getMembershipByUserId } from '../index.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'
 
 describe('concurrent Google Play verification', () => {
@@ -60,16 +60,16 @@ describe('concurrent Google Play verification', () => {
       },
       lineItems: [{ productId, expiryTime: new Date(Date.now() + 86_400_000).toISOString() }],
     }
-    const first = processGooglePlayMembershipVerification(verification.id, { client })
+    const first = processWithGooglePlay(verification.id, client)
     await entered[0]!.promise
-    const second = processGooglePlayMembershipVerification(verification.id, { client })
+    const second = processWithGooglePlay(verification.id, client)
     await entered[1]!.promise
     replies[0]!.resolve(subscription)
     await first
     const membership = await getMembershipByUserId(user.id)
     replies[1]!.resolve(subscription)
     await second
-    await processGooglePlayMembershipVerification(verification.id, { client })
+    await processWithGooglePlay(verification.id, client)
     expect(providerCalls).toBe(2)
     await expect(countTestGooglePlayProviderObservations(verification.id)).resolves.toBe(1)
     await expect(getMembershipByUserId(user.id)).resolves.toEqual(membership)

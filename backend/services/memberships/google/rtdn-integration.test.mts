@@ -12,7 +12,7 @@ import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/googl
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import { ingestGooglePlayRtdnPush, InvalidGooglePlayRtdnError } from './notification-ingress.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
 import type {
   GoogleOidcTrustMaterial,
@@ -65,9 +65,9 @@ describe('Google Play RTDN lifecycle integration', () => {
         throw new Error('Already acknowledged; no Play mutation expected')
       },
     }
-    await expect(
-      processGooglePlayMembershipVerification(verification.id, { client }),
-    ).rejects.toThrow('Google Play purchase is pending')
+    await expect(processWithGooglePlay(verification.id, client)).rejects.toThrow(
+      'Google Play purchase is pending',
+    )
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
       status: 'pending',
     })
@@ -232,7 +232,7 @@ async function processQueuedGooglePlayVerification(
   expect(job.name).toBe('processMembershipVerification')
   expect(job.data).toEqual({ verificationId })
   try {
-    await processGooglePlayMembershipVerification(verificationId, { client })
+    await processWithGooglePlay(verificationId, client)
   } finally {
     await job.remove()
   }
