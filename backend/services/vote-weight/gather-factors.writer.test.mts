@@ -1,38 +1,41 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import * as psql from '@data-stores/psql'
-import { createTestUserDirect } from '@voucha/test-helpers'
+import { describe, expect, it } from 'vitest'
+import { createTestUser } from '@voucha/test-helpers'
+import {
+  rejectPostgresReadForTest,
+  rejectPostgresWriteForTest,
+} from '@voucha/test-helpers/injected-failures'
 
 import { gatherVoteWeightFactors } from './gather-factors.mts'
 
-function gatherCalls(spy: { mock: { calls: unknown[][] } }): number {
-  return spy.mock.calls.filter(([query]) => {
-    const text = typeof query === 'string' ? query : (query as { text: string }).text
-    return text.includes('/* gatherVoteWeightFactors */')
-  }).length
-}
+const MARKER = '/* gatherVoteWeightFactors */'
+const poolFailure = new Error('pool rejected')
 
 describe('gatherVoteWeightFactors', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it.each([
-    ['reader', false, 1, 0],
-    ['writer', true, 0, 1],
-  ])('uses the %s pool when requested', async (_name, readFromWriter, readCalls, writeCalls) => {
-    const user = await createTestUserDirect({
-      username: `test-vote-weight-pool-${crypto.randomUUID().slice(0, 8)}`,
-    })
-    const readSpy = vi.spyOn(psql, 'read')
-    const writeSpy = vi.spyOn(psql, 'write')
+    ['reader', false, rejectPostgresReadForTest, rejectPostgresWriteForTest],
+    ['writer', true, rejectPostgresWriteForTest, rejectPostgresReadForTest],
+  ])(
+    'uses the %s pool when requested',
+    async (_name, readFromWriter, rejectSelected, rejectUnselected) => {
+      const user = await createTestUser()
 
-    await expect(gatherVoteWeightFactors(user!.id, { readFromWriter })).resolves.toMatchObject({
-      oauthCount: 0,
-      isAdmin: false,
-      penaltyMultiplier: 1,
-    })
+      const restoreSelected = rejectSelected(MARKER, poolFailure)
+      try {
+        await expect(gatherVoteWeightFactors(user.id, { readFromWriter })).rejects.toBe(poolFailure)
+      } finally {
+        restoreSelected()
+      }
 
-    expect(gatherCalls(readSpy)).toBe(readCalls)
-    expect(gatherCalls(writeSpy)).toBe(writeCalls)
-  })
+      const restoreUnselected = rejectUnselected(MARKER, poolFailure)
+      try {
+        await expect(gatherVoteWeightFactors(user.id, { readFromWriter })).resolves.toMatchObject({
+          oauthCount: 0,
+          isAdmin: false,
+          penaltyMultiplier: 1,
+        })
+      } finally {
+        restoreUnselected()
+      }
+    },
+  )
 })
