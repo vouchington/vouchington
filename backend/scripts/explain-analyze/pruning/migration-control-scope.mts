@@ -11,10 +11,7 @@ import {
   pruningDatabaseExists,
   pruningLifecycleConnectionUrl,
 } from './database-lifecycle-scope.mts'
-import {
-  migrationCommandSeconds,
-  migrationControlDeadlineMs,
-} from './migration-control-budget.mts'
+import { migrationCommandSeconds, migrationControlDeadlineMs } from './migration-control-budget.mts'
 import { migrationCommandFailure } from './migration-command-failure.mts'
 import { assertMigrationServerClientsClosed } from './migration-control-clients.mts'
 import {
