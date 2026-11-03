@@ -52,6 +52,7 @@ async function replaceInTransaction(
     INSERT INTO url_hacker_news_totals (url_id, story_count, comment_count, looked_up_at)
     SELECT t.url_id, t.story_count, t.comment_count, CURRENT_TIMESTAMP
     FROM unnest($1::uuid[], $2::int[], $3::int[]) AS t(url_id, story_count, comment_count)
+    ORDER BY t.url_id ASC NULLS LAST
     ON CONFLICT (url_id) DO UPDATE SET
       story_count = EXCLUDED.story_count,
       comment_count = EXCLUDED.comment_count,
