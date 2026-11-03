@@ -45029,6 +45029,9 @@
           "drafts": {
             "type": "boolean"
           },
+          "has_hacker_news_references": {
+            "type": "boolean"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -45540,6 +45543,9 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "has_hacker_news_references": {
+            "type": "boolean"
           },
           "has_related_posts": {
             "type": "boolean"

@@ -35,6 +35,7 @@ const rssFeedItemsQueryContract = defineQueryContract({
   category_topics: queryCsvArray(queryString()),
   similar_window_days: queryInteger({ minimum: 0, maximum: 365 }),
   has_related_posts: queryBoolean(),
+  has_hacker_news_references: queryBoolean(),
   story_id: queryUuid(),
   read: queryBoolean(),
 })
@@ -79,6 +80,7 @@ export function prepareRssFeedItemsSearchParams(
     storyIdRaw: typeof query.story_id === 'string' ? query.story_id : undefined,
     similarWindowDays: rawSimilarWindowDays,
     hasRelatedPosts: validationQuery.has_related_posts,
+    hasHackerNewsReferences: validationQuery.has_hacker_news_references,
     read: validationQuery.read,
   }
 }
@@ -95,6 +97,7 @@ export async function resolveRssFeedItemsSearchParams(
     storyIdRaw,
     similarWindowDays,
     hasRelatedPosts,
+    hasHackerNewsReferences,
     read: rawRead,
   } = prepared
 
@@ -143,6 +146,9 @@ export async function resolveRssFeedItemsSearchParams(
 
   const has_related_posts = typeof hasRelatedPosts === 'boolean' ? hasRelatedPosts : undefined
 
+  const has_hacker_news_references =
+    typeof hasHackerNewsReferences === 'boolean' ? hasHackerNewsReferences : undefined
+
   const read = typeof rawRead === 'boolean' ? rawRead : undefined
 
   const searchOptions = {
@@ -166,6 +172,7 @@ export async function resolveRssFeedItemsSearchParams(
     }),
     ...(similar_window_days !== undefined && { similar_window_days }),
     ...(has_related_posts !== undefined && { has_related_posts }),
+    ...(has_hacker_news_references !== undefined && { has_hacker_news_references }),
     ...(storyId && { story_id: storyId }),
     ...(read !== undefined && { read }),
   }

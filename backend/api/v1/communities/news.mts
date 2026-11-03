@@ -1,4 +1,5 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
@@ -145,6 +146,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
       ),
     ),
     users: usersPromise.then(users => indexById(users.filter(Boolean))),
+    rss_feed_item_hacker_news_references: itemsPromise.then(getRssFeedItemHackerNewsSummaries),
     rss_feed_item_elections: getRssFeedItemElectionByIdCachedBatch(allItemIds).then(indexById),
     related_posts_by_url_id: relatedPostsPromise.then(r => r.related_posts_by_url_id),
     posts: relatedPostsPromise.then(r =>

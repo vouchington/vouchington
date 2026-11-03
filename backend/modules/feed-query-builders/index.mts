@@ -19,3 +19,7 @@ export {
   buildTopicAliasMembershipExists,
 } from './topic-post-candidates.mts'
 export { buildRssFeedItemTopicMembershipExists } from './rss-feed-item-topic-candidates.mts'
+export {
+  buildPostHasHackerNewsReferences,
+  buildRssFeedItemHasHackerNewsReferences,
+} from './hacker-news-reference-filters.mts'

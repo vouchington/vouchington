@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { apiQuery } from '../../api-query-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
@@ -97,6 +98,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
       [community.id]: { id: community.id, name: community.name, slug: community.slug },
     },
     post_link_embeds: rawPostsPromise.then(posts => buildLinkEmbedsSidecar(posts, embedAccess)),
+    post_hacker_news_references: getPostHackerNewsSummaries(allPostIds),
   }
 
   if (currentUser) {

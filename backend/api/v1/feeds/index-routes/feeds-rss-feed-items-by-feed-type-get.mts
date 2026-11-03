@@ -1,4 +1,5 @@
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { indexById } from '@modules/utils'
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-feed-items'
@@ -143,6 +144,9 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
         {},
         isAdminUser(currentUser) ? 'administrator' : 'public',
       ),
+    ),
+    rss_feed_item_hacker_news_references: itemsPromise.then(items =>
+      getRssFeedItemHackerNewsSummaries(items),
     ),
     rss_feed_item_elections: getRssFeedItemElectionByIdCachedBatch(allItemIds).then(indexById),
     users: usersPromise.then(users => indexById(users.filter(Boolean))),

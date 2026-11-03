@@ -1,6 +1,7 @@
 import type { BasicUser } from '@services/users/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PostSearchOptions } from '../types.mts'
+import { buildPostHasHackerNewsReferences } from '@modules/feed-query-builders'
 import { appendBaseFilters } from './base-filters.mts'
 import { appendPartitionAndPaginationFilters } from './pagination-filters.mts'
 import { appendSearchAndSimilarityFilters } from './search-filters.mts'
@@ -54,6 +55,10 @@ function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchO
       WHERE story_posts.post_id = posts.id
         AND story_posts.story_id = ${options.story_id}
     )`)
+  }
+  if (options.has_hacker_news_references !== undefined) {
+    const references = buildPostHasHackerNewsReferences()
+    filters.push(options.has_hacker_news_references ? references : sql`NOT `.append(references))
   }
 }
 
