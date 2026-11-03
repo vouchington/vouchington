@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Environment, type JWSTransactionDecodedPayload } from '@apple/app-store-server-library'
 import { describe, expect, it, vi } from 'vitest'
-import { enqueueBulkProcessAppleNotifications } from '@queues/memberships/enqueues'
 import { memberships } from '@queues/memberships/queues'
 import {
   findRecoverableAppleNotificationJobs,
@@ -33,14 +32,12 @@ describe('Apple notification recovery with real GlideMQ', () => {
         (await findRecoverableAppleNotificationJobs()).filter(
           notification => notification.evidenceId === accepted.evidenceId,
         )
-      const dependencies = {
-        findRecoverableAppleNotificationJobs: findOnlyThisNotification,
-        enqueueBulkProcessAppleNotifications,
-      }
-      await expect(recoverAppleNotifications(dependencies)).resolves.toEqual({ enqueued: 1 })
+      await expect(recoverAppleNotifications(findOnlyThisNotification)).resolves.toEqual({
+        enqueued: 1,
+      })
       await Promise.all([
-        recoverAppleNotifications(dependencies),
-        recoverAppleNotifications(dependencies),
+        recoverAppleNotifications(findOnlyThisNotification),
+        recoverAppleNotifications(findOnlyThisNotification),
       ])
 
       await expect(memberships.getJob(jobId)).resolves.toMatchObject({
