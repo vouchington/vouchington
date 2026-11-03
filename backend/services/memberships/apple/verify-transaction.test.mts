@@ -5,7 +5,7 @@ import {
   InAppOwnershipType,
   type JWSTransactionDecodedPayload,
 } from '@apple/app-store-server-library'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createAppleTransactionVerifier,
   verifyAppleSignedTransactionEvidence,
@@ -13,12 +13,19 @@ import {
   type AppleTransactionVerifier,
 } from './verify-transaction.mts'
 
+function freezeNow(): void {
+  vi.setSystemTime(new Date('2026-09-10T00:00:00.000Z'))
+  onTestFinished(() => {
+    vi.useRealTimers()
+  })
+}
+
 describe('Apple App Store signed transaction verification', () => {
   it('normalizes a verified direct purchase', async () => {
+    freezeNow()
     const result = await verifyAppleSignedTransactionEvidence({
       evidence: { signed_transaction_info: 'signed-direct-transaction' },
       expected: expectedTransaction(),
-      now: new Date('2026-09-10T00:00:00.000Z'),
       verifier: makeVerifier(),
     })
 
@@ -96,6 +103,7 @@ describe('Apple App Store signed transaction verification', () => {
   })
 
   it('rejects transaction claims that do not match the expected account or provider context', async () => {
+    freezeNow()
     const cases = [
       [{ appAccountToken: undefined }, 'missing_account_token'],
       [{ appAccountToken: 'another-purchase-intent' }, 'wrong_account'],
@@ -110,7 +118,6 @@ describe('Apple App Store signed transaction verification', () => {
         verifyAppleSignedTransactionEvidence({
           evidence: { signed_transaction_info: 'signed' },
           expected: expectedTransaction(),
-          now: new Date('2026-09-10T00:00:00.000Z'),
           verifier: makeVerifier(transaction),
         }),
       ).resolves.toEqual({ accepted: false, reasonCode })
@@ -118,17 +125,15 @@ describe('Apple App Store signed transaction verification', () => {
   })
 
   it('normalizes expired and revoked transaction lifecycle evidence', async () => {
-    const now = new Date('2026-09-10T00:00:00.000Z')
+    freezeNow()
     const expired = await verifyAppleSignedTransactionEvidence({
       evidence: { signed_transaction_info: 'expired' },
       expected: expectedTransaction(),
-      now,
       verifier: makeVerifier({ expiresDate: Date.parse('2026-09-01T00:00:00.000Z') }),
     })
     const revoked = await verifyAppleSignedTransactionEvidence({
       evidence: { signed_transaction_info: 'revoked' },
       expected: expectedTransaction(),
-      now,
       verifier: makeVerifier({ revocationDate: Date.parse('2026-09-05T00:00:00.000Z') }),
     })
 

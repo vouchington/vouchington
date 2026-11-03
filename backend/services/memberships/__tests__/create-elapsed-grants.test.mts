@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestSku,
   createTestUser,
@@ -6,6 +6,7 @@ import {
   getTestMembershipRaw,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
+import { spyOnMembershipEntitlementAdmission } from '../../../test-helpers/membership-entitlement-admission.mts'
 import { createMembership, grantMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 
@@ -95,17 +96,20 @@ describe('createMembership with elapsed grants', () => {
     const promotedGrant = await grantMembership(admin.id, grantUser.id, 'pro', promotedSku.id, 30)
     await updateTestMembershipExpiresAt(firstGrant.id, new Date('2020-01-01T00:00:00Z'))
     const queuedSku = await createTestSku({ plan: 'plus' })
-    const enqueueEntitlementEffects = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-    const queued = await createMembership(
-      {
+    const queue = spyOnMembershipEntitlementAdmission()
+    let queued: Awaited<ReturnType<typeof createMembership>>
+    try {
+      queued = await createMembership({
         userId: grantUser.id,
         plan: 'plus',
         skuId: queuedSku.id,
         grantedById: admin.id,
         durationDays: 30,
-      },
-      { enqueueDeliverMembershipEntitlementEffects: enqueueEntitlementEffects },
-    )
+      })
+      expect(queue.admissionCount()).toBe(1)
+    } finally {
+      queue.restore()
+    }
 
     expect(queued.projected).toBe(false)
     expect(queued.grantId).toEqual(expect.any(String))
@@ -125,6 +129,5 @@ describe('createMembership with elapsed grants', () => {
         }),
       ]),
     )
-    expect(enqueueEntitlementEffects).toHaveBeenCalledOnce()
   })
 })

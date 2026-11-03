@@ -37,7 +37,6 @@ export function createAppleTransactionVerifier(
 export async function verifyAppleSignedTransactionEvidence(options: {
   evidence: unknown
   expected: AppleSignedTransactionExpectation
-  now?: Date
   verifier: AppleTransactionVerifier
 }): Promise<AppleSignedTransactionVerificationResult> {
   const signedTransactionInfo = getSignedTransactionInfo(options.evidence)
@@ -50,7 +49,7 @@ export async function verifyAppleSignedTransactionEvidence(options: {
     return rejected('invalid_evidence')
   }
 
-  return normalizeAppleTransaction(transaction, options.expected, options.now ?? new Date())
+  return normalizeAppleTransaction(transaction, options.expected, new Date())
 }
 
 function normalizeAppleTransaction(

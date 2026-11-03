@@ -1,5 +1,4 @@
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
-import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import { registerEntitlementEffectsAfterCommit } from './entitlement-effects-after-commit.mts'
 import type {
   CreateMembershipOptions,
@@ -10,7 +9,6 @@ import { getDirectTermEffectiveAt } from './direct-term-effective-at.mts'
 import type { CreatedMembership } from './reconcile-source-projection.mts'
 
 type CreateMembershipDependencies = {
-  enqueueDeliverMembershipEntitlementEffects?: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort
   query?: QueryExecutor
 } & MembershipProviderEvidenceDependency
 
@@ -18,9 +16,6 @@ export async function createMembership(
   options: CreateMembershipOptions,
   dependencies: CreateMembershipDependencies = {},
 ): Promise<CreatedMembership> {
-  const enqueueEntitlementEffects =
-    dependencies.enqueueDeliverMembershipEntitlementEffects ??
-    enqueueDeliverMembershipEntitlementEffectsBestEffort
   const status = options.status ?? 'active'
   const effectiveAt = options.effectiveAt ?? new Date()
   const timingContext = {
@@ -34,23 +29,14 @@ export async function createMembership(
     membership = await createMembershipWithQuery(
       options,
       dependencies,
-      enqueueEntitlementEffects,
       timingContext,
       dependencies.query,
     )
-    if (membership.projected)
-      registerEntitlementEffectsAfterCommit(dependencies.query, enqueueEntitlementEffects)
+    if (membership.projected) registerEntitlementEffectsAfterCommit(dependencies.query)
   } else {
     await using transaction = await beginTransaction()
-    membership = await createMembershipWithQuery(
-      options,
-      dependencies,
-      enqueueEntitlementEffects,
-      timingContext,
-      transaction,
-    )
-    if (membership.projected)
-      registerEntitlementEffectsAfterCommit(transaction, enqueueEntitlementEffects)
+    membership = await createMembershipWithQuery(options, dependencies, timingContext, transaction)
+    if (membership.projected) registerEntitlementEffectsAfterCommit(transaction)
     await transaction.commit()
   }
   return membership

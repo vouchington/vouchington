@@ -26,15 +26,12 @@ type ReceiveOAuthAuthorizationCallbackTransactionResult =
   | ReceiveOAuthAuthorizationCallbackResult
   | { expired: true }
 
-export async function receiveOAuthAuthorizationCallback(
-  options: {
-    provider: BrokerOAuthProvider
-    state: string
-    code?: string
-    error?: string
-  },
-  now: () => Date,
-): Promise<ReceiveOAuthAuthorizationCallbackResult> {
+export async function receiveOAuthAuthorizationCallback(options: {
+  provider: BrokerOAuthProvider
+  state: string
+  code?: string
+  error?: string
+}): Promise<ReceiveOAuthAuthorizationCallbackResult> {
   if (!options.state) throw createHttpError(400, 'OAuth callback is invalid')
   // A provider result is either a code or an error. Rejecting mixed payloads keeps first receipt
   // and replay bound to exactly one stored callback value.
@@ -64,8 +61,7 @@ export async function receiveOAuthAuthorizationCallback(
     )
     const authorization = rows[0] as OAuthAuthorizationRow | undefined
     if (!authorization) throw createHttpError(400, 'OAuth callback is invalid')
-    const decisionAtMs = now().getTime()
-    if (!Number.isFinite(decisionAtMs)) throw new RangeError('Invalid OAuth callback time')
+    const decisionAtMs = Date.now()
     if (authorization.expires_at.getTime() <= decisionAtMs) {
       if (authorization.status !== 'completed') {
         await query(

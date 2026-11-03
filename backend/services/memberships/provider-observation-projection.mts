@@ -1,5 +1,4 @@
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
-import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import { recordMembershipChange } from './changes.mts'
 import type { MembershipProviderSourceIdentity } from './create-types.mts'
 import { getFamilyMembershipSourceProjectionAdmission } from './create/prepare-source.mts'
@@ -25,25 +24,21 @@ export type ProjectVerifiedProviderMembershipObservationOptions = {
   retainWhenDirectAdmissionRejected?: boolean
 }
 type ProjectDependencies = {
-  enqueueEntitlementEffects?: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort
   query?: QueryExecutor
 }
 export async function projectVerifiedProviderMembershipObservation(
   options: ProjectVerifiedProviderMembershipObservationOptions,
   dependencies: ProjectDependencies = {},
 ): Promise<{ membershipId: string | null; projected: boolean }> {
-  const enqueue =
-    dependencies.enqueueEntitlementEffects ?? enqueueDeliverMembershipEntitlementEffectsBestEffort
-  if (dependencies.query) return projectWithQuery(options, dependencies.query, enqueue)
+  if (dependencies.query) return projectWithQuery(options, dependencies.query)
   await using query = await beginTransaction()
-  const result = await projectWithQuery(options, query, enqueue)
+  const result = await projectWithQuery(options, query)
   await query.commit()
   return result
 }
 async function projectWithQuery(
   options: ProjectVerifiedProviderMembershipObservationOptions,
   query: QueryExecutor,
-  enqueue: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort,
 ): Promise<{ membershipId: string | null; projected: boolean }> {
   const observation = await getVerifiedProviderObservation(options, query)
   const source = await lockAndCreateProviderObservationSource(options.userId, observation, query)
@@ -67,7 +62,7 @@ async function projectWithQuery(
   )
   if (!sourceState.advanced) return { membershipId: null, projected: false }
   if (directAdmissionRejected) return { membershipId: null, projected: false }
-  return projectAdvancedProviderObservation(options, observation, source.id, query, enqueue)
+  return projectAdvancedProviderObservation(options, observation, source.id, query)
 }
 
 async function projectAdvancedProviderObservation(
@@ -75,7 +70,6 @@ async function projectAdvancedProviderObservation(
   observation: VerifiedProviderObservation,
   sourceId: string,
   query: QueryExecutor,
-  enqueue: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort,
 ) {
   const sourceProjection = await getLatestProviderSourceProjection(sourceId, query)
   if (sourceProjection) {
@@ -97,7 +91,6 @@ async function projectAdvancedProviderObservation(
       observation,
       observation.timing,
       query,
-      enqueue,
     )
   }
   if (observation.sourceKind === 'family') {
@@ -143,7 +136,7 @@ async function projectAdvancedProviderObservation(
   })
   if (isTerminalMembershipStatus(observation.status) || observation.status === 'paused')
     await restoreFallbackAfterCurrentAccessEndsInTransaction(options.userId, membership.id, query)
-  return membershipProjectionWithEntitlementEffects(query, enqueue, membership.id, project)
+  return membershipProjectionWithEntitlementEffects(query, membership.id, project)
 }
 async function reconcileProviderSourceProjection(
   options: ProjectVerifiedProviderMembershipObservationOptions,
@@ -151,7 +144,6 @@ async function reconcileProviderSourceProjection(
   observation: VerifiedProviderObservation,
   timing: VerifiedProviderObservation['timing'],
   query: QueryExecutor,
-  enqueue: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort,
 ): Promise<{ membershipId: string; projected: boolean }> {
   const entitles =
     !isTerminalMembershipStatus(observation.status) && observation.status !== 'paused'
@@ -177,10 +169,5 @@ async function reconcileProviderSourceProjection(
   )
   if (isTerminalMembershipStatus(observation.status) || observation.status === 'paused')
     await restoreFallbackAfterCurrentAccessEndsInTransaction(options.userId, membership.id, query)
-  return membershipProjectionWithEntitlementEffects(
-    query,
-    enqueue,
-    membership.id,
-    membership.projected,
-  )
+  return membershipProjectionWithEntitlementEffects(query, membership.id, membership.projected)
 }

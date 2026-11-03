@@ -1,5 +1,4 @@
 import type { QueryExecutor } from '@data-stores/psql'
-import type { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import { DuplicateStripeMembershipEventError, recordMembershipChange } from '../changes.mts'
 import type {
   CreateMembershipOptions,
@@ -26,7 +25,6 @@ import { retireCurrentMembershipProjection } from './retire-current-projection.m
 export async function createMembershipWithQuery(
   options: CreateMembershipOptions,
   dependencies: MembershipProviderEvidenceDependency,
-  enqueueEntitlementEffects: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort,
   timingContext: {
     status: MembershipStatus
     effectiveAt: Date
@@ -39,7 +37,6 @@ export async function createMembershipWithQuery(
   const { productId, priorRows, retainedSourceRows, source } = await prepareMembershipCreation(
     options,
     query,
-    enqueueEntitlementEffects,
     directTermEffectiveAt,
   )
   const prior = priorRows[0] as
