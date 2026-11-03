@@ -117,9 +117,15 @@ describe('AI spend-cap coordinated rechecks', () => {
     const registration = await registerSpendCapDelayedJob(waiting, day)
     const job = recheckJob(day, registration.generation)
 
-    await expect(processSpendCapRecheckJob(job)).rejects.toThrow(DelayedError)
-
-    expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 1_000)
+    // Freeze only Date, inside the day so the waiting job stays registered, so the delay is exact.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(`${day}T12:00:00.000Z`))
+    try {
+      await expect(processSpendCapRecheckJob(job)).rejects.toThrow(DelayedError)
+      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 1_000)
+    } finally {
+      vi.useRealTimers()
+    }
     expect(job.updateData).toHaveBeenCalledExactlyOnceWith({
       day,
       generation: registration.generation,
