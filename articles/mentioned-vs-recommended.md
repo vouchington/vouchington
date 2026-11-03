@@ -14,9 +14,9 @@ topics:
 
 A notorious political book showed up as "recommended" by hundreds of people. Almost none of them recommended it. They named it to argue about it, warn about it, or compare something else to it. Counting those comments as endorsements turned a warning into a bestseller.
 
-The second example is quieter. A magazine shares its name with a novel. Every mention of the magazine pushed up the novel's count. Nobody was recommending the novel at all.
+The second example is quieter. A magazine shares its name with a novel. Many comments about the magazine pushed up the novel's count, and the author said they were fixing the matcher to count only comments that mention the novelist.
 
-Neither error is a bug in the code. A mention is a mention. The mistake is calling it a recommendation.
+The second error is a title-resolution bug. The first is not a bug at all: a mention is a mention. The mistake is calling it a recommendation.
 
 ## Why counting breaks
 

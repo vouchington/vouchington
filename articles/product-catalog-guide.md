@@ -23,7 +23,7 @@ Two kinds of posts do most of the work.
 - **Reviews** are written assessments with ratings.
 - **Data points** are specific facts in typed fields, such as a card approval with a score range and a credit limit.
 
-Typed fields can be counted. "Approved with a 750 score and two recent inquiries" is a number you can add up. A paragraph on a forum is not. For how that works, see [Real Numbers From Real People](./data-points-explained.md) and [Why You Can Trust Reviews on Voucha](./reviews-you-can-trust.md).
+Typed fields can be counted. A score of 750 or a count of two recent inquiries is a number you can add up across many posts. A whole sentence such as "Approved with a 750 score and two recent inquiries" cannot, and neither can a paragraph on a forum. For how that works, see [Real Numbers From Real People](./data-points-explained.md) and [Why You Can Trust Reviews on Voucha](./reviews-you-can-trust.md).
 
 ## Trust weighting
 

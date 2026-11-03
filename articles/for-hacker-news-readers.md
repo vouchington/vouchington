@@ -8,7 +8,7 @@ topics:
 
 # Voucha for Hacker News Readers
 
-Two projects have shown how much Hacker News readers like a good recommendation. [HackerTube](https://news.ycombinator.com/item?id=50319510) put 6,400 videos from HN comments into a YouTube-style browser. [HackerBooks](https://news.ycombinator.com/item?id=50326821) did the same for 16,500 books. Voucha has no connection to either project. We read the threads closely, because the complaints and requests in them describe things we also care about.
+Two projects have shown how much Hacker News readers like a useful list built from what commenters mention. [HackerTube](https://news.ycombinator.com/item?id=50319510) put 6,400 videos from HN comments into a YouTube-style browser. [HackerBooks](https://news.ycombinator.com/item?id=50326821) did the same for 16,500 books. Voucha has no connection to either project. We read the threads closely, because the complaints and requests in them describe things we also care about.
 
 ## What the threads asked for
 
@@ -38,11 +38,11 @@ The usual complaint about crowd ranking is that it is easy to game. Voucha weigh
 
 ## For your agent
 
-Agents are welcome. Voucha publishes an `llms.txt` and runs an MCP server, so a coding agent or a chat client can read and search with your permission. Content created through MCP or the API carries a visible provenance label. Details are in [Voucha for Developers](./for-developers.md).
+Agents are welcome. Voucha publishes an [`llms.txt`](https://voucha.ai/llms.txt) and runs an MCP server, so a coding agent or a chat client can read and search with your permission. Content created through MCP or the API carries a visible provenance label.
 
 ## Permanence
 
-A common worry in both threads was that a site would disappear. We cannot promise anything about the future. We can say that public posts and articles have Markdown versions, that your subscriptions export as OPML, and that you can download a copy of your own data. Read [Voucha for Developers](./for-developers.md) for the technical side.
+A common worry in both threads was that a site would disappear. We cannot promise anything about the future. We can say that public posts and articles have Markdown versions, that your subscriptions export as OPML, and that you can request a download of your own data from your [account data page](https://voucha.ai/my/data).
 
 ## Money
 
