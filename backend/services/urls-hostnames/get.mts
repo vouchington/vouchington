@@ -2,35 +2,10 @@ import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { ViewHostname } from './types.mts'
 import sql from 'sql-template-strings'
-import createHttpError from 'http-errors'
-import { isUUID } from '@modules/utils'
-import { isHostname } from '@ts-shared/utils/urls'
+import { getUrlHostnamesByAnyBatch } from './get-batch.mts'
 
-const getUrlHostnameById = async (id: string): Promise<ViewHostname | null> => {
-  const { rows } = await read<ViewHostname>(sql`/* getUrlHostnameById */
-    SELECT * FROM view_url_hostnames
-    WHERE id = ${id}
-    LIMIT 1
-  `)
-  return rows[0] || null
-}
-
-export const getUrlHostnameByAny = async (id: string): Promise<ViewHostname | null> => {
-  const normalized = id.trim().toLowerCase()
-  if (isUUID(normalized)) return getUrlHostnameById(normalized)
-  if (isHostname(normalized)) {
-    const { rows } = await read<ViewHostname>(sql`/* getUrlHostnameByAny */
-      WITH selected AS MATERIALIZED (
-        SELECT id FROM url_hostnames WHERE hostname = ${normalized} LIMIT 1
-      )
-      SELECT hostname.*
-      FROM selected
-      JOIN view_url_hostnames hostname ON hostname.id = selected.id
-    `)
-    return rows[0] || null
-  }
-  throw createHttpError(422, 'Invalid URL hostname identifier: must be a UUID or a valid hostname')
-}
+export const getUrlHostnameByAny = async (id: string): Promise<ViewHostname | null> =>
+  (await getUrlHostnamesByAnyBatch([id]))[0] ?? null
 
 type UrlHostnameCrawlerDetails = {
   id: string
