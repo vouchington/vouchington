@@ -7,18 +7,15 @@ import {
 import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 
 import { read } from './index.mts'
-import {
-  buildExplainAnalyzeText,
-  buildExplainPreparedStatementText,
-  explainAnalyze,
-  functionCallsSince,
-} from './explain-analyze.mts'
+import { explainAnalyze } from './explain-analyze.mts'
+import { buildExplainPreparedStatementText } from './explain-prepared.mts'
+import { functionCallsSince } from './explain-function-calls.mts'
 
 function rootPlan(result: Awaited<ReturnType<typeof explainAnalyze>>): Record<string, unknown> {
   return (result.plan as { Plan: Record<string, unknown> }).Plan
 }
 
-describe('buildExplainAnalyzeText', () => {
+describe('explainAnalyze', () => {
   it('excludes setup-time calls and orders equal-call functions by name', () => {
     expect(
       functionCallsSince(
@@ -47,12 +44,6 @@ describe('buildExplainAnalyzeText', () => {
       ]),
     )
     expect(second.function_calls).toEqual([])
-  })
-
-  it('captures WAL statistics alongside buffers', () => {
-    expect(buildExplainAnalyzeText('SELECT 1')).toBe(
-      'EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT JSON) SELECT 1',
-    )
   })
 
   it('explains execution of a prepared target query so plan-cache mode applies to the target', () => {

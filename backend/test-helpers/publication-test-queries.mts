@@ -1,4 +1,5 @@
-import { read, write, type QueryInput, type TransactionQuery } from '@data-stores/psql'
+import { read, write, type TransactionQuery } from '@data-stores/psql'
+import type { QueryInput } from '@data-stores/psql/types'
 
 export async function listExistingTestPostIds(postIds: readonly string[]): Promise<string[]> {
   const { rows } = await read<{ id: string }>(

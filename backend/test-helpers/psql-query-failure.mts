@@ -1,10 +1,5 @@
-import {
-  beginTransaction,
-  type QueryInput,
-  type QueryOptions,
-  type QueryValues,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { beginTransaction, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
+import type { QueryInput, QueryValues } from '@data-stores/psql/types'
 
 export async function withForcedTransactionRollbackForTest(
   handler: (options: QueryOptions) => Promise<unknown>,
