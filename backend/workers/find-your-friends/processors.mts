@@ -13,31 +13,10 @@ import {
 } from '@services/friend-recommendations/accounts-to-sync'
 import { getFriendsDispatchLimits } from '@services/friend-recommendations/work-limits'
 
-type FindYourFriendsDependencies = {
-  enqueueBulkSyncFacebookFriends: typeof enqueueBulkSyncFacebookFriends
-  enqueueBulkSyncGithubFriends: typeof enqueueBulkSyncGithubFriends
-  enqueueBulkSyncXFriends: typeof enqueueBulkSyncXFriends
-  streamFacebookAccountsToSync: typeof streamFacebookAccountsToSync
-  streamGithubAccountsToSync: typeof streamGithubAccountsToSync
-  streamXAccountsToSync: typeof streamXAccountsToSync
-  getFriendAccountSweepUpperId: typeof getFriendAccountSweepUpperId
-}
-
 export async function processFindYourFriendsDispatcher(
-  dependencies?: Partial<FindYourFriendsDependencies>,
   data: FriendsDispatchData = {},
   saveProgress?: (data: FriendsDispatchData) => Promise<void>,
 ): Promise<{ count: number; hasMore: boolean }> {
-  const deps = {
-    enqueueBulkSyncFacebookFriends,
-    enqueueBulkSyncGithubFriends,
-    enqueueBulkSyncXFriends,
-    streamFacebookAccountsToSync,
-    streamGithubAccountsToSync,
-    streamXAccountsToSync,
-    getFriendAccountSweepUpperId,
-    ...dependencies,
-  }
   const limits = getFriendsDispatchLimits()
   const sweepStartedAt = data.sweepStartedAt ?? new Date().toISOString()
   const upperIds =
@@ -46,7 +25,7 @@ export async function processFindYourFriendsDispatcher(
       await Promise.all(
         (['facebook', 'x', 'github'] as const).map(async provider => [
           provider,
-          await deps.getFriendAccountSweepUpperId(provider),
+          await getFriendAccountSweepUpperId(provider),
         ]),
       ),
     ) as Required<FriendsDispatchData>['upperIds'])
@@ -55,14 +34,14 @@ export async function processFindYourFriendsDispatcher(
   const providers = [
     {
       name: 'facebook',
-      stream: deps.streamFacebookAccountsToSync,
-      enqueue: deps.enqueueBulkSyncFacebookFriends,
+      stream: streamFacebookAccountsToSync,
+      enqueue: enqueueBulkSyncFacebookFriends,
     },
-    { name: 'x', stream: deps.streamXAccountsToSync, enqueue: deps.enqueueBulkSyncXFriends },
+    { name: 'x', stream: streamXAccountsToSync, enqueue: enqueueBulkSyncXFriends },
     {
       name: 'github',
-      stream: deps.streamGithubAccountsToSync,
-      enqueue: deps.enqueueBulkSyncGithubFriends,
+      stream: streamGithubAccountsToSync,
+      enqueue: enqueueBulkSyncGithubFriends,
     },
   ] as const
   const snapshot = (): FriendsDispatchData => ({
