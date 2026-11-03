@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomInt } from 'node:crypto'
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
@@ -19,6 +19,10 @@ import { detectRssFeedItemLanguage } from '../entities/rss-feed-items.mts'
 
 const ENGLISH = 'The quick brown fox jumps over the lazy dog near the quiet river bank today'
 const GERMAN = 'Die Würde des Menschen ist unantastbar und ihr Schutz ist Verpflichtung aller'
+
+// Topic names are unique case-insensitively, so they need a per-run suffix. Digits only: the detector
+// ignores digits, while letters in a random suffix flip the detected language about 1% of the time.
+const randomDigits = () => String(randomInt(1_000_000_000, 10_000_000_000))
 
 describe('entity language detection — users, topics, rss-feed-items', () => {
   let user: PrivateUser
@@ -76,7 +80,7 @@ describe('entity language detection — users, topics, rss-feed-items', () => {
       const random = createRandomString(10)
       const topicId = await insertLanguageDetectionTopicForTest({
         createdById: user.id,
-        name: `${ENGLISH} ${random}`,
+        name: `${ENGLISH} ${randomDigits()}`,
         slug: `topic-entity-${random}`,
       })
 
@@ -92,7 +96,7 @@ describe('entity language detection — users, topics, rss-feed-items', () => {
       const random = createRandomString(10)
       const topicId = await insertLanguageDetectionTopicForTest({
         createdById: user.id,
-        name: `${GERMAN} ${random}`,
+        name: `${GERMAN} ${randomDigits()}`,
         slug: `idem-topic-${random}`,
       })
 
@@ -123,7 +127,7 @@ describe('entity language detection — users, topics, rss-feed-items', () => {
         urlId: urlObj!.id,
         guid: `guid-entity-${random}`,
         itemData: {
-          title: `Item ${random}`,
+          title: 'Item',
           contentSnippet: '<p>&nbsp;</p>',
           'media:description': GERMAN,
         },
@@ -137,7 +141,7 @@ describe('entity language detection — users, topics, rss-feed-items', () => {
       expect(updated.lingua_rs_input_sha256).toHaveLength(32)
       expect(updated.lingua_rs_detected_at).toBeInstanceOf(Date)
       expect(updated.lingua_rs_content_sha256).toEqual(
-        createHash('sha256').update(`Item ${random}\n\n${GERMAN}`, 'utf8').digest(),
+        createHash('sha256').update(`Item\n\n${GERMAN}`, 'utf8').digest(),
       )
     })
 
@@ -151,7 +155,7 @@ describe('entity language detection — users, topics, rss-feed-items', () => {
         rssFeedId: feedId,
         urlId: urlObj!.id,
         guid: `guid-idem-${random}`,
-        itemData: { title: `Idem Item ${random}`, contentSnippet: GERMAN },
+        itemData: { title: 'Idem Item', contentSnippet: GERMAN },
         contentSha256: Buffer.alloc(32, 0),
       })
 

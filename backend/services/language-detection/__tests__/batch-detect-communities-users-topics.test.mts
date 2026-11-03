@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto'
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
@@ -17,6 +18,10 @@ import {
 const ENGLISH = 'The quick brown fox jumps over the lazy dog near the quiet river bank today'
 const GERMAN = 'Die Würde des Menschen ist unantastbar und ihr Schutz ist Verpflichtung aller'
 
+// Topic names are unique case-insensitively, so they need a per-run suffix. Digits only: the detector
+// ignores digits, while letters in a random suffix flip the detected language about 1% of the time.
+const randomDigits = () => String(randomInt(1_000_000_000, 10_000_000_000))
+
 describe('batch-detect — communities, users, topics', () => {
   let user: PrivateUser
 
@@ -33,7 +38,7 @@ describe('batch-detect — communities, users, topics', () => {
       const random = createRandomString(10)
       const communityId = await insertLanguageDetectionCommunityForTest({
         createdById: user.id,
-        name: `${ENGLISH} ${random}`,
+        name: ENGLISH,
         slug: `batch-comm-${random}`,
       })
 
@@ -50,7 +55,7 @@ describe('batch-detect — communities, users, topics', () => {
       const random = createRandomString(10)
       const communityId = await insertLanguageDetectionCommunityForTest({
         createdById: user.id,
-        name: `${GERMAN} ${random}`,
+        name: GERMAN,
         slug: `skip-comm-${random}`,
       })
 
@@ -107,7 +112,7 @@ describe('batch-detect — communities, users, topics', () => {
       const random = createRandomString(10)
       const topicId = await insertLanguageDetectionTopicForTest({
         createdById: user.id,
-        name: `${GERMAN} ${random}`,
+        name: `${GERMAN} ${randomDigits()}`,
         slug: `batch-topic-${random}`,
       })
 
