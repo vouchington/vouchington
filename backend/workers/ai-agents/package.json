@@ -61,8 +61,8 @@
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/ai": "^0.4.0",
-    "@vouchington/queue-errors": "^0.2.0",
+    "@vouchington/ai": "^0.4.1",
+    "@vouchington/queue-errors": "^0.2.1",
     "glide-mq": "^0.20.0",
     "openai": "^7.43.0",
     "p-map": "^7.1.1"

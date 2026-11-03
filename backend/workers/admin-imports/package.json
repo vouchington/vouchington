@@ -22,7 +22,7 @@
     "@queues/background": "workspace:^",
     "@services/admin-imports": "workspace:^",
     "@services/users": "workspace:^",
-    "@vouchington/queue-errors": "^0.2.0",
+    "@vouchington/queue-errors": "^0.2.1",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {

@@ -28,8 +28,8 @@
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@vouchington/ai": "^0.4.0",
-    "@vouchington/queue-errors": "^0.2.0",
+    "@vouchington/ai": "^0.4.1",
+    "@vouchington/queue-errors": "^0.2.1",
     "glide-mq": "^0.20.0",
     "openai": "^7.43.0"
   }
