@@ -6,15 +6,7 @@ import {
   processBoilerplateRemovalDispatcher,
 } from './processors/boilerplate.mts'
 
-type ProcessorDependencies = {
-  processCrawlHostnamesJob?: typeof processCrawlHostnamesJob
-  processBoilerplateRemovalDispatcher?: typeof processBoilerplateRemovalDispatcher
-}
-
-export async function processCrawlDispatchJob(
-  job: Job,
-  dependencies: ProcessorDependencies = {},
-): Promise<unknown> {
+export async function processCrawlDispatchJob(job: Job): Promise<unknown> {
   switch (job.name) {
     case 'crawl.crawl_hostnames_dispatcher':
     case 'crawl.crawl_urls_per_hostname_dispatcher':
@@ -23,11 +15,9 @@ export async function processCrawlDispatchJob(
     case 'crawl.refresh_hostname_crawler_dispatcher':
     case 'crawl.refresh_hostname_crawler':
     case 'crawl.crawl_cleanup':
-      return (dependencies.processCrawlHostnamesJob ?? processCrawlHostnamesJob)(job)
+      return processCrawlHostnamesJob(job)
     case 'crawl.boilerplate_removal_dispatcher': {
-      const candidates = await (
-        dependencies.processBoilerplateRemovalDispatcher ?? processBoilerplateRemovalDispatcher
-      )()
+      const candidates = await processBoilerplateRemovalDispatcher()
       await enqueueBulkBoilerplateRemoval(
         candidates.map(candidate => ({
           hostnameId: candidate.hostname_id,

@@ -13,9 +13,11 @@ import { createCrawl } from '@services/crawls/create'
 import { updateCrawl } from '@services/crawls/update'
 import { addUrls } from '@services/urls/upsert'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, insertTestUrlHostname } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { getMinUUIDv7ForDate } from '@modules/utils'
+import { crawlBoilerplateRemovalWorkConfig } from '@queues/crawl-dispatch/config'
 import { processCrawlDispatchJob } from '../processors.mts'
-import { processBoilerplateRemovalDispatcher } from './boilerplate.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => ({
@@ -70,11 +72,17 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
 
     const user = await createTestUser()
     const hostname = `bp-merged-${randomUUID()}.example.com`
+    // The dispatcher scans every hostname in id order, so an earliest-possible id keeps this fixture first.
+    const hostnameId = await insertTestUrlHostname({
+      id: getMinUUIDv7ForDate(
+        new Date(Date.UTC(1970, 0, 1) + parseInt(randomUUID().slice(0, 3), 16)),
+      ),
+      hostname,
+    })
     const urls = await addUrls(user.id, [
       `https://${hostname}/blog/post-1`,
       `https://${hostname}/blog/post-2`,
     ])
-    const hostnameId = urls[0]!.hostname.id
     onTestFinished(async () => {
       try {
         await updateUrlHostname(hostnameId, { is_crawlable: false })
@@ -98,12 +106,11 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
       })
     }
 
-    const dispatched = await runJob('crawl.boilerplate_removal_dispatcher', {}, current =>
-      processCrawlDispatchJob(current, {
-        processBoilerplateRemovalDispatcher: () => processBoilerplateRemovalDispatcher(hostnameId),
-      }),
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(crawlBoilerplateRemovalWorkConfig, { batch_size: 1 }),
     )
-    expect(dispatched).toBeGreaterThan(0)
+    const dispatched = await runJob('crawl.boilerplate_removal_dispatcher')
+    expect(dispatched).toBe(1)
     expect(
       (
         await crawlDispatchQueue.searchJobs({
