@@ -67,26 +67,26 @@ describe('SES inbound enqueues', () => {
   })
 
   it('retries only failed process jobs that still have copyright objects', async () => {
-    const current = {
-      sesMessageId: 'ses-current',
-      objectKey: 'copyright-incoming/ses-current',
-    }
+    const sesMessageId = `ses-${crypto.randomUUID()}`
+    const current = { sesMessageId, objectKey: `copyright-incoming/${sesMessageId}` }
     const currentId = getSesInboundProcessJobOptions(current).jobId
     const retryCurrent = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const retryOther = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-    const enqueueBulk = vi.fn<() => Promise<never[]>>().mockResolvedValue([])
 
     await expect(
-      enqueueOrRetryBulkSesInboundProcess([current], undefined, {
-        enqueueBulk,
-        getFailedJobs: async () => [
+      enqueueOrRetryBulkSesInboundProcess(
+        [current],
+        [
           { id: currentId, name: SES_INBOUND_PROCESS_JOB.name, retry: retryCurrent },
           { id: 'other-process', name: SES_INBOUND_PROCESS_JOB.name, retry: retryOther },
           { id: currentId, name: SES_INBOUND_RECONCILE_JOB.name, retry: retryOther },
         ],
-      }),
+      ),
     ).resolves.toBe(1)
-    expect(enqueueBulk).toHaveBeenCalledWith([current])
+    expect(await background.getJob(currentId)).toMatchObject({
+      name: SES_INBOUND_PROCESS_JOB.name,
+      data: current,
+    })
     expect(retryCurrent).toHaveBeenCalledOnce()
     expect(retryOther).not.toHaveBeenCalled()
   })
