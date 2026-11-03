@@ -1,9 +1,6 @@
 import type { Job, Queue } from 'glide-mq'
 import { background } from '../queues/background/queues.mts'
-import {
-  createBulkDistributeActivityEnqueue,
-  distributionPageJobId,
-} from '../queues/activitypub/enqueues/delivery.mts'
+import { distributionPageJobId } from '../queues/activitypub/enqueues/delivery.mts'
 import { ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB } from '../queues/background/enqueues/activitypub-jobs.mts'
 import type {
   DistributeActivityData,
@@ -15,35 +12,20 @@ import {
 } from '../services/entity-relations/index.mts'
 import { createRemoteActorFixture } from './ap-inbox-activity-fixtures.mts'
 
-export function createRecoveryBulkEnqueues(
+export function createRecoveryBulkEnqueue(
   queue: Queue<DistributeActivityData | RecoverOutboundDistributionData>,
-  queueName: string,
-  queuePrefix: string,
 ) {
-  const isolatedBulkQueue = {
-    name: queueName,
-    priorityKind: 'ranked' as const,
-    addBulk: (jobs: Parameters<typeof queue.addBulk>[0]) => queue.addBulk(jobs),
-  }
-  return {
-    // The logical name matches the real background dispatch context; the native namespace stays isolated.
-    production: createBulkDistributeActivityEnqueue({
-      queue: isolatedBulkQueue,
-      queueName: 'background',
-      queuePrefix,
-    }),
-    raw: (inputs: DistributeActivityData[]) =>
-      queue.addBulk(
-        inputs.map(data => ({
-          name: ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name,
-          data,
-          opts: {
-            ...ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.options,
-            jobId: distributionPageJobId(data),
-          },
-        })),
-      ),
-  }
+  return (inputs: DistributeActivityData[]) =>
+    queue.addBulk(
+      inputs.map(data => ({
+        name: ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name,
+        data,
+        opts: {
+          ...ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.options,
+          jobId: distributionPageJobId(data),
+        },
+      })),
+    )
 }
 
 export async function addRemoteFollowerAudience(sourceUserId: string): Promise<void> {

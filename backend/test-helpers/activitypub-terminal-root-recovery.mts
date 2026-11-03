@@ -23,7 +23,7 @@ import { background } from '../queues/background/queues.mts'
 import { createFederatedUser } from './ap-inbox-activity-fixtures.mts'
 import {
   addRemoteFollowerAudience,
-  createRecoveryBulkEnqueues,
+  createRecoveryBulkEnqueue,
   getActivityDeliveryJobs,
   getRetainedContinuationId,
 } from './activitypub-recovery-fixtures.mts'
@@ -50,7 +50,7 @@ export async function assertTerminalActivityPubRootRecovery(
     queueName,
     connection,
   )
-  const bulkEnqueues = createRecoveryBulkEnqueues(queue, queueName, workerQueuePrefix ?? 'glide')
+  const enqueueRecoveryBulk = createRecoveryBulkEnqueue(queue)
   const continuationJobs: Array<Job<DistributeActivityData | RecoverOutboundDistributionData>> = []
   const firstSettled = Promise.withResolvers<void>()
   let firstWorker: Worker<DistributeActivityData | RecoverOutboundDistributionData> | undefined
@@ -122,7 +122,7 @@ export async function assertTerminalActivityPubRootRecovery(
       {
         queue,
         // The sweep must perform WATCH-fenced reactivation for the stable root ID.
-        enqueueBulk: options.withReceipt ? bulkEnqueues.production : bulkEnqueues.raw,
+        enqueueBulk: enqueueRecoveryBulk,
         // Keep recovery continuations in this isolated queue.
         enqueueNext: async (data, options) => {
           const continuation = await queue.add(scheduled.template.name, data, {
