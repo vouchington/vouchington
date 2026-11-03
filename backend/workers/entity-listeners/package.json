@@ -37,7 +37,6 @@
     "@queues/vote-aggregation": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/classifier-runs": "workspace:^",
-    "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/community-agent-prompts": "workspace:^",
     "@services/copyright-notices": "workspace:^",
