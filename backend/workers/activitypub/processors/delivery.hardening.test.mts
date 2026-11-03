@@ -1,21 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import type { isFederationEnabledForUser } from '@services/users'
-import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
+import { createTestUserDirect, insertTestPost, readAllQueueJobs } from '@voucha/test-helpers'
+import { createFederatedUser } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
+import {
+  createRemoteFollowersForTest,
+  stubActivityPubSocketForTest,
+} from '@voucha/test-helpers/activitypub-outbound-fixtures'
+import { background } from '@queues/background/queues'
 import { observePostgresReadRoutingForTest } from '@voucha/test-helpers/postgres-read-routing'
 import { updateUserFields } from '@services/users/update-fields'
 import { getOrCreateActorKeyPair } from '@services/ap-actor-keys'
-import type { enqueueBulkDeliverActivity } from '@queues/activitypub/enqueues/delivery'
+import { getUndoFollowActivityId } from '@queues/activitypub/enqueues/delivery'
 import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
-import { insertUndispatchedTestUserFollow } from '@voucha/test-helpers/activitypub-distribution-state'
-import { insertPendingOutboundLikeForTest } from '@voucha/test-helpers/entities/post-election-votes'
-import {
-  type deliverActivityToInbox,
-  type prepareActivityDistributionPage,
-  listPendingOutboundDistributionPage,
-  markActivityDistributionComplete,
-} from '@services/activitypub-delivery'
 import type { DistributeActivityData } from '@queues/background/enqueues/activitypub-domain'
 import { deliverActivity, distributeActivity } from './delivery.mts'
 import {
@@ -26,61 +23,65 @@ import {
   LEGACY_UNDO_LIKE_DATA,
 } from '@voucha/test-helpers/activitypub-distribution-worker-fixtures'
 
-const enqueueBulkDeliverActivityMock = vi.fn<typeof enqueueBulkDeliverActivity>()
-const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
-const prepareActivityDistributionPageMock = vi.fn<typeof prepareActivityDistributionPage>()
+const DELIVER_JOB_NAME = 'activitypub.deliverActivity'
 
-function distributeDeps() {
-  return {
-    enqueueBulkDeliverActivity: enqueueBulkDeliverActivityMock,
-    isFederationEnabledForUser: isFederationEnabledForUserMock,
-    prepareActivityDistributionPage: prepareActivityDistributionPageMock,
+async function deliveriesFor(activityId: string) {
+  return (await readAllQueueJobs(background))
+    .filter(
+      job =>
+        job.name === DELIVER_JOB_NAME &&
+        (job.data as { activityId?: string }).activityId === activityId,
+    )
+    .map(job => job.data as { inboxUrl: string })
+}
+
+// Runs the distribution with no database read allowed and no delivery enqueued.
+async function distributeWithoutReads(data: DistributeActivityData) {
+  const routing = await observePostgresReadRoutingForTest()
+  try {
+    const result = await routing.run(() => distributeActivity(data))
+    expect(routing.primaryAcquisitions()).toBe(0)
+    expect(routing.replicaAcquisitions()).toBe(0)
+    return result
+  } finally {
+    await routing.close()
+    expect(await deliveriesFor(data.activityId)).toEqual([])
   }
 }
 
-describe('distributeActivity', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    isFederationEnabledForUserMock.mockResolvedValue(true)
-    enqueueBulkDeliverActivityMock.mockResolvedValue(undefined as never)
-    prepareActivityDistributionPageMock.mockResolvedValue({
-      nextRemoteActorId: 'remote-actor-1',
-      inboxUrls: ['https://a.example/inbox'],
-      hasMore: false,
-    })
-  })
+async function followScene({ sourceFederated = true, targetFederated = true } = {}) {
+  const source = sourceFederated ? await createFederatedUser() : await createTestUserDirect()
+  const target = targetFederated ? await createFederatedUser() : await createTestUserDirect()
+  const followers = await createRemoteFollowersForTest(source.id, 2)
+  const followData: DistributeActivityData = {
+    activityId: mintUUIDv7(),
+    activityType: 'Follow',
+    sourceUserId: source.id,
+    targetUserId: target.id,
+  }
+  return { source, target, followers, followData }
+}
 
+const expiredActivityId = () =>
+  getMinUUIDv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
+
+describe('distributeActivity', () => {
   it.each([
     ['UndoFollow', LEGACY_UNDO_FOLLOW_DATA],
     ['UndoLike', LEGACY_UNDO_LIKE_DATA],
   ])('drops a %s with no original id', async (_name, data) => {
-    await expect(distributeActivity(data, distributeDeps())).resolves.toEqual({
+    expect(await distributeWithoutReads(data)).toEqual({
       enqueued: 0,
       completed: true,
       reason: 'missing-original-activity-id',
     })
-    expect(prepareActivityDistributionPageMock).not.toHaveBeenCalled()
   })
 
   it.each([
-    [
-      'an expired Follow',
-      {
-        ...FOLLOW_DATA,
-        activityId: getMinUUIDv7ForDate(
-          new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000),
-        ),
-      },
-      'expired-activity',
-    ],
+    ['an expired Follow', { ...FOLLOW_DATA, activityId: expiredActivityId() }, 'expired-activity'],
     [
       'an UndoFollow of an expired Follow',
-      {
-        ...UNDO_FOLLOW_DATA,
-        originalActivityId: getMinUUIDv7ForDate(
-          new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000),
-        ),
-      },
+      { ...UNDO_FOLLOW_DATA, originalActivityId: expiredActivityId() },
       'expired-activity',
     ],
     [
@@ -91,41 +92,43 @@ describe('distributeActivity', () => {
   ] as const)(
     'settles %s without opt-in reads, paging, or fan-out so recovery stops rescanning it',
     async (_name, data, reason) => {
-      await expect(distributeActivity(data, distributeDeps())).resolves.toEqual({
-        enqueued: 0,
-        completed: true,
-        reason,
-      })
-      expect(isFederationEnabledForUserMock).not.toHaveBeenCalled()
-      expect(prepareActivityDistributionPageMock).not.toHaveBeenCalled()
-      expect(enqueueBulkDeliverActivityMock).not.toHaveBeenCalled()
+      expect(await distributeWithoutReads(data)).toEqual({ enqueued: 0, completed: true, reason })
     },
   )
 
   it('does not fan out when the source disables federation', async () => {
-    isFederationEnabledForUserMock.mockResolvedValueOnce(false)
-    await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).resolves.toEqual({
+    const { followData } = await followScene({ sourceFederated: false })
+    await expect(distributeActivity(followData)).resolves.toEqual({
       enqueued: 0,
       completed: true,
     })
-    expect(prepareActivityDistributionPageMock).not.toHaveBeenCalled()
+    expect(await deliveriesFor(followData.activityId)).toEqual([])
   })
 
   it('does not disclose a Follow or UndoFollow target that disables federation', async () => {
-    isFederationEnabledForUserMock.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
-    await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).resolves.toEqual({
+    const { source, target, followData } = await followScene({ targetFederated: false })
+    await expect(distributeActivity(followData)).resolves.toEqual({
       enqueued: 0,
       completed: true,
     })
-    isFederationEnabledForUserMock.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
-    await expect(distributeActivity(UNDO_FOLLOW_DATA, distributeDeps())).resolves.toEqual({
+    const undo: DistributeActivityData = {
+      activityId: getUndoFollowActivityId(followData.activityId),
+      activityType: 'UndoFollow',
+      originalActivityId: followData.activityId,
+      sourceUserId: source.id,
+      targetUserId: target.id,
+    }
+    await expect(distributeActivity(undo)).resolves.toEqual({
       enqueued: 0,
       completed: true,
     })
-    expect(prepareActivityDistributionPageMock).not.toHaveBeenCalled()
+    expect(await deliveriesFor(followData.activityId)).toEqual([])
+    expect(await deliveriesFor(undo.activityId)).toEqual([])
   })
 
   it('suppresses a Like when its post is no longer public before fan-out', async () => {
+    const source = await createFederatedUser()
+    await createRemoteFollowersForTest(source.id, 1)
     const author = await createTestUserDirect()
     const postId = await insertTestPost({
       createdById: author.id,
@@ -135,47 +138,66 @@ describe('distributeActivity', () => {
       broadcast: 'users',
       privacy: 'private',
     })
+    const activityId = mintUUIDv7()
     await expect(
-      distributeActivity(
-        {
-          activityId: LIKE_DATA.activityId,
-          activityType: 'Like',
-          sourceUserId: LIKE_DATA.sourceUserId,
-          targetPostId: postId,
-        },
-        distributeDeps(),
-      ),
+      distributeActivity({
+        activityId,
+        activityType: 'Like',
+        sourceUserId: source.id,
+        targetPostId: postId,
+      }),
     ).resolves.toEqual({
       enqueued: 0,
       completed: true,
     })
-    expect(prepareActivityDistributionPageMock).not.toHaveBeenCalled()
-    expect(enqueueBulkDeliverActivityMock).not.toHaveBeenCalled()
+    expect(await deliveriesFor(activityId)).toEqual([])
   })
 
   it('admits the page and passes its cursor to the next dispatcher job', async () => {
-    prepareActivityDistributionPageMock.mockResolvedValueOnce({
-      nextRemoteActorId: 'remote-actor-2',
-      inboxUrls: ['https://a.example/inbox', 'https://b.example/inbox'],
-      hasMore: true,
-    })
-    await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).resolves.toEqual({
-      enqueued: 2,
+    const { followers, followData } = await followScene()
+    const [first, second] = followers.toSorted((a, b) => (a.id < b.id ? -1 : 1)) as [
+      (typeof followers)[number],
+      (typeof followers)[number],
+    ]
+
+    await expect(distributeActivity(followData, 1)).resolves.toEqual({
+      enqueued: 1,
       completed: false,
-      cursor: 'remote-actor-2',
+      cursor: first.id,
     })
-    expect(prepareActivityDistributionPageMock).toHaveBeenCalledWith('user-1', null, undefined)
-    expect(enqueueBulkDeliverActivityMock).toHaveBeenCalledWith([
-      { ...FOLLOW_DATA, inboxUrl: 'https://a.example/inbox' },
-      { ...FOLLOW_DATA, inboxUrl: 'https://b.example/inbox' },
+    expect(await deliveriesFor(followData.activityId)).toEqual([
+      { ...followData, inboxUrl: first.inbox_url },
     ])
+
+    await expect(distributeActivity({ ...followData, cursor: first.id }, 1)).resolves.toEqual({
+      enqueued: 1,
+      completed: true,
+    })
+    expect(
+      (await deliveriesFor(followData.activityId)).toSorted((a, b) =>
+        a.inboxUrl < b.inboxUrl ? -1 : 1,
+      ),
+    ).toEqual(
+      [
+        { ...followData, inboxUrl: first.inbox_url },
+        { ...followData, cursor: first.id, inboxUrl: second.inbox_url },
+      ].toSorted((a, b) => (a.inboxUrl < b.inboxUrl ? -1 : 1)),
+    )
   })
 
   it('retries the same page when Valkey rejects delivery admission', async () => {
+    const { followers, followData } = await followScene()
     const error = new Error('Valkey rejected the batch')
-    enqueueBulkDeliverActivityMock.mockRejectedValueOnce(error)
-    await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).rejects.toBe(error)
-    expect(prepareActivityDistributionPageMock).toHaveBeenCalledTimes(1)
+    const spy = vi.spyOn(background, 'addBulk').mockRejectedValueOnce(error)
+    onTestFinished(() => spy.mockRestore())
+
+    await expect(distributeActivity(followData)).rejects.toBe(error)
+    expect(await deliveriesFor(followData.activityId)).toEqual([])
+
+    await expect(distributeActivity(followData)).resolves.toEqual({ enqueued: 2, completed: true })
+    expect(
+      (await deliveriesFor(followData.activityId)).map(job => job.inboxUrl).toSorted(),
+    ).toEqual(followers.map(follower => follower.inbox_url).toSorted())
   })
 })
 
@@ -225,75 +247,26 @@ describe('ActivityPub terminal eligibility reads', () => {
       updateUserFields(target.id, { is_fediverse_federation_enabled: true }),
     ])
     await getOrCreateActorKeyPair(source.id)
-    const send = vi.fn<typeof deliverActivityToInbox>().mockResolvedValue(undefined)
+    const captured = stubActivityPubSocketForTest()
     const routing = await observePostgresReadRoutingForTest()
     try {
       await expect(
         routing.run(() =>
-          deliverActivity(
-            {
-              activityId: mintUUIDv7(),
-              activityType: 'Follow',
-              sourceUserId: source.id,
-              targetUserId: target.id,
-              inboxUrl: 'https://follower.example/inbox',
-            },
-            { deliverActivityToInbox: send },
-          ),
+          deliverActivity({
+            activityId: mintUUIDv7(),
+            activityType: 'Follow',
+            sourceUserId: source.id,
+            targetUserId: target.id,
+            inboxUrl: 'https://follower.example/inbox',
+          }),
         ),
       ).resolves.toEqual({ delivered: true })
-      expect(send).toHaveBeenCalledOnce()
+      expect(captured).toHaveLength(1)
       // Two opt-in reads and the actor-key read must all reach the writer before HTTP delivery.
       expect(routing.primaryAcquisitions()).toBe(3)
       expect(routing.replicaAcquisitions()).toBe(0)
     } finally {
       await routing.close()
     }
-  })
-})
-
-const ZERO_UUID = '00000000-0000-0000-0000-000000000000'
-async function settleLikeTheDistributeProcessor(data: DistributeActivityData) {
-  const result = await distributeActivity(data)
-  expect(result).toMatchObject({ enqueued: 0, completed: true, reason: 'expired-activity' })
-  await markActivityDistributionComplete(data)
-}
-
-describe('expired outbound activities and recovery sweeps', () => {
-  it('settles an expired pending Follow and Like so a recovery sweep never redistributes them', async () => {
-    const source = await createTestUserDirect()
-    const target = await createTestUserDirect()
-    const postId = await insertTestPost({
-      createdById: source.id,
-      title: 'Expired outbound activity recovery',
-      slug: `expired-outbound-recovery-${randomUUID()}`,
-      markdown: 'Expired Like',
-    })
-    const expiredId = () =>
-      getMinUUIDv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
-    const followId = await insertUndispatchedTestUserFollow(source.id, target.id, expiredId())
-    const likeId = expiredId()
-    await insertPendingOutboundLikeForTest(source.id, postId, likeId)
-    const page = (kind: 'follows' | 'votes', owner: string) =>
-      listPendingOutboundDistributionPage(kind, `${owner}__${ZERO_UUID}`, 50)
-    const pendingFollow = async () =>
-      (await page('follows', source.id)).rows.find(row => row.sourceUserId === source.id)
-    const pendingLike = async () =>
-      (await page('votes', postId)).rows.find(
-        row => row.source === 'votes' && row.activityId === likeId,
-      )
-    expect(await pendingFollow()).toBeDefined()
-    expect(await pendingLike()).toBeDefined()
-    const [sourceUserId, recovery] = [source.id, true as const]
-    await settleLikeTheDistributeProcessor({
-      ...{ activityType: 'Follow' as const, activityId: followId, targetUserId: target.id },
-      ...{ sourceUserId, recovery },
-    })
-    await settleLikeTheDistributeProcessor({
-      ...{ activityType: 'Like' as const, activityId: likeId, targetPostId: postId },
-      ...{ sourceUserId, recovery },
-    })
-    expect(await pendingFollow()).toBeUndefined()
-    expect(await pendingLike()).toBeUndefined()
   })
 })

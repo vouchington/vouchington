@@ -2,7 +2,6 @@ import { QueueEvents, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { distributeActivity, deliverActivity } from '../processors/delivery.mts'
-import { deliverActivityToInbox } from '@services/activitypub-delivery'
 import { getOrCreateActorKeyPair } from '@services/ap-actor-keys'
 import '@services/bookmarks'
 import { getOrFetchRemoteActorByKeyId } from '@services/remote-actors'
@@ -21,10 +20,12 @@ import {
   type DistributeActivityData,
 } from '@queues/activitypub/enqueues/delivery'
 import { getActorUri, getPostUri } from '@modules/activitypub-uris'
-import { generateRsaSha256KeyPair, verifySignature } from '@modules/http-signatures'
+import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { createTestPost, createTestUserDirect, readAllQueueJobs } from '@voucha/test-helpers'
-
-type DeliverActivityToInboxInput = Parameters<typeof deliverActivityToInbox>[0]
+import {
+  isCapturedActivityPubRequestSigned,
+  stubActivityPubSocketForTest,
+} from '@voucha/test-helpers/activitypub-outbound-fixtures'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
@@ -115,46 +116,6 @@ async function findDeliveredJob(
   return match as { name: string; data: DeliverActivityData }
 }
 
-type CapturedRequest = { url: string; headers: Record<string, string>; body: string }
-
-// Real deliverActivityToInbox (real HTTP-signature construction) with only its innermost network
-// I/O stubbed — the same boundary deliver-activity.test.mts and inbox.test.mts use throughout
-// this codebase. `captured` records what the real code would have sent over the wire.
-function deliverToMockedNetwork(captured: CapturedRequest[]) {
-  return (input: DeliverActivityToInboxInput) =>
-    deliverActivityToInbox(input, {
-      validateUrl: vi
-        .fn<VitestLooseMock>()
-        .mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
-      fetch: vi.fn<VitestLooseMock>(async (url: string, init: Record<string, unknown>) => {
-        captured.push({
-          url,
-          headers: init.headers as Record<string, string>,
-          body: init.body as string,
-        })
-        return new Response(null, { status: 202 })
-      }),
-    })
-}
-
-// Verifies a captured outbound request's HTTP Signature against `publicKeyPem`, deriving
-// path/host from the captured URL the same way inbox.mts derives them from a real inbound
-// request — see @modules/http-signatures's buildSignatureHeaders/verifySignature asymmetry
-// (sign from a full URL, verify from separate path+host).
-function verifyCapturedSignature(captured: CapturedRequest, publicKeyPem: string): boolean {
-  const parsed = new URL(captured.url)
-  return verifySignature(
-    'POST',
-    parsed.pathname + parsed.search,
-    parsed.host,
-    captured.body,
-    captured.headers.signature!,
-    captured.headers.digest!,
-    captured.headers.date!,
-    publicKeyPem,
-  ).valid
-}
-
 async function removeOwnedActivityJobs(sourceUserId: string): Promise<void> {
   const jobs = await readAllQueueJobs(activitypub)
   await Promise.all(
@@ -233,15 +194,13 @@ describe('ActivityPub outbound round trip (Phase C6)', () => {
       expect(distributeResult.enqueued).toBeGreaterThan(0)
 
       const deliverJob = await findDeliveredJob(distributeJob.data.activityId)
-      const captured: CapturedRequest[] = []
-      const deliverResult = await deliverActivity(deliverJob.data, {
-        deliverActivityToInbox: deliverToMockedNetwork(captured),
-      })
+      const captured = stubActivityPubSocketForTest()
+      const deliverResult = await deliverActivity(deliverJob.data)
 
       expect(deliverResult).toEqual({ delivered: true })
       expect(captured).toHaveLength(1)
       expect(captured[0]!.url).toBe(remoteFollower.inbox_url)
-      expect(verifyCapturedSignature(captured[0]!, sourcePublicKeyPem)).toBe(true)
+      expect(isCapturedActivityPubRequestSigned(captured[0]!, sourcePublicKeyPem)).toBe(true)
       expect(JSON.parse(captured[0]!.body)).toMatchObject({
         type: 'Follow',
         actor: getActorUri(sourceUser.id),
@@ -274,15 +233,13 @@ describe('ActivityPub outbound round trip (Phase C6)', () => {
       expect(distributeResult.enqueued).toBeGreaterThan(0)
 
       const deliverJob = await findDeliveredJob(post.id)
-      const captured: CapturedRequest[] = []
-      const deliverResult = await deliverActivity(deliverJob.data, {
-        deliverActivityToInbox: deliverToMockedNetwork(captured),
-      })
+      const captured = stubActivityPubSocketForTest()
+      const deliverResult = await deliverActivity(deliverJob.data)
 
       expect(deliverResult).toEqual({ delivered: true })
       expect(captured).toHaveLength(1)
       expect(captured[0]!.url).toBe(remoteFollower.inbox_url)
-      expect(verifyCapturedSignature(captured[0]!, sourcePublicKeyPem)).toBe(true)
+      expect(isCapturedActivityPubRequestSigned(captured[0]!, sourcePublicKeyPem)).toBe(true)
       expect(JSON.parse(captured[0]!.body)).toMatchObject({
         type: 'Like',
         actor: getActorUri(sourceUser.id),

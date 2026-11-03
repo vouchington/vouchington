@@ -1,15 +1,29 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createHash, randomUUID } from 'node:crypto'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { sentryCaptureMessageMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import {
   SES_INBOUND_PROCESS_JOB,
   SES_INBOUND_RECONCILE_JOB,
 } from '@queues/background/enqueues/ses-inbound-jobs'
+import { background } from '@queues/background/queues'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { stubSesInboundS3ForTest } from '@voucha/test-helpers/ses-inbound-s3'
+import { getSesInboundProcessJobOptions } from '@ts-shared/ses-inbound-contract'
 import { sesInboundWorkConfig } from '@queues/ses-inbound/config'
 import { processSesInboundEmail, reconcileSesInboundEmails } from './processors.mts'
 import { listCopyrightSesInboundObjects } from './processors/s3.mts'
 
-type ReconcileDependencies = Required<NonNullable<Parameters<typeof reconcileSesInboundEmails>[1]>>
+const continuationJobId = (token: string) =>
+  `ses_inbound_reconcile_continuation__${createHash('sha256').update(token).digest('hex')}`
+
+function ownedKeys() {
+  const suffix = randomUUID()
+  return [`ses-a-${suffix}`, `ses-b-${suffix}`].map(sesMessageId => ({
+    sesMessageId,
+    objectKey: `copyright-incoming/${sesMessageId}`,
+  }))
+}
 
 describe('reconcileSesInboundEmails without an SES inbound bucket', () => {
   afterEach(() => {
@@ -31,16 +45,14 @@ describe('reconcileSesInboundEmails without an SES inbound bucket', () => {
     'skips loudly instead of throwing when S3_BUCKET_SES_INBOUND is %j',
     async bucket => {
       vi.stubEnv('S3_BUCKET_SES_INBOUND', bucket)
-      const listCopyrightSesInboundObjects = vi.fn<() => Promise<never>>()
+      const s3Calls = stubSesInboundS3ForTest()
 
-      await expect(
-        reconcileSesInboundEmails({}, { listCopyrightSesInboundObjects }),
-      ).resolves.toEqual({
+      await expect(reconcileSesInboundEmails({})).resolves.toEqual({
         enqueued: 0,
         hasMore: false,
       })
 
-      expect(listCopyrightSesInboundObjects).not.toHaveBeenCalled()
+      expect(s3Calls).toEqual([])
       expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith(
         'scheduled_job_config_missing',
         {
@@ -61,120 +73,89 @@ describe('SES inbound reconciliation pages', () => {
 
   it('caps a run and enqueues one token continuation', async () => {
     vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
-    const restore = overrideDynamicConfigFieldsForTest(sesInboundWorkConfig, {
-      reconcile_max_pages_per_run: 1,
+    await sesInboundWorkConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(sesInboundWorkConfig, { reconcile_max_pages_per_run: 1 }),
+    )
+    const [first] = ownedKeys()
+    const token = `opaque:${randomUUID()}`
+    const s3Calls = stubSesInboundS3ForTest({
+      listPages: { '': { keys: [first!.objectKey], next: token } },
     })
-    try {
-      const listObjects = vi
-        .fn<(token?: string) => Promise<{ objectKeys: string[]; nextContinuationToken?: string }>>()
-        .mockResolvedValue({
-          objectKeys: ['copyright-incoming/ses-a'],
-          nextContinuationToken: 'opaque:token',
-        })
-      const enqueueProcess = vi
-        .fn<ReconcileDependencies['enqueueOrRetryBulkSesInboundProcess']>()
-        .mockResolvedValue(0)
-      const enqueueContinuation = vi
-        .fn<ReconcileDependencies['enqueueSesInboundReconcileContinuation']>()
-        .mockResolvedValue(null)
-      const readFailedJobs = vi
-        .fn<ReconcileDependencies['readRetainedFailedSesInboundProcessJobs']>()
-        .mockResolvedValue([])
 
-      await expect(
-        reconcileSesInboundEmails(
-          {},
-          {
-            listCopyrightSesInboundObjects: listObjects,
-            enqueueOrRetryBulkSesInboundProcess: enqueueProcess,
-            enqueueSesInboundReconcileContinuation: enqueueContinuation,
-            readRetainedFailedSesInboundProcessJobs: readFailedJobs,
-          },
-        ),
-      ).resolves.toEqual({ enqueued: 1, hasMore: true })
-      expect(listObjects).toHaveBeenCalledExactlyOnceWith(undefined)
-      expect(readFailedJobs).toHaveBeenCalledOnce()
-      expect(enqueueProcess).toHaveBeenCalledWith(
-        [{ sesMessageId: 'ses-a', objectKey: 'copyright-incoming/ses-a' }],
-        [],
-      )
-      expect(enqueueContinuation).toHaveBeenCalledExactlyOnceWith('opaque:token')
-    } finally {
-      restore()
-    }
+    await expect(reconcileSesInboundEmails({})).resolves.toEqual({ enqueued: 1, hasMore: true })
+
+    expect(s3Calls).toEqual([
+      {
+        command: 'ListObjectsV2Command',
+        input: { Bucket: 'ses-inbound-test', Prefix: 'copyright-incoming/' },
+      },
+    ])
+    const processJob = await background.getJob(getSesInboundProcessJobOptions(first!).jobId)
+    expect(processJob?.name).toBe(SES_INBOUND_PROCESS_JOB.name)
+    expect(processJob?.data).toEqual(first)
+    const continuation = await background.getJob(continuationJobId(token))
+    expect(continuation?.name).toBe(SES_INBOUND_RECONCILE_JOB.name)
+    expect(continuation?.data).toEqual({ continuationToken: token })
   })
 
   it('resumes at an incoming token and does not continue after the last page', async () => {
     vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
-    const listObjects = vi
-      .fn<(token?: string) => Promise<{ objectKeys: string[] }>>()
-      .mockResolvedValue({ objectKeys: [] })
-    const enqueueContinuation = vi
-      .fn<ReconcileDependencies['enqueueSesInboundReconcileContinuation']>()
-      .mockResolvedValue(null)
-    await expect(
-      reconcileSesInboundEmails(
-        { continuationToken: 'resume:here' },
-        {
-          listCopyrightSesInboundObjects: listObjects,
-          enqueueSesInboundReconcileContinuation: enqueueContinuation,
-          readRetainedFailedSesInboundProcessJobs: async () => [],
+    const resumeToken = `resume:${randomUUID()}`
+    const s3Calls = stubSesInboundS3ForTest({ listPages: { [resumeToken]: { keys: [] } } })
+    const add = vi.spyOn(background, 'add')
+    onTestFinished(() => add.mockRestore())
+
+    await expect(reconcileSesInboundEmails({ continuationToken: resumeToken })).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
+
+    expect(s3Calls).toEqual([
+      {
+        command: 'ListObjectsV2Command',
+        input: {
+          Bucket: 'ses-inbound-test',
+          Prefix: 'copyright-incoming/',
+          ContinuationToken: resumeToken,
         },
-      ),
-    ).resolves.toEqual({ enqueued: 0, hasMore: false })
-    expect(listObjects).toHaveBeenCalledExactlyOnceWith('resume:here')
-    expect(enqueueContinuation).not.toHaveBeenCalled()
+      },
+    ])
+    expect(add).not.toHaveBeenCalled()
   })
 
   it('reads retained failed jobs once and filters the same list across pages', async () => {
     vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
-    const restore = overrideDynamicConfigFieldsForTest(sesInboundWorkConfig, {
-      reconcile_max_pages_per_run: 2,
+    await sesInboundWorkConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(sesInboundWorkConfig, { reconcile_max_pages_per_run: 2 }),
+    )
+    const [first, second] = ownedKeys()
+    const token = `next:${randomUUID()}`
+    stubSesInboundS3ForTest({
+      listPages: {
+        '': { keys: [first!.objectKey], next: token },
+        [token]: { keys: [second!.objectKey] },
+      },
     })
-    try {
-      const failedJob = {
-        id: 'failed-process',
-        name: SES_INBOUND_PROCESS_JOB.name,
-        retry: vi.fn<() => Promise<void>>(),
-      }
-      const failedJobs = [failedJob]
-      const readFailedJobs = vi
-        .fn<ReconcileDependencies['readRetainedFailedSesInboundProcessJobs']>()
-        .mockResolvedValue(failedJobs)
-      const listObjects = vi
-        .fn<ReconcileDependencies['listCopyrightSesInboundObjects']>()
-        .mockResolvedValueOnce({
-          objectKeys: ['copyright-incoming/ses-a'],
-          nextContinuationToken: 'next',
-        })
-        .mockResolvedValueOnce({ objectKeys: ['copyright-incoming/ses-b'] })
-      const enqueueProcess = vi
-        .fn<ReconcileDependencies['enqueueOrRetryBulkSesInboundProcess']>()
-        .mockResolvedValue(0)
+    const failedJobs = [first!, second!].map(data => ({
+      id: getSesInboundProcessJobOptions(data).jobId!,
+      name: SES_INBOUND_PROCESS_JOB.name,
+      retry: vi.fn<() => Promise<void>>(),
+    }))
+    const searchJobs = vi
+      .spyOn(background, 'searchJobs')
+      .mockResolvedValue(failedJobs as unknown as Awaited<ReturnType<typeof background.searchJobs>>)
+    onTestFinished(() => searchJobs.mockRestore())
 
-      await expect(
-        reconcileSesInboundEmails(
-          {},
-          {
-            listCopyrightSesInboundObjects: listObjects,
-            enqueueOrRetryBulkSesInboundProcess: enqueueProcess,
-            readRetainedFailedSesInboundProcessJobs: readFailedJobs,
-          },
-        ),
-      ).resolves.toEqual({ enqueued: 2, hasMore: false })
-      expect(readFailedJobs).toHaveBeenCalledOnce()
-      expect(enqueueProcess).toHaveBeenNthCalledWith(
-        1,
-        [{ sesMessageId: 'ses-a', objectKey: 'copyright-incoming/ses-a' }],
-        failedJobs,
+    await expect(reconcileSesInboundEmails({})).resolves.toEqual({ enqueued: 2, hasMore: false })
+
+    expect(searchJobs).toHaveBeenCalledOnce()
+    for (const failedJob of failedJobs) expect(failedJob.retry).toHaveBeenCalledOnce()
+    for (const data of [first!, second!]) {
+      expect((await background.getJob(getSesInboundProcessJobOptions(data).jobId!))?.data).toEqual(
+        data,
       )
-      expect(enqueueProcess).toHaveBeenNthCalledWith(
-        2,
-        [{ sesMessageId: 'ses-b', objectKey: 'copyright-incoming/ses-b' }],
-        failedJobs,
-      )
-    } finally {
-      restore()
     }
   })
 
@@ -184,74 +165,69 @@ describe('SES inbound reconciliation pages', () => {
     { continuationToken: 12 },
     { continuationToken: 'x'.repeat(1025) },
   ])('rejects invalid job data before S3 work: %j', async data => {
-    const listObjects = vi.fn<() => Promise<never>>()
-    await expect(
-      reconcileSesInboundEmails(data as never, {
-        listCopyrightSesInboundObjects: listObjects,
-      }),
-    ).rejects.toThrow('SES inbound')
-    expect(listObjects).not.toHaveBeenCalled()
+    const s3Calls = stubSesInboundS3ForTest()
+    await expect(reconcileSesInboundEmails(data as never)).rejects.toThrow('SES inbound')
+    expect(s3Calls).toEqual([])
   })
 })
 
-type ProcessDependencies = Required<NonNullable<Parameters<typeof processSesInboundEmail>[1]>>
-
-function createDependencySpies() {
-  return {
-    copySesInboundObjectToCopyrightEvidence:
-      vi.fn<ProcessDependencies['copySesInboundObjectToCopyrightEvidence']>(),
-    createCopyrightEmailIntake: vi.fn<ProcessDependencies['createCopyrightEmailIntake']>(),
-    deleteSesInboundObject: vi.fn<ProcessDependencies['deleteSesInboundObject']>(),
-    enqueueCopyrightEmailIntake: vi.fn<ProcessDependencies['enqueueCopyrightEmailIntake']>(),
-    loadSesInboundObject: vi.fn<ProcessDependencies['loadSesInboundObject']>(),
-    loadSesInboundObjectAndHash: vi.fn<ProcessDependencies['loadSesInboundObjectAndHash']>(),
-    loadSesInboundObjectVersion: vi.fn<ProcessDependencies['loadSesInboundObjectVersion']>(),
-    moveSesInboundObjectToFailed: vi.fn<ProcessDependencies['moveSesInboundObjectToFailed']>(),
-    parseSesInboundMime: vi.fn<ProcessDependencies['parseSesInboundMime']>(),
-    recordCopyrightEmailParse: vi.fn<ProcessDependencies['recordCopyrightEmailParse']>(),
-  } satisfies ProcessDependencies
-}
-
 describe('processSesInboundEmail key boundary', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   it('rejects a non-copyright key before any copy, write, parse, enqueue or source change', async () => {
-    const dependencies = createDependencySpies()
+    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
+    const s3Calls = stubSesInboundS3ForTest()
 
     await expect(
-      processSesInboundEmail(
-        {
-          sesMessageId: 'ses-unhandled-message',
-          objectKey: 'incoming/ses-unhandled-message',
-        },
-        dependencies,
-      ),
+      processSesInboundEmail({
+        sesMessageId: 'ses-unhandled-message',
+        objectKey: 'incoming/ses-unhandled-message',
+      }),
     ).rejects.toThrow('unknown prefix')
 
-    // Neither delete nor move may run: the source object stays at its original key.
-    expect(dependencies.deleteSesInboundObject).not.toHaveBeenCalled()
-    expect(dependencies.moveSesInboundObjectToFailed).not.toHaveBeenCalled()
-    for (const dependency of Object.values(dependencies)) {
-      expect(dependency).not.toHaveBeenCalled()
-    }
+    // No read, delete or move may run: the source object stays at its original key.
+    expect(s3Calls).toEqual([])
   })
 
-  it('still sends a copyright job through the same dependencies', async () => {
-    const dependencies = createDependencySpies()
-    dependencies.loadSesInboundObjectAndHash.mockRejectedValue(new Error('S3 is unavailable'))
+  it('still sends a copyright job through the S3 read', async () => {
+    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
+    const s3Calls = stubSesInboundS3ForTest({ getError: new Error('S3 is unavailable') })
 
     await expect(
-      processSesInboundEmail(
-        {
-          sesMessageId: 'ses-copyright-message',
-          objectKey: 'copyright-incoming/ses-copyright-message',
-        },
-        dependencies,
-      ),
+      processSesInboundEmail({
+        sesMessageId: 'ses-copyright-message',
+        objectKey: 'copyright-incoming/ses-copyright-message',
+      }),
     ).rejects.toThrow('S3 is unavailable')
 
-    expect(dependencies.loadSesInboundObjectAndHash).toHaveBeenCalledExactlyOnceWith(
-      'copyright-incoming/ses-copyright-message',
-    )
-    expect(dependencies.moveSesInboundObjectToFailed).not.toHaveBeenCalled()
-    expect(dependencies.deleteSesInboundObject).not.toHaveBeenCalled()
+    // The source is neither deleted nor moved after a retryable read failure.
+    expect(s3Calls).toEqual([
+      {
+        command: 'GetObjectCommand',
+        input: { Bucket: 'ses-inbound-test', Key: 'copyright-incoming/ses-copyright-message' },
+      },
+    ])
+  })
+
+  it('moves a source object with no body to the failed prefix and stops retrying it', async () => {
+    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
+    const s3Calls = stubSesInboundS3ForTest({ getWithoutBody: true })
+
+    await expect(
+      processSesInboundEmail({
+        sesMessageId: 'ses-bodyless-message',
+        objectKey: 'copyright-incoming/ses-bodyless-message',
+      }),
+    ).rejects.toBeInstanceOf(UnrecoverableError)
+
+    expect(s3Calls.map(call => call.command)).toEqual([
+      'GetObjectCommand',
+      'CopyObjectCommand',
+      'DeleteObjectCommand',
+    ])
+    expect(s3Calls[2]!.input).toEqual({
+      Bucket: 'ses-inbound-test',
+      Key: 'copyright-incoming/ses-bodyless-message',
+    })
   })
 })
