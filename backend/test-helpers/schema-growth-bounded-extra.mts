@@ -175,7 +175,7 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ],
   [
     'membership_ineligible_purchase_reversal_refund_scan_cycles',
-    'The reversal-case foreign-key primary key permits exactly one reusable verification-cycle row per immutable reversal case; later passes rotate its generation in place.',
+    'The reversal-case foreign-key primary key permits exactly one reusable verification-cycle row per reversal case, and bounded fiscal retention deletes it with its case.',
   ],
   [
     'story_post_related_url_projection_jobs',

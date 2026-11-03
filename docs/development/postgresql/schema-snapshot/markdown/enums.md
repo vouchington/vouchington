@@ -1468,6 +1468,7 @@
 - `purchase_intent`
 - `stripe_event_ledger`
 - `membership_operation_ledger`
+- `membership_reversal_case_ledger`
 
 ## `platform_account_kinds`
 

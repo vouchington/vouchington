@@ -41,7 +41,7 @@ export async function seedLedgerOperations(seed: LedgerSeed): Promise<void> {
          membership_provider_lineage_id, membership_lineage_binding_id, stripe_price_id,
          winning_source_kind, qualifying_amount_minor_units, refund_cap_minor_units, currency_code,
          period_started_at, period_ends_at, collision_at)
-       SELECT source.id, lineage.id, binding.id, 'price_explain', 'direct', 100, 100, 'usd', NOW(), NOW(), NOW()
+       SELECT source.id, lineage.id, binding.id, 'price_explain', 'direct', 100, 100, 'usd', NOW(), NOW(), NOW() - $7::interval
        FROM lineage JOIN source ON source.membership_provider_lineage_id = lineage.id
          JOIN binding ON binding.membership_provider_lineage_id = lineage.id
        WHERE $6::text IS NOT NULL RETURNING id
@@ -105,6 +105,29 @@ export async function positionLedgerCursor(prefix: string): Promise<void> {
        ORDER BY completed_at DESC, id DESC LIMIT 1)
      WHERE kind = 'membership_operation_ledger'`,
     [`${prefix}-op-`],
+  )
+}
+
+/** Points the persisted reversal case pass at the last case of a seeded operation group. */
+export async function positionReversalCaseCursor(prefix: string): Promise<void> {
+  await write(
+    `/* positionExplainReversalCaseCursor */
+     UPDATE payment_operational_cleanup_cursors SET cursor_id = (
+       SELECT reversal_case.id FROM membership_ineligible_purchase_reversal_cases reversal_case
+         JOIN membership_operations operation
+           ON operation.membership_lineage_binding_id = reversal_case.membership_lineage_binding_id
+       WHERE operation.idempotency_key LIKE $1 || '%'
+       ORDER BY reversal_case.collision_at DESC, reversal_case.id DESC LIMIT 1)
+     WHERE kind = 'membership_reversal_case_ledger'`,
+    [`${prefix}-op-`],
+  )
+}
+
+export async function resetReversalCaseCursor(): Promise<void> {
+  await write(
+    `/* resetExplainReversalCaseCursor */
+     UPDATE payment_operational_cleanup_cursors SET cursor_id = NULL
+     WHERE kind = 'membership_reversal_case_ledger'`,
   )
 }
 

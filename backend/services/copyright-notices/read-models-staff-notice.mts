@@ -44,9 +44,9 @@ export async function selectStaffEvidence(noticeIds: readonly string[], query: T
     byte_size: number
     sha256: Buffer
   }>(sql`/* getPendingCopyrightStaffCase:evidence */
-    SELECT submission.copyright_notice_id, artifact.id, artifact.copyright_notice_submission_id AS submission_id, (SELECT mime_type FROM media_types WHERE id = artifact.media_type_id) AS mime_type, artifact.byte_size, artifact.sha256
-    FROM copyright_notice_evidence_artifacts artifact JOIN copyright_notice_submissions submission ON submission.id = artifact.copyright_notice_submission_id
-    WHERE submission.copyright_notice_id = ANY(${noticeIds}::uuid[]) ORDER BY artifact.id
+    SELECT artifact.copyright_notice_id, artifact.id, artifact.copyright_notice_submission_id AS submission_id, (SELECT mime_type FROM media_types WHERE id = artifact.media_type_id) AS mime_type, artifact.byte_size, artifact.sha256
+    FROM copyright_notice_evidence_artifacts artifact
+    WHERE artifact.copyright_notice_id = ANY(${noticeIds}::uuid[]) ORDER BY artifact.id
   `)
   return groupByNotice(rows.map(row => ({ ...row, sha256: row.sha256.toString('hex') })))
 }

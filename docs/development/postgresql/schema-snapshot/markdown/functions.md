@@ -384,6 +384,15 @@ CREATE OR REPLACE FUNCTION public.fn_membership_reversal_case_closed(target_bind
  STABLE
 ```
 
+## `fn_membership_reversal_case_expired(target_case_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_membership_reversal_case_expired(target_case_id uuid)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE
+```
+
 ## `fn_min_child_uuidv7(p_parent_id uuid)`
 
 ```sql
@@ -1319,6 +1328,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_request_key_mismatch()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_reversal_case_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_reversal_case_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

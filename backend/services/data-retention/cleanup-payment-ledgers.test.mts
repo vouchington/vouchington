@@ -35,6 +35,7 @@ describe('payment ledger fiscal retention', () => {
     expect(result).toEqual([
       { family: 'stripe_event', scanned: 1, deleted: 1, hasMore: false },
       { family: 'membership_operation', scanned: 1, deleted: 1, hasMore: false },
+      { family: 'membership_reversal_case', scanned: 0, deleted: 0, hasMore: false },
     ])
     await expect(paymentLedgerRecordExists('stripe_event', oldEventId)).resolves.toBe(false)
     await expect(paymentLedgerRecordExists('stripe_event', youngEventId)).resolves.toBe(true)

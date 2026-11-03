@@ -905,6 +905,46 @@ BEGIN
 END $$;
 COMMENT ON FUNCTION fn_membership_reversal_case_closed(UUID) IS
   'True when no operation of the binding reversal case is unfinished and no refund-history verification cycle is running.';
+-- A reversal case is expired once its UTC collision year plus seven full years has ended, it is
+-- closed, and no reversal or collision operation of its binding remains. Readers treat an expired
+-- case as absent and bounded retention deletes it, so both agree on the same instant.
+-- PL/pgSQL because the reversal case tables are created by later migrations.
+CREATE FUNCTION fn_membership_reversal_case_expired(target_case_id UUID)
+RETURNS BOOLEAN LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM membership_ineligible_purchase_reversal_cases reversal_case
+    WHERE reversal_case.id = target_case_id
+      AND date_trunc('year', reversal_case.collision_at AT TIME ZONE 'UTC') + INTERVAL '8 years'
+        <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+      AND fn_membership_reversal_case_closed(reversal_case.membership_lineage_binding_id)
+      AND NOT EXISTS (SELECT 1 FROM membership_ineligible_purchase_reversal_case_operations link
+        WHERE link.membership_ineligible_purchase_reversal_case_id = reversal_case.id)
+      AND NOT EXISTS (SELECT 1 FROM membership_operations operation
+        WHERE operation.membership_lineage_binding_id = reversal_case.membership_lineage_binding_id
+          AND operation.operation_kind IN ('ineligible_purchase_reversal', 'collision_resolution')));
+END $$;
+COMMENT ON FUNCTION fn_membership_reversal_case_expired(UUID) IS
+  'True when a closed reversal case is past its fiscal window and none of its reversal or collision operations remain.';
+-- Settled reversal case rows stay append-only until their case is expired.
+CREATE FUNCTION fn_reject_membership_reversal_case_mutation()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE target_case_id UUID;
+BEGIN
+  IF TG_OP = 'DELETE' AND COALESCE(current_setting('app.billing_retention_delete', true) = 'on', FALSE) THEN
+    IF TG_TABLE_NAME = 'membership_ineligible_purchase_reversal_cases' THEN
+      target_case_id := OLD.id;
+    ELSE
+      SELECT scan.membership_ineligible_purchase_reversal_case_id INTO target_case_id
+      FROM membership_ineligible_purchase_reversal_refund_scans scan
+      WHERE scan.id = OLD.membership_ineligible_purchase_reversal_refund_scan_id;
+    END IF;
+    IF fn_membership_reversal_case_expired(target_case_id) THEN RETURN OLD; END IF;
+  END IF;
+  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';
+END $$;
+COMMENT ON FUNCTION fn_reject_membership_reversal_case_mutation() IS
+  'Rejects every update and every delete except the bounded retention delete of an expired reversal case or its observations.';
 -- Fiscal retention begins after the UTC year containing the final provider operation.
 -- PL/pgSQL because the reversal case tables are created by later migrations.
 CREATE FUNCTION fn_membership_operation_fiscal_retention_due(target_operation_id UUID)
@@ -1127,8 +1167,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_event_processing_work_items__lease_t
 CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__claim ON stripe_event_processing_work_items (available_at, stripe_event_id) WHERE processed_at IS NULL AND ignored_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__retention ON stripe_event_processing_work_items (stripe_event_id)
   WHERE processed_at IS NOT NULL OR ignored_at IS NOT NULL;
-CREATE TYPE payment_operational_cleanup_kinds AS ENUM ('stripe_event_work', 'purchase_intent', 'stripe_event_ledger', 'membership_operation_ledger');
-COMMENT ON TYPE payment_operational_cleanup_kinds IS 'Independent persisted keyset streams for terminal Stripe work, abandoned purchase intent, and fiscal Stripe event and membership operation ledger cleanup.';
+CREATE TYPE payment_operational_cleanup_kinds AS ENUM ('stripe_event_work', 'purchase_intent', 'stripe_event_ledger', 'membership_operation_ledger', 'membership_reversal_case_ledger');
+COMMENT ON TYPE payment_operational_cleanup_kinds IS 'Independent persisted keyset streams for terminal Stripe work, abandoned purchase intent, and fiscal Stripe event, membership operation and reversal case ledger cleanup.';
 CREATE TABLE IF NOT EXISTS payment_operational_cleanup_cursors (
   kind payment_operational_cleanup_kinds PRIMARY KEY,
   cursor_id UUID,
@@ -1136,10 +1176,10 @@ CREATE TABLE IF NOT EXISTS payment_operational_cleanup_cursors (
 );
 CREATE TRIGGER trigger_payment_operational_cleanup_cursors_updated_at BEFORE UPDATE ON payment_operational_cleanup_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-INSERT INTO payment_operational_cleanup_cursors (kind) VALUES ('stripe_event_work'), ('purchase_intent'), ('stripe_event_ledger'), ('membership_operation_ledger') ON CONFLICT DO NOTHING;
+INSERT INTO payment_operational_cleanup_cursors (kind) VALUES ('stripe_event_work'), ('purchase_intent'), ('stripe_event_ledger'), ('membership_operation_ledger'), ('membership_reversal_case_ledger') ON CONFLICT DO NOTHING;
 COMMENT ON TABLE payment_operational_cleanup_cursors IS 'One persisted UUIDv7 keyset position per daily payment operational cleanup.';
 COMMENT ON COLUMN payment_operational_cleanup_cursors.kind IS 'Cleanup stream whose position this row stores.';
-COMMENT ON COLUMN payment_operational_cleanup_cursors.cursor_id IS 'Last scanned id; NULL starts the next full pass. The membership operation stream orders by completion time then id.';
+COMMENT ON COLUMN payment_operational_cleanup_cursors.cursor_id IS 'Last scanned id; NULL starts the next full pass. The membership operation stream orders by completion time then id and the reversal case stream by collision time then id.';
 COMMENT ON COLUMN payment_operational_cleanup_cursors.updated_at IS 'When this cleanup stream last checkpointed.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_events__subscription_id ON stripe_events (subscription_id, id DESC) WHERE subscription_id IS NOT NULL;

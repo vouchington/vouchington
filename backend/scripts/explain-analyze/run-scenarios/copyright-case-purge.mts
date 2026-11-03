@@ -12,6 +12,10 @@ import { copyrightCasePurgeProofSql } from '@services/copyright-notices/retentio
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedPurgeCases } from '../seed-data/copyright-case-purge.mts'
+import {
+  PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS,
+  PURGE_EVIDENCE_SEEDED_ROWS,
+} from '../seed-data/copyright-case-purge-volume.mts'
 
 const PAGE = 25
 const LEGAL_ACTIVITY_INDEX = 'idx_copyright_notices__legal_activity'
@@ -93,11 +97,37 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
   )
 
   registerScenarioContract('copyright-case-purge-evidence-reads', {
-    expectations: [],
+    // One case holds over 150,000 artifacts and linked intakes; each source read must find its first row by index.
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        // The case holds nearly every artifact, so the planner may walk the primary key and stop at
+        // the case's first row; either index returns it with no sort, and the row cap proves it.
+        indexes: [
+          'copyright_notice_evidence_artifacts_copyright_notice_id_id_key',
+          'copyright_notice_evidence_artifacts_pkey',
+        ],
+        anyOf: true,
+        queryContains: 'readCopyrightCaseEvidenceArtifact',
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'copyright_notice_evidence_artifacts', max: 5 },
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'idx_copyright_notice_email_intake_notice_links__notice',
+          'copyright_notice_email_intake_notice_links_pkey',
+        ],
+        anyOf: true,
+        queryContains: 'readCopyrightCaseEmailEvidence',
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'copyright_notice_email_intake_notice_links', max: 5 },
+    ],
     seededRows: {
-      copyright_notice_evidence_artifacts: 1,
-      copyright_notice_email_intake_notice_links: 1,
-      copyright_notice_email_intakes: 8,
+      copyright_notice_evidence_artifacts: PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS,
+      copyright_notice_email_intake_notice_links: PURGE_EVIDENCE_SEEDED_ROWS,
+      copyright_notice_email_intakes: PURGE_EVIDENCE_SEEDED_ROWS + 7,
     },
   })
   await runAndCapture(

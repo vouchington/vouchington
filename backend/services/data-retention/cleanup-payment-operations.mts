@@ -25,6 +25,7 @@ type PaymentCleanupKind =
   | 'purchase_intent'
   | 'stripe_event_ledger'
   | 'membership_operation_ledger'
+  | 'membership_reversal_case_ledger'
 
 function getPaymentCleanupPageBounds(options: PaymentOperationCleanupOptions) {
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')

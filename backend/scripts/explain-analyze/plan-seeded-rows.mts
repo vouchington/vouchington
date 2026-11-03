@@ -9,6 +9,7 @@ import {
   AGENT_MODERATION_RETENTION_RELEASED_NOISE,
   AGENT_MODERATION_RETENTION_ROWS,
 } from './seed-data/agent-moderation-retention.mts'
+import { PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS } from './seed-data/copyright-case-purge-volume.mts'
 
 /** Explicit seed.mts fixture counts plus conservative bounds for captured ancillary relations. */
 // Ancillary relations have no dedicated EXPLAIN seed count; refresh this bound if fixtures grow.
@@ -105,7 +106,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   community_list_urls: ANCILLARY_SEED_ROW_UPPER_BOUND,
   community_member_vacations: ANCILLARY_SEED_ROW_UPPER_BOUND,
   conversation_participants: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  copyright_notice_evidence_artifacts: 1,
+  copyright_notice_evidence_artifacts: PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS,
   copyright_notice_form_intake_reviews: 1,
   copyright_notice_target_images: 2,
   copyright_notice_appeal_recommendations: ANCILLARY_SEED_ROW_UPPER_BOUND,

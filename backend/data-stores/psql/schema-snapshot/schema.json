@@ -1115,7 +1115,8 @@
         "stripe_event_work",
         "purchase_intent",
         "stripe_event_ledger",
-        "membership_operation_ledger"
+        "membership_operation_ledger",
+        "membership_reversal_case_ledger"
       ]
     },
     "platform_account_kinds": {
@@ -1429,7 +1430,7 @@
       "version": "1.1"
     },
     "vector": {
-      "version": "0.8.6"
+      "version": "0.8.7"
     }
   },
   "formatVersion": 2,
@@ -1571,6 +1572,9 @@
     },
     "fn_membership_reversal_case_closed(target_binding_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_membership_reversal_case_closed(target_binding_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\nAS $function$\nBEGIN\n  RETURN NOT EXISTS (\n      SELECT 1 FROM membership_operations sibling\n      WHERE sibling.membership_lineage_binding_id = target_binding_id\n        AND sibling.operation_kind IN ('ineligible_purchase_reversal', 'collision_resolution')\n        AND sibling.completed_at IS NULL)\n    AND NOT EXISTS (\n      SELECT 1 FROM membership_ineligible_purchase_reversal_cases reversal_case\n      JOIN membership_ineligible_purchase_reversal_refund_scan_cycles cycle\n        ON cycle.membership_ineligible_purchase_reversal_case_id = reversal_case.id\n      WHERE reversal_case.membership_lineage_binding_id = target_binding_id\n        AND cycle.completed_at IS NULL);\nEND $function$\n"
+    },
+    "fn_membership_reversal_case_expired(target_case_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_membership_reversal_case_expired(target_case_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\nAS $function$\nBEGIN\n  RETURN EXISTS (\n    SELECT 1 FROM membership_ineligible_purchase_reversal_cases reversal_case\n    WHERE reversal_case.id = target_case_id\n      AND date_trunc('year', reversal_case.collision_at AT TIME ZONE 'UTC') + INTERVAL '8 years'\n        <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'\n      AND fn_membership_reversal_case_closed(reversal_case.membership_lineage_binding_id)\n      AND NOT EXISTS (SELECT 1 FROM membership_ineligible_purchase_reversal_case_operations link\n        WHERE link.membership_ineligible_purchase_reversal_case_id = reversal_case.id)\n      AND NOT EXISTS (SELECT 1 FROM membership_operations operation\n        WHERE operation.membership_lineage_binding_id = reversal_case.membership_lineage_binding_id\n          AND operation.operation_kind IN ('ineligible_purchase_reversal', 'collision_resolution')));\nEND $function$\n"
     },
     "fn_min_child_uuidv7(p_parent_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_min_child_uuidv7(p_parent_id uuid)\n RETURNS uuid\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE\n    WHEN uuid_extract_timestamp(p_parent_id) IS NULL THEN '00000000-0000-0000-0000-000000000000'::uuid\n    ELSE fn_min_uuidv7(GREATEST(uuid_extract_timestamp(p_parent_id) - interval '1 hour', 'epoch'::timestamptz))\n  END\n$function$\n"
@@ -1922,6 +1926,9 @@
     },
     "fn_reject_membership_refund_request_key_mismatch": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_request_key_mismatch()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE saved_request_key TEXT;\nBEGIN\n  IF NEW.source = 'admin' THEN\n    SELECT request.administrator_request_key INTO saved_request_key\n    FROM membership_administrator_refund_operation_requests request\n    WHERE request.membership_operation_id = NEW.membership_operation_id;\n    IF saved_request_key IS DISTINCT FROM NEW.stripe_idempotency_key THEN\n      RAISE EXCEPTION 'administrator refund receipt key does not match its request' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_reject_membership_reversal_case_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_reversal_case_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE target_case_id UUID;\nBEGIN\n  IF TG_OP = 'DELETE' AND COALESCE(current_setting('app.billing_retention_delete', true) = 'on', FALSE) THEN\n    IF TG_TABLE_NAME = 'membership_ineligible_purchase_reversal_cases' THEN\n      target_case_id := OLD.id;\n    ELSE\n      SELECT scan.membership_ineligible_purchase_reversal_case_id INTO target_case_id\n      FROM membership_ineligible_purchase_reversal_refund_scans scan\n      WHERE scan.id = OLD.membership_ineligible_purchase_reversal_refund_scan_id;\n    END IF;\n    IF fn_membership_reversal_case_expired(target_case_id) THEN RETURN OLD; END IF;\n  END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND $function$\n"
     },
     "fn_reject_moderation_appeal_resolution": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_moderation_appeal_resolution()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.resolved_at IS NULL AND OLD.resolution_action IS NULL\n    AND NEW.resolved_at IS NOT NULL AND NEW.resolution_action IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.resolved_at IS DISTINCT FROM NEW.resolved_at\n    OR OLD.resolution_action IS DISTINCT FROM NEW.resolution_action THEN\n    RAISE EXCEPTION 'moderation appeal resolution is immutable once set';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -61901,7 +61908,7 @@
           "type": "membership_source_kinds"
         }
       },
-      "comment": "Immutable collision snapshot that bounds Stripe refund allocation as invoice payments arrive.",
+      "comment": "Collision snapshot that bounds Stripe refund allocation as invoice payments arrive; immutable until bounded retention deletes it after its fiscal window.",
       "foreignKeys": {
         "fk_mipr_cases__binding_lineage": {
           "columns": ["membership_lineage_binding_id", "membership_provider_lineage_id"],
@@ -61931,8 +61938,35 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
+        "idx_member_inelig_purchase_reversal_cases__collision_at_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_member_inelig_purchase_reversal_cases__collision_at_id ON public.membership_ineligible_purchase_reversal_cases USING btree (collision_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "collision_at",
+              "descending": false,
+              "expression": "collision_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membershi_ineligibl_purchase_reversal_cases__source_lineage": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -62029,7 +62063,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_membership_ineligible_purchase_reversal_cases_immutable": "CREATE TRIGGER trigger_membership_ineligible_purchase_reversal_cases_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_cases FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        "trigger_membership_ineligible_purchase_reversal_cases_immutable": "CREATE TRIGGER trigger_membership_ineligible_purchase_reversal_cases_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_cases FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_reversal_case_mutation()"
       },
       "uniqueConstraints": {}
     },
@@ -62138,7 +62172,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_members_ineligi_purchase_reversal_refund_observat__currency": {
           "accessMethod": "btree",
@@ -62217,7 +62251,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_purchase_reversal_refund_observation_currency": "CREATE TRIGGER trigger_purchase_reversal_refund_observation_currency BEFORE INSERT ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_purchase_reversal_refund_observation_currency()",
-        "trigger_purchase_reversal_refund_observations_immutable": "CREATE TRIGGER trigger_purchase_reversal_refund_observations_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        "trigger_purchase_reversal_refund_observations_immutable": "CREATE TRIGGER trigger_purchase_reversal_refund_observations_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_reversal_case_mutation()"
       },
       "uniqueConstraints": {
         "uq_mipr_succeeded_refund_observations__scan_refund": {
@@ -62561,7 +62595,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_membersh_ineligibl_purchase_reversal_refund_scans__currency": {
           "accessMethod": "btree",
@@ -66858,7 +66892,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "membership_refund_operation_attempt_metadata_scans_pkey": {
           "accessMethod": "btree",
@@ -67023,7 +67057,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_membership_refund_operation_attempts__currency_code": {
           "accessMethod": "btree",
@@ -82214,7 +82248,7 @@
       "columns": {
         "cursor_id": {
           "collation": null,
-          "comment": "Last scanned id; NULL starts the next full pass. The membership operation stream orders by completion time then id.",
+          "comment": "Last scanned id; NULL starts the next full pass. The membership operation stream orders by completion time then id and the reversal case stream by collision time then id.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,

@@ -124,7 +124,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'membership_grants',
   'membership_google_play_purchase_tokens',
   'membership_microsoft_store_credentials',
-  'membership_ineligible_purchase_reversal_cases',
   'membership_lineage_bindings',
   'membership_products',
   'membership_provider_contexts',

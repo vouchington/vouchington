@@ -36,6 +36,26 @@ export const RETENTION_BOUNDED_TABLES = new Map<string, string>([
     'Deleted with their operation by the bounded fiscal-retention cleanup before the operation row.',
   ],
   [
+    'membership_ineligible_purchase_reversal_cases',
+    'Bounded keyset cleanup deletes a closed case, with its scans and observations first, once its UTC collision year is eight years past and no reversal or collision operation remains.',
+  ],
+  [
+    'membership_ineligible_purchase_reversal_refund_scans',
+    'Deleted with their case by the bounded fiscal-retention cleanup before the case row.',
+  ],
+  [
+    'membership_ineligible_purchase_reversal_refund_observations',
+    'Deleted with their scan by the bounded fiscal-retention cleanup before the scan row.',
+  ],
+  [
+    'membership_refund_operation_attempts',
+    'Deleted with their operation by the bounded fiscal-retention cleanup before the operation row.',
+  ],
+  [
+    'membership_refund_operation_attempt_metadata_scans',
+    'Deleted with their attempt by the bounded fiscal-retention cleanup before the attempt row.',
+  ],
+  [
     'payment_operational_cleanup_cursors',
     'One persisted keyset position per payment operational cleanup stream.',
   ],

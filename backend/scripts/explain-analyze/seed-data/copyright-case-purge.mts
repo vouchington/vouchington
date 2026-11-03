@@ -2,6 +2,7 @@ import { read, write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets/encryption'
 import { copyrightSubmissionPurpose } from '@services/copyright-notices/submissions'
 import { seedUser } from '../run-support.mts'
+import { seedDueCaseEvidenceVolume } from './copyright-case-purge-volume.mts'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 
 const DAY_MS = 86_400_000
@@ -123,4 +124,5 @@ async function seedDueCaseEvidence(dueId: string): Promise<void> {
     WHERE id = $1::uuid`,
     [dueId],
   )
+  await seedDueCaseEvidenceVolume(dueId, submissionId)
 }
