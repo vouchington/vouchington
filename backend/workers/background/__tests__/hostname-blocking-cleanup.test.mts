@@ -20,6 +20,7 @@ import {
   readEnqueuedJob,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { describe, expect, it } from 'vitest'
 import { createBackgroundProcessor } from '../processors.mts'
@@ -149,7 +150,7 @@ describe('hostname block cleanup background handlers', () => {
       const process = createBackgroundProcessor(
         buildHandlerMap(hostnameBlockingHandlers, ['hostname-blocking']),
       )
-      const afterBlockId = previousUuid(operation.blockId)
+      const afterBlockId = uuidBefore(operation.blockId)
       await enqueueHostnameBlockRecovery({ afterBlockId })
       const job = await background.getJob(`hostnameBlockingRecovery__${afterBlockId}`)
       if (!job) throw new Error('Missing recovery job')
@@ -157,21 +158,24 @@ describe('hostname block cleanup background handlers', () => {
       await process(job)
 
       await expect(
-        background.getJob(`hostnameBlock__${operation.blockId}__${operation.progress}`),
-      ).resolves.toBeTruthy()
+        background
+          .getJob(`hostnameBlock__${operation.blockId}__${operation.progress}`)
+          .then(found => found?.data),
+      ).resolves.toEqual({
+        blockId: operation.blockId,
+        progress: operation.progress,
+        cursor: { stage: 'subdomains' },
+      })
       await expect(
-        background.getJob(`hostnameBlockingRecovery__${operation.blockId}`),
-      ).resolves.toBeTruthy()
+        background
+          .getJob(`hostnameBlockingRecovery__${operation.blockId}`)
+          .then(found => found?.data),
+      ).resolves.toEqual({ afterBlockId: operation.blockId })
     } finally {
       restore()
     }
   })
 })
-
-function previousUuid(id: string): string {
-  const hex = (BigInt(`0x${id.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
-}
 
 async function createOperation(hostnameId: string, hostname: string, administratorId: string) {
   await using query = await beginTransaction()
