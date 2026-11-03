@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { chmod, rm, stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { Readable } from 'node:stream'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createImageUploadUrl } from '../create-upload-url.mts'
@@ -21,6 +21,10 @@ describe('completeImageUpload temporary-file cleanup', () => {
     vi.restoreAllMocks()
   })
 
+  afterAll(() => {
+    vi.restoreAllMocks()
+  })
+
   it('returns the durable processing handoff when temporary-file cleanup fails', async context => {
     const { image_id } = await createImageUploadUrl(user, {
       contentType: 'image/jpeg',
@@ -29,6 +33,7 @@ describe('completeImageUpload temporary-file cleanup', () => {
     const bytes = Buffer.from(`cleanup ${image_id}`)
     const sha256 = createHash('sha256').update(bytes).digest()
     let spoolDirectory: string | undefined
+    let spooledFile: string | undefined
     context.onTestFinished(async () => {
       if (!spoolDirectory) return
       await chmod(spoolDirectory, 0o700)
@@ -40,6 +45,7 @@ describe('completeImageUpload temporary-file cleanup', () => {
     vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue()
     vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockImplementation(async ({ filename }) => {
       // A spool directory that is no longer writable makes the real temporary-file removal fail.
+      spooledFile = filename
       spoolDirectory = dirname(filename)
       await chmod(spoolDirectory, 0o500)
       return { created: true, s3Key: sha256.toString('hex') }
@@ -54,7 +60,7 @@ describe('completeImageUpload temporary-file cleanup', () => {
       s3_key: sha256.toString('hex'),
     })
 
-    expect((await stat(`${spoolDirectory}/media`)).size).toBe(bytes.byteLength)
+    expect((await stat(spooledFile!)).size).toBe(bytes.byteLength)
     expect((await getImageById(image_id))?.s3_key).toBe(sha256.toString('hex'))
   })
 })

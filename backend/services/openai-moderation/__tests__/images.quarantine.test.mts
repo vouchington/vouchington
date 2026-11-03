@@ -10,7 +10,7 @@ import {
   createCompletedModerationImage,
   createImageModerationResult,
 } from '@voucha/test-helpers/services/openai-moderation/image-moderation'
-import { it, expect, afterEach, vi, beforeAll, beforeEach, describe } from 'vitest'
+import { afterAll, it, expect, afterEach, vi, beforeAll, beforeEach, describe } from 'vitest'
 import * as moderation from '@modules/openai-utils/moderate'
 import { processPendingImageQuarantinePage } from '../delete-flagged.mts'
 import { observeImageQuarantineS3 } from '../../../test-helpers/image-quarantine-s3.mts'
@@ -40,6 +40,11 @@ describe('image quarantine', () => {
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
+  })
+
+  afterAll(() => {
+    // Leave the real provider function in place for later files in this fork.
+    requestOpenAIModeration.mockRestore()
   })
 
   it('sexual/minors flag → quarantine copy, original deleted, renders deleted', async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach, vi, beforeAll } from 'vitest'
+import { afterAll, describe, it, expect, afterEach, beforeEach, vi, beforeAll } from 'vitest'
 import * as moderation from '@modules/openai-utils/moderate'
 import { upsertPostOpenAIModeration } from '../posts.mts'
 import { createPost } from '@services/posts'
@@ -32,6 +32,11 @@ describe('posts', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs()
+  })
+
+  afterAll(() => {
+    // Leave the real provider function in place for later files in this fork.
+    requestOpenAIModeration.mockRestore()
   })
 
   function randomSuffix(): string {

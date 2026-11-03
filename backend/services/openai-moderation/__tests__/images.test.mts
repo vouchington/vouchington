@@ -7,7 +7,7 @@ import {
   createCompletedModerationImage,
   createImageModerationResult,
 } from '@voucha/test-helpers/services/openai-moderation/image-moderation'
-import { it, expect, afterEach, vi, beforeAll, beforeEach, describe } from 'vitest'
+import { afterAll, it, expect, afterEach, vi, beforeAll, beforeEach, describe } from 'vitest'
 import * as moderation from '@modules/openai-utils/moderate'
 import { upsertImageOpenAIModeration } from '../images.mts'
 import { createImageUploadUrl } from '@services/images/create-upload-url'
@@ -46,6 +46,11 @@ describe('images', () => {
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
+  })
+
+  afterAll(() => {
+    // Leave the real provider function in place for later files in this fork.
+    requestOpenAIModeration.mockRestore()
   })
 
   it('upsertImageOpenAIModeration - moderates image and stores results', async () => {

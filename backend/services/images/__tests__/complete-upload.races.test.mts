@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
   insertPendingTestImage,
@@ -46,6 +46,10 @@ describe('completeImageUpload - duplicate recovery and races', () => {
         return { created: true, s3Key: imageId }
       },
     )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('allows a fresh upload when an older matching upload failed', async () => {

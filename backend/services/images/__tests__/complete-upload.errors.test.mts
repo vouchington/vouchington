@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { Readable } from 'node:stream'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
   insertPendingTestImage,
@@ -31,6 +31,10 @@ describe('completeImageUpload utility failures', () => {
   })
 
   beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  afterAll(() => {
     vi.restoreAllMocks()
   })
 
