@@ -1,6 +1,5 @@
 import type { CrawlerHtmlResult } from '@services/crawler-html'
 import type CrawlerHtml from '@services/crawler-html'
-import type { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import type { getUrlById } from '@services/urls/get'
 import type { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
 import type { resolveSafeCrawlerAddresses } from './safety.mts'
@@ -30,14 +29,10 @@ export type CrawlUrlOptions = {
 }
 
 export type CrawlUrlDependencies = {
-  ensureCrawlerForHostname: typeof getOrCreateCrawlerForHostname
   fetchCrawlerHtml: typeof CrawlerHtml
   isUrlCrawlable: (url: string, userAgent: string) => Promise<boolean>
-  onRedirectError: (error: Error) => void
   resolveDnsCanary: () => Promise<void>
   resolveSafeCrawlerAddresses: typeof resolveSafeCrawlerAddresses
-  /** Internal business-clock source for snapshot-retention decisions. */
-  now: () => Date
 }
 
 export type CrawlUrlReturn = CrawlBasic | null

@@ -6,7 +6,6 @@ import { updateCrawl } from '../update.mts'
 import { safeResolveUrl } from '../crawl-url-utils.mts'
 import type {
   CrawlHtmlFetchResult,
-  CrawlUrlDependencies,
   CrawlUrlOptions,
   CrawlUrlRecord,
   CrawlUrlRunner,
@@ -17,7 +16,6 @@ const redirectStatusRecordedErrors = new WeakSet<object>()
 
 export async function handleCrawlRedirect(params: {
   crawlId: string
-  dependencies?: Partial<CrawlUrlDependencies>
   htmlResult: CrawlHtmlFetchResult
   options?: CrawlUrlOptions
   runCrawlUrl: CrawlUrlRunner
@@ -25,8 +23,7 @@ export async function handleCrawlRedirect(params: {
   visitedUrls: Set<string>
   hopCount: number
 }): Promise<RedirectResult> {
-  const { crawlId, dependencies, htmlResult, options, runCrawlUrl, url, visitedUrls, hopCount } =
-    params
+  const { crawlId, htmlResult, options, runCrawlUrl, url, visitedUrls, hopCount } = params
   const isPermanentRedirect = [301, 308].includes(htmlResult.response_status_code)
   const isTemporaryRedirect = [302, 303, 307].includes(htmlResult.response_status_code)
   const location = htmlResult.response_headers['location']
@@ -59,13 +56,11 @@ export async function handleCrawlRedirect(params: {
   })
 
   if (isPermanentRedirect) {
-    await trySetCanonicalUrl(url.id, redirectUrlEntry.id, dependencies)
+    await trySetCanonicalUrl(url.id, redirectUrlEntry.id)
   }
 
   if (options?.ensureCrawlerForRedirects === true) {
-    const ensureCrawlerForHostname =
-      dependencies?.ensureCrawlerForHostname ?? getOrCreateCrawlerForHostname
-    await ensureCrawlerForHostname(null, redirectUrlEntry.hostname.id)
+    await getOrCreateCrawlerForHostname(null, redirectUrlEntry.hostname.id)
   }
 
   const redirectResult = await runCrawlUrl(
@@ -107,17 +102,12 @@ function isWeakSetKey(value: unknown): value is object {
   return (typeof value === 'object' && value !== null) || typeof value === 'function'
 }
 
-export async function trySetCanonicalUrl(
-  urlId: string,
-  canonicalUrlId: string,
-  dependencies?: Partial<CrawlUrlDependencies>,
-) {
+export async function trySetCanonicalUrl(urlId: string, canonicalUrlId: string) {
   try {
     await setCanonicalUrl(urlId, canonicalUrlId)
   } catch (err) {
     if (!(err instanceof CircularCanonicalReferenceError)) {
-      const reportError = dependencies?.onRedirectError ?? onError
-      reportError(err instanceof Error ? err : new Error(String(err)))
+      onError(err instanceof Error ? err : new Error(String(err)))
     }
   }
 }

@@ -1,4 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 
 import { trySetCanonicalUrl } from '../crawl-url/redirects.mts'
 
@@ -17,15 +19,19 @@ describe('crawl-url.redirects', () => {
     useCrawlUrlRedirectHarness()
 
   describe('trySetCanonicalUrl', () => {
-    it('reports non-circular canonical update errors through injected handler', async () => {
-      const reportError = vi.fn<(error: Error) => void>()
+    beforeEach(() => {
+      sentryCaptureExceptionMock.mockClear()
+    })
 
-      await trySetCanonicalUrl('not-a-url-id', 'not-a-canonical-id', {
-        onRedirectError: reportError,
-      })
+    it('reports non-circular canonical update errors', async () => {
+      const urlId = randomUUID()
 
-      expect(reportError).toHaveBeenCalledOnce()
-      expect(reportError.mock.calls[0][0]).toBeInstanceOf(Error)
+      await trySetCanonicalUrl(urlId, urlId)
+
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
+      expect(sentryCaptureExceptionMock.mock.calls[0]![0]).toStrictEqual(
+        new Error('URL cannot be its own canonical'),
+      )
     })
   })
 

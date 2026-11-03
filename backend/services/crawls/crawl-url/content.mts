@@ -42,9 +42,7 @@ export async function persistCrawlContent(params: {
   } = params
   const isNoIndex = getNoIndexDirective(htmlResult)
   const htmlFile = htmlResult.htmlFile
-  const nowMs = (options?.dependencies?.now?.() ?? new Date()).getTime()
-  if (!Number.isFinite(nowMs)) throw new RangeError('Invalid HTML snapshot decision time')
-  const now = new Date(nowMs)
+  const now = new Date()
   const previousSnapshotReusable = isSnapshotReusable(
     previousHtmlSha256,
     previousHtmlSnapshotUploadedAt,
