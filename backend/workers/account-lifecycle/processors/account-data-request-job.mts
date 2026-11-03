@@ -32,7 +32,6 @@ export async function processAccountDataRequestJob(
     await processors.processExportRequest(
       job.data.requestId,
       job.data.userId,
-      undefined,
       job.data.processingAttemptId,
       isFinalAttempt,
     )

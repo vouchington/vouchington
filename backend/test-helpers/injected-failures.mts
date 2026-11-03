@@ -59,3 +59,12 @@ export function rejectPostgresWriteForTest(marker: string, error: unknown): () =
   })
   return () => spy.mockRestore()
 }
+
+/**
+ * Reject the next default-pool `beginTransaction()` call, then behave normally. Use when the code
+ * under test opens its own first transaction after only non-transactional work; returns the restore.
+ */
+export function rejectNextPostgresTransactionForTest(error: Error): () => void {
+  const spy = vi.spyOn(psql, 'beginTransaction').mockRejectedValueOnce(error)
+  return () => spy.mockRestore()
+}

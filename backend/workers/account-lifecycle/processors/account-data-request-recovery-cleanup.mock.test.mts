@@ -1,0 +1,142 @@
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { S3Buckets } from '@modules/aws'
+import {
+  createDataRequest,
+  expireDataRequests,
+  markDataRequestProcessing,
+  markDataRequestReady,
+} from '@services/account-data-requests'
+import { dataRequestConfig } from '@services/account-data-requests/work-limits'
+import {
+  createTestUser,
+  expireUserDataRequestForTest,
+  getUserDataRequestStatusAndS3KeyForTest,
+} from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { processCleanupExpiredExports } from './account-data-request-recovery-cleanup.mts'
+
+// Only the external S3 provider call is replaced; the database and the cleanup flow are real.
+const mockS3Send = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>())
+vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => ({
+  ...(await importOriginal<typeof import('@modules/aws')>()),
+  S3ImagesClient: { send: mockS3Send } as unknown as typeof import('@modules/aws').S3ImagesClient,
+}))
+
+type DeleteCommand = {
+  constructor: { name: string }
+  input: { Bucket?: string; Delete?: { Objects?: { Key?: string }[] } }
+}
+
+describe('processCleanupExpiredExports', () => {
+  beforeEach(() => {
+    mockS3Send.mockReset()
+    mockS3Send.mockResolvedValue({})
+  })
+
+  it('expires database records and deletes their S3 objects', async () => {
+    const requests = await createExpiredRequests(2)
+
+    await expect(cleanup(requests)).resolves.toEqual({ hasMore: false })
+
+    expect(deletedKeys(requests)).toEqual(requests.map(request => keyOf(request)).toSorted())
+    expect(mockS3Send.mock.calls.map(([command]) => deleteCommand(command).input.Bucket)).toEqual([
+      S3Buckets.userExports,
+    ])
+    expect(await statuses(requests)).toEqual([
+      { status: 'expired', s3_key: null },
+      { status: 'expired', s3_key: null },
+    ])
+  })
+
+  it('does not call S3 for an empty batch', async () => {
+    const user = await createTestUser()
+    const request = await createDataRequest(user.id, user.id)
+
+    await expect(cleanup([request])).resolves.toEqual({ hasMore: false })
+
+    expect(mockS3Send).not.toHaveBeenCalled()
+  })
+
+  it('treats a bulk S3 deletion failure as non-fatal', async () => {
+    const requests = await createExpiredRequests(1)
+    mockS3Send.mockRejectedValue(new Error('S3 error'))
+
+    await expect(cleanup(requests)).resolves.toEqual({ hasMore: false })
+
+    expect(mockS3Send).toHaveBeenCalledOnce()
+    expect(await statuses(requests)).toEqual([{ status: 'expired', s3_key: null }])
+  })
+
+  it('expires one bounded page per run and resumes after clearing the first page', async () => {
+    const requests = await createExpiredRequests(2)
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(dataRequestConfig, {
+        batch_size: 1,
+        max_batches_per_run: 1,
+      }),
+    )
+
+    await expect(cleanup(requests)).resolves.toEqual({ hasMore: true })
+    expect(deletedKeys(requests)).toHaveLength(1)
+    const remaining = await statuses(requests)
+    expect(remaining.filter(row => row.s3_key !== null)).toHaveLength(1)
+
+    await expect(cleanup(requests)).resolves.toEqual({ hasMore: true })
+    expect(deletedKeys(requests)).toEqual(requests.map(request => keyOf(request)).toSorted())
+
+    await expect(cleanup(requests)).resolves.toEqual({ hasMore: false })
+    expect(mockS3Send).toHaveBeenCalledTimes(2)
+  })
+})
+
+type OwnedRequest = { id: string }
+
+// A scoped expiry keeps the sweep on rows this test owns in the shared database.
+function cleanup(requests: readonly OwnedRequest[]) {
+  return processCleanupExpiredExports({
+    expireDataRequests: batchSize =>
+      expireDataRequests(
+        batchSize,
+        requests.map(request => request.id),
+      ),
+  })
+}
+
+function keyOf(request: OwnedRequest): string {
+  return `test/${request.id}.zip`
+}
+
+async function createExpiredRequests(count: number): Promise<OwnedRequest[]> {
+  const users = await Promise.all(Array.from({ length: count }, () => createTestUser()))
+  const requests = await Promise.all(users.map(user => createDataRequest(user.id, user.id)))
+  await Promise.all(
+    requests.map(async request => {
+      await markDataRequestProcessing(request.id)
+      await markDataRequestReady(request.id, keyOf(request), new Date(Date.now() + 60_000))
+      await expireUserDataRequestForTest(request.id)
+    }),
+  )
+  return requests
+}
+
+function deleteCommand(command: unknown): DeleteCommand {
+  return command as DeleteCommand
+}
+
+function deletedKeys(requests: readonly OwnedRequest[]): string[] {
+  const owned = new Set(requests.map(request => keyOf(request)))
+  return mockS3Send.mock.calls
+    .flatMap(([command]) => deleteCommand(command).input.Delete?.Objects ?? [])
+    .flatMap(object => (object.Key && owned.has(object.Key) ? [object.Key] : []))
+    .toSorted()
+}
+
+function statuses(requests: readonly OwnedRequest[]) {
+  return Promise.all(
+    requests.map(async request => {
+      const row = await getUserDataRequestStatusAndS3KeyForTest(request.id)
+      if (!row) throw new Error('Expected the data request row')
+      return row
+    }),
+  )
+}

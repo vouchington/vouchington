@@ -1,294 +1,300 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { join } from 'node:path'
-import * as fsPromises from 'node:fs/promises'
-import type {
-  deleteExportFromS3,
-  finishDataRequestUpload,
-  leaseDataRequestUpload,
-  markDataRequestFailed,
-  markDataRequestProcessing,
-  markDataRequestReady,
-  uploadExportToS3,
-  wasDataRequestMadeBySubject,
-  writeExportFiles,
-  zipDir,
-} from '@services/account-data-requests'
-import type { getPrivateUserByAny } from '@services/users/get'
-import type { enqueueSendDataExportReadyEmail } from '@queues/emails/enqueues'
+import { readdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+  type MockInstance,
+} from 'vitest'
 import { dataRequestPubSub } from '@data-stores/valkey-pubsub'
+import { S3Buckets } from '@modules/aws'
+import {
+  createDataRequest,
+  getDataRequestById,
+  markDataRequestFailed,
+} from '@services/account-data-requests'
+import { emails } from '@queues/emails/queues'
+import {
+  createTestUser,
+  getTestDataRequestAttemptFence,
+  updateTestUserUiLocale,
+} from '@voucha/test-helpers'
+import {
+  rejectPostgresReadForTest,
+  rejectPostgresWriteForTest,
+} from '@voucha/test-helpers/injected-failures'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { processExportRequest } from './account-data-requests.mts'
 import { publishTerminalStatus } from './account-data-request-publish-terminal-status.mts'
 
-vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), () => ({
-  mkdtemp: vi.fn<VitestLooseMock>(),
-  rm: vi.fn<VitestLooseMock>(),
+// Only the external S3 provider call is replaced; the database, queues, files and zip are real.
+const mockS3Send = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>())
+vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => ({
+  ...(await importOriginal<typeof import('@modules/aws')>()),
+  S3ImagesClient: { send: mockS3Send } as unknown as typeof import('@modules/aws').S3ImagesClient,
 }))
 
-const mockDeleteExportFromS3 = vi.fn<typeof deleteExportFromS3>()
-const mockFinishDataRequestUpload = vi.fn<typeof finishDataRequestUpload>()
-const mockEnqueueSendDataExportReadyEmail = vi.fn<typeof enqueueSendDataExportReadyEmail>()
-const mockGetPrivateUserByAny = vi.fn<typeof getPrivateUserByAny>()
-const mockLeaseDataRequestUpload = vi.fn<typeof leaseDataRequestUpload>()
-const mockMarkDataRequestFailed = vi.fn<typeof markDataRequestFailed>()
-const mockMarkDataRequestProcessing = vi.fn<typeof markDataRequestProcessing>()
-const mockMarkDataRequestReady = vi.fn<typeof markDataRequestReady>()
-const mockPublishTerminalStatus =
-  vi.fn<(requestId: string, status: 'ready' | 'failed') => Promise<void>>()
-const mockUploadExportToS3 = vi.fn<typeof uploadExportToS3>()
-const mockWriteExportFiles = vi.fn<typeof writeExportFiles>()
-const mockWasDataRequestMadeBySubject = vi.fn<typeof wasDataRequestMadeBySubject>()
-const mockZipDir = vi.fn<typeof zipDir>()
-const PROCESSING_ATTEMPT_ID = 'attempt-456'
+type SentCommand = { constructor: { name: string }; input: { Bucket?: string; Key?: string } }
 
 describe('processExportRequest', () => {
-  const requestId = 'request-123'
-  const userId = 'user-123'
-  const tmpDir = '/tmp/voucha-export-request-123-abc'
-  const exportDir = join(tmpDir, 'export')
-  const zipPath = join(tmpDir, `${requestId}.zip`)
-  const s3Key = `${requestId}/${PROCESSING_ATTEMPT_ID}.zip`
+  const s3Send = mockS3Send
+  let publish: MockInstance<typeof dataRequestPubSub.publish>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(fsPromises.mkdtemp).mockResolvedValue(tmpDir)
-    vi.mocked(fsPromises.rm).mockResolvedValue(undefined)
-    mockDeleteExportFromS3.mockResolvedValue(undefined)
-    mockFinishDataRequestUpload.mockResolvedValue(undefined)
-    mockEnqueueSendDataExportReadyEmail.mockResolvedValue(true)
-    mockGetPrivateUserByAny.mockResolvedValue({
-      id: userId,
-      __entity_type: 'user',
-      roles: [],
-      email_address: 'tests+user@voucha.ai',
-      ui_locale: 'fr',
-    } as never)
-    mockLeaseDataRequestUpload.mockResolvedValue(new Date(Date.now() + 60_000))
-    mockMarkDataRequestFailed.mockResolvedValue(true)
-    mockMarkDataRequestProcessing.mockResolvedValue(true)
-    mockMarkDataRequestReady.mockResolvedValue(true)
-    mockPublishTerminalStatus.mockResolvedValue(undefined)
-    mockUploadExportToS3.mockResolvedValue(s3Key)
-    mockWasDataRequestMadeBySubject.mockResolvedValue(true)
-    mockWriteExportFiles.mockResolvedValue(undefined)
-    mockZipDir.mockResolvedValue(undefined)
+    s3Send.mockReset()
+    s3Send.mockResolvedValue({})
+    publish = vi.spyOn(dataRequestPubSub, 'publish')
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  it('uploads zip to S3 and marks request ready', async () => {
-    await runExportRequest(requestId, userId)
-    expect(mockLeaseDataRequestUpload).toHaveBeenCalledWith(requestId, PROCESSING_ATTEMPT_ID)
-    expect(mockUploadExportToS3).toHaveBeenCalledWith(
-      requestId,
-      PROCESSING_ATTEMPT_ID,
-      zipPath,
-      expect.any(AbortSignal),
-    )
-    expect(mockFinishDataRequestUpload).toHaveBeenCalledWith(requestId, PROCESSING_ATTEMPT_ID)
-    expect(mockMarkDataRequestReady).toHaveBeenCalledWith(
-      requestId,
-      s3Key,
-      expect.any(Date),
-      PROCESSING_ATTEMPT_ID,
-    )
+  it('uploads the zip to the export bucket, marks the request ready, and emails the subject', async () => {
+    const { subject, request } = await startRequest()
+    await updateTestUserUiLocale(subject.id, 'fr')
+
+    await processExportRequest(request.id, subject.id, request.processing_attempt_id)
+
+    const key = `${request.id}/${request.processing_attempt_id}.zip`
+    expect(sentCommands(request.id)).toEqual([
+      { name: 'PutObjectCommand', bucket: S3Buckets.userExports, key },
+    ])
+    const ready = await getDataRequestById(subject.id, subject.id, request.id)
+    expect(ready).toMatchObject({ status: 'ready', s3_key: key })
+    expect(ready?.expires_at).toBeInstanceOf(Date)
+    expect((await getTestDataRequestAttemptFence(request.id))?.upload_lease_expires_at).toBeNull()
+    expect(publish).toHaveBeenCalledWith(request.id, { status: 'ready' })
+    const email = await emails.getJob(`data-export-ready__${request.id}`)
+    expect(email?.data).toEqual({
+      input: { userId: subject.id, uiLocale: 'fr' },
+      variables: { requestId: request.id },
+    })
+    expect(await leftoverTempDirs(request.id)).toEqual([])
   })
 
-  it('enqueues a user-targeted email notification when the user exists', async () => {
-    await runExportRequest(requestId, userId)
+  it('emails a subject without a UI locale with a null locale', async () => {
+    const { subject, request } = await startRequest()
+    await updateTestUserUiLocale(subject.id, null)
 
-    expect(mockEnqueueSendDataExportReadyEmail).toHaveBeenCalledWith(
-      { userId, uiLocale: 'fr' },
-      { requestId },
-    )
-    expect(mockEnqueueSendDataExportReadyEmail.mock.calls[0]?.[1]).not.toHaveProperty('downloadUrl')
+    await processExportRequest(request.id, subject.id, request.processing_attempt_id)
+
+    const email = await emails.getJob(`data-export-ready__${request.id}`)
+    expect(email?.data).toEqual({
+      input: { userId: subject.id, uiLocale: null },
+      variables: { requestId: request.id },
+    })
   })
 
-  it('enqueues a user-targeted email when the user has no email address', async () => {
-    mockGetPrivateUserByAny.mockResolvedValue({
-      id: userId,
-      __entity_type: 'user',
-      roles: [],
-      email_address: undefined,
-    } as never)
+  it('does not email the subject about an export that an administrator requested', async () => {
+    const { subject, requester, request } = await startRequest({ administrator: true })
 
-    await runExportRequest(requestId, userId)
+    await processExportRequest(request.id, subject.id, request.processing_attempt_id)
 
-    expect(mockEnqueueSendDataExportReadyEmail).toHaveBeenCalledWith(
-      { userId, uiLocale: null },
-      { requestId },
-    )
+    expect((await getDataRequestById(subject.id, requester.id, request.id))?.status).toBe('ready')
+    expect(publish).toHaveBeenCalledWith(request.id, { status: 'ready' })
+    expect(await emails.getJob(`data-export-ready__${request.id}`)).toBeNull()
   })
 
-  it('skips email when user is not found', async () => {
-    mockGetPrivateUserByAny.mockResolvedValue(null)
+  it('does not start a request whose attempt was already claimed', async () => {
+    const { subject, request } = await startRequest()
+    await processExportRequest(request.id, subject.id, request.processing_attempt_id)
+    s3Send.mockClear()
+    publish.mockClear()
 
-    await runExportRequest(requestId, userId)
+    await processExportRequest(request.id, subject.id, request.processing_attempt_id)
 
-    expect(mockEnqueueSendDataExportReadyEmail).not.toHaveBeenCalled()
+    expect(sentCommands(request.id)).toEqual([])
+    expect(publish).not.toHaveBeenCalled()
   })
 
-  it('cleans up tmp dir on success', async () => {
-    await runExportRequest(requestId, userId)
+  it('does not upload when the attempt cannot take the provider-effect lease', async () => {
+    const { subject, request } = await startRequest()
 
-    expect(mockWriteExportFiles).toHaveBeenCalledWith(userId, exportDir)
-    expect(mockZipDir).toHaveBeenCalledWith(exportDir, zipPath)
-    expect(fsPromises.rm).toHaveBeenCalledWith(tmpDir, { recursive: true, force: true })
+    await processExportRequest(request.id, subject.id)
+
+    expect(sentCommands(request.id)).toEqual([])
+    expect(await getDataRequestById(subject.id, subject.id, request.id)).toMatchObject({
+      status: 'processing',
+      last_error_message: null,
+    })
+    expect(publish).not.toHaveBeenCalled()
   })
 
-  it('does not start if markDataRequestProcessing returns false', async () => {
-    mockMarkDataRequestProcessing.mockResolvedValue(false)
+  it('marks the request failed, publishes the failure, and cleans up after an upload error', async () => {
+    const { subject, request } = await startRequest()
+    s3Send.mockRejectedValue(new Error('S3 upload failed'))
 
-    await runExportRequest(requestId, userId)
+    await expect(
+      processExportRequest(request.id, subject.id, request.processing_attempt_id),
+    ).rejects.toThrow(`Export failed for request ${request.id}`)
 
-    expect(mockWriteExportFiles).not.toHaveBeenCalled()
+    expect(await getDataRequestById(subject.id, subject.id, request.id)).toMatchObject({
+      status: 'failed',
+      last_error_message: 'S3 upload failed',
+    })
+    expect(publish).toHaveBeenCalledWith(request.id, { status: 'failed' })
+    expect(
+      (await getTestDataRequestAttemptFence(request.id))?.upload_lease_expires_at,
+    ).not.toBeNull()
+    expect(await leftoverTempDirs(request.id)).toEqual([])
   })
 
-  it('does not upload if deletion wins before the provider-effect lease', async () => {
-    mockLeaseDataRequestUpload.mockResolvedValue(null)
+  it('leaves a retryable failure unpublished before the final attempt', async () => {
+    const { subject, request } = await startRequest()
+    s3Send.mockRejectedValue(new Error('S3 upload failed'))
 
-    await runExportRequest(requestId, userId)
+    await expect(
+      processExportRequest(request.id, subject.id, request.processing_attempt_id, false),
+    ).rejects.toThrow(`Export failed for request ${request.id}`)
 
-    expect(mockUploadExportToS3).not.toHaveBeenCalled()
-    expect(mockFinishDataRequestUpload).not.toHaveBeenCalled()
-    expect(mockMarkDataRequestFailed).not.toHaveBeenCalled()
+    expect(await getDataRequestById(subject.id, subject.id, request.id)).toMatchObject({
+      status: 'pending',
+      last_error_message: 'S3 upload failed',
+    })
+    expect(publish).not.toHaveBeenCalled()
   })
 
-  it('marks request failed and cleans up tmp dir on error', async () => {
-    mockUploadExportToS3.mockRejectedValue(new Error('S3 upload failed'))
+  it('does not publish a failure for a request that another path already failed', async () => {
+    const { subject, request } = await startRequest()
+    s3Send.mockImplementation(async () => {
+      await markDataRequestFailed(request.id, request.processing_attempt_id, 'failed elsewhere')
+      throw new Error('S3 upload failed')
+    })
 
-    await expect(runExportRequest(requestId, userId)).rejects.toThrow(
-      `Export failed for request ${requestId}`,
-    )
+    await expect(
+      processExportRequest(request.id, subject.id, request.processing_attempt_id),
+    ).rejects.toThrow(`Export failed for request ${request.id}`)
 
-    expect(mockMarkDataRequestFailed).toHaveBeenCalledWith(
-      requestId,
-      PROCESSING_ATTEMPT_ID,
-      'S3 upload failed',
-      true,
-    )
-    expect(mockPublishTerminalStatus).toHaveBeenCalledWith(requestId, 'failed')
-    expect(mockFinishDataRequestUpload).not.toHaveBeenCalled()
-    expect(fsPromises.rm).toHaveBeenCalledWith(tmpDir, { recursive: true, force: true })
+    expect(await getDataRequestById(subject.id, subject.id, request.id)).toMatchObject({
+      status: 'failed',
+      last_error_message: 'failed elsewhere',
+    })
+    expect(publish).not.toHaveBeenCalled()
   })
 
   it.each([
-    { finalAttempt: false, lifecycleSaved: true },
-    { finalAttempt: true, lifecycleSaved: false },
+    ['succeeds', async () => ({})],
+    ['fails', async () => Promise.reject(new Error('S3 error'))],
   ])(
-    'does not publish a non-terminal or stale failure',
-    async ({ finalAttempt, lifecycleSaved }) => {
-      mockUploadExportToS3.mockRejectedValue(new Error('S3 upload failed'))
-      mockMarkDataRequestFailed.mockResolvedValue(lifecycleSaved)
+    'deletes the orphaned S3 object when the request failed during upload and the delete %s',
+    async (_outcome, deleteResult) => {
+      const { subject, request } = await startRequest()
+      s3Send.mockImplementation(async command => {
+        if (commandName(command) === 'DeleteObjectCommand') return deleteResult()
+        await markDataRequestFailed(request.id, request.processing_attempt_id, 'account deleted')
+        return {}
+      })
 
       await expect(
-        processExportRequest(
-          requestId,
-          userId,
-          getExportRequestDependencies(),
-          PROCESSING_ATTEMPT_ID,
-          finalAttempt,
-        ),
-      ).rejects.toThrow(`Export failed for request ${requestId}`)
+        processExportRequest(request.id, subject.id, request.processing_attempt_id),
+      ).resolves.toBeUndefined()
 
-      expect(mockMarkDataRequestFailed).toHaveBeenCalledWith(
-        requestId,
-        PROCESSING_ATTEMPT_ID,
-        'S3 upload failed',
-        finalAttempt,
-      )
-      expect(mockPublishTerminalStatus).not.toHaveBeenCalled()
+      expect(sentCommands(request.id)).toEqual([
+        {
+          name: 'PutObjectCommand',
+          bucket: S3Buckets.userExports,
+          key: `${request.id}/${request.processing_attempt_id}.zip`,
+        },
+        {
+          name: 'DeleteObjectCommand',
+          bucket: S3Buckets.userExports,
+          key: `${request.id}/${request.processing_attempt_id}.zip`,
+        },
+      ])
+      expect(await getDataRequestById(subject.id, subject.id, request.id)).toMatchObject({
+        status: 'failed',
+        last_error_message: 'account deleted',
+        s3_key: null,
+      })
+      expect(publish).not.toHaveBeenCalled()
+      expect(await emails.getJob(`data-export-ready__${request.id}`)).toBeNull()
     },
   )
 
-  it('deletes orphaned S3 object when markDataRequestReady returns false (account deleted)', async () => {
-    mockMarkDataRequestReady.mockResolvedValue(false)
+  it('publishes ready when releasing the settled-upload lease fails', async () => {
+    const { subject, request } = await startRequest()
+    onTestFinished(
+      rejectPostgresWriteForTest('finishDataRequestUpload', new Error('database unavailable')),
+    )
 
-    await runExportRequest(requestId, userId)
+    await expect(
+      processExportRequest(request.id, subject.id, request.processing_attempt_id),
+    ).resolves.toBeUndefined()
 
-    expect(mockDeleteExportFromS3).toHaveBeenCalledWith(s3Key)
-    expect(mockMarkDataRequestFailed).not.toHaveBeenCalled()
-    expect(mockEnqueueSendDataExportReadyEmail).not.toHaveBeenCalled()
+    expect((await getDataRequestById(subject.id, subject.id, request.id))?.status).toBe('ready')
+    expect(publish).toHaveBeenCalledWith(request.id, { status: 'ready' })
   })
 
-  it('publishes ready status when the settled-upload lease release fails', async () => {
-    mockFinishDataRequestUpload.mockRejectedValue(new Error('database unavailable'))
+  it.each(['getPrivateUserByAny', 'wasDataRequestMadeBySubject'])(
+    'keeps the export ready when the %s notification lookup rejects',
+    async marker => {
+      const { subject, request } = await startRequest()
+      onTestFinished(rejectPostgresReadForTest(marker, new Error('best-effort failure')))
 
-    await expect(runExportRequest(requestId, userId)).resolves.toBeUndefined()
+      await expect(
+        processExportRequest(request.id, subject.id, request.processing_attempt_id),
+      ).resolves.toBeUndefined()
 
-    expect(mockMarkDataRequestReady).toHaveBeenCalled()
-    expect(mockPublishTerminalStatus).toHaveBeenCalledWith(requestId, 'ready')
+      expect((await getDataRequestById(subject.id, subject.id, request.id))?.status).toBe('ready')
+      expect(await emails.getJob(`data-export-ready__${request.id}`)).toBeNull()
+    },
+  )
+
+  it('keeps the export ready when the notification enqueue rejects', async () => {
+    const { subject, request } = await startRequest()
+    const add = vi.spyOn(emails, 'add').mockRejectedValue(new Error('best-effort failure'))
+
+    await expect(
+      processExportRequest(request.id, subject.id, request.processing_attempt_id),
+    ).resolves.toBeUndefined()
+
+    expect(add).toHaveBeenCalledOnce()
+    expect((await getDataRequestById(subject.id, subject.id, request.id))?.status).toBe('ready')
   })
 
-  it('does not throw when orphaned S3 delete fails after markDataRequestReady returns false', async () => {
-    mockMarkDataRequestReady.mockResolvedValue(false)
-    mockDeleteExportFromS3.mockRejectedValue(new Error('S3 error'))
-
-    await expect(runExportRequest(requestId, userId)).resolves.toBeUndefined()
-    expect(mockMarkDataRequestFailed).not.toHaveBeenCalled()
-  })
-
-  it.each([
-    ['getPrivateUserByAny', mockGetPrivateUserByAny],
-    ['wasDataRequestMadeBySubject', mockWasDataRequestMadeBySubject],
-    ['email enqueue', mockEnqueueSendDataExportReadyEmail],
-  ])('resolves successfully when %s rejects (best-effort email)', async (_name, mock) => {
-    mock.mockRejectedValue(new Error('best-effort failure'))
-
-    await expect(runExportRequest(requestId, userId)).resolves.toBeUndefined()
-    expect(mockMarkDataRequestFailed).not.toHaveBeenCalled()
-  })
-
-  it('does not email the subject about an export that someone else requested', async () => {
-    mockWasDataRequestMadeBySubject.mockResolvedValue(false)
-
-    await runExportRequest(requestId, userId)
-
-    expect(mockWasDataRequestMadeBySubject).toHaveBeenCalledWith(requestId)
-    expect(mockPublishTerminalStatus).toHaveBeenCalledWith(requestId, 'ready')
-    expect(mockEnqueueSendDataExportReadyEmail).not.toHaveBeenCalled()
-  })
+  function sentCommands(requestId: string) {
+    return s3Send.mock.calls
+      .map(([command]) => command as unknown as SentCommand)
+      .filter(command => command.input.Key?.startsWith(`${requestId}/`))
+      .map(command => ({
+        name: command.constructor.name,
+        bucket: command.input.Bucket,
+        key: command.input.Key,
+      }))
+  }
 })
 
 describe('publishTerminalStatus', () => {
-  it('retries default pub/sub publisher and reports the terminal failure', async () => {
-    const reportError = vi.fn<(error: Error) => void>()
+  it('retries the pub/sub publish and reports the terminal failure', async () => {
     const publish = vi
       .spyOn(dataRequestPubSub, 'publish')
       .mockRejectedValue('publish failed' as never)
+    onTestFinished(() => publish.mockRestore())
 
-    try {
-      await publishTerminalStatus('request-terminal', 'failed', { onError: reportError })
+    await publishTerminalStatus('request-terminal', 'failed')
 
-      expect(publish).toHaveBeenCalledTimes(3)
-      expect(publish).toHaveBeenCalledWith('request-terminal', { status: 'failed' })
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error))
-    } finally {
-      publish.mockRestore()
-    }
+    expect(publish).toHaveBeenCalledTimes(3)
+    expect(publish).toHaveBeenCalledWith('request-terminal', { status: 'failed' })
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
+    expect(sentryCaptureExceptionMock.mock.calls[0]?.[0]).toEqual(new Error('publish failed'))
   })
 })
 
-function runExportRequest(requestId: string, userId: string): Promise<void> {
-  return processExportRequest(
-    requestId,
-    userId,
-    getExportRequestDependencies(),
-    PROCESSING_ATTEMPT_ID,
-  )
+function commandName(command: unknown): string {
+  return (command as SentCommand).constructor.name
 }
 
-function getExportRequestDependencies() {
-  return {
-    deleteExportFromS3: mockDeleteExportFromS3,
-    enqueueSendDataExportReadyEmail: mockEnqueueSendDataExportReadyEmail,
-    finishDataRequestUpload: mockFinishDataRequestUpload,
-    getPrivateUserByAny: mockGetPrivateUserByAny,
-    leaseDataRequestUpload: mockLeaseDataRequestUpload,
-    markDataRequestFailed: mockMarkDataRequestFailed,
-    markDataRequestProcessing: mockMarkDataRequestProcessing,
-    markDataRequestReady: mockMarkDataRequestReady,
-    publishTerminalStatus: mockPublishTerminalStatus,
-    uploadExportToS3: mockUploadExportToS3,
-    wasDataRequestMadeBySubject: mockWasDataRequestMadeBySubject,
-    writeExportFiles: mockWriteExportFiles,
-    zipDir: mockZipDir,
-  }
+async function startRequest(options: { administrator?: boolean } = {}) {
+  const subject = await createTestUser()
+  const requester = options.administrator ? await createTestUser({ administrator: true }) : subject
+  const request = await createDataRequest(subject.id, requester.id)
+  return { subject, requester, request }
+}
+
+async function leftoverTempDirs(requestId: string): Promise<string[]> {
+  return (await readdir(tmpdir())).filter(name => name.startsWith(`voucha-export-${requestId}-`))
 }

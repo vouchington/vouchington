@@ -4,26 +4,19 @@ import {
   claimRecoverableDataRequests,
   deleteExportsFromS3,
 } from '@services/account-data-requests'
-import {
-  enqueueBulkExportRequests,
-  enqueueOrReactivateBulkExportRequests,
-} from '@queues/account-lifecycle/enqueues/account-data-requests'
+import { enqueueOrReactivateBulkExportRequests } from '@queues/account-lifecycle/enqueues/account-data-requests'
 
 type CleanupExpiredExportsDependencies = {
-  deleteExportsFromS3: typeof deleteExportsFromS3
   expireDataRequests: typeof expireDataRequests
 }
 type RecoverExportRequestsDependencies = {
   claimRecoverableDataRequests: typeof claimRecoverableDataRequests
-  enqueueBulkExportRequests: typeof enqueueBulkExportRequests
 }
 
 export async function recoverExportRequests(
   dependencies?: Partial<RecoverExportRequestsDependencies>,
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   const claimRequests = dependencies?.claimRecoverableDataRequests ?? claimRecoverableDataRequests
-  const enqueueRequests =
-    dependencies?.enqueueBulkExportRequests ?? enqueueOrReactivateBulkExportRequests
   const { batchSize, maxBatches } = getDataRequestLimits()
   let enqueued = 0
   let hasMore = false
@@ -32,7 +25,7 @@ export async function recoverExportRequests(
     const result = await claimRequests(undefined, batchSize) // oxlint-disable-line no-await-in-loop -- committed recovery claims become ineligible before the next page.
     if (result.requests.length > 0) {
       // oxlint-disable-next-line no-await-in-loop -- one configured page of enqueues per claimed batch.
-      await enqueueRequests(result.requests)
+      await enqueueOrReactivateBulkExportRequests(result.requests)
     }
     enqueued += result.requests.length
     hasMore = result.hasMore
@@ -45,7 +38,6 @@ export async function processCleanupExpiredExports(
   dependencies?: Partial<CleanupExpiredExportsDependencies>,
 ): Promise<{ hasMore: boolean }> {
   const expireRequests = dependencies?.expireDataRequests ?? expireDataRequests
-  const deleteExports = dependencies?.deleteExportsFromS3 ?? deleteExportsFromS3
   const { batchSize, maxBatches } = getDataRequestLimits()
   for (let batch = 0; batch < maxBatches; batch++) {
     // no-mistakes-disable-next-line query-reached-per-item: page loop, not per item; each iteration is one batched expiry whose commit removes those rows from the next page, and S3 deletes stay bounded to one page.
@@ -53,7 +45,7 @@ export async function processCleanupExpiredExports(
     if (s3Keys.length === 0) return { hasMore: false }
     try {
       // oxlint-disable-next-line no-await-in-loop -- bound provider work to one claimed page.
-      await deleteExports(s3Keys)
+      await deleteExportsFromS3(s3Keys)
     } catch {
       // Non-fatal: S3 lifecycle will eventually reclaim failed objects.
     }

@@ -1,13 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import type {
-  claimRecoverableUserDeletions,
-  processUserDeletionBatch,
-} from '@services/user-deletions'
-import type {
-  enqueueBulkUserDeletions,
-  enqueueUserDeletion,
-} from '@queues/account-lifecycle/enqueues/user-deletions'
+import { claimRecoverableUserDeletions, createUserDeletionRequest } from '@services/user-deletions'
+import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import { createTestUser } from '@voucha/test-helpers'
+import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
+import {
+  getUserDeletionRequestForTest,
+  makeUserDeletionRecoverableForTest,
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 import {
   ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB,
   ACCOUNT_LIFECYCLE_USER_DELETION_JOB,
@@ -107,46 +107,61 @@ describe('user-deletions processor', () => {
     expect(processDeletion).not.toHaveBeenCalled()
   })
 
-  it('processes one fenced deletion batch', async () => {
-    const next = { requestId: 'request-1', processingAttemptId: 'attempt-2' }
-    const processBatch = vi.fn<typeof processUserDeletionBatch>().mockResolvedValue(next)
-    const enqueue = vi.fn<typeof enqueueUserDeletion>().mockResolvedValue()
+  it('processes one fenced deletion batch and enqueues its successor attempt', async () => {
+    const user = await createTestUser()
+    const request = await createUserDeletionRequest(user.id, user.id)
 
-    await processUserDeletion(
-      'request-1',
-      'attempt-1',
-      { isFinalAttempt: true },
-      {
-        processUserDeletionBatch: processBatch,
-        enqueueUserDeletion: enqueue,
-      },
-    )
+    await processUserDeletion(request.id, request.processingAttemptId, { isFinalAttempt: true })
 
-    expect(processBatch).toHaveBeenCalledWith(
-      'request-1',
-      'attempt-1',
-      {
-        processPhaseBatch: expect.any(Function),
-      },
-      {
-        isFinalAttempt: true,
-      },
+    const advanced = await getUserDeletionRequestForTest(request.id)
+    expect(advanced?.processingAttempts).toBe(1)
+    expect(advanced?.currentPhase).not.toBe('posts')
+    const successor = await accountLifecycle.getJob(
+      `user-deletion__${request.id}__${advanced?.processingAttemptId}`,
     )
-    expect(enqueue).toHaveBeenCalledWith(next)
+    expect(successor?.data).toEqual({
+      requestId: request.id,
+      processingAttemptId: advanced?.processingAttemptId,
+    })
   })
 
+  it.each([
+    { isFinalAttempt: true, rotatesToken: true },
+    { isFinalAttempt: false, rotatesToken: false },
+  ])(
+    'passes isFinalAttempt=$isFinalAttempt to the failed-attempt release',
+    async ({ isFinalAttempt, rotatesToken }) => {
+      const user = await createTestUser()
+      const request = await createUserDeletionRequest(user.id, user.id)
+      onTestFinished(rejectNextPostgresTransactionForTest(new Error('provider unavailable')))
+
+      await expect(
+        processUserDeletion(request.id, request.processingAttemptId, { isFinalAttempt }),
+      ).rejects.toThrow('provider unavailable')
+
+      const released = await getUserDeletionRequestForTest(request.id)
+      expect(released?.processingAttemptId === request.processingAttemptId).toBe(!rotatesToken)
+    },
+  )
+
   it('recovers durable requests and enqueues their recoverable attempts', async () => {
-    const claimed = [{ requestId: 'request-1', processingAttemptId: 'attempt-2' }]
-    const claim = vi.fn<typeof claimRecoverableUserDeletions>().mockResolvedValue(claimed)
-    const enqueue = vi.fn<typeof enqueueBulkUserDeletions>().mockResolvedValue([])
+    const user = await createTestUser()
+    const request = await createUserDeletionRequest(user.id, user.id)
+    await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
 
     await expect(
       recoverUserDeletions({
-        claimRecoverableUserDeletions: claim,
-        enqueueBulkUserDeletions: enqueue,
+        claimRecoverableUserDeletions: () => claimRecoverableUserDeletions([request.id]),
       }),
     ).resolves.toEqual({ enqueued: 1 })
-    expect(enqueue).toHaveBeenCalledWith(claimed)
+
+    const queued = await accountLifecycle.getJob(
+      `user-deletion__${request.id}__${request.processingAttemptId}`,
+    )
+    expect(queued?.data).toEqual({
+      requestId: request.id,
+      processingAttemptId: request.processingAttemptId,
+    })
   })
 
   it('rejects unknown job names', async () => {
