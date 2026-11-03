@@ -13,12 +13,10 @@ const DEFAULT_DNS_TIMEOUT_MS = 5000
 
 type ResolveSafeCrawlerAddressesDependencies = {
   validateUrl: typeof validateUrl
-  unsafeUrlError: typeof UnsafeUrlError
 }
 
 const defaultDependencies: ResolveSafeCrawlerAddressesDependencies = {
   validateUrl,
-  unsafeUrlError: UnsafeUrlError,
 }
 
 export interface ResolveSafeCrawlerAddressesOptions {
@@ -39,7 +37,7 @@ export async function resolveSafeCrawlerAddresses(
     return await dependencies.validateUrl(url, { timeoutMs })
   } catch (err) {
     const duration = Date.now() - startedAt
-    if (err instanceof dependencies.unsafeUrlError) {
+    if (err instanceof UnsafeUrlError) {
       throw new CrawlerSsrfError(url, err.reason)
     }
     // ssrf-guard rejects a DNS timeout with an Error named `AbortError` whose message is "DNS

@@ -7,22 +7,10 @@ import {
 import type { validateUrl as validateSafeUrl } from 'ssrf-guard/node'
 import { resolveSafeCrawlerAddresses } from './safety.mts'
 
-class TestUnsafeUrlError extends Error {
-  rawUrl: string
-  reason: string
-  constructor(rawUrl: string, reason: string) {
-    super(`Unsafe URL: ${reason} (${rawUrl})`)
-    this.name = 'UnsafeUrlError'
-    this.rawUrl = rawUrl
-    this.reason = reason
-  }
-}
-
 const mockValidateUrl = vi.fn<typeof validateSafeUrl>()
 
 const makeDependencies = () => ({
   validateUrl: mockValidateUrl,
-  unsafeUrlError: TestUnsafeUrlError,
 })
 
 describe('resolveSafeCrawlerAddresses', () => {
@@ -60,11 +48,9 @@ describe('resolveSafeCrawlerAddresses', () => {
   })
 
   it('wraps UnsafeUrlError as CrawlerSsrfError', async () => {
-    mockValidateUrl.mockRejectedValueOnce(new TestUnsafeUrlError('https://10.0.0.1/', 'private IP'))
-
-    await expect(
-      resolveSafeCrawlerAddresses('https://10.0.0.1/', { dependencies: makeDependencies() }),
-    ).rejects.toBeInstanceOf(CrawlerSsrfError)
+    await expect(resolveSafeCrawlerAddresses('https://10.0.0.1/')).rejects.toBeInstanceOf(
+      CrawlerSsrfError,
+    )
   })
 
   it('wraps a DNS resolution timeout (AbortError) as CrawlerTimeoutError', async () => {

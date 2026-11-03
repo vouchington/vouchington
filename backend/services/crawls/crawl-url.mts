@@ -103,7 +103,6 @@ export const crawlUrl = async (
     try {
       const redirect = await handleCrawlRedirect({
         crawlId: crawl.id,
-        dependencies,
         htmlResult,
         hopCount,
         options: scopedOptions,
