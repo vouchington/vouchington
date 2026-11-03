@@ -23,7 +23,6 @@ describe('current EXPLAIN read inventory', () => {
         'backend/services/crawls/get-html-by-url-ids.mts',
         'backend/services/bedrock-embeddings-batch/orchestrator/results.mts',
         'backend/services/users/get.mts',
-        'backend/services/rss-feeds/reconcile-item-language.mts',
         'backend/services/stories/get-post-stories.mts',
         'backend/services/urls/get.mts',
         'backend/services/entity-cache/keys.mts',
@@ -41,7 +40,6 @@ describe('current EXPLAIN read inventory', () => {
       for (const name of [
         'getLatestHtmlByUrlIds',
         'downloadBatchResults',
-        'reenqueueItemLanguageDetectionIfNeeded',
         'getPostStoryIdsByStoryIds',
         'getPostStoryByPostId',
         'getUrlById',
