@@ -24,7 +24,6 @@ import { requestBlueskyDisconnect } from './disconnect-request.mts'
 import { withBlueskyDisconnectLock } from './disconnect-lock.mts'
 
 type ExactGeneration = { blueskyDid: string; linkAuthorizationId: string }
-type DisconnectExactGeneration = (userId: string, generation: ExactGeneration) => Promise<void>
 
 // Best-effort, like sanitizeStripeCustomers in @services/users/delete.mts: one Bluesky failure
 // must not block the others or the disconnect itself. Successful deletes remove receipts eagerly;
@@ -61,13 +60,9 @@ async function deleteBlueskyFollowRecordsForFollower(
 export async function disconnectAcceptedBlueskyAccountAndCleanupFollows(
   userId: string,
   generation: ExactGeneration,
-  dependencies?: { disconnectWithoutLock?: DisconnectExactGeneration },
 ): Promise<void> {
   await withBlueskyDisconnectLock(userId, () =>
-    (dependencies?.disconnectWithoutLock ?? disconnectAcceptedBlueskyAccountWithoutLock)(
-      userId,
-      generation,
-    ),
+    disconnectAcceptedBlueskyAccountWithoutLock(userId, generation),
   )
 }
 
@@ -117,12 +112,7 @@ async function cleanupFollowerRoleBeforeDisconnect(
 
 export async function disconnectBlueskyAccountAndCleanupFollows(
   userId: string,
-  dependencies?: {
-    query?: TransactionQuery
-    enqueueDisconnectRequested?: typeof enqueueDisconnectRequested
-    reportError?: typeof onError
-    disconnectWithoutLock?: DisconnectExactGeneration
-  },
+  dependencies?: { query?: TransactionQuery },
 ): Promise<void> {
   await runWithTransaction(dependencies?.query, async query => {
     await query(
@@ -133,13 +123,10 @@ export async function disconnectBlueskyAccountAndCleanupFollows(
     registerPostCommitAction(query, () =>
       withBlueskyDisconnectLock(userId, async () => {
         try {
-          await (dependencies?.enqueueDisconnectRequested ?? enqueueDisconnectRequested)(request)
+          await enqueueDisconnectRequested(request)
         } catch (err) {
-          const reportError = dependencies?.reportError ?? onError
-          reportError(err instanceof Error ? err : new Error(String(err)))
-          await (
-            dependencies?.disconnectWithoutLock ?? disconnectAcceptedBlueskyAccountWithoutLock
-          )(userId, request)
+          onError(err instanceof Error ? err : new Error(String(err)))
+          await disconnectAcceptedBlueskyAccountWithoutLock(userId, request)
         }
       }),
     )

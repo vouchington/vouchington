@@ -1,5 +1,5 @@
 import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
-import { afterAll, afterEach, describe, expect, it, onTestFinished } from 'vitest'
+import { afterAll, afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import { adminImportsWorkConfig } from '@queues/admin-imports/config'
 import { enqueueAdminTopicImportDispatch } from '@queues/admin-imports/enqueues'
@@ -24,6 +24,7 @@ import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
+import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
 import { getRssFeedImportRowIds } from '@voucha/test-helpers/rss-feed-import-rows'
 import { adminImportsHandlers } from '../../admin-imports/workers.mts'
 import { userRssFeedImportsHandlers } from '../../user-rss-feed-imports/workers.mts'
@@ -143,22 +144,24 @@ describe('imports background domain', () => {
       Array.from({ length: 5 }, (_, index) => ({ slug: `paged-topic-${stamp}-${index}` })),
     )
 
+    const addBulk = vi.spyOn(backgroundQueue, 'addBulk')
+    onTestFinished(() => addBulk.mockRestore())
+    const ownedRowIds = new Set(rows.map(row => row.id))
+    const enqueuedOwnedRowIds = () =>
+      addBulk.mock.calls
+        .flatMap(([jobs]) => jobs)
+        .map(job => (job.data as { rowId?: string }).rowId)
+        .filter(rowId => ownedRowIds.has(rowId!))
+
     const done = untilRows(adminRows, rows.length)
     await enqueueAdminTopicImportDispatch(batch.id)
     await done
 
     expect(adminRows.toSorted()).toEqual(rows.map(row => row.id).toSorted())
+    expect(enqueuedOwnedRowIds().toSorted()).toEqual(rows.map(row => row.id).toSorted())
 
-    const enqueued: AdminTopicImportRowData[][] = []
-    await dispatchAdminTopicImport(
-      { batchId: batch.id, cursor: rows.length },
-      {
-        enqueueRows: batchRows => {
-          enqueued.push(batchRows)
-          return Promise.resolve([])
-        },
-      },
-    )
-    expect(enqueued).toEqual([])
+    addBulk.mockClear()
+    await dispatchAdminTopicImport({ batchId: batch.id, cursor: rows.length })
+    expect(enqueuedOwnedRowIds()).toEqual([])
   })
 })
