@@ -1,7 +1,5 @@
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
-import { processCrawlHostnamesJob } from '../processors/hostnames.mts'
 import { randomUUID } from 'node:crypto'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -102,10 +100,9 @@ describe('hostname paged dispatcher through the shared CPU queue', () => {
     }
   })
   it('enqueues a hostname needing crawler refresh', async () => {
+    const hostnameTime = Date.UTC(1971, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)
     const hostnameId = await insertTestUrlHostname({
-      id: getMinUUIDv7ForDate(
-        new Date(Date.UTC(1971, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)),
-      ),
+      id: getMinUUIDv7ForDate(new Date(hostnameTime)),
       hostname: `refresh-${randomUUID()}.example.com`,
       is_crawlable: true,
     })
@@ -120,26 +117,23 @@ describe('hostname paged dispatcher through the shared CPU queue', () => {
         await Promise.all(ownedChildren.map(job => job.remove()))
       }
     })
-    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { weekly_refresh_batch_size: 5000 })
-    expect(await searchHostnameIdsNeedingCrawlerRefresh(500, {}, hostnameId)).toContain(hostnameId)
     const refreshDispatcher = requireBackgroundCpuJob('crawl.refresh_hostname_crawler_dispatcher')
     const queued = await crawlDispatchQueue.add(
       refreshDispatcher.name,
-      {},
+      {
+        cursor: {
+          afterId: uuidBefore(hostnameId),
+          sweepStartedAt: new Date(hostnameTime + 1).toISOString(),
+        },
+      },
       refreshDispatcher.options,
     )
     if (!queued) throw new Error('Expected refresh dispatcher admission')
     onTestFinished(() => queued.remove())
-    const result = await processCrawlDispatchJob(queued, {
-      processCrawlHostnamesJob: job =>
-        processCrawlHostnamesJob(job, {
-          searchHostnameIdsNeedingCrawlerRefresh: limit =>
-            searchHostnameIdsNeedingCrawlerRefresh(limit, {}, hostnameId),
-        }),
-    })
-    expect(result).toMatchObject({ count: expect.any(Number) })
+    const result = await processCrawlDispatchJob(queued)
+    expect(result).toEqual({ count: 1, hasMore: false })
     expect(
       await workerChildCount('crawl.refresh_hostname_crawler', { hostname_id: hostnameId }),
-    ).toBeGreaterThan(0)
+    ).toBe(1)
   })
 })

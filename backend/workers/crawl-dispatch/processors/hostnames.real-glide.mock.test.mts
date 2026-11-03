@@ -231,11 +231,8 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     expect(await getCrawlData(url.id, oldCrawlId)).toBeDefined()
     expect(await getCrawlData(otherUrl.id, otherCrawlId)).toBeDefined()
     const result = await runJob('crawl.crawl_cleanup', {}, current =>
-      processCrawlDispatchJob(current, {
-        processCrawlHostnamesJob: job =>
-          processCrawlHostnamesJob(job, {
-            deleteOldInvalidCrawls: () => deleteOldInvalidCrawls({ ids: [oldCrawlId] }),
-          }),
+      processCrawlHostnamesJob(current, {
+        deleteOldInvalidCrawls: () => deleteOldInvalidCrawls({ ids: [oldCrawlId] }),
       }),
     )
     expect(result).toMatchObject({ crawls_deleted_invalid: expect.any(Number) })
