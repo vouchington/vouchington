@@ -36,19 +36,14 @@ describe('copyright retention continuation', () => {
         }
         return { copyrightActionAttempts: { scanned: 0, deleted: 0, hasMore: false } }
       })
-    let failAfterAdmission = true
-    const enqueue = vi.fn<typeof enqueueDataRetentionCleanupContinuation>(async data => {
-      const admitted = await enqueueDataRetentionCleanupContinuation(data)
-      if (failAfterAdmission) {
-        failAfterAdmission = false
-        throw new Error('enqueue acknowledgement failed')
-      }
-      return admitted
+    const admit = psql.add
+    const add = vi.spyOn(psql, 'add')
+    onTestFinished(() => add.mockRestore())
+    add.mockImplementationOnce(async function (this: typeof psql, ...args) {
+      await Reflect.apply(admit, this, args)
+      throw new Error('enqueue acknowledgement failed')
     })
-    const dependencies = {
-      copyrightRetentionCleanup: copyrightCleanup,
-      enqueueDataRetentionCleanupContinuation: enqueue,
-    }
+    const dependencies = { copyrightRetentionCleanup: copyrightCleanup }
 
     await expect(
       processPsql(

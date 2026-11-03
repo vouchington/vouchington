@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { runDataRetentionCleanup } from '@services/data-retention'
-import { enqueueDataRetentionCleanupContinuation } from '@queues/psql/enqueues'
 import { psql } from '@queues/psql/queues'
 import { AI_RETENTION_FAMILIES, type PsqlRetentionJobData } from '@queues/psql/types'
 import processPsql from '../processors.mts'
@@ -80,29 +79,27 @@ describe('processPsql retention continuations', () => {
       copyrightActionAttempts: { scanned: 0, deleted: 0, hasMore: false },
     } satisfies Awaited<ReturnType<typeof runDataRetentionCleanup>>
     const cleanup = vi.fn<typeof runDataRetentionCleanup>().mockResolvedValue(result)
-    const enqueue = vi.fn<typeof enqueueDataRetentionCleanupContinuation>(async data => {
-      await enqueueDataRetentionCleanupContinuation(data)
+    const admit = psql.add
+    const add = vi.spyOn(psql, 'add')
+    onTestFinished(() => add.mockRestore())
+    add.mockImplementationOnce(async function (this: typeof psql, ...args) {
+      await Reflect.apply(admit, this, args)
       throw new Error('admission acknowledgement failed')
     })
 
     await expect(
-      processPsql(
-        'dataRetentionCleanup',
-        {},
-        { dataRetentionCleanup: cleanup, enqueueDataRetentionCleanupContinuation: enqueue },
-        initialJobId,
-      ),
+      processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId),
     ).rejects.toThrow('admission acknowledgement failed')
-    expect(enqueue).toHaveBeenCalledExactlyOnceWith({
-      runId,
-      step: 1,
-      activeClassifierSweeps: [],
-      activeMembershipFamilies: [],
-      activePostModerationKinds: [],
-      copyrightFamilies: ['copyrightFormScreeningAttempts'],
-    })
-    expect((await psql.getJob(copyrightId))?.data).toMatchObject({
-      continuation: { copyrightFamilies: ['copyrightFormScreeningAttempts'] },
+    expect(add).toHaveBeenCalledOnce()
+    expect((await psql.getJob(copyrightId))?.data).toEqual({
+      continuation: {
+        runId,
+        step: 1,
+        activeClassifierSweeps: [],
+        activeMembershipFamilies: [],
+        activePostModerationKinds: [],
+        copyrightFamilies: ['copyrightFormScreeningAttempts'],
+      },
     })
   })
 
