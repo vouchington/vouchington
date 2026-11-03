@@ -3,76 +3,18 @@ import { read, write, type QueryExecutor, type QueryOptions } from '@data-stores
 import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
 import { DISPUTE_SLA_HOURS, type ReviewDisputeStatus } from './config.mts'
-import type { ReviewDisputeResponse } from './types.mts'
+import type { ReviewDisputeResponse, ReviewDisputeSummary } from './types.mts'
+import {
+  DISPUTE_JOINS,
+  DISPUTE_SELECT,
+  DISPUTE_SUMMARY_JOINS,
+  DISPUTE_SUMMARY_SELECT,
+} from './get-query.mts'
 
-const DISPUTE_SELECT = sql`
-  rd.id, rd.post_id, rd.topic_id, rd.disputant_user_id, rd.reason, rd.claim_text,
-  CASE
-    WHEN rd.resolved_at IS NULL THEN 'pending'
-    WHEN rd.resolution_action = 'dismiss' THEN 'dismissed'
-    ELSE 'resolved'
-  END AS status,
-  rd.recommended_action, rd.ai_public_response, rd.ai_internal_response, rd.model, rd.ai_drafted_at,
-  rd.ai_draft_run_id,
-  ('dispute_resolution_' || rd.ai_draft_request_token::text) AS ai_draft_requested_run_id,
-  rd.public_response, rd.internal_notes, rd.drafted_at, rd.edited_at, rd.edited_by_id,
-  rd.approved_at, rd.approved_by_id, rd.sent_at, rd.resolved_at, rd.resolved_by_id,
-  rd.resolution_action, rd.latest_lifecycle_change_id, rd.updated_at,
-  uuid_extract_timestamp(rd.id) AS created_at,
-  CASE WHEN p.deleted_at IS NULL THEN
-    COALESCE(NULLIF(BTRIM(p.title), ''), post_slug.slug, NULLIF(BTRIM(LEFT(p.markdown, 80)), ''), p.post_type::text)
-  ELSE p.post_type::text END AS post_label,
-  CASE WHEN p.deleted_at IS NULL AND NULLIF(BTRIM(p.title), '') IS NOT NULL THEN jsonb_build_object(
-    'text', p.title,
-    'declared_language', p.declared_language,
-    'lingua_rs_detected_language', p.lingua_rs_detected_language
-  ) ELSE NULL END AS post_content,
-  jsonb_build_object(
-    'disputant', jsonb_build_object(
-      'id', rd.disputant_user_id,
-      'username', disputant.username,
-      'verified_display_name', disputant.verified_display_name,
-      'profile_image_id', disputant.profile_image_id
-    ),
-    'review', jsonb_build_object(
-      'post', jsonb_build_object(
-        'id', p.id,
-        'title', p.title,
-        'declared_language', p.declared_language,
-        'lingua_rs_detected_language', p.lingua_rs_detected_language,
-        'slug', post_slug.slug,
-        'markdown_preview', LEFT(p.markdown, 500),
-        'created_by_id', p.created_by_id,
-        'created_at', p.created_at
-      ),
-      'topic', CASE WHEN t.id IS NULL THEN NULL ELSE jsonb_build_object(
-        'id', t.id,
-        'name', t.name,
-        'slug', t.slug,
-        'topic_type', t.topic_type
-      ) END,
-      'rating', rd.disputed_rating
-    )
-  ) AS staff_context
-`
-
-const DISPUTE_JOINS = sql`
-  LEFT JOIN view_users_public disputant ON disputant.id = rd.disputant_user_id
-  JOIN posts p ON p.id = rd.post_id
-  LEFT JOIN topics t
-    ON t.id = rd.topic_id
-    AND t.deleted_at IS NULL
-    AND t.merged_into_topic_id IS NULL
-  LEFT JOIN LATERAL (
-    SELECT ps.slug
-    FROM post_slugs ps
-    WHERE ps.post_id = rd.post_id
-    ORDER BY ps.id DESC
-    LIMIT 1
-  ) post_slug ON true
-`
-
-function addIsOverdue(dispute: ReviewDisputeResponse, now: Date): ReviewDisputeResponse {
+function addIsOverdue<T extends { status: ReviewDisputeStatus; created_at: Date }>(
+  dispute: T,
+  now: Date,
+): T {
   if (dispute.status !== 'pending') return dispute
   const ageHours = (now.getTime() - dispute.created_at.getTime()) / 3_600_000
   return { ...dispute, is_overdue: ageHours > DISPUTE_SLA_HOURS }
@@ -139,17 +81,17 @@ export type ListReviewDisputesOptions = {
 
 export async function listReviewDisputes(
   options: ListReviewDisputesOptions = {},
-): Promise<{ disputes: ReviewDisputeResponse[]; hasNextPage: boolean }> {
+): Promise<{ disputes: ReviewDisputeSummary[]; hasNextPage: boolean }> {
   const { status = 'pending', limit = 25, beforeId, disputantUserId, now = new Date() } = options
   const fetchLimit = limit + 1
 
   const query = sql`/* listReviewDisputes */
     SELECT `
-    .append(DISPUTE_SELECT)
+    .append(DISPUTE_SUMMARY_SELECT)
     .append(sql`
     FROM review_disputes rd
     `)
-    .append(DISPUTE_JOINS).append(sql`
+    .append(DISPUTE_SUMMARY_JOINS).append(sql`
     WHERE `)
   query.append(reviewDisputeStatusPredicate(status))
   query.append(sql`
@@ -163,7 +105,7 @@ export async function listReviewDisputes(
   query.append(sql` ORDER BY rd.id DESC LIMIT ${fetchLimit}`)
 
   const { rows } = await read(query)
-  const disputes = (rows as ReviewDisputeResponse[]).map(dispute => addIsOverdue(dispute, now))
+  const disputes = (rows as ReviewDisputeSummary[]).map(dispute => addIsOverdue(dispute, now))
   const hasNextPage = disputes.length > limit
   return { disputes: disputes.slice(0, limit), hasNextPage }
 }

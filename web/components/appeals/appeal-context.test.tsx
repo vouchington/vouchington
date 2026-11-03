@@ -2,62 +2,58 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { AppealContext } from './appeal-context'
 import { makeAppeal } from '@/test-helpers/appeals-client-fixtures'
+import { toModerationAppealSummary } from '@/types/appeals'
 
 describe('AppealContext', () => {
-  it('renders human-readable appellant, target, and original-decision context', () => {
+  it('renders the appellant and public target context from the summary', () => {
     render(
       <AppealContext
-        appeal={makeAppeal({
-          target_context: {
-            type: 'warning',
-            id: 'warning-1',
-            public_message: 'Please keep reviews factual.',
-            created_at: '2026-01-01T00:00:00Z',
-            community: null,
-          },
-          staff_context: {
-            appellant: {
-              id: 'user-1',
-              username: 'member',
-              verified_display_name: 'Member Name',
-              profile_image_id: null,
+        appeal={toModerationAppealSummary(
+          makeAppeal({
+            target_context: {
+              type: 'warning',
+              id: 'warning-1',
+              public_message: 'Please keep reviews factual.',
+              created_at: '2026-01-01T00:00:00Z',
+              community: null,
             },
-            original_decision: {
-              internal_reason: 'Repeated unsupported claims.',
-              actor: {
-                id: 'staff-1',
-                username: 'moderator',
-                verified_display_name: null,
+            staff_context: {
+              appellant: {
+                id: 'user-1',
+                username: 'member',
+                verified_display_name: 'Member Name',
                 profile_image_id: null,
               },
+              original_decision: { internal_reason: 'Internal only.', actor: null },
             },
-          },
-        })}
+          }),
+        )}
       />,
     )
 
     expect(screen.getByText('Member Name')).toBeInTheDocument()
     expect(screen.getByText('Please keep reviews factual.')).toBeInTheDocument()
-    expect(screen.getByText('Repeated unsupported claims.')).toBeInTheDocument()
-    expect(screen.getByText('moderator')).toBeInTheDocument()
+    expect(screen.queryByText('Internal only.')).not.toBeInTheDocument()
   })
 
   it('falls back to the deleted-user label when optional display context is absent', () => {
     render(
       <AppealContext
-        appeal={makeAppeal({
-          user_warning_id: null,
-          target_context: null,
-          staff_context: {
-            appellant: {
-              id: 'user-fallback',
-              username: null,
-              verified_display_name: null,
-              profile_image_id: null,
+        appeal={toModerationAppealSummary(
+          makeAppeal({
+            user_warning_id: null,
+            target_context: null,
+            staff_context: {
+              appellant: {
+                id: 'user-fallback',
+                username: null,
+                verified_display_name: null,
+                profile_image_id: null,
+              },
+              original_decision: { internal_reason: null, actor: null },
             },
-            original_decision: { internal_reason: null, actor: null },
-          },
-        })}
+          }),
+        )}
       />,
     )
 

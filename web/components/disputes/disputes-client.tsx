@@ -1,26 +1,23 @@
 'use client'
 
 import { useReducer } from 'react'
-import onError from '@/lib/on-error/on-error'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-import {
-  approveDispute,
-  dismissDispute,
-  resolveDisputeRemove,
-  resolveDisputeAnnotate,
-  sendDisputeResolution,
-  updateDisputeDraft,
-  listReviewDisputesClient,
-} from '@/lib/api/client/disputes'
+import { listReviewDisputesClient } from '@/lib/api/client/disputes'
 import { DisputesTable } from './disputes-table'
-import type { ReviewDispute } from '@/types/review-disputes'
-import { useTranslations } from '@/lib/i18n/use-translations'
-import { disputesClientReducer, uniqueDisputes } from './disputes-client-state'
+import { DisputeDetailDialog } from './dispute-detail-dialog'
+import type { ReviewDisputeSummary } from '@/types/review-disputes'
+import {
+  disputesClientReducer,
+  initialDisputesClientState,
+  uniqueDisputes,
+  withDisputeOverrides,
+} from './disputes-client-state'
+import { useDisputeActions } from './use-dispute-actions'
 import { useDisputeAiReruns } from './use-dispute-ai-reruns'
 
 interface DisputesData {
-  disputes: ReviewDispute[]
+  disputes: ReviewDisputeSummary[]
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
 
@@ -37,7 +34,6 @@ export function DisputesClient({
   statusFilter,
   mine = false,
 }: DisputesClientProps) {
-  const t = useTranslations()
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
     usePaginatedList(
       data,
@@ -48,95 +44,14 @@ export function DisputesClient({
           listReviewDisputesClient({ after, status: statusFilter, mine: mine || undefined }),
       },
     )
-  const [state, dispatch] = useReducer(disputesClientReducer, {
-    disputeOverrides: {},
-    loadingId: null,
-    draftEdits: {},
-  })
-  const disputes = uniqueDisputes(pages.flatMap(page => page.disputes)).map(
-    dispute => state.disputeOverrides[dispute.id] ?? dispute,
+  const [state, dispatch] = useReducer(disputesClientReducer, initialDisputesClientState)
+  const disputes = withDisputeOverrides(
+    uniqueDisputes(pages.flatMap(page => page.disputes)),
+    state.disputeOverrides,
   )
-  const { handleRerunAI, pendingRerunIds } = useDisputeAiReruns(disputes, dispatch)
-
-  async function handleApprove(id: string) {
-    dispatch({ type: 'set_loading', id })
-    try {
-      const result = await approveDispute(id)
-      dispatch({ type: 'update_dispute', dispute: result.dispute })
-    } catch (err) {
-      onError(err, {
-        fallback: t('extracted.disputes.disputesClient.failedToApproveDispute_c4b95406'),
-        tags: { form: 'dispute-approve' },
-      })
-    } finally {
-      dispatch({ type: 'set_loading', id: null })
-    }
-  }
-
-  async function handleSend(id: string) {
-    dispatch({ type: 'set_loading', id })
-    try {
-      const result = await sendDisputeResolution(id)
-      dispatch({ type: 'update_dispute', dispute: result.dispute })
-    } catch (err) {
-      onError(err, {
-        fallback: t('extracted.disputes.disputesClient.failedToSendDisputeResolution_7cdfc475'),
-        tags: { form: 'dispute-send' },
-      })
-    } finally {
-      dispatch({ type: 'set_loading', id: null })
-    }
-  }
-
-  async function handleResolve(id: string, action: 'remove' | 'dismiss') {
-    dispatch({ type: 'set_loading', id })
-    try {
-      const result =
-        action === 'dismiss' ? await dismissDispute(id) : await resolveDisputeRemove(id, action)
-      dispatch({ type: 'update_dispute', dispute: result.dispute })
-    } catch (err) {
-      /* c8 ignore next -- error path requires injecting a resolve dispute failure */
-      onError(err, {
-        fallback: t('extracted.disputes.disputesClient.failedToResolveDispute_ed6dde5c'),
-        tags: { form: 'dispute-resolve' },
-      })
-    } finally {
-      dispatch({ type: 'set_loading', id: null })
-    }
-  }
-
-  async function handleSaveAndApprove(id: string) {
-    const text = state.draftEdits[id]
-    if (text !== undefined) {
-      try {
-        await updateDisputeDraft(id, { public_response: text })
-      } catch (err) {
-        // Do not approve a stale draft if saving the edits failed.
-        /* c8 ignore next -- error path requires injecting a save draft failure */
-        onError(err, {
-          fallback: t('extracted.disputes.disputesClient.failedToSaveDraft_350705d0'),
-        })
-        return
-      }
-    }
-    await handleApprove(id)
-  }
-
-  async function handleAnnotate(id: string, text: string) {
-    dispatch({ type: 'set_loading', id })
-    try {
-      const result = await resolveDisputeAnnotate(id, text)
-      dispatch({ type: 'update_dispute', dispute: result.dispute })
-    } catch (err) {
-      /* c8 ignore next 4 -- error path requires injecting an annotate failure */
-      onError(err, {
-        fallback: t('extracted.disputes.disputesClient.failedToAttachAnnotation_4e848bc5'),
-        tags: { form: 'dispute-annotate' },
-      })
-    } finally {
-      dispatch({ type: 'set_loading', id: null })
-    }
-  }
+  const open = state.openId ? state.disputeOverrides[state.openId] : undefined
+  const { handleRerunAI, pendingRerunIds } = useDisputeAiReruns(state.disputeOverrides, dispatch)
+  const actions = useDisputeActions(state, dispatch)
 
   return (
     <div
@@ -158,17 +73,28 @@ export function DisputesClient({
         <DisputesTable
           viewerTier={viewerTier}
           disputes={disputes}
-          draftEdits={state.draftEdits}
           loadingId={state.loadingId}
           pendingRerunIds={pendingRerunIds}
-          onEdit={(id, text) => dispatch({ type: 'edit_draft', id, text })}
-          onApprove={handleSaveAndApprove}
-          onSend={handleSend}
-          onRerunAI={handleRerunAI}
-          onResolve={handleResolve}
-          onAnnotate={handleAnnotate}
+          onOpen={actions.handleOpen}
         />
       </InfiniteScroll>
+      {viewerTier === 'staff' ? (
+        <DisputeDetailDialog
+          dispute={
+            open
+              ? { ...open, public_response: state.draftEdits[open.id] ?? open.public_response }
+              : null
+          }
+          onClose={() => dispatch({ type: 'close_dispute' })}
+          disabled={state.loadingId !== null || Boolean(open && pendingRerunIds.has(open.id))}
+          onEdit={(id, text) => dispatch({ type: 'edit_draft', id, text })}
+          onApprove={actions.handleSaveAndApprove}
+          onSend={actions.handleSend}
+          onRerunAI={handleRerunAI}
+          onResolve={actions.handleResolve}
+          onAnnotate={actions.handleAnnotate}
+        />
+      ) : null}
     </div>
   )
 }

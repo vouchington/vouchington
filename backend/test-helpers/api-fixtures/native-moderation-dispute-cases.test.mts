@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { redactReviewDispute } from '../../services/review-disputes/redaction.mts'
+import {
+  listRedactedReviewDisputes,
+  redactReviewDispute,
+} from '../../services/review-disputes/redaction.mts'
 import { backendResponseContracts } from './response-contracts.mts'
 import { nativeModerationDisputeApiFixtureCases } from './native-moderation-dispute-cases.mts'
 
@@ -22,16 +25,13 @@ describe('native moderation dispute fixtures', () => {
     ])
   })
 
-  it('keeps enriched staff context on every dispute response', () => {
+  it('keeps enriched staff context on every dispute detail response', () => {
     for (const fixture of nativeModerationDisputeApiFixtureCases) {
       if (fixture.id.endsWith('resolution-drafts.default')) continue
       if (fixture.id.includes('.member.')) continue
+      if (fixture.id === 'native.moderation.disputes.default') continue
 
-      const body = fixture.body as {
-        dispute?: { staff_context?: unknown }
-        disputes?: Array<{ staff_context?: unknown }>
-      }
-      const dispute = body.dispute ?? body.disputes?.[0]
+      const { dispute } = fixture.body as { dispute?: { staff_context?: unknown } }
       if (!dispute) throw new Error(`Missing dispute response in ${fixture.id}`)
 
       expect(dispute.staff_context).toMatchObject({
@@ -54,6 +54,29 @@ describe('native moderation dispute fixtures', () => {
     }
   })
 
+  it('keeps the staff list as summaries without drafts, notes and review context', () => {
+    const staffList = nativeModerationDisputeApiFixtureCases.find(
+      fixture => fixture.id === 'native.moderation.disputes.default',
+    )!.body as { disputes: Array<Record<string, unknown>> }
+    const [row] = staffList.disputes
+
+    expect(row).toMatchObject({
+      post_slug: 'a-disputed-review',
+      disputant: { id: 'user-1', username: 'native-claimant' },
+      has_ai_draft: false,
+      has_draft: false,
+    })
+    for (const field of [
+      'claim_text',
+      'internal_notes',
+      'ai_public_response',
+      'ai_internal_response',
+      'staff_context',
+    ]) {
+      expect(row).not.toHaveProperty(field)
+    }
+  })
+
   it('keeps member list and detail fixtures as the exact redacted projection', () => {
     const memberList = nativeModerationDisputeApiFixtureCases.find(
       fixture => fixture.id === 'native.moderation.disputes.member.default',
@@ -64,16 +87,24 @@ describe('native moderation dispute fixtures', () => {
     const staffList = nativeModerationDisputeApiFixtureCases.find(
       fixture => fixture.id === 'native.moderation.disputes.default',
     )!.body as { disputes: Array<Record<string, unknown>> }
+    const staffDetail = nativeModerationDisputeApiFixtureCases.find(
+      fixture => fixture.id === 'native.moderation.disputes.detail.default',
+    )!.body as { dispute: Record<string, unknown> }
     const dispute = memberList.disputes[0]!
 
     expect(dispute.id).toBe('00000000-0000-7000-8000-000000000201')
     expect(dispute.post_label).toBe('A disputed review')
     expect(dispute).toEqual(
-      redactReviewDispute(
-        staffList.disputes[0]! as unknown as Parameters<typeof redactReviewDispute>[0],
-      ),
+      listRedactedReviewDisputes(
+        staffList.disputes as unknown as Parameters<typeof listRedactedReviewDisputes>[0],
+      )[0],
     )
     expect(memberDetail.dispute).toEqual(dispute)
+    expect(memberDetail.dispute).toEqual(
+      redactReviewDispute(
+        staffDetail.dispute as unknown as Parameters<typeof redactReviewDispute>[0],
+      ),
+    )
     for (const field of [
       'disputant_user_id',
       'claim_text',
@@ -94,9 +125,12 @@ describe('native moderation dispute fixtures', () => {
       expect(dispute).not.toHaveProperty(field)
     }
 
-    for (const key of ['GET:/api/v1/disputes#member', 'GET:/api/v1/disputes/:id#member']) {
+    for (const [key, definition] of [
+      ['GET:/api/v1/disputes#member', 'RedactedReviewDisputeSummary'],
+      ['GET:/api/v1/disputes/:id#member', 'RedactedReviewDispute'],
+    ] as const) {
       const contract = backendResponseContracts[key]!
-      const redactedSchema = contract.schema.definitions.RedactedReviewDispute
+      const redactedSchema = contract.schema.definitions[definition]
       expect(redactedSchema?.type).toBe('object')
       if (redactedSchema?.type !== 'object') throw new Error(`Invalid redacted schema for ${key}`)
       expect(redactedSchema.properties.post_label).toEqual({

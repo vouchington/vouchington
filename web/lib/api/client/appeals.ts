@@ -1,10 +1,10 @@
 'use client'
 
 import { clientApi } from './instance'
-import type { ModerationAppeal } from '@/types/appeals'
+import type { ModerationAppeal, ModerationAppealSummary } from '@/types/appeals'
 
 export interface AppealsPage {
-  appeals: ModerationAppeal[]
+  appeals: ModerationAppealSummary[]
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
 
@@ -16,6 +16,14 @@ export function listModerationAppealsClient(options: {
   return clientApi.get('/api/v1/appeals', {
     searchParams: { limit: 50, after: options.after, status: options.status, mine: options.mine },
   })
+}
+
+/** List rows are summaries; the detail read carries the reason, drafts, notes and decision. */
+export async function getModerationAppealClient(appealId: string): Promise<ModerationAppeal> {
+  const { appeal } = await clientApi.get<{ appeal: ModerationAppeal }>(
+    `/api/v1/appeals/${appealId}`,
+  )
+  return appeal
 }
 
 export function createModerationAppeal(data: {

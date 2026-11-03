@@ -11,7 +11,7 @@ import type { DisputesClientAction } from './disputes-client-state'
 type PendingRerun = { before: ReviewDispute; runId: string; expiresAt: number }
 
 export function useDisputeAiReruns(
-  disputes: ReviewDispute[],
+  disputes: Readonly<Record<string, ReviewDispute>>,
   dispatch: Dispatch<DisputesClientAction>,
 ) {
   const t = useTranslations()
@@ -80,7 +80,7 @@ export function useDisputeAiReruns(
   async function handleRerunAI(id: string) {
     dispatch({ type: 'set_loading', id })
     try {
-      const before = disputes.find(dispute => dispute.id === id)
+      const before = disputes[id]
       if (!before) throw new Error(`Could not find dispute ${id}`)
       const { run_id: runId } = await rerunDisputeAI(id)
       setPendingReruns(current =>

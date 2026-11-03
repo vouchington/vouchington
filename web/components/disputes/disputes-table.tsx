@@ -1,24 +1,17 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import { DisputeRow } from './dispute-row'
 import { MemberDisputeRow } from './member-dispute-row'
 import { DividedTableShell, type DividedTableColumn } from '@/components/admin/divided-table-shell'
-import type { ReviewDispute } from '@/types/review-disputes'
+import type { ReviewDisputeSummary } from '@/types/review-disputes'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface DisputesTableProps {
   viewerTier: 'staff' | 'member'
-  disputes: ReviewDispute[]
-  draftEdits: Record<string, string>
+  disputes: ReviewDisputeSummary[]
   loadingId: string | null
   pendingRerunIds?: ReadonlySet<string>
-  onEdit: (id: string, text: string) => void
-  onApprove: (id: string) => void
-  onSend: (id: string) => void
-  onRerunAI: (id: string) => void
-  onResolve: (id: string, action: 'remove' | 'dismiss') => void
-  onAnnotate: (id: string, text: string) => void
+  onOpen: (id: string) => void
 }
 
 function disputeColumns(
@@ -42,55 +35,36 @@ function disputeColumns(
   return [...shared, ['resolution', t('extracted.disputes.disputesTable.resolution_d4055faf')]]
 }
 
-function disputeRows({
+export function DisputesTable({
   viewerTier,
   disputes,
-  draftEdits,
   loadingId,
   pendingRerunIds,
-  onEdit,
-  onApprove,
-  onSend,
-  onRerunAI,
-  onResolve,
-  onAnnotate,
-}: DisputesTableProps): ReactNode {
-  if (viewerTier === 'staff') {
-    return disputes.map(dispute => (
-      <DisputeRow
-        key={dispute.id}
-        dispute={{
-          ...dispute,
-          public_response: draftEdits[dispute.id] ?? dispute.public_response,
-        }}
-        disabled={loadingId !== null || Boolean(pendingRerunIds?.has(dispute.id))}
-        onEdit={onEdit}
-        onApprove={onApprove}
-        onSend={onSend}
-        onRerunAI={onRerunAI}
-        onResolve={onResolve}
-        onAnnotate={onAnnotate}
-      />
-    ))
-  }
-  return disputes.map(dispute => (
-    <MemberDisputeRow
-      key={dispute.id}
-      dispute={dispute}
-    />
-  ))
-}
-
-export function DisputesTable(props: DisputesTableProps) {
+  onOpen,
+}: DisputesTableProps) {
   const t = useTranslations()
   return (
     <DividedTableShell
       aria-label={t('extracted.disputes.page.reviewDisputes_25c25858')}
-      columns={disputeColumns(t, props.viewerTier)}
+      columns={disputeColumns(t, viewerTier)}
       emptyMessage={t('extracted.disputes.disputesTable.noDisputes_43fb46e8')}
-      isEmpty={props.disputes.length === 0}
+      isEmpty={disputes.length === 0}
     >
-      {disputeRows(props)}
+      {viewerTier === 'staff'
+        ? disputes.map(dispute => (
+            <DisputeRow
+              key={dispute.id}
+              dispute={dispute}
+              disabled={loadingId !== null || Boolean(pendingRerunIds?.has(dispute.id))}
+              onOpen={onOpen}
+            />
+          ))
+        : disputes.map(dispute => (
+            <MemberDisputeRow
+              key={dispute.id}
+              dispute={dispute}
+            />
+          ))}
     </DividedTableShell>
   )
 }

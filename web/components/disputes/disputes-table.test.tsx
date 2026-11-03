@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { ReviewDispute } from '@/types/review-disputes'
+import type { ReviewDisputeSummary } from '@/types/review-disputes'
 import { DisputesTable } from './disputes-table'
 
-function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispute {
+function makeDispute(overrides: Partial<ReviewDisputeSummary> = {}): ReviewDisputeSummary {
   return {
     id: 'dispute-1',
     post_id: 'post-1',
@@ -24,14 +24,8 @@ function makeProps(overrides: Partial<Parameters<typeof DisputesTable>[0]> = {})
   return {
     viewerTier: 'staff' as const,
     disputes: [makeDispute()],
-    draftEdits: {},
     loadingId: null,
-    onEdit: vi.fn<() => void>(),
-    onApprove: vi.fn<() => void>(),
-    onSend: vi.fn<() => void>(),
-    onRerunAI: vi.fn<() => void>(),
-    onResolve: vi.fn<() => void>(),
-    onAnnotate: vi.fn<() => void>(),
+    onOpen: vi.fn<(id: string) => void>(),
     ...overrides,
   }
 }
@@ -62,7 +56,7 @@ describe('DisputesTable', () => {
   })
 
   it('renders member dispute row for member tier', () => {
-    const memberDispute: ReviewDispute = {
+    const memberDispute: ReviewDisputeSummary = {
       id: 'dispute-m1',
       post_id: 'post-m1',
       post_label: 'A review',
@@ -81,31 +75,21 @@ describe('DisputesTable', () => {
     expect(screen.queryByRole('link', { name: 'Member Review' })).toBeNull()
   })
 
-  it('passes draftEdits override to DisputeRow', () => {
-    const props = makeProps({
-      disputes: [makeDispute({ id: 'dispute-1', public_response: 'original' })],
-      draftEdits: { 'dispute-1': 'draft override' },
-    })
-    render(<DisputesTable {...props} />)
-    const textarea = screen.getByPlaceholderText('Edit the public response...')
-    expect((textarea as HTMLTextAreaElement).value).toBe('draft override')
-  })
-
-  it('passes onAnnotate through to DisputeRow', () => {
-    const onAnnotate = vi.fn<() => void>()
+  it('opens the clicked dispute by id', () => {
+    const onOpen = vi.fn<(id: string) => void>()
     render(
       <DisputesTable
         {...makeProps({
-          disputes: [makeDispute({ public_response: 'some text' })],
-          onAnnotate,
+          disputes: [makeDispute({ id: 'dispute-1' }), makeDispute({ id: 'dispute-2' })],
+          onOpen,
         })}
       />,
     )
-    const annotateBtn = screen.getByTitle('Attach the response above as a public rebuttal')
-    expect(annotateBtn).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Review' })[1]!)
+    expect(onOpen).toHaveBeenCalledWith('dispute-2')
   })
 
-  it('keeps another dispute actionable while one AI rerun is pending', () => {
+  it('keeps another dispute openable while one AI rerun is pending', () => {
     render(
       <DisputesTable
         {...makeProps({
@@ -114,8 +98,8 @@ describe('DisputesTable', () => {
         })}
       />,
     )
-    const rerunButtons = screen.getAllByTitle('Re-run AI')
-    expect(rerunButtons[0]).toBeDisabled()
-    expect(rerunButtons[1]).toBeEnabled()
+    const buttons = screen.getAllByRole('button', { name: 'Review' })
+    expect(buttons[0]).toBeDisabled()
+    expect(buttons[1]).toBeEnabled()
   })
 })

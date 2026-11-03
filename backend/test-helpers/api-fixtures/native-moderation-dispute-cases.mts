@@ -2,11 +2,11 @@ import { responseBody } from './static-response-bodies.mts'
 import { nativeModerationFixtureCase as fixtureCase } from './native-moderation-fixture-case.mts'
 
 const disputeId = '00000000-0000-7000-8000-000000000201'
-const defaultBody = responseBody('native.moderation.disputes.default') as {
-  disputes: Array<Record<string, unknown>>
-  page_info: Record<string, unknown>
-}
-const pendingDispute = defaultBody.disputes[0]!
+const pendingDispute = (
+  responseBody('native.moderation.disputes.detail.default') as {
+    dispute: Record<string, unknown>
+  }
+).dispute
 
 function disputeBody(overrides: Record<string, unknown> = {}) {
   return { dispute: { ...pendingDispute, ...overrides } }

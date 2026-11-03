@@ -4,6 +4,7 @@ import { DisputesClient } from '@/components/disputes/disputes-client'
 import { DisputeContext } from '@/components/disputes/dispute-context'
 import { DisputeRow } from '@/components/disputes/dispute-row'
 import { MemberDisputeRow } from '@/components/disputes/member-dispute-row'
+import { toReviewDisputeSummary } from '@/types/review-disputes'
 import { TopicClaimReview } from '@/components/admin/topic-claim-review'
 import { EntityStoryFrame } from './entity-story-frame'
 import {
@@ -57,14 +58,9 @@ export const StaffRow: Story = {
       <table className='min-w-full divide-y divide-border'>
         <tbody className='divide-y divide-border bg-card'>
           <DisputeRow
-            dispute={pendingDispute}
+            dispute={toReviewDisputeSummary(pendingDispute)}
             disabled={false}
-            onEdit={fn()}
-            onApprove={fn()}
-            onSend={fn()}
-            onRerunAI={fn()}
-            onResolve={fn()}
-            onAnnotate={fn()}
+            onOpen={fn()}
           />
         </tbody>
       </table>
@@ -75,7 +71,7 @@ export const StaffRow: Story = {
 export const Context: Story = {
   render: () => (
     <EntityStoryFrame title='Dispute Context'>
-      <DisputeContext dispute={pendingDispute} />
+      <DisputeContext dispute={toReviewDisputeSummary(pendingDispute)} />
     </EntityStoryFrame>
   ),
 }
@@ -85,7 +81,7 @@ export const MemberRow: Story = {
     <EntityStoryFrame title='Dispute Row (member, redacted)'>
       <table className='min-w-full divide-y divide-border'>
         <tbody className='divide-y divide-border bg-card'>
-          <MemberDisputeRow dispute={resolvedDispute} />
+          <MemberDisputeRow dispute={toReviewDisputeSummary(resolvedDispute)} />
         </tbody>
       </table>
     </EntityStoryFrame>

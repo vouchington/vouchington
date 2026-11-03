@@ -283,9 +283,7 @@ describe('createModerationAppeal', () => {
     expect(new Set(appeals.map(appeal => appeal.target_context?.type))).toEqual(
       new Set(['warning', 'community_ban', 'post_removal']),
     )
-    expect(appeals.every(appeal => appeal.staff_context?.appellant.id === listAppellant.id)).toBe(
-      true,
-    )
+    expect(appeals.every(appeal => appeal.appellant.id === listAppellant.id)).toBe(true)
   })
 
   it('throws for empty appeal_reason', () => {

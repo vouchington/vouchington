@@ -41,3 +41,33 @@ export type ReviewDisputeResponse = ReviewDispute & {
     }
   }
 }
+
+/**
+ * One row of the dispute list. Staff and members both get summaries; the detail read carries the
+ * claim, drafts, notes and review context. `public_response` is set only once it was sent.
+ */
+export type ReviewDisputeSummary = Pick<
+  ReviewDispute,
+  | 'id'
+  | 'post_id'
+  | 'topic_id'
+  | 'disputant_user_id'
+  | 'reason'
+  | 'status'
+  | 'recommended_action'
+  | 'is_overdue'
+  | 'public_response'
+  | 'approved_at'
+  | 'sent_at'
+  | 'resolved_at'
+  | 'resolution_action'
+  | 'created_at'
+  | 'updated_at'
+> & {
+  post_label: string
+  post_content: ReviewDisputePostContent | null
+  post_slug: string | null
+  disputant: ReviewDisputeActorSummary
+  has_ai_draft: boolean
+  has_draft: boolean
+}

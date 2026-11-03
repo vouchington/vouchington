@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { ReviewDisputeResponse } from './types.mts'
+import type { ReviewDisputeResponse, ReviewDisputeSummary } from './types.mts'
 import { redactReviewDispute, listRedactedReviewDisputes } from './redaction.mts'
 
 function makeDispute(overrides: Partial<ReviewDisputeResponse> = {}): ReviewDisputeResponse {
@@ -128,23 +128,59 @@ describe('redactReviewDispute', () => {
   })
 })
 
+function makeSummary(overrides: Partial<ReviewDisputeSummary> = {}): ReviewDisputeSummary {
+  return {
+    id: crypto.randomUUID(),
+    post_id: crypto.randomUUID(),
+    topic_id: crypto.randomUUID(),
+    disputant_user_id: crypto.randomUUID(),
+    reason: 'other',
+    status: 'pending',
+    recommended_action: 'remove',
+    public_response: null,
+    approved_at: null,
+    sent_at: null,
+    resolved_at: null,
+    resolution_action: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+    post_label: 'A review',
+    post_content: null,
+    post_slug: 'a-review',
+    disputant: {
+      id: crypto.randomUUID(),
+      username: 'claimant',
+      verified_display_name: null,
+      profile_image_id: null,
+    },
+    has_ai_draft: true,
+    has_draft: true,
+    ...overrides,
+  }
+}
+
 describe('listRedactedReviewDisputes', () => {
   it('maps an empty array to empty', () => {
     expect(listRedactedReviewDisputes([])).toEqual([])
   })
 
-  it('redacts every dispute in the list', () => {
-    const disputes = [makeDispute(), makeDispute({ sent_at: new Date() })]
-    const redacted = listRedactedReviewDisputes(disputes)
-    expect(redacted).toHaveLength(2)
-    for (const r of redacted) {
-      expect(r).not.toHaveProperty('claim_text')
-      expect(r).not.toHaveProperty('disputant_user_id')
-      expect(r).not.toHaveProperty('staff_context')
+  it('drops the disputant, the AI recommendation, the slug and the draft flags from every row', () => {
+    const rows = listRedactedReviewDisputes([makeSummary(), makeSummary()])
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(row).not.toHaveProperty('disputant_user_id')
+      expect(row).not.toHaveProperty('disputant')
+      expect(row).not.toHaveProperty('recommended_action')
+      expect(row).not.toHaveProperty('post_slug')
+      expect(row).not.toHaveProperty('has_ai_draft')
+      expect(row).not.toHaveProperty('has_draft')
     }
-    // Second dispute has sent_at set so public_response is visible
-    expect(redacted[1].public_response).toBe('Human response')
-    // First dispute sent_at is null so public_response is hidden
-    expect(redacted[0].public_response).toBeNull()
+  })
+
+  it('keeps the public fields, including a sent response', () => {
+    const [row] = listRedactedReviewDisputes([
+      makeSummary({ sent_at: new Date(), public_response: 'Human response' }),
+    ])
+    expect(row!.public_response).toBe('Human response')
   })
 })

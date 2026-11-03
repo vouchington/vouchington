@@ -1,9 +1,9 @@
 import { cache } from 'react'
 import { serverApi } from './instance'
-import type { ReviewDispute } from '@/types/review-disputes'
+import type { ReviewDisputeSummary } from '@/types/review-disputes'
 
 interface DisputesResponse {
-  disputes: ReviewDispute[]
+  disputes: ReviewDisputeSummary[]
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
 

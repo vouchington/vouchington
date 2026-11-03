@@ -38,6 +38,23 @@ describe('native moderation appeal and dispute cursor fixtures', () => {
     })
   })
 
+  it('keeps the staff list as summaries without drafts, notes and the original decision', () => {
+    const first = responseBody('native.moderation.appeals.default') as AppealBody
+    const [row] = first.appeals as Array<Record<string, unknown>>
+
+    expect(row).toMatchObject({ appellant: { id: 'user-1' }, has_ai_draft: true, has_draft: false })
+    for (const field of [
+      'appeal_reason',
+      'appellant_user_id',
+      'internal_notes',
+      'ai_public_response',
+      'ai_internal_response',
+      'staff_context',
+    ]) {
+      expect(row).not.toHaveProperty(field)
+    }
+  })
+
   it('gives a nonempty terminal dispute page a scoped start cursor', () => {
     const body = responseBody('native.moderation.disputes.default') as DisputeBody
     expect(decodeCursor(body.page_info.start_cursor)).toEqual({

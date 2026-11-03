@@ -5,8 +5,8 @@ import {
   REVIEW_DISPUTE_REASONS,
   REVIEW_DISPUTE_STATUSES,
 } from '@ts-shared/utils/moderation-catalogs'
-import type { ReviewDisputeResponse } from '@services/review-disputes'
-import type { ModerationAppealResponse } from '@services/moderation-appeals/types'
+import type { ReviewDisputeSummary } from '@services/review-disputes'
+import type { ModerationAppealSummary } from '@services/moderation-appeals/types'
 import { externalText, iso } from './mcp-read-output.mts'
 import { nullable, objectSchema, type JsonSchema } from '@vouchington/mcp-server/schema'
 
@@ -21,10 +21,10 @@ export type McpDispute = {
   id: string
   post_id: string
   topic_id: string
-  reason: ReviewDisputeResponse['reason']
-  status: ReviewDisputeResponse['status']
+  reason: ReviewDisputeSummary['reason']
+  status: ReviewDisputeSummary['status']
   is_overdue?: boolean
-  resolution_action: ReviewDisputeResponse['resolution_action']
+  resolution_action: ReviewDisputeSummary['resolution_action']
   public_response: string | null
   resolved_at: string | null
   sent_at: string | null
@@ -37,16 +37,52 @@ export type McpAppeal = {
   target_type: 'warning' | 'ban' | 'removal' | 'suspension'
   target_id: string
   community_id: string | null
-  post_removal_kind: ModerationAppealResponse['post_removal_kind']
-  status: ModerationAppealResponse['status']
+  post_removal_kind: ModerationAppealSummary['post_removal_kind']
+  status: ModerationAppealSummary['status']
   is_overdue?: boolean
-  resolution_action: ModerationAppealResponse['resolution_action']
+  resolution_action: ModerationAppealSummary['resolution_action']
   public_response: string | null
   resolved_at: string | null
   sent_at: string | null
   created_at: string
   updated_at: string
 }
+
+/** The summary fields both list rows and full detail reads carry. */
+type DisputeSource = Pick<
+  ReviewDisputeSummary,
+  | 'id'
+  | 'post_id'
+  | 'topic_id'
+  | 'reason'
+  | 'status'
+  | 'is_overdue'
+  | 'resolution_action'
+  | 'public_response'
+  | 'resolved_at'
+  | 'sent_at'
+  | 'created_at'
+  | 'updated_at'
+>
+
+type AppealSource = Pick<
+  ModerationAppealSummary,
+  | 'id'
+  | 'user_warning_id'
+  | 'community_ban_id'
+  | 'post_id'
+  | 'user_suspension_id'
+  | 'community_id'
+  | 'post_removal_kind'
+  | 'status'
+  | 'is_overdue'
+  | 'resolution_action'
+  | 'public_response'
+  | 'resolved_at'
+  | 'sent_at'
+  | 'created_at'
+  | 'updated_at'
+>
 
 const uuid: JsonSchema = { type: 'string', format: 'uuid' }
 const timestamp: JsonSchema = { type: 'string', format: 'date-time' }
@@ -103,7 +139,7 @@ function sentResponse(
   return sentAt ? externalText(text, source, contentType) : Promise.resolve(null)
 }
 
-export async function toMcpDispute(dispute: ReviewDisputeResponse): Promise<McpDispute> {
+export async function toMcpDispute(dispute: DisputeSource): Promise<McpDispute> {
   return {
     id: dispute.id,
     post_id: dispute.post_id,
@@ -126,16 +162,14 @@ export async function toMcpDispute(dispute: ReviewDisputeResponse): Promise<McpD
 }
 
 /** The kind and id of the decision an appeal contests; exactly one of the four ids is set. */
-function appealTarget(
-  appeal: ModerationAppealResponse,
-): Pick<McpAppeal, 'target_type' | 'target_id'> {
+function appealTarget(appeal: AppealSource): Pick<McpAppeal, 'target_type' | 'target_id'> {
   if (appeal.user_warning_id) return { target_type: 'warning', target_id: appeal.user_warning_id }
   if (appeal.community_ban_id) return { target_type: 'ban', target_id: appeal.community_ban_id }
   if (appeal.post_id) return { target_type: 'removal', target_id: appeal.post_id }
   return { target_type: 'suspension', target_id: appeal.user_suspension_id as string }
 }
 
-export async function toMcpAppeal(appeal: ModerationAppealResponse): Promise<McpAppeal> {
+export async function toMcpAppeal(appeal: AppealSource): Promise<McpAppeal> {
   return {
     id: appeal.id,
     ...appealTarget(appeal),

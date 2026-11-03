@@ -4,6 +4,7 @@ import { AppealsClient } from '@/components/appeals/appeals-client'
 import { AppealContext } from '@/components/appeals/appeal-context'
 import { AppealRow } from '@/components/appeals/appeal-row'
 import { MemberAppealRow } from '@/components/appeals/member-appeal-row'
+import { toModerationAppealSummary } from '@/types/appeals'
 import { EntityStoryFrame } from './entity-story-frame'
 import { pendingAppeal, resolvedAppeal, staffData, memberData } from './fixtures/moderation-appeals'
 
@@ -51,14 +52,9 @@ export const StaffRow: Story = {
       <table className='min-w-full divide-y divide-border'>
         <tbody className='divide-y divide-border bg-card'>
           <AppealRow
-            appeal={pendingAppeal}
-            viewerRole='administrator'
+            appeal={toModerationAppealSummary(pendingAppeal)}
             disabled={false}
-            onEdit={fn()}
-            onApprove={fn()}
-            onSend={fn()}
-            onRerunAI={fn()}
-            onResolve={fn()}
+            onOpen={fn()}
           />
         </tbody>
       </table>
@@ -69,7 +65,7 @@ export const StaffRow: Story = {
 export const Context: Story = {
   render: () => (
     <EntityStoryFrame title='Appeal Context'>
-      <AppealContext appeal={pendingAppeal} />
+      <AppealContext appeal={toModerationAppealSummary(pendingAppeal)} />
     </EntityStoryFrame>
   ),
 }
@@ -79,7 +75,7 @@ export const MemberRow: Story = {
     <EntityStoryFrame title='Appeal Row (member, redacted)'>
       <table className='min-w-full divide-y divide-border'>
         <tbody className='divide-y divide-border bg-card'>
-          <MemberAppealRow appeal={resolvedAppeal} />
+          <MemberAppealRow appeal={toModerationAppealSummary(resolvedAppeal)} />
         </tbody>
       </table>
     </EntityStoryFrame>

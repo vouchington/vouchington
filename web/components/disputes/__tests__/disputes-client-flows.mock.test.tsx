@@ -11,6 +11,7 @@ const h = vi.hoisted(() => ({
   mockRerunDisputeAI: vi.fn<VitestLooseMock>(),
   mockReconcileDisputeAIDraft: vi.fn<VitestLooseMock>(),
   mockUpdateDisputeDraft: vi.fn<VitestLooseMock>(),
+  mockGetReviewDispute: vi.fn<VitestLooseMock>(),
   mockListReviewDisputesClient: vi.fn<VitestLooseMock>(),
   mockOnError: vi.fn<VitestLooseMock>(),
 }))
@@ -24,6 +25,7 @@ vi.mock(import('@/lib/api/client/disputes'), () => ({
   rerunDisputeAI: h.mockRerunDisputeAI,
   reconcileDisputeAIDraft: h.mockReconcileDisputeAIDraft,
   updateDisputeDraft: h.mockUpdateDisputeDraft,
+  getReviewDisputeClient: h.mockGetReviewDispute,
   listReviewDisputesClient: h.mockListReviewDisputesClient,
 }))
 
@@ -31,6 +33,18 @@ vi.mock(import('@/lib/on-error/on-error'), () => ({ default: h.mockOnError }))
 
 import { DisputesClient } from '../disputes-client'
 import { makeDispute, makeDisputesData } from '@/test-helpers/disputes-client-fixtures'
+
+async function renderStaff(disputes: ReviewDispute[] = [makeDispute()]) {
+  h.mockGetReviewDispute.mockResolvedValueOnce(disputes[0])
+  render(
+    <DisputesClient
+      viewerTier='staff'
+      data={makeDisputesData(disputes)}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+  await screen.findByRole('dialog')
+}
 
 describe('DisputesClient — error handling, member tier, pagination, reducer', () => {
   afterEach(() => {
@@ -41,12 +55,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
     const error = new Error('Server error')
     h.mockApproveDispute.mockRejectedValueOnce(error)
     h.mockUpdateDisputeDraft.mockResolvedValueOnce({ dispute: makeDispute() })
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData()}
-      />,
-    )
+    await renderStaff()
     fireEvent.click(screen.getByRole('button', { name: /approve/i }))
     await waitFor(() =>
       expect(h.mockOnError).toHaveBeenCalledWith(
@@ -60,12 +69,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
     const error = new Error('Send failed')
     h.mockSendDisputeResolution.mockRejectedValueOnce(error)
     const approved = makeDispute({ approved_at: 'x', sent_at: null })
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData([approved])}
-      />,
-    )
+    await renderStaff([approved])
     fireEvent.click(screen.getByRole('button', { name: /send/i }))
     await waitFor(() =>
       expect(h.mockOnError).toHaveBeenCalledWith(
@@ -91,12 +95,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
         }),
     )
     h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(after)
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData([before])}
-      />,
-    )
+    await renderStaff([before])
 
     fireEvent.click(screen.getByTitle('Re-run AI'))
     expect(h.mockReconcileDisputeAIDraft).not.toHaveBeenCalled()
@@ -116,12 +115,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
         ai_public_response: 'Earlier job draft',
       }),
     )
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData([before])}
-      />,
-    )
+    await renderStaff([before])
 
     fireEvent.click(screen.getByTitle('Re-run AI'))
     await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledOnce())
@@ -140,12 +134,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
         ai_public_response: 'Later job draft',
       }),
     )
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData([before])}
-      />,
-    )
+    await renderStaff([before])
 
     fireEvent.click(screen.getByTitle('Re-run AI'))
     expect(await screen.findByText('Later job draft')).toBeVisible()
@@ -158,12 +147,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
     h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: 'manual-job' })
     h.mockReconcileDisputeAIDraft.mockRejectedValueOnce(error)
     try {
-      render(
-        <DisputesClient
-          viewerTier='staff'
-          data={makeDisputesData()}
-        />,
-      )
+      await renderStaff()
       fireEvent.click(screen.getByTitle('Re-run AI'))
       await waitFor(() =>
         expect(consoleError).toHaveBeenCalledWith('Could not refresh queued dispute draft', error),
@@ -178,13 +162,8 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
   it.each([
     ['approved', { approved_at: '2026-01-02T00:00:00Z' }],
     ['sent', { sent_at: '2026-01-03T00:00:00Z' }],
-  ])('does not offer a guaranteed-to-fail AI rerun for a %s dispute', (_state, overrides) => {
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData([makeDispute(overrides)])}
-      />,
-    )
+  ])('does not offer a guaranteed-to-fail AI rerun for a %s dispute', async (_state, overrides) => {
+    await renderStaff([makeDispute(overrides)])
 
     expect(screen.getByTitle('Re-run AI')).toBeDisabled()
   })
@@ -249,12 +228,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
   it('reducer edit_draft branch: updateDisputeDraft is called with edited text', async () => {
     h.mockUpdateDisputeDraft.mockResolvedValueOnce({ dispute: makeDispute() })
     h.mockApproveDispute.mockResolvedValueOnce({ dispute: makeDispute({ approved_at: 'x' }) })
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData()}
-      />,
-    )
+    await renderStaff()
     fireEvent.change(screen.getByPlaceholderText('Edit the public response...'), {
       target: { value: 'Updated response' },
     })

@@ -8,16 +8,16 @@ describe('native moderation optional additive contracts', () => {
     readFileSync(new URL('../../../api-fixtures/v1/manifest.json', import.meta.url), 'utf8'),
   ) as ReturnType<typeof buildApiFixtureManifest>
 
-  it('keeps current appeal and dispute context optional and review media required', () => {
+  it('keeps appeal target context optional, leaves staff context to detail routes, and requires review media', () => {
     expect(
       requiredFlagsForProperty(contracts['GET:/api/v1/appeals#staff'].schema, 'target_context'),
     ).toEqual([false])
     expect(
       requiredFlagsForProperty(contracts['GET:/api/v1/appeals#staff'].schema, 'staff_context'),
-    ).toEqual([false])
+    ).toEqual([])
     expect(
       requiredFlagsForProperty(contracts['GET:/api/v1/disputes#staff'].schema, 'staff_context'),
-    ).toEqual([false])
+    ).toEqual([])
     expect(
       requiredFlagsForProperty(contracts['GET:/api/v1/posts/review-queue'].schema, 'media_reveal'),
     ).toEqual([true])

@@ -1,4 +1,4 @@
-import type { ReviewDispute } from '@/types/review-disputes'
+import { toReviewDisputeSummary, type ReviewDispute } from '@/types/review-disputes'
 import type { TopicClaim } from '@/types/topic-claims'
 
 export const pendingDispute: ReviewDispute = {
@@ -71,7 +71,7 @@ export const resolvedDispute: ReviewDispute = {
 }
 
 export const staffData = {
-  disputes: [pendingDispute, resolvedDispute],
+  disputes: [pendingDispute, resolvedDispute].map(toReviewDisputeSummary),
   page_info: { has_next_page: false, end_cursor: null },
 }
 

@@ -1,12 +1,17 @@
 import { canViewPostsBatch } from './check-privacy-access-batch.mts'
-import type { ReviewDisputeResponse } from '@services/review-disputes'
 import type { PrivateUser } from '@services/users/types'
 
+type DisputePostContentFields = {
+  post_id: string
+  post_label: string
+  post_content: unknown
+}
+
 /** Removes authored post content the viewer cannot access while retaining the public dispute record. */
-export async function filterReviewDisputePostContentForViewer(
+export async function filterReviewDisputePostContentForViewer<T extends DisputePostContentFields>(
   currentUser: PrivateUser,
-  disputes: ReviewDisputeResponse[],
-): Promise<ReviewDisputeResponse[]> {
+  disputes: T[],
+): Promise<T[]> {
   if (disputes.length === 0) return disputes
 
   const visibility = await canViewPostsBatch(

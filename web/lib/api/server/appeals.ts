@@ -1,9 +1,9 @@
 import { cache } from 'react'
 import { serverApi } from './instance'
-import type { ModerationAppeal } from '@/types/appeals'
+import type { ModerationAppealSummary } from '@/types/appeals'
 
 interface AppealsResponse {
-  appeals: ModerationAppeal[]
+  appeals: ModerationAppealSummary[]
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
 

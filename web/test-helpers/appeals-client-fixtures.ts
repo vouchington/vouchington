@@ -1,4 +1,4 @@
-import type { ModerationAppeal } from '@/types/appeals'
+import { toModerationAppealSummary, type ModerationAppeal } from '@/types/appeals'
 
 export function makeAppeal(overrides: Partial<ModerationAppeal> = {}): ModerationAppeal {
   return {
@@ -51,7 +51,7 @@ export function makeAppeal(overrides: Partial<ModerationAppeal> = {}): Moderatio
 
 export function makeAppealsData(appeals: ModerationAppeal[] = [makeAppeal()]) {
   return {
-    appeals,
+    appeals: appeals.map(toModerationAppealSummary),
     page_info: { has_next_page: false, end_cursor: null },
   }
 }

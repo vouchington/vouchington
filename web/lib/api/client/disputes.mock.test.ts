@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   listReviewDisputesClient,
+  getReviewDisputeClient,
   createReviewDispute,
   updateDisputeDraft,
   approveDispute,
@@ -57,6 +58,16 @@ describe('disputes client api helpers', () => {
         searchParams: { limit: 50, after: 'cursor-1', status: 'pending', mine: true },
       })
       expect(result).toBe(page)
+    })
+  })
+
+  describe('getReviewDisputeClient', () => {
+    it('reads the full dispute from the detail route', async () => {
+      const dispute = { id: 'dispute-1', claim_text: 'wrong' }
+      mockGet.mockResolvedValueOnce({ dispute })
+
+      await expect(getReviewDisputeClient('dispute-1')).resolves.toBe(dispute)
+      expect(mockGet).toHaveBeenCalledWith('/api/v1/disputes/dispute-1')
     })
   })
 

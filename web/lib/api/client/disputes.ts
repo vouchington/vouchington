@@ -1,10 +1,10 @@
 'use client'
 
 import { clientApi } from './instance'
-import type { ReviewDispute } from '@/types/review-disputes'
+import type { ReviewDispute, ReviewDisputeSummary } from '@/types/review-disputes'
 
 export interface DisputesPage {
-  disputes: ReviewDispute[]
+  disputes: ReviewDisputeSummary[]
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
 
@@ -16,6 +16,14 @@ export function listReviewDisputesClient(options: {
   return clientApi.get('/api/v1/disputes', {
     searchParams: { limit: 50, after: options.after, status: options.status, mine: options.mine },
   })
+}
+
+/** List rows are summaries; the detail read carries the claim, drafts, notes and context. */
+export async function getReviewDisputeClient(disputeId: string): Promise<ReviewDispute> {
+  const { dispute } = await clientApi.get<{ dispute: ReviewDispute }>(
+    `/api/v1/disputes/${disputeId}`,
+  )
+  return dispute
 }
 
 export function createReviewDispute(data: {

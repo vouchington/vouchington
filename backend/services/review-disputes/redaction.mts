@@ -1,4 +1,4 @@
-import type { ReviewDisputeResponse } from './types.mts'
+import type { ReviewDisputeResponse, ReviewDisputeSummary } from './types.mts'
 
 export type RedactedReviewDispute = Omit<
   ReviewDisputeResponse,
@@ -55,8 +55,29 @@ export function redactReviewDispute(dispute: ReviewDisputeResponse): RedactedRev
   }
 }
 
+export type RedactedReviewDisputeSummary = Omit<
+  ReviewDisputeSummary,
+  | 'disputant_user_id'
+  | 'recommended_action'
+  | 'post_slug'
+  | 'disputant'
+  | 'has_ai_draft'
+  | 'has_draft'
+>
+
+/** Member list rows: the staff summary without the disputant, the AI recommendation and draft flags. */
 export function listRedactedReviewDisputes(
-  disputes: ReviewDisputeResponse[],
-): RedactedReviewDispute[] {
-  return disputes.map(redactReviewDispute)
+  disputes: ReviewDisputeSummary[],
+): RedactedReviewDisputeSummary[] {
+  return disputes.map(
+    ({
+      disputant_user_id: _d,
+      recommended_action: _ra,
+      post_slug: _ps,
+      disputant: _dp,
+      has_ai_draft: _ha,
+      has_draft: _hd,
+      ...rest
+    }) => rest,
+  )
 }

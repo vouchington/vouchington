@@ -1,4 +1,4 @@
-import type { ReviewDispute } from '@/types/review-disputes'
+import { toReviewDisputeSummary, type ReviewDispute } from '@/types/review-disputes'
 
 export function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispute {
   return {
@@ -23,7 +23,7 @@ export function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispu
 
 export function makeDisputesData(disputes: ReviewDispute[] = [makeDispute()]) {
   return {
-    disputes,
+    disputes: disputes.map(toReviewDisputeSummary),
     page_info: { has_next_page: false, end_cursor: null },
   }
 }

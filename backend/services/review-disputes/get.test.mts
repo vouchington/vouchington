@@ -25,6 +25,7 @@ import {
 } from './get.mts'
 import { DISPUTE_SLA_HOURS } from './config.mts'
 import { dismissReviewDispute } from './resolve.mts'
+import { updateReviewDisputeDraft } from './update-dispute-draft.mts'
 
 async function makeDisputeFixture(staffId: string, suffix = '', createdAt?: Date) {
   const creator = await createTestUser()
@@ -213,6 +214,29 @@ describe('listReviewDisputes', () => {
     expect(found!.is_overdue).toBeUndefined()
   })
 
+  it('returns summary rows that hold flags instead of drafts, notes and the claim', async () => {
+    const { dispute, claimant } = await makeDisputeFixture(staff.id)
+    await updateReviewDisputeDraft(staff.id, dispute.id, {
+      publicResponse: 'Unsent staff draft',
+      internalNotes: 'Private staff note',
+    })
+    const { disputes } = await listReviewDisputes({
+      status: 'pending',
+      disputantUserId: claimant.id,
+    })
+    const row = disputes.find(d => d.id === dispute.id)!
+    expect(row).toMatchObject({
+      has_draft: true,
+      has_ai_draft: false,
+      public_response: null,
+      disputant: { id: claimant.id },
+      post_slug: expect.any(String),
+    })
+    for (const field of ['claim_text', 'internal_notes', 'ai_public_response', 'staff_context']) {
+      expect(row).not.toHaveProperty(field)
+    }
+  })
+
   it('filters by disputantUserId', async () => {
     const { dispute, claimant } = await makeDisputeFixture(staff.id)
     const { disputes } = await listReviewDisputes({
@@ -244,7 +268,6 @@ describe('listReviewDisputes', () => {
       beforeId: newer.id,
       limit: 100,
     })
-    // uuidv7 ids sort ascending by creation time; beforeId keeps only id < cursor.
     expect(paged.every(d => d.id.localeCompare(newer.id) < 0)).toBe(true)
     expect(paged.some(d => d.id === newer.id)).toBe(false)
     expect(paged.some(d => d.id === older.id)).toBe(true)
@@ -261,8 +284,7 @@ describe('listDisputesForPost', () => {
   it('returns disputes for a given post', async () => {
     const { dispute, postId } = await makeDisputeFixture(staff.id)
     const disputes = await listDisputesForPost(postId)
-    expect(disputes.length).toBeGreaterThan(0)
-    expect(disputes.find(d => d.id === dispute.id)).toBeDefined()
+    expect(disputes.map(d => d.id)).toContain(dispute.id)
   })
 
   it('returns empty array for post with no disputes', async () => {
@@ -273,7 +295,6 @@ describe('listDisputesForPost', () => {
       createdById: creator.id,
       markdown: 'No disputes here.',
     })
-    const disputes = await listDisputesForPost(postId)
-    expect(disputes).toEqual([])
+    expect(await listDisputesForPost(postId)).toEqual([])
   })
 })

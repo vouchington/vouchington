@@ -17,6 +17,7 @@ import {
 } from './get.mts'
 import { APPEAL_SLA_HOURS } from './config.mts'
 import { dismissModerationAppeal } from './dismiss-appeal.mts'
+import { updateModerationAppealDraft } from './update-appeal-draft.mts'
 import { resolveModerationAppealReduce } from './resolve.mts'
 import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
 
@@ -187,6 +188,29 @@ describe('listModerationAppeals', () => {
     const { appeal } = await createModerationAppeal(target, WEB_PROVENANCE, input)
     return appeal
   }
+
+  it('returns summary rows that hold flags instead of drafts, notes and the reason', async () => {
+    const appeal = await createAppeal(`Summary appeal ${crypto.randomUUID()}`)
+    await updateModerationAppealDraft(staff.id, appeal.id, {
+      publicResponse: 'Unsent staff draft',
+      internalNotes: 'Private staff note',
+    })
+    const { appeals } = await listModerationAppeals({
+      appellantUserId: appellant.id,
+      status: 'pending',
+    })
+    const row = appeals.find(a => a.id === appeal.id)!
+
+    expect(row).toMatchObject({
+      has_draft: true,
+      public_response: null,
+      appellant: { id: appellant.id },
+      target_context: { type: 'warning' },
+    })
+    for (const field of ['appeal_reason', 'internal_notes', 'ai_public_response']) {
+      expect(row).not.toHaveProperty(field)
+    }
+  })
 
   it('returns appeals by appellantUserId', async () => {
     const a1 = await createAppeal(`List test appeal ${crypto.randomUUID()}`)

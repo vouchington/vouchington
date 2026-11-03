@@ -1,14 +1,14 @@
 'use client'
 
 import { TimeAgo } from '@/components/shared/time-ago'
-import type { ModerationAppeal } from '@/types/appeals'
+import type { ModerationAppealSummary } from '@/types/appeals'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface MemberAppealRowProps {
-  appeal: ModerationAppeal
+  appeal: ModerationAppealSummary
 }
 
-function targetLabel(appeal: ModerationAppeal): string {
+function targetLabel(appeal: ModerationAppealSummary): string {
   if (appeal.community_ban_id) return 'Community ban'
   if (appeal.user_warning_id) return 'Warning'
   if (appeal.user_suspension_id) return 'Platform suspension'

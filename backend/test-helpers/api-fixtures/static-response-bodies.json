@@ -1923,51 +1923,23 @@
   "native.moderation.appeals.page-2": {
     "appeals": [
       {
-        "ai_drafted_at": "2026-06-02T12:00:00.000Z",
-        "ai_internal_response": "The warning can remain in place.",
-        "ai_public_response": "We reviewed your appeal.",
-        "appeal_reason": "I would like another review.",
-        "appellant_user_id": "user-2",
-        "approved_at": null,
-        "approved_by_id": null,
-        "case_id": "case-2",
-        "community_ban_id": null,
-        "community_id": null,
-        "created_at": "2026-06-02T11:45:00.000Z",
-        "drafted_at": null,
-        "edited_at": null,
-        "edited_by_id": null,
         "id": "00000000-0000-7000-8000-000000000101",
-        "internal_notes": null,
-        "is_overdue": false,
-        "latest_lifecycle_change_id": null,
-        "model": "gpt-test",
+        "user_warning_id": "warning-2",
+        "community_ban_id": null,
         "post_id": null,
+        "user_suspension_id": null,
+        "community_id": null,
         "post_removal_kind": null,
-        "public_response": null,
-        "recommended_action": "deny",
-        "resolution_action": null,
-        "resolved_at": null,
-        "resolved_by_id": null,
-        "sent_at": null,
-        "staff_context": {
-          "appellant": {
-            "id": "user-2",
-            "profile_image_id": null,
-            "username": "appealing-member",
-            "verified_display_name": null
-          },
-          "original_decision": {
-            "actor": {
-              "id": "admin-1",
-              "profile_image_id": null,
-              "username": "moderator",
-              "verified_display_name": null
-            },
-            "internal_reason": "Repeated spam links"
-          }
-        },
         "status": "pending",
+        "recommended_action": "deny",
+        "is_overdue": false,
+        "public_response": null,
+        "approved_at": null,
+        "sent_at": null,
+        "resolved_at": null,
+        "resolution_action": null,
+        "created_at": "2026-06-02T11:45:00.000Z",
+        "updated_at": "2026-06-02T12:00:00.000Z",
         "target_context": {
           "community": null,
           "created_at": "2026-06-02T11:30:00.000Z",
@@ -1975,11 +1947,14 @@
           "public_message": "Please stop posting repeated promotional links.",
           "type": "warning"
         },
-        "updated_at": "2026-06-02T12:00:00.000Z",
-        "user_suspension_id": null,
-        "user_warning_id": "warning-2",
-        "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
-        "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
+        "appellant": {
+          "id": "user-2",
+          "profile_image_id": null,
+          "username": "appealing-member",
+          "verified_display_name": null
+        },
+        "has_ai_draft": true,
+        "has_draft": false
       }
     ],
     "page_info": {
@@ -2227,51 +2202,23 @@
   "native.moderation.appeals.default": {
     "appeals": [
       {
-        "ai_drafted_at": "2026-06-01T12:00:00.000Z",
-        "ai_internal_response": "Partial reduction recommended.",
-        "ai_public_response": "We reviewed your appeal.",
-        "appeal_reason": "Please review this again.",
-        "appellant_user_id": "user-1",
-        "approved_at": null,
-        "approved_by_id": null,
-        "case_id": "case-1",
-        "community_ban_id": null,
-        "community_id": null,
-        "created_at": "2026-06-01T11:45:00.000Z",
-        "drafted_at": null,
-        "edited_at": null,
-        "edited_by_id": null,
         "id": "00000000-0000-7000-8000-000000000102",
-        "internal_notes": null,
-        "is_overdue": false,
-        "latest_lifecycle_change_id": null,
-        "model": "gpt-test",
+        "user_warning_id": null,
+        "community_ban_id": null,
         "post_id": "post-1",
+        "user_suspension_id": null,
+        "community_id": null,
         "post_removal_kind": "platform",
-        "public_response": null,
-        "recommended_action": "reduce",
-        "resolution_action": null,
-        "resolved_at": null,
-        "resolved_by_id": null,
-        "sent_at": null,
-        "staff_context": {
-          "appellant": {
-            "id": "user-1",
-            "profile_image_id": null,
-            "username": "appealing-reviewer",
-            "verified_display_name": null
-          },
-          "original_decision": {
-            "actor": {
-              "id": "admin-1",
-              "profile_image_id": null,
-              "username": "moderator",
-              "verified_display_name": null
-            },
-            "internal_reason": "The post did not meet the content policy."
-          }
-        },
         "status": "pending",
+        "recommended_action": "reduce",
+        "is_overdue": false,
+        "public_response": null,
+        "approved_at": null,
+        "sent_at": null,
+        "resolved_at": null,
+        "resolution_action": null,
+        "created_at": "2026-06-01T11:45:00.000Z",
+        "updated_at": "2026-06-01T12:00:00.000Z",
         "target_context": {
           "community": null,
           "decided_at": "2026-06-01T11:30:00.000Z",
@@ -2283,11 +2230,14 @@
           "title": "A removed review",
           "type": "post_removal"
         },
-        "updated_at": "2026-06-01T12:00:00.000Z",
-        "user_suspension_id": null,
-        "user_warning_id": null,
-        "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
-        "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
+        "appellant": {
+          "id": "user-1",
+          "profile_image_id": null,
+          "username": "appealing-reviewer",
+          "verified_display_name": null
+        },
+        "has_ai_draft": true,
+        "has_draft": false
       }
     ],
     "page_info": {
@@ -2296,71 +2246,105 @@
       "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnN0YWZmLWFsbDppZC1kZXNjIn0"
     }
   },
+  "native.moderation.disputes.detail.default": {
+    "dispute": {
+      "claim_text": "Native review dispute",
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "ai_drafted_at": null,
+      "ai_draft_run_id": null,
+      "ai_draft_requested_run_id": "dispute_resolution_00000000-0000-7000-8000-000000000211",
+      "ai_internal_response": null,
+      "ai_public_response": null,
+      "approved_at": null,
+      "approved_by_id": null,
+      "drafted_at": null,
+      "edited_at": null,
+      "edited_by_id": null,
+      "disputant_user_id": "user-1",
+      "id": "00000000-0000-7000-8000-000000000201",
+      "is_overdue": false,
+      "internal_notes": null,
+      "latest_lifecycle_change_id": null,
+      "model": null,
+      "post_id": "post-1",
+      "post_content": {
+        "text": "A disputed review",
+        "declared_language": null,
+        "lingua_rs_detected_language": null
+      },
+      "reason": "other",
+      "recommended_action": "remove",
+      "public_response": null,
+      "status": "pending",
+      "resolution_action": null,
+      "resolved_at": null,
+      "resolved_by_id": null,
+      "sent_at": null,
+      "staff_context": {
+        "disputant": {
+          "id": "user-1",
+          "profile_image_id": null,
+          "username": "native-claimant",
+          "verified_display_name": null
+        },
+        "review": {
+          "post": {
+            "created_at": "2026-05-31T12:00:00.000Z",
+            "created_by_id": "user-2",
+            "id": "post-1",
+            "markdown_preview": "The review being disputed.",
+            "declared_language": null,
+            "lingua_rs_detected_language": null,
+            "slug": "a-disputed-review",
+            "title": "A disputed review"
+          },
+          "rating": 1,
+          "topic": {
+            "id": "topic-1",
+            "name": "Native topic",
+            "slug": "native-topic",
+            "topic_type": "business"
+          }
+        }
+      },
+      "topic_id": "topic-1",
+      "updated_at": "2026-06-01T12:00:00.000Z",
+      "post_label": "A disputed review"
+    }
+  },
   "native.moderation.disputes.default": {
     "disputes": [
       {
-        "claim_text": "Native review dispute",
-        "created_at": "2026-06-01T11:45:00.000Z",
-        "ai_drafted_at": null,
-        "ai_draft_run_id": null,
-        "ai_draft_requested_run_id": "dispute_resolution_00000000-0000-7000-8000-000000000211",
-        "ai_internal_response": null,
-        "ai_public_response": null,
-        "approved_at": null,
-        "approved_by_id": null,
-        "drafted_at": null,
-        "edited_at": null,
-        "edited_by_id": null,
-        "disputant_user_id": "user-1",
         "id": "00000000-0000-7000-8000-000000000201",
-        "is_overdue": false,
-        "internal_notes": null,
-        "latest_lifecycle_change_id": null,
-        "model": null,
         "post_id": "post-1",
+        "topic_id": "topic-1",
+        "disputant_user_id": "user-1",
+        "reason": "other",
+        "status": "pending",
+        "recommended_action": "remove",
+        "is_overdue": false,
+        "public_response": null,
+        "approved_at": null,
+        "sent_at": null,
+        "resolved_at": null,
+        "resolution_action": null,
+        "created_at": "2026-06-01T11:45:00.000Z",
+        "updated_at": "2026-06-01T12:00:00.000Z",
+        "post_label": "A disputed review",
         "post_content": {
           "text": "A disputed review",
           "declared_language": null,
           "lingua_rs_detected_language": null
         },
-        "reason": "other",
-        "recommended_action": "remove",
-        "public_response": null,
-        "status": "pending",
-        "resolution_action": null,
-        "resolved_at": null,
-        "resolved_by_id": null,
-        "sent_at": null,
-        "staff_context": {
-          "disputant": {
-            "id": "user-1",
-            "profile_image_id": null,
-            "username": "native-claimant",
-            "verified_display_name": null
-          },
-          "review": {
-            "post": {
-              "created_at": "2026-05-31T12:00:00.000Z",
-              "created_by_id": "user-2",
-              "id": "post-1",
-              "markdown_preview": "The review being disputed.",
-              "declared_language": null,
-              "lingua_rs_detected_language": null,
-              "slug": "a-disputed-review",
-              "title": "A disputed review"
-            },
-            "rating": 1,
-            "topic": {
-              "id": "topic-1",
-              "name": "Native topic",
-              "slug": "native-topic",
-              "topic_type": "business"
-            }
-          }
+        "post_slug": "a-disputed-review",
+        "disputant": {
+          "id": "user-1",
+          "profile_image_id": null,
+          "username": "native-claimant",
+          "verified_display_name": null
         },
-        "topic_id": "topic-1",
-        "updated_at": "2026-06-01T12:00:00.000Z",
-        "post_label": "A disputed review"
+        "has_ai_draft": false,
+        "has_draft": false
       }
     ],
     "page_info": {
