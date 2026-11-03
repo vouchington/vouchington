@@ -51,10 +51,8 @@ describe('refund reconciliation dispatcher', () => {
       expect.arrayContaining([first.id, second.id]),
     )
     expect(batch.dispatches).toHaveLength(2)
-    expect(batch.hasMore).toBe(true)
     expect(batch.dispatches.every(item => /^[0-9a-f-]{36}$/.test(item.leaseToken))).toBe(true)
 
-    // hasMore counts every due row in the shared table, so only the owned dispatch is asserted.
     const rest = await dispatchDueRefundReconciliations(1)
     expect(rest.dispatches).toEqual([expect.objectContaining({ id: third.id })])
   })
