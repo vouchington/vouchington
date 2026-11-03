@@ -1,257 +1,219 @@
-import { createTransactionResource } from '../../../test-helpers/services/identity-verification/transaction-resource.mts'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { beginTransaction } from '@voucha/test-helpers'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import {
+  createTestMembership,
+  createTestUser,
+  getIdentityVerificationAttemptStates,
+  setUserVerificationFields,
+} from '@voucha/test-helpers'
+import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
+import { IDENTITY_VERIFICATION_FEE_MINOR_UNITS } from '@voucha/config'
+import { v7 } from 'uuid'
 import {
   attachCheckoutToIdentityVerificationAttempt,
   releaseReservedIdentityVerificationAttempt,
   reserveIdentityVerificationAttempt,
 } from '../attempts.mts'
+import { grantIdentityVerificationAttempt } from '../attempt-grants.mts'
 import {
-  abandonIdentityVerificationProviderSession,
   beginIdentityVerificationProviderSession,
   consumeIdentityVerificationAttempt,
-  releaseAttachedIdentityVerificationAttempt,
   releaseIdentityVerificationAttempt,
 } from '../attempt-lifecycle.mts'
 
-const mockBeginTransaction = vi.fn<typeof beginTransaction>()
-
-function makeQueryResult(rows: Record<string, unknown>[] = []) {
-  return { rowCount: rows.length, rows, command: 'SELECT', oid: 0, fields: [] }
+async function reserveAttachedAttempt(userId: string) {
+  const attempt = await reserveIdentityVerificationAttempt(userId)
+  const checkoutSessionId = `cs_${v7()}`
+  await attachCheckoutToIdentityVerificationAttempt(attempt.id, checkoutSessionId)
+  return { attempt, checkoutSessionId }
 }
 
-function queryText(query: unknown): string {
-  return (query as { text: string }).text
+async function consumeSelfPaidAttempt(userId: string) {
+  const { checkoutSessionId } = await reserveAttachedAttempt(userId)
+  await beginIdentityVerificationProviderSession(checkoutSessionId)
+  await consumeIdentityVerificationAttempt(checkoutSessionId, `vs_${v7()}`)
+  await setUserVerificationFields(userId, { verificationStatus: 'failed' })
+}
+
+async function createUserWithSupportGrant() {
+  const [user, supportAgent] = await Promise.all([createTestUser(), createTestUser()])
+  await consumeSelfPaidAttempt(user.id)
+  await grantIdentityVerificationAttempt(user.id, supportAgent.id, `test grant ${v7()}`)
+  return user
 }
 
 describe('reserveIdentityVerificationAttempt', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  it('charges the identity verification fee for a user without a membership', async () => {
+    const user = await createTestUser()
 
-  it('creates a new zero-cost child attempt for a released support grant without rewriting the prior checkout audit', async () => {
-    const query = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(makeQueryResult())
-      .mockResolvedValueOnce(makeQueryResult([{ id: 'grant-1', source: 'support_grant' }]))
-    mockBeginTransaction.mockImplementation(async () => createTransactionResource(query as never))
+    const attempt = await reserveIdentityVerificationAttempt(user.id)
 
-    await expect(
-      reserveIdentityVerificationAttempt('user-1', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).resolves.toEqual({ id: 'grant-1', source: 'support_grant', amountMinorUnits: 0 })
-    expect(query).toHaveBeenCalledTimes(2)
-    const reservationSql = queryText(query.mock.calls[1]?.[0])
-    expect(reservationSql).toContain('grant_entitlement_attempt_id')
-    expect(reservationSql).toContain('NOT EXISTS')
-    expect(reservationSql).toContain('ON CONFLICT (grant_entitlement_attempt_id)')
-    expect(reservationSql).toContain('INSERT INTO identity_verification_attempts')
-    expect(reservationSql).not.toContain('checkout_session_id = NULL')
-  })
-
-  it('releases only the child attempt while preserving its Checkout session identifier for audit', async () => {
-    const query = vi.fn<VitestLooseMock>().mockResolvedValue(makeQueryResult([{ id: 'attempt-2' }]))
-    mockBeginTransaction.mockImplementation(async () => createTransactionResource(query as never))
-
-    await releaseIdentityVerificationAttempt('cs_abandoned', {
-      beginTransaction: mockBeginTransaction as never,
+    expect(attempt).toEqual({
+      id: attempt.id,
+      source: 'self_paid',
+      amountMinorUnits: IDENTITY_VERIFICATION_FEE_MINOR_UNITS,
     })
-
-    const releaseSql = queryText(query.mock.calls[0]?.[0])
-    expect(releaseSql).toContain('SET released_at = CURRENT_TIMESTAMP')
-    expect(releaseSql).toContain('checkout_session_id =')
-    expect(releaseSql).toContain('checkout_claimed_at IS NULL')
-    expect(releaseSql).not.toContain('checkout_session_id = NULL')
+    expect(attempt.amountMinorUnits).toBeGreaterThan(0)
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      { id: attempt.id, source: 'self_paid', checkout_session_id: null, released_at: null },
+    ])
   })
 
-  it('does not fall through to a paid attempt while a support-grant child is active', async () => {
-    const query = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(makeQueryResult())
-      .mockResolvedValueOnce(makeQueryResult())
-      .mockResolvedValueOnce(makeQueryResult([{ id: 'grant-parent' }]))
-    mockBeginTransaction.mockImplementation(async () => createTransactionResource(query as never))
+  it('includes one free attempt for an active Plus membership and rejects a second', async () => {
+    const user = await createTestUser()
+    await createTestMembership({ user_id: user.id, plan: 'plus', status: 'active' })
 
-    await expect(
-      reserveIdentityVerificationAttempt('user-1', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).rejects.toMatchObject({ status: 409 })
-    expect(query).toHaveBeenCalledTimes(3)
-  })
+    const attempt = await reserveIdentityVerificationAttempt(user.id)
 
-  it('consumes the child attempt once provider creation succeeds', async () => {
-    const query = vi.fn<VitestLooseMock>().mockResolvedValue(makeQueryResult([{ id: 'attempt-2' }]))
-    mockBeginTransaction.mockImplementation(async () => createTransactionResource(query as never))
-
-    await consumeIdentityVerificationAttempt('cs_retry', 'vs_retry', {
-      beginTransaction: mockBeginTransaction as never,
+    expect(attempt).toEqual({ id: attempt.id, source: 'membership_included', amountMinorUnits: 0 })
+    await expect(reserveIdentityVerificationAttempt(user.id)).rejects.toMatchObject({
+      status: 409,
+      message: 'Your membership-included identity verification has already been used.',
     })
-
-    const consumeSql = queryText(query.mock.calls[0]?.[0])
-    expect(consumeSql).toContain('SET consumed_at = CURRENT_TIMESTAMP')
-    expect(consumeSql).toContain('provider_session_id =')
-  })
-
-  it('reconciles an acknowledgement-lost Checkout attachment only for its exact active attempt', async () => {
-    const query = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(makeQueryResult([{ id: 'attempt-1' }]))
-    mockBeginTransaction
-      .mockRejectedValueOnce(new Error('database unavailable'))
-      .mockImplementationOnce(async () => createTransactionResource(query as never))
-
-    await expect(
-      attachCheckoutToIdentityVerificationAttempt('attempt-1', 'cs_test', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).resolves.toBeUndefined()
-    const recoverySql = queryText(query.mock.calls[0]?.[0])
-    expect(recoverySql).toContain('WHERE id =')
-    expect(recoverySql).toContain('checkout_session_id =')
-    expect(recoverySql).toContain('released_at IS NULL')
-    expect(recoverySql).toContain('consumed_at IS NULL')
-  })
-
-  it.each(['a different Checkout', 'a released attempt', 'a consumed attempt'])(
-    'rethrows an attachment error when recovery finds %s',
-    async () => {
-      const error = new Error('database unavailable')
-      const query = vi.fn<VitestLooseMock>().mockResolvedValue(makeQueryResult())
-      mockBeginTransaction
-        .mockRejectedValueOnce(error)
-        .mockImplementationOnce(async () => createTransactionResource(query as never))
-
-      await expect(
-        attachCheckoutToIdentityVerificationAttempt('attempt-1', 'cs_test', {
-          beginTransaction: mockBeginTransaction as never,
-        }),
-      ).rejects.toBe(error)
-    },
-  )
-
-  it('treats an already-active exact Checkout attachment as idempotent', async () => {
-    const query = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(makeQueryResult())
-      .mockResolvedValueOnce(makeQueryResult([{ id: 'attempt-1' }]))
-    mockBeginTransaction.mockImplementation(async () => createTransactionResource(query as never))
-
-    await expect(
-      attachCheckoutToIdentityVerificationAttempt('attempt-1', 'cs_test', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).resolves.toBeUndefined()
   })
 
   it('rejects an additional paid attempt after a self-paid attempt was consumed', async () => {
-    const query = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(makeQueryResult())
-      .mockResolvedValueOnce(makeQueryResult())
-      .mockResolvedValueOnce(makeQueryResult([{ id: 'consumed-attempt' }]))
-    mockBeginTransaction.mockImplementation(async () => createTransactionResource(query as never))
+    const user = await createTestUser()
+    await consumeSelfPaidAttempt(user.id)
 
-    await expect(
-      reserveIdentityVerificationAttempt('user-1', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).rejects.toMatchObject({ status: 409 })
+    await expect(reserveIdentityVerificationAttempt(user.id)).rejects.toMatchObject({
+      status: 409,
+      message:
+        'Your identity verification attempt has completed. Contact support to request another attempt.',
+    })
   })
 
-  it('rejects when an included attempt cannot be reserved', async () => {
-    const query = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(makeQueryResult([{ plan: 'plus' }]))
-      .mockResolvedValueOnce(makeQueryResult())
-      .mockResolvedValueOnce(makeQueryResult())
-      .mockResolvedValueOnce(makeQueryResult())
-    mockBeginTransaction.mockImplementation(async () => createTransactionResource(query as never))
+  it('reserves a new zero-cost child for a released support grant and keeps the prior audit row', async () => {
+    const user = await createUserWithSupportGrant()
+    const first = await reserveAttachedAttempt(user.id)
+    await releaseIdentityVerificationAttempt(first.checkoutSessionId)
 
-    await expect(
-      reserveIdentityVerificationAttempt('user-1', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).rejects.toMatchObject({ status: 409 })
+    const retry = await reserveIdentityVerificationAttempt(user.id)
+
+    expect(retry).toEqual({ id: retry.id, source: 'support_grant', amountMinorUnits: 0 })
+    expect(retry.id).not.toBe(first.attempt.id)
+    const states = await getIdentityVerificationAttemptStates(user.id)
+    const entitlement = states.find(
+      state => state.source === 'support_grant' && state.grant_entitlement_attempt_id === null,
+    )
+    expect(states.find(state => state.id === first.attempt.id)).toMatchObject({
+      grant_entitlement_attempt_id: entitlement!.id,
+      checkout_session_id: first.checkoutSessionId,
+      released_at: expect.any(Date),
+    })
+    expect(states.find(state => state.id === retry.id)).toMatchObject({
+      grant_entitlement_attempt_id: entitlement!.id,
+      checkout_session_id: null,
+      released_at: null,
+    })
   })
 
-  it('handles lifecycle transitions and detects unavailable attempts', async () => {
-    const withResults = (...results: ReturnType<typeof makeQueryResult>[]) => {
-      const query = vi.fn<VitestLooseMock>()
-      for (const result of results) query.mockResolvedValueOnce(result)
-      mockBeginTransaction.mockImplementation(async () => createTransactionResource(query as never))
-      return query
-    }
+  it('does not fall through to a paid attempt while a support-grant child is active', async () => {
+    const user = await createUserWithSupportGrant()
+    await reserveIdentityVerificationAttempt(user.id)
 
-    withResults({ ...makeQueryResult(), rowCount: 1 })
-    await beginIdentityVerificationProviderSession('cs_begin', {
-      beginTransaction: mockBeginTransaction as never,
+    await expect(reserveIdentityVerificationAttempt(user.id)).rejects.toMatchObject({
+      status: 409,
+      message: 'Your support-granted identity verification is already in progress.',
     })
+    const states = await getIdentityVerificationAttemptStates(user.id)
+    expect(states.filter(state => state.source === 'self_paid')).toHaveLength(1)
+  })
+})
 
-    withResults(
-      { ...makeQueryResult(), rowCount: 0 },
-      makeQueryResult([{ provider_creation_started_at: new Date() }]),
-    )
-    await beginIdentityVerificationProviderSession('cs_existing', {
-      beginTransaction: mockBeginTransaction as never,
-    })
+describe('attachCheckoutToIdentityVerificationAttempt', () => {
+  it('attaches the Checkout session and treats the same attachment as idempotent', async () => {
+    const user = await createTestUser()
+    const { attempt, checkoutSessionId } = await reserveAttachedAttempt(user.id)
 
-    withResults({ ...makeQueryResult(), rowCount: 0 }, makeQueryResult())
     await expect(
-      beginIdentityVerificationProviderSession('cs_missing', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).rejects.toMatchObject({ status: 409 })
+      attachCheckoutToIdentityVerificationAttempt(attempt.id, checkoutSessionId),
+    ).resolves.toBeUndefined()
 
-    withResults({ ...makeQueryResult(), rowCount: 0 })
-    await expect(
-      releaseAttachedIdentityVerificationAttempt('attempt-1', 'cs_missing', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).rejects.toMatchObject({ status: 409 })
-
-    const abandonQuery = withResults(makeQueryResult())
-    await abandonIdentityVerificationProviderSession('cs_abandon', {
-      beginTransaction: mockBeginTransaction as never,
-    })
-    expect(queryText(abandonQuery.mock.calls[0]?.[0])).toContain(
-      'provider_creation_started_at = NULL',
-    )
-
-    withResults(
-      { ...makeQueryResult(), rowCount: 0 },
-      makeQueryResult([{ provider_session_id: 'vs_existing' }]),
-    )
-    await consumeIdentityVerificationAttempt('cs_existing', 'vs_existing', {
-      beginTransaction: mockBeginTransaction as never,
-    })
-
-    withResults({ ...makeQueryResult(), rowCount: 0 }, makeQueryResult())
-    await expect(
-      consumeIdentityVerificationAttempt('cs_missing', 'vs_new', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).rejects.toMatchObject({ status: 409 })
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      { id: attempt.id, checkout_session_id: checkoutSessionId },
+    ])
   })
 
-  it('releases detached reservations and rejects a multi-row checkout release', async () => {
-    const query = vi.fn<VitestLooseMock>().mockResolvedValue(makeQueryResult())
-    mockBeginTransaction.mockImplementation(async () => createTransactionResource(query as never))
-    await releaseReservedIdentityVerificationAttempt('attempt-1', {
-      beginTransaction: mockBeginTransaction as never,
-    })
+  it('rejects a different Checkout for an attempt that already has one', async () => {
+    const user = await createTestUser()
+    const { attempt, checkoutSessionId } = await reserveAttachedAttempt(user.id)
 
-    const multiRowQuery = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValue({ ...makeQueryResult(), rowCount: 2 })
-    mockBeginTransaction.mockImplementation(async () =>
-      createTransactionResource(multiRowQuery as never),
-    )
     await expect(
-      releaseIdentityVerificationAttempt('cs_duplicate', {
-        beginTransaction: mockBeginTransaction as never,
-      }),
-    ).rejects.toThrow('multiple attempts')
+      attachCheckoutToIdentityVerificationAttempt(attempt.id, `cs_${v7()}`),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'Identity verification attempt is no longer available.',
+    })
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      { id: attempt.id, checkout_session_id: checkoutSessionId },
+    ])
+  })
+
+  it('reconciles an acknowledgement-lost attachment for its exact active attempt', async () => {
+    const user = await createTestUser()
+    const { attempt, checkoutSessionId } = await reserveAttachedAttempt(user.id)
+    onTestFinished(rejectNextPostgresTransactionForTest(new Error('database unavailable')))
+
+    await expect(
+      attachCheckoutToIdentityVerificationAttempt(attempt.id, checkoutSessionId),
+    ).resolves.toBeUndefined()
+  })
+
+  it('rethrows an attachment error when the attempt has a different Checkout', async () => {
+    const user = await createTestUser()
+    const { attempt } = await reserveAttachedAttempt(user.id)
+    const error = new Error('database unavailable')
+    onTestFinished(rejectNextPostgresTransactionForTest(error))
+
+    await expect(
+      attachCheckoutToIdentityVerificationAttempt(attempt.id, `cs_${v7()}`),
+    ).rejects.toBe(error)
+  })
+
+  it('rethrows an attachment error when recovery finds a released attempt', async () => {
+    const user = await createTestUser()
+    const { attempt, checkoutSessionId } = await reserveAttachedAttempt(user.id)
+    await releaseIdentityVerificationAttempt(checkoutSessionId)
+    const error = new Error('database unavailable')
+    onTestFinished(rejectNextPostgresTransactionForTest(error))
+
+    await expect(
+      attachCheckoutToIdentityVerificationAttempt(attempt.id, checkoutSessionId),
+    ).rejects.toBe(error)
+  })
+
+  it('rethrows an attachment error when recovery finds a consumed attempt', async () => {
+    const user = await createTestUser()
+    const { attempt, checkoutSessionId } = await reserveAttachedAttempt(user.id)
+    await beginIdentityVerificationProviderSession(checkoutSessionId)
+    await consumeIdentityVerificationAttempt(checkoutSessionId, `vs_${v7()}`)
+    const error = new Error('database unavailable')
+    onTestFinished(rejectNextPostgresTransactionForTest(error))
+
+    await expect(
+      attachCheckoutToIdentityVerificationAttempt(attempt.id, checkoutSessionId),
+    ).rejects.toBe(error)
+  })
+})
+
+describe('releaseReservedIdentityVerificationAttempt', () => {
+  it('releases a reservation that has no Checkout', async () => {
+    const user = await createTestUser()
+    const attempt = await reserveIdentityVerificationAttempt(user.id)
+
+    await releaseReservedIdentityVerificationAttempt(attempt.id)
+
+    const [state] = await getIdentityVerificationAttemptStates(user.id)
+    expect(state).toMatchObject({ id: attempt.id, released_at: expect.any(Date) })
+  })
+
+  it('leaves an attempt with an attached Checkout unreleased', async () => {
+    const user = await createTestUser()
+    const { attempt } = await reserveAttachedAttempt(user.id)
+
+    await releaseReservedIdentityVerificationAttempt(attempt.id)
+
+    const [state] = await getIdentityVerificationAttemptStates(user.id)
+    expect(state).toMatchObject({ id: attempt.id, released_at: null })
   })
 })

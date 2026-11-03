@@ -1,81 +1,109 @@
-import { createTransactionResource } from '../../../test-helpers/services/identity-verification/transaction-resource.mts'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { beginTransaction } from '@voucha/test-helpers'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  createTestUser,
+  getUserVerificationState,
+  setUserVerificationFields,
+} from '@voucha/test-helpers'
+import { invalidate } from '@services/entity-cache/invalidate'
 import { updateDisplayPreferences } from '../display-preferences.mts'
 
-const mockBeginTransaction = vi.fn<typeof beginTransaction>()
-const mockInvalidateUsers = vi.fn<(userId: string) => Promise<void>>()
-
-function updateDisplayPreferencesForTest(...args: Parameters<typeof updateDisplayPreferences>) {
-  const [userId, input, dependencies] = args
-  return updateDisplayPreferences(userId, input, {
-    beginTransaction: mockBeginTransaction as never,
-    invalidateUsers: mockInvalidateUsers as never,
-    ...dependencies,
+async function createVerifiedUser() {
+  const user = await createTestUser()
+  await setUserVerificationFields(user.id, {
+    verificationStatus: 'verified',
+    verifiedBadgeVisible: true,
+    publicVerifiedNameDisplay: 'hidden',
   })
-}
-
-function makeQueryFn(rowCount = 1) {
-  const q = vi.fn<VitestLooseMock>().mockResolvedValue({ rowCount })
-  ;(q as unknown as { client: unknown }).client = {}
-  return q as never
-}
-
-function setupTransactionMock(rowCount = 1) {
-  mockBeginTransaction.mockImplementation(async () =>
-    createTransactionResource(makeQueryFn(rowCount)),
-  )
+  return user
 }
 
 describe('updateDisplayPreferences', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    setupTransactionMock()
-    mockInvalidateUsers.mockResolvedValue(undefined)
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('does nothing when no fields are provided', async () => {
-    await updateDisplayPreferencesForTest('user-1', {})
-    expect(mockBeginTransaction).not.toHaveBeenCalled()
-    expect(mockInvalidateUsers).not.toHaveBeenCalled()
+    const user = await createVerifiedUser()
+    const invalidateUsers = vi.spyOn(invalidate, 'users').mockResolvedValue()
+
+    await updateDisplayPreferences(user.id, {})
+
+    expect(invalidateUsers).not.toHaveBeenCalled()
+    expect(await getUserVerificationState(user.id)).toMatchObject({
+      is_verified_badge_visible: true,
+      public_verified_name_display: 'hidden',
+    })
   })
 
-  it('updates is_verified_badge_visible only', async () => {
-    await updateDisplayPreferencesForTest('user-1', { is_verified_badge_visible: false })
-    expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
-    expect(mockInvalidateUsers).toHaveBeenCalledWith('user-1')
+  it('updates is_verified_badge_visible only and invalidates the user cache', async () => {
+    const user = await createVerifiedUser()
+    const invalidateUsers = vi.spyOn(invalidate, 'users').mockResolvedValue()
+
+    await updateDisplayPreferences(user.id, { is_verified_badge_visible: false })
+
+    expect(await getUserVerificationState(user.id)).toMatchObject({
+      is_verified_badge_visible: false,
+      public_verified_name_display: 'hidden',
+    })
+    expect(invalidateUsers).toHaveBeenCalledExactlyOnceWith(user.id)
   })
 
-  it('updates public_verified_name_display only', async () => {
-    await updateDisplayPreferencesForTest('user-1', { public_verified_name_display: 'first_name' })
-    expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
-    expect(mockInvalidateUsers).toHaveBeenCalledWith('user-1')
+  it('updates public_verified_name_display only and invalidates the user cache', async () => {
+    const user = await createVerifiedUser()
+    const invalidateUsers = vi.spyOn(invalidate, 'users').mockResolvedValue()
+
+    await updateDisplayPreferences(user.id, { public_verified_name_display: 'first_name' })
+
+    expect(await getUserVerificationState(user.id)).toMatchObject({
+      is_verified_badge_visible: true,
+      public_verified_name_display: 'first_name',
+    })
+    expect(invalidateUsers).toHaveBeenCalledExactlyOnceWith(user.id)
   })
 
   it('updates both fields at once', async () => {
-    await updateDisplayPreferencesForTest('user-1', {
-      is_verified_badge_visible: true,
+    const user = await createVerifiedUser()
+    const invalidateUsers = vi.spyOn(invalidate, 'users').mockResolvedValue()
+
+    await updateDisplayPreferences(user.id, {
+      is_verified_badge_visible: false,
       public_verified_name_display: 'full_name',
     })
-    expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
-    expect(mockInvalidateUsers).toHaveBeenCalledWith('user-1')
+
+    expect(await getUserVerificationState(user.id)).toMatchObject({
+      is_verified_badge_visible: false,
+      public_verified_name_display: 'full_name',
+    })
+    expect(invalidateUsers).toHaveBeenCalledExactlyOnceWith(user.id)
   })
 
-  it('accepts all valid public_verified_name_display values', async () => {
-    const values = ['hidden', 'first_name', 'first_name_last_initial', 'full_name'] as const
-    for (const value of values) {
-      vi.clearAllMocks()
-      setupTransactionMock()
-      mockInvalidateUsers.mockResolvedValue(undefined)
-      await updateDisplayPreferencesForTest('user-1', { public_verified_name_display: value })
-      expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
-    }
-  })
+  it.each(['hidden', 'first_name', 'first_name_last_initial', 'full_name'] as const)(
+    'stores the %s public name display',
+    async value => {
+      const user = await createVerifiedUser()
+      await setUserVerificationFields(user.id, { publicVerifiedNameDisplay: 'full_name' })
+      vi.spyOn(invalidate, 'users').mockResolvedValue()
 
-  it('does not invalidate cache when UPDATE matches 0 rows (user is not verified)', async () => {
-    setupTransactionMock(0)
-    await updateDisplayPreferencesForTest('user-1', { is_verified_badge_visible: true })
-    expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
-    expect(mockInvalidateUsers).not.toHaveBeenCalled()
+      await updateDisplayPreferences(user.id, { public_verified_name_display: value })
+
+      expect(await getUserVerificationState(user.id)).toMatchObject({
+        public_verified_name_display: value,
+      })
+    },
+  )
+
+  it('changes nothing and skips invalidation for a user who is not verified', async () => {
+    const user = await createTestUser()
+    const before = (await getUserVerificationState(user.id))!
+    const invalidateUsers = vi.spyOn(invalidate, 'users').mockResolvedValue()
+
+    await updateDisplayPreferences(user.id, {
+      is_verified_badge_visible: !before.is_verified_badge_visible,
+    })
+
+    expect(invalidateUsers).not.toHaveBeenCalled()
+    expect(await getUserVerificationState(user.id)).toMatchObject({
+      is_verified_badge_visible: before.is_verified_badge_visible,
+    })
   })
 })
