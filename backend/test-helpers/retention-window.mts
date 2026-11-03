@@ -17,3 +17,16 @@ export function createIsolatedRetentionWindow(spanDays = 150) {
   const at = (daysAgo: number) => new Date(now.getTime() - daysAgo * DAY_MS)
   return { now, at, lowerBoundDate: at(spanDays) }
 }
+
+/**
+ * A one-millisecond sweep window for fixtures whose assertions count exact pages. The cutoff is
+ * `aged + 1ms` and the lower bound is `aged`, so the production cleanup can only see rows stamped
+ * with this fixture's own `aged` millisecond. Leftover committed rows from other fixtures would
+ * need the same millisecond to be seen, unlike a 60-day window that any of them can land in.
+ * Pass the same `retentionDays` to the cleanup so its cutoff matches.
+ */
+export function createExactRetentionWindow(retentionDays: number) {
+  const aged = new Date(FAR_FUTURE_START_MS + randomInt(0, PLACEMENT_SPAN_MS))
+  const now = new Date(aged.getTime() + retentionDays * DAY_MS + 1)
+  return { aged, now, retentionDays, lowerBoundDate: aged }
+}

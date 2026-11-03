@@ -13,7 +13,10 @@ import {
   insertTextEmbeddingForRetentionTest,
   textEmbeddingExistsForRetentionTest,
 } from '@voucha/test-helpers/entities/ai-retention'
-import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
+import {
+  createExactRetentionWindow,
+  createIsolatedRetentionWindow,
+} from '@voucha/test-helpers/retention-window'
 import { deleteModerationWorkForAdmissionTest } from '@voucha/test-helpers/entities/ai-retention-moderation'
 import { cleanupTextEmbeddingCache } from '../cleanup-text-embeddings.mts'
 import { cleanupTerminalEmbeddingBatches } from '../cleanup-embedding-batches.mts'
@@ -31,16 +34,16 @@ import { checkPostClearance } from '../../post-clearance/check-clearance.mts'
 
 describe('AI and embedding retention', () => {
   it('resumes text-cache eviction and retains recent vectors', async () => {
-    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const { aged, ...window } = createExactRetentionWindow(90)
     await using setup = await beginTransaction()
     const hashes = await Promise.all([
-      insertTextEmbeddingForRetentionTest(setup, at(100)),
-      insertTextEmbeddingForRetentionTest(setup, at(100)),
-      insertTextEmbeddingForRetentionTest(setup, at(10)),
+      insertTextEmbeddingForRetentionTest(setup, aged),
+      insertTextEmbeddingForRetentionTest(setup, aged),
+      insertTextEmbeddingForRetentionTest(setup, window.now),
     ])
     await setup.commit()
     await using reader = await beginTransaction()
-    const options = { now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    const options = { ...window, batchSize: 1, maxBatches: 1 }
     expect(await cleanupTextEmbeddingCache(options)).toMatchObject({ deleted: 1, hasMore: true })
     expect(await cleanupTextEmbeddingCache(options)).toMatchObject({
       deleted: 1,
