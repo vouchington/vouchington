@@ -10,11 +10,18 @@ import {
   setReferralLinkLastCrawlSuccessAtRecent,
   softDeleteReferralLink,
 } from '@voucha/test-helpers/entities/referral-links'
-import { setHostnameAsValidForCrawlSearch } from '@voucha/test-helpers/entities/url-hostnames'
+import {
+  setHostnameAsValidForCrawlSearch,
+  setTestHostnameRequestsPerSecondLimit,
+} from '@voucha/test-helpers/entities/url-hostnames'
 import {
   deleteTestRobotsTxtCache,
   setTestRobotsTxtCache,
 } from '@voucha/test-helpers/entities/dispatch'
+import {
+  assertFailedAdmission,
+  failOwnedBulkAdmission,
+} from '@voucha/test-helpers/referral-dispatch-failures'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
 import { deactivateUserReferralLink } from '@services/user-referral-program-links/activate'
 import { getUrlById } from '@services/urls/get'
@@ -23,44 +30,10 @@ import { dispatchReferralLinkCrawls, enqueueReferralLinkCrawlsForUrlId } from '.
 import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
 import { getDateFromUUIDv7 } from '@modules/utils'
 
-const ROBOTS_CRAWL_DELAY_8S = 'User-agent: *\nAllow: /\nCrawl-delay: 8'
+// Only the crawler's product token gets 8s; the wildcard group would give 3s.
+const ROBOTS_CRAWL_DELAY_8S =
+  'User-agent: voucha-bot\nCrawl-delay: 8\n\nUser-agent: *\nAllow: /\nCrawl-delay: 3'
 const ROBOTS_RATE_LIMIT_MS = 8_000
-
-/** Fails the one bulk admission carrying the owned link; every other admission runs for real. */
-function failOwnedBulkAdmission(linkId: string, error: Error) {
-  const original = crawlReferralLinksQueue.addBulk as typeof crawlReferralLinksQueue.addBulk
-  const owned: Parameters<typeof original>[0][] = []
-  const spy = vi.spyOn(crawlReferralLinksQueue, 'addBulk').mockImplementation(((
-    ...args: Parameters<typeof original>
-  ) => {
-    if (args[0].some(job => (job.data as { linkId?: string }).linkId === linkId)) {
-      owned.push(args[0])
-      throw error
-    }
-    return Reflect.apply(original, crawlReferralLinksQueue, args) as ReturnType<typeof original>
-  }) as typeof original)
-  return { owned, restore: () => spy.mockRestore() }
-}
-
-function assertFailedAdmission(
-  owned: Parameters<typeof crawlReferralLinksQueue.addBulk>[0][],
-  expected: { linkId: string; urlId: string; referralProgramId: string; hostnameId: string },
-) {
-  assert.equal(owned.length, 1)
-  assert.deepEqual(
-    owned[0]!.map(job => job.data),
-    [
-      {
-        linkId: expected.linkId,
-        urlId: expected.urlId,
-        referralProgramId: expected.referralProgramId,
-      },
-    ],
-  )
-  const ordering = owned[0]![0]!.opts?.ordering
-  assert.equal(ordering?.key, `crawl:${expected.hostnameId}`)
-  assert.deepEqual(ordering?.rateLimit, { max: 1, duration: ROBOTS_RATE_LIMIT_MS })
-}
 
 describe('dispatch', () => {
   const seededHostnames: string[] = []
@@ -202,7 +175,7 @@ describe('dispatch', () => {
     } finally {
       failure.restore()
     }
-    assertFailedAdmission(failure.owned, {
+    assertFailedAdmission(failure.owned, ROBOTS_RATE_LIMIT_MS, {
       linkId: targetLink.id,
       urlId: targetLink.url_id,
       referralProgramId: targetFixture.referralProgramId,
@@ -230,6 +203,41 @@ describe('dispatch', () => {
     }
   })
 
+  it('applies the hostname requests_per_second_limit to the enqueue rate limit', async () => {
+    const suffix = Math.random().toString(36).slice(2, 8)
+    const hostname = `dispatch-rps-${suffix}.com`
+    seededHostnames.push(hostname)
+    await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
+    const fixture = await createReferralProgramFixture({
+      createdById: user.id,
+      randomSuffix: `rps${suffix}`,
+      hostname,
+      pathname: '/ref/%',
+    })
+    const link = await createUserReferralLink(user, WEB_PROVENANCE, {
+      user_id: user.id,
+      referral_program_id: fixture.referralProgramId,
+      url: `https://${hostname}/ref/rps`,
+    })
+    const url = await getUrlById(link.url_id)
+    assert.ok(url)
+    await setHostnameAsValidForCrawlSearch(url.hostname.id)
+    await setTestHostnameRequestsPerSecondLimit(url.hostname.id, 2)
+
+    assert.deepEqual(await dispatchReferralLinkCrawls({ referralLinkIds: [link.id] }), {
+      count: 1,
+      hasMore: false,
+    })
+
+    const jobs = (await readAllQueueJobs(crawlReferralLinksQueue)).filter(
+      job => (job.data as { linkId?: string } | null | undefined)?.linkId === link.id,
+    )
+    assert.deepEqual(
+      jobs.map(job => job.opts.ordering?.rateLimit),
+      [{ max: 1, duration: 500 }],
+    )
+  })
+
   it('surfaces a URL-specific enqueue failure with the robots Crawl-delay rate limit', async () => {
     const suffix = Math.random().toString(36).slice(2, 8)
     const link = await createActiveLink(`enqueue-failure-${suffix}`)
@@ -248,7 +256,7 @@ describe('dispatch', () => {
     } finally {
       failure.restore()
     }
-    assertFailedAdmission(failure.owned, {
+    assertFailedAdmission(failure.owned, ROBOTS_RATE_LIMIT_MS, {
       linkId: link.id,
       urlId: link.url_id,
       referralProgramId,
