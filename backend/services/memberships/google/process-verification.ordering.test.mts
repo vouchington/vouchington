@@ -8,7 +8,7 @@ import { getTestGooglePlaySourceExpiredAt } from '@voucha/test-helpers/google-pl
 import { createMembershipVerification, getMembershipByUserId } from '@services/memberships'
 import { describe, expect, it } from 'vitest'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import type { GooglePlaySubscriptionV2 } from './types.mts'
 
 describe('Google Play observation ordering', () => {
@@ -51,26 +51,22 @@ describe('Google Play observation ordering', () => {
       },
       lineItems: [{ productId, expiryTime }],
     })
-    const olderFetch = processGooglePlayMembershipVerification(first.id, {
-      client: {
-        getSubscription: async () => {
-          started.resolve()
-          await release.promise
-          return subscription(
-            'SUBSCRIPTION_STATE_ACTIVE',
-            new Date(Date.now() + 86_400_000).toISOString(),
-          )
-        },
-        acknowledgeSubscription: async () => undefined,
+    const olderFetch = processWithGooglePlay(first.id, {
+      getSubscription: async () => {
+        started.resolve()
+        await release.promise
+        return subscription(
+          'SUBSCRIPTION_STATE_ACTIVE',
+          new Date(Date.now() + 86_400_000).toISOString(),
+        )
       },
+      acknowledgeSubscription: async () => undefined,
     })
     await started.promise
-    await processGooglePlayMembershipVerification(second.id, {
-      client: {
-        getSubscription: async () =>
-          subscription('SUBSCRIPTION_STATE_EXPIRED', new Date(Date.now() - 60_000).toISOString()),
-        acknowledgeSubscription: async () => undefined,
-      },
+    await processWithGooglePlay(second.id, {
+      getSubscription: async () =>
+        subscription('SUBSCRIPTION_STATE_EXPIRED', new Date(Date.now() - 60_000).toISOString()),
+      acknowledgeSubscription: async () => undefined,
     })
     release.resolve()
     await olderFetch
@@ -85,28 +81,24 @@ describe('Google Play observation ordering', () => {
     const newer = await fixture.createVerification(fixture.purchaseToken)
     const started = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
-    const olderFetch = processGooglePlayMembershipVerification(older.id, {
-      client: {
-        getSubscription: async ({ purchaseToken }) => {
-          started.resolve()
-          await release.promise
-          throw new GooglePlaySubscriptionLookupError(404, purchaseToken)
-        },
-        acknowledgeSubscription: async () => undefined,
+    const olderFetch = processWithGooglePlay(older.id, {
+      getSubscription: async ({ purchaseToken }) => {
+        started.resolve()
+        await release.promise
+        throw new GooglePlaySubscriptionLookupError(404, purchaseToken)
       },
+      acknowledgeSubscription: async () => undefined,
     })
     await started.promise
-    await processGooglePlayMembershipVerification(newer.id, {
-      client: {
-        getSubscription: async () =>
-          fixture.subscription(
-            'SUBSCRIPTION_STATE_ACTIVE',
-            new Date(Date.now() + 2 * 86_400_000).toISOString(),
-            null,
-            'synthetic-newer',
-          ),
-        acknowledgeSubscription: async () => undefined,
-      },
+    await processWithGooglePlay(newer.id, {
+      getSubscription: async () =>
+        fixture.subscription(
+          'SUBSCRIPTION_STATE_ACTIVE',
+          new Date(Date.now() + 2 * 86_400_000).toISOString(),
+          null,
+          'synthetic-newer',
+        ),
+      acknowledgeSubscription: async () => undefined,
     })
     release.resolve()
     await olderFetch
@@ -125,36 +117,32 @@ describe('Google Play observation ordering', () => {
     const newer = await fixture.createVerification(newerToken)
     const started = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
-    const olderFetch = processGooglePlayMembershipVerification(older.id, {
-      client: {
-        getSubscription: async ({ purchaseToken }) => {
-          expect(purchaseToken).toBe(olderToken)
-          started.resolve()
-          await release.promise
-          return fixture.subscription(
-            'SUBSCRIPTION_STATE_ACTIVE',
-            new Date(Date.now() + 86_400_000).toISOString(),
-            fixture.purchaseToken,
-            'synthetic-older-successor',
-          )
-        },
-        acknowledgeSubscription: async () => undefined,
+    const olderFetch = processWithGooglePlay(older.id, {
+      getSubscription: async ({ purchaseToken }) => {
+        expect(purchaseToken).toBe(olderToken)
+        started.resolve()
+        await release.promise
+        return fixture.subscription(
+          'SUBSCRIPTION_STATE_ACTIVE',
+          new Date(Date.now() + 86_400_000).toISOString(),
+          fixture.purchaseToken,
+          'synthetic-older-successor',
+        )
       },
+      acknowledgeSubscription: async () => undefined,
     })
     await started.promise
-    await processGooglePlayMembershipVerification(newer.id, {
-      client: {
-        getSubscription: async ({ purchaseToken }) => {
-          expect(purchaseToken).toBe(newerToken)
-          return fixture.subscription(
-            'SUBSCRIPTION_STATE_EXPIRED',
-            new Date(Date.now() - 60_000).toISOString(),
-            fixture.purchaseToken,
-            'synthetic-newer-successor',
-          )
-        },
-        acknowledgeSubscription: async () => undefined,
+    await processWithGooglePlay(newer.id, {
+      getSubscription: async ({ purchaseToken }) => {
+        expect(purchaseToken).toBe(newerToken)
+        return fixture.subscription(
+          'SUBSCRIPTION_STATE_EXPIRED',
+          new Date(Date.now() - 60_000).toISOString(),
+          fixture.purchaseToken,
+          'synthetic-newer-successor',
+        )
       },
+      acknowledgeSubscription: async () => undefined,
     })
     release.resolve()
     await olderFetch
@@ -203,17 +191,15 @@ async function createActiveFixture() {
     lineItems: [{ productId, expiryTime }],
   })
   const seed = await createVerification(purchaseToken)
-  await processGooglePlayMembershipVerification(seed.id, {
-    client: {
-      getSubscription: async () =>
-        subscription(
-          'SUBSCRIPTION_STATE_ACTIVE',
-          new Date(Date.now() + 86_400_000).toISOString(),
-          null,
-          'synthetic-seed',
-        ),
-      acknowledgeSubscription: async () => undefined,
-    },
+  await processWithGooglePlay(seed.id, {
+    getSubscription: async () =>
+      subscription(
+        'SUBSCRIPTION_STATE_ACTIVE',
+        new Date(Date.now() + 86_400_000).toISOString(),
+        null,
+        'synthetic-seed',
+      ),
+    acknowledgeSubscription: async () => undefined,
   })
   return { userId: user.id, purchaseToken, createVerification, subscription }
 }

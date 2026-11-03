@@ -15,7 +15,7 @@ import {
   getTestMembershipProviderEvidenceTerminalState,
 } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 describe('Google Play RTDN finalization fence', () => {
@@ -56,15 +56,16 @@ describe('Google Play RTDN finalization fence', () => {
       evidence: { purchase_token: oldToken },
     })
     await expect(
-      processGooglePlayMembershipVerification(initial.id, {
-        client: makeGooglePlayClient({
+      processWithGooglePlay(
+        initial.id,
+        makeGooglePlayClient({
           accountId,
           oldProductId,
           pending: true,
           oldToken,
           successorToken,
         }),
-      }),
+      ),
     ).rejects.toThrow('Google Play purchase is pending')
     await expect(getMembershipVerification(owner.id, initial.id)).resolves.toMatchObject({
       status: 'pending',
@@ -109,9 +110,7 @@ describe('Google Play RTDN finalization fence', () => {
       id: predecessorVerificationId,
       data: { verificationId: predecessorVerificationId },
     })
-    const predecessor = processGooglePlayMembershipVerification(predecessorVerificationId, {
-      client,
-    })
+    const predecessor = processWithGooglePlay(predecessorVerificationId, client)
 
     await predecessorFinalFetch.promise
     const successor = await createMembershipVerification({
@@ -121,7 +120,7 @@ describe('Google Play RTDN finalization fence', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: successorToken },
     })
-    await processGooglePlayMembershipVerification(successor.id, { client })
+    await processWithGooglePlay(successor.id, client)
     await expect(getMembershipVerification(owner.id, successor.id)).resolves.toMatchObject({
       status: 'verified',
     })

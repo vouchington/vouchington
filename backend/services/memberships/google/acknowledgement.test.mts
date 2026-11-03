@@ -23,7 +23,7 @@ import {
   findDueGooglePlayAcknowledgementIds,
   advanceGooglePlayAcknowledgementRecoveryCursor,
 } from './acknowledgement-recovery.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'
 
@@ -105,7 +105,7 @@ describe('Google Play acknowledgement recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: purchaseToken },
     })
-    await processGooglePlayMembershipVerification(verification.id, { client })
+    await processWithGooglePlay(verification.id, client)
     const acknowledgementId = await getTestGooglePlayAcknowledgementId(verification.id)
     if (!acknowledgementId) throw new Error('Google Play acknowledgement was not created')
     const dueBatch = await findDueGooglePlayAcknowledgementIds()
@@ -124,7 +124,7 @@ describe('Google Play acknowledgement recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: purchaseToken },
     })
-    await processGooglePlayMembershipVerification(restored.id, { client })
+    await processWithGooglePlay(restored.id, client)
     expect(await acknowledgeGooglePlayPurchase({ acknowledgementId, client })).toBe('deferred')
     await makeTestGooglePlayAcknowledgementDue(acknowledgementId)
     expect(await acknowledgeGooglePlayPurchase({ acknowledgementId, client })).toBe('acknowledged')
@@ -165,22 +165,20 @@ describe('Google Play acknowledgement recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: purchaseToken },
     })
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: {
-        getSubscription: async () => ({
-          latestOrderId: 'synthetic-order',
-          subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE',
-          acknowledgementState: 'ACKNOWLEDGEMENT_STATE_PENDING',
-          testPurchase: {},
-          externalAccountIdentifiers: {
-            obfuscatedExternalAccountId: createHash('sha256').update(user.id).digest('hex'),
-          },
-          lineItems: [
-            { productId, expiryTime: new Date(Date.now() + 60 * 86_400_000).toISOString() },
-          ],
-        }),
-        acknowledgeSubscription: async () => undefined,
-      },
+    await processWithGooglePlay(verification.id, {
+      getSubscription: async () => ({
+        latestOrderId: 'synthetic-order',
+        subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE',
+        acknowledgementState: 'ACKNOWLEDGEMENT_STATE_PENDING',
+        testPurchase: {},
+        externalAccountIdentifiers: {
+          obfuscatedExternalAccountId: createHash('sha256').update(user.id).digest('hex'),
+        },
+        lineItems: [
+          { productId, expiryTime: new Date(Date.now() + 60 * 86_400_000).toISOString() },
+        ],
+      }),
+      acknowledgeSubscription: async () => undefined,
     })
     const acknowledgementId = await getTestGooglePlayAcknowledgementId(verification.id)
     if (!acknowledgementId) throw new Error('Google Play acknowledgement was not created')

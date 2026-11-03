@@ -7,7 +7,7 @@ import {
   createTestSku,
   createTestUser,
 } from '@voucha/test-helpers'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
@@ -26,14 +26,12 @@ describe('Google Play membership verification edge cases', () => {
     })
     let calls = 0
 
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: {
-        getSubscription: async () => {
-          calls += 1
-          throw new Error('Malformed evidence must be rejected before a provider call')
-        },
-        acknowledgeSubscription: async () => undefined,
+    await processWithGooglePlay(verification.id, {
+      getSubscription: async () => {
+        calls += 1
+        throw new Error('Malformed evidence must be rejected before a provider call')
       },
+      acknowledgeSubscription: async () => undefined,
     })
 
     expect(calls).toBe(0)
@@ -47,9 +45,10 @@ describe('Google Play membership verification edge cases', () => {
     const fixture = await createGooglePlayFixture()
     const verification = await fixture.submit(`google-token-${randomUUID()}`)
 
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: makeGooglePlayClient({ userId: fixture.user.id, productId: `other-${randomUUID()}` }),
-    })
+    await processWithGooglePlay(
+      verification.id,
+      makeGooglePlayClient({ userId: fixture.user.id, productId: `other-${randomUUID()}` }),
+    )
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -61,13 +60,14 @@ describe('Google Play membership verification edge cases', () => {
     const verification = await fixture.submit(`google-token-${randomUUID()}`)
 
     await expect(
-      processGooglePlayMembershipVerification(verification.id, {
-        client: makeGooglePlayClient({
+      processWithGooglePlay(
+        verification.id,
+        makeGooglePlayClient({
           userId: fixture.user.id,
           productId: fixture.productId,
           subscriptionState: 'SUBSCRIPTION_STATE_PENDING',
         }),
-      }),
+      ),
     ).rejects.toThrow('Google Play purchase is pending')
 
     await expect(
@@ -80,13 +80,14 @@ describe('Google Play membership verification edge cases', () => {
     const fixture = await createGooglePlayFixture()
     const verification = await fixture.submit(`google-token-${randomUUID()}`)
 
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: makeGooglePlayClient({
+    await processWithGooglePlay(
+      verification.id,
+      makeGooglePlayClient({
         userId: fixture.user.id,
         productId: fixture.productId,
         expiryTime: 'not-a-timestamp',
       }),
-    })
+    )
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -100,14 +101,12 @@ describe('Google Play membership verification edge cases', () => {
     let calls = 0
 
     await expect(
-      processGooglePlayMembershipVerification(verification.id, {
-        client: {
-          getSubscription: async () => {
-            calls += 1
-            throw new Error('Google subscriptionsv2 is temporarily unavailable')
-          },
-          acknowledgeSubscription: async () => undefined,
+      processWithGooglePlay(verification.id, {
+        getSubscription: async () => {
+          calls += 1
+          throw new Error('Google subscriptionsv2 is temporarily unavailable')
         },
+        acknowledgeSubscription: async () => undefined,
       }),
     ).rejects.toThrow('Google subscriptionsv2 is temporarily unavailable')
 
@@ -122,17 +121,15 @@ describe('Google Play membership verification edge cases', () => {
     for (const status of [400, 404, 410]) {
       const purchaseToken = `google-invalid-${randomUUID()}`
       const verification = await fixture.submit(purchaseToken)
-      await processGooglePlayMembershipVerification(verification.id, {
-        client: {
-          getSubscription: async () => {
-            throw new GooglePlaySubscriptionLookupError(
-              status,
-              purchaseToken,
-              status === 400 ? 'invalidValue' : null,
-            )
-          },
-          acknowledgeSubscription: async () => undefined,
+      await processWithGooglePlay(verification.id, {
+        getSubscription: async () => {
+          throw new GooglePlaySubscriptionLookupError(
+            status,
+            purchaseToken,
+            status === 400 ? 'invalidValue' : null,
+          )
         },
+        acknowledgeSubscription: async () => undefined,
       })
       await expect(
         getMembershipVerification(fixture.user.id, verification.id),
@@ -141,13 +138,11 @@ describe('Google Play membership verification edge cases', () => {
     const purchaseToken = `google-retry-${randomUUID()}`
     const verification = await fixture.submit(purchaseToken)
     await expect(
-      processGooglePlayMembershipVerification(verification.id, {
-        client: {
-          getSubscription: async () => {
-            throw new GooglePlaySubscriptionLookupError(503, purchaseToken)
-          },
-          acknowledgeSubscription: async () => undefined,
+      processWithGooglePlay(verification.id, {
+        getSubscription: async () => {
+          throw new GooglePlaySubscriptionLookupError(503, purchaseToken)
         },
+        acknowledgeSubscription: async () => undefined,
       }),
     ).rejects.toThrow('Google Play subscriptionsv2 fetch failed with 503')
     await expect(
@@ -156,13 +151,11 @@ describe('Google Play membership verification edge cases', () => {
     const ambiguousToken = `google-ambiguous-${randomUUID()}`
     const ambiguous = await fixture.submit(ambiguousToken)
     await expect(
-      processGooglePlayMembershipVerification(ambiguous.id, {
-        client: {
-          getSubscription: async () => {
-            throw new GooglePlaySubscriptionLookupError(400, ambiguousToken, 'required')
-          },
-          acknowledgeSubscription: async () => undefined,
+      processWithGooglePlay(ambiguous.id, {
+        getSubscription: async () => {
+          throw new GooglePlaySubscriptionLookupError(400, ambiguousToken, 'required')
         },
+        acknowledgeSubscription: async () => undefined,
       }),
     ).rejects.toThrow('Google Play subscriptionsv2 fetch failed with 400')
     await expect(getMembershipVerification(fixture.user.id, ambiguous.id)).resolves.toMatchObject({
@@ -176,9 +169,10 @@ describe('Google Play membership verification edge cases', () => {
     const purchaseToken = `google-token-${randomUUID()}`
     const first = await fixture.submit(purchaseToken)
 
-    await processGooglePlayMembershipVerification(first.id, {
-      client: makeGooglePlayClient({ userId: fixture.user.id, productId: fixture.productId }),
-    })
+    await processWithGooglePlay(
+      first.id,
+      makeGooglePlayClient({ userId: fixture.user.id, productId: fixture.productId }),
+    )
 
     const conflicting = await createMembershipVerification({
       userId: other.id,
@@ -187,9 +181,10 @@ describe('Google Play membership verification edge cases', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: purchaseToken },
     })
-    await processGooglePlayMembershipVerification(conflicting.id, {
-      client: makeGooglePlayClient({ userId: other.id, productId: fixture.productId }),
-    })
+    await processWithGooglePlay(
+      conflicting.id,
+      makeGooglePlayClient({ userId: other.id, productId: fixture.productId }),
+    )
 
     await expect(getMembershipVerification(other.id, conflicting.id)).resolves.toMatchObject({
       status: 'conflict',
@@ -208,14 +203,12 @@ describe('Google Play membership verification edge cases', () => {
       productId: fixture.productId,
       linkedPurchaseToken: priorToken,
     })
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: {
-        ...currentClient,
-        getSubscription: async request => {
-          if (request.purchaseToken === priorToken)
-            throw new GooglePlaySubscriptionLookupError(410, priorToken)
-          return currentClient.getSubscription(request)
-        },
+    await processWithGooglePlay(verification.id, {
+      ...currentClient,
+      getSubscription: async request => {
+        if (request.purchaseToken === priorToken)
+          throw new GooglePlaySubscriptionLookupError(410, priorToken)
+        return currentClient.getSubscription(request)
       },
     })
 

@@ -14,7 +14,7 @@ import {
   getTestMembershipSourceState,
 } from '@voucha/test-helpers'
 import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/google-play-recovery'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import {
   advanceGooglePlayActiveSourceRecoveryCursor,
@@ -65,7 +65,7 @@ describe('Google Play active-source recovery', () => {
     }
 
     const verificationId = await admitActiveSourceVerification(fixture)
-    await processGooglePlayMembershipVerification(verificationId, { client })
+    await processWithGooglePlay(verificationId, client)
     await (await memberships.getJob(verificationId))?.remove()
 
     expect(fetchedTokens).toEqual([fixture.purchaseToken])
@@ -87,13 +87,11 @@ describe('Google Play active-source recovery', () => {
     async ({ status, reason }) => {
       const fixture = await createActiveGooglePlayFixture()
       const verificationId = await admitActiveSourceVerification(fixture)
-      await processGooglePlayMembershipVerification(verificationId, {
-        client: {
-          getSubscription: async ({ purchaseToken }) => {
-            throw new GooglePlaySubscriptionLookupError(status, purchaseToken, reason)
-          },
-          acknowledgeSubscription: async () => undefined,
+      await processWithGooglePlay(verificationId, {
+        getSubscription: async ({ purchaseToken }) => {
+          throw new GooglePlaySubscriptionLookupError(status, purchaseToken, reason)
         },
+        acknowledgeSubscription: async () => undefined,
       })
       await (await memberships.getJob(verificationId))?.remove()
 
@@ -116,29 +114,25 @@ describe('Google Play active-source recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: successorToken },
     })
-    const successorProcessing = processGooglePlayMembershipVerification(successor.id, {
-      client: {
-        getSubscription: async ({ purchaseToken }) => {
-          expect(purchaseToken).toBe(successorToken)
-          successorStarted.resolve()
-          await releaseSuccessor.promise
-          return subscriptionFixture(fixture.userId, fixture.productId, {
-            linkedPurchaseToken: fixture.purchaseToken,
-          })
-        },
-        acknowledgeSubscription: async () => undefined,
+    const successorProcessing = processWithGooglePlay(successor.id, {
+      getSubscription: async ({ purchaseToken }) => {
+        expect(purchaseToken).toBe(successorToken)
+        successorStarted.resolve()
+        await releaseSuccessor.promise
+        return subscriptionFixture(fixture.userId, fixture.productId, {
+          linkedPurchaseToken: fixture.purchaseToken,
+        })
       },
+      acknowledgeSubscription: async () => undefined,
     })
     await successorStarted.promise
 
     const recoveryVerificationId = await admitActiveSourceVerification(fixture)
-    await processGooglePlayMembershipVerification(recoveryVerificationId, {
-      client: {
-        getSubscription: async ({ purchaseToken }) => {
-          throw new GooglePlaySubscriptionLookupError(404, purchaseToken)
-        },
-        acknowledgeSubscription: async () => undefined,
+    await processWithGooglePlay(recoveryVerificationId, {
+      getSubscription: async ({ purchaseToken }) => {
+        throw new GooglePlaySubscriptionLookupError(404, purchaseToken)
       },
+      acknowledgeSubscription: async () => undefined,
     })
     await (await memberships.getJob(recoveryVerificationId))?.remove()
     releaseSuccessor.resolve()
@@ -160,13 +154,11 @@ describe('Google Play active-source recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: fixture.purchaseToken },
     })
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: {
-        getSubscription: async ({ purchaseToken }) => {
-          throw new GooglePlaySubscriptionLookupError(404, purchaseToken)
-        },
-        acknowledgeSubscription: async () => undefined,
+    await processWithGooglePlay(verification.id, {
+      getSubscription: async ({ purchaseToken }) => {
+        throw new GooglePlaySubscriptionLookupError(404, purchaseToken)
       },
+      acknowledgeSubscription: async () => undefined,
     })
 
     await expect(getMembershipByUserId(fixture.userId)).resolves.toMatchObject({ status: 'active' })
@@ -223,7 +215,7 @@ async function createActiveGooglePlayFixture() {
     idempotencyKey: randomUUID(),
     evidence: { purchase_token: purchaseToken },
   })
-  await processGooglePlayMembershipVerification(verification.id, { client })
+  await processWithGooglePlay(verification.id, client)
   const membership = await getMembershipByUserId(user.id)
   if (!membership) throw new Error('Google Play fixture was not projected')
   const sourceId = await getMembershipSourceIdByMembershipId(membership.id)

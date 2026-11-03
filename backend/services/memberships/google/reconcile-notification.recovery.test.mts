@@ -16,7 +16,7 @@ import {
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
@@ -77,12 +77,12 @@ describe('Google Play RTDN recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: purchaseToken },
     })
-    await processGooglePlayMembershipVerification(verification.id, { client })
+    await processWithGooglePlay(verification.id, client)
     calls.length = 0
 
     await reconcileGooglePlayRtdnNotification({ evidenceId })
     const recoveryVerificationId = await expectQueuedVerification(user.id, applicationId)
-    await processGooglePlayMembershipVerification(recoveryVerificationId, { client })
+    await processWithGooglePlay(recoveryVerificationId, client)
     await (await memberships.getJob(recoveryVerificationId))?.remove()
     expect(calls).toEqual([applicationId])
     await reconcileGooglePlayRtdnNotification({ evidenceId })
@@ -110,7 +110,7 @@ describe('Google Play RTDN recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: purchaseToken },
     })
-    await processGooglePlayMembershipVerification(verification.id, { client })
+    await processWithGooglePlay(verification.id, client)
     calls.length = 0
     const evidenceId = await createTestGooglePlayRtdnEvidence({
       applicationId,
@@ -120,7 +120,7 @@ describe('Google Play RTDN recovery', () => {
 
     await reconcileGooglePlayRtdnNotification({ evidenceId })
     const recoveryVerificationId = await expectQueuedVerification(user.id, applicationId)
-    await processGooglePlayMembershipVerification(recoveryVerificationId, { client })
+    await processWithGooglePlay(recoveryVerificationId, client)
     await (await memberships.getJob(recoveryVerificationId))?.remove()
     expect(calls).toEqual([applicationId])
     await reconcileGooglePlayRtdnNotification({ evidenceId })
@@ -147,16 +147,14 @@ describe('Google Play RTDN recovery', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: currentToken },
     })
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: {
-        getSubscription: async ({ purchaseToken }) => {
-          if (purchaseToken === ancestorToken)
-            throw new GooglePlaySubscriptionLookupError(400, ancestorToken, 'subscriptionExpired')
-          expect(purchaseToken).toBe(currentToken)
-          return subscriptionFor({ productId, userId: user.id, linkedPurchaseToken: ancestorToken })
-        },
-        acknowledgeSubscription: async () => undefined,
+    await processWithGooglePlay(verification.id, {
+      getSubscription: async ({ purchaseToken }) => {
+        if (purchaseToken === ancestorToken)
+          throw new GooglePlaySubscriptionLookupError(400, ancestorToken, 'subscriptionExpired')
+        expect(purchaseToken).toBe(currentToken)
+        return subscriptionFor({ productId, userId: user.id, linkedPurchaseToken: ancestorToken })
       },
+      acknowledgeSubscription: async () => undefined,
     })
     await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({ status: 'active' })
   })

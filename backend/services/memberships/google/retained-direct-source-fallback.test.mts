@@ -11,7 +11,7 @@ import { createMembership } from '../create.mts'
 import { projectVerifiedProviderMembershipObservation } from '../provider-observation-projection.mts'
 import { updateMembershipFromEvent } from '../update.mts'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
+import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 describe('retained Google Play direct sources', () => {
@@ -34,9 +34,10 @@ describe('retained Google Play direct sources', () => {
       evidence: { purchase_token: `google-retained-${randomUUID()}` },
     })
 
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: makeGooglePlayClient(fixture.user.id, fixture.productId),
-    })
+    await processWithGooglePlay(
+      verification.id,
+      makeGooglePlayClient(fixture.user.id, fixture.productId),
+    )
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
