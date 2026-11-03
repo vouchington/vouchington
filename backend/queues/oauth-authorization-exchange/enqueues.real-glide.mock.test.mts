@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { Queue, Worker, type Job } from 'glide-mq'
-import { describe, expect, it, vi } from 'vitest'
+import { Job, Worker } from 'glide-mq'
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
-import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
+import {
+  closeAndUnregisterGlideMQInstance,
+  ENQUEUE_BASE_DEFAULTS,
+} from '@data-stores/valkey-glide-mq'
+import { background } from '@queues/background/queues'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { startRealGlideJobLifecycle } from '@voucha/test-helpers/real-glide-job-lifecycle'
 import {
@@ -16,152 +20,192 @@ import {
 } from './enqueues.mts'
 import { oauthAuthorizationExchangeQueue } from './queues.mts'
 
+vi.hoisted(() => {
+  const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
+  url.pathname = String(crypto.getRandomValues(new Uint32Array(1))[0])
+  vi.stubEnv('VALKEY_WORKER_QUEUE_URL', url.toString())
+})
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
+// A graceful close waits out the worker's in-flight blocking read, so keep that read short.
+const workerOptions = {
+  connection: workerQueueConnection,
+  prefix: workerQueuePrefix,
+  blockTimeout: 100,
+  // Production ranks recovered jobs; the worker's own promotion pass releases them, so keep it short.
+  promotionInterval: 100,
+}
+
+// Rank 1 is the lowest rank the ranked background queue accepts; recovery does not exercise priority ordering.
+const seedOptions = (authorizationId: string) => ({
+  jobId: authorizationId,
+  attempts: 1,
+  removeOnComplete: 100,
+  removeOnFail: 100,
+  priority: 1,
+  ordering: { key: 'oauth-authorization-exchange' },
+  deduplication: { id: authorizationId, mode: 'simple' as const },
+})
+
+type ExchangeJob = Job<OAuthAuthorizationExchangeJobData>
+
 describe('OAuth authorization exchange recovery through real GlideMQ', () => {
+  const workers: Worker<OAuthAuthorizationExchangeJobData>[] = []
+
+  afterEach(async () => {
+    vi.restoreAllMocks()
+    await Promise.allSettled(workers.splice(0).map(worker => worker.close()))
+    await background.obliterate({ force: true })
+  })
+
+  const startWorker = async (
+    processor: (job: ExchangeJob) => Promise<void>,
+    onTerminal: (job: ExchangeJob, state: 'completed' | 'failed') => void,
+  ) => {
+    const worker = new Worker<OAuthAuthorizationExchangeJobData>(
+      background.name,
+      processor,
+      workerOptions,
+    )
+    workers.push(worker)
+    worker.on('error', () => undefined)
+    worker.on('completed', job => onTerminal(job, 'completed'))
+    worker.on('failed', job => {
+      if (job) onTerminal(job, 'failed')
+    })
+    await worker.waitUntilReady()
+    return worker
+  }
+
+  // Seeds one job per entry, runs a worker until each is terminal, and returns the live jobs.
+  const seedTerminalJobs = async (
+    seeds: { id: string; name?: string; fail?: boolean }[],
+    executionCounts: Map<string, number>,
+  ) => {
+    const settled = Promise.withResolvers<void>()
+    const states = new Map<string, string>()
+    const worker = await startWorker(
+      async job => {
+        executionCounts.set(job.id, (executionCounts.get(job.id) ?? 0) + 1)
+        if (seeds.find(seed => seed.id === job.id)?.fail) {
+          throw new Error('expected terminal exchange failure')
+        }
+      },
+      (job, state) => {
+        if (!seeds.some(seed => seed.id === job.id)) return
+        states.set(job.id, state)
+        if (states.size === seeds.length) settled.resolve()
+      },
+    )
+    const jobs = await Promise.all(
+      seeds.map(seed =>
+        background.add(
+          seed.name ?? OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
+          { authorizationId: seed.id },
+          seedOptions(seed.id),
+        ),
+      ),
+    )
+    await settled.promise
+    await worker.close()
+    workers.splice(workers.indexOf(worker), 1)
+    return jobs.map(job => {
+      if (!job) throw new Error('Expected terminal exchange test job to be created')
+      return job
+    })
+  }
+
   it('reactivates matching completed and failed stable IDs without touching unrelated jobs', async () => {
-    const queueName = `oauth_authorization_exchange_recovery_${randomUUID()}`
-    const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
-    // A graceful close waits out the worker's in-flight blocking read. This case opens two
-    // workers, and each pays that wait on its first poll and again on close. 100ms keeps those
-    // four waits inside the five-second case budget when the shared Valkey is busy.
-    const workerOptions = { ...connection, blockTimeout: 100 }
-    const queue = new Queue<OAuthAuthorizationExchangeJobData>(queueName, connection)
     const completedAuthorizationId = randomUUID()
     const failedAuthorizationId = randomUUID()
     const unrelatedAuthorizationId = randomUUID()
     const executionCounts = new Map<string, number>()
-    let failSelectedJob = true
-    const initialWorker = new Worker<OAuthAuthorizationExchangeJobData>(
-      queueName,
-      async (job: Job<OAuthAuthorizationExchangeJobData>) => {
-        const authorizationId = job.data.authorizationId
-        executionCounts.set(authorizationId, (executionCounts.get(authorizationId) ?? 0) + 1)
-        if (authorizationId === failedAuthorizationId && failSelectedJob) {
-          throw new Error('expected terminal exchange failure')
-        }
-      },
-      workerOptions,
+    const [completedJob, failedJob, unrelatedJob] = await seedTerminalJobs(
+      [
+        { id: completedAuthorizationId },
+        { id: failedAuthorizationId, fail: true },
+        { id: unrelatedAuthorizationId },
+      ],
+      executionCounts,
     )
-    initialWorker.on('error', () => undefined)
-    const terminalStates = new Map<string, 'completed' | 'failed'>()
-    const initialSettled = Promise.withResolvers<void>()
-    const trackedIds = new Set<string>([
-      completedAuthorizationId,
-      failedAuthorizationId,
-      unrelatedAuthorizationId,
-    ])
-    const noteTerminal = (
-      settledJob: Job<OAuthAuthorizationExchangeJobData> | undefined,
-      state: 'completed' | 'failed',
-    ) => {
-      if (!settledJob || !trackedIds.has(settledJob.id)) return
-      terminalStates.set(settledJob.id, state)
-      if (terminalStates.size === trackedIds.size) initialSettled.resolve()
-    }
-    initialWorker.on('completed', settledJob => noteTerminal(settledJob, 'completed'))
-    initialWorker.on('failed', settledJob => noteTerminal(settledJob, 'failed'))
-    const options = (authorizationId: string) => ({
-      jobId: authorizationId,
-      attempts: 1,
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      // Stable-ID recovery does not exercise priority scheduling or its promotion cadence.
-      priority: 0,
-      deduplication: { id: authorizationId, mode: 'simple' as const },
-    })
-    let recoveryWorker: Worker<OAuthAuthorizationExchangeJobData> | undefined
+    await expect(completedJob.getState()).resolves.toBe('completed')
+    await expect(failedJob.getState()).resolves.toBe('failed')
+    await expect(unrelatedJob.getState()).resolves.toBe('completed')
 
-    try {
-      const completedJob = await queue.add(
-        OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
-        { authorizationId: completedAuthorizationId },
-        options(completedAuthorizationId),
-      )
-      const failedJob = await queue.add(
-        OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
-        { authorizationId: failedAuthorizationId },
-        options(failedAuthorizationId),
-      )
-      const unrelatedJob = await queue.add(
-        OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
-        { authorizationId: unrelatedAuthorizationId },
-        options(unrelatedAuthorizationId),
-      )
-      if (!completedJob || !failedJob || !unrelatedJob) {
-        throw new Error('Expected terminal exchange test jobs to be created')
-      }
-      await initialSettled.promise
-      await expect(completedJob.getState()).resolves.toBe('completed')
-      await expect(failedJob.getState()).resolves.toBe('failed')
-      await expect(unrelatedJob.getState()).resolves.toBe('completed')
-      await initialWorker.close()
-      failSelectedJob = false
-
-      const lookups: string[] = []
-      const terminalJobs = async (ids: readonly string[], state: string) => {
-        const jobs = await Promise.all(
-          ids.map(async id => {
-            lookups.push(id)
-            const job = await queue.getJob(id)
-            return job && (await job.getState()) === state ? job : null
-          }),
-        )
-        return jobs.filter(job => job !== null)
-      }
-      const inputs = [
+    await expect(
+      enqueueOrReactivateBulkOAuthAuthorizationExchanges([
         { authorizationId: completedAuthorizationId },
         { authorizationId: failedAuthorizationId },
-      ]
-      await expect(
-        enqueueOrReactivateBulkOAuthAuthorizationExchanges(inputs, {
-          getCompletedJobs: ids => terminalJobs(ids, 'completed'),
-          enqueueBulk: async jobs =>
-            queue.addBulk(
-              jobs.map(data => ({
-                name: OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
-                data,
-                opts: options(data.authorizationId),
-              })),
-            ),
-          getFailedJobs: ids => terminalJobs(ids, 'failed'),
-        }),
-      ).resolves.toBe(1)
+      ]),
+    ).resolves.toBe(1)
 
-      expect(new Set(lookups)).toEqual(new Set(inputs.map(input => input.authorizationId)))
-      expect(lookups).not.toContain(unrelatedAuthorizationId)
-
-      const recovered = Promise.withResolvers<void>()
-      const recoveredIds = new Set<string>()
-      recoveryWorker = new Worker<OAuthAuthorizationExchangeJobData>(
-        queueName,
-        async (job: Job<OAuthAuthorizationExchangeJobData>) => {
-          const authorizationId = job.data.authorizationId
-          executionCounts.set(authorizationId, (executionCounts.get(authorizationId) ?? 0) + 1)
-        },
-        workerOptions,
-      )
-      recoveryWorker.on('completed', job => {
+    const recovered = Promise.withResolvers<void>()
+    const recoveredIds = new Set<string>()
+    await startWorker(
+      async job => {
+        executionCounts.set(job.id, (executionCounts.get(job.id) ?? 0) + 1)
+      },
+      job => {
         if (job.id !== completedAuthorizationId && job.id !== failedAuthorizationId) return
         recoveredIds.add(job.id)
         if (recoveredIds.size === 2) recovered.resolve()
-      })
-      await recovered.promise
-      expect(executionCounts.get(completedAuthorizationId)).toBe(2)
-      expect(executionCounts.get(failedAuthorizationId)).toBe(2)
-      await expect(unrelatedJob.getState()).resolves.toBe('completed')
-      expect(executionCounts.get(unrelatedAuthorizationId)).toBe(1)
-    } finally {
-      await Promise.allSettled([initialWorker.close(), recoveryWorker?.close()])
-      await queue.obliterate({ force: true })
-      await queue.close()
-    }
+      },
+    )
+    await recovered.promise
+    expect(executionCounts.get(completedAuthorizationId)).toBe(2)
+    expect(executionCounts.get(failedAuthorizationId)).toBe(2)
+    await expect(unrelatedJob.getState()).resolves.toBe('completed')
+    expect(executionCounts.get(unrelatedAuthorizationId)).toBe(1)
+  })
+
+  it('does not inspect queue state for an empty durable recovery page', async () => {
+    const getJob = vi.spyOn(background, 'getJob')
+    const addBulk = vi.spyOn(background, 'addBulk')
+
+    await expect(enqueueOrReactivateBulkOAuthAuthorizationExchanges([])).resolves.toBe(0)
+
+    expect(getJob).not.toHaveBeenCalled()
+    expect(addBulk).not.toHaveBeenCalled()
+  })
+
+  it('preserves a completed job whose name is not the exchange job', async () => {
+    const authorizationId = randomUUID()
+    await seedTerminalJobs(
+      [{ id: authorizationId, name: OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name }],
+      new Map(),
+    )
+    const remove = vi.spyOn(Job.prototype, 'remove')
+
+    await expect(
+      enqueueOrReactivateBulkOAuthAuthorizationExchanges([{ authorizationId }]),
+    ).resolves.toBe(0)
+
+    expect(remove).not.toHaveBeenCalled()
+    const retained = await background.getJob(authorizationId)
+    expect(retained?.name).toBe(OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name)
+    await expect(retained?.getState()).resolves.toBe('completed')
+  })
+
+  it('aborts recovery enqueue when completed-job removal fails', async () => {
+    const authorizationId = randomUUID()
+    await seedTerminalJobs([{ id: authorizationId }], new Map())
+    vi.spyOn(Job.prototype, 'remove').mockRejectedValueOnce(new Error('remove failed'))
+    const addBulk = vi.spyOn(background, 'addBulk')
+
+    await expect(
+      enqueueOrReactivateBulkOAuthAuthorizationExchanges([{ authorizationId }]),
+    ).rejects.toThrow('remove failed')
+
+    expect(addBulk).not.toHaveBeenCalled()
+    await expect((await background.getJob(authorizationId))?.getState()).resolves.toBe('completed')
   })
 })
-
 // The admin backfill and manual triggers reuse one logical dispatcher id, so a later trigger must
 // start a new pass once the previous one is done however it ended.
 describe('OAuth exchange dispatcher enqueue through real GlideMQ', () => {
+  // This is the file's last suite; the queue lives in its private `voucha_qdb_<n>` namespace.
+  afterAll(() => closeAndUnregisterGlideMQInstance(background))
+
   // The throttle window is wall-clock time: dropping its ttl lets the replay isolate the job-id
   // claim, which is the part that used to outlive the job. Zero priority skips the scheduler's ~5s
   // promotion of prioritized jobs, and one attempt avoids waiting out a retry backoff.

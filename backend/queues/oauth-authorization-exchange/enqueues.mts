@@ -23,45 +23,20 @@ const enqueueBulkOAuthAuthorizationExchanges = createBackgroundBulkEnqueue(
   }),
 )
 
-type RetryableOAuthAuthorizationExchangeJob = {
-  id: string
-  name: string
-  retry(): Promise<void>
-}
-
-type RecoverableOAuthAuthorizationExchangeJob = {
-  id: string
-  name: string
-  remove(): Promise<void>
-}
-
-type OAuthAuthorizationExchangeRecoveryDependencies = {
-  enqueueBulk: typeof enqueueBulkOAuthAuthorizationExchanges
-  getCompletedJobs(ids: readonly string[]): Promise<RecoverableOAuthAuthorizationExchangeJob[]>
-  getFailedJobs(ids: readonly string[]): Promise<RetryableOAuthAuthorizationExchangeJob[]>
-}
-
-const recoveryDependencies: OAuthAuthorizationExchangeRecoveryDependencies = {
-  enqueueBulk: enqueueBulkOAuthAuthorizationExchanges,
-  getCompletedJobs: ids => getRecoveryJobs(ids, 'completed'),
-  getFailedJobs: ids => getRecoveryJobs(ids, 'failed'),
-}
-
 export async function enqueueOrReactivateBulkOAuthAuthorizationExchanges(
   inputs: OAuthAuthorizationExchangeJobData[],
-  dependencies: OAuthAuthorizationExchangeRecoveryDependencies = recoveryDependencies,
 ): Promise<number> {
   if (inputs.length === 0) return 0
   const authorizationIds = new Set(inputs.map(input => input.authorizationId))
   const [completedJobs, failedJobs] = await Promise.all([
-    dependencies.getCompletedJobs([...authorizationIds]),
-    dependencies.getFailedJobs([...authorizationIds]),
+    getRecoveryJobs([...authorizationIds], 'completed'),
+    getRecoveryJobs([...authorizationIds], 'failed'),
   ])
   const removableJobs = completedJobs.filter(
     job => job.name === OAUTH_AUTHORIZATION_EXCHANGE_JOB.name && authorizationIds.has(job.id),
   )
   await Promise.all(removableJobs.map(job => job.remove()))
-  await dependencies.enqueueBulk(inputs)
+  await enqueueBulkOAuthAuthorizationExchanges(inputs)
   const retryableJobs = failedJobs.filter(
     job => job.name === OAUTH_AUTHORIZATION_EXCHANGE_JOB.name && authorizationIds.has(job.id),
   )
