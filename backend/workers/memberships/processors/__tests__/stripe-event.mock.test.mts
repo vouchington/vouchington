@@ -191,35 +191,34 @@ describe('stripe-event', () => {
       expect(ignoredEvent?.status).toBe('ignored')
     })
 
-    it.each([
-      { isFinalAttempt: false, terminal: false },
-      { isFinalAttempt: true, terminal: true },
-    ])(
-      'records a processing failure before retrying the job (final attempt: $isFinalAttempt)',
-      async ({ isFinalAttempt, terminal }) => {
-        const subscriptionId = createUniqueStripeId('sub', 'failure')
-        const failure = new Error('handler failed')
-        mockGetStripeSubscription.mockRejectedValue(failure)
-        const storedEvent = await insertStripeEvent(
-          createProductionStripeEvent('invoice.payment_failed', {
-            id: createUniqueStripeId('in', 'failure'),
-            object: 'invoice',
-            customer: createUniqueStripeId('cus', 'failure'),
-            subscription: subscriptionId,
-          }),
-        )
+    async function failProcessing(isFinalAttempt: boolean) {
+      const failure = new Error('handler failed')
+      mockGetStripeSubscription.mockRejectedValue(failure)
+      const storedEvent = await insertStripeEvent(
+        createProductionStripeEvent('invoice.payment_failed', {
+          id: createUniqueStripeId('in', 'failure'),
+          object: 'invoice',
+          customer: createUniqueStripeId('cus', 'failure'),
+          subscription: createUniqueStripeId('sub', 'failure'),
+        }),
+      )
+      await expect(
+        processStripeEvent(toJobData(storedEvent), isFinalAttempt, applicationContext),
+      ).rejects.toBe(failure)
+      const failedEvent = await getTestStripeEventByStripeEventId(storedEvent.stripe_event_id)
+      expect(failedEvent?.last_error_message).toBe('handler failed')
+      expect(failedEvent?.last_error_at).not.toBeNull()
+      expect(failedEvent?.attempt_count).toBe(1)
+      return failedEvent
+    }
 
-        await expect(
-          processStripeEvent(toJobData(storedEvent), isFinalAttempt, applicationContext),
-        ).rejects.toBe(failure)
+    it('records a processing failure without failing the event before the final attempt', async () => {
+      expect((await failProcessing(false))?.failed_at).toBeNull()
+    })
 
-        const failedEvent = await getTestStripeEventByStripeEventId(storedEvent.stripe_event_id)
-        expect(failedEvent?.last_error_message).toBe('handler failed')
-        expect(failedEvent?.last_error_at).not.toBeNull()
-        expect(failedEvent?.failed_at !== null).toBe(terminal)
-        expect(failedEvent?.attempt_count).toBe(1)
-      },
-    )
+    it('records a processing failure and fails the event on the final attempt', async () => {
+      expect((await failProcessing(true))?.failed_at).toBeInstanceOf(Date)
+    })
 
     it('skips duplicate jobs after processing has been acquired', async () => {
       const user = await createTestUser()

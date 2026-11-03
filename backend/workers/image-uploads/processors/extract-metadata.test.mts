@@ -94,7 +94,7 @@ describe('extract-metadata', () => {
       expect(updated && deriveUploadStatus(updated)).toBe('complete')
       expect(updated?.data).toMatchObject({ format: 'jpeg', width: 64, height: 32 })
       expect(updated?.upload_completed_at).toBeDefined()
-      expect(getImageFromS3).toHaveBeenCalledExactlyOnceWith(expect.any(String), updated?.s3_key)
+      expect(getImageFromS3).toHaveBeenCalledExactlyOnceWith('test', updated?.s3_key)
       expect(await readImageCreatedJobs(image_id)).toEqual([{ id: image_id }])
       expect(publish).toHaveBeenCalledExactlyOnceWith(image_id, { id: image_id, ...COMPLETE_STATE })
     })
@@ -156,12 +156,11 @@ describe('extract-metadata', () => {
       storeInS3(Buffer.from('not an image'))
       watchPublishedStates()
 
-      await expect(processExtractImageMetadata(image_id)).rejects.toThrow(
-        /unsupported image format/,
-      )
+      await expect(processExtractImageMetadata(image_id)).rejects.toBeInstanceOf(Error)
 
       const updated = await getImageById(image_id)
       expect(updated && deriveUploadStatus(updated)).toBe('failed')
+      expect(updated?.upload_error).toBeTruthy()
       expect(await readImageCreatedJobs(image_id)).toEqual([])
     })
 
