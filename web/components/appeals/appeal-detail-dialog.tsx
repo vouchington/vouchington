@@ -1,6 +1,12 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { toModerationAppealSummary, type ModerationAppeal } from '@/types/appeals'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { AppealContext } from './appeal-context'
@@ -21,12 +27,14 @@ export function AppealDetailDialog({ appeal, onClose, ...actions }: AppealDetail
         if (!open) onClose()
       }}
     >
-      <DialogContent
-        data-pw='appeal-detail-dialog'
-        aria-describedby={undefined}
-      >
+      <DialogContent data-pw='appeal-detail-dialog'>
         <DialogHeader>
           <DialogTitle>{t('extracted.appeals.appealRow.review_aff0766a')}</DialogTitle>
+          <DialogDescription>
+            {t(
+              'extracted.appeals.appealDetailDialog.reviewThisAppealAndDecideHowToRespond_1f11d4d3',
+            )}
+          </DialogDescription>
         </DialogHeader>
         {appeal ? (
           <>

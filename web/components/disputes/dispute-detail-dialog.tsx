@@ -1,6 +1,12 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { toReviewDisputeSummary, type ReviewDispute } from '@/types/review-disputes'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { DisputeContext } from './dispute-context'
@@ -21,12 +27,14 @@ export function DisputeDetailDialog({ dispute, onClose, ...actions }: DisputeDet
         if (!open) onClose()
       }}
     >
-      <DialogContent
-        data-pw='dispute-detail-dialog'
-        aria-describedby={undefined}
-      >
+      <DialogContent data-pw='dispute-detail-dialog'>
         <DialogHeader>
           <DialogTitle>{t('extracted.disputes.disputesTable.review_aff0766a')}</DialogTitle>
+          <DialogDescription>
+            {t(
+              'extracted.disputes.disputeDetailDialog.reviewThisDisputeAndDecideHowToRespond_63c1e56c',
+            )}
+          </DialogDescription>
         </DialogHeader>
         {dispute ? (
           <>
