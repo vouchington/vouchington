@@ -23,14 +23,6 @@ import {
 } from '@services/notifications/content-visibility-writes'
 import type { ReconcileContentVisibilityData } from '@queues/background/enqueues/notifications-domain'
 
-type NotificationProcessorDependencies = {
-  enqueueContinueNotificationPushIntentReconciliation: typeof enqueueContinueNotificationPushIntentReconciliation
-  enqueueDeliverNotificationPushIntent: typeof enqueueDeliverNotificationPushIntent
-  listAvailableNotificationPushIntents: typeof listAvailableNotificationPushIntents
-  reconcileNotificationsForPost: typeof reconcileNotificationsForPost
-  reconcileNotificationsForRssFeedItem: typeof reconcileNotificationsForRssFeedItem
-}
-
 export { processCommunityActivityDigestDispatch } from './processors/community-activity-digest.mts'
 export { processDeliverNotificationPushIntent } from './processors/push-delivery.mts'
 export { processConversationMessageNotification } from './processors/conversation.mts'
@@ -65,12 +57,12 @@ async function dispatchCreatedNotificationPushes(
 }
 
 /** One bounded page of the post's recipients; a full page queues the next page after its last id. */
-export async function processReconcilePostNotifications(
-  data: { postId: string; afterUserId?: string; pageSize?: number },
-  dependencies?: Partial<NotificationProcessorDependencies>,
-) {
-  const reconcile = dependencies?.reconcileNotificationsForPost ?? reconcileNotificationsForPost
-  const result = await reconcile(data.postId, {
+export async function processReconcilePostNotifications(data: {
+  postId: string
+  afterUserId?: string
+  pageSize?: number
+}) {
+  const result = await reconcileNotificationsForPost(data.postId, {
     afterUserId: data.afterUserId,
     pageSize: data.pageSize,
     onCreatedNotifications: dispatchCreatedNotificationPushes,
@@ -79,13 +71,12 @@ export async function processReconcilePostNotifications(
 }
 
 /** One bounded page of the item's recipients; a full page queues the next page after its last id. */
-export async function processReconcileRssFeedItemNotifications(
-  data: { rssFeedItemId: string; afterUserId?: string; pageSize?: number },
-  dependencies?: Partial<NotificationProcessorDependencies>,
-) {
-  const reconcile =
-    dependencies?.reconcileNotificationsForRssFeedItem ?? reconcileNotificationsForRssFeedItem
-  const result = await reconcile(data.rssFeedItemId, {
+export async function processReconcileRssFeedItemNotifications(data: {
+  rssFeedItemId: string
+  afterUserId?: string
+  pageSize?: number
+}) {
+  const result = await reconcileNotificationsForRssFeedItem(data.rssFeedItemId, {
     afterUserId: data.afterUserId,
     pageSize: data.pageSize,
     onCreatedNotifications: dispatchCreatedNotificationPushes,
@@ -105,23 +96,27 @@ export async function processReconcileContentVisibility(data: ReconcileContentVi
   return page
 }
 
+/** Tests scope the recovery read to the fixture's ids; the shared-DB guard rejects an unscoped read. */
+type PushIntentRecoveryDependencies = {
+  listAvailableNotificationPushIntents: typeof listAvailableNotificationPushIntents
+}
+
 export async function processReconcileNotificationPushIntents(
   data: ReconcileNotificationPushIntentsData = {},
-  dependencies: Partial<NotificationProcessorDependencies> = {},
+  dependencies: Partial<PushIntentRecoveryDependencies> = {},
 ) {
   const listIntents =
     dependencies.listAvailableNotificationPushIntents ?? listAvailableNotificationPushIntents
-  const enqueueIntent =
-    dependencies.enqueueDeliverNotificationPushIntent ?? enqueueDeliverNotificationPushIntent
-  const enqueueContinuation =
-    dependencies.enqueueContinueNotificationPushIntentReconciliation ??
-    enqueueContinueNotificationPushIntentReconciliation
   const pageSize = getNotificationsWorkLimit('push_intent_recovery_page_size')
   const intents = await listIntents(pageSize, data)
-  await Promise.all(intents.map(intent => enqueueIntent(intent.user_id, intent.notification_id)))
+  await Promise.all(
+    intents.map(intent =>
+      enqueueDeliverNotificationPushIntent(intent.user_id, intent.notification_id),
+    ),
+  )
   const lastIntent = intents.at(-1)
   if (intents.length === pageSize && lastIntent) {
-    await enqueueContinuation({
+    await enqueueContinueNotificationPushIntentReconciliation({
       scanBefore: lastIntent.scan_before,
       after: {
         updatedAt: lastIntent.updated_at,

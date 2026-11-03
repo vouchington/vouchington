@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import webpush from 'web-push'
 
 import {
@@ -8,23 +8,28 @@ import {
   processReconcileNotificationPushIntents,
   processFollowNotification,
 } from './processors.mts'
-import type { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
-import type { reconcileNotificationsForRssFeedItem } from '@services/notifications/reconcile-rss-feed-item'
-import type {
-  enqueueContinueNotificationPushIntentReconciliation,
-  enqueueDeliverNotificationPushIntent,
-} from '@queues/notifications/enqueues'
+import { bookmarkEntity } from '@services/bookmarks/upsert'
+import { upsertRssFeedItems } from '../../services/rss-feed-items/upsert.mts'
+import {
+  createRandomString,
+  createTestUser,
+  createTestUserDirect,
+  insertTestBlock,
+  insertTestPost,
+  insertTestRssFeedDirect,
+  setEntityRelationCreatedAt,
+} from '@voucha/test-helpers'
 import { listAvailableNotificationPushIntents } from '@services/notifications-push'
-import { createTestUser, createTestUserDirect, insertTestBlock } from '@voucha/test-helpers'
+import { withTestNotificationPushRecoveryBacklog } from '@voucha/test-helpers/notification-push-recovery'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { listNotifications } from '@services/notifications/list'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
 import { background } from '@queues/background/queues'
-import { NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB } from '@queues/background/enqueues/notifications-jobs'
-
-const mockReconcileNotificationsForPost = vi.fn<typeof reconcileNotificationsForPost>()
-const mockReconcileNotificationsForRssFeedItem =
-  vi.fn<typeof reconcileNotificationsForRssFeedItem>()
+import {
+  NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
+  NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
+} from '@queues/background/enqueues/notifications-jobs'
+import type { ReconcileNotificationPushIntentsData } from '@queues/notifications/enqueues'
 
 async function queuedPushes(userIds: string[]) {
   const jobs = await readAllQueueJobs(background)
@@ -46,63 +51,99 @@ describe('processFollowNotification', () => {
   })
 })
 
+function scopedTo(notificationIds: readonly string[]) {
+  return {
+    listAvailableNotificationPushIntents: (
+      limit: number,
+      page: Parameters<typeof listAvailableNotificationPushIntents>[1],
+    ) => listAvailableNotificationPushIntents(limit, { ...page, notificationIds }),
+  }
+}
+
+async function notificationIdsFor(userIds: string[]) {
+  const pages = await Promise.all(userIds.map(userId => listNotifications(userId)))
+  return pages.map(page => page.results.map(row => row.id))
+}
+
 describe('notification reconcile processors', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('enqueues post push delivery per created notification batch', async () => {
-    const [first, second, third] = [1, 2, 3].map(() => ({
-      user_id: crypto.randomUUID(),
-      id: crypto.randomUUID(),
-    }))
-    mockReconcileNotificationsForPost.mockImplementation(async (_postId, options) => {
-      await options!.onCreatedNotifications!([first!, second!])
-      await options!.onCreatedNotifications!([third!])
-      return { created: 3, pruned: 1 }
+  it('enqueues post push delivery for each created notification', async () => {
+    const author = await createTestUser()
+    const recipients = await Promise.all([createTestUser(), createTestUser()])
+    await Promise.all(
+      recipients.map(async user => {
+        await bookmarkEntity(user, 'user', { id: author.id }, 'subscribe')
+        await setEntityRelationCreatedAt(
+          'relation__user__subscribe__user',
+          user.id,
+          author.id,
+          new Date(Date.now() - 2_000),
+        )
+      }),
+    )
+    const suffix = createRandomString(10)
+    const postId = await insertTestPost({
+      createdById: author.id,
+      title: `push ${suffix}`,
+      slug: `push-${suffix}`,
+      markdown: 'Push delivery per created notification',
     })
 
-    await expect(runReconcilePostNotifications({ postId: 'post-1' })).resolves.toEqual({
-      created: 3,
-      pruned: 1,
+    await expect(processReconcilePostNotifications({ postId })).resolves.toMatchObject({
+      created: 2,
     })
 
-    const pushes = await queuedPushes([first!.user_id, second!.user_id, third!.user_id])
-    expect(pushes).toHaveLength(3)
+    const userIds = recipients.map(user => user.id)
+    const notificationIds = await notificationIdsFor(userIds)
+    expect(notificationIds.map(ids => ids.length)).toEqual([1, 1])
+    const pushes = await queuedPushes(userIds)
+    expect(pushes).toHaveLength(2)
     expect(pushes).toEqual(
-      expect.arrayContaining([
-        { userId: first!.user_id, notificationId: first!.id },
-        { userId: second!.user_id, notificationId: second!.id },
-        { userId: third!.user_id, notificationId: third!.id },
-      ]),
+      expect.arrayContaining(
+        userIds.map((userId, index) => ({ userId, notificationId: notificationIds[index]![0] })),
+      ),
     )
   })
 
-  it('enqueues RSS push delivery per created notification batch', async () => {
-    const [first, second] = [1, 2].map(() => ({
-      user_id: crypto.randomUUID(),
-      id: crypto.randomUUID(),
-    }))
-    mockReconcileNotificationsForRssFeedItem.mockImplementation(async (_rssFeedItemId, options) => {
-      await options!.onCreatedNotifications!([first!])
-      await options!.onCreatedNotifications!([second!])
-      return { created: 2, pruned: 0 }
-    })
+  it('enqueues RSS push delivery for each created notification', async () => {
+    const recipients = await Promise.all([createTestUser(), createTestUser()])
+    const feed = await insertTestRssFeedDirect({})
+    await Promise.all(
+      recipients.map(async user => {
+        await bookmarkEntity(user, 'rss_feed', { id: feed.id }, 'subscribe')
+        await setEntityRelationCreatedAt(
+          'relation__user__subscribe__rss_feed',
+          user.id,
+          feed.id,
+          new Date(Date.now() - 2_000),
+        )
+      }),
+    )
+    const suffix = createRandomString(10)
+    const [item] = await upsertRssFeedItems(feed.id, [
+      {
+        guid: `guid-${suffix}`,
+        title: 'Push RSS Item',
+        link: `https://example.com/items/${suffix}`,
+        content: 'Body',
+        contentSnippet: 'Body',
+        categories: [],
+        creator: 'Tester',
+      },
+    ])
 
     await expect(
-      runReconcileRssFeedItemNotifications({ rssFeedItemId: 'item-1' }),
-    ).resolves.toEqual({
-      created: 2,
-      pruned: 0,
-    })
+      processReconcileRssFeedItemNotifications({ rssFeedItemId: item!.id }),
+    ).resolves.toMatchObject({ created: 2 })
 
-    const pushes = await queuedPushes([first!.user_id, second!.user_id])
+    const userIds = recipients.map(user => user.id)
+    const notificationIds = await notificationIdsFor(userIds)
+    expect(notificationIds.map(ids => ids.length)).toEqual([1, 1])
+    const pushes = await queuedPushes(userIds)
     expect(pushes).toHaveLength(2)
     expect(pushes).toEqual(
-      expect.arrayContaining([
-        { userId: first!.user_id, notificationId: first!.id },
-        { userId: second!.user_id, notificationId: second!.id },
-      ]),
+      expect.arrayContaining(
+        userIds.map((userId, index) => ({ userId, notificationId: notificationIds[index]![0] })),
+      ),
     )
   })
 })
@@ -144,80 +185,53 @@ describe('notification push intent processors', () => {
 
   it('reports a nonempty durable-intent reconciliation batch', async () => {
     const recipient = await createTestUserDirect()
-    const follower = await createTestUserDirect()
-    const [notification] = await createFollowNotification(
-      recipient.id,
-      follower.id,
-      follower.username,
-    )
-    const result = await processReconcileNotificationPushIntents(
-      {},
-      {
-        listAvailableNotificationPushIntents: (limit, page) =>
-          listAvailableNotificationPushIntents(limit, {
-            ...page,
-            notificationIds: [notification!.id],
-          }),
+    await withTestNotificationPushRecoveryBacklog(
+      { userId: recipient.id, count: 1 },
+      async fixture => {
+        await expect(
+          processReconcileNotificationPushIntents(
+            { scanBefore: fixture.scanBefore, after: fixture.after },
+            scopedTo(fixture.notificationIds),
+          ),
+        ).resolves.toEqual({ enqueued: 1 })
+        await expect(queuedPushes([recipient.id])).resolves.toEqual([
+          { userId: recipient.id, notificationId: fixture.notificationIds[0] },
+        ])
       },
     )
-    expect(result.enqueued).toBe(1)
   })
 })
 
 describe('notification push-intent recovery', () => {
   it('chains another bounded page when at least 100 intents are available', async () => {
-    const updatedAt = '2026-09-05 23:59:00.000001+00'
-    const scanBefore = '2026-09-06 00:00:00.000002+00'
-    const intents = Array.from({ length: 100 }, (_, index) => ({
-      user_id: `user-${index}`,
-      notification_id: `notification-${index}`,
-      updated_at: updatedAt,
-      scan_before: scanBefore,
-    }))
-    const listIntents = vi
-      .fn<typeof listAvailableNotificationPushIntents>()
-      .mockResolvedValue(intents)
-    const enqueueIntent = vi
-      .fn<typeof enqueueDeliverNotificationPushIntent>()
-      .mockResolvedValue(undefined)
-    const enqueueContinuation = vi
-      .fn<typeof enqueueContinueNotificationPushIntentReconciliation>()
-      .mockResolvedValue(undefined)
+    const recipient = await createTestUserDirect()
+    await withTestNotificationPushRecoveryBacklog(
+      { userId: recipient.id, count: 100 },
+      async fixture => {
+        await expect(
+          processReconcileNotificationPushIntents(
+            { scanBefore: fixture.scanBefore, after: fixture.after },
+            scopedTo(fixture.notificationIds),
+          ),
+        ).resolves.toEqual({ enqueued: 100 })
 
-    await expect(
-      processReconcileNotificationPushIntents(
-        {},
-        {
-          listAvailableNotificationPushIntents: listIntents,
-          enqueueDeliverNotificationPushIntent: enqueueIntent,
-          enqueueContinueNotificationPushIntentReconciliation: enqueueContinuation,
-        },
-      ),
-    ).resolves.toEqual({ enqueued: 100 })
-
-    expect(listIntents).toHaveBeenCalledWith(100, {})
-    expect(enqueueIntent).toHaveBeenCalledTimes(100)
-    expect(enqueueContinuation).toHaveBeenCalledWith({
-      scanBefore,
-      after: {
-        updatedAt,
-        userId: 'user-99',
-        notificationId: 'notification-99',
+        const pushes = await queuedPushes([recipient.id])
+        expect(pushes.map(push => push.notificationId).toSorted()).toEqual(fixture.notificationIds)
+        const continuations = (await readAllQueueJobs(background))
+          .filter(job => job.name === NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB.name)
+          .map(job => job.data as ReconcileNotificationPushIntentsData)
+          .filter(data => data.after?.userId === recipient.id)
+        expect(continuations).toEqual([
+          {
+            scanBefore: fixture.scanBefore,
+            after: {
+              updatedAt: fixture.scanBefore,
+              userId: recipient.id,
+              notificationId: fixture.notificationIds[99],
+            },
+          },
+        ])
       },
-    })
+    )
   })
 })
-function runReconcilePostNotifications(data: { postId: string; afterUserId?: string }) {
-  return processReconcilePostNotifications(data, {
-    reconcileNotificationsForPost: mockReconcileNotificationsForPost,
-  })
-}
-
-function runReconcileRssFeedItemNotifications(data: {
-  rssFeedItemId: string
-  afterUserId?: string
-}) {
-  return processReconcileRssFeedItemNotifications(data, {
-    reconcileNotificationsForRssFeedItem: mockReconcileNotificationsForRssFeedItem,
-  })
-}

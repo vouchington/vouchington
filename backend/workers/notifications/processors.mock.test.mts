@@ -8,17 +8,17 @@ import {
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { notificationsWorkConfig } from '@services/notifications/work-limits'
-import {
-  enqueueContinueNotificationPushIntentReconciliation,
-  enqueueDeliverNotificationPushIntent,
-  type ReconcileNotificationPushIntentsData,
-} from '@queues/notifications/enqueues'
-import { BACKGROUND_QUEUE_NAME, PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
-import { notifications } from '@queues/notifications/queues'
-import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
-import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
 import { listAvailableNotificationPushIntents } from '@services/notifications-push'
+import type { ReconcileNotificationPushIntentsData } from '@queues/notifications/enqueues'
+import { BACKGROUND_QUEUE_NAME, PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
+import { background } from '@queues/background/queues'
+import {
+  NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
+  NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
+} from '@queues/background/enqueues/notifications-jobs'
+import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
 import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
+import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
 import {
   processDeliverNotificationPushIntent,
   processReconcileNotificationPushIntents,
@@ -33,13 +33,22 @@ vi.mock<typeof import('web-push')>(import('web-push'), async importActual => {
   }
   return { ...mockedModule, default: mockedModule }
 })
-type EnqueueResult = { completion?: Promise<unknown>; enqueued?: unknown }
-type RecordedEnqueue =
-  | ({ kind: 'delivery'; data: { userId: string; notificationId: string } } & EnqueueResult)
-  | ({
-      kind: 'continuation'
-      data: Required<ReconcileNotificationPushIntentsData>
-    } & EnqueueResult)
+type DeliveryData = { userId: string; notificationId: string }
+async function recoveryJobs(userId: string) {
+  const jobs = await readAllQueueJobs(background)
+  return {
+    deliveries: jobs.filter(
+      job =>
+        job.name === NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB.name &&
+        (job.data as DeliveryData).userId === userId,
+    ),
+    continuations: jobs.filter(
+      job =>
+        job.name === NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB.name &&
+        (job.data as ReconcileNotificationPushIntentsData).after?.userId === userId,
+    ),
+  }
+}
 describe('notification push-intent recovery across pages', () => {
   let restoreWorkLimits: (() => void) | undefined
   beforeEach(() => {
@@ -58,7 +67,6 @@ describe('notification push-intent recovery across pages', () => {
   })
   it('drains distinct 2-item and 1-item pages without resending a successful endpoint', async () => {
     const recipient = await createTestUserDirect()
-    const enqueues: RecordedEnqueue[] = []
     let notificationIds: readonly string[] = []
     await withTestNotificationPushRecoveryBacklog(
       { userId: recipient.id, count: 3 },
@@ -68,39 +76,35 @@ describe('notification push-intent recovery across pages', () => {
           await expect(
             processReconcileNotificationPushIntents(
               { scanBefore: fixture.scanBefore, after: fixture.after },
-              recoveryDependencies(enqueues, fixture.notificationIds),
+              scopedTo(fixture.notificationIds),
             ),
           ).resolves.toEqual({ enqueued: 2 })
-          const firstPage = enqueues.filter(
-            (enqueue): enqueue is Extract<RecordedEnqueue, { kind: 'delivery' }> =>
-              enqueue.kind === 'delivery',
+          const firstJobs = await recoveryJobs(recipient.id)
+          const firstPage = firstJobs.deliveries
+            .map(job => ({ data: job.data as DeliveryData, opts: job.opts, name: job.name }))
+            .toSorted((a, b) => a.data.notificationId.localeCompare(b.data.notificationId))
+          expect(firstPage.map(delivery => delivery.data)).toEqual(
+            fixture.notificationIds
+              .slice(0, 2)
+              .map(notificationId => ({ userId: recipient.id, notificationId })),
           )
-          const firstContinuation = enqueues.find(enqueue => enqueue.kind === 'continuation')
-          expect(firstPage).toHaveLength(2)
-          expect(firstContinuation).toBeDefined()
-          const firstPageNotificationIds = firstPage.map(enqueue => enqueue.data.notificationId)
-          expect(firstPageNotificationIds).toEqual(fixture.notificationIds.slice(0, 2))
-          expect(enqueues.map(enqueue => enqueue.kind)).toEqual([
-            ...Array<string>(2).fill('delivery'),
-            'continuation',
-          ])
-          expect(firstContinuation!.data.scanBefore).toBe(fixture.scanBefore)
-          expect(firstContinuation!.data.after.updatedAt).toBe(fixture.scanBefore)
-          expect(firstContinuation!.data.after).toMatchObject({
-            userId: recipient.id,
-            notificationId: fixture.notificationIds[1],
+          expect(firstJobs.continuations).toHaveLength(1)
+          const firstContinuation = firstJobs.continuations[0]!
+          expect(firstContinuation.data).toEqual({
+            scanBefore: fixture.scanBefore,
+            after: {
+              updatedAt: fixture.scanBefore,
+              userId: recipient.id,
+              notificationId: fixture.notificationIds[1],
+            },
           })
-          const firstPageJobs = await Promise.all(
-            firstPage.map(enqueue => readEnqueuedJob(notifications, enqueue.enqueued)),
-          )
-          const continuationJob = await readEnqueuedJob(notifications, firstContinuation!.enqueued)
-          for (const job of firstPageJobs) {
-            expect(job).toMatchObject({
+          for (const delivery of firstPage) {
+            expect(delivery).toMatchObject({
               name: 'notifications.processDeliverNotificationPushIntent',
               opts: { priority: PRIORITY_TASK },
             })
           }
-          expect(continuationJob).toMatchObject({
+          expect(firstContinuation).toMatchObject({
             name: 'notifications.processReconcileNotificationPushIntents',
             opts: { priority: PRIORITY_DISPATCH },
           })
@@ -116,22 +120,20 @@ describe('notification push-intent recovery across pages', () => {
           ).resolves.toEqual(pendingStates)
           await expect(
             processReconcileNotificationPushIntents(
-              firstContinuation!.data,
-              recoveryDependencies(enqueues, fixture.notificationIds),
+              firstContinuation.data as ReconcileNotificationPushIntentsData,
+              scopedTo(fixture.notificationIds),
             ),
           ).resolves.toEqual({ enqueued: 1 })
-          const secondPage = enqueues
-            .filter(
-              (enqueue): enqueue is Extract<RecordedEnqueue, { kind: 'delivery' }> =>
-                enqueue.kind === 'delivery',
-            )
-            .slice(2)
-          expect(secondPage.map(enqueue => enqueue.data)).toEqual([
+          const secondJobs = await recoveryJobs(recipient.id)
+          const secondPage = secondJobs.deliveries.filter(
+            job => (job.data as DeliveryData).notificationId === fixture.notificationIds[2],
+          )
+          expect(secondPage.map(job => job.data)).toEqual([
             { userId: recipient.id, notificationId: fixture.notificationIds[2] },
           ])
-          expect(enqueues.filter(enqueue => enqueue.kind === 'continuation')).toHaveLength(1)
-          const secondJob = await readEnqueuedJob(notifications, secondPage[0]!.enqueued)
-          expect(secondJob).toMatchObject({
+          expect(secondJobs.deliveries).toHaveLength(3)
+          expect(secondJobs.continuations).toHaveLength(1)
+          expect(secondPage[0]).toMatchObject({
             name: 'notifications.processDeliverNotificationPushIntent',
             opts: { priority: PRIORITY_TASK },
           })
@@ -190,7 +192,9 @@ describe('notification push-intent recovery across pages', () => {
             expect.any(String),
             expect.objectContaining({ agent: expect.anything(), timeout: 30_000 }),
           )
-          await expect(processDeliverNotificationPushIntent(secondPage[0]!.data)).resolves.toEqual({
+          await expect(
+            processDeliverNotificationPushIntent(secondPage[0]!.data as DeliveryData),
+          ).resolves.toEqual({
             delivered: 2,
             suppressed: false,
           })
@@ -225,7 +229,7 @@ describe('notification push-intent recovery across pages', () => {
             },
           ])
         } finally {
-          await deleteRecordedTestQueueJobs(enqueues)
+          await deleteRecoveryJobs(recipient.id)
         }
       },
     )
@@ -235,34 +239,14 @@ describe('notification push-intent recovery across pages', () => {
     ).resolves.toEqual([])
   })
 })
-function recoveryDependencies(enqueues: RecordedEnqueue[], notificationIds: readonly string[]) {
+function scopedTo(notificationIds: readonly string[]) {
   return {
     listAvailableNotificationPushIntents: (
       limit: number,
       page: Parameters<typeof listAvailableNotificationPushIntents>[1],
     ) => listAvailableNotificationPushIntents(limit, { ...page, notificationIds }),
-    enqueueDeliverNotificationPushIntent: (userId: string, notificationId: string) => {
-      const recorded: RecordedEnqueue = {
-        kind: 'delivery',
-        data: { userId, notificationId },
-      }
-      enqueues.push(recorded)
-      const deliver = () => enqueueDeliverNotificationPushIntent(userId, notificationId)
-      recorded.completion = captureEnqueue(recorded, deliver)
-      return recorded.completion
-    },
-    enqueueContinueNotificationPushIntentReconciliation: (
-      data: Required<ReconcileNotificationPushIntentsData>,
-    ) => {
-      const recorded: RecordedEnqueue = { kind: 'continuation', data }
-      enqueues.push(recorded)
-      const continueReconciliation = () => enqueueContinueNotificationPushIntentReconciliation(data)
-      recorded.completion = captureEnqueue(recorded, continueReconciliation)
-      return recorded.completion
-    },
   }
 }
-
 async function createSubscription(userId: string, endpoint: string) {
   return upsertWebPushSubscription({
     userId,
@@ -276,24 +260,15 @@ async function createSubscription(userId: string, endpoint: string) {
 function successfulSendResult(): SendResult {
   return { statusCode: 201, body: '', headers: {} }
 }
-async function deleteRecordedTestQueueJobs(enqueues: RecordedEnqueue[]): Promise<void> {
-  const settledJobs = await Promise.allSettled(
-    enqueues.map(async enqueue => readEnqueuedJob(notifications, await enqueue.completion!)),
-  )
-  const jobIds = settledJobs.flatMap(result =>
-    result.status === 'fulfilled' ? [result.value.id] : [],
-  )
+async function deleteRecoveryJobs(userId: string): Promise<void> {
+  const { deliveries, continuations } = await recoveryJobs(userId)
+  const jobIds = new Set([...deliveries, ...continuations].map(job => job.id))
   const queue = getOrCreateQueue(BACKGROUND_QUEUE_NAME)
-  const ownedJobIds = new Set(jobIds)
-  for (const jobId of ownedJobIds) queue.jobs.delete(jobId)
+  for (const jobId of jobIds) queue.jobs.delete(jobId)
   for (let index = queue.waitingQueue.length - 1; index >= 0; index -= 1) {
-    if (ownedJobIds.has(queue.waitingQueue[index]!.id)) queue.waitingQueue.splice(index, 1)
+    if (jobIds.has(queue.waitingQueue[index]!.id)) queue.waitingQueue.splice(index, 1)
   }
-  await expect(Promise.all(jobIds.map(jobId => notifications.getJob(jobId)))).resolves.toEqual(
-    jobIds.map(() => null),
+  await expect(Promise.all([...jobIds].map(jobId => background.getJob(jobId)))).resolves.toEqual(
+    [...jobIds].map(() => null),
   )
-}
-async function captureEnqueue(recorded: RecordedEnqueue, enqueue: () => unknown): Promise<unknown> {
-  recorded.enqueued = await enqueue()
-  return recorded.enqueued
 }
