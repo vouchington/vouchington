@@ -225,6 +225,11 @@ describe('processSesInboundEmail key boundary', () => {
       'CopyObjectCommand',
       'DeleteObjectCommand',
     ])
+    expect(s3Calls[1]!.input).toEqual({
+      Bucket: 'ses-inbound-test',
+      Key: 'failed/ses-bodyless-message',
+      CopySource: 'ses-inbound-test/copyright-incoming/ses-bodyless-message',
+    })
     expect(s3Calls[2]!.input).toEqual({
       Bucket: 'ses-inbound-test',
       Key: 'copyright-incoming/ses-bodyless-message',

@@ -6,9 +6,11 @@ import { eraseTestCopyrightEmailIntakeOriginal } from '@voucha/test-helpers/copy
 import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
 import {
   SES_INBOUND_TEST_RECEIVED_AT,
+  readCopyrightEmailAncestorKindForTest,
   readCopyrightEmailIntakeIdForTest,
   readCopyrightEmailIntakeVerdictsForTest,
   readCopyrightEmailParseFailureForTest,
+  readCopyrightEmailThreadHeadersForTest,
   stubSesInboundS3ForTest,
 } from '@voucha/test-helpers/ses-inbound-s3'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
@@ -179,12 +181,25 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       virus: 'processing_failed',
     })
     expect(enqueuedIntakeIds()).toEqual([noticeIntakeId])
+    expect(
+      await readCopyrightEmailThreadHeadersForTest(noticeIntakeId, notice.sesMessageId),
+    ).toEqual({ messageId: noticeMessageId, inReplyTo: [], references: ['<prior@example.test>'] })
 
     await processSesInboundEmail(reply)
 
     const replyIntakeId = (await readCopyrightEmailIntakeIdForTest(reply.sesMessageId))!
     expect(replyIntakeId).not.toBe(noticeIntakeId)
     expect(enqueuedIntakeIds()).toEqual([noticeIntakeId, replyIntakeId])
+    expect(await readCopyrightEmailThreadHeadersForTest(replyIntakeId, reply.sesMessageId)).toEqual(
+      {
+        messageId: `<${reply.sesMessageId}@example.test>`,
+        inReplyTo: [noticeMessageId],
+        references: ['<prior@example.test>'],
+      },
+    )
+    expect(await readCopyrightEmailAncestorKindForTest(replyIntakeId, noticeIntakeId)).toBe(
+      'in_reply_to',
+    )
     expect(s3Calls.at(-1)).toEqual({
       command: 'DeleteObjectCommand',
       input: { Bucket: 'ses-inbound-test', Key: reply.objectKey },
