@@ -48,7 +48,6 @@ export const updateCommunitySettings: CommunityModerationHandler = async (user, 
       input,
       archive as boolean,
       membership,
-      undefined,
       community,
     )
   } else if (archive === undefined) {

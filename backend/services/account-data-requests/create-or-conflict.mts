@@ -12,34 +12,23 @@ type CreateDataRequestOrConflictResult =
   | { type: 'created'; request: UserDataRequest }
   | { type: 'conflict'; existing: UserDataRequest | null }
 
-type CreateDataRequestOrConflictDeps = {
-  createDataRequest: typeof createDataRequest
-  getLatestDataRequest: typeof getLatestDataRequest
-}
-
-const defaultDeps: CreateDataRequestOrConflictDeps = {
-  createDataRequest,
-  getLatestDataRequest,
-}
-
 export async function createDataRequestOrConflict(
   userId: string,
   requestedById: string,
-  deps: CreateDataRequestOrConflictDeps = defaultDeps,
 ): Promise<CreateDataRequestOrConflictResult> {
-  const existing = await deps.getLatestDataRequest(userId, requestedById)
+  const existing = await getLatestDataRequest(userId, requestedById)
   if (existing && isActiveDataRequest(existing)) {
     return { type: 'conflict', existing }
   }
 
   try {
-    const request = await deps.createDataRequest(userId, requestedById)
+    const request = await createDataRequest(userId, requestedById)
     return { type: 'created', request }
   } catch (err) {
     if (isActiveRequestUniqueViolation(err)) {
       // Intentional extra read after the write race so API callers can return the
       // current active request metadata in a 409 response.
-      const racedExisting = await deps.getLatestDataRequest(userId, requestedById)
+      const racedExisting = await getLatestDataRequest(userId, requestedById)
       return {
         type: 'conflict',
         existing: racedExisting && isActiveDataRequest(racedExisting) ? racedExisting : null,

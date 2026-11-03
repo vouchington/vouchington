@@ -4,18 +4,7 @@ type PostWithCommunityId = {
   community_id?: string | null
 }
 
-type GetPostCommunitiesRecordDeps = {
-  getCommunitiesByIdBatch: typeof getCommunitiesByIdBatch
-}
-
-const defaultDeps: GetPostCommunitiesRecordDeps = {
-  getCommunitiesByIdBatch,
-}
-
-export async function getPostCommunitiesRecord(
-  posts: Array<PostWithCommunityId | null>,
-  deps: GetPostCommunitiesRecordDeps = defaultDeps,
-) {
+export async function getPostCommunitiesRecord(posts: Array<PostWithCommunityId | null>) {
   const communityIds = [
     ...new Set(
       posts.flatMap(post =>
@@ -26,7 +15,7 @@ export async function getPostCommunitiesRecord(
     ),
   ]
   if (communityIds.length === 0) return {}
-  const communities = await deps.getCommunitiesByIdBatch(communityIds)
+  const communities = await getCommunitiesByIdBatch(communityIds)
   return Object.fromEntries(
     communities.flatMap(community =>
       community

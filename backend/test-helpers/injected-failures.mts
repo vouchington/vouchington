@@ -74,3 +74,24 @@ export function rejectNextPostgresTransactionForTest(error: Error): () => void {
   const spy = vi.spyOn(psql, 'beginTransaction').mockRejectedValueOnce(error)
   return () => spy.mockRestore()
 }
+
+/**
+ * Answer default-pool `read()` calls whose statement text contains `marker` from `answers`, in call
+ * order: each entry replaces that call's rows, and calls past the end of the list run the real read.
+ * Use to make a read observe state from before a concurrent write; returns the restore.
+ */
+export function answerPostgresReadsForTest(
+  marker: string,
+  answers: ReadonlyArray<Record<string, unknown>[]>,
+): () => void {
+  const realRead = psql.read
+  let calls = 0
+  const spy = vi.spyOn(psql, 'read').mockImplementation((query, ...rest) => {
+    const text = typeof query === 'string' ? query : query.text
+    if (!text.includes(marker)) return realRead(query, ...rest)
+    const rows = answers[calls++]
+    if (!rows) return realRead(query, ...rest)
+    return Promise.resolve({ command: 'SELECT', rowCount: rows.length, oid: 0, fields: [], rows })
+  })
+  return () => spy.mockRestore()
+}

@@ -1,39 +1,27 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { v7 as uuidv7 } from 'uuid'
+import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
 import { getPostCommunitiesRecord } from './post-communities-record.mts'
 
 describe('getPostCommunitiesRecord', () => {
-  const getCommunitiesByIdBatch = vi.fn<VitestLooseMock>()
-
-  function getRecord(posts: Parameters<typeof getPostCommunitiesRecord>[0]) {
-    return getPostCommunitiesRecord(posts, { getCommunitiesByIdBatch })
-  }
-
-  beforeEach(() => {
-    getCommunitiesByIdBatch.mockReset()
-  })
-
   it('returns community sidecar records for unique post community ids', async () => {
-    getCommunitiesByIdBatch.mockResolvedValue([
-      { id: 'community-1', name: 'Rewards', slug: 'rewards' },
-      null,
-    ])
+    const owner = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id })
 
     await expect(
-      getRecord([
-        { community_id: 'community-1' },
-        { community_id: 'community-1' },
+      getPostCommunitiesRecord([
+        { community_id: community.id },
+        { community_id: community.id },
+        { community_id: uuidv7() },
         { community_id: null },
         null,
       ]),
     ).resolves.toEqual({
-      'community-1': { id: 'community-1', name: 'Rewards', slug: 'rewards' },
+      [community.id]: { id: community.id, name: community.name, slug: community.slug },
     })
-    expect(getCommunitiesByIdBatch).toHaveBeenCalledWith(['community-1'])
   })
 
-  it('skips the community lookup when no posts have a community id', async () => {
-    await expect(getRecord([{ community_id: null }, null])).resolves.toEqual({})
-
-    expect(getCommunitiesByIdBatch).not.toHaveBeenCalled()
+  it('returns an empty record when no posts have a community id', async () => {
+    await expect(getPostCommunitiesRecord([{ community_id: null }, null])).resolves.toEqual({})
   })
 })

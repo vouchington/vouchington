@@ -5211,9 +5211,6 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../../queues/cache-purge
       '@services/moderation-ai-config':
         specifier: workspace:^
         version: link:../moderation-ai-config
