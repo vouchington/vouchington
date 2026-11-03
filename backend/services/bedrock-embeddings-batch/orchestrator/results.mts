@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { finished, pipeline } from 'node:stream/promises'
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
-import type { read } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import type { BatchResultLine } from '@vouchington/utils/bedrock-embedding-batches'
 
@@ -51,7 +51,7 @@ export const downloadBatchResults = async (batchId: string): Promise<string> => 
   return tempFilePath
 }
 
-async function readBedrockBatchData(query: typeof read, batchId: string) {
+async function readBedrockBatchData(query: QueryExecutor, batchId: string) {
   const { rows } = await query<{ data: unknown }>(
     `/* downloadBatchResults */
     SELECT data
