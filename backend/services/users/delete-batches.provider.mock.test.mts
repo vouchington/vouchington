@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockS3Send, mockStripeUpdate } = vi.hoisted(() => ({
   mockS3Send: vi.fn<VitestLooseMock>(),
@@ -23,6 +23,7 @@ vi.mock<typeof import('@modules/stripe/client')>(
 )
 
 import { S3Buckets } from '@modules/aws'
+import * as cachePurge from '@services/entity-cache/purge'
 import { addUserDeletionExternalWorks, createUserDeletionRequest } from '@services/user-deletions'
 import {
   createTestUser,
@@ -43,6 +44,10 @@ describe('user deletion provider work', () => {
   beforeEach(() => {
     mockS3Send.mockReset()
     mockStripeUpdate.mockReset()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('keeps required provider work pending until the provider succeeds', async () => {
@@ -74,6 +79,7 @@ describe('user deletion provider work', () => {
     const request = await createUserDeletionRequest(user.id, user.id)
     await addUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', [`user:${user.id}`])
     await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
+    const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
 
     await expect(
       processUserDeletionExternalWork(request.id, request.processingAttemptId),
@@ -82,6 +88,7 @@ describe('user deletion provider work', () => {
     await expect(
       processUserDeletionExternalWork(request.id, request.processingAttemptId),
     ).resolves.toEqual({ hasMore: false })
+    expect(purge).toHaveBeenCalledExactlyOnceWith([`user:${user.id}`])
   })
 
   it('completes Stripe work when the customer is already missing', async () => {

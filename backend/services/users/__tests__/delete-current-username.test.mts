@@ -1,10 +1,15 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { v7 } from 'uuid'
 import { createTestUser, updateUserUsername } from '@voucha/test-helpers'
 import { getUserDeletionCompletionAuditForTest } from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
+import * as cachePurge from '@services/entity-cache/purge'
 import { deleteUser } from '../delete.mts'
 
 describe('deleteUser durable cleanup identity', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('uses the username captured under the deletion row lock for durable cleanup', async () => {
     const user = await createTestUser()
     const currentUsername = `deletion-current-${v7()}`
@@ -23,10 +28,12 @@ describe('deleteUser durable cleanup identity', () => {
     const user = await createTestUser()
     const currentUsername = `deletion-purge-${v7()}`
     await updateUserUsername(user.id, currentUsername)
+    const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
 
     const attempt = await deleteUser(user, user)
     const audit = await getUserDeletionCompletionAuditForTest(attempt.requestId)
 
+    expect(purge).toHaveBeenCalledExactlyOnceWith([`user:${user.id}`, `user:${currentUsername}`])
     expect(audit.externalWorks.map(work => work.workKey).toSorted()).toEqual(
       [`user:${user.id}`, `user:${currentUsername}`].toSorted(),
     )
@@ -39,10 +46,15 @@ describe('deleteUser durable cleanup identity', () => {
     vi.stubEnv('SKIP_CACHE_PURGE', 'false')
     try {
       const user = await createTestUser()
+      const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
 
       const attempt = await deleteUser(user, user)
       const audit = await getUserDeletionCompletionAuditForTest(attempt.requestId)
 
+      expect(purge).toHaveBeenCalledExactlyOnceWith([
+        `user:${user.id}`,
+        `user:${user.username?.toLowerCase()}`,
+      ])
       expect(audit.externalWorks.map(work => work.workKey).toSorted()).toEqual(
         [`user:${user.id}`, `user:${user.username?.toLowerCase()}`].toSorted(),
       )

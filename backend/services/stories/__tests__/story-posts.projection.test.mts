@@ -140,17 +140,46 @@ describe('story post projection', () => {
     vi.spyOn(notificationReconcile, 'enqueueNotificationReconcileForRelations').mockRejectedValue(
       dispatchError,
     )
-    const invalidateStories = vi.spyOn(cacheInvalidation, 'invalidateStories')
+    const order: string[] = []
+    const admissions: Promise<unknown>[] = []
+    const invalidateStories = cacheInvalidation.invalidateStories
+    const invalidateSpy = vi
+      .spyOn(cacheInvalidation, 'invalidateStories')
+      .mockImplementation(storyId => {
+        // The in-process worker also invalidates after the created job; only delivery's call precedes the enqueues.
+        if (!order.includes('invalidate')) order.push('invalidate')
+        return invalidateStories(storyId)
+      })
+    const backgroundAdd = backgroundQueue.add
+    vi.spyOn(backgroundQueue, 'add').mockImplementation(
+      (...args: Parameters<typeof backgroundAdd>) => {
+        if (args[0] === 'entity-listeners.processPostCreated' && !order.includes('created')) {
+          order.push('created')
+        }
+        const admission = Reflect.apply(backgroundAdd, backgroundQueue, args)
+        admissions.push(admission)
+        return admission
+      },
+    )
+    const agentAdd = ai_agents.add
+    vi.spyOn(ai_agents, 'add').mockImplementation((...args: Parameters<typeof agentAdd>) => {
+      if (!order.includes('agent')) order.push('agent')
+      const admission = Reflect.apply(agentAdd, ai_agents, args)
+      admissions.push(admission)
+      return admission
+    })
 
     const prepared = await prepareStoryPost(story.id, testUser)
     await prepared.finalize()
     const result = prepared.response
+    await Promise.all(admissions)
 
     expect(Object.keys(result).toSorted()).toEqual(['post', 'postStory', 'story'])
     expect(
       sentryCaptureExceptionMock.mock.calls.filter(([captured]) => captured === dispatchError),
     ).toHaveLength(1)
-    expect(invalidateStories).toHaveBeenCalledExactlyOnceWith(story.id)
+    expect(invalidateSpy).toHaveBeenNthCalledWith(1, story.id)
+    expect(order).toEqual(['invalidate', 'created', 'agent'])
     await expect(
       backgroundQueue.searchJobs({
         name: 'entity-listeners.processPostCreated',
