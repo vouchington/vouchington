@@ -130,7 +130,7 @@ describe('bounded sitemap publication', () => {
     }
 
     // The chain's generation was published and its progress deleted.
-    await expect(generateSitemapPage(1, dependencies, new Date(), 'gone')).resolves.toMatchObject({
+    await expect(generateSitemapPage(1, dependencies, 'gone')).resolves.toMatchObject({
       hasMore: false,
       stale: true,
     })
@@ -149,7 +149,7 @@ describe('bounded sitemap publication', () => {
       previous_generation_id: null,
       previous_page_count: 0,
     }
-    await expect(generateSitemapPage(1, dependencies, new Date(), 'older')).resolves.toMatchObject({
+    await expect(generateSitemapPage(1, dependencies, 'older')).resolves.toMatchObject({
       stale: true,
     })
     expect(started).toHaveLength(0)

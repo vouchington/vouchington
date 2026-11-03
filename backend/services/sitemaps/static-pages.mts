@@ -37,30 +37,21 @@ const STATIC_PAGE_PATHS = [
   '/rewards-program-statuses',
 ] as const
 
-function buildStaticPageUrlEntries(now: string = new Date().toISOString()) {
+function buildStaticPageUrlEntries() {
+  const now = new Date().toISOString()
   return STATIC_PAGE_PATHS.map(path => ({
     loc: buildSitemapUrl(path),
     lastmod: now,
   }))
 }
 
-type GenerateStaticPagesSitemapDeps = {
-  putSitemapObjectFile: typeof putSitemapObjectFile
-}
-
-const defaultDeps: GenerateStaticPagesSitemapDeps = {
-  putSitemapObjectFile,
-}
-
-export async function generateStaticPagesSitemap(
-  deps: GenerateStaticPagesSitemapDeps = defaultDeps,
-): Promise<void> {
+export async function generateStaticPagesSitemap(): Promise<void> {
   const urls = buildStaticPageUrlEntries()
 
   const file = await createGzipFileFromUtf8Chunks(iterateUrlsetXml(urls))
 
   try {
-    await deps.putSitemapObjectFile(buildStaticPagesStorageKey(), file.filePath, {
+    await putSitemapObjectFile(buildStaticPagesStorageKey(), file.filePath, {
       contentType: 'application/xml; charset=utf-8',
       contentEncoding: 'gzip',
     })

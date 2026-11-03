@@ -61,13 +61,18 @@ describe('sitemap generation freshness', () => {
   })
 
   it.each([
-    { finished: false, startedAt: '2026-10-24T23:58:00.000Z' },
-    { finished: true, startedAt: '2026-10-24T23:58:00.000Z' },
-    { finished: false, startedAt: 'invalid' },
-    { finished: true, startedAt: '2027-01-01T00:00:00.000Z' },
+    { finished: false, age: 'expired' as const },
+    { finished: true, age: 'expired' as const },
+    { finished: false, age: 'invalid' as const },
+    { finished: true, age: 'future' as const },
   ])(
-    'restarts an expired or invalid candidate without retiring the public generation ($finished, $startedAt)',
-    async ({ finished, startedAt }) => {
+    'restarts an expired or invalid candidate without retiring the public generation ($finished, $age)',
+    async ({ finished, age }) => {
+      const startedAt = {
+        expired: new Date(Date.now() - 120_000).toISOString(),
+        invalid: 'invalid',
+        future: '2999-01-01T00:00:00.000Z',
+      }[age]
       onTestFinished(
         overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, {
           generation_max_age_seconds: 60,
@@ -117,15 +122,15 @@ describe('sitemap generation freshness', () => {
         key => (key === indexKey ? new Error('index unavailable') : undefined),
         metadata,
       )
-      const restarted = await generateSitemapFamilyFiles(
-        'users',
-        new Date('2026-10-25T00:00:00.000Z'),
-      )
+      const startedBefore = Date.now()
+      const restarted = await generateSitemapFamilyFiles('users')
+      const startedAfter = Date.now()
       expect(restarted.hasMore).toBe(true)
       const fresh = JSON.parse(objects.get(progressKey)!.toString()) as SitemapGenerationProgress
       expect(fresh.generation_id).not.toBe(candidate)
       expect(fresh.high_water_id!.localeCompare(user.id)).toBeGreaterThanOrEqual(0)
-      expect(fresh.started_at).toBe('2026-10-25T00:00:00.000Z')
+      expect(Date.parse(fresh.started_at)).toBeGreaterThanOrEqual(startedBefore)
+      expect(Date.parse(fresh.started_at)).toBeLessThanOrEqual(startedAfter)
       expect(objects.get(indexKey)?.toString()).toBe('previous-public-index')
       expect((await getSitemapFamilyManifest('users'))?.generation_id).toBe(publicGeneration)
       expect(
@@ -144,7 +149,7 @@ describe('sitemap generation freshness', () => {
     const progressKey = 'families/users/_progress.json'
     const completed: SitemapGenerationProgress = {
       generation_id: generationId,
-      started_at: '2026-10-25T00:00:00.000Z',
+      started_at: new Date().toISOString(),
       content_hash: 'completed',
       high_water_id: null,
       after_id: null,
@@ -162,9 +167,7 @@ describe('sitemap generation freshness', () => {
       metadata,
       key => (key === progressKey ? new Error('progress deletion failed') : undefined),
     )
-    await expect(
-      generateSitemapFamilyFiles('users', new Date('2026-10-25T00:00:00.000Z')),
-    ).rejects.toThrow('progress deletion failed')
+    await expect(generateSitemapFamilyFiles('users')).rejects.toThrow('progress deletion failed')
     const published = await getSitemapFamilyManifest('users')
     expect(published!.generation_id).toBe(generationId)
     const indexKey = 'sitemaps/families/users.xml'
@@ -184,10 +187,7 @@ describe('sitemap generation freshness', () => {
       key => (key === indexKey ? new Error('fresh index unavailable') : undefined),
       metadata,
     )
-    const restarted = await generateSitemapFamilyFiles(
-      'users',
-      new Date('2026-10-25T00:00:00.000Z'),
-    )
+    const restarted = await generateSitemapFamilyFiles('users')
     expect(restarted.hasMore).toBe(true)
     const fresh = JSON.parse(objects.get(progressKey)!.toString()) as SitemapGenerationProgress
     expect(fresh.generation_id).not.toBe(generationId)

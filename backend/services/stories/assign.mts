@@ -16,10 +16,6 @@ import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-
 type AssignmentDependencies = {
   expectedStoryId?: string
   query?: TransactionQuery
-  refreshStoryPostForStory?: typeof refreshStoryPostForStory
-  invalidateStories?: typeof invalidateStories
-  enqueueStoryPostAgent?: typeof enqueueStoryPostAgent
-  onError?: typeof onError
 }
 /**
  * Admin-only: assign item to story and lock the assignment.
@@ -31,9 +27,6 @@ export async function adminAssignItemToStory(
   itemId: string,
   dependencies: AssignmentDependencies = {},
 ): Promise<string | null> {
-  const refreshStoryPost = dependencies.refreshStoryPostForStory ?? refreshStoryPostForStory
-  const enqueueStoryPost = dependencies.enqueueStoryPostAgent ?? enqueueStoryPostAgent
-  const reportError = dependencies.onError ?? onError
   let refreshResults: Array<{ storyId: string; result: StoryPostRefreshResult | null }> = []
   let afterCommit: (() => Promise<void>) | undefined
   const selectedQuery = dependencies.query
@@ -71,7 +64,7 @@ export async function adminAssignItemToStory(
       for (const affectedStoryId of affectedStoryIds) {
         // oxlint-disable no-await-in-loop -- sorted refreshes acquire story relation locks in one global order.
         // no-mistakes-disable-next-line query-reached-per-item: at most two stories (new and prior); each refresh rewrites one story post under its own publication lock, posts are never batched, and sorted order is the global story lock order.
-        const refreshResult = await refreshStoryPost(
+        const refreshResult = await refreshStoryPostForStory(
           affectedStoryId,
           { query },
           { enqueueAgent: false },
@@ -105,12 +98,12 @@ export async function adminAssignItemToStory(
     afterCommit = async () => {
       await dispatchPostCommitEffectsBestEffort(
         refreshResults.flatMap(({ result }) => (result ? [result] : [])),
-        reportError,
+        onError,
       )
       for (const { result } of refreshResults) {
-        if (result) void enqueueStoryPost(result.postId, { force: true })
+        if (result) void enqueueStoryPostAgent(result.postId, { force: true })
       }
-      await (dependencies.invalidateStories ?? invalidateStories)(storyId, row.prior_story_id)
+      await invalidateStories(storyId, row.prior_story_id)
     }
     if (dependencies.query) registerPostCommitAction(query, afterCommit)
     return row.id
@@ -127,9 +120,6 @@ export async function adminRemoveItemFromStory(
   itemId: string,
   dependencies: AssignmentDependencies = {},
 ): Promise<string | null> {
-  const refreshStoryPost = dependencies.refreshStoryPostForStory ?? refreshStoryPostForStory
-  const enqueueStoryPost = dependencies.enqueueStoryPostAgent ?? enqueueStoryPostAgent
-  const reportError = dependencies.onError ?? onError
   let refreshResults: StoryPostRefreshResult[] = []
   let afterCommit: (() => Promise<void>) | undefined
   // Use a CTE to capture the old story_id before the SET clause nulls it.
@@ -166,7 +156,11 @@ export async function adminRemoveItemFromStory(
     if (row?.prior_story_id) {
       const priorStoryId = row.prior_story_id
       await clearMovedStoryOfficialItem(query, priorStoryId, itemId)
-      const refreshResult = await refreshStoryPost(priorStoryId, { query }, { enqueueAgent: false })
+      const refreshResult = await refreshStoryPostForStory(
+        priorStoryId,
+        { query },
+        { enqueueAgent: false },
+      )
       if (refreshResult) {
         refreshResults = [refreshResult]
         await recordPostPublicationChange(query, {
@@ -187,10 +181,10 @@ export async function adminRemoveItemFromStory(
       )
     if (!row) return null
     afterCommit = async () => {
-      await dispatchPostCommitEffectsBestEffort(refreshResults, reportError)
+      await dispatchPostCommitEffectsBestEffort(refreshResults, onError)
       for (const refreshResult of refreshResults)
-        void enqueueStoryPost(refreshResult.postId, { force: true })
-      await (dependencies.invalidateStories ?? invalidateStories)(row.prior_story_id)
+        void enqueueStoryPostAgent(refreshResult.postId, { force: true })
+      await invalidateStories(row.prior_story_id)
     }
     if (dependencies.query) registerPostCommitAction(query, afterCommit)
     return row.id

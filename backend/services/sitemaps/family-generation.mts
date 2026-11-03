@@ -19,7 +19,6 @@ import type { SitemapFamilyEntry, SitemapFamilyType } from './types.mts'
 
 export async function generateSitemapFamilyFiles(
   family: SitemapFamilyType,
-  now = new Date(),
   expectedGenerationId?: string,
 ): Promise<GenerationPageResult> {
   return generateSitemapPage<SitemapFamilyEntry>(
@@ -40,12 +39,11 @@ export async function generateSitemapFamilyFiles(
           page_count: pageCount,
           next_page: 1,
           retire_after: new Date(
-            now.getTime() + getSitemapsWorkLimit('retired_generation_grace_seconds') * 1000,
+            Date.now() + getSitemapsWorkLimit('retired_generation_grace_seconds') * 1000,
           ).toISOString(),
         }),
       toUrl: buildFamilySitemapUrl,
     },
-    now,
     expectedGenerationId,
   )
 }

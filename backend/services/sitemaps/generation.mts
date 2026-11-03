@@ -25,7 +25,6 @@ export { generatePostTypeIndex, generateRootIndex } from './index-generation.mts
 export async function generatePostDaySitemapFiles(
   postType: SitemapPostType,
   day: string,
-  now = new Date(),
   expectedGenerationId?: string,
 ): Promise<GenerationPageResult> {
   return generateSitemapPage<SitemapPostWithId>(
@@ -51,7 +50,7 @@ export async function generatePostDaySitemapFiles(
           page_count: pageCount,
           next_page: 1,
           retire_after: new Date(
-            now.getTime() + getSitemapsWorkLimit('retired_generation_grace_seconds') * 1000,
+            Date.now() + getSitemapsWorkLimit('retired_generation_grace_seconds') * 1000,
           ).toISOString(),
         }),
       afterPublication: async () => {
@@ -59,7 +58,6 @@ export async function generatePostDaySitemapFiles(
       },
       toUrl: buildPostSitemapUrl,
     },
-    now,
     expectedGenerationId,
   )
 }
