@@ -26,8 +26,6 @@
     "http-errors": "^2.0.1"
   },
   "devDependencies": {
-    "@services/topics": "workspace:^",
-    "@types/http-errors": "^2.0.5",
-    "@voucha/test-helpers": "workspace:^"
+    "@types/http-errors": "^2.0.5"
   }
 }

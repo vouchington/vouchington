@@ -4,7 +4,6 @@ import { createTestUser, softDeleteUser } from '@voucha/test-helpers'
 import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createImportBatch, getImportBatch, getImportRowsByBatchId } from '@services/admin-imports'
-import { getTopicBySlug } from '@services/topics/get'
 import type { PrivateUser } from '@services/users/types'
 import { publishImportProgress, subscribeImportProgress } from '@data-stores/valkey-pubsub'
 import { UnrecoverableError } from '@vouchington/queue-errors'
@@ -48,15 +47,14 @@ describe('processImportRow', () => {
 
   it('creates the topic, completes the row, and publishes progress', async () => {
     const slug = `import-processor-${randomUUID()}`
-    const name = `Imported ${slug}`
-    const { batch, rowIds } = await createImportBatch(admin, 'topic', [{ slug, name }])
+    const { batch, rowIds } = await createImportBatch(admin, 'topic', [{ slug }])
     const progress = await watchProgress(batch.id)
 
     await processImportRow(batch.id, rowIds[0]!)
 
-    expect((await getTopicBySlug(slug))?.name).toBe(name)
     const [row] = await getImportRowsByBatchId(batch.id)
     expect(row!.completed_at).not.toBeNull()
+    expect(row!.created_entity_id).toEqual(expect.any(String))
     expect(row!.failed_at).toBeNull()
     await expect(progress.next()).resolves.toEqual({
       batchId: batch.id,
@@ -76,9 +74,9 @@ describe('processImportRow', () => {
 
     await processImportRow(batch.id, rowIds[0]!)
 
-    expect(await getTopicBySlug(slug)).toBeNull()
     const [row] = await getImportRowsByBatchId(batch.id)
     expect(row!.failed_at).not.toBeNull()
+    expect(row!.created_entity_id).toBeNull()
     expect(row!.error_message).toBe('Import batch creator not found')
     await expect(progress.next()).resolves.toEqual({
       batchId: batch.id,
@@ -93,11 +91,12 @@ describe('processImportRow', () => {
     const slug = `import-processor-${randomUUID()}`
     const { batch, rowIds } = await createImportBatch(admin, 'topic', [{ slug }])
     await processImportRow(batch.id, rowIds[0]!)
-    const topicId = (await getTopicBySlug(slug))!.id
+    const [completed] = await getImportRowsByBatchId(batch.id)
 
     await processImportRow(batch.id, rowIds[0]!)
 
-    expect((await getTopicBySlug(slug))!.id).toBe(topicId)
+    const [again] = await getImportRowsByBatchId(batch.id)
+    expect(again!.created_entity_id).toBe(completed!.created_entity_id)
     expect((await getImportBatch(batch.id))!.completed_rows).toBe(1)
   })
 
@@ -161,8 +160,16 @@ describe('processImportRow', () => {
   })
 
   it('reports a missing row without throwing', async () => {
-    await expect(processImportRow(randomUUID(), randomUUID())).resolves.toBeUndefined()
+    const batchId = randomUUID()
+    const rowId = randomUUID()
+
+    await expect(processImportRow(batchId, rowId)).resolves.toBeUndefined()
+
     expect(captureException).toHaveBeenCalledTimes(1)
+    expect(captureException).toHaveBeenCalledWith(
+      expect.objectContaining({ message: `Import row ${rowId} not found` }),
+      expect.objectContaining({ extra: { batchId, rowId } }),
+    )
   })
 
   it('reports a row that belongs to a different batch', async () => {
