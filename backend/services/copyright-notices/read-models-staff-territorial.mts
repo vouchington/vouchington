@@ -56,9 +56,11 @@ export async function selectStaffTerritorialCases(
         (SELECT count(*)::int FROM copyright_eu_dispute_settlement_referrals referral
           WHERE referral.copyright_notice_id = receipt.copyright_notice_id
         ) AS dispute_settlement_count
-      -- no-mistakes-disable-next-line postgres-bounded-statements: Receipts are read for the notice ids of one review-queue page (ANY of the caller's bounded id array), one receipt per notice and jurisdiction; the count subselects aggregate to one row each.
+      -- no-mistakes-disable-next-line postgres-bounded-statements: copyright_territorial_notice_receipts is read for the notice ids of one review-queue page (ANY of the caller's bounded id array); copyright_notices and copyright_territorial_notice_acknowledgments join to those receipts by notice id and receipt id, so each adds at most one row per receipt, and the count subselects aggregate to one row each.
       FROM copyright_territorial_notice_receipts receipt
+      -- no-mistakes-disable-next-line postgres-bounded-statements: copyright_notices is joined by primary key to each page receipt, so it adds at most one row per receipt.
       JOIN copyright_notices notice ON notice.id = receipt.copyright_notice_id
+      -- no-mistakes-disable-next-line postgres-bounded-statements: Acknowledgments are joined by receipt id, so they add at most the receipt's own acknowledgment rows.
       LEFT JOIN copyright_territorial_notice_acknowledgments acknowledgment
         ON acknowledgment.copyright_territorial_notice_receipt_id = receipt.id
       LEFT JOIN LATERAL (
