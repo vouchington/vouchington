@@ -190,7 +190,7 @@ describe('onCheckoutAbortedForIdentity', () => {
     expect(invalidations.forUser(user.id)).toEqual([])
   })
 
-  it('rolls back the terminal state change when the statement is rejected, so a replay recovers', async () => {
+  it('commits nothing when the release statement is rejected, so a replay recovers', async () => {
     const { user, attemptId, checkoutSessionId } = await createPaymentPendingUser()
     const invalidations = observeUserCacheInvalidations()
     const eventData = {

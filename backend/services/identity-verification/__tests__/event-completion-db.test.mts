@@ -6,6 +6,7 @@ import {
   getTestUserRaw,
   getUserVerificationState,
   insertTestVerifiedIdentity,
+  setTestUserVoteWeightRecalculatedAt,
   setUserVerificationFields,
 } from '@voucha/test-helpers'
 import { rejectNextBackgroundJobAddForTest } from '@voucha/test-helpers/injected-failures'
@@ -22,6 +23,9 @@ import { v7 } from 'uuid'
 import { onVerificationSessionVerified } from '../event-completion.mts'
 import { computeIdentityFingerprint } from '../fingerprint.mts'
 import type { stripeIdentityProvider } from '../stripe-identity.mts'
+
+// A replay's recalculation is observable as a newer timestamp than this fixed past instant.
+const BACKDATED_RECALCULATION = new Date('2020-01-01T00:00:00.000Z')
 
 type VerificationResult = Awaited<ReturnType<typeof stripeIdentityProvider.getVerificationResult>>
 
@@ -122,7 +126,7 @@ describe('onVerificationSessionVerified', () => {
     const eventData = { id: sessionId, metadata: { user_id: user.id } }
     const first = deliver(eventData, makeVerifiedResult())
     await first.done
-    const firstRecalculatedAt = (await getTestUserRaw(user.id))?.vote_weight_recalculated_at
+    await setTestUserVoteWeightRecalculatedAt(user.id, BACKDATED_RECALCULATION)
     const invalidations = observeUserCacheInvalidations()
     const fanOuts = observeUserElectionFanOuts()
 
@@ -130,9 +134,8 @@ describe('onVerificationSessionVerified', () => {
     await replay.done
 
     expect(replay.getVerificationResult).not.toHaveBeenCalled()
-    expect(firstRecalculatedAt).toBeInstanceOf(Date)
     expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at?.getTime()).toBeGreaterThan(
-      firstRecalculatedAt?.getTime() ?? Infinity,
+      BACKDATED_RECALCULATION.getTime(),
     )
     expect(await countVerifiedIdentities(user.id)).toBe(1)
     expect((await getUserVerificationState(user.id))?.verification_status).toBe('verified')
@@ -153,7 +156,7 @@ describe('onVerificationSessionVerified', () => {
     await expect(failed.done).rejects.toThrow('temporary queue outage')
     restore()
     expect((await getUserVerificationState(user.id))?.verification_status).toBe('verified')
-    const failedRecalculatedAt = (await getTestUserRaw(user.id))?.vote_weight_recalculated_at
+    await setTestUserVoteWeightRecalculatedAt(user.id, BACKDATED_RECALCULATION)
     const invalidations = observeUserCacheInvalidations()
     const fanOuts = observeUserElectionFanOuts()
 
@@ -162,9 +165,8 @@ describe('onVerificationSessionVerified', () => {
 
     expect(failed.getVerificationResult).toHaveBeenCalledExactlyOnceWith(sessionId)
     expect(retry.getVerificationResult).not.toHaveBeenCalled()
-    expect(failedRecalculatedAt).toBeInstanceOf(Date)
     expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at?.getTime()).toBeGreaterThan(
-      failedRecalculatedAt?.getTime() ?? Infinity,
+      BACKDATED_RECALCULATION.getTime(),
     )
     expect(invalidations.forUser(user.id)).toEqual([[user.id]])
     expect(fanOuts.forUser(user.id)).toEqual([{ userId: user.id, cursor: null }])
@@ -174,7 +176,7 @@ describe('onVerificationSessionVerified', () => {
     stubIdentityFingerprintSecret()
     const { user, sessionId } = await createIdentityPendingUser()
     await verifyOnce(user.id, sessionId, makeVerifiedResult())
-    const firstRecalculatedAt = (await getTestUserRaw(user.id))?.vote_weight_recalculated_at
+    await setTestUserVoteWeightRecalculatedAt(user.id, BACKDATED_RECALCULATION)
     const invalidations = observeUserCacheInvalidations()
     const fanOuts = observeUserElectionFanOuts()
 
@@ -182,9 +184,8 @@ describe('onVerificationSessionVerified', () => {
     await retry.done
 
     expect(retry.getVerificationResult).not.toHaveBeenCalled()
-    expect(firstRecalculatedAt).toBeInstanceOf(Date)
     expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at?.getTime()).toBeGreaterThan(
-      firstRecalculatedAt?.getTime() ?? Infinity,
+      BACKDATED_RECALCULATION.getTime(),
     )
     expect(fanOuts.forUser(user.id)).toEqual([{ userId: user.id, cursor: null }])
     expect(invalidations.forUser(user.id)).toEqual([[user.id]])
