@@ -13,52 +13,30 @@ import {
   type StoryPostRelationEffects,
 } from './story-post-relation-effects.mts'
 
-export type StoryPostDeliveryDependencies = {
-  dispatchStoryPostRelationEffects: typeof dispatchStoryPostRelationEffects
-  enqueueOnPostCreated: typeof enqueueOnPostCreated
-  enqueueStoryPostAgent: typeof enqueueStoryPostAgent
-  enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: typeof enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort
-  invalidateStories: typeof invalidateStories
-  onError: typeof onError
-}
-
-const defaultStoryPostDeliveryDependencies: StoryPostDeliveryDependencies = {
-  dispatchStoryPostRelationEffects,
-  enqueueOnPostCreated,
-  enqueueStoryPostAgent,
-  enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort,
-  invalidateStories,
-  onError,
-}
-
-export async function deliverStoryPost(
-  {
-    post,
-    postStory,
-    storyTellerUser,
-    relationEffects,
-  }: {
-    post: Post
-    postStory: PostStory
-    storyTellerUser: PrivateUser
-    relationEffects: StoryPostRelationEffects
-  },
-  dependencies: Partial<StoryPostDeliveryDependencies> = {},
-): Promise<void> {
-  const resolvedDependencies = { ...defaultStoryPostDeliveryDependencies, ...dependencies }
+export async function deliverStoryPost({
+  post,
+  postStory,
+  storyTellerUser,
+  relationEffects,
+}: {
+  post: Post
+  postStory: PostStory
+  storyTellerUser: PrivateUser
+  relationEffects: StoryPostRelationEffects
+}): Promise<void> {
   try {
-    await resolvedDependencies.dispatchStoryPostRelationEffects(storyTellerUser, {
+    await dispatchStoryPostRelationEffects(storyTellerUser, {
       ...relationEffects,
       handleVotes: false,
     })
   } catch (err) {
-    resolvedDependencies.onError(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
   const bloomKeys = [normalizeKey(post.id)]
   if (post.slug) bloomKeys.push(normalizeKey(post.slug))
   void addEntityBloomKeys('posts', bloomKeys)
-  await resolvedDependencies.invalidateStories(postStory.story_id)
-  void resolvedDependencies.enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
-  void resolvedDependencies.enqueueOnPostCreated(post.id)
-  void resolvedDependencies.enqueueStoryPostAgent(post.id)
+  await invalidateStories(postStory.story_id)
+  void enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
+  void enqueueOnPostCreated(post.id)
+  void enqueueStoryPostAgent(post.id)
 }

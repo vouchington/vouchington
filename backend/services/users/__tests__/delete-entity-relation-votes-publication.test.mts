@@ -16,11 +16,6 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 
-const cleanupDeps = {
-  deleteExportsFromS3: async () => undefined,
-  sanitizeStripeCustomer: async () => undefined,
-}
-
 describe('deleteUser entity-relation vote publication capture', () => {
   it.each(['topic', 'topic_alias', 'related_url'] as const)(
     'captures a %s relation leaving public eligibility when its voter is deleted',
@@ -44,7 +39,7 @@ describe('deleteUser entity-relation vote publication capture', () => {
         score: 1,
       })
       const jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
-        deleteUserAndDrainForTest(voter, voter, cleanupDeps),
+        deleteUserAndDrainForTest(voter, voter),
       )
       expect(jobs.length).toBeGreaterThan(0)
       const keys = jobs.flatMap(job => job.keys)

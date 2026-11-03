@@ -21,10 +21,10 @@ import {
   recordPostPublicationChange,
 } from '@services/post-publication'
 import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
-import { deliverStoryPost, type StoryPostDeliveryDependencies } from './story-post-delivery.mts'
+import { deliverStoryPost } from './story-post-delivery.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
 
-export type StoryPostCreateDependencies = Partial<StoryPostDeliveryDependencies> & {
+export type StoryPostCreateDependencies = {
   getStoryTeller?: () => Promise<BasicUser | null>
 }
 
@@ -166,26 +166,20 @@ export async function createStoryPostInTransaction(
   return { post, story, postStory, categoryTopicRelations, storyTellerUser, categoryTopicRelation }
 }
 
-export function finalizeCreatedStoryPost(
-  created: CreatedStoryPost,
-  dependencies: StoryPostCreateDependencies,
-): Promise<void> {
-  return deliverStoryPost(
-    {
-      post: created.post,
-      postStory: created.postStory,
-      storyTellerUser: created.storyTellerUser,
-      relationEffects: {
-        relatedUrlRelation: getEntityRelationMetadataOrThrow({
-          subjectType: 'post',
-          objectType: 'url',
-          predicate: 'related',
-        }),
-        relatedUrlRelations: [],
-        categoryTopicRelation: created.categoryTopicRelation,
-        categoryTopicRelations: created.categoryTopicRelations,
-      },
+export function finalizeCreatedStoryPost(created: CreatedStoryPost): Promise<void> {
+  return deliverStoryPost({
+    post: created.post,
+    postStory: created.postStory,
+    storyTellerUser: created.storyTellerUser,
+    relationEffects: {
+      relatedUrlRelation: getEntityRelationMetadataOrThrow({
+        subjectType: 'post',
+        objectType: 'url',
+        predicate: 'related',
+      }),
+      relatedUrlRelations: [],
+      categoryTopicRelation: created.categoryTopicRelation,
+      categoryTopicRelations: created.categoryTopicRelations,
     },
-    dependencies,
-  )
+  })
 }

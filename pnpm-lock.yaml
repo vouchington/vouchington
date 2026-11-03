@@ -12214,6 +12214,9 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
+      '@modules/aws':
+        specifier: workspace:^
+        version: link:../../modules/aws
       '@modules/csv':
         specifier: workspace:^
         version: link:../../modules/csv

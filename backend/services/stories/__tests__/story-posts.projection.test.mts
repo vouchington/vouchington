@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import {
   addCategoryToRssFeedItem,
   createTestTopic,
@@ -16,6 +17,10 @@ import {
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 import { notifications } from '@queues/notifications/queues'
+import { ai_agents } from '@queues/ai-agents/queues'
+import * as notificationReconcile from '@services/entity-relations/notification-reconcile'
+import { backgroundQueue } from '../../../test-helpers/shared-background-queue.mts'
+import * as cacheInvalidation from '../cache-invalidation.mts'
 import {
   createEntityRelationElectionTarget,
   getEntityRelationElectionVote,
@@ -48,6 +53,10 @@ describe('story post projection', () => {
     testUser = await createTestUserDirect()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('commits positive relation votes and queue effects after its projection transaction', async () => {
     const story = await insertTestStory({ title: 'Projection side effects' })
     const [firstUrlId, secondUrlId] = await Promise.all([
@@ -75,12 +84,7 @@ describe('story post projection', () => {
     )
     await addCategoryToRssFeedItem(itemIds[0]!, topic.id)
 
-    const prepared = await prepareStoryPost(
-      story.id,
-      testUser,
-      {},
-      { enqueueOnPostCreated: () => Promise.resolve() },
-    )
+    const prepared = await prepareStoryPost(story.id, testUser)
     await prepared.finalize()
     const result = prepared.response
     await drainStoryPostRelatedUrlProjection(result.post.id)
@@ -133,42 +137,29 @@ describe('story post projection', () => {
       }),
     )
     const dispatchError = new Error('relation dispatch failed')
-    const reportedErrors: Error[] = []
-    const effects: string[] = []
-
-    const prepared = await prepareStoryPost(
-      story.id,
-      testUser,
-      {},
-      {
-        dispatchStoryPostRelationEffects: async () => {
-          throw dispatchError
-        },
-        invalidateStories: async storyId => {
-          effects.push(`invalidate:${storyId}`)
-        },
-        enqueueOnPostCreated: postId => {
-          effects.push(`created:${postId}`)
-          return Promise.resolve()
-        },
-        enqueueStoryPostAgent: async postId => {
-          effects.push(`agent:${postId}`)
-        },
-        onError: error => {
-          reportedErrors.push(error)
-        },
-      },
+    vi.spyOn(notificationReconcile, 'enqueueNotificationReconcileForRelations').mockRejectedValue(
+      dispatchError,
     )
+    const invalidateStories = vi.spyOn(cacheInvalidation, 'invalidateStories')
+
+    const prepared = await prepareStoryPost(story.id, testUser)
     await prepared.finalize()
     const result = prepared.response
 
     expect(Object.keys(result).toSorted()).toEqual(['post', 'postStory', 'story'])
-    expect(reportedErrors).toEqual([dispatchError])
-    expect(effects).toEqual([
-      `invalidate:${story.id}`,
-      `created:${result.post.id}`,
-      `agent:${result.post.id}`,
-    ])
+    expect(
+      sentryCaptureExceptionMock.mock.calls.filter(([captured]) => captured === dispatchError),
+    ).toHaveLength(1)
+    expect(invalidateStories).toHaveBeenCalledExactlyOnceWith(story.id)
+    await expect(
+      backgroundQueue.searchJobs({
+        name: 'entity-listeners.processPostCreated',
+        data: { id: result.post.id },
+      }),
+    ).resolves.toHaveLength(1)
+    await expect(
+      ai_agents.searchJobs({ name: 'story-post', data: { post_id: result.post.id } }),
+    ).resolves.toHaveLength(1)
   })
 })
 

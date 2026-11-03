@@ -20,12 +20,11 @@ export type StoryPostResult = {
 type PreparedStoryPost = {
   response: StoryPostResult
   created: CreatedStoryPost
-  dependencies: StoryPostCreateDependencies
   finalize: typeof finalizePreparedStoryPost
 }
 
 function finalizePreparedStoryPost(this: PreparedStoryPost): Promise<void> {
-  return finalizeCreatedStoryPost(this.created, this.dependencies)
+  return finalizeCreatedStoryPost(this.created)
 }
 
 export async function prepareStoryPost(
@@ -59,7 +58,6 @@ export async function prepareStoryPost(
   return {
     response: { post: created.post, story: created.story, postStory: created.postStory },
     created,
-    dependencies,
     finalize: finalizePreparedStoryPost,
   }
 }

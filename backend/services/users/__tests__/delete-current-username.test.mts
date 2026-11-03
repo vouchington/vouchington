@@ -23,30 +23,32 @@ describe('deleteUser durable cleanup identity', () => {
     const user = await createTestUser()
     const currentUsername = `deletion-purge-${v7()}`
     await updateUserUsername(user.id, currentUsername)
-    const purgeCacheTags = vi.fn<(tags: readonly string[]) => Promise<void>>(async () => {})
 
-    const attempt = await deleteUser(user, user, { purgeCacheTags })
+    const attempt = await deleteUser(user, user)
     const audit = await getUserDeletionCompletionAuditForTest(attempt.requestId)
 
-    expect(purgeCacheTags).toHaveBeenCalledWith([`user:${user.id}`, `user:${currentUsername}`])
-    expect(audit.externalWorks).toHaveLength(2)
+    expect(audit.externalWorks.map(work => work.workKey).toSorted()).toEqual(
+      [`user:${user.id}`, `user:${currentUsername}`].toSorted(),
+    )
     expect(audit.externalWorks.every(work => work.completedAt instanceof Date)).toBe(true)
   })
 
   it('leaves durable cache work pending when the immediate purge fails', async () => {
-    const user = await createTestUser()
-    const purgeCacheTags = vi.fn<(tags: readonly string[]) => Promise<void>>(async () => {
-      throw new Error('Cloudflare unavailable')
-    })
+    vi.stubEnv('CF_WORKER_ROUTE', 'https://127.0.0.1:9')
+    vi.stubEnv('CF_WORKER_SECRET', 'test-secret')
+    vi.stubEnv('SKIP_CACHE_PURGE', 'false')
+    try {
+      const user = await createTestUser()
 
-    const attempt = await deleteUser(user, user, { purgeCacheTags })
-    const audit = await getUserDeletionCompletionAuditForTest(attempt.requestId)
+      const attempt = await deleteUser(user, user)
+      const audit = await getUserDeletionCompletionAuditForTest(attempt.requestId)
 
-    expect(purgeCacheTags).toHaveBeenCalledWith([
-      `user:${user.id}`,
-      `user:${user.username?.toLowerCase()}`,
-    ])
-    expect(audit.externalWorks).toHaveLength(2)
-    expect(audit.externalWorks.every(work => work.completedAt === null)).toBe(true)
+      expect(audit.externalWorks.map(work => work.workKey).toSorted()).toEqual(
+        [`user:${user.id}`, `user:${user.username?.toLowerCase()}`].toSorted(),
+      )
+      expect(audit.externalWorks.every(work => work.completedAt === null)).toBe(true)
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })

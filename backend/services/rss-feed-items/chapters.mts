@@ -13,31 +13,10 @@ const CHAPTERS_CONTENT_TYPES = 'application/json, application/*+json;q=0.9, */*;
 
 export { type PodcastChapter } from './chapters-normalize.mts'
 
-type ChaptersSafeFetch = (
-  initialUrl: Parameters<typeof safeFetch>[0],
-  options?: Parameters<typeof safeFetch>[1],
-) => Promise<Pick<Awaited<ReturnType<typeof safeFetch>>, 'body' | 'ok' | 'url'>>
-
-type ChaptersDependencies = {
-  getRssFeedItemById: typeof getRssFeedItemById
-  safeFetch: ChaptersSafeFetch
-  readResponseBodyAsBuffer: typeof readResponseBodyAsBuffer
-  onError: typeof onError
-}
-
-const defaultDependencies: ChaptersDependencies = {
-  getRssFeedItemById,
-  safeFetch,
-  readResponseBodyAsBuffer,
-  onError,
-}
-
 export async function getPodcastEpisodeChaptersById(
   rssFeedItemId: string,
-  dependencies: Partial<ChaptersDependencies> = {},
 ): Promise<PodcastChapter[]> {
-  const deps = { ...defaultDependencies, ...dependencies }
-  const item = await deps.getRssFeedItemById(rssFeedItemId)
+  const item = await getRssFeedItemById(rssFeedItemId)
   if (!item) return []
 
   const chaptersUrl = normalizedHttpsUrl(item.data.chapters_url)
@@ -50,7 +29,7 @@ export async function getPodcastEpisodeChaptersById(
       abortController.abort(new Error(`Chapter fetch timed out for ${chaptersUrl}`))
     }, CHAPTERS_FETCH_TIMEOUT_MS)
     try {
-      const response = await deps.safeFetch(chaptersUrl, {
+      const response = await safeFetch(chaptersUrl, {
         headers: { Accept: CHAPTERS_CONTENT_TYPES },
         allowedProtocols: ['https:'],
         maxRedirects: CHAPTERS_MAX_REDIRECT_HOPS,
@@ -60,7 +39,7 @@ export async function getPodcastEpisodeChaptersById(
         await response.body?.cancel().catch(onError)
         return []
       }
-      const body = await deps.readResponseBodyAsBuffer({
+      const body = await readResponseBodyAsBuffer({
         response,
         url: response.url,
         maxSizeBytes: CHAPTERS_MAX_SIZE_BYTES,
@@ -72,7 +51,7 @@ export async function getPodcastEpisodeChaptersById(
     }
   } catch (err) {
     if (err instanceof UnsafeUrlError) return []
-    deps.onError(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
     return []
   }
 }

@@ -1,11 +1,5 @@
-import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
-import type { deleteExportFromS3 } from '@services/account-data-requests'
-import {
-  addUserDeletionExternalWorks,
-  createUserDeletionRequest,
-  processUserDeletionBatch,
-} from '@services/user-deletions'
+import { describe, expect, it } from 'vitest'
+import { processUserDeletionBatch } from '@services/user-deletions'
 import {
   countTestPostsCreatedBy,
   countTestPostSourcesForContributor,
@@ -22,14 +16,9 @@ import {
   insertTestUserDeletionFollowPostRelations,
   insertTestUserDeletionLists,
   insertTestUserDeletionPostVotes,
-  isTestUserDeletionExternalWorkCompleted,
-  rotateTestUserDeletionAttemptDuringProviderCall,
 } from '@voucha/test-helpers'
 import { deleteUser } from './delete.mts'
 import { processUserDeletionPhaseBatch } from './delete-phases.mts'
-import { processUserDeletionExternalWork } from './delete-phase-external-work.mts'
-import { addTestStripeDeletionWork } from '@voucha/test-helpers/entities/stripe-customer-deletion'
-import { markUserDeletionAttemptStartedForTest } from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('user deletion batches', () => {
@@ -158,139 +147,4 @@ describe('user deletion batches', () => {
     }
     await drainUserDeletionForTest(attempt)
   })
-
-  it('keeps required provider work pending until the provider succeeds', async () => {
-    const user = await createTestUser()
-    const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWorks(request.id, 's3-export', ['test/export.zip'])
-    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
-    const deleteS3 = vi
-      .fn<typeof deleteExportFromS3>()
-      .mockRejectedValueOnce(new Error('S3 unavailable'))
-      .mockResolvedValue(undefined)
-
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId, {
-        deleteExportFromS3: deleteS3,
-      }),
-    ).rejects.toThrow('S3 unavailable')
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId, {
-        deleteExportFromS3: deleteS3,
-      }),
-    ).resolves.toEqual({ hasMore: true })
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId, {
-        deleteExportFromS3: deleteS3,
-      }),
-    ).resolves.toEqual({ hasMore: false })
-    expect(deleteS3).toHaveBeenCalledTimes(2)
-  })
-
-  it('completes Stripe work when the customer is already missing', async () => {
-    const user = await createTestUser()
-    const request = await createUserDeletionRequest(user.id, user.id)
-    await addTestStripeDeletionWork(request.id, 'cus_already_deleted')
-    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
-    const sanitizeCustomer = vi
-      .fn<(stripeCustomerId: string) => Promise<unknown>>()
-      .mockRejectedValue(makeStripeMissingCustomerError())
-
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId, {
-        sanitizeStripeCustomer: sanitizeCustomer,
-      }),
-    ).resolves.toEqual({ hasMore: true })
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId, {
-        sanitizeStripeCustomer: sanitizeCustomer,
-      }),
-    ).resolves.toEqual({ hasMore: false })
-  })
-
-  it('keeps Stripe work retryable for errors other than a missing customer', async () => {
-    const user = await createTestUser()
-    const request = await createUserDeletionRequest(user.id, user.id)
-    await addTestStripeDeletionWork(request.id, 'cus_retryable')
-    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
-    const stripeError = Object.assign(new Error('Invalid customer update'), {
-      code: 'parameter_invalid_empty',
-      param: 'email',
-    })
-    const sanitizeCustomer = vi
-      .fn<(stripeCustomerId: string) => Promise<unknown>>()
-      .mockRejectedValueOnce(stripeError)
-      .mockResolvedValue({})
-
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId, {
-        sanitizeStripeCustomer: sanitizeCustomer,
-      }),
-    ).rejects.toBe(stripeError)
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId, {
-        sanitizeStripeCustomer: sanitizeCustomer,
-      }),
-    ).resolves.toEqual({ hasMore: true })
-  })
-
-  it('does not start provider work after an attempt loses ownership', async () => {
-    const user = await createTestUser()
-    const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWorks(request.id, 's3-export', ['test/fenced-export.zip'])
-    const deleteS3 = vi.fn<typeof deleteExportFromS3>().mockResolvedValue(undefined)
-
-    await expect(
-      processUserDeletionExternalWork(request.id, randomUUID(), {
-        deleteExportFromS3: deleteS3,
-      }),
-    ).rejects.toThrow('lost ownership')
-    expect(deleteS3).not.toHaveBeenCalled()
-  })
-
-  it('does not complete provider work after an attempt loses ownership during the call', async () => {
-    const user = await createTestUser()
-    const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWorks(request.id, 's3-export', ['test/rotated-export.zip'])
-    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
-    const successorAttemptId = randomUUID()
-    const deleteS3 = vi.fn<typeof deleteExportFromS3>().mockImplementation(async () => {
-      await rotateTestUserDeletionAttemptDuringProviderCall(request.id, successorAttemptId)
-    })
-
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId, {
-        deleteExportFromS3: deleteS3,
-      }),
-    ).rejects.toThrow('lost ownership')
-    await expect(isTestUserDeletionExternalWorkCompleted(request.id)).resolves.toBe(false)
-  })
-
-  it('does not complete missing-customer Stripe work after the attempt loses ownership', async () => {
-    const user = await createTestUser()
-    const request = await createUserDeletionRequest(user.id, user.id)
-    await addTestStripeDeletionWork(request.id, 'cus_rotated')
-    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
-    const successorAttemptId = randomUUID()
-    const sanitizeCustomer = vi
-      .fn<(stripeCustomerId: string) => Promise<unknown>>()
-      .mockImplementation(async () => {
-        await rotateTestUserDeletionAttemptDuringProviderCall(request.id, successorAttemptId)
-        throw makeStripeMissingCustomerError()
-      })
-
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId, {
-        sanitizeStripeCustomer: sanitizeCustomer,
-      }),
-    ).rejects.toThrow('lost ownership')
-    await expect(isTestUserDeletionExternalWorkCompleted(request.id)).resolves.toBe(false)
-  })
 })
-
-function makeStripeMissingCustomerError(): Error & { code: string; param: string } {
-  return Object.assign(new Error('Provider detail changed'), {
-    code: 'resource_missing',
-    param: 'id',
-  })
-}

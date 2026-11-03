@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { it, expect, beforeAll, describe, vi } from 'vitest'
+import { it, expect, beforeAll, afterEach, describe, vi } from 'vitest'
 import {
   insertTestRssFeedItem,
   createTestUrlWithHostname,
@@ -20,7 +20,6 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
-import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
@@ -28,21 +27,15 @@ import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/
 function sha256(data: unknown): Buffer {
   return createHash('sha256').update(JSON.stringify(data)).digest()
 }
-function trackedStoryPostAgent() {
+function trackStoryPostAgentAdds(): { pending: Promise<unknown>[] } {
   const pending: Promise<unknown>[] = []
   const add = ai_agents.add
-  const spy = vi.spyOn(ai_agents, 'add').mockImplementation((...args: Parameters<typeof add>) => {
+  vi.spyOn(ai_agents, 'add').mockImplementation((...args: Parameters<typeof add>) => {
     const job = Reflect.apply(add, ai_agents, args)
     pending.push(job)
-    spy.mockRestore()
     return job
   })
-  return {
-    pending,
-    enqueueStoryPostAgent(postId: string, opts?: { force?: boolean }) {
-      return Promise.all([enqueueStoryPostAgent(postId, opts)]).then(() => undefined)
-    },
-  }
+  return { pending }
 }
 let feedId: string
 let urlId: string
@@ -61,6 +54,10 @@ describe('story-posts', () => {
     feedId = (await createTestRssFeed({})).id
     urlId = await createTestUrlWithHostname()
     testUser = await createTestUserDirect()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
   it('prepareStoryPost — creates a story post and links via story_posts', async () => {
     const story = await insertTestStory({ title: 'Test Story Title' })
@@ -84,8 +81,8 @@ describe('story-posts', () => {
       contentSha256: sha256(itemData2),
     })
     await setTestItemStoryId(itemId2, story.id)
-    const agent = trackedStoryPostAgent()
-    const prepared = await prepareStoryPost(story.id, testUser, {}, agent)
+    const agent = trackStoryPostAgentAdds()
+    const prepared = await prepareStoryPost(story.id, testUser, {})
     await prepared.finalize()
     const result = prepared.response
     await Promise.all(agent.pending)
@@ -259,13 +256,10 @@ describe('story-posts', () => {
   it('prepareStoryPost — ai_summary_markdown option sets post content directly', async () => {
     const story = await insertTestStory({ title: 'AI Summary Override Test' })
     await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId, count: 2 })
-    const agent = trackedStoryPostAgent()
-    const prepared = await prepareStoryPost(
-      story.id,
-      testUser,
-      { ai_summary_markdown: 'Overridden summary.' },
-      agent,
-    )
+    const agent = trackStoryPostAgentAdds()
+    const prepared = await prepareStoryPost(story.id, testUser, {
+      ai_summary_markdown: 'Overridden summary.',
+    })
     await prepared.finalize()
     const result = prepared.response
     await Promise.all(agent.pending)
