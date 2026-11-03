@@ -92,7 +92,7 @@ describe('get.generated', () => {
       expect(await caches.urls.get(url.id)).toEqual(cachedUrl)
       expect((await getUrlByAnyCached(url.id))?.hostname.is_blocked).toBe(true)
 
-      await syncDomainsWithDatabase(sourceId, new Response(''), 'url')
+      await syncDomainsWithDatabase(sourceId, new Response('other.example.com\n'), 'url')
       expect(await caches.urls.get(url.id)).toEqual(cachedUrl)
       expect((await getUrlByAnyCached(url.id))?.hostname.is_blocked).toBe(false)
     } finally {

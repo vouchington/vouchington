@@ -70,3 +70,7 @@ export function createSourceNotFoundError(
 export function createSyncFailedError(url: string, cause: unknown): Error {
   return new Error(`Failed to sync blacklist from ${url}: ${cause}`)
 }
+
+export function createEmptyFeedError(): Error {
+  return new Error('Blocklist feed contained no valid domains; keeping the existing domains')
+}

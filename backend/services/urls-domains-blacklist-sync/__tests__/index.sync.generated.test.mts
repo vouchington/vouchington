@@ -116,7 +116,7 @@ describe('index.generated (syncBlacklistSource)', () => {
     expect(await isBlocked('new3.com')).toBe(true)
   })
 
-  it('syncBlacklistSource handles empty new list', async () => {
+  it('syncBlacklistSource keeps existing domains when the new list has no valid domains', async () => {
     const sourceId = await createTestBlacklistSource({
       type: 'url',
       name: `test-sync-empty-${suffix}`,
@@ -130,7 +130,7 @@ describe('index.generated (syncBlacklistSource)', () => {
 
     serverContent = ''
     await syncBlacklistSourceById(sourceId)
-    expect(await listBlacklistDomainsBySource(sourceId)).toEqual([])
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual(['a.com', 'b.com'])
   })
 
   it('syncBlacklistSource handles empty current DB (first sync)', async () => {

@@ -1,17 +1,21 @@
 import type { Response } from 'undici'
 import { createReadStream, createWriteStream } from 'node:fs'
-import { rm } from 'node:fs/promises'
+import { rm, stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { Readable } from 'node:stream'
 import { finished, pipeline } from 'node:stream/promises'
 import { runCommand } from '@modules/child-process'
-import { readNormalizedDomains } from './sync-utils.mts'
+import { createEmptyFeedError, readNormalizedDomains } from './sync-utils.mts'
 
 const SORT_BIN = '/usr/bin/sort'
 const COMM_BIN = '/usr/bin/comm'
 const DIFF_TIMEOUT_MS = 120_000
 
-/** Stream normalized domains through `sort -u` without holding the list. */
+/**
+ * Stream normalized domains through `sort -u` without holding the list. A feed with no
+ * valid domain (an HTML error page, an empty body) is rejected before any diff, so it
+ * cannot remove every domain the feed previously contributed.
+ */
 export async function writeSortedDesiredDomains(
   response: Response,
   destination: string,
@@ -25,6 +29,7 @@ export async function writeSortedDesiredDomains(
       destination,
       createReadStream(download),
     )
+    if ((await stat(destination)).size === 0) throw createEmptyFeedError()
   } finally {
     await rm(download, { force: true })
   }
