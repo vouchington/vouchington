@@ -63,8 +63,8 @@ describe('pause collection on an active Stripe subscription', () => {
       pause_collection: { behavior: 'void' },
     }
 
-    await handleSubscriptionUpdated(eventId, eventData, undefined, applicationContext)
-    await handleSubscriptionUpdated(eventId, eventData, undefined, applicationContext)
+    await handleSubscriptionUpdated(eventId, eventData, applicationContext)
+    await handleSubscriptionUpdated(eventId, eventData, applicationContext)
 
     await expect(getTestMembershipRaw(membership.id)).resolves.toMatchObject({
       status: 'active',

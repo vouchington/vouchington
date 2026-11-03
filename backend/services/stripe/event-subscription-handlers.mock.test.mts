@@ -50,11 +50,11 @@ function createProductionStripeMembership(options: Parameters<typeof createTestM
   })
 }
 async function handleUpdated(eventId: string, eventData: Record<string, unknown>) {
-  return handleSubscriptionUpdated(eventId, eventData, undefined, applicationContext)
+  return handleSubscriptionUpdated(eventId, eventData, applicationContext)
 }
 
 async function handleDeleted(eventId: string, eventData: Record<string, unknown>) {
-  return handleSubscriptionDeleted(eventId, eventData, undefined, applicationContext)
+  return handleSubscriptionDeleted(eventId, eventData, applicationContext)
 }
 
 describe('membership subscription event handlers', () => {

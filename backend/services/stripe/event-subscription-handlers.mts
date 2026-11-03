@@ -7,7 +7,6 @@ import {
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from '@services/memberships/reconcile-recorded-ineligible-stripe-purchase-reversal'
-import { isTerminalMembershipStatus } from './membership-change-helpers.mts'
 import { getStripeObjectId, getStripeObjectString } from '@vouchington/stripe'
 
 export async function handleInvoicePaymentPaid(
@@ -61,40 +60,18 @@ export async function handleCheckoutSessionPaymentFailure(
 export async function handleSubscriptionUpdated(
   eventId: string,
   eventData: Record<string, unknown>,
-  onMembershipLapse?: (userId: string) => void,
   applicationContext: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
 ): Promise<void> {
   const subscriptionId = getStripeObjectString(eventData.id)
   if (!subscriptionId) return
-  const updatedMembership = await syncMembershipFromStripeSubscription(
-    eventId,
-    subscriptionId,
-    applicationContext,
-  )
-  if (
-    updatedMembership &&
-    isTerminalMembershipStatus(updatedMembership.current.status) &&
-    !isTerminalMembershipStatus(updatedMembership.previous.status)
-  )
-    onMembershipLapse?.(updatedMembership.current.user_id)
+  await syncMembershipFromStripeSubscription(eventId, subscriptionId, applicationContext)
 }
 export async function handleSubscriptionDeleted(
   eventId: string,
   eventData: Record<string, unknown>,
-  onMembershipLapse?: (userId: string) => void,
   applicationContext: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
 ): Promise<void> {
   const subscriptionId = getStripeObjectString(eventData.id)
   if (!subscriptionId) return
-  const updatedMembership = await syncMembershipFromStripeSubscription(
-    eventId,
-    subscriptionId,
-    applicationContext,
-  )
-  if (
-    updatedMembership &&
-    isTerminalMembershipStatus(updatedMembership.current.status) &&
-    !isTerminalMembershipStatus(updatedMembership.previous.status)
-  )
-    onMembershipLapse?.(updatedMembership.current.user_id)
+  await syncMembershipFromStripeSubscription(eventId, subscriptionId, applicationContext)
 }
