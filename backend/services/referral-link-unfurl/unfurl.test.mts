@@ -53,8 +53,8 @@ describe('runReferralLinkUnfurl', () => {
   async function createAmexCardFixture(owner: { id: string }, card: AmexCardSlug) {
     return createReferralProgramFixture({
       createdById: owner.id,
-      hostname: '*.americanexpress.com',
-      pathname: `/en-us/referral/${card.kind}/${card.slug}%`,
+      hostname: 'www.americanexpress.com',
+      pathname: `/en-us/referral/${card.kind}/${card.slug}`,
     })
   }
 
@@ -92,7 +92,7 @@ describe('runReferralLinkUnfurl', () => {
     )
   }
 
-  it('happy path: creates a child for each owned catalog card and marks the parent completed', async () => {
+  it('happy path: creates one child per catalog card and marks the parent completed', async () => {
     const owner = await createPlusOwner()
     const parent = await createParentLink(owner, 'happy')
     const cards: AmexCardSlug[] = [
@@ -103,16 +103,17 @@ describe('runReferralLinkUnfurl', () => {
     await Promise.all(cards.map(card => createAmexCardFixture(owner, card)))
     const finalUrl = `https://redirected.example.com/landed?corid=${randomSlug('corid')}`
     const crawl = stubCrawl(finalUrl)
+    answerCatalog(cards)
     await runReferralLinkUnfurl(parent.id)
     expect(crawl).toHaveBeenCalledOnce()
     const updated = await getUserReferralLink(parent.id)
     expect(updated?.unfurl_completed_at).toBeTruthy()
     expect(updated?.unfurl_failed_at).toBeNull()
-    // The real catalog also lists cards other tests own, so assert only on this test's cards.
     const ownedUrls = await Promise.all(
       constructChildUrls(finalUrl, cards).map(url => addUrl(owner.id, url)),
     )
     const childIds = await getActiveChildUrlIdsForTest(parent.id)
+    expect(childIds).toHaveLength(cards.length)
     expect(childIds).toEqual(expect.arrayContaining(ownedUrls.map(url => url!.id)))
   })
   it('no-ops for a missing parent link id, never crawling', async () => {
