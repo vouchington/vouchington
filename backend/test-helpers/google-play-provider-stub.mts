@@ -41,6 +41,8 @@ function stubGooglePlayServiceAccount(): void {
 
 const subscriptionAnswers = new AsyncLocalStorage<GooglePlaySubscriptionsV2Client>()
 const SUBSCRIPTION_URL = /\/purchases\/subscriptionsv2\/tokens\/([^/?]+)$/
+const ACKNOWLEDGE_URL =
+  /\/applications\/([^/]+)\/purchases\/subscriptions\/([^/]+)\/tokens\/([^/?]+):acknowledge$/
 let answeringInstalled = false
 
 /**
@@ -60,6 +62,15 @@ function installGooglePlayAnswering(): void {
     if (url === 'https://oauth2.googleapis.com/token')
       return Response.json({ access_token: 'google-play-test-token', expires_in: 3600 })
     const answers = subscriptionAnswers.getStore()
+    const acknowledged = ACKNOWLEDGE_URL.exec(url)
+    if (answers && acknowledged) {
+      await answers.acknowledgeSubscription({
+        packageName: decodeURIComponent(acknowledged[1]!),
+        subscriptionId: decodeURIComponent(acknowledged[2]!),
+        purchaseToken: decodeURIComponent(acknowledged[3]!),
+      })
+      return new Response(null, { status: 204 })
+    }
     const purchaseToken = SUBSCRIPTION_URL.exec(url)?.[1]
     if (!answers || purchaseToken === undefined)
       throw new Error(`Unexpected Google Play provider URL ${url}`)
@@ -92,15 +103,21 @@ function restoreEnv(name: string, value: string | undefined): void {
   else vi.stubEnv(name, value)
 }
 
+/** Runs a production Google Play entry point against a stubbed Google Play. */
+export async function withGooglePlay<T>(
+  answers: GooglePlaySubscriptionsV2Client,
+  run: () => Promise<T>,
+): Promise<T> {
+  installGooglePlayAnswering()
+  return subscriptionAnswers.run(answers, run)
+}
+
 /** Runs the production Google Play verification worker against a stubbed Google Play. */
 export async function processWithGooglePlay(
   verificationId: string,
   answers: GooglePlaySubscriptionsV2Client,
 ): Promise<void> {
-  installGooglePlayAnswering()
-  await subscriptionAnswers.run(answers, () =>
-    processGooglePlayMembershipVerification(verificationId),
-  )
+  await withGooglePlay(answers, () => processGooglePlayMembershipVerification(verificationId))
 }
 
 export function googlePlayTokenPath(applicationId: string, purchaseToken: string): string {

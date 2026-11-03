@@ -69,7 +69,6 @@ export async function processGooglePlayMembershipVerification(
     if (preflight.reasonCode) return await reject(validation, preflight.reasonCode, validationQuery)
     await validationQuery.commit()
     const resolved = await resolveGooglePlayTokenLineage({
-      client,
       environment: context.environment,
       applicationId: context.applicationId,
       purchaseToken,

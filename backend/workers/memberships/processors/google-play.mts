@@ -5,7 +5,6 @@ import {
 } from '@queues/memberships/enqueues'
 import {
   acknowledgeGooglePlayPurchase,
-  createConfiguredGooglePlaySubscriptionsV2Client,
   findDueGooglePlayAcknowledgementIds,
   advanceGooglePlayAcknowledgementRecoveryCursor,
   findRecoverableGooglePlayNotificationJobs,
@@ -48,7 +47,6 @@ export async function processGooglePlayAcknowledgement(data: {
 }): Promise<void> {
   await acknowledgeGooglePlayPurchase({
     acknowledgementId: data.acknowledgementId,
-    client: createConfiguredGooglePlaySubscriptionsV2Client(),
   })
 }
 

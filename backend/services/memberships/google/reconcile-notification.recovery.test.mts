@@ -16,7 +16,10 @@ import {
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
-import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
+import {
+  processWithGooglePlay,
+  withGooglePlay,
+} from '@voucha/test-helpers/google-play-provider-stub'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
@@ -60,14 +63,14 @@ describe('Google Play RTDN recovery', () => {
     const calls: string[] = []
     const client = clientFor({ applicationId, productId, userId: user.id, calls })
 
-    await reconcileGooglePlayRtdnNotification({ evidenceId, client })
+    await withGooglePlay(client, () => reconcileGooglePlayRtdnNotification({ evidenceId }))
     await expect(getTestMembershipProviderEvidenceTerminalState(evidenceId)).resolves.toMatchObject(
       {
         verified_at: null,
         rejected_at: null,
       },
     )
-    await reconcileGooglePlayRtdnNotification({ evidenceId, client })
+    await withGooglePlay(client, () => reconcileGooglePlayRtdnNotification({ evidenceId }))
     expect(calls).toEqual([applicationId])
 
     const verification = await createMembershipVerification({

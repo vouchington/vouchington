@@ -17,7 +17,10 @@ import {
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
-import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
+import {
+  processWithGooglePlay,
+  withGooglePlay,
+} from '@voucha/test-helpers/google-play-provider-stub'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 describe('Google Play RTDN reconciliation failures', () => {
@@ -42,9 +45,13 @@ describe('Google Play RTDN reconciliation failures', () => {
     })
     const client = unavailableClient()
 
-    await reconcileGooglePlayRtdnNotification({ evidenceId: ignoredEvidenceId, client })
+    await withGooglePlay(client, () =>
+      reconcileGooglePlayRtdnNotification({ evidenceId: ignoredEvidenceId }),
+    )
     await expect(
-      reconcileGooglePlayRtdnNotification({ evidenceId: corruptedEvidenceId, client }),
+      withGooglePlay(client, () =>
+        reconcileGooglePlayRtdnNotification({ evidenceId: corruptedEvidenceId }),
+      ),
     ).rejects.toThrow(/encrypted|secret|authenticate/i)
 
     await expect(
@@ -71,10 +78,10 @@ describe('Google Play RTDN reconciliation failures', () => {
         },
       }),
     })
-    await reconcileGooglePlayRtdnNotification({
-      evidenceId: unboundEvidenceId,
-      client: createTestGooglePlayClient({ productId, userId: (await createTestUser()).id }),
-    })
+    await withGooglePlay(
+      createTestGooglePlayClient({ productId, userId: (await createTestUser()).id }),
+      () => reconcileGooglePlayRtdnNotification({ evidenceId: unboundEvidenceId }),
+    )
     await expect(
       getTestMembershipProviderEvidenceTerminalState(unboundEvidenceId),
     ).resolves.toMatchObject({
@@ -154,7 +161,9 @@ describe('Google Play RTDN reconciliation failures', () => {
         },
         acknowledgeSubscription: async () => undefined,
       }
-      const failed = await reconcileGooglePlayRtdnNotification({ evidenceId, client }).then(
+      const failed = await withGooglePlay(client, () =>
+        reconcileGooglePlayRtdnNotification({ evidenceId }),
+      ).then(
         () => false,
         () => true,
       )

@@ -12,7 +12,10 @@ import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/googl
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import { ingestGooglePlayRtdnPush, InvalidGooglePlayRtdnError } from './notification-ingress.mts'
-import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
+import {
+  processWithGooglePlay,
+  withGooglePlay,
+} from '@voucha/test-helpers/google-play-provider-stub'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
 import type {
   GoogleOidcTrustMaterial,
@@ -169,9 +172,13 @@ describe('Google Play RTDN lifecycle integration', () => {
         enqueue: async () => undefined,
       }),
     ).rejects.toBeInstanceOf(InvalidGooglePlayRtdnError)
-    await reconcileGooglePlayRtdnNotification({ evidenceId: ingress.evidenceId, client })
+    await withGooglePlay(client, () =>
+      reconcileGooglePlayRtdnNotification({ evidenceId: ingress.evidenceId }),
+    )
     await processQueuedGooglePlayVerification(user.id, applicationId, client)
-    await reconcileGooglePlayRtdnNotification({ evidenceId: ingress.evidenceId, client })
+    await withGooglePlay(client, () =>
+      reconcileGooglePlayRtdnNotification({ evidenceId: ingress.evidenceId }),
+    )
 
     await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({ plan: 'plus' })
     await expect(
@@ -207,9 +214,13 @@ describe('Google Play RTDN lifecycle integration', () => {
       trust,
       enqueue: async () => undefined,
     })
-    await reconcileGooglePlayRtdnNotification({ evidenceId: revocation.evidenceId, client })
+    await withGooglePlay(client, () =>
+      reconcileGooglePlayRtdnNotification({ evidenceId: revocation.evidenceId }),
+    )
     await processQueuedGooglePlayVerification(user.id, applicationId, client)
-    await reconcileGooglePlayRtdnNotification({ evidenceId: revocation.evidenceId, client })
+    await withGooglePlay(client, () =>
+      reconcileGooglePlayRtdnNotification({ evidenceId: revocation.evidenceId }),
+    )
     await expect(getMembershipByUserId(user.id)).resolves.toBeNull()
     await expect(
       getTestMembershipProviderEvidenceTerminalState(revocation.evidenceId),
