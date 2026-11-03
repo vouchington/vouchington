@@ -6,6 +6,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { uuidAfter } from '@voucha/test-helpers/uuid-before'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
 import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/uuid-cursors'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
@@ -127,6 +128,64 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     await expect(readJobsFor(emails, email.id)).resolves.toEqual([
       { name: 'processSendCopyrightNoticeEmail', data: { intentId: email.id } },
     ])
+  })
+
+  it('reports its cap and resumes only the unfinished channel', async () => {
+    overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
+      batch_size: 1,
+      max_batches_per_run: 1,
+    })
+    const inApp = await createInAppIntent()
+    const email = await createEmailIntent()
+    // A later owned row of each channel guarantees the capped page has a next page.
+    await createInAppIntent()
+    await createEmailIntent()
+    const continuations: { pending?: string[]; cursors?: Record<string, unknown> }[] = []
+    const add = notifications.add
+    vi.spyOn(notifications, 'add').mockImplementation((name, ...args) => {
+      if (name === 'notifications.processReconcileCopyrightDeliveryIntents')
+        continuations.push(args[0] as (typeof continuations)[number])
+      return add.call(notifications, name, ...args)
+    })
+
+    await expect(
+      processReconcileCopyrightDeliveryIntents({
+        cursors: { in_app: encodeUuidCursorBefore(inApp.id) },
+      }),
+    ).resolves.toEqual({ enqueued: 1, hasMore: true })
+
+    expect(continuations).toHaveLength(1)
+    expect(continuations[0]!.pending).toEqual(['email', 'in_app'])
+    expect(continuations[0]!.cursors).toEqual({
+      in_app: encodeUuidCursorBefore(uuidAfter(inApp.id)),
+    })
+    const queued = (await readAllQueueJobs(notifications)).filter(
+      job =>
+        job.opts.deduplication?.id ===
+        `copyright-delivery-reconciliation:${JSON.stringify(continuations[0])}`,
+    )
+    expect(queued.map(job => job.data)).toEqual([continuations[0]])
+    await expect(readJobsFor(notifications, inApp.id)).resolves.toEqual([
+      { name: 'notifications.processDeliverCopyrightNotice', data: { intentId: inApp.id } },
+    ])
+
+    await expect(
+      processReconcileCopyrightDeliveryIntents({
+        pending: ['email'],
+        cursors: { 'email-notices': encodeUuidCursorBefore(email.id) },
+      }),
+    ).resolves.toMatchObject({ enqueued: 1 })
+
+    expect(continuations).toHaveLength(2)
+    expect(continuations[1]!.pending).toEqual(['email'])
+    expect(continuations[1]!.cursors).toEqual({
+      'email-notices': encodeUuidCursorBefore(uuidAfter(email.id)),
+    })
+    await expect(readJobsFor(emails, email.id)).resolves.toEqual([
+      { name: 'processSendCopyrightNoticeEmail', data: { intentId: email.id } },
+    ])
+    await expect(readJobsFor(notifications, email.id)).resolves.toEqual([])
+    await expect(readJobsFor(notifications, inApp.id)).resolves.toHaveLength(1)
   })
 
   it('reports nothing to enqueue when no intent follows the cursors', async () => {
