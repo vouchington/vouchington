@@ -13,7 +13,6 @@ import type { Job } from 'glide-mq'
 
 type FollowerDistributionDependencies = {
   advanceFollowerDistributionChunkCursor: typeof advanceFollowerDistributionChunkCursor
-  enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
   enqueueBulkProcessFollowerDistributions: typeof enqueueBulkProcessFollowerDistributions
   processFollowerDistributionChunk: typeof processFollowerDistributionChunk
   enqueueBackfillFollowerDistributionsContinuation: typeof enqueueBackfillFollowerDistributionsContinuation
@@ -22,9 +21,7 @@ type FollowerDistributionDependencies = {
 
 type ProcessFollowerDistributionDependencies = Pick<
   FollowerDistributionDependencies,
-  | 'advanceFollowerDistributionChunkCursor'
-  | 'enqueueBulkDeliverNotificationPushIntents'
-  | 'processFollowerDistributionChunk'
+  'advanceFollowerDistributionChunkCursor' | 'processFollowerDistributionChunk'
 >
 
 type BackfillFollowerDistributionDependencies = Pick<
@@ -46,7 +43,6 @@ export async function processFollowerDistribution(
 ) {
   const deps = {
     advanceFollowerDistributionChunkCursor,
-    enqueueBulkDeliverNotificationPushIntents,
     processFollowerDistributionChunk,
     ...dependencies,
   }
@@ -55,7 +51,7 @@ export async function processFollowerDistribution(
       deferCursorUpdate: true,
     })
     if (result.notificationsToDeliver.length > 0) {
-      await deps.enqueueBulkDeliverNotificationPushIntents(result.notificationsToDeliver)
+      await enqueueBulkDeliverNotificationPushIntents(result.notificationsToDeliver)
     }
     if (result.cursorRecipientId) {
       await deps.advanceFollowerDistributionChunkCursor(

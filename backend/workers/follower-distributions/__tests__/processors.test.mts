@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import type {
   advanceFollowerDistributionChunkCursor,
@@ -9,14 +9,12 @@ import type {
   enqueueBackfillFollowerDistributionsContinuation,
   enqueueBulkProcessFollowerDistributions,
 } from '@queues/follower-distributions/enqueues'
-import type { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications/enqueues'
+import { background } from '@queues/background/queues'
 
 import { backfillFollowerDistributions, processFollowerDistribution } from '../processors.mts'
 
 const mockAdvanceFollowerDistributionChunkCursor =
   vi.fn<typeof advanceFollowerDistributionChunkCursor>()
-const mockEnqueueBulkDeliverNotificationPushIntents =
-  vi.fn<typeof enqueueBulkDeliverNotificationPushIntents>()
 const mockEnqueueBulkProcessFollowerDistributions =
   vi.fn<typeof enqueueBulkProcessFollowerDistributions>()
 const mockProcessFollowerDistributionChunk = vi.fn<typeof processFollowerDistributionChunk>()
@@ -30,6 +28,10 @@ describe('follower distribution worker processors with queue side effects', () =
     vi.clearAllMocks()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('does not advance the distribution cursor if push enqueueing fails', async () => {
     mockProcessFollowerDistributionChunk.mockResolvedValue({
       completed: true,
@@ -38,7 +40,7 @@ describe('follower distribution worker processors with queue side effects', () =
       notificationsToDeliver: [{ notificationId: 'notification-1', userId: 'user-1' }],
       processed: 1,
     })
-    mockEnqueueBulkDeliverNotificationPushIntents.mockRejectedValue(new Error('Valkey unavailable'))
+    vi.spyOn(background, 'addBulk').mockRejectedValue(new Error('Valkey unavailable'))
 
     await expect(
       runProcessFollowerDistribution({ distributionId: 'distribution-1' }),
@@ -100,7 +102,6 @@ function runProcessFollowerDistribution(data: { distributionId: string }) {
   }
   return processFollowerDistribution(job, {
     advanceFollowerDistributionChunkCursor: mockAdvanceFollowerDistributionChunkCursor,
-    enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
     processFollowerDistributionChunk: mockProcessFollowerDistributionChunk,
   })
 }

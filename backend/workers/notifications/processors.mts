@@ -24,7 +24,6 @@ import {
 import type { ReconcileContentVisibilityData } from '@queues/background/enqueues/notifications-domain'
 
 type NotificationProcessorDependencies = {
-  enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
   enqueueContinueNotificationPushIntentReconciliation: typeof enqueueContinueNotificationPushIntentReconciliation
   enqueueDeliverNotificationPushIntent: typeof enqueueDeliverNotificationPushIntent
   listAvailableNotificationPushIntents: typeof listAvailableNotificationPushIntents
@@ -56,12 +55,8 @@ export {
 
 async function dispatchCreatedNotificationPushes(
   createdNotifications: CreatedNotification[] | undefined,
-  dependencies?: Partial<NotificationProcessorDependencies>,
 ) {
-  const enqueuePushes =
-    dependencies?.enqueueBulkDeliverNotificationPushIntents ??
-    enqueueBulkDeliverNotificationPushIntents
-  await enqueuePushes(
+  await enqueueBulkDeliverNotificationPushIntents(
     (createdNotifications ?? []).map(notification => ({
       userId: notification.user_id,
       notificationId: notification.id,
@@ -78,7 +73,7 @@ export async function processReconcilePostNotifications(
   const result = await reconcile(data.postId, {
     afterUserId: data.afterUserId,
     pageSize: data.pageSize,
-    onCreatedNotifications: created => dispatchCreatedNotificationPushes(created, dependencies),
+    onCreatedNotifications: dispatchCreatedNotificationPushes,
   })
   return result
 }
@@ -93,7 +88,7 @@ export async function processReconcileRssFeedItemNotifications(
   const result = await reconcile(data.rssFeedItemId, {
     afterUserId: data.afterUserId,
     pageSize: data.pageSize,
-    onCreatedNotifications: created => dispatchCreatedNotificationPushes(created, dependencies),
+    onCreatedNotifications: dispatchCreatedNotificationPushes,
   })
   return result
 }
