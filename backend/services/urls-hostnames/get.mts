@@ -4,8 +4,10 @@ import type { ViewHostname } from './types.mts'
 import sql from 'sql-template-strings'
 import { getUrlHostnamesByAnyBatch } from './get-batch.mts'
 
-export const getUrlHostnameByAny = async (id: string): Promise<ViewHostname | null> =>
-  (await getUrlHostnamesByAnyBatch([id]))[0]
+export const getUrlHostnameByAny = async (id: string): Promise<ViewHostname | null> => {
+  const [hostname] = await getUrlHostnamesByAnyBatch([id])
+  return hostname
+}
 
 type UrlHostnameCrawlerDetails = {
   id: string
