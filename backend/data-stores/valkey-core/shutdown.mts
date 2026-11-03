@@ -5,51 +5,33 @@ import { closeValkeyClients } from 'valkyries'
 import { dynamicConfigs } from 'valkyries/dynamic-config'
 import { closeSharedCommandClientFromRegistry, getGlideMQInstances } from './glide-mq-registry.mts'
 
-type ShutdownDeps = {
-  getGlideMQInstances: () => Array<{ close(): Promise<void> }>
-  closeValkeyClients: typeof closeValkeyClients
-  closeSharedCommandClientFromRegistry: typeof closeSharedCommandClientFromRegistry
-}
+let shutdown = false
 
-const defaultShutdownDeps: ShutdownDeps = {
-  getGlideMQInstances,
-  closeValkeyClients,
-  closeSharedCommandClientFromRegistry,
-}
+async function gracefulShutdown(): Promise<void> {
+  if (shutdown) return
+  shutdown = true
 
-export function createGracefulShutdown(
-  deps: ShutdownDeps = defaultShutdownDeps,
-): () => Promise<void> {
-  let shutdown = false
+  // closeValkeyClients closes every live DynamicConfig before the clients it owns.
+  const results = await Promise.allSettled([
+    ...getGlideMQInstances().map(instance => Promise.resolve().then(() => instance.close())),
+    Promise.resolve().then(() => closeValkeyClients({ throwOnError: true })),
+  ])
+  const errors = collectErrors(results)
 
-  return async function onGracefulShutdown(): Promise<void> {
-    if (shutdown) return
-    shutdown = true
+  const sharedCommandClientResult = await Promise.allSettled([
+    Promise.resolve().then(closeSharedCommandClientFromRegistry),
+  ])
+  errors.push(...collectErrors(sharedCommandClientResult))
 
-    // closeValkeyClients closes every live DynamicConfig before the clients it owns.
-    const results = await Promise.allSettled([
-      ...deps.getGlideMQInstances().map(instance => Promise.resolve().then(() => instance.close())),
-      Promise.resolve().then(() => deps.closeValkeyClients({ throwOnError: true })),
-    ])
-    const errors = collectErrors(results)
-
-    const sharedCommandClientResult = await Promise.allSettled([
-      Promise.resolve().then(deps.closeSharedCommandClientFromRegistry),
-    ])
-    errors.push(...collectErrors(sharedCommandClientResult))
-
-    if (errors.length > 0) {
-      throw new AggregateError(errors, 'Valkey shutdown failed')
-    }
+  if (errors.length > 0) {
+    throw new AggregateError(errors, 'Valkey shutdown failed')
   }
 }
 
-export const onGracefulShutdown = Object.assign(createGracefulShutdown(), {
-  async waitForInitialization(
-    configs: Iterable<{ waitForInitialization(): Promise<void> }> = dynamicConfigs,
-  ): Promise<void> {
+export const onGracefulShutdown = Object.assign(gracefulShutdown, {
+  async waitForInitialization(): Promise<void> {
     const results = await Promise.allSettled(
-      Array.from(configs, config => Promise.resolve().then(() => config.waitForInitialization())),
+      dynamicConfigs.map(config => Promise.resolve().then(() => config.waitForInitialization())),
     )
     const errors = collectErrors(results)
     if (errors.length > 0) throw new AggregateError(errors, 'Dynamic config initialization failed')
