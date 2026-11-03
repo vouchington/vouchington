@@ -122,6 +122,7 @@ describe('onVerificationSessionVerified', () => {
     const eventData = { id: sessionId, metadata: { user_id: user.id } }
     const first = deliver(eventData, makeVerifiedResult())
     await first.done
+    const firstRecalculatedAt = (await getTestUserRaw(user.id))?.vote_weight_recalculated_at
     const invalidations = observeUserCacheInvalidations()
     const fanOuts = observeUserElectionFanOuts()
 
@@ -129,6 +130,10 @@ describe('onVerificationSessionVerified', () => {
     await replay.done
 
     expect(replay.getVerificationResult).not.toHaveBeenCalled()
+    expect(firstRecalculatedAt).toBeInstanceOf(Date)
+    expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at?.getTime()).toBeGreaterThan(
+      firstRecalculatedAt?.getTime() ?? Infinity,
+    )
     expect(await countVerifiedIdentities(user.id)).toBe(1)
     expect((await getUserVerificationState(user.id))?.verification_status).toBe('verified')
     expect(fanOuts.forUser(user.id)).toEqual([{ userId: user.id, cursor: null }])
@@ -148,20 +153,28 @@ describe('onVerificationSessionVerified', () => {
     await expect(failed.done).rejects.toThrow('temporary queue outage')
     restore()
     expect((await getUserVerificationState(user.id))?.verification_status).toBe('verified')
+    const failedRecalculatedAt = (await getTestUserRaw(user.id))?.vote_weight_recalculated_at
     const invalidations = observeUserCacheInvalidations()
     const fanOuts = observeUserElectionFanOuts()
 
-    await deliver(eventData, makeVerifiedResult(), 'evt_2').done
+    const retry = deliver(eventData, makeVerifiedResult(), 'evt_2')
+    await retry.done
 
+    expect(failed.getVerificationResult).toHaveBeenCalledExactlyOnceWith(sessionId)
+    expect(retry.getVerificationResult).not.toHaveBeenCalled()
+    expect(failedRecalculatedAt).toBeInstanceOf(Date)
+    expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at?.getTime()).toBeGreaterThan(
+      failedRecalculatedAt?.getTime() ?? Infinity,
+    )
     expect(invalidations.forUser(user.id)).toEqual([[user.id]])
     expect(fanOuts.forUser(user.id)).toEqual([{ userId: user.id, cursor: null }])
-    expect(failed.getVerificationResult).toHaveBeenCalledOnce()
   })
 
   it('repairs committed side effects when the retry has redacted metadata', async () => {
     stubIdentityFingerprintSecret()
     const { user, sessionId } = await createIdentityPendingUser()
     await verifyOnce(user.id, sessionId, makeVerifiedResult())
+    const firstRecalculatedAt = (await getTestUserRaw(user.id))?.vote_weight_recalculated_at
     const invalidations = observeUserCacheInvalidations()
     const fanOuts = observeUserElectionFanOuts()
 
@@ -169,6 +182,10 @@ describe('onVerificationSessionVerified', () => {
     await retry.done
 
     expect(retry.getVerificationResult).not.toHaveBeenCalled()
+    expect(firstRecalculatedAt).toBeInstanceOf(Date)
+    expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at?.getTime()).toBeGreaterThan(
+      firstRecalculatedAt?.getTime() ?? Infinity,
+    )
     expect(fanOuts.forUser(user.id)).toEqual([{ userId: user.id, cursor: null }])
     expect(invalidations.forUser(user.id)).toEqual([[user.id]])
   })

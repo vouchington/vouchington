@@ -11,6 +11,7 @@ import {
   observeUserCacheInvalidations,
 } from '@voucha/test-helpers/services/identity-verification/event-verified-fixtures'
 import { createPaymentPendingUser } from '@voucha/test-helpers/services/identity-verification/payment-pending-fixtures'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { v7 } from 'uuid'
 import {
   onVerificationSessionRequiresInput,
@@ -187,6 +188,47 @@ describe('onCheckoutAbortedForIdentity', () => {
 
     expect((await getUserVerificationState(user.id))?.verification_status).toBe('payment_pending')
     expect(invalidations.forUser(user.id)).toEqual([])
+  })
+
+  it('rolls back the terminal state change when the statement is rejected, so a replay recovers', async () => {
+    const { user, attemptId, checkoutSessionId } = await createPaymentPendingUser()
+    const invalidations = observeUserCacheInvalidations()
+    const eventData = {
+      id: checkoutSessionId,
+      metadata: { intent: 'identity-verification', user_id: user.id },
+    }
+    const restore = runBeforePostgresStatementForTest('onCheckoutAbortedForIdentity', async () => {
+      throw new Error('release statement rejected')
+    })
+
+    try {
+      await expect(onCheckoutAbortedForIdentity('evt_1', eventData)).rejects.toThrow(
+        'release statement rejected',
+      )
+    } finally {
+      restore()
+    }
+
+    expect(invalidations.forUser(user.id)).toEqual([])
+    expect(await getUserVerificationState(user.id)).toMatchObject({
+      verification_status: 'payment_pending',
+      pending_verification_session_id: checkoutSessionId,
+    })
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      { id: attemptId, released_at: null },
+    ])
+
+    await onCheckoutAbortedForIdentity('evt_2', eventData)
+
+    expect(await getUserVerificationState(user.id)).toMatchObject({
+      verification_status: 'unverified',
+      pending_verification_session_id: null,
+      pending_checkout_session_id: null,
+    })
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      { id: attemptId, released_at: expect.any(Date) },
+    ])
+    expect(invalidations.forUser(user.id)).toEqual([[user.id]])
   })
 
   it('leaves the user payment_pending while no attempt can be released, so a replay recovers', async () => {

@@ -116,8 +116,9 @@ export function rejectNextBackgroundJobAddForTest(jobName: string, error: Error)
 }
 
 /**
- * Run `beforeStatement` once, inside the first default-pool transaction opened after this call,
- * immediately before the first statement whose text contains `marker`. The callback receives that
+ * While installed, wrap every transaction opened through `psql.beginTransaction`. Run
+ * `beforeStatement` once, on the first statement (in whichever transaction reaches it) whose text
+ * contains `marker`, immediately before that statement. The callback receives that
  * transaction's executor, so a lifecycle change it writes is visible to the statement that follows,
  * as a concurrent commit between two statements would be; a throw rejects that statement. Returns
  * the restore.
