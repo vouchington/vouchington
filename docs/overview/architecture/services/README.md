@@ -68,12 +68,12 @@ Payment operational retention removes finished Stripe event processing work and 
 failed, ownerless, or provider-expired purchase launches in bounded, persisted keyset passes.
 Launched subscriptions and native purchase tokens remain available to resolve later provider
 events. The immutable Stripe event ledger remains the deduplication authority while its record
-exists. Expired Stripe events and settled cancellation or administrator refund operations are
-removed after their fiscal retention window, including dependent refund records in foreign-key
-order. Each run reads one bounded page: operations are scanned through a partial index of the two
-deletable kinds, and Stripe events through a persisted id cursor that passes over events with
-unfinished or failed work and restarts after a full pass. Other operation kinds are outside this
-job. No separate permanent replay identity survives deletion. Verification-linked purchase
+exists. Expired Stripe events and every kind of settled membership operation are removed after
+their fiscal retention window, including receipts, reversal-case links and dependent refund records
+in foreign-key order. A reversal or collision operation waits while its case still has unfinished
+sibling work or an open verification cycle; an administrator refund waits until a requested
+cancellation has revoked access. Each run reads one bounded page: both ledgers use persisted keyset
+cursors that pass over rows that are not yet deletable and restart after a full pass. No separate permanent replay identity survives deletion. Verification-linked purchase
 intents remain because their accounting evidence must keep a valid reference. Failed Stripe
 processing work remains recoverable until it reaches a completed or ignored outcome.
 

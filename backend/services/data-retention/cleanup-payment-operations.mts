@@ -20,7 +20,11 @@ export type PaymentOperationCleanupResult = {
   cursorId: string | null
 }
 
-type PaymentCleanupKind = 'stripe_event_work' | 'purchase_intent' | 'stripe_event_ledger'
+type PaymentCleanupKind =
+  | 'stripe_event_work'
+  | 'purchase_intent'
+  | 'stripe_event_ledger'
+  | 'membership_operation_ledger'
 
 function getPaymentCleanupPageBounds(options: PaymentOperationCleanupOptions) {
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')

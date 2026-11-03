@@ -6,11 +6,11 @@ One persisted UUIDv7 keyset position per daily payment operational cleanup.
 
 Not partitioned — growth: bounded.
 
-| Column       | Type                                | Nullable | Default             | Identity | Generated | Collation | Comment                                                 |
-| ------------ | ----------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
-| `kind`       | `payment_operational_cleanup_kinds` | no       |                     |          |           |           | Cleanup stream whose position this row stores.          |
-| `cursor_id`  | `uuid`                              | yes      |                     |          |           |           | Last scanned UUIDv7 id; NULL starts the next full pass. |
-| `updated_at` | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP` |          |           |           | When this cleanup stream last checkpointed.             |
+| Column       | Type                                | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                             |
+| ------------ | ----------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `kind`       | `payment_operational_cleanup_kinds` | no       |                     |          |           |           | Cleanup stream whose position this row stores.                                                                      |
+| `cursor_id`  | `uuid`                              | yes      |                     |          |           |           | Last scanned id; NULL starts the next full pass. The membership operation stream orders by completion time then id. |
+| `updated_at` | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP` |          |           |           | When this cleanup stream last checkpointed.                                                                         |
 
 **Primary key:** `PRIMARY KEY (kind)`
 

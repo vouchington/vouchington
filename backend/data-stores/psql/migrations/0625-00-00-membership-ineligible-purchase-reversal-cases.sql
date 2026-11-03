@@ -112,7 +112,7 @@ EXECUTE FUNCTION fn_reject_mutation();
 CREATE OR REPLACE TRIGGER trigger_purchase_reversal_case_operations_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_case_operations
 FOR EACH ROW
-EXECUTE FUNCTION fn_reject_mutation();
+EXECUTE FUNCTION fn_reject_membership_operation_child_mutation();
 
 COMMENT ON TABLE membership_ineligible_purchase_reversal_cases IS
   'Immutable collision snapshot that bounds Stripe refund allocation as invoice payments arrive.';

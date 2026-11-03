@@ -3,11 +3,19 @@ import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { cleanupPaymentLedgers } from '@services/data-retention/cleanup-payment-ledgers'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { runAndCapture, seedUser } from '../run-support.mts'
+import { runAndCapture } from '../run-support.mts'
+import {
+  positionLedgerCursor,
+  resetLedgerCursor,
+  seedLedgerOperations,
+} from './payment-ledger-retention-seed.mts'
 
 const limits = { batchSize: 20, maxBatches: 1 }
+const blockedPrefix = `explain-retention-blocked-${randomUUID()}`
+const dueAutomaticPrefix = `explain-retention-due-auto-${randomUUID()}`
+const dueReversalPrefix = `explain-retention-due-reversal-${randomUUID()}`
 
-/** Many old rows this job can never delete sit ahead of one due row; a run must still read one page. */
+/** Many old rows that cannot be deleted yet sit ahead of due rows; a run must still read one page. */
 export async function runPaymentLedgerRetentionBacklogScenarios(): Promise<void> {
   await seedBlockedStripeEvents()
   registerScenarioContract('membership-stripe-event-retention-blocked-backlog', {
@@ -31,22 +39,65 @@ export async function runPaymentLedgerRetentionBacklogScenarios(): Promise<void>
       {
         kind: 'usesIndexes',
         indexes: ['idx_membership_operations__completed_at_id'],
+        queryContains: 'selectExpiredMembershipOperationLedgerPage',
         noSort: true,
       },
-      { kind: 'maxProcessedRows', relation: 'membership_operations', max: 5 },
+      { kind: 'maxProcessedRows', relation: 'membership_operations', max: 25 },
+      {
+        kind: 'maxFunctionCalls',
+        function: 'fn_membership_operation_fiscal_retention_due',
+        max: 21,
+      },
     ],
-    seededRows: { membership_operations: 2001 },
-    // The captured run deletes the due row, so the replayed plan proves the 2,000 other rows stay out of the index.
+    seededRows: { membership_operations: 2002 },
     allowEmptyResult: true,
   })
   await runAndCapture(
     'membership-operation-retention-blocked-backlog',
     async () => {
       const result = await cleanupPaymentLedgers(limits)
-      assert.equal(result.find(page => page.family === 'membership_operation')?.deleted, 1)
+      assert.deepEqual(
+        result.find(page => page.family === 'membership_operation'),
+        {
+          family: 'membership_operation',
+          scanned: 20,
+          deleted: 0,
+          hasMore: true,
+        },
+      )
     },
     undefined,
     'selectExpiredMembershipOperationLedgerPage',
+  )
+
+  // The pass resumes after the blocked rows, as later daily runs do, and drains the due kinds.
+  await positionLedgerCursor(blockedPrefix)
+  registerScenarioContract('membership-operation-retention-resumed-after-blocked', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_membership_operations__completed_at_id'],
+        queryContains: 'selectExpiredMembershipOperationLedgerPage',
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'membership_operations', max: 25 },
+    ],
+    seededRows: { membership_operations: 2002 },
+    allowEmptyResult: true,
+  })
+  await runAndCapture(
+    'membership-operation-retention-resumed-after-blocked',
+    async () => {
+      const result = await cleanupPaymentLedgers({ batchSize: 20, maxBatches: 3 })
+      assert.ok((result.find(page => page.family === 'membership_operation')?.deleted ?? 0) >= 5)
+    },
+    undefined,
+    [
+      'selectExpiredMembershipOperationLedgerPage',
+      'deleteExpiredMembershipAutomaticRefundReceipts',
+      'deleteExpiredMembershipReversalCaseLinks',
+    ],
+    { localSettings: { 'app.billing_retention_delete': 'on' } },
   )
 }
 
@@ -73,42 +124,32 @@ async function seedBlockedStripeEvents(): Promise<void> {
   await write(`/* seedExplainBlockedStripeEvents:analyze */ ANALYZE stripe_events`)
 }
 
-/** Automatic refunds are outside this job's kinds; one cancellation completed later is due. */
+/**
+ * 2000 collision operations whose reversal case is still verifying sit ahead of two due operations,
+ * one automatic refund and one reversal, each with a receipt (and the reversal a case link).
+ */
 async function seedBlockedMembershipOperations(): Promise<void> {
-  const applicationId = `explain-retention-blocked-${randomUUID()}`
-  await write(
-    `/* seedExplainBlockedMembershipOperations */
-     WITH lineage AS (
-       INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id)
-       VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', $1), $2)
-       RETURNING id, membership_provider_context_id
-     ), binding AS (
-       INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
-       SELECT id, $3::uuid FROM lineage RETURNING id, membership_provider_lineage_id
-     ), source AS (
-       INSERT INTO membership_sources (source_kind, membership_provider_lineage_id)
-       SELECT 'direct', id FROM lineage RETURNING id, membership_provider_lineage_id
-     ), blocked AS (
-       INSERT INTO membership_operations (membership_source_id, membership_provider_lineage_id,
-         membership_lineage_binding_id, membership_provider_context_id, operation_kind,
-         idempotency_key, qualifying_allocation_minor_units, remaining_refundable_minor_units,
-         currency_code, period_started_at, period_ends_at, requested_at, completed_at)
-       SELECT source.id, source.membership_provider_lineage_id, binding.id,
-         lineage.membership_provider_context_id, 'automatic_refund', $4 || n, 100, 100, 'usd',
-         NOW() - INTERVAL '10 years', NOW() - INTERVAL '9 years 11 months',
-         NOW() - INTERVAL '9 years 1 day', NOW() - INTERVAL '9 years'
-       FROM lineage JOIN source ON source.membership_provider_lineage_id = lineage.id
-         JOIN binding ON binding.membership_provider_lineage_id = lineage.id
-         CROSS JOIN generate_series(0, 1999) AS n
-     ) INSERT INTO membership_operations (membership_source_id, membership_provider_lineage_id,
-         membership_lineage_binding_id, membership_provider_context_id, operation_kind,
-         idempotency_key, requested_at, completed_at)
-       SELECT source.id, source.membership_provider_lineage_id, binding.id,
-         lineage.membership_provider_context_id, 'cancel_source', $4 || 'due',
-         NOW() - INTERVAL '8 years 1 day', NOW() - INTERVAL '8 years'
-       FROM lineage JOIN source ON source.membership_provider_lineage_id = lineage.id
-         JOIN binding ON binding.membership_provider_lineage_id = lineage.id`,
-    [applicationId, `lineage-${randomUUID()}`, seedUser.id, `retention-${randomUUID()}-`],
-  )
-  await write(`/* seedExplainBlockedMembershipOperations:analyze */ ANALYZE membership_operations`)
+  await seedLedgerOperations({
+    kind: 'collision_resolution',
+    count: 2000,
+    completedAgo: '9 years',
+    prefix: blockedPrefix,
+    caseCycle: 'open',
+  })
+  await seedLedgerOperations({
+    kind: 'automatic_refund',
+    count: 1,
+    completedAgo: '8 years',
+    prefix: dueAutomaticPrefix,
+    withChildren: true,
+  })
+  await seedLedgerOperations({
+    kind: 'ineligible_purchase_reversal',
+    count: 1,
+    completedAgo: '8 years',
+    prefix: dueReversalPrefix,
+    caseCycle: 'completed',
+    withChildren: true,
+  })
+  await resetLedgerCursor()
 }
