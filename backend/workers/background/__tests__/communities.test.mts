@@ -14,8 +14,8 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { describe, expect, it } from 'vitest'
 import { trackUserMetricsFills } from '../../../test-helpers/user-metrics-cache-fills.mts'
 import { createBackgroundProcessor } from '../processors.mts'
-import { communitiesHandlers } from './communities.mts'
-import { buildHandlerMap } from './handler-map.mts'
+import { communitiesHandlers } from '../processors/communities.mts'
+import { buildHandlerMap } from '../processors/handler-map.mts'
 
 describe('community member metric invalidation background handler', () => {
   it('walks bounded pages through the production queue and replays the same stable job ids', async () => {

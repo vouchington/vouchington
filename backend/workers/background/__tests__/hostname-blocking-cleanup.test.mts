@@ -23,8 +23,8 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { describe, expect, it } from 'vitest'
 import { createBackgroundProcessor } from '../processors.mts'
-import { buildHandlerMap } from './handler-map.mts'
-import { hostnameBlockingHandlers } from './hostname-blocking.mts'
+import { buildHandlerMap } from '../processors/handler-map.mts'
+import { hostnameBlockingHandlers } from '../processors/hostname-blocking.mts'
 
 describe('hostname block cleanup background handlers', () => {
   it('enqueues the scheduler root without running recovery', async () => {
