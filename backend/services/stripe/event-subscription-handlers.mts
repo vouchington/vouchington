@@ -10,22 +10,14 @@ import { reconcileRecordedIneligibleStripePurchaseReversal } from '@services/mem
 import { isTerminalMembershipStatus } from './membership-change-helpers.mts'
 import { getStripeObjectId, getStripeObjectString } from '@vouchington/stripe'
 
-type InvoicePaymentPaidDependencies = {
-  reconcileRecordedIneligibleStripePurchaseReversal: typeof reconcileRecordedIneligibleStripePurchaseReversal
-}
-
 export async function handleInvoicePaymentPaid(
   eventData: Record<string, unknown>,
   providerEnvironment: 'test' | 'production',
-  dependencies?: Partial<InvoicePaymentPaidDependencies>,
   applicationContext: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
 ): Promise<void> {
   const invoiceId = getStripeObjectId(eventData.invoice)
   if (!invoiceId) return
-  const reconcile =
-    dependencies?.reconcileRecordedIneligibleStripePurchaseReversal ??
-    reconcileRecordedIneligibleStripePurchaseReversal
-  await reconcile({
+  await reconcileRecordedIneligibleStripePurchaseReversal({
     originatingInvoiceId: invoiceId,
     providerApplicationId: applicationContext.applicationId,
     providerEnvironment,
