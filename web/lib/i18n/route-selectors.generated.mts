@@ -82,7 +82,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/communities/[slug]/posts", selectorId: "web.route.4bfa3e10523f6265.d895db6df8dccc27", hasMembership: true },
   { pattern: "/communities/[slug]/posts/create", selectorId: "web.route.ce9944e1639ae69a.d895db6df8dccc27", hasMembership: true },
   { pattern: "/communities/[slug]/settings", selectorId: "web.route.b8c121fa4ba695f7.dc660d966fb9c436", hasMembership: true },
-  { pattern: "/communities/[slug]/settings/applications", selectorId: "web.route.1796d9f690929a1f.4c14e02eb917033b", hasMembership: true },
+  { pattern: "/communities/[slug]/settings/applications", selectorId: "web.route.1796d9f690929a1f.629a0bfe453915d2", hasMembership: true },
   { pattern: "/communities/[slug]/settings/invites", selectorId: "web.route.71955e0e28ba3356.fe9064bf6df86b0d", hasMembership: true },
   { pattern: "/communities/[slug]/settings/moderation", selectorId: "web.route.c9ccccbb2f80f7a0.d5fc720e6dae6332", hasMembership: true },
   { pattern: "/communities/[slug]/settings/moderation/analytics", selectorId: "web.route.0f270001abf34f53.a46e7cd80b57c0fd", hasMembership: true },

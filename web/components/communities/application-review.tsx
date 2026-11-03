@@ -17,7 +17,7 @@ import type {
 } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getUserLabel } from '@/lib/users/user-helpers'
-import { ApplicationDetail } from './application-detail'
+import { ApplicationDetailDialog } from './application-detail'
 
 interface ApplicationReviewProps {
   data: CommunityApplicationsResponseBody
@@ -53,6 +53,8 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
       ? [{ ...application, status: statusOverrides[application.id] ?? application.status }]
       : []
   })
+
+  const openApplication = applications.find(application => application.id === openApplicationId)
 
   if (applications.length === 0 && !hasNextPage) {
     return (
@@ -125,7 +127,6 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
             const isPending = application.status === 'pending'
             const isApproved = application.status === 'approved'
             const isRejected = application.status === 'rejected'
-            const isOpen = openApplicationId === application.id
 
             return (
               <div
@@ -161,35 +162,30 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
                   )}
                 </div>
 
-                {isOpen ? (
-                  <ApplicationDetail
-                    communitySlug={communitySlug}
-                    applicationId={application.id}
-                  />
-                ) : (
-                  application.message_preview && (
-                    <div className='mt-3'>
-                      <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                        {t('extracted.communities.applicationReview.message_2f77668a')}
-                      </p>
-                      <p className='mt-1 whitespace-pre-wrap break-words text-sm'>
-                        {application.message_preview}
-                      </p>
-                    </div>
-                  )
+                {application.message_preview && (
+                  <div className='mt-3'>
+                    <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                      {t('extracted.communities.applicationReview.message_2f77668a')}
+                    </p>
+                    <p className='mt-1 whitespace-pre-wrap break-words text-sm'>
+                      {application.message_preview}
+                    </p>
+                  </div>
                 )}
+                <p className='mt-3 text-xs text-muted-foreground'>
+                  {t('extracted.communities.applicationReview.answerCount_90a51327', {
+                    count: application.answer_count,
+                  })}
+                </p>
 
                 <Button
-                  data-pw='application-review-toggle-details'
+                  data-pw='application-review-view-details'
                   className='mt-3'
                   size='sm'
                   variant='ghost'
-                  aria-expanded={isOpen}
-                  onClick={() => setOpenApplicationId(isOpen ? null : application.id)}
+                  onClick={() => setOpenApplicationId(application.id)}
                 >
-                  {isOpen
-                    ? t('extracted.communities.applicationReview.hideDetails_c9722a7a')
-                    : t('extracted.communities.applicationReview.showDetails_1af77ee2')}
+                  {t('extracted.communities.applicationReview.showDetails_1af77ee2')}
                 </Button>
 
                 {isPending &&
@@ -265,6 +261,20 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
           })}
         </div>
       </InfiniteScroll>
+      {openApplication && (
+        <ApplicationDetailDialog
+          communitySlug={communitySlug}
+          applicationId={openApplication.id}
+          applicantLabel={getUserLabel(
+            users[openApplication.user_id],
+            t('shared.user.deletedUser'),
+          )}
+          appliedDate={t('extracted.communities.applicationReview.appliedDate_6e231f5e', {
+            date: new Date(openApplication.created_at).toLocaleDateString(),
+          })}
+          onClose={() => setOpenApplicationId(null)}
+        />
+      )}
     </div>
   )
 }

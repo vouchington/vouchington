@@ -73,7 +73,7 @@ describe('ApplicationReview row details', () => {
     users: { [applicant.id]: applicant },
   }
 
-  it('shows the preview and loads answers only when the row is opened', async () => {
+  it('shows the preview and loads answers in a dialog only when the row is opened', async () => {
     vi.mocked(getCommunityApplication).mockResolvedValue({
       community_application: {
         __entity_type: 'community_application',
@@ -99,10 +99,13 @@ describe('ApplicationReview row details', () => {
       </LocaleProvider>,
     )
     expect(screen.getByText('Preview text')).toBeInTheDocument()
+    expect(screen.getByText('Answers: 1')).toBeInTheDocument()
     expect(getCommunityApplication).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Show details' }))
 
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeInTheDocument()
     expect(await screen.findByText('Full answer')).toBeInTheDocument()
     expect(screen.getByText('Full message')).toBeInTheDocument()
     expect(getCommunityApplication).toHaveBeenCalledWith('test-community', application.id)
