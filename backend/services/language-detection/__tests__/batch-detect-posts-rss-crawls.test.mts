@@ -35,10 +35,9 @@ describe('batch-detect — posts, rss-feed-items, crawls', () => {
     })
 
     it('detects language for posts and writes results', async () => {
-      const random = createRandomString(10)
       const postId = await insertLanguageDetectionPostForTest({
         createdById: user.id,
-        title: `Batch post ${random}`,
+        title: 'Batch post',
         markdown: ENGLISH,
       })
 
@@ -51,10 +50,9 @@ describe('batch-detect — posts, rss-feed-items, crawls', () => {
     })
 
     it('skips posts whose sha is already current (returns { updated: 0 })', async () => {
-      const random = createRandomString(10)
       const postId = await insertLanguageDetectionPostForTest({
         createdById: user.id,
-        title: `SHA skip post ${random}`,
+        title: 'SHA skip post',
         markdown: GERMAN,
       })
 
@@ -120,7 +118,7 @@ describe('batch-detect — posts, rss-feed-items, crawls', () => {
         urlId: urlObj!.id,
         guid: `guid-batch-${random}`,
         itemData: {
-          title: `Batch Item ${random}`,
+          title: 'Batch Item',
           contentSnippet: '<p>&nbsp;</p>',
           'media:description': GERMAN,
         },
@@ -132,7 +130,7 @@ describe('batch-detect — posts, rss-feed-items, crawls', () => {
       const result = await getLanguageDetectionResultForTest('rss_feed_items', itemId)
       expect(result.lingua_rs_detected_language).toBe('de')
       expect(result.lingua_rs_content_sha256).toEqual(
-        createHash('sha256').update(`Batch Item ${random}\n\n${GERMAN}`, 'utf8').digest(),
+        createHash('sha256').update(`Batch Item\n\n${GERMAN}`, 'utf8').digest(),
       )
     })
   })

@@ -32,7 +32,7 @@ describe('language detection processors', () => {
       urlId: url!.id,
       guid: `language-processor-${random}`,
       itemData: {
-        title: `English language detection sample article ${random}`,
+        title: 'English language detection sample article',
         contentSnippet:
           'This feed item is written entirely in English. It describes a simple news article with clear sentences, common vocabulary, and enough surrounding context for reliable language detection.',
       },
@@ -60,7 +60,7 @@ describe('language detection processors', () => {
       createdById: user!.id,
       markdown:
         'This post is written in English with clear sentences, common vocabulary, and enough context for reliable language detection by the worker processor.',
-      title: `Language detection ${randomUUID()}`,
+      title: 'Language detection',
     })
 
     await processLanguageDetection('post', postId)
@@ -144,7 +144,7 @@ describe('language detection processors', () => {
         create: () =>
           insertLanguageDetectionPostForTest({
             createdById: owner.id,
-            title: `Backfill ${randomUUID()}`,
+            title: 'Backfill',
             markdown: text,
           }),
       },

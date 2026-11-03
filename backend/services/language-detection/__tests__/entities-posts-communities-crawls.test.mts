@@ -31,10 +31,9 @@ describe('entity language detection — posts, communities, crawls', () => {
     })
 
     it('detects the language and writes columns when post has no prior detection', async () => {
-      const random = createRandomString(10)
       const postId = await insertLanguageDetectionPostForTest({
         createdById: user.id,
-        title: `Post entity test ${random}`,
+        title: 'Post entity test',
         markdown: ENGLISH,
       })
 
@@ -47,10 +46,9 @@ describe('entity language detection — posts, communities, crawls', () => {
     })
 
     it('skips detection (idempotency) when input sha is already current', async () => {
-      const random = createRandomString(10)
       const postId = await insertLanguageDetectionPostForTest({
         createdById: user.id,
-        title: `Idempotent Post ${random}`,
+        title: 'Idempotent Post',
         markdown: GERMAN,
       })
 
@@ -90,7 +88,7 @@ describe('entity language detection — posts, communities, crawls', () => {
       const random = createRandomString(10)
       const communityId = await insertLanguageDetectionCommunityForTest({
         createdById: user.id,
-        name: `${ENGLISH} ${random}`,
+        name: ENGLISH,
         slug: `comm-entity-${random}`,
       })
 
@@ -106,7 +104,7 @@ describe('entity language detection — posts, communities, crawls', () => {
       const random = createRandomString(10)
       const communityId = await insertLanguageDetectionCommunityForTest({
         createdById: user.id,
-        name: `${GERMAN} ${random}`,
+        name: GERMAN,
         slug: `idempotent-comm-${random}`,
       })
 
@@ -122,7 +120,7 @@ describe('entity language detection — posts, communities, crawls', () => {
       const random = createRandomString(10)
       const communityId = await insertLanguageDetectionCommunityForTest({
         createdById: user.id,
-        name: `${ENGLISH} ${random}`,
+        name: ENGLISH,
         slug: `spanish-comm-${random}`,
         defaultLanguage: 'es',
       })
