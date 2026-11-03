@@ -34,7 +34,7 @@ export const rssFeedsHandlers = [
       targetName: 'background',
       readAndDispatch: async pageSize => {
         const limit = Math.min(pageSize, remainingBudget, getCrawlCapacityBudget())
-        const result = await processRssFeedsDispatcher(undefined, {
+        const result = await processRssFeedsDispatcher({
           cursor: job.data.cursor,
           asOf: asOfDate,
           limit,

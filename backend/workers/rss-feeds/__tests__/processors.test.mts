@@ -1,159 +1,183 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
-import type { getRssFeedsToFetch, getTierSlaMs } from '@services/rss-feeds'
-import { TIER_PRIORITY } from '@queues/rss-feeds/config'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
+import { background } from '@queues/background/queues'
+import { getRssFeedByIdToFetch, type RssFeedDispatchCursor } from '@services/rss-feeds'
+import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
+import {
+  readAllQueueJobs,
+  updateUrlHostnameCrawlable,
+  insertTestRssFeedDirect,
+} from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { getRssFeedCrawlTiers } from '@voucha/test-helpers/data-stores/psql/rss-feed-crawl-tiers'
+import {
+  deleteRssFeedsByIds,
+  setRssFeedOwningTopicVoteScore,
+  updateRssFeedTiming,
+} from '@voucha/test-helpers/entities/rss-feeds'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view-for-test'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
+import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { processFetchRssFeed, processRssFeedsDispatcher } from '../processors.mts'
 
-const mockEnqueueBulkFetchRssFeeds = vi.fn<typeof enqueueBulkFetchRssFeeds>()
-const mockGetRssFeedsToFetch = vi.fn<typeof getRssFeedsToFetch>()
-const mockGetTierSlaMs = vi.fn<typeof getTierSlaMs>()
+const TIER_5_SLA_MS = 3_600_000
 
-// Default SLAs matching the config defaults
-const TIER_SLA: Record<number, number> = {
-  1: 5 * 60_000,
-  2: 15 * 60_000,
-  3: 60 * 60_000,
-  4: 2 * 60 * 60_000,
-  5: 24 * 60 * 60_000,
+async function ownedFetchJobs(feedIds: readonly string[]) {
+  return (await readAllQueueJobs(background)).filter(
+    job =>
+      job.name === RSS_FEEDS_FETCH_JOB.name &&
+      feedIds.includes((job.data as { rssFeedId: string }).rssFeedId),
+  )
 }
 
-function makeRssFeedToFetch(overrides: {
-  id?: string
-  crawl_tier?: number
-  crawl_score?: number
-  priority_group?: 1 | 2
-}): Awaited<ReturnType<typeof getRssFeedsToFetch>>['feeds'][number] {
-  const crawlTier = overrides.crawl_tier ?? 5
-  const priorityGroup = overrides.priority_group ?? 1
-  return {
-    id: overrides.id ?? 'feed-id',
-    url: 'https://example.com/feed.xml',
-    url_hostname_id: 'hostname-id',
-    declared_language: null,
-    crawlable: true,
-    title: 'Test Feed',
-    last_modified_at: null,
-    etag: null,
-    last_fetched_at: null,
-    feed_type: 'article' as const,
-    crawl_score: overrides.crawl_score ?? 0,
-    crawl_tier: crawlTier,
-    priority_group: priorityGroup,
-    dispatch_lane: priorityGroup === 1 ? crawlTier : crawlTier + 5,
-    feed_ignore_robots_txt: null,
-    hostname_ignore_robots_txt: null,
-    feed_unreliable_status_codes: null,
-    hostname_unreliable_status_codes: null,
-  }
+async function dispatchOwnedPage(feedIds: string[], cursor: RssFeedDispatchCursor) {
+  onTestFinished(async () => {
+    await Promise.all((await ownedFetchJobs(feedIds)).map(job => job.remove()))
+    await deleteRssFeedsByIds(feedIds)
+  })
+  const result = await processRssFeedsDispatcher({
+    cursor,
+    asOf: new Date(),
+    limit: 5,
+    rawBudget: 5,
+  })
+  return { result, jobs: await ownedFetchJobs(feedIds) }
 }
 
 describe('processRssFeedsDispatcher', () => {
-  beforeEach(() => {
-    mockEnqueueBulkFetchRssFeeds.mockResolvedValue(undefined as never)
-    mockGetTierSlaMs.mockImplementation((tier: number) => TIER_SLA[tier] ?? TIER_SLA[5])
-  })
+  it('returns { count: 0 } and enqueues nothing when no owned feed is due', async () => {
+    const { firstId, secondId } = createTestUuidWindow()
+    const feed = await insertTestRssFeedDirect({ id: firstId })
+    await updateRssFeedTiming(feed.id, new Date())
 
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('returns { count: 0 } and does not enqueue when no feeds returned', async () => {
-    mockGetRssFeedsToFetch.mockResolvedValue({ feeds: [], rawRowsRead: 0 })
-    const result = await runDispatcher()
-    expect(result).toEqual({ count: 0, rawRowsRead: 0 })
-    expect(mockEnqueueBulkFetchRssFeeds).not.toHaveBeenCalled()
-  })
-
-  it('enqueues feeds with TIER_PRIORITY[1] and tier-1 SLA for tier-1 feeds', async () => {
-    const feed = makeRssFeedToFetch({ id: 'feed-tier1', crawl_tier: 1, crawl_score: 10 })
-    mockGetRssFeedsToFetch.mockResolvedValue({ feeds: [feed], rawRowsRead: 1 })
-
-    await runDispatcher()
-
-    expect(mockGetRssFeedsToFetch).toHaveBeenCalledWith({})
-    expect(mockEnqueueBulkFetchRssFeeds).toHaveBeenCalledWith(['feed-tier1'], {
-      priority: TIER_PRIORITY[1],
-      ttl: TIER_SLA[1],
+    const { result, jobs } = await dispatchOwnedPage([feed.id], {
+      lane: 5,
+      afterId: uuidBefore(firstId),
+      throughId: secondId,
     })
-  })
 
-  it('enqueues feeds with TIER_PRIORITY[5] and tier-5 SLA for tier-5 feeds', async () => {
-    const feed = makeRssFeedToFetch({ id: 'feed-tier5', crawl_tier: 5, crawl_score: 0 })
-    mockGetRssFeedsToFetch.mockResolvedValue({ feeds: [feed], rawRowsRead: 1 })
-
-    await runDispatcher()
-
-    expect(mockEnqueueBulkFetchRssFeeds).toHaveBeenCalledWith(['feed-tier5'], {
-      priority: TIER_PRIORITY[5],
-      ttl: TIER_SLA[5],
+    expect(result).toEqual({
+      count: 0,
+      rawRowsRead: 1,
+      nextCursor: { lane: 6, afterId: '00000000-0000-0000-0000-000000000000', throughId: secondId },
     })
+    expect(jobs).toEqual([])
   })
 
-  it('groups feeds by tier and issues one enqueue call per tier', async () => {
-    const feeds = [
-      makeRssFeedToFetch({ id: 'feed-a', crawl_tier: 1, crawl_score: 10 }),
-      makeRssFeedToFetch({ id: 'feed-b', crawl_tier: 1, crawl_score: 8 }),
-      makeRssFeedToFetch({ id: 'feed-c', crawl_tier: 3, crawl_score: 2 }),
-    ]
-    mockGetRssFeedsToFetch.mockResolvedValue({ feeds, rawRowsRead: feeds.length })
+  it('enqueues due tier-5 feeds with TIER_PRIORITY[5] and the tier-5 SLA as ttl', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { tier5_sla_ms: TIER_5_SLA_MS }),
+    )
+    const { firstId, secondId, thirdId } = createTestUuidWindow()
+    const feeds = await Promise.all([firstId, secondId].map(id => insertTestRssFeedDirect({ id })))
+    const feedIds = feeds.map(feed => feed.id)
 
-    await runDispatcher()
+    const { result, jobs } = await dispatchOwnedPage(feedIds, {
+      lane: 5,
+      afterId: uuidBefore(firstId),
+      throughId: thirdId,
+    })
 
-    // Two calls: one for tier 1, one for tier 3
-    expect(mockEnqueueBulkFetchRssFeeds).toHaveBeenCalledTimes(2)
-    const calls = mockEnqueueBulkFetchRssFeeds.mock.calls
-    const tier1Call = calls.find(c => c[1]?.priority === TIER_PRIORITY[1])
-    const tier3Call = calls.find(c => c[1]?.priority === TIER_PRIORITY[3])
-    expect(tier1Call?.[0]).toContain('feed-a')
-    expect(tier1Call?.[0]).toContain('feed-b')
-    expect(tier3Call?.[0]).toContain('feed-c')
-    expect(tier1Call?.[1]?.ttl).toBe(TIER_SLA[1])
-    expect(tier3Call?.[1]?.ttl).toBe(TIER_SLA[3])
-  })
-
-  it('returns total feed count', async () => {
-    const feeds = [
-      makeRssFeedToFetch({ id: 'x1', crawl_tier: 2 }),
-      makeRssFeedToFetch({ id: 'x2', crawl_tier: 4 }),
-    ]
-    mockGetRssFeedsToFetch.mockResolvedValue({ feeds, rawRowsRead: feeds.length })
-
-    const result = await runDispatcher()
-    expect(result).toEqual({ count: 2, rawRowsRead: 2 })
+    expect(result).toMatchObject({ count: 2, rawRowsRead: 2 })
+    expect(jobs.map(job => job.data)).toEqual([
+      { rssFeedId: firstId, ttl: TIER_5_SLA_MS },
+      { rssFeedId: secondId, ttl: TIER_5_SLA_MS },
+    ])
+    expect(jobs.map(job => job.opts.priority)).toEqual([20, 20])
   })
 
   it('omits ttl for backfill feeds so they are not blocked by the SLA dedup window', async () => {
-    const feed = makeRssFeedToFetch({ id: 'feed-backfill', crawl_tier: 5, priority_group: 2 })
-    mockGetRssFeedsToFetch.mockResolvedValue({ feeds: [feed], rawRowsRead: 1 })
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        tier1_sla_ms: 5 * 60_000,
+        tier5_sla_ms: TIER_5_SLA_MS,
+      }),
+    )
+    const { firstId, secondId } = createTestUuidWindow()
+    const feed = await insertTestRssFeedDirect({ id: firstId })
+    await updateRssFeedTiming(feed.id, new Date(Date.now() - 10 * 60_000))
 
-    await runDispatcher()
-
-    expect(mockEnqueueBulkFetchRssFeeds).toHaveBeenCalledWith(['feed-backfill'], {
-      priority: TIER_PRIORITY[5],
-      ttl: undefined,
+    const { result, jobs } = await dispatchOwnedPage([feed.id], {
+      lane: 10,
+      afterId: uuidBefore(firstId),
+      throughId: secondId,
     })
+
+    expect(result).toMatchObject({ count: 1, rawRowsRead: 1 })
+    expect(jobs.map(job => job.data)).toEqual([{ rssFeedId: firstId, ttl: undefined }])
+    expect(jobs.map(job => job.opts.priority)).toEqual([20])
   })
+
+  // no-mistakes-timeout-reason: two crawl-tier materialized view refreshes around one owned dispatch exceed the 5s default
+  it(
+    'enqueues a due hot-tier feed with its tier priority and tier SLA as ttl',
+    { timeout: 20_000 },
+    async () => {
+      onTestFinished(
+        overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+          tier1_sla_ms: 11 * 60_000,
+          tier2_sla_ms: 12 * 60_000,
+          tier3_sla_ms: 13 * 60_000,
+          tier4_sla_ms: 14 * 60_000,
+          tier5_sla_ms: TIER_5_SLA_MS,
+        }),
+      )
+      const { firstId } = createTestUuidWindow()
+      const feed = await insertTestRssFeedDirect({ id: firstId })
+      onTestFinished(() => refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers'))
+      // ast-grep-ignore: no-three-sequential-awaits -- write the score before refreshing the MV and reading its tier
+      await setRssFeedOwningTopicVoteScore(feed.id, 1_000_000_000, 0)
+      await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
+      const [tier] = await getRssFeedCrawlTiers([feed.id])
+      // The tier is a percentile of the shared database, so only the hot tiers are guaranteed.
+      expect([1, 2, 3, 4]).toContain(tier)
+      const hotTier = tier as 1 | 2 | 3 | 4
+      const expected = {
+        1: { priority: 1, ttl: 11 * 60_000 },
+        2: { priority: 3, ttl: 12 * 60_000 },
+        3: { priority: 7, ttl: 13 * 60_000 },
+        4: { priority: 12, ttl: 14 * 60_000 },
+      }[hotTier]
+
+      const { result, jobs } = await dispatchOwnedPage([feed.id], {
+        lane: hotTier,
+        afterId: uuidBefore(firstId),
+        throughId: firstId,
+      })
+
+      expect(result).toMatchObject({ count: 1, rawRowsRead: 1 })
+      expect(jobs.map(job => job.data)).toEqual([{ rssFeedId: firstId, ttl: expected.ttl }])
+      expect(jobs.map(job => job.opts.priority)).toEqual([expected.priority])
+    },
+  )
 })
 
-function runDispatcher(): Promise<{ count: number }> {
-  return processRssFeedsDispatcher({
-    enqueueBulkFetchRssFeeds: mockEnqueueBulkFetchRssFeeds,
-    getRssFeedsToFetch: mockGetRssFeedsToFetch,
-    getTierSlaMs: mockGetTierSlaMs,
-  })
-}
-
 describe('processFetchRssFeed', () => {
-  it('returns small fetch metadata instead of the full fetch result', async () => {
-    const fetchRssFeed = vi.fn<typeof import('@services/rss-feeds').fetchRssFeed>()
-    fetchRssFeed.mockResolvedValue([
-      { id: 'item-1', has_embedding: false },
-      { id: 'item-2', has_embedding: true },
-    ])
+  it('returns small fetch metadata and forwards the ttl to the fetch', async () => {
+    const { firstId } = createTestUuidWindow()
+    const feed = await insertTestRssFeedDirect({ id: firstId })
+    onTestFinished(() => deleteRssFeedsByIds([feed.id]))
+    const lastFetchedAt = new Date(Date.now() - 60 * 60_000)
+    await updateRssFeedTiming(feed.id, lastFetchedAt)
+    const fetchable = await getRssFeedByIdToFetch(feed.id, { ttl: 0 })
+    await updateUrlHostnameCrawlable(fetchable!.url_hostname_id, false)
 
-    const result = await processFetchRssFeed('feed-1', 0, { fetchRssFeed })
+    // A two-hour ttl treats the hour-old fetch as fresh, so nothing is fetched or stamped.
+    await expect(processFetchRssFeed(feed.id, 2 * 60 * 60_000)).resolves.toEqual({
+      rss_feed_id: feed.id,
+      item_count: 0,
+    })
+    expect((await getRssFeedByIdToFetch(feed.id, { ttl: 0 }))!.last_fetched_at).toEqual(
+      lastFetchedAt,
+    )
 
-    expect(fetchRssFeed).toHaveBeenCalledWith('feed-1', 0)
-    expect(result).toEqual({ rss_feed_id: 'feed-1', item_count: 2 })
+    // A one-minute ttl makes the feed due; the uncrawlable hostname stamps it without fetching.
+    await expect(processFetchRssFeed(feed.id, 60_000)).resolves.toEqual({
+      rss_feed_id: feed.id,
+      item_count: 0,
+    })
+    expect(
+      (await getRssFeedByIdToFetch(feed.id, { ttl: 0 }))!.last_fetched_at!.getTime(),
+    ).toBeGreaterThan(lastFetchedAt.getTime())
   })
 })

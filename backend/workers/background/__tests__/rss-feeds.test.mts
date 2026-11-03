@@ -63,7 +63,7 @@ describe('rss-feeds background domain', () => {
       [firstId, secondId, thirdId].map(id => insertTestRssFeedDirect({ id })),
     )
 
-    const result = await processRssFeedsDispatcher(undefined, {
+    const result = await processRssFeedsDispatcher({
       cursor: { lane: 5, afterId: uuidBefore(firstId), throughId: thirdId },
       asOf: new Date(),
       limit: 2,
