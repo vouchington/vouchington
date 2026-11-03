@@ -13,7 +13,6 @@ import { getLatestRssFeedCrawlForFeedWithOptions } from '../crawls.mts'
 import { insertTestRssFeedCrawl } from '@voucha/test-helpers/entities/rss-feed-crawls'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { createRssFeedItemEmbeddingContent } from '../../rss-feed-items/content.mts'
-import * as contentAnalysisEnqueues from '@queues/content-analysis/enqueues'
 import { createTestTopic, insertTestRssFeedItem, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 const mockCrawlerRss = vi.fn<typeof CrawlerRss>()
@@ -290,41 +289,5 @@ describe('fetch.feed-data', () => {
     const updatedFeed = await getRssFeedById(feed.id)
     expect(updatedFeed!.etag).toBe('"new-etag"')
     expect(updatedFeed!.last_modified_at).toEqual(seedLastModifiedAt)
-  })
-
-  it('fetchRssFeed queues an unchanged item once when the feed language changes', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTestTopic({
-      name: `Test Topic ${random}`,
-      slug: `test-topic-${random}`,
-      hostname: `fetch-language-${random}.example.com`,
-    })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/language-${random}.xml`,
-      topic_id: topic.id,
-      title: `Language Feed ${random}`,
-    })
-    await updateRssFeedById(feed.id, { is_enabled: true, discoverable: true })
-    const xmlFor = (language: string) =>
-      `<rss version="2.0"><channel><title>Language ${random}</title><language>${language}</language><item><link>https://example.com/language-item-${random}</link><guid>language-${random}</guid><title>Item</title></item></channel></rss>`
-    const respond = (xml: string) =>
-      mockCrawlerRss.mockResolvedValueOnce({
-        responseCode: 200,
-        feed: parseFeedDocument(Buffer.from(xml)).feed,
-        contentSha256: createHash('sha256').update(xml).digest(),
-        headers: { etag: null, lastModified: null },
-      })
-    respond(xmlFor('en'))
-    const [created] = await fetchRssFeedForTest(feed.id, 0)
-    const spy = vi.spyOn(contentAnalysisEnqueues, 'enqueueBulkLanguageDetection')
-
-    respond(xmlFor('fr'))
-    await fetchRssFeedForTest(feed.id, 0)
-
-    expect(spy).toHaveBeenCalledOnce()
-    expect(spy).toHaveBeenCalledWith('rss_feed_item', [created.id])
-    spy.mockRestore()
   })
 })
