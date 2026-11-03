@@ -123,7 +123,7 @@ function communityModerationCases(): OperationCase[] {
       }
     }),
   )
-  if (cases.length !== 59) throw new Error('community moderation option inventory drift')
+  if (cases.length !== 60) throw new Error('community moderation option inventory drift')
   return cases
 }
 
