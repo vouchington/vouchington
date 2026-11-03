@@ -401,6 +401,11 @@ restriction, dispute, and account suspension can keep a case longer. The daily a
 eligible cases in bounded pages. It removes all versions of exclusive evidence objects before deleting
 case rows, then removes the remaining party associations in the same job. A held case is rechecked
 before every physical deletion page.
+A hold that lands after a purge has started stops further deletion pages, but it does not restore
+pointer cuts already made. Most cut fields keep their facts in append-only history rows, so the legal
+record survives. Two cuts lose information: a decision no longer records which decision it
+superseded (the decisions still order by id and decision time), and a submission no longer records
+which guest capability filed it. The owner accepted this limit in #4797.
 
 The worker needs `s3:ListBucketVersions`, `s3:DeleteObjectVersion`, and `s3:DeleteObject` on the
 copyright evidence bucket. Check these permissions and resolve failed worker pages before expecting
