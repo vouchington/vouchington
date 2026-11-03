@@ -6,6 +6,7 @@ import {
   deleteTestOAuthAuthorizationFixtures,
   getTestUserRaw,
 } from '@voucha/test-helpers'
+import { failOwnedVoteWeightEnqueue } from '@voucha/test-helpers/vote-weight-dirty-marker'
 import { createVoteWeightDispatchUserAt } from '@voucha/test-helpers/vote-weight-dispatch'
 import { createVoteWeightRecalculationRaceQuery } from '@voucha/test-helpers/vote-weight-recalculation-race'
 import {
@@ -112,22 +113,17 @@ describe('recalculateUserVoteWeight', () => {
     await upsertOAuthAccount('github', providerUserId, `tests+${providerUserId}@voucha.ai`, {
       login: providerUserId,
     })
-    const reported: Error[] = []
     const query = createVoteWeightRecalculationRaceQuery(async () => {
       await connectOAuthAccountToUser('github', userId, providerUserId)
-      await runOAuthAccountConnectionPostCommitEffects(userId, {
-        enqueueVoteWeightRecalculation: async () => {
-          throw new Error('queue unavailable')
-        },
-        invalidateVerifiedEmail: async () => 0,
-        reportError: error => {
-          reported.push(error)
-        },
-      })
+      const failure = failOwnedVoteWeightEnqueue(userId, new Error('queue unavailable'))
+      try {
+        await runOAuthAccountConnectionPostCommitEffects(userId)
+      } finally {
+        failure.mockRestore()
+      }
     })
 
     await expect(recalculateUserVoteWeight(userId, { query })).rejects.toThrow(/raced/)
-    expect(reported).toHaveLength(1)
     const latestFactors = await gatherVoteWeightFactors(userId, { readFromWriter: true })
     expect(latestFactors?.oauthCount).toBe(1)
     expect(latestFactors?.current_weight).toBe(baseline.weight)

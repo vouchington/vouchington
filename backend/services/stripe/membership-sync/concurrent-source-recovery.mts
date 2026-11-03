@@ -5,16 +5,6 @@ import type {
 } from '@services/memberships/create-types'
 import { syncMembershipFromStripeSubscription } from './sync-existing.mts'
 
-type ConcurrentStripeMembershipSourceRecoveryDependencies = {
-  getMembershipByStripeSubscriptionId: typeof getMembershipByStripeSubscriptionId
-  syncMembershipFromStripeSubscription: typeof syncMembershipFromStripeSubscription
-}
-
-const defaultDependencies: ConcurrentStripeMembershipSourceRecoveryDependencies = {
-  getMembershipByStripeSubscriptionId,
-  syncMembershipFromStripeSubscription,
-}
-
 export async function recoverConcurrentStripeMembershipSource(
   error: unknown,
   options: {
@@ -22,14 +12,12 @@ export async function recoverConcurrentStripeMembershipSource(
     subscriptionId: string
     sourceIdentity: StripeMembershipSourceIdentity
     applicationContext: StripeMembershipApplicationContext
-    dependencies?: ConcurrentStripeMembershipSourceRecoveryDependencies
   },
 ): Promise<boolean> {
   if (!isUniqueConstraintError(error)) return false
-  const dependencies = options.dependencies ?? defaultDependencies
-  const membership = await dependencies.getMembershipByStripeSubscriptionId(options.sourceIdentity)
+  const membership = await getMembershipByStripeSubscriptionId(options.sourceIdentity)
   if (!membership) return false
-  await dependencies.syncMembershipFromStripeSubscription(
+  await syncMembershipFromStripeSubscription(
     options.eventId,
     options.subscriptionId,
     options.applicationContext,
