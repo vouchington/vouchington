@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import {
+  AppStoreServerAPIClient,
   AutoRenewStatus,
   Environment,
   InAppOwnershipType,
@@ -21,7 +22,10 @@ import { reconcileAppleNotification } from './reconcile-notification.mts'
 import type { AppleNotificationReconciliationVerifier } from './notification-verifier.mts'
 
 describe('Apple notification reconciliation', () => {
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
 
   it('keeps independently verified family notification evidence durable until recipients prove distinct receipts', async () => {
     const firstUser = await createTestUser()
@@ -36,22 +40,13 @@ describe('Apple notification reconciliation', () => {
     const historyCalls: string[] = []
     const dependencies = reconciliationDependencies(fixture, historyCalls)
 
-    await reconcileAppleNotification(
-      {
-        evidenceId: accepted.evidenceId,
-        providerLineageId: fixture.providerLineageId,
-        environment: 'test',
-      },
-      dependencies,
-    )
-    await reconcileAppleNotification(
-      {
-        evidenceId: accepted.evidenceId,
-        providerLineageId: fixture.providerLineageId,
-        environment: 'test',
-      },
-      dependencies,
-    )
+    const notification = {
+      evidenceId: accepted.evidenceId,
+      providerLineageId: fixture.providerLineageId,
+      environment: 'test',
+    } as const
+    await reconcileAppleNotification(notification, dependencies)
+    await reconcileAppleNotification(notification, dependencies)
     expect(historyCalls).toEqual([fixture.providerLineageId])
     await expect(getMembershipByUserId(firstUser.id)).resolves.toBeNull()
     await expect(getMembershipByUserId(secondUser.id)).resolves.toBeNull()
@@ -202,36 +197,35 @@ function reconciliationDependencies(
   historyCalls: string[],
   verifier = makeVerifier(fixture),
 ) {
-  return {
-    createVerifier: () => verifier,
-    createClient: () => ({
-      async getTransactionHistory(transactionId: string) {
-        historyCalls.push(transactionId)
-        return {
-          signedTransactions: [fixture.submittedTransaction, fixture.latestTransaction],
-          hasMore: false,
-        }
+  vi.stubEnv('APPLE_APP_STORE_SERVER_API_ISSUER_ID', 'synthetic-issuer')
+  vi.stubEnv('APPLE_APP_STORE_SERVER_API_KEY_ID', 'synthetic-key')
+  vi.stubEnv('APPLE_APP_STORE_SERVER_API_PRIVATE_KEY', 'synthetic-private-key')
+  vi.spyOn(AppStoreServerAPIClient.prototype, 'getTransactionHistory').mockImplementation(
+    async transactionId => {
+      historyCalls.push(transactionId)
+      return {
+        signedTransactions: [fixture.submittedTransaction, fixture.latestTransaction],
+        hasMore: false,
+      }
+    },
+  )
+  vi.spyOn(AppStoreServerAPIClient.prototype, 'getAllSubscriptionStatuses').mockResolvedValue({
+    bundleId: fixture.applicationId,
+    environment: Environment.SANDBOX,
+    data: [
+      {
+        lastTransactions: [
+          {
+            status: Status.ACTIVE,
+            originalTransactionId: fixture.providerLineageId,
+            signedTransactionInfo: fixture.latestTransaction,
+            signedRenewalInfo: 'latest-renewal',
+          },
+        ],
       },
-      async getAllSubscriptionStatuses() {
-        return {
-          bundleId: fixture.applicationId,
-          environment: Environment.SANDBOX,
-          data: [
-            {
-              lastTransactions: [
-                {
-                  status: Status.ACTIVE,
-                  originalTransactionId: fixture.providerLineageId,
-                  signedTransactionInfo: fixture.latestTransaction,
-                  signedRenewalInfo: 'latest-renewal',
-                },
-              ],
-            },
-          ],
-        }
-      },
-    }),
-  }
+    ],
+  })
+  return { createVerifier: () => verifier }
 }
 
 function makeVerifier(

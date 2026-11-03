@@ -7,8 +7,6 @@ import {
   createConfiguredAppleTransactionHistoryClient,
   fetchAppleTransactionHistory,
   getLatestAuthoritativeAppleTransaction,
-  type AppleSubscriptionStatusClient,
-  type AppleTransactionHistoryClient,
 } from './history.mts'
 import {
   createAppleNotificationVerifier,
@@ -45,9 +43,7 @@ export async function reconcileAppleNotification(
     await rejectAppleNotificationEvidence(data.evidenceId)
     return
   }
-  const client = (dependencies.createClient ?? createConfiguredAppleTransactionHistoryClient)(
-    evidence,
-  )
+  const client = createConfiguredAppleTransactionHistoryClient(evidence)
   const history = await fetchAppleTransactionHistory(client, notification.providerLineageId)
   const latest = getLatestAuthoritativeAppleTransaction(history, notification.signedTransactionInfo)
   const statuses = await fetchAppleSubscriptionStatuses(client, notification.providerLineageId)
@@ -61,10 +57,6 @@ export async function reconcileAppleNotification(
 }
 
 type AppleNotificationReconciliationDependencies = {
-  createClient?: (options: {
-    applicationId: string
-    environment: AppleMembershipProviderEnvironment
-  }) => AppleTransactionHistoryClient & AppleSubscriptionStatusClient
   createVerifier?: (options: {
     applicationId: string
     environment: AppleMembershipProviderEnvironment
