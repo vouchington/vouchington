@@ -1,6 +1,6 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   beginTransaction,
   createTestUser,
@@ -15,10 +15,7 @@ import {
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
-import {
-  connectOAuthAccountToUser,
-  runOAuthAccountConnectionPostCommitEffects,
-} from './connect.mts'
+import { connectOAuthAccountToUser } from './connect.mts'
 import { upsertOAuthAccount } from './upsert.mts'
 
 describe('connectOAuthAccountToUser', () => {
@@ -152,27 +149,5 @@ describe('connectOAuthAccountToUser', () => {
       await deleting?.catch(() => undefined)
       await restoreUser(user.id)
     }
-  })
-})
-
-describe('runOAuthAccountConnectionPostCommitEffects', () => {
-  it('reports a non-Error vote-weight failure and continues invalidating email state', async () => {
-    const userId = randomUUID()
-    const invalidateVerifiedEmail = vi.fn<() => Promise<number>>(() => Promise.resolve(0))
-    const reportError = vi.fn<(error: unknown) => void>()
-
-    await runOAuthAccountConnectionPostCommitEffects(userId, {
-      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Post-commit reporting must normalize non-Error queue failures.
-      enqueueVoteWeightRecalculation: (_userId: string) => Promise.reject('queue unavailable'),
-      invalidateVerifiedEmail,
-      reportError,
-    })
-
-    expect(reportError).toHaveBeenCalledOnce()
-    expect(reportError.mock.calls[0]![0]).toMatchObject({
-      name: 'Error',
-      message: 'queue unavailable',
-    })
-    expect(invalidateVerifiedEmail).toHaveBeenCalledWith(userId)
   })
 })

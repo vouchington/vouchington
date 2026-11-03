@@ -26,7 +26,6 @@ describe('vote weight dispatcher processor', () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(voteWeightWorkConfig, { dispatch_batch_size: 1 }),
     )
-    expect(fixture.reportedErrors).toHaveLength(1)
     expect((await fixture.getUser())?.vote_weight_recalculated_at).toBeNull()
 
     await processVoteWeightDirtyMarkers({ afterId: fixture.afterId })

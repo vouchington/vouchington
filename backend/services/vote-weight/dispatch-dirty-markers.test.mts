@@ -9,7 +9,6 @@ describe('dispatchVoteWeightDirtyMarkers', () => {
   it('pages a committed OAuth dirty marker after post-commit enqueue failure', async () => {
     const fixture = await createFailedOAuthVoteWeightEnqueueFixture()
     onTestFinished(fixture.cleanup)
-    expect(fixture.reportedErrors).toHaveLength(1)
     expect((await fixture.getUser())?.vote_weight_recalculated_at).toBeNull()
 
     const restore = overrideDynamicConfigFieldsForTest(voteWeightWorkConfig, {

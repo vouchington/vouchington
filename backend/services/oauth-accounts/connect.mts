@@ -13,18 +13,6 @@ import { createCodedError } from '@vouchington/sentry'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import { resolveConnectedFriendReferences } from './resolve-friend-reference-page.mts'
 
-type OAuthAccountConnectionPostCommitDependencies = {
-  enqueueVoteWeightRecalculation: typeof enqueueRecalculateUserVoteWeight
-  invalidateVerifiedEmail: typeof invalidateVerifiedEmailCache
-  reportError: typeof onError
-}
-
-const defaultPostCommitDependencies: OAuthAccountConnectionPostCommitDependencies = {
-  enqueueVoteWeightRecalculation: enqueueRecalculateUserVoteWeight,
-  invalidateVerifiedEmail: invalidateVerifiedEmailCache,
-  reportError: onError,
-}
-
 export async function connectOAuthAccountToUser(
   provider: OAuthProvider,
   userId: string,
@@ -157,19 +145,16 @@ export async function assertLockedOAuthAccountConnectionUserActive(
   return Object.freeze({ [activeConnectionUser]: true as const, query, userId })
 }
 
-export async function runOAuthAccountConnectionPostCommitEffects(
-  userId: string,
-  dependencies: OAuthAccountConnectionPostCommitDependencies = defaultPostCommitDependencies,
-): Promise<void> {
+export async function runOAuthAccountConnectionPostCommitEffects(userId: string): Promise<void> {
   try {
-    await dependencies.enqueueVoteWeightRecalculation(userId)
+    await enqueueRecalculateUserVoteWeight(userId)
   } catch (err) {
-    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
   try {
-    await dependencies.invalidateVerifiedEmail(userId)
+    await invalidateVerifiedEmailCache(userId)
   } catch (err) {
-    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
