@@ -1,298 +1,242 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
-  createTestUser,
-  setUserVerificationFields,
-  getUserVerificationState,
   countVerifiedIdentities,
-  getVerifiedIdentityByFingerprint,
+  createTestUser,
   getStoredVerifiedIdentityHash,
+  getTestUserRaw,
+  getUserVerificationState,
   insertTestVerifiedIdentity,
+  setUserVerificationFields,
 } from '@voucha/test-helpers'
+import { rejectNextBackgroundJobAddForTest } from '@voucha/test-helpers/injected-failures'
+import {
+  createIdentityPendingUser,
+  makeVerifiedResult,
+  observeUserCacheInvalidations,
+  observeUserElectionFanOuts,
+  stubIdentityFingerprintSecret,
+  USER_ELECTION_FAN_OUT_JOB_NAME,
+} from '@voucha/test-helpers/services/identity-verification/event-verified-fixtures'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { v7 } from 'uuid'
 import { onVerificationSessionVerified } from '../event-completion.mts'
-import { runVerifiedIdentityTransaction } from '../event-completion-txn.mts'
-import { beginTransactionWithLostVerificationStatus } from '@voucha/test-helpers/services/identity-verification/verification-status-race'
+import { computeIdentityFingerprint } from '../fingerprint.mts'
+import type { stripeIdentityProvider } from '../stripe-identity.mts'
 
-type VerificationResult = {
-  documentNumber?: string
-  documentType?: string
-  firstName?: string
-  fullName?: string
-  issuingCountry?: string
-  lastName?: string
-  outcome: 'failed' | 'requires_input' | 'verified'
+type VerificationResult = Awaited<ReturnType<typeof stripeIdentityProvider.getVerificationResult>>
+
+function deliver(
+  eventData: Record<string, unknown>,
+  result: VerificationResult,
+  eventId = 'evt_1',
+) {
+  const getVerificationResult = vi.fn<(sessionId: string) => Promise<VerificationResult>>(
+    async () => result,
+  )
+  return {
+    getVerificationResult,
+    done: onVerificationSessionVerified(eventId, eventData, { getVerificationResult }),
+  }
 }
 
-const mockGetVerificationResult = vi.fn<(sessionId: string) => Promise<VerificationResult>>()
-const mockFingerprint =
-  vi.fn<
-    (input: { documentNumber: string; documentType: string; issuingCountry: string }) => string
-  >()
-const mockInvalidateUsers = vi.fn<(userId: string) => Promise<void>>()
-
-function makeFingerprint(): string {
-  return v7().replaceAll('-', '').padEnd(64, '0')
+async function verifyOnce(userId: string, sessionId: string, result: VerificationResult) {
+  const { done } = deliver({ id: sessionId, metadata: { user_id: userId } }, result)
+  await done
 }
 
 describe('onVerificationSessionVerified', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockGetVerificationResult.mockResolvedValue({
-      outcome: 'verified',
-      firstName: 'Alice',
-      lastName: 'Smith',
-      fullName: 'Alice Smith',
-      documentNumber: 'X1234',
-      issuingCountry: 'US',
-      documentType: 'passport',
-    } as never)
-    mockInvalidateUsers.mockResolvedValue(undefined)
-  })
+  it('stores the hash and name fields, then refreshes weight, elections and caches', async () => {
+    stubIdentityFingerprintSecret()
+    const { user, sessionId } = await createIdentityPendingUser()
+    const result = makeVerifiedResult()
+    const invalidations = observeUserCacheInvalidations()
+    const fanOuts = observeUserElectionFanOuts()
 
-  it('inserts a verified_identities row and sets status to verified', async () => {
-    const user = await createTestUser()
-    const fingerprint = makeFingerprint()
-    mockFingerprint.mockReturnValue(fingerprint)
-    const sessionId = `vs_${v7()}`
-    await setUserVerificationFields(user.id, {
-      verificationStatus: 'identity_pending',
-      pendingVerificationSessionId: sessionId,
-    })
-
-    await onVerificationSessionVerified(
-      'evt_1',
-      {
-        id: sessionId,
-        metadata: { user_id: user.id, checkout_session_id: 'cs_abc' },
-      },
-      {
-        computeIdentityFingerprint: mockFingerprint as never,
-        getVerificationResult: mockGetVerificationResult as never,
-        invalidateUsers: mockInvalidateUsers as never,
-      },
+    const { getVerificationResult, done } = deliver(
+      { id: sessionId, metadata: { user_id: user.id, checkout_session_id: 'cs_abc' } },
+      result,
     )
+    await done
 
+    expect(getVerificationResult).toHaveBeenCalledExactlyOnceWith(sessionId)
     const state = await getUserVerificationState(user.id)
-    expect(state?.verification_status).toBe('verified')
-    expect(state?.pending_verification_session_id).toBeNull()
+    expect(state).toMatchObject({
+      verification_status: 'verified',
+      pending_verification_session_id: null,
+      pending_checkout_session_id: null,
+      verified_first_name: 'Alice',
+      verified_last_name_initial: 'S',
+      verified_full_name: 'Alice Smith',
+    })
     expect(await countVerifiedIdentities(user.id)).toBe(1)
+    const fingerprint = computeIdentityFingerprint(result)
     expect(await getStoredVerifiedIdentityHash(fingerprint)).toEqual(
       Buffer.from(fingerprint, 'hex'),
     )
+    expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at).toBeInstanceOf(Date)
+    expect(fanOuts.forUser(user.id)).toEqual([{ userId: user.id, cursor: null }])
+    expect(invalidations.forUser(user.id)).toEqual([[user.id]])
   })
 
-  it('discards an unverified new fingerprint after a lost final update so a later attempt can verify', async () => {
-    const user = await createTestUser()
-    const fingerprint = makeFingerprint()
-    const firstSession = `vs_${v7()}`
-    await setUserVerificationFields(user.id, {
-      verificationStatus: 'identity_pending',
-      pendingVerificationSessionId: firstSession,
+  it('sets duplicate_id when the same document is already active on another account', async () => {
+    stubIdentityFingerprintSecret()
+    const first = await createIdentityPendingUser()
+    const second = await createIdentityPendingUser()
+    const result = makeVerifiedResult()
+    await verifyOnce(first.user.id, first.sessionId, result)
+    expect((await getUserVerificationState(first.user.id))?.verification_status).toBe('verified')
+    const invalidations = observeUserCacheInvalidations()
+    const fanOuts = observeUserElectionFanOuts()
+
+    await verifyOnce(second.user.id, second.sessionId, result)
+
+    expect(await getUserVerificationState(second.user.id)).toMatchObject({
+      verification_status: 'duplicate_id',
+      pending_verification_session_id: null,
+      pending_checkout_session_id: null,
     })
-
-    const outcome = await runVerifiedIdentityTransaction(
-      firstSession,
-      user.id,
-      fingerprint,
-      'Alice',
-      'Smith',
-      'Alice Smith',
-      { beginTransaction: beginTransactionWithLostVerificationStatus(user.id) },
-    )
-    expect(outcome).toBe('noop')
-    expect((await getUserVerificationState(user.id))?.verification_status).toBe('failed')
-    expect(await countVerifiedIdentities(user.id)).toBe(0)
-    expect(await getStoredVerifiedIdentityHash(fingerprint)).toBeNull()
-
-    const secondSession = `vs_${v7()}`
-    await setUserVerificationFields(user.id, {
-      verificationStatus: 'identity_pending',
-      pendingVerificationSessionId: secondSession,
-    })
-    expect(
-      await runVerifiedIdentityTransaction(
-        secondSession,
-        user.id,
-        fingerprint,
-        'Alice',
-        'Smith',
-        'Alice Smith',
-      ),
-    ).toBe('verified')
-    expect(await getStoredVerifiedIdentityHash(fingerprint)).toEqual(
-      Buffer.from(fingerprint, 'hex'),
-    )
-  })
-
-  it('persists verified name fields', async () => {
-    const user = await createTestUser()
-    const fingerprint = makeFingerprint()
-    mockFingerprint.mockReturnValue(fingerprint)
-    const sessionId = `vs_${v7()}`
-    const checkoutSessionId = `cs_${v7()}`
-    await setUserVerificationFields(user.id, {
-      verificationStatus: 'identity_pending',
-      pendingVerificationSessionId: sessionId,
-      pendingCheckoutSessionId: checkoutSessionId,
-    })
-
-    await onVerificationSessionVerified(
-      'evt_1',
-      {
-        id: sessionId,
-        metadata: { user_id: user.id },
-      },
-      {
-        computeIdentityFingerprint: mockFingerprint as never,
-        getVerificationResult: mockGetVerificationResult as never,
-        invalidateUsers: mockInvalidateUsers as never,
-      },
-    )
-
-    const state = await getUserVerificationState(user.id)
-    expect(state?.verified_first_name).toBe('Alice')
-    expect(state?.verified_last_name_initial).toBe('S')
-    expect(state?.verified_full_name).toBe('Alice Smith')
-  })
-
-  it('sets duplicate_id status when the same fingerprint is already active on another account', async () => {
-    const user1 = await createTestUser()
-    const user2 = await createTestUser()
-    const fingerprint = makeFingerprint()
-    mockFingerprint.mockReturnValue(fingerprint)
-
-    const session1 = `vs_${v7()}`
-    const checkout1 = `cs_${v7()}`
-    await setUserVerificationFields(user1.id, {
-      verificationStatus: 'identity_pending',
-      pendingVerificationSessionId: session1,
-      pendingCheckoutSessionId: checkout1,
-    })
-    await onVerificationSessionVerified(
-      'evt_1',
-      {
-        id: session1,
-        metadata: { user_id: user1.id },
-      },
-      {
-        computeIdentityFingerprint: mockFingerprint as never,
-        getVerificationResult: mockGetVerificationResult as never,
-        invalidateUsers: mockInvalidateUsers as never,
-      },
-    )
-    expect((await getUserVerificationState(user1.id))?.verification_status).toBe('verified')
-
-    const session2 = `vs_${v7()}`
-    const checkout2 = `cs_${v7()}`
-    await setUserVerificationFields(user2.id, {
-      verificationStatus: 'identity_pending',
-      pendingVerificationSessionId: session2,
-      pendingCheckoutSessionId: checkout2,
-    })
-    await onVerificationSessionVerified(
-      'evt_2',
-      {
-        id: session2,
-        metadata: { user_id: user2.id },
-      },
-      {
-        computeIdentityFingerprint: mockFingerprint as never,
-        getVerificationResult: mockGetVerificationResult as never,
-        invalidateUsers: mockInvalidateUsers as never,
-      },
-    )
-
-    const state2 = await getUserVerificationState(user2.id)
-    expect(state2?.verification_status).toBe('duplicate_id')
-    expect(state2?.pending_verification_session_id).toBeNull()
-    expect(await countVerifiedIdentities(user2.id)).toBe(0)
+    expect(await countVerifiedIdentities(second.user.id)).toBe(0)
+    expect(fanOuts.forUser(second.user.id)).toEqual([])
+    expect(invalidations.forUser(second.user.id)).toEqual([[second.user.id]])
   })
 
   it('rejects a document after its first account was deleted while retaining only the hash', async () => {
+    stubIdentityFingerprintSecret()
+    const result = makeVerifiedResult()
     const priorUser = await createTestUser()
-    const fingerprint = makeFingerprint()
+    const fingerprint = computeIdentityFingerprint(result)
     await insertTestVerifiedIdentity(priorUser.id, fingerprint, `vs_${v7()}`)
     await setUserVerificationFields(priorUser.id, { verificationStatus: 'verified' })
     await deleteUserAndDrainForTest(priorUser, priorUser)
-    expect(await getVerifiedIdentityByFingerprint(fingerprint)).toMatchObject({
-      user_id: null,
-      status: 'revoked',
-    })
+    const next = await createIdentityPendingUser()
 
-    const nextUser = await createTestUser()
-    const sessionId = `vs_${v7()}`
-    await setUserVerificationFields(nextUser.id, {
-      verificationStatus: 'identity_pending',
-      pendingVerificationSessionId: sessionId,
-    })
-    mockFingerprint.mockReturnValue(fingerprint)
-    await onVerificationSessionVerified(
-      'evt_reuse',
-      { id: sessionId, metadata: { user_id: nextUser.id } },
-      {
-        computeIdentityFingerprint: mockFingerprint as never,
-        getVerificationResult: mockGetVerificationResult as never,
-        invalidateUsers: mockInvalidateUsers as never,
-      },
-    )
-    expect((await getUserVerificationState(nextUser.id))?.verification_status).toBe('duplicate_id')
-    expect(await countVerifiedIdentities(nextUser.id)).toBe(0)
+    await verifyOnce(next.user.id, next.sessionId, result)
+
+    expect((await getUserVerificationState(next.user.id))?.verification_status).toBe('duplicate_id')
+    expect(await countVerifiedIdentities(next.user.id)).toBe(0)
   })
 
-  it('is idempotent on re-delivery with the same session ID', async () => {
-    const user = await createTestUser()
-    const fingerprint = makeFingerprint()
-    mockFingerprint.mockReturnValue(fingerprint)
-    const sessionId = `vs_${v7()}`
-    const checkoutSessionId = `cs_${v7()}`
-    await setUserVerificationFields(user.id, {
-      verificationStatus: 'identity_pending',
-      pendingVerificationSessionId: sessionId,
-      pendingCheckoutSessionId: checkoutSessionId,
-    })
-
+  it('replays a delivery by repeating the refreshes without a second Stripe read or link', async () => {
+    stubIdentityFingerprintSecret()
+    const { user, sessionId } = await createIdentityPendingUser()
     const eventData = { id: sessionId, metadata: { user_id: user.id } }
-    await onVerificationSessionVerified('evt_1', eventData, {
-      computeIdentityFingerprint: mockFingerprint as never,
-      getVerificationResult: mockGetVerificationResult as never,
-      invalidateUsers: mockInvalidateUsers as never,
-    })
-    await onVerificationSessionVerified('evt_1', eventData, {
-      computeIdentityFingerprint: mockFingerprint as never,
-      getVerificationResult: mockGetVerificationResult as never,
-      invalidateUsers: mockInvalidateUsers as never,
-    })
+    const first = deliver(eventData, makeVerifiedResult())
+    await first.done
+    const invalidations = observeUserCacheInvalidations()
+    const fanOuts = observeUserElectionFanOuts()
 
+    const replay = deliver(eventData, makeVerifiedResult())
+    await replay.done
+
+    expect(replay.getVerificationResult).not.toHaveBeenCalled()
     expect(await countVerifiedIdentities(user.id)).toBe(1)
     expect((await getUserVerificationState(user.id))?.verification_status).toBe('verified')
+    expect(fanOuts.forUser(user.id)).toEqual([{ userId: user.id, cursor: null }])
+    expect(invalidations.forUser(user.id)).toEqual([[user.id]])
   })
 
-  it('sets verification_status to failed when field extraction fails (outcome = failed)', async () => {
-    mockGetVerificationResult.mockResolvedValue({ outcome: 'failed' } as never)
-    const user = await createTestUser()
-    const sessionId = `vs_${v7()}`
-    await setUserVerificationFields(user.id, {
-      verificationStatus: 'identity_pending',
-      pendingVerificationSessionId: sessionId,
-    })
-
-    await onVerificationSessionVerified(
-      'evt_1',
-      {
-        id: sessionId,
-        metadata: { user_id: user.id },
-      },
-      {
-        computeIdentityFingerprint: mockFingerprint as never,
-        getVerificationResult: mockGetVerificationResult as never,
-        invalidateUsers: mockInvalidateUsers as never,
-      },
+  it('repairs the election enqueue on a retry after the queue was unavailable', async () => {
+    stubIdentityFingerprintSecret()
+    const { user, sessionId } = await createIdentityPendingUser()
+    const eventData = { id: sessionId, metadata: { user_id: user.id } }
+    const restore = rejectNextBackgroundJobAddForTest(
+      USER_ELECTION_FAN_OUT_JOB_NAME,
+      new Error('temporary queue outage'),
     )
 
-    const state = await getUserVerificationState(user.id)
-    expect(state?.verification_status).toBe('failed')
-    expect(state?.pending_verification_session_id).toBeNull()
-    expect(await countVerifiedIdentities(user.id)).toBe(0)
+    const failed = deliver(eventData, makeVerifiedResult())
+    await expect(failed.done).rejects.toThrow('temporary queue outage')
+    restore()
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('verified')
+    const invalidations = observeUserCacheInvalidations()
+    const fanOuts = observeUserElectionFanOuts()
+
+    await deliver(eventData, makeVerifiedResult(), 'evt_2').done
+
+    expect(invalidations.forUser(user.id)).toEqual([[user.id]])
+    expect(fanOuts.forUser(user.id)).toEqual([{ userId: user.id, cursor: null }])
+    expect(failed.getVerificationResult).toHaveBeenCalledOnce()
+  })
+
+  it('repairs committed side effects when the retry has redacted metadata', async () => {
+    stubIdentityFingerprintSecret()
+    const { user, sessionId } = await createIdentityPendingUser()
+    await verifyOnce(user.id, sessionId, makeVerifiedResult())
+    const invalidations = observeUserCacheInvalidations()
+    const fanOuts = observeUserElectionFanOuts()
+
+    const retry = deliver({ id: sessionId, metadata: {} }, makeVerifiedResult(), 'evt_retry')
+    await retry.done
+
+    expect(retry.getVerificationResult).not.toHaveBeenCalled()
+    expect(fanOuts.forUser(user.id)).toEqual([{ userId: user.id, cursor: null }])
+    expect(invalidations.forUser(user.id)).toEqual([[user.id]])
+  })
+
+  it.each(['failed', 'requires_input'] as const)(
+    'moves the user to failed and invalidates when the outcome is %s',
+    async outcome => {
+      const { user, sessionId } = await createIdentityPendingUser()
+      const invalidations = observeUserCacheInvalidations()
+      const fanOuts = observeUserElectionFanOuts()
+
+      const { getVerificationResult, done } = deliver(
+        { id: sessionId, metadata: { user_id: user.id } },
+        { outcome },
+      )
+      await done
+
+      expect(getVerificationResult).toHaveBeenCalledExactlyOnceWith(sessionId)
+      expect(await getUserVerificationState(user.id)).toMatchObject({
+        verification_status: 'failed',
+        pending_verification_session_id: null,
+        pending_checkout_session_id: null,
+      })
+      expect(await countVerifiedIdentities(user.id)).toBe(0)
+      expect(fanOuts.forUser(user.id)).toEqual([])
+      expect(invalidations.forUser(user.id)).toEqual([[user.id]])
+    },
+  )
+
+  it('looks the user up by session id when metadata.user_id is absent', async () => {
+    stubIdentityFingerprintSecret()
+    const { user, sessionId } = await createIdentityPendingUser()
+    const invalidations = observeUserCacheInvalidations()
+
+    await deliver({ id: sessionId, metadata: {} }, makeVerifiedResult()).done
+
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('verified')
+    expect(invalidations.forUser(user.id)).toEqual([[user.id]])
+  })
+
+  it('does nothing when the session id is absent or matches no user', async () => {
+    const { user } = await createIdentityPendingUser()
+    const missingId = deliver({ metadata: { user_id: user.id } }, { outcome: 'failed' })
+    const unknownSession = deliver({ id: `vs_${v7()}`, metadata: {} }, { outcome: 'failed' })
+    await missingId.done
+    await unknownSession.done
+
+    expect(missingId.getVerificationResult).not.toHaveBeenCalled()
+    expect(unknownSession.getVerificationResult).not.toHaveBeenCalled()
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('identity_pending')
+  })
+
+  it('does nothing when the user is not identity_pending for this session', async () => {
+    const { user, sessionId } = await createIdentityPendingUser()
+    await setUserVerificationFields(user.id, {
+      verificationStatus: 'unverified',
+      pendingVerificationSessionId: null,
+    })
+    const invalidations = observeUserCacheInvalidations()
+
+    const { getVerificationResult, done } = deliver(
+      { id: sessionId, metadata: { user_id: user.id } },
+      { outcome: 'failed' },
+    )
+    await done
+
+    expect(getVerificationResult).not.toHaveBeenCalled()
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('unverified')
+    expect(invalidations.forUser(user.id)).toEqual([])
   })
 })

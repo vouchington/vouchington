@@ -1,10 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-type VerifiedIdentityTransactionDependencies = {
-  beginTransaction: typeof beginTransaction
-}
-
 /**
  * Runs the full verified-identity transaction: idempotency check, guard, fingerprint
  * collision check, verified_identities insert, and users status update.
@@ -17,10 +13,8 @@ export async function runVerifiedIdentityTransaction(
   firstName: string | null,
   lastName: string | null,
   fullName: string | null,
-  dependencies?: Partial<VerifiedIdentityTransactionDependencies>,
 ): Promise<'verified' | 'already_verified' | 'duplicate' | 'noop'> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   async function completeVerifiedIdentityInTransaction(query: typeof transaction) {
     // Check whether we already processed this exact session (idempotent re-delivery)
     const { rows: existingRows } = await query(sql`/* onVerificationSessionVerified:existing */

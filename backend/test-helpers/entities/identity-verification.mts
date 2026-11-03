@@ -128,7 +128,10 @@ export async function getStoredVerifiedIdentityHash(fingerprint: string): Promis
 }
 
 export type IdentityVerificationAttemptState = {
+  checkout_claimed_at: Date | null
   checkout_session_id: string | null
+  provider_creation_started_at: Date | null
+  provider_session_id: string | null
   consumed_at: Date | null
   grant_entitlement_attempt_id: string | null
   granted_by_id: string | null
@@ -142,7 +145,8 @@ export async function getIdentityVerificationAttemptStates(
   userId: string,
 ): Promise<IdentityVerificationAttemptState[]> {
   const { rows } = await read(sql`/* getIdentityVerificationAttemptStates */
-    SELECT id, source, grant_entitlement_attempt_id, granted_by_id, checkout_session_id, released_at, consumed_at
+    SELECT id, source, grant_entitlement_attempt_id, granted_by_id, checkout_session_id, released_at, consumed_at,
+      checkout_claimed_at, provider_creation_started_at, provider_session_id
     FROM identity_verification_attempts
     WHERE user_id = ${userId}
     ORDER BY id
@@ -181,4 +185,15 @@ export async function getVerifiedIdentityByFingerprint(fingerprint: string): Pro
         }
       | undefined) ?? null
   )
+}
+
+/** Commit an attempt's Checkout claim, as a claim whose acknowledgement was lost would have. */
+export async function markIdentityVerificationAttemptCheckoutClaimed(
+  checkoutSessionId: string,
+): Promise<void> {
+  await write(sql`/* markIdentityVerificationAttemptCheckoutClaimed */
+    UPDATE identity_verification_attempts
+    SET checkout_claimed_at = CURRENT_TIMESTAMP
+    WHERE checkout_session_id = ${checkoutSessionId}
+  `)
 }

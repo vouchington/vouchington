@@ -7,13 +7,7 @@ import { runVerifiedIdentityTransaction } from './event-completion-txn.mts'
 import { enqueueElectionUpdatesForUser, recalculateUserVoteWeight } from '@services/vote-weight'
 
 type VerificationSessionDependencies = {
-  computeIdentityFingerprint: typeof computeIdentityFingerprint
   getVerificationResult: typeof stripeIdentityProvider.getVerificationResult
-  invalidateUsers: typeof invalidate.users
-  runVerifiedIdentityTransaction: typeof runVerifiedIdentityTransaction
-  recalculateUserVoteWeight: typeof recalculateUserVoteWeight
-  enqueueElectionUpdatesForUser: typeof enqueueElectionUpdatesForUser
-  beginTransaction: typeof beginTransaction
 }
 
 /**
@@ -28,16 +22,8 @@ export async function onVerificationSessionVerified(
   eventData: Record<string, unknown>,
   dependencies?: Partial<VerificationSessionDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
   const getVerificationResult =
     dependencies?.getVerificationResult ?? stripeIdentityProvider.getVerificationResult
-  const computeFingerprint = dependencies?.computeIdentityFingerprint ?? computeIdentityFingerprint
-  const runVerifiedTransaction =
-    dependencies?.runVerifiedIdentityTransaction ?? runVerifiedIdentityTransaction
-  const invalidateUsers = dependencies?.invalidateUsers ?? invalidate.users
-  const recalculateVoteWeight = dependencies?.recalculateUserVoteWeight ?? recalculateUserVoteWeight
-  const enqueueElectionUpdates =
-    dependencies?.enqueueElectionUpdatesForUser ?? enqueueElectionUpdatesForUser
   const sessionId = eventData.id as string | undefined
   if (!sessionId) return
 
@@ -47,7 +33,7 @@ export async function onVerificationSessionVerified(
   let userId = metadata?.user_id
 
   if (!userId) {
-    await using transaction = await begin()
+    await using transaction = await beginTransaction()
     const { rows: fallbackRows } =
       await transaction(sql`/* onVerificationSessionVerified:user-fallback */
         SELECT id FROM users
@@ -70,7 +56,7 @@ export async function onVerificationSessionVerified(
   // Check a committed identity before the pending-state guard. Stripe retries after an external
   // side effect fails, so a later delivery must repair the vote-weight refresh and election enqueue
   // even though the durable identity transition has already cleared the pending session.
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   const { rows: preRows } = await transaction(sql`/* onVerificationSessionVerified:pre-guard */
       SELECT verification_status, pending_verification_session_id,
         EXISTS (
@@ -91,9 +77,9 @@ export async function onVerificationSessionVerified(
     | undefined
   if (!preRow) return
   if (preRow.identity_committed) {
-    const { changed } = await recalculateVoteWeight(userId, { readFromWriter: true })
-    if (changed || preRow.identity_committed) await enqueueElectionUpdates(userId)
-    await invalidateUsers(userId)
+    const { changed } = await recalculateUserVoteWeight(userId, { readFromWriter: true })
+    if (changed || preRow.identity_committed) await enqueueElectionUpdatesForUser(userId)
+    await invalidate.users(userId)
     return
   }
   if (
@@ -109,7 +95,7 @@ export async function onVerificationSessionVerified(
   // must be transitioned out of identity_pending — there is no subsequent lifecycle event
   // that would clear it. Transition to 'failed' so the user can restart.
   if (result.outcome === 'failed' || result.outcome === 'requires_input') {
-    await using transaction = await begin()
+    await using transaction = await beginTransaction()
     const { rowCount } = await transaction(sql`/* onVerificationSessionVerified:extract-failed */
         UPDATE users
         SET verification_status = 'failed',
@@ -122,7 +108,7 @@ export async function onVerificationSessionVerified(
           AND pending_verification_session_id = ${sessionId}
       `)
     await transaction.commit()
-    if (rowCount) await invalidateUsers(userId)
+    if (rowCount) await invalidate.users(userId)
     return
   }
 
@@ -130,26 +116,25 @@ export async function onVerificationSessionVerified(
 
   const { firstName, lastName, fullName, documentNumber, issuingCountry, documentType } = result
 
-  const fingerprint = computeFingerprint({ issuingCountry, documentType, documentNumber })
+  const fingerprint = computeIdentityFingerprint({ issuingCountry, documentType, documentNumber })
   // documentNumber is no longer referenced after this line — it must not be logged or stored.
 
-  const outcome = await runVerifiedTransaction(
+  const outcome = await runVerifiedIdentityTransaction(
     sessionId,
     userId,
     fingerprint,
     firstName,
     lastName,
     fullName,
-    { beginTransaction: begin },
   )
 
   if (outcome === 'noop') return
 
   if (outcome === 'verified' || outcome === 'already_verified') {
-    const { changed } = await recalculateVoteWeight(userId, { readFromWriter: true })
+    const { changed } = await recalculateUserVoteWeight(userId, { readFromWriter: true })
     // Replays must enqueue too: a prior delivery may have committed the identity
     // transaction and weight but failed before the aggregate refresh was enqueued.
-    if (changed || outcome === 'already_verified') await enqueueElectionUpdates(userId)
+    if (changed || outcome === 'already_verified') await enqueueElectionUpdatesForUser(userId)
   }
-  await invalidateUsers(userId)
+  await invalidate.users(userId)
 }

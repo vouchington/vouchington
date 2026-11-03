@@ -1,277 +1,212 @@
-import { createTransactionResource } from '../../../test-helpers/services/identity-verification/transaction-resource.mts'
-import { makePrivateUser } from '../../../test-helpers/services/identity-verification/start-test-fixtures.mts'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { beginTransaction } from '@voucha/test-helpers'
-import type { assertEligibleForIdentityVerification } from '../eligibility.mts'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  createTestMembership,
+  createTestUser,
+  getIdentityVerificationAttemptStates,
+  getUserVerificationState,
+  markIdentityVerificationAttemptCheckoutClaimed,
+  setUserVerificationFields,
+} from '@voucha/test-helpers'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
+import { observeUserCacheInvalidations } from '@voucha/test-helpers/services/identity-verification/event-verified-fixtures'
+import {
+  IDENTITY_VERIFICATION_CURRENCY,
+  IDENTITY_VERIFICATION_FEE_MINOR_UNITS,
+} from '@voucha/config'
+import { v7 } from 'uuid'
 import { startIdentityVerification } from '../start.mts'
 
-type StartIdentityVerificationDependencies = Required<
-  NonNullable<Parameters<typeof startIdentityVerification>[2]>
->
+type CreateIdentityCheckoutSession = Parameters<
+  typeof startIdentityVerification
+>[2]['createIdentityCheckoutSession']
 
-const mockBeginTransaction = vi.fn<typeof beginTransaction>()
-const mockInvalidateUsers = vi.fn<(userId: string) => Promise<void>>()
-const mockAssertEligible = vi.fn<typeof assertEligibleForIdentityVerification>()
-const mockCreateIdentityCheckoutSession =
-  vi.fn<StartIdentityVerificationDependencies['createIdentityCheckoutSession']>()
-const mockReserveAttempt = vi.fn<StartIdentityVerificationDependencies['reserveAttempt']>()
-const mockAttachCheckout = vi.fn<StartIdentityVerificationDependencies['attachCheckoutToAttempt']>()
-const mockReleaseAttempt = vi.fn<StartIdentityVerificationDependencies['releaseAttempt']>()
-const mockReleaseAttachedAttempt =
-  vi.fn<StartIdentityVerificationDependencies['releaseAttachedAttempt']>()
-let mockQuery: ReturnType<typeof vi.fn<VitestLooseMock>>
+const opts = { successUrl: 'https://example.com/success', cancelUrl: 'https://example.com/cancel' }
 
-function startIdentityVerificationForTest(
-  currentUser: Parameters<typeof startIdentityVerification>[0],
-  opts: Parameters<typeof startIdentityVerification>[1],
-  dependencies: Partial<StartIdentityVerificationDependencies> = {},
-) {
-  return startIdentityVerification(currentUser, opts, {
-    assertEligibleForIdentityVerification: mockAssertEligible,
-    beginTransaction: mockBeginTransaction as never,
-    invalidateUsers: mockInvalidateUsers as never,
-    reserveAttempt: mockReserveAttempt,
-    attachCheckoutToAttempt: mockAttachCheckout,
-    releaseAttempt: mockReleaseAttempt,
-    releaseAttachedAttempt: mockReleaseAttachedAttempt,
-    ...dependencies,
-    createIdentityCheckoutSession:
-      dependencies.createIdentityCheckoutSession ?? mockCreateIdentityCheckoutSession,
-  })
-}
-
-function queryText(query: unknown): string {
-  return (query as { text: string }).text
-}
-
-function mockAmbiguousClaimRecovery({
-  checkoutClaimedAt,
-  pendingVerificationSessionId,
-}: {
-  checkoutClaimedAt: Date | null
-  pendingVerificationSessionId: string | null
-}) {
-  mockQuery = vi.fn<VitestLooseMock>()
-  mockBeginTransaction
-    .mockRejectedValueOnce(new Error('database unavailable'))
-    .mockImplementationOnce(async () =>
-      createTransactionResource(
-        mockQuery.mockResolvedValue({
-          rows: [
-            {
-              checkout_claimed_at: checkoutClaimedAt,
-              pending_verification_session_id: pendingVerificationSessionId,
-            },
-          ],
-        }) as never,
-      ),
-    )
+function makeCheckout(url: string | null = 'https://checkout.stripe.com/pay/cs_test') {
+  const checkoutId = `cs_${v7()}`
+  const createIdentityCheckoutSession = vi.fn<CreateIdentityCheckoutSession>(
+    async () => ({ id: checkoutId, url }) as never,
+  )
+  return { checkoutId, createIdentityCheckoutSession }
 }
 
 describe('startIdentityVerification', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockAssertEligible.mockResolvedValue(undefined)
-    mockInvalidateUsers.mockResolvedValue(undefined)
-    mockQuery = vi.fn<VitestLooseMock>().mockResolvedValue({ rows: [{ claim_committed: true }] })
-    mockBeginTransaction.mockImplementation(async () =>
-      createTransactionResource(mockQuery as never),
-    )
-    mockCreateIdentityCheckoutSession.mockResolvedValue({
-      id: 'cs_test',
-      url: 'https://checkout.stripe.com/pay/cs_test',
-    } as never)
-    mockReserveAttempt.mockResolvedValue({
-      id: 'attempt-1',
+  it('claims payment_pending for the exact attempt and returns the checkout URL', async () => {
+    const user = await createTestUser()
+    const { checkoutId, createIdentityCheckoutSession } = makeCheckout()
+    const invalidations = observeUserCacheInvalidations()
+
+    const result = await startIdentityVerification(user, opts, { createIdentityCheckoutSession })
+
+    expect(result).toEqual({ url: 'https://checkout.stripe.com/pay/cs_test' })
+    const [attempt] = await getIdentityVerificationAttemptStates(user.id)
+    expect(attempt).toMatchObject({
       source: 'self_paid',
-      amountMinorUnits: 500,
+      checkout_session_id: checkoutId,
+      checkout_claimed_at: expect.any(Date),
+      released_at: null,
     })
-    mockAttachCheckout.mockResolvedValue(undefined)
-    mockReleaseAttempt.mockResolvedValue(undefined)
-    mockReleaseAttachedAttempt.mockResolvedValue(undefined)
-  })
-
-  it('returns the checkout URL on success', async () => {
-    const user = makePrivateUser()
-    const result = await startIdentityVerificationForTest(user, {
-      successUrl: 'https://example.com/success',
-      cancelUrl: 'https://example.com/cancel',
+    expect(createIdentityCheckoutSession).toHaveBeenCalledExactlyOnceWith({
+      userId: user.id,
+      email: user.email_address,
+      priceAmountMinorUnits: IDENTITY_VERIFICATION_FEE_MINOR_UNITS,
+      currency: IDENTITY_VERIFICATION_CURRENCY,
+      productName: 'Identity Verification',
+      successUrl: opts.successUrl,
+      cancelUrl: opts.cancelUrl,
+      metadata: {
+        intent: 'identity-verification',
+        user_id: user.id,
+        identity_verification_attempt_id: attempt!.id,
+      },
     })
-    expect(result.url).toBe('https://checkout.stripe.com/pay/cs_test')
-    expect(mockCreateIdentityCheckoutSession).toHaveBeenCalledTimes(1)
-    expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
-    expect(mockAssertEligible).toHaveBeenCalledWith(user)
-    expect(mockInvalidateUsers).toHaveBeenCalledWith(user.id)
-    expect(queryText(mockQuery.mock.calls[0]![0])).toContain(
-      'checkout_claimed_at = CURRENT_TIMESTAMP',
-    )
-  })
-
-  it('continues to the Checkout URL after attachment recovery succeeds', async () => {
-    await expect(
-      startIdentityVerificationForTest(makePrivateUser(), {
-        successUrl: 'https://example.com/success',
-        cancelUrl: 'https://example.com/cancel',
-      }),
-    ).resolves.toEqual({ url: 'https://checkout.stripe.com/pay/cs_test' })
-    expect(mockReleaseAttempt).not.toHaveBeenCalled()
-  })
-
-  it('includes intent and user_id in checkout session metadata', async () => {
-    const user = makePrivateUser({ id: 'user-xyz' })
-    await startIdentityVerificationForTest(user, {
-      successUrl: 'https://example.com/success',
-      cancelUrl: 'https://example.com/cancel',
+    expect(await getUserVerificationState(user.id)).toMatchObject({
+      verification_status: 'payment_pending',
+      verification_provider: 'stripe_identity',
+      pending_verification_session_id: checkoutId,
+      pending_checkout_session_id: null,
     })
-    expect(mockCreateIdentityCheckoutSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        metadata: expect.objectContaining({
-          intent: 'identity-verification',
-          user_id: 'user-xyz',
-        }),
-      }),
-    )
+    expect(invalidations.forUser(user.id)).toEqual([[user.id]])
   })
 
   it('creates a zero-dollar Checkout for a membership-included attempt', async () => {
-    mockReserveAttempt.mockResolvedValue({
-      id: 'attempt-included',
-      source: 'membership_included',
-      amountMinorUnits: 0,
+    const user = await createTestUser()
+    await createTestMembership({ user_id: user.id, plan: 'plus', status: 'active' })
+    const { createIdentityCheckoutSession } = makeCheckout()
+
+    await startIdentityVerification(user, opts, { createIdentityCheckoutSession })
+
+    expect(createIdentityCheckoutSession).toHaveBeenCalledOnce()
+    expect(createIdentityCheckoutSession.mock.calls[0]![0]).toMatchObject({
+      priceAmountMinorUnits: 0,
     })
-    await startIdentityVerificationForTest(makePrivateUser(), {
-      successUrl: 'https://example.com/success',
-      cancelUrl: 'https://example.com/cancel',
-    })
-    expect(mockCreateIdentityCheckoutSession).toHaveBeenCalledWith(
-      expect.objectContaining({ priceAmountMinorUnits: 0 }),
-    )
   })
 
-  it('releases a reservation when Checkout creation fails', async () => {
-    mockCreateIdentityCheckoutSession.mockRejectedValue(new Error('Stripe unavailable'))
+  it('still returns the URL when cache invalidation fails (session already live)', async () => {
+    const user = await createTestUser()
+    const { createIdentityCheckoutSession } = makeCheckout()
+    const invalidations = observeUserCacheInvalidations()
+    invalidations.spy.mockRejectedValueOnce(new Error('cache down'))
+
     await expect(
-      startIdentityVerificationForTest(makePrivateUser(), {
-        successUrl: 'https://example.com/success',
-        cancelUrl: 'https://example.com/cancel',
-      }),
+      startIdentityVerification(user, opts, { createIdentityCheckoutSession }),
+    ).resolves.toEqual({ url: 'https://checkout.stripe.com/pay/cs_test' })
+
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('payment_pending')
+  })
+
+  it('propagates an eligibility error without touching Stripe or an attempt', async () => {
+    const user = await createTestUser()
+    await setUserVerificationFields(user.id, { verificationStatus: 'verified' })
+    const verified = { ...user, verification_status: 'verified' as const }
+    const { createIdentityCheckoutSession } = makeCheckout()
+
+    await expect(
+      startIdentityVerification(verified, opts, { createIdentityCheckoutSession }),
+    ).rejects.toMatchObject({ status: 409, message: 'Your account is already verified.' })
+
+    expect(createIdentityCheckoutSession).not.toHaveBeenCalled()
+    expect(await getIdentityVerificationAttemptStates(user.id)).toEqual([])
+  })
+
+  it('releases the reservation and leaves the user unchanged when Checkout creation fails', async () => {
+    const user = await createTestUser()
+    const createIdentityCheckoutSession = vi.fn<CreateIdentityCheckoutSession>(async () => {
+      throw new Error('Stripe unavailable')
+    })
+
+    await expect(
+      startIdentityVerification(user, opts, { createIdentityCheckoutSession }),
     ).rejects.toThrow('Stripe unavailable')
-    expect(mockReleaseAttempt).toHaveBeenCalledWith('attempt-1')
+
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      { checkout_session_id: null, released_at: expect.any(Date) },
+    ])
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('unverified')
   })
 
-  it('propagates errors from assertEligible without touching Stripe or DB', async () => {
-    mockAssertEligible.mockRejectedValue(new Error('Suspended'))
-    const user = makePrivateUser()
+  it('releases the reservation when the Stripe session has no URL', async () => {
+    const user = await createTestUser()
+    const { createIdentityCheckoutSession } = makeCheckout(null)
+
     await expect(
-      startIdentityVerificationForTest(user, {
-        successUrl: 'https://example.com/success',
-        cancelUrl: 'https://example.com/cancel',
-      }),
-    ).rejects.toThrow('Suspended')
-    expect(mockCreateIdentityCheckoutSession).not.toHaveBeenCalled()
-    expect(mockBeginTransaction).not.toHaveBeenCalled()
+      startIdentityVerification(user, opts, { createIdentityCheckoutSession }),
+    ).rejects.toThrow('missing URL')
+
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      { checkout_session_id: null, released_at: expect.any(Date) },
+    ])
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('unverified')
   })
 
-  it('throws 409 when its attempt was not durably claimed', async () => {
-    const mockQuery = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValue({ rows: [{ claim_committed: false }] })
-    mockBeginTransaction.mockImplementation(async () =>
-      createTransactionResource(mockQuery as never),
+  it('throws 409 and releases the attached attempt when its claim was not durably made', async () => {
+    const user = await createTestUser()
+    const { checkoutId, createIdentityCheckoutSession } = makeCheckout()
+    onTestFinished(
+      runBeforePostgresStatementForTest('startIdentityVerification:claim-and-persist', async () => {
+        await setUserVerificationFields(user.id, { verificationStatus: 'identity_pending' })
+      }),
     )
-    const user = makePrivateUser()
+    const invalidations = observeUserCacheInvalidations()
+
     await expect(
-      startIdentityVerificationForTest(user, {
-        successUrl: 'https://example.com/success',
-        cancelUrl: 'https://example.com/cancel',
-      }),
+      startIdentityVerification(user, opts, { createIdentityCheckoutSession }),
     ).rejects.toMatchObject({ status: 409 })
-    expect(mockInvalidateUsers).not.toHaveBeenCalled()
-    expect(mockReleaseAttachedAttempt).toHaveBeenCalledWith('attempt-1', 'cs_test')
+
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      {
+        checkout_session_id: checkoutId,
+        checkout_claimed_at: null,
+        released_at: expect.any(Date),
+      },
+    ])
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('identity_pending')
+    expect(invalidations.forUser(user.id)).toEqual([])
   })
 
-  it('returns the just-created Checkout URL when an ambiguous committed claim has redacted metadata', async () => {
-    mockAmbiguousClaimRecovery({
-      checkoutClaimedAt: new Date(),
-      pendingVerificationSessionId: null,
-    })
+  it('returns the just-created Checkout URL when an ambiguous claim failure had committed', async () => {
+    const user = await createTestUser()
+    const { checkoutId, createIdentityCheckoutSession } = makeCheckout()
+    onTestFinished(
+      runBeforePostgresStatementForTest('startIdentityVerification:claim-and-persist', async () => {
+        await markIdentityVerificationAttemptCheckoutClaimed(checkoutId)
+        throw new Error('acknowledgement lost')
+      }),
+    )
+    const invalidations = observeUserCacheInvalidations()
 
     await expect(
-      startIdentityVerificationForTest(makePrivateUser(), {
-        successUrl: 'https://example.com/success',
-        cancelUrl: 'https://example.com/cancel',
-      }),
+      startIdentityVerification(user, opts, { createIdentityCheckoutSession }),
     ).resolves.toEqual({ url: 'https://checkout.stripe.com/pay/cs_test' })
-    expect(mockReleaseAttachedAttempt).not.toHaveBeenCalled()
-    expect(queryText(mockQuery.mock.calls[0]![0])).toContain('WHERE id = $1')
+
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      { checkout_session_id: checkoutId, checkout_claimed_at: expect.any(Date), released_at: null },
+    ])
+    expect(invalidations.forUser(user.id)).toEqual([[user.id]])
   })
 
-  it('returns the just-created Checkout URL when another attempt replaced user session metadata', async () => {
-    mockAmbiguousClaimRecovery({
-      checkoutClaimedAt: new Date(),
-      pendingVerificationSessionId: 'cs_winner',
-    })
+  it('releases the attached attempt and rethrows when an ambiguous claim failure had not committed', async () => {
+    const user = await createTestUser()
+    const { checkoutId, createIdentityCheckoutSession } = makeCheckout()
+    onTestFinished(
+      runBeforePostgresStatementForTest('startIdentityVerification:claim-and-persist', async () => {
+        throw new Error('database unavailable')
+      }),
+    )
+    const invalidations = observeUserCacheInvalidations()
 
     await expect(
-      startIdentityVerificationForTest(makePrivateUser(), {
-        successUrl: 'https://example.com/success',
-        cancelUrl: 'https://example.com/cancel',
-      }),
-    ).resolves.toEqual({ url: 'https://checkout.stripe.com/pay/cs_test' })
-    expect(mockReleaseAttachedAttempt).not.toHaveBeenCalled()
-  })
-
-  it('releases the attached attempt when an overlapping claim committed for another session', async () => {
-    mockAmbiguousClaimRecovery({
-      checkoutClaimedAt: null,
-      pendingVerificationSessionId: 'cs_winner',
-    })
-
-    await expect(
-      startIdentityVerificationForTest(makePrivateUser(), {
-        successUrl: 'https://example.com/success',
-        cancelUrl: 'https://example.com/cancel',
-      }),
+      startIdentityVerification(user, opts, { createIdentityCheckoutSession }),
     ).rejects.toThrow('database unavailable')
 
-    expect(mockReleaseAttachedAttempt).toHaveBeenCalledWith('attempt-1', 'cs_test')
-  })
-
-  it('throws if Stripe session has no URL (before DB update, no DB side effect)', async () => {
-    mockCreateIdentityCheckoutSession.mockResolvedValue({
-      id: 'cs_nurl',
-      url: null,
-    } as never)
-    const user = makePrivateUser()
-    await expect(
-      startIdentityVerificationForTest(user, {
-        successUrl: 'https://example.com/success',
-        cancelUrl: 'https://example.com/cancel',
-      }),
-    ).rejects.toThrow('missing URL')
-    expect(mockBeginTransaction).not.toHaveBeenCalled()
-  })
-
-  it('rethrows Stripe errors without touching the DB', async () => {
-    mockCreateIdentityCheckoutSession.mockRejectedValue(new Error('Stripe unavailable'))
-    const user = makePrivateUser({ verification_status: 'failed' })
-    await expect(
-      startIdentityVerificationForTest(user, {
-        successUrl: 'https://example.com/success',
-        cancelUrl: 'https://example.com/cancel',
-      }),
-    ).rejects.toThrow('Stripe unavailable')
-    expect(mockBeginTransaction).not.toHaveBeenCalled()
-  })
-
-  it('still returns URL when cache invalidation fails (session already live)', async () => {
-    mockInvalidateUsers.mockRejectedValue(new Error('cache down'))
-    const user = makePrivateUser({ id: 'user-abc' })
-    const result = await startIdentityVerificationForTest(user, {
-      successUrl: 'https://example.com/success',
-      cancelUrl: 'https://example.com/cancel',
-    })
-    expect(result.url).toBe('https://checkout.stripe.com/pay/cs_test')
-    expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
+    expect(await getIdentityVerificationAttemptStates(user.id)).toMatchObject([
+      {
+        checkout_session_id: checkoutId,
+        checkout_claimed_at: null,
+        released_at: expect.any(Date),
+      },
+    ])
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('unverified')
+    expect(invalidations.forUser(user.id)).toEqual([])
   })
 })

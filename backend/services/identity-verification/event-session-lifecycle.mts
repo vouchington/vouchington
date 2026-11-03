@@ -15,12 +15,6 @@ export {
 
 type SessionLifecycleDependencies = {
   createVerificationSession: typeof stripeIdentityProvider.createVerificationSession
-  invalidateUsers: typeof invalidate.users
-  beginTransaction: typeof beginTransaction
-  consumeAttempt: typeof consumeIdentityVerificationAttempt
-  beginProviderSession: typeof beginIdentityVerificationProviderSession
-  abandonProviderSession: typeof abandonIdentityVerificationProviderSession
-  releaseAttempt: typeof releaseIdentityVerificationAttempt
 }
 
 /**
@@ -37,16 +31,8 @@ export async function onCheckoutCompletedForIdentity(
   eventData: Record<string, unknown>,
   dependencies?: Partial<SessionLifecycleDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
   const createVerificationSession =
     dependencies?.createVerificationSession ?? stripeIdentityProvider.createVerificationSession
-  const invalidateUsers = dependencies?.invalidateUsers ?? invalidate.users
-  const consumeAttempt = dependencies?.consumeAttempt ?? consumeIdentityVerificationAttempt
-  const beginProviderSession =
-    dependencies?.beginProviderSession ?? beginIdentityVerificationProviderSession
-  const abandonProviderSession =
-    dependencies?.abandonProviderSession ?? abandonIdentityVerificationProviderSession
-  const releaseAttempt = dependencies?.releaseAttempt ?? releaseIdentityVerificationAttempt
   if (eventData.payment_status !== 'paid' && eventData.payment_status !== 'no_payment_required')
     return
 
@@ -63,7 +49,7 @@ export async function onCheckoutCompletedForIdentity(
 
   // Pre-guard: skip if the user is no longer in payment_pending for this checkout session.
   // Handles replay idempotency and races with checkout.session.expired.
-  await using preTransaction = await begin()
+  await using preTransaction = await beginTransaction()
   const { rows: preRows } = await preTransaction(
     sql`/* onCheckoutCompletedForIdentity:pre-guard */
       SELECT id FROM users
@@ -84,8 +70,8 @@ export async function onCheckoutCompletedForIdentity(
   // Only the first DB UPDATE (below) will succeed; the other delivery sees 0 rows and returns
   // without creating a duplicate or orphaned session.
   // If this throws, the user remains in payment_pending and the event can be replayed.
-  await beginProviderSession(checkoutSessionId)
-  await using guardTransaction = await begin()
+  await beginIdentityVerificationProviderSession(checkoutSessionId)
+  await using guardTransaction = await beginTransaction()
   const { rows: currentRows } = await guardTransaction(
     sql`/* onCheckoutCompletedForIdentity:post-reservation-guard */
       SELECT id FROM users
@@ -98,8 +84,8 @@ export async function onCheckoutCompletedForIdentity(
   )
   await guardTransaction.commit()
   if (!currentRows.length) {
-    await abandonProviderSession(checkoutSessionId)
-    await releaseAttempt(checkoutSessionId)
+    await abandonIdentityVerificationProviderSession(checkoutSessionId)
+    await releaseIdentityVerificationAttempt(checkoutSessionId)
     return
   }
   // The provider may accept this idempotent request before a network error reaches us.
@@ -113,11 +99,11 @@ export async function onCheckoutCompletedForIdentity(
 
   // Provider-session creation is the irreversible boundary. Consume the reservation
   // before exposing the session, while an abandoned Checkout remains releasable.
-  await consumeAttempt(checkoutSessionId, session.sessionId)
+  await consumeIdentityVerificationAttempt(checkoutSessionId, session.sessionId)
 
   // Single atomic UPDATE: claim identity_pending and persist the session in one shot.
   // The WHERE guard prevents double-application if a concurrent event already handled this.
-  await using claimTransaction = await begin()
+  await using claimTransaction = await beginTransaction()
   const { rowCount } = await claimTransaction(
     sql`/* onCheckoutCompletedForIdentity:claim-and-persist */
       UPDATE users
@@ -134,7 +120,7 @@ export async function onCheckoutCompletedForIdentity(
 
   if (!rowCount) return
 
-  await invalidateUsers(userId)
+  await invalidate.users(userId)
 }
 
 /**
@@ -148,14 +134,11 @@ export async function onCheckoutCompletedForIdentity(
 export async function onVerificationSessionRequiresInput(
   _eventId: string,
   eventData: Record<string, unknown>,
-  dependencies?: Partial<SessionLifecycleDependencies>,
 ): Promise<void> {
-  const begin = dependencies?.beginTransaction ?? beginTransaction
-  const invalidateUsers = dependencies?.invalidateUsers ?? invalidate.users
   const sessionId = eventData.id as string | undefined
   if (!sessionId) return
 
-  await using transaction = await begin()
+  await using transaction = await beginTransaction()
   const { rows } = await transaction(sql`/* onVerificationSessionRequiresInput */
       SELECT id FROM users
       WHERE deleted_at IS NULL
@@ -165,5 +148,5 @@ export async function onVerificationSessionRequiresInput(
     `)
   await transaction.commit()
 
-  await Promise.all((rows as { id: string }[]).map(row => invalidateUsers(row.id)))
+  await Promise.all((rows as { id: string }[]).map(row => invalidate.users(row.id)))
 }

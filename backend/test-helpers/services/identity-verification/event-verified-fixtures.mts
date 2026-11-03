@@ -1,103 +1,83 @@
-import { createTransactionResource } from './transaction-resource.mts'
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
+import { v7 } from 'uuid'
+import { createTestUser } from '../../entities/users.mts'
+import { setUserVerificationFields } from '../../entities/identity-verification.mts'
+import { invalidate } from '../../../services/entity-cache/invalidate.mts'
+import { VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB } from '../../../queues/background/enqueues/vote-aggregation-jobs.mts'
+import { backgroundQueue } from '../../shared-background-queue.mts'
 
-import type { beginTransaction } from '@voucha/test-helpers'
-import type { computeIdentityFingerprint } from '../../../services/identity-verification/fingerprint.mts'
+export const USER_ELECTION_FAN_OUT_JOB_NAME = VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB.name
 
-import { onVerificationSessionVerified } from '../../../services/identity-verification/event-completion.mts'
-
-type EventVerifiedDependencies = NonNullable<Parameters<typeof onVerificationSessionVerified>[2]>
-
-const mockBeginTransaction = vi.fn<typeof beginTransaction>()
-
-const mockInvalidateUsers = vi.fn<(userId: string) => Promise<void>>()
-
-const mockGetVerificationResult =
-  vi.fn<NonNullable<EventVerifiedDependencies['getVerificationResult']>>()
-
-const mockFingerprint = vi.fn<typeof computeIdentityFingerprint>()
-const mockRecalculateVoteWeight =
-  vi.fn<(userId: string) => Promise<{ weight: number; changed: boolean }>>()
-const mockEnqueueElectionUpdates = vi.fn<(userId: string) => Promise<void>>()
-
-function onVerificationSessionVerifiedForTest(
-  ...args: Parameters<typeof onVerificationSessionVerified>
-) {
-  const [eventId, eventData, dependencies] = args
-  return onVerificationSessionVerified(eventId, eventData, {
-    beginTransaction: mockBeginTransaction as never,
-    getVerificationResult: mockGetVerificationResult,
-    computeIdentityFingerprint: mockFingerprint,
-    invalidateUsers: mockInvalidateUsers as never,
-    recalculateUserVoteWeight: mockRecalculateVoteWeight,
-    enqueueElectionUpdatesForUser: mockEnqueueElectionUpdates,
-    ...dependencies,
-  })
+export type VerifiedResult = {
+  documentNumber: string
+  documentType: string
+  firstName: string
+  fullName: string
+  issuingCountry: string
+  lastName: string
+  outcome: 'verified'
 }
 
-function makeQueryResult(rows: Record<string, unknown>[] = []) {
-  return { rowCount: rows.length, rows, command: 'SELECT', oid: 0, fields: [] }
-}
-
-function makePreGuardResult(sessionId: string) {
-  return makeQueryResult([
-    {
-      verification_status: 'identity_pending',
-      pending_verification_session_id: sessionId,
-      pending_checkout_session_id: 'cs_test',
-    },
-  ])
-}
-
-function resetEventVerifiedDoubles() {
-  vi.clearAllMocks()
-  mockGetVerificationResult.mockResolvedValue({
+/** A Stripe-extracted result whose document number is unique, so no other test owns its hash. */
+export function makeVerifiedResult(overrides: Partial<VerifiedResult> = {}): VerifiedResult {
+  return {
     outcome: 'verified',
     firstName: 'Alice',
     lastName: 'Smith',
     fullName: 'Alice Smith',
-    documentNumber: 'X1234',
+    documentNumber: `X${v7()}`,
     issuingCountry: 'US',
     documentType: 'passport',
-  })
-  mockFingerprint.mockReturnValue('a'.repeat(64))
-  mockInvalidateUsers.mockResolvedValue(undefined)
-  mockRecalculateVoteWeight.mockResolvedValue({ weight: 1, changed: false })
-  mockEnqueueElectionUpdates.mockResolvedValue(undefined)
-  mockBeginTransaction
-    .mockImplementationOnce(async () => {
-      const query = vi.fn<VitestLooseMock>().mockResolvedValue(makePreGuardResult('vs_test'))
-      return createTransactionResource(query as never)
-    })
-    .mockImplementation(async () => {
-      const query = vi.fn<VitestLooseMock>()
-      query
-        .mockResolvedValueOnce(makeQueryResult([])) // existing session check → not found
-        .mockResolvedValueOnce(
-          makeQueryResult([
-            {
-              verification_status: 'identity_pending',
-              pending_verification_session_id: 'vs_test',
-            },
-          ]),
-        ) // guard check → identity_pending
-        .mockResolvedValueOnce(makeQueryResult([])) // collision check → no collision
-        .mockResolvedValueOnce(makeQueryResult([{ identity_fingerprint: 'fingerprint' }])) // permanent hash
-        .mockResolvedValueOnce(makeQueryResult()) // live link
-        .mockResolvedValue(makeQueryResult([{}])) // UPDATE users → 1 row updated
-      return createTransactionResource(query as never)
-    })
+    ...overrides,
+  }
 }
 
-export {
-  makePreGuardResult,
-  makeQueryResult,
-  mockBeginTransaction,
-  mockEnqueueElectionUpdates,
-  mockFingerprint,
-  mockGetVerificationResult,
-  mockInvalidateUsers,
-  mockRecalculateVoteWeight,
-  onVerificationSessionVerifiedForTest,
-  resetEventVerifiedDoubles,
+/** The fingerprint HMAC reads this secret per call; restore the environment after the test. */
+export function stubIdentityFingerprintSecret(): void {
+  vi.stubEnv('IDENTITY_FINGERPRINT_SECRET', 'a'.repeat(32))
+  onTestFinished(() => {
+    vi.unstubAllEnvs()
+  })
+}
+
+/** A user waiting on Stripe Identity for a session this test owns. */
+export async function createIdentityPendingUser() {
+  const user = await createTestUser()
+  const sessionId = `vs_${v7()}`
+  const checkoutSessionId = `cs_${v7()}`
+  await setUserVerificationFields(user.id, {
+    verificationStatus: 'identity_pending',
+    pendingVerificationSessionId: sessionId,
+    pendingCheckoutSessionId: checkoutSessionId,
+  })
+  return { user, sessionId, checkoutSessionId }
+}
+
+/** Observe, through the real function, which user caches an event handler invalidated. */
+export function observeUserCacheInvalidations() {
+  const spy = vi.spyOn(invalidate, 'users')
+  onTestFinished(() => {
+    spy.mockRestore()
+  })
+  return {
+    spy,
+    forUser: (userId: string) => spy.mock.calls.filter(([id]) => id === userId),
+  }
+}
+
+/** Observe the user-election fan-out jobs admitted to the real background queue. */
+export function observeUserElectionFanOuts() {
+  const add = vi.spyOn(backgroundQueue, 'add')
+  onTestFinished(() => {
+    add.mockRestore()
+  })
+  return {
+    forUser: (userId: string) =>
+      add.mock.calls.flatMap(([name, data]) =>
+        name === USER_ELECTION_FAN_OUT_JOB_NAME &&
+        (data as { userId?: string } | undefined)?.userId === userId
+          ? [data]
+          : [],
+      ),
+  }
 }
