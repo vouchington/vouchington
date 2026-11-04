@@ -7,8 +7,7 @@ import {
 } from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 
 export async function createUserDeletionSweepNeighbor() {
-  const user = await createTestUser()
-  const request = await createUserDeletionRequest(user.id, user.id)
+  const request = await createNeighborRequest()
   await makeUserDeletionRecoverableForTest(request.id, 'stale')
   return { id: request.id, before: await readUserDeletionSweepNeighbor(request.id) }
 }
@@ -18,4 +17,9 @@ export async function readUserDeletionSweepNeighbor(requestId: string) {
     request: await getUserDeletionRequestForTest(requestId),
     dispatchedAt: await getUserDeletionDispatchedAtForTest(requestId),
   }
+}
+
+async function createNeighborRequest() {
+  const user = await createTestUser()
+  return createUserDeletionRequest(user.id, user.id)
 }
