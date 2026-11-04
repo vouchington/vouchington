@@ -91,7 +91,7 @@ test.describe('Reviews Page', () => {
     // short-page escape hatch cannot auto-load the next page on its own — this test
     // must exercise the scroll-gated path, not the escape hatch.
     await forceMainScrollableBeforeHydration(page)
-    await navigateTo(page, '/reviews?sort=new')
+    await navigateTo(page, '/reviews?sort=new&time_range=all')
 
     await expect(page.getByTestId('infinite-scroll-sentinel')).toBeVisible()
 
@@ -113,7 +113,7 @@ test.describe('Reviews Page', () => {
 
   test('should keep existing posts visible after scrolling to bottom', async ({ page }) => {
     await forceMainScrollableBeforeHydration(page)
-    await navigateTo(page, '/reviews?sort=new')
+    await navigateTo(page, '/reviews?sort=new&time_range=all')
 
     await expect(page.getByTestId('infinite-scroll-sentinel')).toBeVisible()
 

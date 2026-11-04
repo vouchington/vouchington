@@ -29,7 +29,7 @@ async function expectAccountLabel(scope: Locator, username: string, label: strin
 test.describe('Author account labels outside the profile header', () => {
   test('shows the label on post cards in a profile discussion list', async ({ page }) => {
     for (const { username, label } of ACCOUNTS) {
-      await navigateTo(page, `/user/${username}/discussions`)
+      await navigateTo(page, `/user/${username}/discussions?time_range=all`)
       const card = page
         .getByTestId('post-card-root')
         .filter({ hasText: `Account label discussion by ${username}` })
