@@ -34,6 +34,7 @@ describe('RootAppShell auth boundary', () => {
     const tree = RootAppShell({
       currentUser: privateUser,
       globalFeatureFlags: {},
+      hackerNewsConfig: { references_visible: true, post_time_range_cap: '1y' },
       isStandaloneLandingPage: true,
       initialPathname: '/',
       mainContent: <main />,
