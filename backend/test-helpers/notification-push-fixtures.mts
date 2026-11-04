@@ -1,5 +1,8 @@
 import { createTestUserDirect } from './entities/users-direct.mts'
-import { getTestNotificationPushIntentLeaseExpiry } from './entities/notification-push-intents.mts'
+import {
+  getTestNotificationPushIntentLeaseExpiry,
+  getTestNotificationPushIntentState,
+} from './entities/notification-push-intents.mts'
 import { createFollowNotification } from '../services/notifications/create-follow-notification.mts'
 import { upsertWebPushSubscription } from '../services/notifications/push-subscriptions.mts'
 import { claimNotificationPushIntent } from '../services/notifications-push/push-intents.mts'
@@ -47,4 +50,8 @@ export async function getLeaseExpiry(intent: {
 
 export function successfulSendResult() {
   return { statusCode: 201, body: '', headers: {} }
+}
+
+export async function getIntentState(intent: { user_id: string; notification_id: string }) {
+  return getTestNotificationPushIntentState(intent.user_id, intent.notification_id)
 }

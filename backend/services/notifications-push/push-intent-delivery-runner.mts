@@ -18,27 +18,20 @@ export type PushDeliveryRun = {
   fatalError: Error | undefined
 }
 
-export type PushDeliveryDependencies = {
-  createAgent?: () => Agent
-  renew?: typeof renewNotificationPushIntentLease
-  persist?: typeof persistClaimedNotificationPushOutcome
-}
-
 export async function runNotificationPushDelivery(input: {
   intent: NotificationPushIntent
   pending: PushSubscriptionRow[]
   notification: PushPayloadNotification
   policy: NotificationPushDeliveryPolicy
-  dependencies?: PushDeliveryDependencies
 }): Promise<PushDeliveryRun> {
-  const agent = input.dependencies?.createAgent?.() ?? new Agent({ keepAlive: true })
+  const agent = new Agent({ keepAlive: true })
   const outcomes: NotificationPushEndpointOutcome[] = []
   let subscriptionStale = false
   const keeper = createNotificationPushIntentLeaseKeeper({
     intent: input.intent,
     leaseSeconds: input.policy.leaseSeconds,
     renewalMs: input.policy.renewalMs,
-    renew: input.dependencies?.renew ?? renewNotificationPushIntentLease,
+    renew: renewNotificationPushIntentLease,
     onLost: () => agent.destroy(),
   })
   try {
@@ -60,8 +53,7 @@ export async function runNotificationPushDelivery(input: {
         )
         if (!keeper.ownershipLost) {
           try {
-            const persist = input.dependencies?.persist ?? persistClaimedNotificationPushOutcome
-            const persistence = await persist(input.intent, outcome)
+            const persistence = await persistClaimedNotificationPushOutcome(input.intent, outcome)
             if (persistence === 'lease_lost') {
               keeper.fail()
               return

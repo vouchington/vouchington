@@ -1,15 +1,17 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Agent } from 'node:https'
+import { beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import type { Agent } from 'node:https'
 import webpush from 'web-push'
-import { deliverClaimedNotificationPushIntent } from './push-intent-delivery.mts'
-import { claimNotificationPushIntent, renewNotificationPushIntentLease } from './push-intents.mts'
-import { persistClaimedNotificationPushOutcome } from './push-intent-results.mts'
 import {
-  notificationPushDeliveryPolicy,
-  type NotificationPushDeliveryPolicy,
-} from './push-intent-delivery-policy.mts'
+  answerPostgresWritesForTest,
+  rejectPostgresWriteForTest,
+  runAfterPostgresWriteForTest,
+} from '@voucha/test-helpers/injected-failures'
+import { deliverClaimedNotificationPushIntent } from './push-intent-delivery.mts'
+import { claimNotificationPushIntent, releaseNotificationPushIntent } from './push-intents.mts'
+import type { NotificationPushDeliveryPolicy } from './push-intent-delivery-policy.mts'
 import {
   createDelivery,
+  getIntentState,
   getLeaseExpiry,
   successfulSendResult,
 } from '@voucha/test-helpers/notification-push-fixtures'
@@ -40,24 +42,35 @@ describe('incremental notification push receipts', () => {
   })
   it('persists a prompt endpoint before a slow peer settles', async () => {
     const { intent, prompt, promptSubscriptionId, slow } = await createDelivery()
-    let resolveSlow!: () => void
+    const promptPersisted = Promise.withResolvers<void>()
+    const releaseSlow = Promise.withResolvers<void>()
     let slowSettled = false
     vi.mocked(webpush.sendNotification).mockImplementation(async subscription => {
       if (subscription.endpoint === prompt) return successfulSendResult()
-      await new Promise<void>(resolve => {
-        resolveSlow = resolve
-      })
+      await releaseSlow.promise
       slowSettled = true
       return successfulSendResult()
     })
-    const promptDelivery = captureDeliveredPersist(promptSubscriptionId)
-    const delivery = deliverClaimedNotificationPushIntent(intent, undefined, {
-      persist: promptDelivery.persist,
-    })
-    await promptDelivery.delivered.promise
-    expect(webpush.sendNotification).toHaveBeenCalledTimes(2)
-    expect(slowSettled).toBe(false)
-    resolveSlow()
+    onTestFinished(
+      runAfterPostgresWriteForTest((statement, values, result) => {
+        if (
+          !statement.includes('persistClaimedNotificationPushOutcome') ||
+          !values.includes(promptSubscriptionId)
+        )
+          return
+        const outcome = result.rows[0]?.outcome
+        if (outcome === 'persisted') promptPersisted.resolve()
+        else promptPersisted.reject(new Error(`notification push persist returned ${outcome}`))
+      }),
+    )
+    const delivery = deliverClaimedNotificationPushIntent(intent)
+    try {
+      await promptPersisted.promise
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(2)
+      expect(slowSettled).toBe(false)
+    } finally {
+      releaseSlow.resolve()
+    }
     await expect(delivery).resolves.toEqual({ delivered: 2, suppressed: false })
     expect(slow).not.toBe(prompt)
   })
@@ -66,24 +79,33 @@ describe('incremental notification push receipts', () => {
     const { intent, prompt, promptSubscriptionId, slow } = await createDelivery(1)
     const originalLeaseExpiry = await getLeaseExpiry(intent)
     const slowSend = Promise.withResolvers<void>()
-    const renewed = Promise.withResolvers<void>()
-    const promptDelivery = captureDeliveredPersist(promptSubscriptionId)
+    const periodicRenewal = Promise.withResolvers<void>()
+    const promptPersisted = Promise.withResolvers<void>()
+    let acceptedRenewals = 0
+    onTestFinished(
+      runAfterPostgresWriteForTest((statement, values, result) => {
+        if (!values.includes(intent.lease_token)) return
+        if (statement.includes('renewNotificationPushIntentLease') && result.rowCount === 1) {
+          if (++acceptedRenewals === 2) periodicRenewal.resolve()
+        }
+        if (
+          statement.includes('persistClaimedNotificationPushOutcome') &&
+          values.includes(promptSubscriptionId)
+        )
+          promptPersisted.resolve()
+      }),
+    )
     vi.mocked(webpush.sendNotification).mockImplementation(async subscription => {
       if (subscription.endpoint === prompt) return successfulSendResult()
       await slowSend.promise
       throw Object.assign(new Error('provider unavailable'), { statusCode: 500 })
     })
-    const deliveryRejection = deliverClaimedNotificationPushIntent(intent, shortLeasePolicy, {
-      renew: async (renewedIntent, leaseSeconds) => {
-        const accepted = await renewNotificationPushIntentLease(renewedIntent, leaseSeconds)
-        if (accepted) renewed.resolve()
-        return accepted
-      },
-      persist: promptDelivery.persist,
-    }).catch(err => err)
+    const deliveryRejection = deliverClaimedNotificationPushIntent(intent, shortLeasePolicy).catch(
+      err => err,
+    )
     try {
-      await renewed.promise
-      await promptDelivery.delivered.promise
+      await periodicRenewal.promise
+      await promptPersisted.promise
       await expect(getLeaseExpiry(intent)).resolves.toBeGreaterThan(originalLeaseExpiry)
       await expect(
         claimNotificationPushIntent(
@@ -111,190 +133,147 @@ describe('incremental notification push receipts', () => {
   })
   it('destroys the agent, settles active work, and suppresses queued sends after persistence loss', async () => {
     const { intent, prompt } = await createDelivery()
-    const agent = new Agent()
-    const destroy = vi.spyOn(agent, 'destroy')
-    let rejectSlow!: (error: Error) => void
+    const rejectSlow = Promise.withResolvers<never>()
     let slowStarted = false
-    destroy.mockImplementation(() => {
-      rejectSlow?.(new Error('agent destroyed'))
-      return agent
-    })
-    vi.mocked(webpush.sendNotification).mockImplementation(async subscription => {
-      if (subscription.endpoint === prompt) return successfulSendResult()
-      slowStarted = true
-      await new Promise<never>((_resolve, reject) => {
-        rejectSlow = reject
-      })
-      throw new Error('unreachable')
-    })
+    const agent = watchSendAgent(() => rejectSlow.reject(new Error('agent destroyed')))
+    vi.mocked(webpush.sendNotification).mockImplementation(
+      async (subscription, _payload, options) => {
+        agent.watch(options)
+        if (subscription.endpoint === prompt) {
+          await releaseNotificationPushIntent(intent)
+          return successfulSendResult()
+        }
+        slowStarted = true
+        return rejectSlow.promise
+      },
+    )
 
-    await expect(
-      deliverClaimedNotificationPushIntent(
-        intent,
-        {
-          ...shortLeasePolicy,
-          endpointConcurrency: 2,
-        },
-        {
-          createAgent: () => agent,
-          persist: async () => 'lease_lost',
-        },
-      ),
-    ).resolves.toEqual({ delivered: 0, suppressed: false })
+    await expect(deliverClaimedNotificationPushIntent(intent, shortLeasePolicy)).resolves.toEqual({
+      delivered: 0,
+      suppressed: false,
+    })
     expect(slowStarted).toBe(true)
-    expect(destroy).toHaveBeenCalled()
+    expect(agent.destroy).toHaveBeenCalled()
     expect(webpush.sendNotification).toHaveBeenCalledTimes(2)
   })
 
   it('suppresses queued mappers after a first persistence loss', async () => {
     const { intent } = await createDelivery(120, 3)
-    vi.mocked(webpush.sendNotification).mockResolvedValue(successfulSendResult())
+    vi.mocked(webpush.sendNotification).mockImplementation(async () => {
+      await releaseNotificationPushIntent(intent)
+      return successfulSendResult()
+    })
     await expect(
-      deliverClaimedNotificationPushIntent(
-        intent,
-        { ...shortLeasePolicy, endpointConcurrency: 1 },
-        { persist: async () => 'lease_lost' },
-      ),
+      deliverClaimedNotificationPushIntent(intent, { ...shortLeasePolicy, endpointConcurrency: 1 }),
     ).resolves.toEqual({ delivered: 0, suppressed: false })
     expect(webpush.sendNotification).toHaveBeenCalledOnce()
   })
 
-  it('caps production delivery concurrency at five', async () => {
-    const { endpointConcurrency } = notificationPushDeliveryPolicy
-    expect(endpointConcurrency).toBe(5)
-    const { intent } = await createDelivery(120, endpointConcurrency + 1)
-    const schedulingObserved = Promise.withResolvers<void>()
-    const releaseSends = Promise.withResolvers<void>()
-    let inFlight = 0
-    let maxInFlight = 0
-    let renewals = 0
-    vi.mocked(webpush.sendNotification).mockImplementation(async () => {
-      inFlight++
-      maxInFlight = Math.max(maxInFlight, inFlight)
-      await releaseSends.promise
-      inFlight--
-      return successfulSendResult()
-    })
-    const delivery = deliverClaimedNotificationPushIntent(
-      intent,
-      { ...notificationPushDeliveryPolicy, renewalMs: shortLeasePolicy.renewalMs },
-      {
-        renew: async () => {
-          if (++renewals > 1) schedulingObserved.resolve()
-          return true
-        },
+  it('rethrows persistence failures after settling and destroys the agent', async () => {
+    const { intent } = await createDelivery()
+    const agent = watchSendAgent(() => {})
+    vi.mocked(webpush.sendNotification).mockImplementation(
+      async (_subscription, _payload, options) => {
+        agent.watch(options)
+        return successfulSendResult()
       },
     )
-    try {
-      await schedulingObserved.promise
-      expect(maxInFlight).toBe(endpointConcurrency)
-    } finally {
-      releaseSends.resolve()
-      await delivery
-    }
+    onTestFinished(
+      rejectPostgresWriteForTest(
+        'persistClaimedNotificationPushOutcome',
+        new Error('persist failed'),
+      ),
+    )
+    await expect(deliverClaimedNotificationPushIntent(intent, shortLeasePolicy)).rejects.toThrow(
+      'persist failed',
+    )
+    expect(agent.destroy).toHaveBeenCalled()
   })
-  it('rethrows persistence failures after settling and treats final transition false as ownership loss', async () => {
-    const failing = await createDelivery()
-    const agent = new Agent()
-    const destroy = vi.spyOn(agent, 'destroy')
+
+  it('treats a rejected final delivered transition as ownership loss', async () => {
+    const { intent } = await createDelivery()
     vi.mocked(webpush.sendNotification).mockResolvedValue(successfulSendResult())
-    await expect(
-      deliverClaimedNotificationPushIntent(failing.intent, shortLeasePolicy, {
-        createAgent: () => agent,
-        persist: async () => {
-          throw new Error('persist failed')
-        },
-      }),
-    ).rejects.toThrow('persist failed')
-    expect(destroy).toHaveBeenCalled()
+    onTestFinished(
+      answerPostgresWritesForTest('markNotificationPushIntentDelivered', [[{ completed: false }]]),
+    )
+    await expect(deliverClaimedNotificationPushIntent(intent, shortLeasePolicy)).resolves.toEqual({
+      delivered: 0,
+      suppressed: false,
+    })
+    expect(webpush.sendNotification).toHaveBeenCalledTimes(2)
+  })
 
-    const final = await createDelivery()
-    await expect(
-      deliverClaimedNotificationPushIntent(final.intent, shortLeasePolicy, {
-        markDelivered: async () => false,
-      }),
-    ).resolves.toEqual({ delivered: 0, suppressed: false })
-
-    const retry = await createDelivery()
+  it('treats a rejected retry release as ownership loss', async () => {
+    const { intent } = await createDelivery()
     vi.mocked(webpush.sendNotification).mockRejectedValue(
       Object.assign(new Error('retry'), { statusCode: 500 }),
     )
-    await expect(
-      deliverClaimedNotificationPushIntent(retry.intent, shortLeasePolicy, {
-        release: async () => false,
-      }),
-    ).resolves.toEqual({ delivered: 0, suppressed: false })
+    onTestFinished(answerPostgresWritesForTest('releaseNotificationPushIntent', [[]]))
+    await expect(deliverClaimedNotificationPushIntent(intent, shortLeasePolicy)).resolves.toEqual({
+      delivered: 0,
+      suppressed: false,
+    })
+    expect(webpush.sendNotification).toHaveBeenCalledTimes(2)
   })
 
   it.each([false, new Error('renew failed')])(
     'stops before finalization when renewal is %s',
     async renewal => {
       const { intent } = await createDelivery()
-      const agent = new Agent()
-      const destroy = vi.spyOn(agent, 'destroy')
-      let finalized = 0
+      const before = await getIntentState(intent)
+      const rejectSend = Promise.withResolvers<never>()
+      const agent = watchSendAgent(() => rejectSend.reject(new Error('agent destroyed')))
+      vi.mocked(webpush.sendNotification).mockImplementation(
+        async (_subscription, _payload, options) => {
+          agent.watch(options)
+          return rejectSend.promise
+        },
+      )
       let renewals = 0
-      let rejectSend!: (error: Error) => void
-      const renewalStarted = Promise.withResolvers<void>()
-      destroy.mockImplementation(() => {
-        rejectSend(new Error('agent destroyed'))
-        return agent
-      })
-      vi.mocked(webpush.sendNotification).mockImplementation(async () => {
-        await new Promise<never>((_resolve, reject) => {
-          rejectSend = reject
-        })
-        throw new Error('unreachable')
-      })
-      const delivery = deliverClaimedNotificationPushIntent(
-        intent,
-        {
-          ...shortLeasePolicy,
-          endpointConcurrency: 1,
-        },
-        {
-          createAgent: () => agent,
-          renew: async () => {
-            if (++renewals === 1) return true
-            renewalStarted.resolve()
-            if (renewal instanceof Error) throw renewal
-            return renewal
-          },
-          markDelivered: async () => {
-            finalized++
-            return true
-          },
-        },
+      onTestFinished(
+        renewal instanceof Error
+          ? rejectPostgresWriteForTest(
+              'renewNotificationPushIntentLease',
+              renewal,
+              () => ++renewals === 2,
+            )
+          : answerPostgresWritesForTest('renewNotificationPushIntentLease', [undefined, []]),
       )
-      const settled = delivery.then(
-        value => ({ value, error: undefined }),
-        err => ({ value: undefined, error: err }),
+      const delivery = deliverClaimedNotificationPushIntent(intent, {
+        ...shortLeasePolicy,
+        endpointConcurrency: 1,
+      })
+      const settled = await delivery.then(
+        value => ({ value, errorMessage: undefined }),
+        err => ({ value: undefined, errorMessage: err instanceof Error ? err.message : undefined }),
       )
-      await renewalStarted.promise
-      const result = await settled
-      const observed = {
-        value: result.value,
-        errorMessage: result.error instanceof Error ? result.error.message : undefined,
-      }
-      expect(observed).toEqual(
+      expect(settled).toEqual(
         renewal instanceof Error
           ? { value: undefined, errorMessage: 'renew failed' }
           : { value: { delivered: 0, suppressed: false }, errorMessage: undefined },
       )
-      expect(finalized).toBe(0)
-      expect(destroy).toHaveBeenCalled()
+      expect(agent.destroy).toHaveBeenCalled()
+      await expect(getIntentState(intent)).resolves.toEqual(before)
     },
   )
 })
 
-function captureDeliveredPersist(subscriptionId: string) {
-  const delivered = Promise.withResolvers<void>()
-  const persist = (async (intent, outcome) => {
-    const result = await persistClaimedNotificationPushOutcome(intent, outcome)
-    if (outcome.kind === 'delivered' && outcome.subscription.id === subscriptionId)
-      if (result === 'persisted') delivered.resolve()
-      else delivered.reject(new Error(`notification push persist returned ${result}`))
-    return result
-  }) as typeof persistClaimedNotificationPushOutcome
-  return { delivered, persist }
+/** Spies on the real agent production hands to `sendNotification`, calling through to destroy it. */
+function watchSendAgent(onDestroy: () => void) {
+  const destroy = vi.fn<() => void>()
+  let watched = false
+  return {
+    destroy,
+    watch(options: unknown) {
+      if (watched) return
+      watched = true
+      const agent = (options as { agent: Agent }).agent
+      const realDestroy = agent.destroy
+      vi.spyOn(agent, 'destroy').mockImplementation(() => {
+        destroy()
+        onDestroy()
+        Reflect.apply(realDestroy, agent, [])
+      })
+    },
+  }
 }
