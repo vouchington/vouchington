@@ -15,10 +15,11 @@ export async function cleanupPostModerationLedgerPage(
   requestedUpperId: string,
   lowerId: string,
   lowerBoundDate: Date | null,
+  postIds?: readonly string[],
 ): Promise<{ changed: number; hasMore: boolean }> {
   // Each phase commits before the next phase acquires a different post's lock.
   // This keeps every writer and worker on post→work→source or work→source order.
-  const dirty = await runPostModerationHashWorkPage(batchSize)
+  const dirty = await runPostModerationHashWorkPage(batchSize, postIds)
   const candidate = await runPostModerationDuePage(
     kind,
     batchSize,
@@ -26,10 +27,11 @@ export async function cleanupPostModerationLedgerPage(
     lowerId,
     lowerBoundDate,
     dirty.processed,
+    postIds,
   )
   const policy =
     kind === 'superseded_versions'
-      ? await runPostModerationPolicyPage(batchSize)
+      ? await runPostModerationPolicyPage(batchSize, postIds)
       : { processed: false, hasMore: false }
   return {
     changed: candidate.changed,
@@ -37,16 +39,16 @@ export async function cleanupPostModerationLedgerPage(
   }
 }
 
-async function runPostModerationHashWorkPage(batchSize: number) {
+async function runPostModerationHashWorkPage(batchSize: number, postIds?: readonly string[]) {
   await using query = await beginTransaction()
-  const result = await reconsiderChangedPostModerationPost(query, batchSize)
+  const result = await reconsiderChangedPostModerationPost(query, batchSize, undefined, postIds)
   await query.commit()
   return result
 }
 
-async function runPostModerationPolicyPage(batchSize: number) {
+async function runPostModerationPolicyPage(batchSize: number, postIds?: readonly string[]) {
   await using query = await beginTransaction()
-  const result = await reconsiderPostModerationPolicyRevision(query, batchSize)
+  const result = await reconsiderPostModerationPolicyRevision(query, batchSize, undefined, postIds)
   await query.commit()
   return result
 }
@@ -58,6 +60,7 @@ async function runPostModerationDuePage(
   lowerId: string,
   lowerBoundDate: Date | null,
   dirtyProcessed: boolean,
+  postIds?: readonly string[],
 ): Promise<{ changed: number; hasMore: boolean }> {
   await using query = await beginTransaction()
   await query(
@@ -111,8 +114,15 @@ async function runPostModerationDuePage(
              AND retention_due_at < uuid_extract_timestamp($1::uuid)
              AND id > $2::uuid AND id < $1::uuid
              AND (retention_due_at, id) > ($3::timestamptz, $4::uuid)
-           ORDER BY retention_due_at, id LIMIT $5`,
-          [upperId, lowerId, afterDueAt, afterId, batchSize + 1],
+           ${postIds === undefined ? '' : 'AND post_id = ANY($6::uuid[])\n           '}ORDER BY retention_due_at, id LIMIT $5`,
+          [
+            upperId,
+            lowerId,
+            afterDueAt,
+            afterId,
+            batchSize + 1,
+            ...(postIds === undefined ? [] : [postIds]),
+          ],
         )
       : await query<PostModerationCandidate>(
           `/* cleanupPostModerationLedgerPage.listPassEvidence */
@@ -122,14 +132,21 @@ async function runPostModerationDuePage(
              AND retention_due_at < uuid_extract_timestamp($1::uuid)
              AND (retention_due_at, id) > ($2::timestamptz, $3::uuid)
              AND disposition = 'pass' AND source <> 'staff' AND evidence <> '{}'::jsonb
-           ORDER BY retention_due_at, id LIMIT $4`,
-          [upperId, afterDueAt, afterId, batchSize + 1],
+           ${postIds === undefined ? '' : 'AND version_id IN (SELECT id FROM post_moderation_versions WHERE post_id = ANY($5::uuid[]))\n           '}ORDER BY retention_due_at, id LIMIT $4`,
+          [
+            upperId,
+            afterDueAt,
+            afterId,
+            batchSize + 1,
+            ...(postIds === undefined ? [] : [postIds]),
+          ],
         )
   const page = rows.slice(0, batchSize)
   const outcome = await processPostModerationCandidatePage(query, kind, page, upperId)
   const { rows: pendingWork } = await query<{ post_id: string }>(
     `/* hasPostModerationRetentionPostWork */
-     SELECT post_id FROM post_moderation_retention_post_work_items LIMIT 1`,
+     SELECT post_id FROM post_moderation_retention_post_work_items ${postIds === undefined ? '' : 'WHERE post_id = ANY($1::uuid[]) '}LIMIT 1`,
+    postIds === undefined ? [] : [postIds],
   )
   const hasMore = rows.length > batchSize || outcome.needsRetry || pendingWork.length > 0
   // A queued recheck can rearm a due row behind this position, including if another

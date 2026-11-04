@@ -7,14 +7,22 @@ export async function reconsiderChangedPostModerationPost(
   query: QueryExecutor,
   batchSize: number,
   revision = POST_MODERATION_POLICY_REVISION,
+  postIds?: readonly string[],
 ): Promise<{ processed: boolean; hasMore: boolean }> {
   const { rows } = await query<{ post_id: string }>(
     `/* listChangedPostModerationRetentionPost */
      SELECT post_id FROM post_moderation_retention_post_work_items
-     ORDER BY changed_at, post_id LIMIT 1`,
+     ${postIds === undefined ? '' : 'WHERE post_id = ANY($1::uuid[])\n     '}ORDER BY changed_at, post_id LIMIT 1`,
+    postIds === undefined ? [] : [postIds],
   )
   if (!rows[0]) return { processed: false, hasMore: false }
-  return reconsiderChangedPostModerationPostById(query, rows[0].post_id, batchSize, revision)
+  return reconsiderChangedPostModerationPostById(
+    query,
+    rows[0].post_id,
+    batchSize,
+    revision,
+    postIds,
+  )
 }
 
 /** One post and one bounded disposition subpage, under the caller's transaction. */
@@ -23,6 +31,7 @@ export async function reconsiderChangedPostModerationPostById(
   postId: string,
   batchSize: number,
   revision = POST_MODERATION_POLICY_REVISION,
+  postIds?: readonly string[],
 ): Promise<{ processed: boolean; hasMore: boolean }> {
   await query(
     `/* lockChangedPostModerationRetentionPost */
@@ -54,7 +63,7 @@ export async function reconsiderChangedPostModerationPostById(
     [postId, work[0].cursor_version_record_id, revision],
   )
   const version = versions[0]
-  if (!version) return finishPostModerationHashWork(query, postId)
+  if (!version) return finishPostModerationHashWork(query, postId, postIds)
   const { rows: dispositions } = await query<{ id: string }>(
     `/* listChangedPostModerationRetentionDispositions */
      SELECT id FROM post_moderation_dispositions
@@ -122,7 +131,7 @@ export async function reconsiderChangedPostModerationPostById(
        AND retention_hash_blocked_at IS NOT NULL LIMIT 1`,
     [postId, version.id],
   )
-  if (!next[0]) return finishPostModerationHashWork(query, postId)
+  if (!next[0]) return finishPostModerationHashWork(query, postId, postIds)
   await query(
     `/* advancePostModerationRetentionVersionCursor */
      UPDATE post_moderation_retention_post_work_items
@@ -138,6 +147,7 @@ export async function reconsiderChangedPostModerationPostById(
 async function finishPostModerationHashWork(
   query: QueryExecutor,
   postId: string,
+  postIds?: readonly string[],
 ): Promise<{ processed: boolean; hasMore: boolean }> {
   await query(
     `/* finishPostModerationRetentionPostWork */
@@ -146,7 +156,8 @@ async function finishPostModerationHashWork(
   )
   const { rows } = await query<{ post_id: string }>(
     `/* hasChangedPostModerationRetentionPosts */
-     SELECT post_id FROM post_moderation_retention_post_work_items LIMIT 1`,
+     SELECT post_id FROM post_moderation_retention_post_work_items ${postIds === undefined ? '' : 'WHERE post_id = ANY($1::uuid[]) '}LIMIT 1`,
+    postIds === undefined ? [] : [postIds],
   )
   return { processed: true, hasMore: rows.length > 0 }
 }

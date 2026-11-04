@@ -237,6 +237,7 @@ export type DataRetentionCleanupOptions = {
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
   postModerationLedger?: Partial<DataRetentionLimits> & {
+    postIds?: readonly string[]
     now?: Date
     kinds?: readonly PostModerationRetentionKind[]
   }

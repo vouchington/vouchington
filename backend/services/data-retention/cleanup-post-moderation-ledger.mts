@@ -15,6 +15,7 @@ export type PostModerationLedgerCleanupOptions = {
   retentionDays: number
   now?: Date
   lowerBoundDate?: Date
+  postIds?: readonly string[]
   kinds?: readonly PostModerationRetentionKind[]
 }
 
@@ -57,6 +58,7 @@ export async function cleanupPostModerationLedger(
         cutoffId,
         lowerId,
         options.lowerBoundDate ?? null,
+        options.postIds,
       )
       /* oxlint-enable no-await-in-loop */
       if (kind === 'superseded_versions') deletedVersions += page.changed
