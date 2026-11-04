@@ -167,8 +167,8 @@ describe('processReconcileCopyrightAgentDispatches', () => {
       onTestFinished(async () => {
         await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
       })
-      const [failingEmailId, failingEffect, appealId, sameEffect, nextEmailId] = await Promise.all([
-        pendingEmail(),
+      const failingEmailId = await pendingEmail()
+      const [failingEffect, appealId, sameEffect, nextEmailId] = await Promise.all([
         pendingFormEffect(),
         pendingAppeal(),
         pendingFormEffect(),
