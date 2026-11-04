@@ -46,7 +46,7 @@ _none_
 - `idx_user_import_requests__rss_feed_id`: `CREATE INDEX idx_user_import_requests__rss_feed_id ON public.user_import_requests USING btree (rss_feed_id, id) WHERE (rss_feed_id IS NOT NULL)`
 - `idx_user_import_requests__rss_feed_import_row_id`: `CREATE UNIQUE INDEX idx_user_import_requests__rss_feed_import_row_id ON public.user_import_requests USING btree (rss_feed_import_row_id) WHERE (rss_feed_import_row_id IS NOT NULL)`
 - `idx_user_import_requests__topic_id`: `CREATE INDEX idx_user_import_requests__topic_id ON public.user_import_requests USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
-- `idx_user_import_requests__topic_recommendation`: `CREATE INDEX idx_user_import_requests__topic_recommendation ON public.user_import_requests USING btree (topic_recommendation_post_id, id) WHERE (followed_at IS NULL)`
+- `idx_user_import_requests__topic_recommendation`: `CREATE INDEX idx_user_import_requests__topic_recommendation ON public.user_import_requests USING btree (topic_recommendation_post_id, id) INCLUDE (user_id) WHERE (followed_at IS NULL)`
 - `idx_user_import_requests__topic_recommendation_post_id`: `CREATE INDEX idx_user_import_requests__topic_recommendation_post_id ON public.user_import_requests USING btree (topic_recommendation_post_id) WHERE (topic_recommendation_post_id IS NOT NULL)`
 - `idx_user_import_requests__user_id__id_desc`: `CREATE INDEX idx_user_import_requests__user_id__id_desc ON public.user_import_requests USING btree (user_id, id DESC)`
 - `idx_user_import_requests__user_topic_recommendation`: `CREATE UNIQUE INDEX idx_user_import_requests__user_topic_recommendation ON public.user_import_requests USING btree (user_id, topic_recommendation_post_id) WHERE (topic_recommendation_post_id IS NOT NULL)`
