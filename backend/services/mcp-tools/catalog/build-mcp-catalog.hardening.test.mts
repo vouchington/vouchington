@@ -24,7 +24,7 @@ const names = [
 // Pin the exact-grant listing including explicit message and household grants.
 const PLUS_WITHOUT_MODERATION_DIGEST =
   '9c24e846c27e2ba78142f18f575a0fb8daf8c53fa6341eeaed03a7cbc753d8f9'
-const PRE_MESSAGE_DIGEST = '14ceba6c1ec12716d4bed6c7e802ac83595bfd073640ec61ebbbd8b78b3dfa19'
+const PRE_MESSAGE_DIGEST = '30593bfa78e31f787bfc9ab32932f50e163918178d36e35f1db453313c2c5a54'
 const UMBRELLA_ONLY_DIGEST = 'dcd9577126925c0d583da79ddef7abb251a067ccf8c4c0f8aa31f0b6e673ddb9'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
