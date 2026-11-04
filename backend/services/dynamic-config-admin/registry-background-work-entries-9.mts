@@ -19,6 +19,10 @@ import {
 } from '@queues/find-your-friends/config'
 import { articlesWorkConfig, articlesWorkMaxValues } from '@services/articles/work-limits'
 import {
+  prioritizedReferralLinksWorkConfig,
+  prioritizedReferralLinksWorkMaxValues,
+} from '@services/prioritized-referral-links/work-limits'
+import {
   MIN_RETIRED_GENERATION_GRACE_SECONDS,
   sitemapsWorkConfig,
   sitemapsWorkMaxValues,
@@ -96,6 +100,16 @@ export const backgroundWorkRegistryEntries9 = {
       retired_generation_delete_page_size: 'Retired sitemap child files deleted per cleanup run.',
       retired_generation_record_scan_limit:
         'Retired sitemap generations inspected per cleanup run.',
+    },
+  }),
+  'prioritized-referral-links-work-config': defineBoundedWorkNamespace({
+    namespace: 'prioritized-referral-links-work-config',
+    config: prioritizedReferralLinksWorkConfig,
+    label: 'Prioritized referral links',
+    maxValues: prioritizedReferralLinksWorkMaxValues,
+    descriptions: {
+      recent_vote_window_days:
+        'Days back a viewer vote on a post still counts toward ranking referral links; cost grows with the window.',
     },
   }),
   'find-your-friends-work-config': defineBoundedWorkNamespace({

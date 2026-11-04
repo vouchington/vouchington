@@ -2,10 +2,14 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { childVisibilitySql } from '@services/user-referral-program-links'
 import { buildViewerPostDiscoveryEligibilityFilter } from '@modules/feed-query-builders'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import { DEFAULT_PERSONAL_LINK_LIMIT, RECENT_VOTE_LIMIT } from './config.mts'
 import { appendLinkUserJoin, toLinksWithUsers, type LinkRow } from './link-rows.mts'
 import { RANK_ORDER_SQL, RANKED_COLUMNS_SQL, rankingCtesSql } from './ranking-ctes.mts'
 import type { ReferralLinksWithUsers } from './types.mts'
+import { getRecentVoteWindowDays } from './work-limits.mts'
+
+const MILLISECONDS_PER_DAY = 86_400_000
 
 export type InNetworkResult = {
   inNetwork: ReferralLinksWithUsers
@@ -28,13 +32,16 @@ export async function getInNetworkLinks(
     currentUserId: viewerId,
     isAdministrator: false,
   })
+  // Votes on posts older than the window do not count; the post id bound also prunes partitions.
+  const minVotedPostId = getMinUUIDv7ForDate(
+    new Date(Date.now() - getRecentVoteWindowDays() * MILLISECONDS_PER_DAY),
+  )
   const query = sql`/* getInNetworkReferralLinks */
 WITH recent_votes AS (
   -- Newest votes first; an older vote on the same post is superseded below.
-  -- no-mistakes-disable-next-line postgres-required-predicates: the viewer's votes span every post_id partition; their newest votes bound the read instead
   SELECT id, post_id, score
   FROM post_votes
-  WHERE user_id = ${viewerId}
+  WHERE user_id = ${viewerId} AND post_id >= ${minVotedPostId}
   ORDER BY id DESC
   LIMIT ${RECENT_VOTE_LIMIT}
 ),

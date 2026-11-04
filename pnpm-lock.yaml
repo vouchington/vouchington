@@ -6384,6 +6384,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
+      '@services/prioritized-referral-links':
+        specifier: workspace:^
+        version: link:../prioritized-referral-links
       '@services/recaptcha':
         specifier: workspace:^
         version: link:../recaptcha
@@ -9757,12 +9760,18 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@services/user-referral-program-links':
         specifier: workspace:^
         version: link:../user-referral-program-links
@@ -9775,6 +9784,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@services/official-referral-program-links':
         specifier: workspace:^
