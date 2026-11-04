@@ -5,7 +5,10 @@ const FIRST_HOSTNAME_INDEX = 200_000
 const SEEDED_URL_COUNT = 20_000
 
 /** Seed enough old and live rows to measure the bounded Hacker News retention selector. */
-export async function seedHackerNewsRetention(expiredRows = 500): Promise<void> {
+export async function seedHackerNewsRetention(
+  expiredRows = 500,
+  childRows = Math.min(expiredRows, 25),
+): Promise<void> {
   await write(
     `/* seedExplainHackerNewsRetention:hostnames */
      INSERT INTO url_hostnames (id, hostname, publicly_introduced_at)
@@ -36,7 +39,7 @@ export async function seedHackerNewsRetention(expiredRows = 500): Promise<void> 
      SELECT url.id, 0, 0,
        CASE WHEN series.index < $3::integer
          THEN CURRENT_TIMESTAMP - INTERVAL '100 years'
-         ELSE CURRENT_TIMESTAMP - INTERVAL '1 day'
+         ELSE CURRENT_TIMESTAMP
        END
      FROM generate_series($1::integer, $1::integer + $2::integer - 1) AS series(index)
      JOIN urls url ON url.id = format(
@@ -53,11 +56,11 @@ export async function seedHackerNewsRetention(expiredRows = 500): Promise<void> 
      INSERT INTO url_hacker_news_stories
        (url_id, hacker_news_item_id, points, reply_count, posted_at)
      SELECT totals.url_id, 2_000_000 + series.index, 1, 0, CURRENT_TIMESTAMP
-    FROM generate_series($1::integer, $1::integer + $2::integer - 1) AS series(index)
+     FROM generate_series($1::integer, $1::integer + $2::integer - 1) AS series(index)
      JOIN url_hacker_news_totals totals ON totals.url_id = format(
        '019e0000-0300-7000-8000-%s', lpad(to_hex(series.index), 12, '0'))::uuid
      ON CONFLICT (url_id, hacker_news_item_id) DO NOTHING`,
-    [FIRST_URL_INDEX, Math.min(expiredRows, 25)],
+    [FIRST_URL_INDEX, childRows],
   )
 
   await write(
@@ -70,7 +73,7 @@ export async function seedHackerNewsRetention(expiredRows = 500): Promise<void> 
      JOIN url_hacker_news_totals totals ON totals.url_id = format(
        '019e0000-0300-7000-8000-%s', lpad(to_hex(series.index), 12, '0'))::uuid
      ON CONFLICT (url_id, hacker_news_item_id) DO NOTHING`,
-    [FIRST_URL_INDEX, Math.min(expiredRows, 25)],
+    [FIRST_URL_INDEX, childRows],
   )
 
   await write(
