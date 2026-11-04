@@ -18,9 +18,12 @@ export async function lockTopicHostnameOwnership(
   }>(sql`/* getTopicHostnameOwnershipIds */
     SELECT hostname_id FROM topics WHERE id = ANY(${[...new Set(topicIds)]}::uuid[])
     UNION
+    -- no-mistakes-disable-next-line postgres-bounded-statements: hostname rows are added manually, so no cap.
     SELECT id FROM url_hostnames WHERE topic_id = ANY(${[...new Set(topicIds)]}::uuid[])
     UNION
+    -- no-mistakes-disable-next-line postgres-bounded-statements: landing-page relations are added manually, so no cap.
     SELECT urls.hostname_id FROM relation__topic__landing_page__url relation
+    -- no-mistakes-disable-next-line postgres-bounded-statements: urls are reached only through the manually added landing-page relations, so no cap.
     JOIN urls ON urls.id = relation.object_id
     WHERE relation.subject_id = ANY(${[...new Set(topicIds)]}::uuid[])
       AND relation.deleted_at IS NULL
