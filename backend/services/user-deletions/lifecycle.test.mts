@@ -1,3 +1,7 @@
+import {
+  createUserDeletionSweepNeighbor,
+  readUserDeletionSweepNeighbor,
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
@@ -46,41 +50,48 @@ describe('user deletion lifecycle', () => {
   })
 
   it('preserves unstarted work tokens and rotates stale work tokens', async () => {
+    const neighbor = await createUserDeletionSweepNeighbor()
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
-    const unstarted = (await claimRecoverableUserDeletions()).find(
-      candidate => candidate.requestId === request.id,
-    )
+    const [unstarted] = await claimRecoverableUserDeletions([request.id], 1)
+    expect(unstarted).toEqual({
+      requestId: request.id,
+      processingAttemptId: request.processingAttemptId,
+    })
     expect(unstarted?.processingAttemptId).toBe(request.processingAttemptId)
     if (!unstarted) throw new Error('Expected recovered request')
 
     await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
     expect((await getUserDeletionRequestForTest(request.id))?.processingStartedAt).not.toBeNull()
     await makeUserDeletionRecoverableForTest(request.id, 'stale')
-    const stale = (await claimRecoverableUserDeletions()).find(
-      candidate => candidate.requestId === request.id,
-    )
+    const [stale] = await claimRecoverableUserDeletions([request.id], 1)
+    expect(stale?.requestId).toBe(request.id)
+    expect(await readUserDeletionSweepNeighbor(neighbor.id)).toEqual(neighbor.before)
     expect(stale?.processingAttemptId).not.toBe(unstarted.processingAttemptId)
   })
 
-  it('claims only the requested due requests', async () => {
-    const [owner, bystander] = await Promise.all([createTestUser(), createTestUser()])
+  it('claims bounded owned pages while an equally eligible neighbor stays unchanged', async () => {
+    const neighbor = await createUserDeletionSweepNeighbor()
+    const owner = await createTestUser()
+    const bystander = await createTestUser()
     const owned = await createUserDeletionRequest(owner.id, owner.id)
     const other = await createUserDeletionRequest(bystander.id, bystander.id)
     await makeUserDeletionRecoverableForTest(owned.id, 'unstarted')
     await makeUserDeletionRecoverableForTest(other.id, 'unstarted')
 
-    await expect(claimRecoverableUserDeletions([owned.id])).resolves.toEqual([
+    await expect(claimRecoverableUserDeletions([owned.id, other.id], 1)).resolves.toEqual([
       { requestId: owned.id, processingAttemptId: owned.processingAttemptId },
     ])
-    // The bystander was left due, so a second scoped claim still takes it.
-    await expect(claimRecoverableUserDeletions([other.id])).resolves.toEqual([
+    await expect(claimRecoverableUserDeletions([owned.id, other.id], 1)).resolves.toEqual([
       { requestId: other.id, processingAttemptId: other.processingAttemptId },
     ])
+    await expect(claimRecoverableUserDeletions([owned.id, other.id], 1)).resolves.toEqual([])
+    expect(await readUserDeletionSweepNeighbor(neighbor.id)).toEqual(neighbor.before)
   })
 
   it('rotates the token after a terminal processing failure before recovery', async () => {
+    const neighbor = await createUserDeletionSweepNeighbor()
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
 
@@ -101,10 +112,11 @@ describe('user deletion lifecycle', () => {
     if (!released) throw new Error('Expected released request')
 
     await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
-    const recovered = (await claimRecoverableUserDeletions()).find(
-      candidate => candidate.requestId === request.id,
-    )
-    expect(recovered?.processingAttemptId).toBe(released.processingAttemptId)
+    const recovered = await claimRecoverableUserDeletions([request.id], 1)
+    expect(recovered).toEqual([
+      { requestId: request.id, processingAttemptId: released.processingAttemptId },
+    ])
+    expect(await readUserDeletionSweepNeighbor(neighbor.id)).toEqual(neighbor.before)
   })
 
   it('preserves the token after a non-final processing failure', async () => {

@@ -1,7 +1,11 @@
+import {
+  createUserDeletionSweepNeighbor,
+  readUserDeletionSweepNeighbor,
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 import { describe, expect, it, vi } from 'vitest'
 import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-deletions'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
-import { claimRecoverableUserDeletions, createUserDeletionRequest } from '@services/user-deletions'
+import { createUserDeletionRequest } from '@services/user-deletions'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   getUserDeletionDispatchedAtForTest,
@@ -17,6 +21,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 describe('user deletion recovery with a retained failed job under the attempt token', () => {
   it('re-dispatches the unstarted attempt so its job runs and claims the token', async () => {
+    const neighbor = await createUserDeletionSweepNeighbor()
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     const attempt = { requestId: request.id, processingAttemptId: request.processingAttemptId }
@@ -30,9 +35,8 @@ describe('user deletion recovery with a retained failed job under the attempt to
       await expect((await accountLifecycle.getJob(jobId))?.getState()).resolves.toBe('failed')
       await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
 
-      await recoverUserDeletions({
-        claimRecoverableUserDeletions: () => claimRecoverableUserDeletions([request.id]),
-      })
+      await expect(recoverUserDeletions([request.id], 1)).resolves.toEqual({ enqueued: 1 })
+      expect(await readUserDeletionSweepNeighbor(neighbor.id)).toEqual(neighbor.before)
 
       const redispatched = await accountLifecycle.getJob(jobId)
       if (!redispatched) throw new Error('Expected recovery to dispatch the attempt again')
@@ -56,6 +60,7 @@ describe('user deletion recovery with a retained failed job under the attempt to
   })
 
   it('keeps a still-queued delayed job as the canonical delivery of its token', async () => {
+    const neighbor = await createUserDeletionSweepNeighbor()
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     const attempt = { requestId: request.id, processingAttemptId: request.processingAttemptId }
@@ -68,9 +73,8 @@ describe('user deletion recovery with a retained failed job under the attempt to
       await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
       const staleDispatchedAt = await getUserDeletionDispatchedAtForTest(request.id)
 
-      await recoverUserDeletions({
-        claimRecoverableUserDeletions: () => claimRecoverableUserDeletions([request.id]),
-      })
+      await expect(recoverUserDeletions([request.id], 1)).resolves.toEqual({ enqueued: 1 })
+      expect(await readUserDeletionSweepNeighbor(neighbor.id)).toEqual(neighbor.before)
 
       // Recovery claimed the request, so it considered this exact token and left the job alone.
       const dispatchedAt = await getUserDeletionDispatchedAtForTest(request.id)

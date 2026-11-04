@@ -1,6 +1,10 @@
+import {
+  createUserDeletionSweepNeighbor,
+  readUserDeletionSweepNeighbor,
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import type { Job } from 'glide-mq'
-import { claimRecoverableUserDeletions, createUserDeletionRequest } from '@services/user-deletions'
+import { createUserDeletionRequest } from '@services/user-deletions'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -83,16 +87,17 @@ describe('user-deletions processor', () => {
     ).rejects.toThrow('recovery sweep reached')
   })
 
-  it('recovers durable requests and enqueues their recoverable attempts', async () => {
+  it('recovers bounded owned pages and leaves an eligible neighbor unchanged', async () => {
+    const neighbor = await createUserDeletionSweepNeighbor()
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
 
-    await expect(
-      recoverUserDeletions({
-        claimRecoverableUserDeletions: () => claimRecoverableUserDeletions([request.id]),
-      }),
-    ).resolves.toEqual({ enqueued: 1 })
+    const otherUser = await createTestUser()
+    const other = await createUserDeletionRequest(otherUser.id, otherUser.id)
+    await makeUserDeletionRecoverableForTest(other.id, 'unstarted')
+
+    await expect(recoverUserDeletions([request.id, other.id], 1)).resolves.toEqual({ enqueued: 1 })
 
     const queued = await accountLifecycle.getJob(
       `user-deletion__${request.id}__${request.processingAttemptId}`,
@@ -101,6 +106,19 @@ describe('user-deletions processor', () => {
       requestId: request.id,
       processingAttemptId: request.processingAttemptId,
     })
+    expect(
+      await accountLifecycle.getJob(`user-deletion__${other.id}__${other.processingAttemptId}`),
+    ).toBeNull()
+    await expect(recoverUserDeletions([request.id, other.id], 1)).resolves.toEqual({ enqueued: 1 })
+    const next = await accountLifecycle.getJob(
+      `user-deletion__${other.id}__${other.processingAttemptId}`,
+    )
+    expect(next?.data).toEqual({
+      requestId: other.id,
+      processingAttemptId: other.processingAttemptId,
+    })
+    await expect(recoverUserDeletions([request.id, other.id], 1)).resolves.toEqual({ enqueued: 0 })
+    expect(await readUserDeletionSweepNeighbor(neighbor.id)).toEqual(neighbor.before)
   })
 
   it('rejects unknown job names', async () => {
