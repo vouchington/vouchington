@@ -14,11 +14,7 @@ import type {
   ReferralCrawlDispatchCursor,
 } from '@queues/crawl-referral-links/types'
 
-type ReferralLinkDispatchDependencies = {
-  now?: Date
-}
-
-type ScheduledReferralLinkDispatchOptions = ReferralLinkDispatchDependencies & {
+type ScheduledReferralLinkDispatchOptions = {
   referralLinkIds?: readonly string[]
   cursor?: ReferralCrawlDispatchCursor
   urlId?: string
@@ -32,10 +28,7 @@ export async function dispatchReferralLinkCrawls(
   const CRAWLER_REFERRAL_LINKS_FAILURE_RETRY_HOURS =
     getCrawlerReferralLinksWorkLimit('failure_retry_hours')
   const limits = resolveReferralCrawlPageLimits(options.limits)
-  const clock = options.cursor?.sweepStartedAt ?? new Date((options.now ?? new Date()).getTime())
-  if (typeof clock !== 'string' && !Number.isFinite(clock.getTime()))
-    throw new TypeError('Referral dispatch clock must be valid')
-  const sweepStartedAt = typeof clock === 'string' ? clock : clock.toISOString()
+  const sweepStartedAt = options.cursor?.sweepStartedAt ?? new Date().toISOString()
   const scope = {
     ...(options.urlId && { urlId: options.urlId }),
     ...(options.referralLinkIds && { referralLinkIds: options.referralLinkIds }),
@@ -123,11 +116,8 @@ export async function dispatchReferralLinkCrawls(
 }
 
 /** Event fanout preserves its URL scope and bypasses scheduled crawl cooldowns. */
-export async function enqueueReferralLinkCrawlsForUrlId(
-  urlId: string,
-  dependencies: ReferralLinkDispatchDependencies = {},
-) {
-  const result = await dispatchReferralLinkCrawls({ ...dependencies, urlId })
+export async function enqueueReferralLinkCrawlsForUrlId(urlId: string) {
+  const result = await dispatchReferralLinkCrawls({ urlId })
   if (result.hasMore && result.cursor)
     await enqueueCrawlReferralLinksDispatcher({ urlId, cursor: result.cursor })
   return { count: result.count, hasMore: result.hasMore }

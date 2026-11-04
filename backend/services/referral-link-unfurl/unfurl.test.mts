@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestUserDirect,
   createReferralProgramFixture,
@@ -13,8 +13,12 @@ import { deleteUserReferralLink } from '@services/user-referral-program-links/de
 import { getActiveChildUrlIdsForTest } from '@voucha/test-helpers/entities/referral-links'
 import { addUrl } from '@services/urls/upsert'
 import type { PrivateUser } from '@services/users/types'
-import type { BrowserCrawlResult } from '@services/browser-crawl'
+import * as browserCrawl from '@services/browser-crawl'
 import { suppressedError } from '@voucha/test-helpers/suppressed-error'
+import {
+  answerPostgresReadsForTest,
+  rejectPostgresReadForTest,
+} from '@voucha/test-helpers/injected-failures'
 import { constructChildUrls, type getAmexCardSlugCatalog } from './construct-amex-children.mts'
 import { runReferralLinkUnfurl } from './unfurl.mts'
 
@@ -59,30 +63,33 @@ describe('runReferralLinkUnfurl', () => {
   }
 
   function stubCrawl(finalUrl: string) {
-    let calls = 0
-    async function crawlWithBrowser(): Promise<BrowserCrawlResult> {
-      calls++
-      return { statusCode: 200, hasContent: true, title: 'stub', contentLength: 1, finalUrl }
-    }
-    return { crawlWithBrowser, callCount: () => calls }
+    const spy = vi.spyOn(browserCrawl, 'crawlWithBrowser').mockResolvedValue({
+      statusCode: 200,
+      hasContent: true,
+      title: 'stub',
+      contentLength: 1,
+      finalUrl,
+    })
+    onTestFinished(() => spy.mockRestore())
+    return spy
   }
 
   function stubCrawlThrows(error: Error) {
-    let calls = 0
-    async function crawlWithBrowser(): Promise<BrowserCrawlResult> {
-      calls++
-      throw error
-    }
-    return { crawlWithBrowser, callCount: () => calls }
+    const spy = vi.spyOn(browserCrawl, 'crawlWithBrowser').mockRejectedValue(error)
+    onTestFinished(() => spy.mockRestore())
+    return spy
   }
 
-  function stubCatalog(cards: AmexCardSlug[]) {
-    let calls = 0
-    async function getAmexCardSlugCatalog(): Promise<AmexCardSlug[]> {
-      calls++
-      return cards
-    }
-    return { getAmexCardSlugCatalog, callCount: () => calls }
+  /** Answers the global catalog read with exactly these cards; the production parser still runs. */
+  function answerCatalog(...catalogs: AmexCardSlug[][]) {
+    onTestFinished(
+      answerPostgresReadsForTest(
+        '/* getAmexCardSlugCatalog */',
+        catalogs.map(cards =>
+          cards.map(card => ({ pathname: `/en-us/referral/${card.kind}/${card.slug}%` })),
+        ),
+      ),
+    )
   }
 
   it('happy path: creates one child per catalog card and marks the parent completed', async () => {
@@ -95,24 +102,26 @@ describe('runReferralLinkUnfurl', () => {
     ]
     await Promise.all(cards.map(card => createAmexCardFixture(owner, card)))
     const finalUrl = `https://redirected.example.com/landed?corid=${randomSlug('corid')}`
-    await runReferralLinkUnfurl(parent.id, {
-      crawlWithBrowser: stubCrawl(finalUrl).crawlWithBrowser,
-      getAmexCardSlugCatalog: stubCatalog(cards).getAmexCardSlugCatalog,
-    })
+    const crawl = stubCrawl(finalUrl)
+    answerCatalog(cards)
+    await runReferralLinkUnfurl(parent.id)
+    expect(crawl).toHaveBeenCalledOnce()
     const updated = await getUserReferralLink(parent.id)
     expect(updated?.unfurl_completed_at).toBeTruthy()
     expect(updated?.unfurl_failed_at).toBeNull()
+    const ownedUrls = await Promise.all(
+      constructChildUrls(finalUrl, cards).map(url => addUrl(owner.id, url)),
+    )
     const childIds = await getActiveChildUrlIdsForTest(parent.id)
     expect(childIds).toHaveLength(cards.length)
+    expect(childIds).toEqual(expect.arrayContaining(ownedUrls.map(url => url!.id)))
   })
   it('no-ops for a missing parent link id, never crawling', async () => {
     const crawl = stubCrawl('https://example.com/never-used')
 
-    await expect(
-      runReferralLinkUnfurl(randomUUID(), { crawlWithBrowser: crawl.crawlWithBrowser }),
-    ).resolves.toBeUndefined()
+    await expect(runReferralLinkUnfurl(randomUUID())).resolves.toBeUndefined()
 
-    expect(crawl.callCount()).toBe(0)
+    expect(crawl).not.toHaveBeenCalled()
   })
 
   it('no-ops for a soft-deleted parent link, never crawling', async () => {
@@ -121,11 +130,9 @@ describe('runReferralLinkUnfurl', () => {
     await deleteUserReferralLink(owner, parent.id)
     const crawl = stubCrawl('https://example.com/never-used')
 
-    await expect(
-      runReferralLinkUnfurl(parent.id, { crawlWithBrowser: crawl.crawlWithBrowser }),
-    ).resolves.toBeUndefined()
+    await expect(runReferralLinkUnfurl(parent.id)).resolves.toBeUndefined()
 
-    expect(crawl.callCount()).toBe(0)
+    expect(crawl).not.toHaveBeenCalled()
   })
 
   it('no-ops when the given id is itself a child link, never crawling', async () => {
@@ -147,11 +154,9 @@ describe('runReferralLinkUnfurl', () => {
     )[0]!
     const crawl = stubCrawl('https://example.com/never-used')
 
-    await expect(
-      runReferralLinkUnfurl(child.id, { crawlWithBrowser: crawl.crawlWithBrowser }),
-    ).resolves.toBeUndefined()
+    await expect(runReferralLinkUnfurl(child.id)).resolves.toBeUndefined()
 
-    expect(crawl.callCount()).toBe(0)
+    expect(crawl).not.toHaveBeenCalled()
   })
 
   it('fails without crawling when the owner no longer has an active Plus/Pro membership', async () => {
@@ -159,9 +164,9 @@ describe('runReferralLinkUnfurl', () => {
     const parent = await createParentLink(owner!, 'downgraded')
     const crawl = stubCrawl('https://example.com/never-used')
 
-    await runReferralLinkUnfurl(parent.id, { crawlWithBrowser: crawl.crawlWithBrowser })
+    await runReferralLinkUnfurl(parent.id)
 
-    expect(crawl.callCount()).toBe(0)
+    expect(crawl).not.toHaveBeenCalled()
     const updated = await getUserReferralLink(parent.id)
     expect(updated?.unfurl_failed_at).toBeTruthy()
     expect(updated?.unfurl_last_error).toBe('Owner no longer has an active Plus/Pro membership')
@@ -171,11 +176,9 @@ describe('runReferralLinkUnfurl', () => {
   it('marks the parent failed and rethrows when the crawl throws', async () => {
     const owner = await createPlusOwner()
     const parent = await createParentLink(owner, 'crawl-fails')
-    const crawl = stubCrawlThrows(suppressedError('boom'))
+    stubCrawlThrows(suppressedError('boom'))
 
-    await expect(
-      runReferralLinkUnfurl(parent.id, { crawlWithBrowser: crawl.crawlWithBrowser }),
-    ).rejects.toThrow('boom')
+    await expect(runReferralLinkUnfurl(parent.id)).rejects.toThrow('boom')
 
     const updated = await getUserReferralLink(parent.id)
     expect(updated?.unfurl_failed_at).toBeTruthy()
@@ -186,16 +189,12 @@ describe('runReferralLinkUnfurl', () => {
   it('marks the parent failed without throwing when child URL construction fails', async () => {
     const owner = await createPlusOwner()
     const parent = await createParentLink(owner, 'construct-fails')
-    const crawl = stubCrawl('https://redirected.example.com/landed?x=1')
+    stubCrawl('https://redirected.example.com/landed?x=1')
+    onTestFinished(
+      rejectPostgresReadForTest('/* getAmexCardSlugCatalog */', suppressedError('catalog boom')),
+    )
 
-    await expect(
-      runReferralLinkUnfurl(parent.id, {
-        crawlWithBrowser: crawl.crawlWithBrowser,
-        getAmexCardSlugCatalog: async () => {
-          throw suppressedError('catalog boom')
-        },
-      }),
-    ).resolves.toBeUndefined()
+    await expect(runReferralLinkUnfurl(parent.id)).resolves.toBeUndefined()
 
     const updated = await getUserReferralLink(parent.id)
     expect(updated?.unfurl_failed_at).toBeTruthy()
@@ -206,12 +205,10 @@ describe('runReferralLinkUnfurl', () => {
   it('fails with a zero-candidates message and leaves the parent otherwise untouched', async () => {
     const owner = await createPlusOwner()
     const parent = await createParentLink(owner, 'zero-candidates')
-    const crawl = stubCrawl('https://redirected.example.com/landed?x=1')
+    stubCrawl('https://redirected.example.com/landed?x=1')
+    answerCatalog([])
 
-    await runReferralLinkUnfurl(parent.id, {
-      crawlWithBrowser: crawl.crawlWithBrowser,
-      getAmexCardSlugCatalog: stubCatalog([]).getAmexCardSlugCatalog,
-    })
+    await runReferralLinkUnfurl(parent.id)
 
     const updated = await getUserReferralLink(parent.id)
     expect(updated).toBeTruthy()
@@ -238,19 +235,16 @@ describe('runReferralLinkUnfurl', () => {
     const keepUrlRecord = await addUrl(owner.id, keepUrl)
     const dropUrlRecord = await addUrl(owner.id, dropUrl)
 
-    await runReferralLinkUnfurl(parent.id, {
-      crawlWithBrowser: stubCrawl(finalUrl).crawlWithBrowser,
-      getAmexCardSlugCatalog: stubCatalog([cardKeep, cardDrop]).getAmexCardSlugCatalog,
-    })
+    stubCrawl(finalUrl)
+    answerCatalog([cardKeep, cardDrop], [cardKeep])
+
+    await runReferralLinkUnfurl(parent.id)
 
     const idsAfterRun1 = await getActiveChildUrlIdsForTest(parent.id)
     expect(idsAfterRun1).toHaveLength(2)
     expect(idsAfterRun1).toEqual(expect.arrayContaining([keepUrlRecord!.id, dropUrlRecord!.id]))
 
-    await runReferralLinkUnfurl(parent.id, {
-      crawlWithBrowser: stubCrawl(finalUrl).crawlWithBrowser,
-      getAmexCardSlugCatalog: stubCatalog([cardKeep]).getAmexCardSlugCatalog,
-    })
+    await runReferralLinkUnfurl(parent.id)
 
     const idsAfterRun2 = await getActiveChildUrlIdsForTest(parent.id)
     expect(idsAfterRun2).toEqual([keepUrlRecord!.id])
@@ -279,10 +273,10 @@ describe('runReferralLinkUnfurl', () => {
       label: 'manually added',
     })
 
-    await runReferralLinkUnfurl(parent.id, {
-      crawlWithBrowser: stubCrawl(finalUrl).crawlWithBrowser,
-      getAmexCardSlugCatalog: stubCatalog([cardConflict, cardOk]).getAmexCardSlugCatalog,
-    })
+    stubCrawl(finalUrl)
+    answerCatalog([cardConflict, cardOk])
+
+    await runReferralLinkUnfurl(parent.id)
 
     const updatedParent = await getUserReferralLink(parent.id)
     expect(updatedParent?.unfurl_completed_at).toBeTruthy()

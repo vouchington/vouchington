@@ -29,38 +29,24 @@ function isLocalOrPrivateHostname(hostname: string): boolean {
   )
 }
 
-type BrowserCrawlDependencies = {
-  isUrlCrawlable?: typeof isUrlCrawlable
-  crawlWithBrowser?: typeof crawlWithBrowser
-  handleBrowserCrawlResult?: typeof handleBrowserCrawlResult
-  handleBrowserCrawlError?: typeof handleBrowserCrawlError
-}
-
 export async function processBrowserCrawl(
   url: { id: string; url: string; hostname: { id: string; hostname: string } },
   linkId: string,
   crawler: Crawler,
-  dependencies?: BrowserCrawlDependencies,
 ): Promise<void> {
   if (isLocalOrPrivateHostname(url.hostname.hostname)) return
 
-  const doIsUrlCrawlable = dependencies?.isUrlCrawlable ?? isUrlCrawlable
-  const isCrawlable = await doIsUrlCrawlable(url.url, CRAWLER_USER_AGENT).catch((err: unknown) => {
+  const isCrawlable = await isUrlCrawlable(url.url, CRAWLER_USER_AGENT).catch((err: unknown) => {
     onError(err instanceof Error ? err : new Error(String(err)))
     return false
   })
   if (!isCrawlable) return
 
   try {
-    const doCrawlWithBrowser = dependencies?.crawlWithBrowser ?? crawlWithBrowser
-    const doHandleBrowserCrawlResult =
-      dependencies?.handleBrowserCrawlResult ?? handleBrowserCrawlResult
-    const result = await doCrawlWithBrowser(url.url)
-    await doHandleBrowserCrawlResult(url.id, linkId, crawler, result)
+    const result = await crawlWithBrowser(url.url)
+    await handleBrowserCrawlResult(url.id, linkId, crawler, result)
   } catch (err) {
-    const doHandleBrowserCrawlError =
-      dependencies?.handleBrowserCrawlError ?? handleBrowserCrawlError
-    await doHandleBrowserCrawlError(linkId, err)
+    await handleBrowserCrawlError(linkId, err)
   }
 }
 
