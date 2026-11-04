@@ -90,7 +90,9 @@ describe('initial Stripe renewal decision', () => {
       should_cancel_at_period_end: true,
     })
     expect(
-      (await getMembershipHistory(user.id)).find(change => change.stripe_event_id === eventId),
+      (await getMembershipHistory(user.id)).results.find(
+        change => change.stripe_event_id === eventId,
+      ),
     ).toMatchObject({
       membership_id: membership!.id,
       should_cancel_at_period_end: true,

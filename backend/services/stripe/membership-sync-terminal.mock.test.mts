@@ -121,7 +121,7 @@ describe('terminal membership sync', () => {
       cancelled_at: endedAt,
       source_cancelled_at: endedAt,
     })
-    const history = await getMembershipHistory(member.id)
+    const history = (await getMembershipHistory(member.id)).results
     const cancellation = history.find(change => change.stripe_event_id === eventId)
     const resumedGrant = history.find(
       change => change.change_type === 'admin_grant' && change.membership_id !== grant.id,
@@ -228,7 +228,7 @@ describe('terminal membership sync', () => {
     })
     await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({ open_activation_count: 0 })
 
-    const historyBeforeReplay = await getMembershipHistory(member.id)
+    const historyBeforeReplay = (await getMembershipHistory(member.id)).results
     const effectsBeforeReplay = await Promise.all(
       historyBeforeReplay.map(change => getTestMembershipEntitlementEffects(change.id)),
     )
@@ -238,7 +238,9 @@ describe('terminal membership sync', () => {
     await expect(
       getMembershipByStripeSubscriptionId(getSourceIdentity(subscriptionId)),
     ).resolves.toMatchObject({ id: activeMembership?.id, plan: 'pro', status: 'active' })
-    await expect(getMembershipHistory(member.id)).resolves.toEqual(historyBeforeReplay)
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
+      historyBeforeReplay,
+    )
     await expect(
       Promise.all(
         historyBeforeReplay.map(change => getTestMembershipEntitlementEffects(change.id)),
@@ -285,7 +287,7 @@ describe('terminal membership sync', () => {
       cancelled_at: null,
       source_cancelled_at: null,
     })
-    await expect(getMembershipHistory(member.id)).resolves.toEqual(
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ stripe_event_id: terminalEventId }),
         expect.objectContaining({

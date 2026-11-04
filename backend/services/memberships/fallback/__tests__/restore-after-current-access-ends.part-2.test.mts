@@ -42,7 +42,7 @@ describe('fallback access after current direct or administrator-grant access end
     expect(restored).toMatchObject({ plan: 'plus', status: 'active' })
     expect(restored?.id).not.toBe(family.id)
     expect(restored?.id).not.toBe(grant.id)
-    const history = await getMembershipHistory(user.id)
+    const history = (await getMembershipHistory(user.id)).results
     const expiration = history.find(
       change => change.membership_id === grant.id && change.change_type === 'expiration',
     )
@@ -108,7 +108,7 @@ describe('fallback access after current direct or administrator-grant access end
       expired_at: new Date('2020-01-01T00:00:00.000Z'),
       projection_ended_at: expect.any(Date),
     })
-    const history = await getMembershipHistory(user.id)
+    const history = (await getMembershipHistory(user.id)).results
     expect(history).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -202,7 +202,7 @@ describe('fallback access after current direct or administrator-grant access end
     expect(restored).toMatchObject({ plan: 'plus', status: 'active' })
     expect(restored?.id).not.toBe(family.id)
     expect(restored?.id).not.toBe(secondActiveGrant?.id)
-    const history = await getMembershipHistory(user.id)
+    const history = (await getMembershipHistory(user.id)).results
     const firstExpiration = history.find(
       change =>
         change.membership_id === firstActiveGrant!.id && change.change_type === 'expiration',

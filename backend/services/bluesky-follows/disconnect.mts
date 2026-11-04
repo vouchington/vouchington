@@ -88,26 +88,40 @@ async function cleanupFollowerRoleBeforeDisconnect(
   userId: string,
   linked: BlueskyLinkedAccount,
 ): Promise<void> {
-  const receipts = await listBlueskyFollowReceiptsForFollower(
+  let receipts = await listBlueskyFollowReceiptsForFollower(
     userId,
     linked.bluesky_did,
     linked.link_authorization_id,
+    null,
   )
-  if (receipts.length > 0) {
-    try {
-      await runWithAttachedBlueskySession(userId, linked.link_authorization_id, async () => {
-        const session = await restoreBlueskySession(
-          await getBlueskyOAuthClient(),
-          linked.bluesky_did,
-        )
+  if (receipts.length === 0) return
+  try {
+    await runWithAttachedBlueskySession(userId, linked.link_authorization_id, async () => {
+      const session = await restoreBlueskySession(await getBlueskyOAuthClient(), linked.bluesky_did)
+      // Every receipt must be attempted before revocation; failed deletes stay behind the cursor.
+      /* oxlint-disable no-await-in-loop -- ordered page operations depend on the preceding page */
+      for (;;) {
+        const cursor = receipts[receipts.length - 1]!.followee_user_id
+
+        // no-mistakes-disable-next-line query-reached-per-item: each bounded receipt page is attempted before revocation; failed remote deletes must remain behind the physical cursor
         await deleteBlueskyFollowRecordsForFollower(session, receipts)
-      })
-    } catch (err) {
-      // Could not even authenticate to attempt cleanup (e.g. an already-invalid session).
-      // Disconnect still succeeds; revoking the exact account generation cascades its receipts.
-      onError(err instanceof Error ? err : new Error(String(err)))
-    }
+
+        // no-mistakes-disable-next-line query-reached-per-item: one exact-generation keyset page follows the preceding remote-cleanup page
+        receipts = await listBlueskyFollowReceiptsForFollower(
+          userId,
+          linked.bluesky_did,
+          linked.link_authorization_id,
+          cursor,
+        )
+        if (receipts.length === 0) break
+      }
+    })
+  } catch (err) {
+    // Could not even authenticate to attempt cleanup (e.g. an already-invalid session).
+    // Disconnect still succeeds; revoking the exact account generation cascades its receipts.
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
+  /* oxlint-enable no-await-in-loop */
 }
 
 export async function disconnectBlueskyAccountAndCleanupFollows(

@@ -23,7 +23,7 @@ describe('expireElapsedMemberships database boundary', () => {
       hasMore: false,
     })
 
-    const history = await getMembershipHistory(member.id)
+    const history = (await getMembershipHistory(member.id)).results
     expect(history.filter(change => change.change_type === 'expiration')).toHaveLength(
       expectedExpired,
     )

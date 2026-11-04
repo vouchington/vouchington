@@ -44,7 +44,9 @@ describe('expireElapsedMembershipsForUsers', () => {
     })
     expect(await getMembershipByUserId(members[0]!.id)).toBeNull()
     expect(
-      (await getMembershipHistory(members[1]!.id)).filter(row => row.change_type === 'expiration'),
+      (await getMembershipHistory(members[1]!.id)).results.filter(
+        row => row.change_type === 'expiration',
+      ),
     ).toEqual([])
     expect(await expireElapsedMembershipsForUsers([members[1]!.id])).toEqual({
       expired: 1,
@@ -103,7 +105,7 @@ describe('expireElapsedMembershipsForUsers', () => {
     })
     const activeMembership = await getMembershipByUserId(member.id)
     expect(activeMembership).toMatchObject({ plan: 'pro' })
-    const history = await getMembershipHistory(member.id)
+    const history = (await getMembershipHistory(member.id)).results
     const expirationChange = history.find(
       change => change.membership_id === first.id && change.change_type === 'expiration',
     )

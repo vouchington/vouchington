@@ -42,7 +42,7 @@ describe('create', () => {
       expect(membership!.plan).toBe('plus')
       expect(membership!.status).toBe('active')
 
-      const history = await getMembershipHistory(user.id)
+      const history = (await getMembershipHistory(user.id)).results
       expect(history[0].membership_id).toBe(result.id)
       expect(history[0].change_type).toBe('admin_grant')
     })
@@ -100,7 +100,7 @@ describe('create', () => {
 
       const elapsedProjection = await getTestMembershipRaw(elapsedGrant.id)
       expect(elapsedProjection?.expired_at).toEqual(expect.any(Date))
-      const expirationChange = (await getMembershipHistory(stripeUser.id)).find(
+      const expirationChange = (await getMembershipHistory(stripeUser.id)).results.find(
         change => change.membership_id === elapsedGrant.id && change.change_type === 'expiration',
       )
       expect(expirationChange?.expired_at).toEqual(elapsedProjection?.expired_at)
@@ -124,7 +124,7 @@ describe('create', () => {
 
       const membership = await getTestMembershipRaw(result.id)
       expect(membership?.should_cancel_at_period_end).toBe(true)
-      expect(await getMembershipHistory(cancelUser.id)).toEqual([
+      expect((await getMembershipHistory(cancelUser.id)).results).toEqual([
         expect.objectContaining({
           membership_id: result.id,
           change_type: 'renewal',
@@ -149,7 +149,7 @@ describe('create', () => {
       expect(membership?.status).toBe('cancelled')
       expect(membership?.should_cancel_at_period_end).toBe(false)
       expect(membership?.source_auto_renews).toBe(false)
-      expect(await getMembershipHistory(cancelUser.id)).toEqual([
+      expect((await getMembershipHistory(cancelUser.id)).results).toEqual([
         expect.objectContaining({
           membership_id: result.id,
           change_type: 'cancellation',
@@ -236,7 +236,7 @@ describe('create', () => {
       await grantMembership(admin.id, noteUser.id, 'plus', sku.id, 30, {
         note: 'Complimentary access for beta tester',
       })
-      const history = await getMembershipHistory(noteUser.id)
+      const history = (await getMembershipHistory(noteUser.id)).results
       expect(history.length).toBeGreaterThanOrEqual(1)
       const latestChange = history[0]
       expect(latestChange.note).toBe('Complimentary access for beta tester')
@@ -252,7 +252,7 @@ describe('create', () => {
       await updateTestMembershipExpiresAt(first.id, new Date('2020-01-01T00:00:00Z'))
       const proSku = await createTestSku({ plan: 'pro' })
       const secondResult = await grantMembership(admin.id, historyUser.id, 'pro', proSku.id, 30)
-      const history = await getMembershipHistory(historyUser.id)
+      const history = (await getMembershipHistory(historyUser.id)).results
       const replacementChange = history[0]
       expect(replacementChange.change_type).toBe('admin_grant')
       expect(replacementChange.from_plan).toBe('plus')

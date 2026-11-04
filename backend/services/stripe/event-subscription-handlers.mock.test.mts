@@ -271,9 +271,9 @@ describe('membership subscription event handlers', () => {
       cancelled_at: endedAt,
       paused_at: null,
     })
-    expect(
-      (await getMembershipHistory(member.id)).filter(change => change.stripe_event_id === eventId),
-    ).toEqual([expect.objectContaining({ change_type: 'cancellation' })])
+    const { results } = await getMembershipHistory(member.id)
+    const changes = results.filter(row => row.stripe_event_id === eventId)
+    expect(changes).toEqual([expect.objectContaining({ change_type: 'cancellation' })])
   })
 })
 

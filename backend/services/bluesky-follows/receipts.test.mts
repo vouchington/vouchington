@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { blueskyFollowsWorkConfig } from './work-limits.mts'
 import {
   createRandomString,
   createTestUserDirect,
@@ -9,6 +11,8 @@ import {
 } from '@voucha/test-helpers'
 import {
   getBlueskyFollowReceipt,
+  listBlueskyFollowReceiptsForFollower,
+  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers,
   saveBlueskyFollowReceipt as saveScopedBlueskyFollowReceipt,
 } from './receipts.mts'
 import { getBlueskyLinkedAccountForUser } from '@services/bluesky-accounts'
@@ -35,6 +39,74 @@ function fakeRecordUri(): string {
 }
 
 describe('bluesky follow receipt ownership', () => {
+  it('pages follower receipts and deletes only other followers of the target', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 1 }),
+    )
+    const follower = await createTestUserDirect()
+    const target = await createTestUserDirect()
+    const other = await createTestUserDirect()
+    const account = await insertTestBlueskyLinkedAccount({ userId: follower.id })
+    await saveBlueskyFollowReceipt(follower.id, target.id, fakeRecordUri())
+    await saveBlueskyFollowReceipt(follower.id, other.id, fakeRecordUri())
+    await saveBlueskyFollowReceipt(target.id, target.id, fakeRecordUri())
+    await saveBlueskyFollowReceipt(other.id, target.id, fakeRecordUri())
+
+    const first = await listBlueskyFollowReceiptsForFollower(
+      follower.id,
+      account.bluesky_did,
+      account.link_authorization_id,
+      null,
+    )
+    expect(first).toHaveLength(1)
+    const second = await listBlueskyFollowReceiptsForFollower(
+      follower.id,
+      account.bluesky_did,
+      account.link_authorization_id,
+      first[0]!.followee_user_id,
+    )
+    expect(second).toHaveLength(1)
+    expect([first[0]!.followee_user_id, second[0]!.followee_user_id].toSorted()).toEqual(
+      [target.id, other.id].toSorted(),
+    )
+
+    await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers(target.id)
+    expect(
+      await getBlueskyFollowReceipt(
+        follower.id,
+        target.id,
+        account.bluesky_did,
+        account.link_authorization_id,
+      ),
+    ).toBeNull()
+    expect(
+      await getBlueskyFollowReceipt(
+        follower.id,
+        other.id,
+        account.bluesky_did,
+        account.link_authorization_id,
+      ),
+    ).not.toBeNull()
+    const targetAccount = await getBlueskyLinkedAccountForUser(target.id)
+    expect(
+      await getBlueskyFollowReceipt(
+        target.id,
+        target.id,
+        targetAccount!.bluesky_did,
+        targetAccount!.link_authorization_id,
+      ),
+    ).not.toBeNull()
+    const otherAccount = await getBlueskyLinkedAccountForUser(other.id)
+    expect(
+      await getBlueskyFollowReceipt(
+        other.id,
+        target.id,
+        otherAccount!.bluesky_did,
+        otherAccount!.link_authorization_id,
+      ),
+    ).toBeNull()
+  })
+
   it('binds the receipt to the exact linked-account generation', async () => {
     const follower = await createTestUserDirect()
     const followee = await createTestUserDirect()

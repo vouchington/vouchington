@@ -1,6 +1,7 @@
 import { read, withTransactionOptions, write, type QueryOptions } from '@data-stores/psql'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import sql from 'sql-template-strings'
+import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 
 // CRUD on bluesky_follow_records (see migrations/0571-00-00-bluesky-follow-records.sql). A row is
 // Voucha's durable receipt that a live app.bsky.graph.follow record currently exists on Bluesky for
@@ -96,6 +97,7 @@ export async function listBlueskyFollowReceiptsForFollower(
   followerUserId: string,
   followerBlueskyDid: string,
   followerAuthorizationId: string,
+  cursor: string | null,
   options: QueryOptions = {},
 ): Promise<BlueskyFollowReceipt[]> {
   const { rows } = await read(
@@ -108,7 +110,10 @@ export async function listBlueskyFollowReceiptsForFollower(
         ON account.link_authorization_id = receipt.follower_account_link_authorization_id
       WHERE receipt.follower_user_id = ${followerUserId}
         AND account.bluesky_did = ${followerBlueskyDid}
-        AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}`,
+        AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}
+        AND (${cursor}::uuid IS NULL OR receipt.followee_user_id > ${cursor}::uuid)
+      ORDER BY receipt.followee_user_id
+      LIMIT ${getBlueskyFollowsWorkLimit('backfill_batch_size')}`,
     options,
   )
   return rows as BlueskyFollowReceipt[]
@@ -122,11 +127,26 @@ export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers(
   followeeUserId: string,
   options: QueryOptions = {},
 ): Promise<void> {
-  await write(
-    sql`/* deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers */
-      DELETE FROM bluesky_follow_records
-      WHERE followee_user_id = ${followeeUserId}
-        AND follower_user_id <> ${followeeUserId}`,
-    options,
-  )
+  const batchSize = getBlueskyFollowsWorkLimit('backfill_batch_size')
+  // Disconnect must clear all other followers' receipts before revoking the account.
+  /* oxlint-disable no-await-in-loop -- ordered page operations depend on the preceding page */
+  for (;;) {
+    // no-mistakes-disable-next-line query-reached-per-item: each iteration deletes one validated receipt page; disconnect must finish this exact followee cleanup before revocation
+    const { rowCount } = await write(
+      sql`/* deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers */
+        DELETE FROM bluesky_follow_records
+        WHERE followee_user_id = ${followeeUserId}
+          AND follower_user_id <> ${followeeUserId}
+          AND (follower_user_id, followee_user_id) IN (
+          SELECT follower_user_id, followee_user_id
+          FROM bluesky_follow_records
+          WHERE followee_user_id = ${followeeUserId}
+            AND follower_user_id <> ${followeeUserId}
+          LIMIT ${batchSize}
+        )`,
+      options,
+    )
+    if (!rowCount) break
+  }
+  /* oxlint-enable no-await-in-loop */
 }

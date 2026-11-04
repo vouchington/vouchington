@@ -104,6 +104,7 @@
     "@services/user-deletions": "workspace:^",
     "@services/user-import-export": "workspace:^",
     "@services/user-rate-limits": "workspace:^",
+    "@services/user-referral-program-links": "workspace:^",
     "@services/users": "workspace:^",
     "@services/vote-weight": "workspace:^",
     "@services/web-risk": "workspace:^",

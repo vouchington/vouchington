@@ -6402,6 +6402,9 @@ importers:
       '@services/user-rate-limits':
         specifier: workspace:^
         version: link:../user-rate-limits
+      '@services/user-referral-program-links':
+        specifier: workspace:^
+        version: link:../user-referral-program-links
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -7927,6 +7930,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
@@ -7951,6 +7957,9 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../../ts-shared/money
@@ -11998,6 +12007,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -12031,6 +12043,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^

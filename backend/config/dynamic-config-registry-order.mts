@@ -80,6 +80,7 @@ export const REGISTRY_ORDER = [
   'crawler-refresh-work-config',
   'referral-crawl-dispatch-work-config',
   'referral-unfurl-dispatch-work-config',
+  'referral-link-cleanup-work-config',
   'friends-dispatch-work-config',
   'entity-reconciliation-work-config',
   'api-keys-work-config',

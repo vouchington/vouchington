@@ -28,7 +28,7 @@ describe('changes', () => {
         toSkuId: toSku.id,
       })
 
-      const history = await getMembershipHistory(user.id)
+      const history = (await getMembershipHistory(user.id)).results
       expect(history.length).toBeGreaterThanOrEqual(1)
       const change = history[0]!
       expect(change.membership_id).toBe(membershipId)
@@ -63,7 +63,7 @@ describe('changes', () => {
         stripeEventId,
       })
 
-      const history = await getMembershipHistory(user.id)
+      const history = (await getMembershipHistory(user.id)).results
       const change = history[0]!
       expect(change.change_type).toBe('upgrade')
       expect(change.from_plan).toBe('plus')

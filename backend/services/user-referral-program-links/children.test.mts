@@ -1,4 +1,6 @@
-import { beforeAll, describe, it } from 'vitest'
+import { beforeAll, describe, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { referralLinkCleanupConfig } from './work-limits.mts'
 import assert from 'node:assert/strict'
 import type { PrivateUser } from '@services/users/types'
 import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
@@ -78,8 +80,9 @@ describe('children', () => {
   })
 
   it("softDeleteChildrenForUser soft-deletes all of a user's children across parents", async () => {
+    onTestFinished(overrideDynamicConfigFieldsForTest(referralLinkCleanupConfig, { batch_size: 1 }))
     const otherUser = await createTestUser()
-    const { children: userChildren } = await createParentWithChildren(1)
+    const { parent, children: userChildren } = await createParentWithChildren(3)
 
     const otherParent = await createUserReferralLink(otherUser, WEB_PROVENANCE, {
       user_id: otherUser.id,
@@ -99,8 +102,10 @@ describe('children', () => {
 
     await softDeleteChildrenForUser(user.id)
 
-    const deletedOwn = await getUserReferralLink(userChildren[0]!.id)
-    assert.equal(deletedOwn, null)
+    for (const child of userChildren) {
+      assert.equal(await getUserReferralLink(child.id), null)
+    }
+    assert.ok(await getUserReferralLink(parent.id))
 
     const untouchedOther = await getUserReferralLink(otherChild.id)
     assert.ok(untouchedOther)

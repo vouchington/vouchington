@@ -179,7 +179,9 @@ describe('ensureMembershipFromStripeSubscription', () => {
       paused_at: null,
     })
     expect(
-      (await getMembershipHistory(member.id)).find(change => change.stripe_event_id === eventId),
+      (await getMembershipHistory(member.id)).results.find(
+        change => change.stripe_event_id === eventId,
+      ),
     ).toMatchObject({
       membership_id: existingMembership.id,
       membership_provider_evidence_record_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
@@ -230,7 +232,7 @@ describe('ensureMembershipFromStripeSubscription', () => {
       }),
     )
     expect(membership).not.toBeNull()
-    const initialChanges = (await getMembershipHistory(member.id)).filter(
+    const initialChanges = (await getMembershipHistory(member.id)).results.filter(
       change => change.membership_id === membership!.id,
     )
     expect(initialChanges).toEqual([

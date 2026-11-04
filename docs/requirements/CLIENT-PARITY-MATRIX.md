@@ -35,6 +35,12 @@ REST membership overview and verification reads expose domain outcomes. Queue re
 clients must not infer a retry deadline from a pending verification. The producer contract lands before
 the dependent native model and fixture changes. This adds no native UI parity claim.
 
+## Membership history pagination
+
+The administrator membership-history read returns `results` and `page_info`, with an owner-scoped
+cursor for older changes. Web, Swift, and .NET have no consumers of this administrative endpoint;
+no dependent native work or new UI parity claim is required.
+
 ## Notification mark-all continuation
 
 REST and MCP mark one bounded page, return the immediate `marked_read` count and `has_more`, and

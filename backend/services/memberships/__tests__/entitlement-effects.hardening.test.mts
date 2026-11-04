@@ -72,7 +72,7 @@ describe('membership projection entitlement-effect transaction', () => {
     await expect(getTestMembershipEntitlementEffects(after.latest_change_id)).resolves.toEqual([
       expect.objectContaining({ user_id: user.id, delivered_at: null }),
     ])
-    await expect(getMembershipHistory(user.id)).resolves.toEqual([
+    await expect(getMembershipHistory(user.id).then(page => page.results)).resolves.toEqual([
       expect.objectContaining({ change_type: 'renewal', stripe_event_id: shortenedEventId }),
       expect.objectContaining({ change_type: 'renewal' }),
     ])

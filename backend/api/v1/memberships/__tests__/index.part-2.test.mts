@@ -241,8 +241,13 @@ describe('index', () => {
         .get(`/api/v1/memberships/history/${historyUser.id}`)
         .expect(200)
 
-      expect(response.body).toHaveProperty('changes')
-      expect(response.body.changes).toHaveLength(0)
+      expect(response.body).toHaveProperty('results')
+      expect(response.body.results).toHaveLength(0)
+      expect(response.body.page_info).toEqual({
+        has_next_page: false,
+        start_cursor: null,
+        end_cursor: null,
+      })
     })
 
     it('returns history with changes after granting membership', async () => {
@@ -263,8 +268,8 @@ describe('index', () => {
         .get(`/api/v1/memberships/history/${historyUser.id}`)
         .expect(200)
 
-      expect(response.body.changes.length).toBeGreaterThanOrEqual(1)
-      const adminGrant = response.body.changes.find(
+      expect(response.body.results.length).toBeGreaterThanOrEqual(1)
+      const adminGrant = response.body.results.find(
         (c: { change_type: string }) => c.change_type === 'admin_grant',
       )
       expect(adminGrant).toBeDefined()

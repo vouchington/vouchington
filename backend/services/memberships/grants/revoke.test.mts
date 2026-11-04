@@ -36,7 +36,7 @@ describe('revokeMembershipGrant', () => {
     await grantMembership(grantor.id, member.id, 'pro', queuedSku.id, 31)
     const [, queuedGrantId] = (await getTestGrantQueue(member.id)).grant_ids
     expect(queuedGrantId).toBeDefined()
-    const beforeHistory = await getMembershipHistory(member.id)
+    const beforeHistory = (await getMembershipHistory(member.id)).results
 
     const revoked = await revokeMembershipGrant(revoker.id, queuedGrantId!, 'incorrect grant')
 
@@ -50,7 +50,9 @@ describe('revokeMembershipGrant', () => {
       plan: 'plus',
       status: 'active',
     })
-    await expect(getMembershipHistory(member.id)).resolves.toEqual(beforeHistory)
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
+      beforeHistory,
+    )
     await expect(getTestMembershipGrant(queuedGrantId!)).resolves.toMatchObject({
       revoked_by_id: revoker.id,
       revocation_reason: 'incorrect grant',
@@ -97,7 +99,7 @@ describe('revokeMembershipGrant', () => {
     }
 
     expect(replayed).toMatchObject({ alreadyRevoked: true })
-    await expect(getMembershipHistory(member.id)).resolves.toEqual(
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ change_type: 'expiration' })]),
     )
   })
@@ -135,7 +137,7 @@ describe('revokeMembershipGrant', () => {
       revocation_reason: 'grant no longer applies',
       source_cancelled_at: expect.any(Date),
     })
-    await expect(getMembershipHistory(member.id)).resolves.not.toEqual(
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           change_type: 'admin_revoke',
@@ -215,7 +217,7 @@ describe('revokeMembershipGrant', () => {
       plan: 'pro',
       status: 'active',
     })
-    const history = await getMembershipHistory(member.id)
+    const history = (await getMembershipHistory(member.id)).results
     const revocation = history.find(change => change.change_type === 'admin_revoke')
     const successor = history.find(
       change => change.change_type === 'admin_grant' && change.to_sku_id === secondSku.id,
@@ -242,13 +244,13 @@ describe('revokeMembershipGrant', () => {
     const [, queuedGrantId] = (await getTestGrantQueue(member.id)).grant_ids
     expect(queuedGrantId).toBeDefined()
     await setTestMembershipGrantRemainingMilliseconds(queuedGrantId!, 0.5)
-    const before = await getMembershipHistory(member.id)
+    const before = (await getMembershipHistory(member.id)).results
     await updateTestMembershipExpiresAt(active.id, new Date('2020-01-01T00:00:00.000Z'))
 
     await expect(
       revokeMembershipGrant(admin.id, queuedGrantId!, 'too late'),
     ).rejects.toBeInstanceOf(CompletedMembershipGrantError)
-    const history = await getMembershipHistory(member.id)
+    const history = (await getMembershipHistory(member.id)).results
     expect(history).toHaveLength(before.length + 1)
     const expiration = history.find(change => change.change_type === 'expiration')
     expect(expiration).toBeDefined()

@@ -106,7 +106,7 @@ describe('reconcileStripeMembershipSource', () => {
       source_cancelled_at: null,
       projection_ended_at: null,
     })
-    const changes = (await getMembershipHistory(member.id)).filter(change =>
+    const changes = (await getMembershipHistory(member.id)).results.filter(change =>
       [terminalEventId, reactivationEventId].includes(change.stripe_event_id ?? ''),
     )
     expect(changes).toEqual(
@@ -193,7 +193,7 @@ describe('reconcileStripeMembershipSource', () => {
     await expect(getTestMembershipRaw(grant.id)).resolves.toMatchObject({
       projection_ended_at: expect.any(Date),
     })
-    await expect(getMembershipHistory(member.id)).resolves.toEqual(
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           membership_id: retained.id,
@@ -243,7 +243,7 @@ describe('reconcileStripeMembershipSource', () => {
     if (!active) throw new Error('Expected active Stripe membership')
     await reconcileOwnedStripeSource(eventId, sourceIdentity, activeValues)
 
-    const changes = await getMembershipHistory(user.id)
+    const changes = (await getMembershipHistory(user.id)).results
     const corrections = changes.filter(
       change => change.change_type === 'reactivation' && change.stripe_event_id === null,
     )
