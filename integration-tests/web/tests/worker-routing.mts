@@ -77,7 +77,7 @@ describe('web worker routing tests', () => {
   })
 
   describe('edge caching and bot classification', () => {
-    it('signed-out pages dispatch through CachedOrigin and signed-out APIs are publicly cacheable', async () => {
+    it('dispatches anonymous pages and preserves API cache policies', async () => {
       const pageResponse = await client.request('/')
       expect(pageResponse.status).toBe(200)
       expect(pageResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
@@ -86,7 +86,11 @@ describe('web worker routing tests', () => {
       const apiResponse = await client.request(`/api/v1/posts?anonymous-cache=${cacheKey}`)
       expect(apiResponse.status).toBe(200)
       expect(apiResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
-      expect(apiResponse.headers.get('cache-control')).toContain('public')
+      expect(apiResponse.headers.get('cache-control')).toBe('private, no-store')
+
+      const publicResponse = await client.request('/api/v1/topics')
+      expect(publicResponse.status).toBe(200)
+      expect(publicResponse.headers.get('cache-control')).toContain('public')
 
       // A real platform HIT is not observable via local `wrangler dev`: Workers
       // Cache sits in front of the named CachedOrigin entrypoint at Cloudflare's

@@ -83,7 +83,7 @@ describe('bounded story routes', () => {
       peers.itemIds.slice(0, 3),
     )
     expect(Object.keys(response.body.rss_feed_items)).toHaveLength(4)
-    expect(response.headers['cache-control']).toContain('public')
+    expect(response.headers['cache-control']).toBe('private, no-store')
   })
 
   it('paginates story detail at the bounded default with page-local sidecars and no count read', async () => {
