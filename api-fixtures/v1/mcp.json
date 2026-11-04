@@ -43613,7 +43613,7 @@
                               "type": "string"
                             },
                             "failure_message": {
-                              "$ref": "#/$defs/S1"
+                              "$ref": "#/$defs/S2"
                             },
                             "id": {
                               "type": "string"
@@ -43643,7 +43643,7 @@
                           "additionalProperties": false,
                           "properties": {
                             "reason": {
-                              "$ref": "#/$defs/S2"
+                              "$ref": "#/$defs/S1"
                             },
                             "recommendation": {
                               "anyOf": [
@@ -43654,7 +43654,7 @@
                                       "type": "string"
                                     },
                                     "rationale": {
-                                      "$ref": "#/$defs/S2"
+                                      "$ref": "#/$defs/S1"
                                     },
                                     "recommendation": {
                                       "enum": ["confirm", "modify", "reverse", "uncertain"],
@@ -43673,7 +43673,7 @@
                               "type": "string"
                             },
                             "target_ids": {
-                              "$ref": "#/$defs/S5"
+                              "$ref": "#/$defs/S4"
                             }
                           },
                           "required": ["reason", "recommendation", "submission_id", "target_ids"],
@@ -43685,10 +43685,10 @@
                         "additionalProperties": false,
                         "properties": {
                           "contact": {
-                            "$ref": "#/$defs/S2"
+                            "$ref": "#/$defs/S1"
                           },
                           "display_name": {
-                            "$ref": "#/$defs/S2"
+                            "$ref": "#/$defs/S1"
                           },
                           "misuse": {
                             "anyOf": [
@@ -43748,10 +43748,10 @@
                                             "type": "string"
                                           },
                                           "gap": {
-                                            "$ref": "#/$defs/S2"
+                                            "$ref": "#/$defs/S1"
                                           },
                                           "status": {
-                                            "$ref": "#/$defs/S4"
+                                            "$ref": "#/$defs/S3"
                                           }
                                         },
                                         "required": ["element", "gap", "status"],
@@ -43774,7 +43774,7 @@
                                             "type": "string"
                                           },
                                           "note": {
-                                            "$ref": "#/$defs/S2"
+                                            "$ref": "#/$defs/S1"
                                           }
                                         },
                                         "required": ["kind", "note"],
@@ -43783,7 +43783,7 @@
                                       "type": "array"
                                     },
                                     "summary": {
-                                      "$ref": "#/$defs/S2"
+                                      "$ref": "#/$defs/S1"
                                     }
                                   },
                                   "required": ["elements", "risk_notes", "summary"],
@@ -43798,13 +43798,13 @@
                               "type": "string"
                             },
                             "statement": {
-                              "$ref": "#/$defs/S2"
+                              "$ref": "#/$defs/S1"
                             },
                             "submission_id": {
                               "type": "string"
                             },
                             "target_ids": {
-                              "$ref": "#/$defs/S5"
+                              "$ref": "#/$defs/S4"
                             }
                           },
                           "required": [
@@ -43889,7 +43889,7 @@
                               "type": "string"
                             },
                             "submission_id": {
-                              "$ref": "#/$defs/S1"
+                              "$ref": "#/$defs/S2"
                             }
                           },
                           "required": ["action", "kind", "reviewed_at", "submission_id"],
@@ -43898,7 +43898,7 @@
                         "type": "array"
                       },
                       "evidence": {
-                        "$ref": "#/$defs/S2"
+                        "$ref": "#/$defs/S1"
                       },
                       "form_review": {
                         "anyOf": [
@@ -43920,7 +43920,7 @@
                                         "type": "string"
                                       },
                                       "reviewed_by_id": {
-                                        "$ref": "#/$defs/S1"
+                                        "$ref": "#/$defs/S2"
                                       }
                                     },
                                     "required": ["is_accepted", "reviewed_at", "reviewed_by_id"],
@@ -43957,10 +43957,10 @@
                                                       "type": "string"
                                                     },
                                                     "gap": {
-                                                      "$ref": "#/$defs/S2"
+                                                      "$ref": "#/$defs/S1"
                                                     },
                                                     "status": {
-                                                      "$ref": "#/$defs/S4"
+                                                      "$ref": "#/$defs/S3"
                                                     }
                                                   },
                                                   "required": ["element", "gap", "status"],
@@ -43981,7 +43981,7 @@
                                                       "type": "string"
                                                     },
                                                     "note": {
-                                                      "$ref": "#/$defs/S2"
+                                                      "$ref": "#/$defs/S1"
                                                     }
                                                   },
                                                   "required": ["kind", "note"],
@@ -43999,7 +43999,7 @@
                                                 "type": "string"
                                               },
                                               "summary": {
-                                                "$ref": "#/$defs/S2"
+                                                "$ref": "#/$defs/S1"
                                               }
                                             },
                                             "required": [
@@ -44016,7 +44016,7 @@
                                         ]
                                       },
                                       "rationale": {
-                                        "$ref": "#/$defs/S2"
+                                        "$ref": "#/$defs/S1"
                                       },
                                       "recommendation": {
                                         "anyOf": [
@@ -44092,7 +44092,7 @@
                                       ]
                                     },
                                     "commenced_at": {
-                                      "$ref": "#/$defs/S1"
+                                      "$ref": "#/$defs/S2"
                                     },
                                     "id": {
                                       "type": "string"
@@ -44120,13 +44120,13 @@
                                       "type": "boolean"
                                     },
                                     "received_by_designated_agent_at": {
-                                      "$ref": "#/$defs/S1"
+                                      "$ref": "#/$defs/S2"
                                     },
                                     "resolved": {
                                       "type": "boolean"
                                     },
                                     "target_ids": {
-                                      "$ref": "#/$defs/S5"
+                                      "$ref": "#/$defs/S4"
                                     }
                                   },
                                   "required": [
@@ -44168,10 +44168,10 @@
                                             "type": "string"
                                           },
                                           "gap": {
-                                            "$ref": "#/$defs/S2"
+                                            "$ref": "#/$defs/S1"
                                           },
                                           "status": {
-                                            "$ref": "#/$defs/S4"
+                                            "$ref": "#/$defs/S3"
                                           }
                                         },
                                         "required": ["criterion", "gap", "status"],
@@ -44194,7 +44194,7 @@
                                             "type": "string"
                                           },
                                           "note": {
-                                            "$ref": "#/$defs/S2"
+                                            "$ref": "#/$defs/S1"
                                           }
                                         },
                                         "required": ["kind", "note"],
@@ -44203,7 +44203,7 @@
                                       "type": "array"
                                     },
                                     "summary": {
-                                      "$ref": "#/$defs/S2"
+                                      "$ref": "#/$defs/S1"
                                     }
                                   },
                                   "required": ["criteria", "risk_notes", "summary"],
@@ -44218,7 +44218,7 @@
                               "type": "string"
                             },
                             "statement": {
-                              "$ref": "#/$defs/S2"
+                              "$ref": "#/$defs/S1"
                             },
                             "submission_id": {
                               "type": "string"
@@ -44353,7 +44353,7 @@
                               "type": "string"
                             },
                             "uploaded_by_username": {
-                              "$ref": "#/$defs/S2"
+                              "$ref": "#/$defs/S1"
                             },
                             "target_id": {
                               "type": "string"
@@ -44419,7 +44419,7 @@
                                       "type": "string"
                                     },
                                     "uploaded_by_id": {
-                                      "$ref": "#/$defs/S1"
+                                      "$ref": "#/$defs/S2"
                                     }
                                   },
                                   "required": [
@@ -44467,7 +44467,7 @@
                             "additionalProperties": false,
                             "properties": {
                               "acknowledged_at": {
-                                "$ref": "#/$defs/S1"
+                                "$ref": "#/$defs/S2"
                               },
                               "attempt_count": {
                                 "type": "number"
@@ -44476,10 +44476,10 @@
                                 "type": "boolean"
                               },
                               "exhausted_at": {
-                                "$ref": "#/$defs/S1"
+                                "$ref": "#/$defs/S2"
                               },
                               "last_attempt_at": {
-                                "$ref": "#/$defs/S1"
+                                "$ref": "#/$defs/S2"
                               }
                             },
                             "required": [
@@ -44491,81 +44491,8 @@
                             ],
                             "type": "object"
                           },
-                          "complaints": {
-                            "items": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "decision": {
-                                  "anyOf": [
-                                    {
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "decided_at": {
-                                          "type": "string"
-                                        },
-                                        "id": {
-                                          "type": "string"
-                                        },
-                                        "rationale": {
-                                          "$ref": "#/$defs/S2"
-                                        },
-                                        "staff_disposition": {
-                                          "enum": ["maintain", "revoke"],
-                                          "type": "string"
-                                        }
-                                      },
-                                      "required": [
-                                        "decided_at",
-                                        "id",
-                                        "rationale",
-                                        "staff_disposition"
-                                      ],
-                                      "type": "object"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "explanation": {
-                                  "$ref": "#/$defs/S2"
-                                },
-                                "filed_by": {
-                                  "enum": ["notifier", "poster", "reviewer"],
-                                  "type": "string"
-                                },
-                                "id": {
-                                  "type": "string"
-                                },
-                                "informed_at": {
-                                  "$ref": "#/$defs/S1"
-                                },
-                                "received_at": {
-                                  "type": "string"
-                                },
-                                "submitted_by_id": {
-                                  "$ref": "#/$defs/S1"
-                                },
-                                "window_ends_at": {
-                                  "$ref": "#/$defs/S1"
-                                }
-                              },
-                              "required": [
-                                "decision",
-                                "explanation",
-                                "filed_by",
-                                "id",
-                                "informed_at",
-                                "received_at",
-                                "submitted_by_id",
-                                "window_ends_at"
-                              ],
-                              "type": "object"
-                            },
-                            "type": "array"
-                          },
-                          "complaints_page_info": {
-                            "$ref": "#/$defs/S3"
+                          "complaint_count": {
+                            "type": "number"
                           },
                           "decision": {
                             "anyOf": [
@@ -44586,7 +44513,7 @@
                                     "type": "string"
                                   },
                                   "rationale": {
-                                    "$ref": "#/$defs/S2"
+                                    "$ref": "#/$defs/S1"
                                   }
                                 },
                                 "required": [
@@ -44603,70 +44530,8 @@
                               }
                             ]
                           },
-                          "dispute_settlements": {
-                            "items": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "body_name": {
-                                  "type": "string"
-                                },
-                                "id": {
-                                  "type": "string"
-                                },
-                                "outcome": {
-                                  "anyOf": [
-                                    {
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "decided_at": {
-                                          "type": "string"
-                                        },
-                                        "implemented_at": {
-                                          "$ref": "#/$defs/S1"
-                                        },
-                                        "result": {
-                                          "enum": [
-                                            "decided_for_platform",
-                                            "decided_for_recipient",
-                                            "no_decision",
-                                            "withdrawn"
-                                          ],
-                                          "type": "string"
-                                        }
-                                      },
-                                      "required": ["decided_at", "implemented_at", "result"],
-                                      "type": "object"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "referred_at": {
-                                  "type": "string"
-                                },
-                                "referred_by_id": {
-                                  "$ref": "#/$defs/S1"
-                                },
-                                "referred_by_party": {
-                                  "enum": ["notifier", "poster"],
-                                  "type": "string"
-                                }
-                              },
-                              "required": [
-                                "body_name",
-                                "id",
-                                "outcome",
-                                "referred_at",
-                                "referred_by_id",
-                                "referred_by_party"
-                              ],
-                              "type": "object"
-                            },
-                            "type": "array"
-                          },
-                          "dispute_settlements_page_info": {
-                            "$ref": "#/$defs/S3"
+                          "dispute_settlement_count": {
+                            "type": "number"
                           },
                           "grounds": {
                             "type": "string"
@@ -44678,72 +44543,27 @@
                             "additionalProperties": false,
                             "properties": {
                               "email": {
-                                "$ref": "#/$defs/S1"
+                                "$ref": "#/$defs/S2"
                               },
                               "name": {
-                                "$ref": "#/$defs/S1"
+                                "$ref": "#/$defs/S2"
                               }
                             },
                             "required": ["email", "name"],
                             "type": "object"
                           },
-                          "recipients": {
-                            "items": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "informed_at": {
-                                  "$ref": "#/$defs/S1"
-                                },
-                                "role": {
-                                  "enum": ["claimant", "poster"],
-                                  "type": "string"
-                                },
-                                "state": {
-                                  "anyOf": [
-                                    {
-                                      "const": "bounced"
-                                    },
-                                    {
-                                      "const": "claimed"
-                                    },
-                                    {
-                                      "const": "failed"
-                                    },
-                                    {
-                                      "const": "pending"
-                                    },
-                                    {
-                                      "const": "sent"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "user_id": {
-                                  "$ref": "#/$defs/S1"
-                                }
-                              },
-                              "required": ["informed_at", "role", "state", "user_id"],
-                              "type": "object"
-                            },
-                            "type": "array"
-                          },
                           "reopened_at": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S2"
                           }
                         },
                         "required": [
                           "acknowledgment",
-                          "complaints",
-                          "complaints_page_info",
+                          "complaint_count",
                           "decision",
-                          "dispute_settlements",
-                          "dispute_settlements_page_info",
+                          "dispute_settlement_count",
                           "grounds",
                           "hosted_use_url",
                           "notifier",
-                          "recipients",
                           "reopened_at"
                         ],
                         "type": "object"
@@ -44752,7 +44572,7 @@
                         "type": "string"
                       },
                       "work_description": {
-                        "$ref": "#/$defs/S2"
+                        "$ref": "#/$defs/S1"
                       }
                     },
                     "required": [
@@ -44782,7 +44602,20 @@
                   "type": "array"
                 },
                 "page_info": {
-                  "$ref": "#/$defs/S3"
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "$ref": "#/$defs/S2"
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "$ref": "#/$defs/S2"
+                    }
+                  },
+                  "required": ["end_cursor", "has_next_page", "start_cursor"],
+                  "type": "object"
                 }
               },
               "required": ["copyright_notices", "page_info"],
@@ -44791,44 +44624,28 @@
                 "S1": {
                   "anyOf": [
                     {
-                      "type": "null"
+                      "type": "string"
                     },
                     {
-                      "type": "string"
+                      "type": "null"
                     }
                   ]
                 },
                 "S2": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "type": "null"
                     },
                     {
-                      "type": "null"
+                      "type": "string"
                     }
                   ]
                 },
                 "S3": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end_cursor": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "has_next_page": {
-                      "type": "boolean"
-                    },
-                    "start_cursor": {
-                      "$ref": "#/$defs/S1"
-                    }
-                  },
-                  "required": ["end_cursor", "has_next_page", "start_cursor"],
-                  "type": "object"
-                },
-                "S4": {
                   "enum": ["missing", "present", "unclear"],
                   "type": "string"
                 },
-                "S5": {
+                "S4": {
                   "items": {
                     "type": "string"
                   },

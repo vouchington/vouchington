@@ -1,3 +1,5 @@
+import { withTransactionOptions } from '@data-stores/psql'
+import { selectStaffTerritorialCases } from '../services/copyright-notices/read-models-staff-territorial.mts'
 import { createTestUser } from './entities/users.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
 import {
@@ -11,8 +13,14 @@ import {
 
 export async function createTestEuParticipantCase(
   outcome: 'pending' | 'no_action' | 'restrict' = 'restrict',
+  options: { extraPosts?: number; samePoster?: boolean } = {},
 ) {
   const post = await createHostedImagePost('public')
+  const extraPosts = await Promise.all(
+    Array.from({ length: options.extraPosts ?? 0 }, () =>
+      createHostedImagePost('public', { poster: options.samePoster ? post.poster : undefined }),
+    ),
+  )
   const [notifier, staff, administrator, stranger] = await Promise.all([
     createTestUser(),
     createTestUser({ extraRoles: ['moderator'] }),
@@ -45,18 +53,16 @@ export async function createTestEuParticipantCase(
       outcome,
       targets:
         outcome === 'restrict'
-          ? [
-              {
-                surfaceKind: 'post-image',
-                postId: post.postId,
-                imageId: post.imageId,
-                hostedUseUrl: `https://example.test/work/${suffix}`,
-              },
-            ]
+          ? [post, ...extraPosts].map(hosted => ({
+              surfaceKind: 'post-image' as const,
+              postId: hosted.postId,
+              imageId: hosted.imageId,
+              hostedUseUrl: `https://example.test/work/${suffix}`,
+            }))
           : [],
     })
   }
-  return { ...post, notifier, staff, administrator, stranger, receipt, suffix }
+  return { ...post, extraPosts, notifier, staff, administrator, stranger, receipt, suffix }
 }
 
 export async function createTestEuParticipantComplaint(input: {
@@ -78,4 +84,12 @@ export async function createTestEuParticipantComplaint(input: {
     rationale: input.rationale,
   })
   return { request, decision }
+}
+
+/** The staff review-queue territorial card of one notice, read through the real read model. */
+export async function readStaffTerritorialCard(noticeId: string) {
+  const cards = await withTransactionOptions({}, query =>
+    selectStaffTerritorialCases([noticeId], query),
+  )
+  return cards.get(noticeId)
 }

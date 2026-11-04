@@ -3,15 +3,17 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { createDeterministicCopyrightCorrespondencesInTransaction } from './correspondence.mts'
-import {
-  createCopyrightDeliveryIntents,
-  type CopyrightDeliveryIntentInput,
-} from './delivery-intent-batch.mts'
-import type { CopyrightNoticeDeliveryKind } from './delivery-types.mts'
+import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
+import type {
+  CopyrightDeliveryIntentInput,
+  CopyrightNoticeDeliveryKind,
+} from './delivery-types.mts'
 import type { CopyrightCorrespondenceKind } from './types.mts'
 
 export type CopyrightStatementDeliveryInput = {
   noticeId: string
+  /** The hosted use the notice describes; required for restriction and owner notices. */
+  targetId?: string
   recipientUserId: string | null
   recipientRole: 'poster' | 'claimant' | 'informed_owner'
   recipientEmail?: string | null
@@ -84,6 +86,7 @@ export async function createCopyrightStatementDeliveriesInTransaction(
   for (const [index, { input, activeUserId }] of deliveries.entries()) {
     const base = {
       noticeId: input.noticeId,
+      targetId: input.targetId,
       submissionId: null,
       correspondenceId: correspondences[index]!.id,
       recipientUserId: activeUserId,

@@ -19,7 +19,7 @@ export async function createCopyrightCaseDeliveryIntentRow(): Promise<{
       )
       INSERT INTO copyright_notice_delivery_work_items (
         copyright_notice_id, recipient_user_id, recipient_role, delivery_kind, channel, idempotency_key
-      ) SELECT notice.id, recipient.id, 'poster', 'poster_restriction_notice', 'in_app',
+      ) SELECT notice.id, recipient.id, 'poster', 'status_update', 'in_app',
         ${`copyright-case-delivery-${randomUUID()}`} FROM notice CROSS JOIN recipient
       RETURNING id AS intent_id, copyright_notice_id AS notice_id`,
   )

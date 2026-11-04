@@ -13,6 +13,8 @@ import {
   decideCopyrightTerritorialRedress,
   listCopyrightEuStaffDisputeSettlements,
   listCopyrightTerritorialComplaints,
+  listCopyrightTerritorialClaimants,
+  listCopyrightTerritorialPosters,
   recordCopyrightEuDisputeSettlementImplementation,
   recordCopyrightEuDisputeSettlementOutcome,
   referCopyrightEuDisputeSettlement,
@@ -99,5 +101,57 @@ describe('territorial redress client', () => {
       '/api/v1/copyright-notices/notice-3/eu-dispute-settlements/staff',
       { searchParams: { after: 'settlement-cursor' } },
     )
+  })
+
+  it('reads posters pages from the first page and from a cursor', async () => {
+    const page = {
+      copyright_territorial_posters: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: page,
+      call: () => listCopyrightTerritorialPosters('notice-4'),
+      expectedArgs: [
+        '/api/v1/copyright-notices/notice-4/territorial-posters',
+        { searchParams: { after: undefined, limit: undefined } },
+      ],
+    })
+    mockGet.mockClear()
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: page,
+      call: () => listCopyrightTerritorialPosters('notice-4', { after: 'target-1', limit: 100 }),
+      expectedArgs: [
+        '/api/v1/copyright-notices/notice-4/territorial-posters',
+        { searchParams: { after: 'target-1', limit: 100 } },
+      ],
+    })
+  })
+
+  it('reads claimants pages from the first page and from a cursor', async () => {
+    const page = {
+      copyright_territorial_claimants: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: page,
+      call: () => listCopyrightTerritorialClaimants('notice-4'),
+      expectedArgs: [
+        '/api/v1/copyright-notices/notice-4/territorial-claimants',
+        { searchParams: { after: undefined } },
+      ],
+    })
+    mockGet.mockClear()
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: page,
+      call: () => listCopyrightTerritorialClaimants('notice-4', { after: 'receipt-1' }),
+      expectedArgs: [
+        '/api/v1/copyright-notices/notice-4/territorial-claimants',
+        { searchParams: { after: 'receipt-1' } },
+      ],
+    })
   })
 })

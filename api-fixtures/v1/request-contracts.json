@@ -16613,14 +16613,8 @@
           ],
           "type": "object"
         },
-        "complaints": {
-          "items": {
-            "$ref": "#/components/schemas/CopyrightTerritorialStaffComplaint"
-          },
-          "type": "array"
-        },
-        "complaints_page_info": {
-          "$ref": "#/components/schemas/PageInfo"
+        "complaint_count": {
+          "type": "number"
         },
         "decision": {
           "anyOf": [
@@ -16652,84 +16646,8 @@
             }
           ]
         },
-        "dispute_settlements": {
-          "items": {
-            "additionalProperties": false,
-            "properties": {
-              "body_name": {
-                "type": "string"
-              },
-              "id": {
-                "type": "string"
-              },
-              "outcome": {
-                "anyOf": [
-                  {
-                    "additionalProperties": false,
-                    "properties": {
-                      "decided_at": {
-                        "type": "string"
-                      },
-                      "implemented_at": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "result": {
-                        "enum": [
-                          "decided_for_platform",
-                          "decided_for_recipient",
-                          "no_decision",
-                          "withdrawn"
-                        ],
-                        "type": "string"
-                      }
-                    },
-                    "required": ["decided_at", "implemented_at", "result"],
-                    "type": "object"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "referred_at": {
-                "type": "string"
-              },
-              "referred_by_id": {
-                "anyOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
-              },
-              "referred_by_party": {
-                "enum": ["notifier", "poster"],
-                "type": "string"
-              }
-            },
-            "required": [
-              "body_name",
-              "id",
-              "outcome",
-              "referred_at",
-              "referred_by_id",
-              "referred_by_party"
-            ],
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "dispute_settlements_page_info": {
-          "$ref": "#/components/schemas/PageInfo"
+        "dispute_settlement_count": {
+          "type": "number"
         },
         "grounds": {
           "type": "string"
@@ -16764,12 +16682,6 @@
           "required": ["email", "name"],
           "type": "object"
         },
-        "recipients": {
-          "items": {
-            "$ref": "#/components/schemas/CopyrightTerritorialStaffRecipient"
-          },
-          "type": "array"
-        },
         "reopened_at": {
           "anyOf": [
             {
@@ -16783,15 +16695,12 @@
       },
       "required": [
         "acknowledgment",
-        "complaints",
-        "complaints_page_info",
+        "complaint_count",
         "decision",
-        "dispute_settlements",
-        "dispute_settlements_page_info",
+        "dispute_settlement_count",
         "grounds",
         "hosted_use_url",
         "notifier",
-        "recipients",
         "reopened_at"
       ],
       "type": "object"
@@ -16856,6 +16765,58 @@
         }
       },
       "required": ["period_end", "period_start"],
+      "type": "object"
+    },
+    "CopyrightTerritorialStaffClaimant": {
+      "additionalProperties": false,
+      "properties": {
+        "informed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "receipt_id": {
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "const": "bounced"
+            },
+            {
+              "const": "claimed"
+            },
+            {
+              "const": "failed"
+            },
+            {
+              "const": "pending"
+            },
+            {
+              "const": "sent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["informed_at", "receipt_id", "state", "user_id"],
       "type": "object"
     },
     "CopyrightTerritorialStaffComplaint": {
@@ -16944,7 +16905,7 @@
       ],
       "type": "object"
     },
-    "CopyrightTerritorialStaffRecipient": {
+    "CopyrightTerritorialStaffPoster": {
       "additionalProperties": false,
       "properties": {
         "informed_at": {
@@ -16957,8 +16918,7 @@
             }
           ]
         },
-        "role": {
-          "enum": ["claimant", "poster"],
+        "target_id": {
           "type": "string"
         },
         "state": {
@@ -16994,7 +16954,7 @@
           ]
         }
       },
-      "required": ["informed_at", "role", "state", "user_id"],
+      "required": ["informed_at", "state", "target_id", "user_id"],
       "type": "object"
     },
     "CopyrightTerritorialSupervisedComplaintRequest": {
@@ -42052,17 +42012,14 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
+    "GET:/api/v1/admin/landing-pages/:pageId": {
       "path": {
         "properties": {
-          "username": {
-            "type": "string"
-          },
-          "slug": {
+          "pageId": {
             "type": "string"
           }
         },
-        "required": ["username", "slug"],
+        "required": ["pageId"],
         "type": "object"
       }
     },
@@ -42199,6 +42156,20 @@
           }
         },
         "required": ["userId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/admin/users/:username/landing-pages/:slug/analytics": {
+      "path": {
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": ["username", "slug"],
         "type": "object"
       }
     },
@@ -43468,7 +43439,57 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/copyright-notices/:id/territorial-claimants": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/copyright-notices/:id/territorial-complaints": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-notices/:id/territorial-posters": {
       "path": {
         "properties": {
           "id": {
@@ -45502,6 +45523,20 @@
             "type": "string"
           }
         },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "runId"],
         "type": "object"
       }
     },
@@ -48065,16 +48100,6 @@
         "$ref": "#/components/schemas/LogoutRequest"
       }
     },
-    "POST:/api/v1/auth/native/email-address/login": {
-      "body": {
-        "$ref": "#/components/schemas/EmailAddressLoginBody"
-      }
-    },
-    "POST:/api/v1/auth/native/email-address/tokens": {
-      "body": {
-        "$ref": "#/components/schemas/EmailAddressTokenBody"
-      }
-    },
     "POST:/api/v1/auth/mfa/passkeys/authentication/options": {
       "body": {
         "additionalProperties": false,
@@ -48132,6 +48157,16 @@
           }
         },
         "type": "object"
+      }
+    },
+    "POST:/api/v1/auth/native/email-address/login": {
+      "body": {
+        "$ref": "#/components/schemas/EmailAddressLoginBody"
+      }
+    },
+    "POST:/api/v1/auth/native/email-address/tokens": {
+      "body": {
+        "$ref": "#/components/schemas/EmailAddressTokenBody"
       }
     },
     "POST:/api/v1/auth/oauth/:provider/authorizations": {
@@ -50695,20 +50730,6 @@
         "$ref": "#/components/schemas/CreateModerationReportRequest"
       }
     },
-    "GET:/api/v1/reports/:id/judgements/:runId": {
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "runId": {
-            "type": "string"
-          }
-        },
-        "required": ["id", "runId"],
-        "type": "object"
-      }
-    },
     "POST:/api/v1/reports/:id/judgements": {
       "path": {
         "properties": {
@@ -51643,17 +51664,6 @@
           }
         },
         "required": ["userId"],
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/admin/landing-pages/:pageId": {
-      "path": {
-        "properties": {
-          "pageId": {
-            "type": "string"
-          }
-        },
-        "required": ["pageId"],
         "type": "object"
       }
     }

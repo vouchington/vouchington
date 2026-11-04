@@ -357,8 +357,16 @@
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940"
     },
+    "GET:/api/v1/copyright-notices/:id/territorial-claimants": {
+      "fixtureIds": ["web.copyright.eu.territorial-claimants"],
+      "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544"
+    },
     "GET:/api/v1/copyright-notices/:id/territorial-complaints": {
       "fixtureIds": ["web.copyright.eu.territorial-complaints"],
+      "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544"
+    },
+    "GET:/api/v1/copyright-notices/:id/territorial-posters": {
+      "fixtureIds": ["web.copyright.eu.territorial-posters"],
       "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544"
     },
     "GET:/api/v1/copyright-notices/association-targets": {
@@ -3257,9 +3265,17 @@
       "fixtureIds": ["web.copyright.eu.participant.no-action-complaint"],
       "hash": "10fd8b03e76dc670e8403bf8d2308e553ca2a297f3504ccd18ea8d6c6dfb6e65"
     },
+    "web.copyright.eu.territorial-claimants": {
+      "fixtureIds": ["web.copyright.eu.territorial-claimants"],
+      "hash": "06547f4778f7c974790ac8c59433e40969a8f52047912fac3de9c8ff6279b364"
+    },
     "web.copyright.eu.territorial-complaints": {
       "fixtureIds": ["web.copyright.eu.territorial-complaints"],
       "hash": "4c66339888ce391a253a7022ff3e0bb060b6856430b9294c121c910ecbe1275f"
+    },
+    "web.copyright.eu.territorial-posters": {
+      "fixtureIds": ["web.copyright.eu.territorial-posters"],
+      "hash": "daa27bccfa909a6921a14d17160809a9ee8b5d40e8c8d911c672e55868e896f1"
     },
     "web.copyright.eu.transparency-report": {
       "fixtureIds": ["web.copyright.eu.transparency-report"],
@@ -3319,7 +3335,7 @@
     },
     "web.copyright.staff-queue.territorial": {
       "fixtureIds": ["web.copyright.staff-queue.territorial"],
-      "hash": "35086540fa8660873771f630ca6e6b962374ad585b735175422f4107b98ced76"
+      "hash": "aa9ab03c48d8bfe77ab622238860a71745037a160d40997d59b6f596c6236c69"
     },
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],

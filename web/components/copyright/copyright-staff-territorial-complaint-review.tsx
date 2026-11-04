@@ -6,11 +6,9 @@ import { ButtonGroup } from '@/components/ui/button-group'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  decideCopyrightTerritorialRedress,
-  type CopyrightTerritorialComplaint,
-} from '@/lib/api/client/copyright-territorial-redress'
+import { decideCopyrightTerritorialRedress } from '@/lib/api/client/copyright-territorial-redress'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import type { CopyrightTerritorialComplaint } from '@/types/copyright-territorial'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 
 export function CopyrightStaffTerritorialComplaintReview({

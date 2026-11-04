@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import {
-  createCopyrightDeliveryIntents,
-  type CopyrightDeliveryIntentInput,
-} from './delivery-intent-batch.mts'
+import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
+import type { CopyrightDeliveryIntentInput } from './delivery-types.mts'
 
 describe('delivery intent batches', () => {
   useCopyrightIntakeEnvironment()
@@ -17,7 +15,7 @@ describe('delivery intent batches', () => {
       correspondenceId: null,
       recipientUserId: userId,
       recipientRole: 'poster',
-      deliveryKind: 'poster_review_notice',
+      deliveryKind: 'status_update',
       channel: 'in_app',
       idempotencyKey: key,
     } satisfies CopyrightDeliveryIntentInput
@@ -44,7 +42,7 @@ describe('delivery intent batches', () => {
       createCopyrightDeliveryIntents(
         [
           posterIntent(noticeId, user.id, key),
-          { ...posterIntent(noticeId, user.id, key), deliveryKind: 'poster_restriction_notice' },
+          { ...posterIntent(noticeId, user.id, key), deliveryKind: 'redress_decision_notice' },
         ],
         transaction,
       ),

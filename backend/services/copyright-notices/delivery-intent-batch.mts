@@ -3,24 +3,14 @@ import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type {
+  CopyrightDeliveryIntentInput,
   CopyrightDeliveryIntentRecord,
-  CopyrightNoticeDeliveryKind,
 } from './delivery-types.mts'
-
-export type CopyrightDeliveryIntentInput = {
-  noticeId: string
-  submissionId: string | null
-  correspondenceId: string | null
-  recipientUserId: string | null
-  recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
-  deliveryKind: CopyrightNoticeDeliveryKind
-  channel: CopyrightDeliveryIntentRecord['channel']
-  idempotencyKey: string
-  recipientEmail?: string
-  targetPath?: string
-}
-
-type KeyedIntent = CopyrightDeliveryIntentRecord & { idempotency_key: string }
+import {
+  assertDeliveryIntentInput,
+  assertReplayMatches,
+  type KeyedIntent,
+} from './delivery-intent-checks.mts'
 
 /**
  * Creates every delivery intent, then every email recipient, in two statements however many
@@ -58,13 +48,14 @@ export async function createCopyrightDeliveryIntents(
   const { rows: inserted } = await transaction<KeyedIntent>(
     sql`/* createCopyrightDeliveryIntents */
     INSERT INTO copyright_notice_delivery_work_items (
-      copyright_notice_id, copyright_notice_submission_id, copyright_notice_correspondence_message_id,
+      copyright_notice_id, copyright_notice_target_id, copyright_notice_submission_id, copyright_notice_correspondence_message_id,
       recipient_user_id, recipient_role, delivery_kind, target_path, channel, idempotency_key
-    ) SELECT input.notice_id, input.submission_id, input.correspondence_id,
+    ) SELECT input.notice_id, input.target_id, input.submission_id, input.correspondence_id,
       input.recipient_user_id, input.recipient_role, input.delivery_kind, input.target_path, input.channel,
       input.idempotency_key
     FROM unnest(
       ${unique.map(input => input.noticeId)}::uuid[],
+      ${unique.map(input => input.targetId ?? null)}::uuid[],
       ${unique.map(input => input.submissionId)}::uuid[],
       ${unique.map(input => input.correspondenceId)}::uuid[],
       ${unique.map(input => input.recipientUserId)}::uuid[],
@@ -74,7 +65,7 @@ export async function createCopyrightDeliveryIntents(
       ${unique.map(input => input.channel)}::copyright_notice_delivery_intent_channels[],
       ${unique.map(input => input.idempotencyKey)}::text[]
     ) AS input(
-      notice_id, submission_id, correspondence_id, recipient_user_id, recipient_role, delivery_kind,
+      notice_id, target_id, submission_id, correspondence_id, recipient_user_id, recipient_role, delivery_kind,
       target_path, channel, idempotency_key
     )
     WHERE EXISTS (SELECT 1 FROM copyright_notices WHERE id = input.notice_id)
@@ -88,7 +79,7 @@ export async function createCopyrightDeliveryIntents(
       ))
     ORDER BY input.idempotency_key ASC NULLS LAST
     ON CONFLICT (idempotency_key) DO NOTHING
-    RETURNING id, lease_token, copyright_notice_id, copyright_notice_submission_id,
+    RETURNING id, lease_token, copyright_notice_id, copyright_notice_target_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
       channel, state, amazon_ses_message_id, attempt_count, idempotency_key
   `,
@@ -101,7 +92,7 @@ export async function createCopyrightDeliveryIntents(
   if (missingKeys.size > 0) {
     const { rows: existingRows } = await transaction<KeyedIntent>(
       sql`/* createCopyrightDeliveryIntents:existing */
-      SELECT id, lease_token, copyright_notice_id, copyright_notice_submission_id,
+      SELECT id, lease_token, copyright_notice_id, copyright_notice_target_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
       channel, state, amazon_ses_message_id, attempt_count, idempotency_key
       FROM copyright_notice_delivery_work_items
@@ -153,40 +144,4 @@ export async function insertCopyrightDeliveryRecipients(
     ORDER BY recipient.intent_id ASC NULLS LAST
     ON CONFLICT (copyright_notice_delivery_work_item_id) DO NOTHING
   `)
-}
-
-function assertDeliveryIntentInput(input: CopyrightDeliveryIntentInput): void {
-  assert(
-    !['poster', 'informed_owner'].includes(input.recipientRole) || input.recipientUserId,
-    422,
-    'Poster delivery requires a user recipient',
-  )
-  assert(
-    input.recipientRole !== 'correspondent' || (!input.recipientUserId && input.recipientEmail),
-    422,
-    'Correspondent delivery requires an external email recipient',
-  )
-  assert(
-    (input.recipientRole === 'informed_owner') === Boolean(input.targetPath),
-    422,
-    'Informed owner delivery requires a community path',
-  )
-}
-
-function assertReplayMatches(
-  existing: CopyrightDeliveryIntentRecord,
-  input: CopyrightDeliveryIntentInput,
-): void {
-  assert(
-    existing.copyright_notice_id === input.noticeId &&
-      existing.copyright_notice_submission_id === input.submissionId &&
-      existing.copyright_notice_correspondence_message_id === input.correspondenceId &&
-      existing.recipient_user_id === input.recipientUserId &&
-      existing.recipient_role === input.recipientRole &&
-      existing.delivery_kind === input.deliveryKind &&
-      existing.target_path === (input.targetPath ?? null) &&
-      existing.channel === input.channel,
-    409,
-    'Copyright delivery idempotency key was reused',
-  )
 }

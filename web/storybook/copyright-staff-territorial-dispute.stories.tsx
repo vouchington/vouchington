@@ -2,6 +2,10 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
 import { CopyrightStaffTerritorialDispute } from '@/components/copyright/copyright-staff-territorial-dispute'
 import type { CopyrightEuDisputeSettlementsPage } from '@/lib/api/client/copyright-territorial-redress'
+import type {
+  CopyrightTerritorialClaimant,
+  CopyrightTerritorialPoster,
+} from '@/types/copyright-territorial'
 import { makeCopyrightStaffQueueItem } from '@/test-helpers/api-responses/copyright'
 
 const item = makeCopyrightStaffQueueItem({
@@ -18,14 +22,6 @@ const item = makeCopyrightStaffQueueItem({
       exhausted_at: null,
       escalated: false,
     },
-    recipients: [
-      {
-        role: 'claimant',
-        user_id: '019f0000-0000-7000-8000-000000000195',
-        informed_at: '2026-09-30T10:00:00Z',
-        state: 'sent',
-      },
-    ],
     decision: {
       id: 'decision-1',
       outcome: 'restrict',
@@ -34,30 +30,48 @@ const item = makeCopyrightStaffQueueItem({
       public_explanation: 'The image reproduces the photograph.',
     },
     reopened_at: null,
-    complaints: [],
-    complaints_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-    dispute_settlements: [
-      {
-        id: 'referral-1',
-        body_name: 'Example Dispute Body',
-        referred_at: '2026-10-01T10:00:00Z',
-        referred_by_party: 'poster',
-        referred_by_id: '019f0000-0000-7000-8000-000000000196',
-        outcome: null,
-      },
-    ],
-    dispute_settlements_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    complaint_count: 0,
+    dispute_settlement_count: 1,
   },
 })
+const claimants: CopyrightTerritorialClaimant[] = [
+  {
+    receipt_id: '019f0000-0000-7000-8000-000000000197',
+    user_id: '019f0000-0000-7000-8000-000000000195',
+    informed_at: '2026-09-30T10:00:00Z',
+    state: 'sent',
+  },
+]
+const posters: CopyrightTerritorialPoster[] = []
 const initialPage: CopyrightEuDisputeSettlementsPage = {
-  copyright_eu_dispute_settlements: item.territorial?.dispute_settlements ?? [],
+  copyright_eu_dispute_settlements: [
+    {
+      id: 'referral-1',
+      body_name: 'Example Dispute Body',
+      referred_at: '2026-10-01T10:00:00Z',
+      referred_by_party: 'poster',
+      referred_by_id: '019f0000-0000-7000-8000-000000000196',
+      outcome: null,
+    },
+  ],
   page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
 }
 
 const meta = {
   title: 'Copyright/Staff Territorial Dispute Settlement',
   component: CopyrightStaffTerritorialDispute,
-  args: { item, initialPage, pending: false, onReview: () => undefined },
+  args: {
+    item,
+    initialPage,
+    posters,
+    claimants,
+    recipientsComplete: true,
+    recipientsStatus: 'idle',
+    onLoadRecipients: () => undefined,
+    onRetryRecipients: () => undefined,
+    pending: false,
+    onReview: () => undefined,
+  },
 } satisfies Meta<typeof CopyrightStaffTerritorialDispute>
 
 export default meta

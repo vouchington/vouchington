@@ -5,6 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { selectTerritorialParent } from './case-collection-parent.mts'
 import {
   euSettlementCursorScope,
   selectEuParticipantSettlements,
@@ -24,20 +25,7 @@ export async function listCopyrightTerritorialComplaints(
   assertNotSuspended(currentUser)
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Copyright review staff required')
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{
-    jurisdiction: 'eu_dsa' | 'uk'
-    decision_id: string | null
-    decided_at: Date | null
-  }>(sql`/* listCopyrightTerritorialComplaints:case */
-    SELECT notice.jurisdiction,
-      notice.current_territorial_decision_identity_id AS decision_id,
-      notice.territorial_decided_at AS decided_at
-    FROM copyright_notices notice
-    JOIN copyright_territorial_notice_receipts receipt
-      ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
-    WHERE notice.id = ${noticeId} AND notice.jurisdiction IN ('eu_dsa', 'uk')`)
-  const parent = rows[0]
-  assert(parent, 404, 'Territorial copyright notice not found')
+  const parent = await selectTerritorialParent(noticeId, transaction)
   if (options.after) assert(parent.decision_id, 400, 'Invalid cursor format')
   const afterId = options.after
     ? decodeScopedUuidCursor(

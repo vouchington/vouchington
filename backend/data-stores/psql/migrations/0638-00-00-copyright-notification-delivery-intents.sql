@@ -6,6 +6,7 @@
 CREATE TABLE copyright_notice_delivery_work_items (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  copyright_notice_target_id uuid,
   copyright_notice_email_intake_receipt_id uuid CONSTRAINT fk_copyright_notice_delivery_work_items__email_intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   copyright_notice_submission_id uuid,
   copyright_notice_correspondence_message_id uuid,
@@ -38,11 +39,14 @@ CREATE TABLE copyright_notice_delivery_work_items (
   CONSTRAINT uq_copyri_notice_delive_intents__email_intake_id__delivery_kind UNIQUE (copyright_notice_email_intake_receipt_id, delivery_kind),
   CONSTRAINT fk_copyright_notice_delivery_work_items__submission__notice FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id)
     REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_copyright_notice_delivery_work_items__target__notice FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
+    REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyri_notice_delive_intents__correspondence_message__notice FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id)
     REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT,
   CHECK (delivery_kind <> 'claimant_decision_notice' OR recipient_role = 'claimant'),
   CHECK (delivery_kind NOT IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice') OR recipient_role IN ('poster', 'informed_owner')),
   CHECK (delivery_kind <> 'owner_information_notice' OR recipient_role = 'informed_owner'),
+  CONSTRAINT chk_copyright_notice_delivery_work_items__target_kinds CHECK ((copyright_notice_target_id IS NOT NULL) = (delivery_kind IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'owner_information_notice'))),
   CHECK ((recipient_role = 'informed_owner') = (target_path IS NOT NULL)),
   CHECK (recipient_role NOT IN ('poster', 'informed_owner') OR recipient_user_id IS NOT NULL OR recipient_user_erased_at IS NOT NULL),
   CHECK (recipient_role <> 'correspondent' OR recipient_user_id IS NULL),
@@ -155,6 +159,9 @@ ALTER TABLE copyright_notice_lifecycle_changes
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__notice
   ON copyright_notice_delivery_work_items (copyright_notice_id, id);
+CREATE INDEX idx_copyright_notice_delivery_work_items__target_recipient
+  ON copyright_notice_delivery_work_items (copyright_notice_id, copyright_notice_target_id, recipient_user_id, id)
+  WHERE copyright_notice_target_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_delivery_work_items__email_intake_receipt
   ON copyright_notice_delivery_work_items (copyright_notice_email_intake_receipt_id, id)
   WHERE copyright_notice_email_intake_receipt_id IS NOT NULL;
@@ -186,6 +193,7 @@ BEGIN
     RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';
   END IF;
   IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id
+    OR NEW.copyright_notice_target_id IS DISTINCT FROM OLD.copyright_notice_target_id
     OR NEW.copyright_notice_email_intake_receipt_id IS DISTINCT FROM OLD.copyright_notice_email_intake_receipt_id
     OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id
     OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id
@@ -229,6 +237,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE copyright_notice_delivery_work_items IS 'Durable, idempotent legal-notice delivery obligations, including statements of reasons, decision notices, authenticated arrival receipts, and private replies to rejected email intakes. Transport workers claim and transition intents; they cannot alter case facts.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.copyright_notice_id IS 'Copyright case that owns the delivery obligation; NULL for a reply to a declined email intake, which never creates a case.';
+COMMENT ON COLUMN copyright_notice_delivery_work_items.copyright_notice_target_id IS 'Hosted use this delivery tells its recipient about; set for exactly the restriction, review, restoration and owner-information notices, which are sent per target, and NULL for every other kind.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.copyright_notice_email_intake_receipt_id IS 'Retained inbound email receipt identity this delivery answers; exactly one of this and copyright_notice_id is set, and at most one delivery of each kind exists per intake.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.body_ciphertext IS 'Immutable encrypted receipt or reply body sent for an email intake, so every retry sends the same legal text; NULL for case deliveries.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.copyright_notice_submission_id IS 'Optional immutable submission that caused the delivery.';

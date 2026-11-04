@@ -10,6 +10,26 @@ const euSettlementStartCursor = encodeScopedUuidCursor(
   `copyright-eu-settlements:${noticeId}:participant:${euParticipantId}`,
 )
 
+/** An empty page of one of the staff territorial collections of the case. */
+function territorialCollectionCase(
+  collection: 'complaints' | 'posters' | 'claimants',
+): ApiFixtureCase {
+  return {
+    id: `web.copyright.eu.territorial-${collection}`,
+    method: 'GET',
+    path: `/api/v1/copyright-notices/${noticeId}/territorial-${collection}`,
+    route: {
+      routeTemplate: `/api/v1/copyright-notices/:id/territorial-${collection}`,
+      pathParams: { id: noticeId },
+    },
+    auth: 'fixture-admin',
+    status: 200,
+    body: { [`copyright_territorial_${collection}`]: [], page_info: pageInfo },
+    consumers: ['web'],
+    migratedFrom: ['backend/api/v1/copyright-notices/case-collection-routes.mts'],
+  }
+}
+
 export const webCopyrightEuApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'web.copyright.eu.jurisdiction-availability',
@@ -126,20 +146,9 @@ export const webCopyrightEuApiFixtureCases: ApiFixtureCase[] = [
       'web/lib/api/server/copyright-notices.ts',
     ],
   },
-  {
-    id: 'web.copyright.eu.territorial-complaints',
-    method: 'GET',
-    path: `/api/v1/copyright-notices/${noticeId}/territorial-complaints`,
-    route: {
-      routeTemplate: '/api/v1/copyright-notices/:id/territorial-complaints',
-      pathParams: { id: noticeId },
-    },
-    auth: 'fixture-admin',
-    status: 200,
-    body: { copyright_territorial_complaints: [], page_info: pageInfo },
-    consumers: ['web'],
-    migratedFrom: ['backend/api/v1/copyright-notices/case-collection-routes.mts'],
-  },
+  ...(['complaints', 'posters', 'claimants'] as const).map(collection =>
+    territorialCollectionCase(collection),
+  ),
   {
     id: 'web.copyright.eu.dispute-settlements.participant',
     method: 'GET',

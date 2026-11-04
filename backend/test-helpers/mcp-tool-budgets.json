@@ -1413,11 +1413,11 @@
     "legal": {
       "list_copyright_review_queue": {
         "measured": {
-          "list": 15280,
+          "list": 13238,
           "core": 300
         },
         "max": {
-          "list": 16000,
+          "list": 14000,
           "core": 1000
         }
       },

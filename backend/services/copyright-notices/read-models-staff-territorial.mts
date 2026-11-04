@@ -4,9 +4,6 @@ import sql from 'sql-template-strings'
 import type { CopyrightStaffTerritorialCase } from './read-models-staff-territorial-types.mts'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
-import { selectTerritorialStaffRecipients } from './read-models-staff-territorial-recipients.mts'
-import { selectTerritorialStaffComplaintPages } from './read-models-staff-territorial-complaints.mts'
-import { selectEuStaffSettlementPages } from './read-models-eu-settlements.mts'
 
 /**
  * Reads the live territorial decision and the receipt that gives staff each case. Cases without a
@@ -36,6 +33,8 @@ export async function selectStaffTerritorialCases(
     rationale_ciphertext: string | null
     public_explanation_ciphertext: string | null
     reopened_at: Date | null
+    complaint_count: number
+    dispute_settlement_count: number
   }>(
     sql`/* selectStaffTerritorialCase */
       SELECT receipt.copyright_notice_id AS notice_id, receipt.jurisdiction,
@@ -52,16 +51,23 @@ export async function selectStaffTerritorialCases(
         notice.territorial_rationale_ciphertext AS rationale_ciphertext,
         notice.territorial_public_explanation_ciphertext AS public_explanation_ciphertext,
         CASE WHEN notice.territorial_decision_outcome = 'no_action'
-          THEN reopened.decided_at ELSE NULL END AS reopened_at
+          THEN reopened.decided_at ELSE NULL END AS reopened_at,
+        reopened.complaint_count,
+        (SELECT count(*)::int FROM copyright_eu_dispute_settlement_referrals referral
+          WHERE referral.copyright_notice_id = receipt.copyright_notice_id
+        ) AS dispute_settlement_count
+      -- no-mistakes-disable-next-line postgres-bounded-statements: copyright_territorial_notice_receipts is read for the notice ids of one review-queue page (ANY of the caller's bounded id array). Each lateral aggregate and count subselect reads one case's rows through its index, and the total is not capped by the page size.
       FROM copyright_territorial_notice_receipts receipt
+      -- no-mistakes-disable-next-line postgres-bounded-statements: copyright_notices is joined by primary key to each page receipt, so it adds at most one row per receipt.
       JOIN copyright_notices notice ON notice.id = receipt.copyright_notice_id
+      -- no-mistakes-disable-next-line postgres-bounded-statements: At most one acknowledgment exists per receipt, because uq_copyright_territorial_notice_acknowledgments__receipt_id is unique.
       LEFT JOIN copyright_territorial_notice_acknowledgments acknowledgment
         ON acknowledgment.copyright_territorial_notice_receipt_id = receipt.id
       LEFT JOIN LATERAL (
-        SELECT min(request.decided_at) AS decided_at
+        SELECT min(request.decided_at) FILTER (WHERE request.staff_disposition = 'revoke') AS decided_at,
+          count(*)::int AS complaint_count
         FROM copyright_territorial_redress_requests request
         WHERE request.copyright_territorial_decision_id = notice.current_territorial_decision_identity_id
-          AND request.staff_disposition = 'revoke'
       ) reopened ON true
       WHERE receipt.copyright_notice_id = ANY(${noticeIds}::uuid[])
         AND receipt.jurisdiction = notice.jurisdiction
@@ -69,33 +75,10 @@ export async function selectStaffTerritorialCases(
   )
   const receipts = new Map<string, (typeof rows)[number]>()
   for (const row of rows) if (!receipts.has(row.notice_id)) receipts.set(row.notice_id, row)
-  const cases = [...receipts.values()].map(row => ({
-    noticeId: row.notice_id,
-    decisionId: row.decision_id,
-    decidedAt: row.decided_at,
-    jurisdiction: row.jurisdiction,
-  }))
-  const [recipients, complaints, settlements] = await Promise.all([
-    selectTerritorialStaffRecipients(
-      cases.flatMap(item =>
-        item.decisionId && item.decidedAt
-          ? [{ noticeId: item.noticeId, decisionId: item.decisionId, decidedAt: item.decidedAt }]
-          : [],
-      ),
-      query,
-    ),
-    selectTerritorialStaffComplaintPages(cases, query),
-    selectEuStaffSettlementPages(
-      cases.map(item => item.noticeId),
-      query,
-    ),
-  ])
   return new Map(
     [...receipts.values()].map((row): [string, CopyrightStaffTerritorialCase] => {
       const noticeId = row.notice_id
       const labels = territorialLabels(row.jurisdiction)
-      const complaintPage = complaints.get(noticeId)!
-      const settlementPage = settlements.get(noticeId)!
       return [
         noticeId,
         {
@@ -113,11 +96,8 @@ export async function selectStaffTerritorialCases(
                 )
               : null,
           },
-          recipients: recipients.get(noticeId) ?? [],
-          complaints: complaintPage.results,
-          complaints_page_info: complaintPage.page_info,
-          dispute_settlements: settlementPage.results,
-          dispute_settlements_page_info: settlementPage.page_info,
+          complaint_count: row.complaint_count,
+          dispute_settlement_count: row.dispute_settlement_count,
           acknowledgment: {
             attempt_count: row.attempt_count ?? 0,
             last_attempt_at: row.last_attempt_at,

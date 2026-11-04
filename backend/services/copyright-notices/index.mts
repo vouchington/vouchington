@@ -125,6 +125,11 @@ export {
 } from './case-collection-pages.mts'
 
 export {
+  listCopyrightTerritorialClaimants,
+  listCopyrightTerritorialPosters,
+} from './case-collection-recipient-pages.mts'
+
+export {
   copyrightTrustedFlaggerCursorScope,
   createCopyrightTrustedFlagger,
   getCopyrightTrustedFlagger,

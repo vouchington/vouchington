@@ -1,30 +1,12 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
-import type { PageInfo } from '@voucha/types/pagination'
-import type { CopyrightTerritorialStaffRecipient } from './read-models-staff-territorial-recipients.mts'
-import type { CopyrightTerritorialStaffComplaint } from './read-models-staff-territorial-complaints.mts'
+
 export type CopyrightStaffTerritorialCase = {
   hosted_use_url: string
   grounds: string
   notifier: { name: string | null; email: string | null }
-  recipients: CopyrightTerritorialStaffRecipient[]
-  complaints: CopyrightTerritorialStaffComplaint[]
-  complaints_page_info: PageInfo
-  dispute_settlements_page_info: PageInfo
-  dispute_settlements: Array<{
-    id: string
-    body_name: string
-    referred_at: Date
-    referred_by_party: Extract<
-      FiniteValue<'copyright_territorial_party_roles'>,
-      'poster' | 'notifier'
-    >
-    referred_by_id: string | null
-    outcome: {
-      result: FiniteValue<'copyright_eu_dispute_settlement_results'>
-      decided_at: Date
-      implemented_at: Date | null
-    } | null
-  }>
+  /** Complaints on the live decision and dispute settlements of the notice; the rows are paged. */
+  complaint_count: number
+  dispute_settlement_count: number
   acknowledgment: {
     attempt_count: number
     last_attempt_at: Date | null

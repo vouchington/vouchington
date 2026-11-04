@@ -1,15 +1,14 @@
 'use client'
 
 import { clientApi } from './instance'
-import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import type {
+  CopyrightStaffEuDisputeSettlement,
+  CopyrightTerritorialClaimant,
+  CopyrightTerritorialComplaint,
+  CopyrightTerritorialPoster,
+} from '@/types/copyright-territorial'
 import type { CopyrightTerritorialJurisdiction } from './copyright-territorial-decisions'
 
-export type CopyrightTerritorialComplaint = NonNullable<
-  NonNullable<CopyrightStaffQueueItem['territorial']>['complaints']
->[number]
-type CopyrightEuDisputeSettlement = NonNullable<
-  NonNullable<CopyrightStaffQueueItem['territorial']>['dispute_settlements']
->[number]
 type CopyrightTerritorialStaffPageInfo = {
   has_next_page: boolean
   start_cursor: string | null
@@ -19,8 +18,16 @@ export type CopyrightTerritorialComplaintsPage = {
   copyright_territorial_complaints: CopyrightTerritorialComplaint[]
   page_info: CopyrightTerritorialStaffPageInfo
 }
+export type CopyrightTerritorialPostersPage = {
+  copyright_territorial_posters: CopyrightTerritorialPoster[]
+  page_info: CopyrightTerritorialStaffPageInfo
+}
+export type CopyrightTerritorialClaimantsPage = {
+  copyright_territorial_claimants: CopyrightTerritorialClaimant[]
+  page_info: CopyrightTerritorialStaffPageInfo
+}
 export type CopyrightEuDisputeSettlementsPage = {
-  copyright_eu_dispute_settlements: CopyrightEuDisputeSettlement[]
+  copyright_eu_dispute_settlements: CopyrightStaffEuDisputeSettlement[]
   page_info: CopyrightTerritorialStaffPageInfo
 }
 export type CopyrightEuDisputeSettlementResult =
@@ -39,6 +46,24 @@ export function listCopyrightTerritorialComplaints(
   options: { after?: string } = {},
 ): Promise<CopyrightTerritorialComplaintsPage> {
   return clientApi.get(`/api/v1/copyright-notices/${noticeId}/territorial-complaints`, {
+    searchParams: { after: options.after },
+  })
+}
+
+export function listCopyrightTerritorialPosters(
+  noticeId: string,
+  options: { after?: string; limit?: number } = {},
+): Promise<CopyrightTerritorialPostersPage> {
+  return clientApi.get(`/api/v1/copyright-notices/${noticeId}/territorial-posters`, {
+    searchParams: { after: options.after, limit: options.limit },
+  })
+}
+
+export function listCopyrightTerritorialClaimants(
+  noticeId: string,
+  options: { after?: string } = {},
+): Promise<CopyrightTerritorialClaimantsPage> {
+  return clientApi.get(`/api/v1/copyright-notices/${noticeId}/territorial-claimants`, {
     searchParams: { after: options.after },
   })
 }

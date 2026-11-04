@@ -10,6 +10,14 @@ export type CopyrightNoticeDeliveryKind = Exclude<
 >
 export type CopyrightDeliveryKind = FiniteValue<'copyright_notice_delivery_kinds'>
 
+/** The kinds a restriction event sends per target; their rows carry the target they describe. */
+export const copyrightTargetDeliveryKinds = [
+  'poster_restriction_notice',
+  'poster_review_notice',
+  'poster_restoration_notice',
+  'owner_information_notice',
+] as const satisfies readonly CopyrightNoticeDeliveryKind[]
+
 export const copyrightDecisionDeliveryKinds = [
   'poster_restriction_notice',
   'claimant_decision_notice',
@@ -34,4 +42,19 @@ export type CopyrightDeliveryIntentRecord = {
 export type CopyrightDeliveryRecipientRecord = {
   copyright_notice_delivery_work_item_id: string
   email_ciphertext: string
+}
+
+export type CopyrightDeliveryIntentInput = {
+  noticeId: string
+  /** Required for, and only for, the kinds in `copyrightTargetDeliveryKinds`. */
+  targetId?: string
+  submissionId: string | null
+  correspondenceId: string | null
+  recipientUserId: string | null
+  recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
+  deliveryKind: CopyrightNoticeDeliveryKind
+  channel: CopyrightDeliveryIntentRecord['channel']
+  idempotencyKey: string
+  recipientEmail?: string
+  targetPath?: string
 }

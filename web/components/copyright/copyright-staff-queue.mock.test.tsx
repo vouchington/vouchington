@@ -128,15 +128,8 @@ describe('CopyrightStaffQueue recovery actions', () => {
         },
         decision: null,
         reopened_at: null,
-        recipients: [],
-        complaints: [],
-        complaints_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-        dispute_settlements: [],
-        dispute_settlements_page_info: {
-          has_next_page: false,
-          start_cursor: null,
-          end_cursor: null,
-        },
+        complaint_count: 0,
+        dispute_settlement_count: 0,
       },
     }
     render(
