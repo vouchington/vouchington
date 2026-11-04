@@ -18,7 +18,7 @@ export interface WebFixtureClientEndpointContext {
   readonly captchaConfig: typeof import('@/lib/api/client/captcha-config')
   readonly communities: Pick<
     typeof import('@/lib/api/client/communities'),
-    'fetchCommunityPinnedPosts' | 'updateCommunityPostTypeSettings'
+    'fetchCommunityPinnedPosts' | 'getCommunityApplication' | 'updateCommunityPostTypeSettings'
   >
   readonly communityBans: Pick<
     typeof import('@/lib/api/client/community-bans'),

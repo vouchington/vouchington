@@ -4914,6 +4914,22 @@
         }
       ]
     },
+    "GET:/api/v1/communities/:idOrSlug/applications/:id": {
+      "pullRequest": 4882,
+      "contracts": [
+        {
+          "audience": "community_moderation",
+          "facts": "F93",
+          "inputFields": "I164",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "read_application"
+          },
+          "decision": false
+        }
+      ]
+    },
     "GET:/api/v1/communities/:idOrSlug/automod/recent-actions": {
       "pullRequest": 2972,
       "contracts": [

@@ -24,6 +24,7 @@ export const COMMUNITY_MODERATION_UNTRUSTED_FIELDS = [
   'options',
   'target_label',
   'message',
+  'message_preview',
   'question',
   'answers',
   'authored_title',

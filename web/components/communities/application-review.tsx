@@ -11,9 +11,13 @@ import { Badge } from '@/components/ui/badge'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { approveApplication, rejectApplication } from '@/lib/api/client'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
-import type { CommunityApplication, CommunityApplicationsResponseBody } from '@/types/api-responses'
+import type {
+  CommunityApplicationStatus,
+  CommunityApplicationsResponseBody,
+} from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getUserLabel } from '@/lib/users/user-helpers'
+import { ApplicationDetailDialog } from './application-detail'
 
 interface ApplicationReviewProps {
   data: CommunityApplicationsResponseBody
@@ -32,20 +36,25 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
     usePaginatedList(data, endpoint, {})
   const results = mergePageResultsById(pages)
-  const communityApplications = mergeRecords(pages, page => page.community_applications)
+  const communityApplications = mergeRecords(pages, page => page.community_application_summaries)
   const users = mergeRecords(pages, page => page.users)
   const [loading, setLoading] = useState<string | null>(null)
   const [activeAction, setActiveAction] = useState<ActiveAction | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [applicationOverrides, setApplicationOverrides] = useState<
-    Readonly<Record<string, CommunityApplication>>
+  const [statusOverrides, setStatusOverrides] = useState<
+    Readonly<Record<string, CommunityApplicationStatus>>
   >({})
+  const [openApplicationId, setOpenApplicationId] = useState<string | null>(null)
 
   const applications = results.flatMap(result => {
     const application = communityApplications[result.id]
-    return application ? [applicationOverrides[application.id] ?? application] : []
+    return application
+      ? [{ ...application, status: statusOverrides[application.id] ?? application.status }]
+      : []
   })
+
+  const openApplication = applications.find(application => application.id === openApplicationId)
 
   if (applications.length === 0 && !hasNextPage) {
     return (
@@ -65,13 +74,7 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
     setLoading(applicationId)
     try {
       await approveApplication(communitySlug, applicationId)
-      const application = communityApplications[applicationId]
-      if (application) {
-        setApplicationOverrides(current => ({
-          ...current,
-          [applicationId]: { ...application, approved_at: new Date().toISOString() },
-        }))
-      }
+      setStatusOverrides(current => ({ ...current, [applicationId]: 'approved' }))
       refresh()
     } catch (err) {
       setError(
@@ -89,13 +92,7 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
     setLoading(applicationId)
     try {
       await rejectApplication(communitySlug, applicationId, rejectionReason)
-      const application = communityApplications[applicationId]
-      if (application) {
-        setApplicationOverrides(current => ({
-          ...current,
-          [applicationId]: { ...application, rejected_at: new Date().toISOString() },
-        }))
-      }
+      setStatusOverrides(current => ({ ...current, [applicationId]: 'rejected' }))
       setActiveAction(null)
       setRejectionReason('')
       refresh()
@@ -127,9 +124,9 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
         <div className='space-y-4'>
           {applications.map(application => {
             const user = users[application.user_id]
-            const isPending = !application.approved_at && !application.rejected_at
-            const isApproved = !!application.approved_at
-            const isRejected = !!application.rejected_at
+            const isPending = application.status === 'pending'
+            const isApproved = application.status === 'approved'
+            const isRejected = application.status === 'rejected'
 
             return (
               <div
@@ -165,27 +162,31 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
                   )}
                 </div>
 
-                {Object.keys(application.answers).length > 0 && (
-                  <div className='mt-3 space-y-2'>
-                    {Object.entries(application.answers).map(([key, value]) => (
-                      <div key={key}>
-                        <p className='text-xs font-medium text-muted-foreground'>{key}</p>
-                        <p className='text-sm'>{String(value)}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {application.message && (
+                {application.message_preview && (
                   <div className='mt-3'>
                     <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                       {t('extracted.communities.applicationReview.message_2f77668a')}
                     </p>
                     <p className='mt-1 whitespace-pre-wrap break-words text-sm'>
-                      {application.message}
+                      {application.message_preview}
                     </p>
                   </div>
                 )}
+                <p className='mt-3 text-xs text-muted-foreground'>
+                  {t('extracted.communities.applicationReview.answerCount_90a51327', {
+                    count: application.answer_count,
+                  })}
+                </p>
+
+                <Button
+                  data-pw='application-review-view-details'
+                  className='mt-3'
+                  size='sm'
+                  variant='ghost'
+                  onClick={() => setOpenApplicationId(application.id)}
+                >
+                  {t('extracted.communities.applicationReview.showDetails_1af77ee2')}
+                </Button>
 
                 {isPending &&
                   (activeAction?.applicationId === application.id &&
@@ -260,6 +261,20 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
           })}
         </div>
       </InfiniteScroll>
+      {openApplication && (
+        <ApplicationDetailDialog
+          communitySlug={communitySlug}
+          applicationId={openApplication.id}
+          applicantLabel={getUserLabel(
+            users[openApplication.user_id],
+            t('shared.user.deletedUser'),
+          )}
+          appliedDate={t('extracted.communities.applicationReview.appliedDate_6e231f5e', {
+            date: new Date(openApplication.created_at).toLocaleDateString(),
+          })}
+          onClose={() => setOpenApplicationId(null)}
+        />
+      )}
     </div>
   )
 }

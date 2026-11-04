@@ -7,6 +7,7 @@ import {
   rankingPaginationParser,
 } from '@modules/pagination'
 import {
+  getCommunityApplication,
   getRaidModeSuggestion,
   searchApplications,
   searchCommunityBans,
@@ -47,9 +48,12 @@ async function readApplicationPage(communityId: string, args: CommunityModeratio
   })
   const publicUsers = await getUserPublicByAnyCachedBatch(result.results.map(a => a.user_id))
   return {
-    results: result.results.map(a => ({ __entity_type: 'community_application', id: a.id })),
+    results: result.results.map(a => ({
+      __entity_type: 'community_application_summary',
+      id: a.id,
+    })),
     page_info: result.page_info,
-    community_applications: indexById(result.results),
+    community_application_summaries: indexById(result.results),
     users: indexById(publicUsers.filter(user => user != null)),
   }
 }
@@ -58,6 +62,11 @@ export const communityModerationReadLists: Record<string, CommunityModerationHan
   async list_applications(user, args) {
     const { community } = await loadCommunityForModerator(user, args.community)
     return readApplicationPage(community.id, args)
+  },
+
+  async read_application(user, args) {
+    const { community } = await loadCommunityForModerator(user, args.community)
+    return { community_application: await getCommunityApplication(community.id, args.id as string) }
   },
 
   async list_bans(user, args) {

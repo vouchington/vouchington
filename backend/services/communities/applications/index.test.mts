@@ -6,7 +6,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createApplication } from './create.mts'
-import { searchApplications } from './get.mts'
+import { getCommunityApplication, searchApplications } from './get.mts'
 import { getApplicationQuestions, setApplicationQuestions } from './questions.mts'
 import { archiveCommunities } from '../archive.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -154,13 +154,57 @@ describe('index', () => {
 
       const result = await searchApplications(community.id)
       expect(result.results.length).toBeGreaterThan(0)
-      expect(Object.keys(result.results[0]!).toSorted()).toEqual(applicationKeys)
+      expect(Object.keys(result.results[0]!).toSorted()).toEqual([
+        '__entity_type',
+        'answer_count',
+        'created_at',
+        'id',
+        'message_preview',
+        'status',
+        'user_id',
+      ])
       expect(result.results).toHaveLength(1)
       expect(result.results[0]).toMatchObject({
-        __entity_type: 'community_application',
+        __entity_type: 'community_application_summary',
         id: application.id,
         user_id: applicant.id,
-        community_id: community.id,
+        status: 'pending',
+        message_preview: null,
+        answer_count: 0,
+      })
+    })
+
+    it('truncates the message to a preview', async () => {
+      const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
+      const applicant = await createTestUser()
+      const message = 'x'.repeat(1000)
+      await createApplication(applicant.id, WEB_PROVENANCE, community.id, {}, message)
+
+      const { results } = await searchApplications(community.id)
+      const preview = results[0]?.message_preview
+      expect(preview?.length).toBeLessThan(message.length)
+      expect(message.startsWith(preview!)).toBe(true)
+    })
+  })
+
+  describe('getCommunityApplication', () => {
+    it('returns the full application of its own community and 404s for another', async () => {
+      const [community, other] = await Promise.all([
+        insertTestCommunity({ createdById: owner.id, visibility: 'private' }),
+        insertTestCommunity({ createdById: owner.id, visibility: 'private' }),
+      ])
+      const applicant = await createTestUser()
+      const application = await createApplication(
+        applicant.id,
+        WEB_PROVENANCE,
+        community.id,
+        {},
+        'Hello',
+      )
+
+      expect(await getCommunityApplication(community.id, application.id)).toEqual(application)
+      await expect(getCommunityApplication(other.id, application.id)).rejects.toMatchObject({
+        status: 404,
       })
     })
   })

@@ -2,6 +2,7 @@ import communitiesAgentPromptsDefault from '../../../../api-fixtures/v1/response
 import communitiesAgentPromptsHistoryDefault from '../../../../api-fixtures/v1/responses/web.communities.agent-prompts.history.default.json'
 import communitiesAiAgentDefault from '../../../../api-fixtures/v1/responses/web.communities.ai-agent.default.json'
 import communitiesAiAgentsDefault from '../../../../api-fixtures/v1/responses/web.communities.ai-agents.default.json'
+import communitiesApplicationDefault from '../../../../api-fixtures/v1/responses/web.communities.application.default.json'
 import communitiesApplicationQuestionsDefault from '../../../../api-fixtures/v1/responses/web.communities.application-questions.default.json'
 import communitiesApplicationsDefault from '../../../../api-fixtures/v1/responses/web.communities.applications.default.json'
 import communitiesArchiveDefault from '../../../../api-fixtures/v1/responses/web.communities.archive.default.json'
@@ -19,6 +20,7 @@ import type {
   CommunityAiAgentResponseBody,
   CommunityAiAgentsResponseBody,
   CommunityApplicationQuestionsResponseBody,
+  CommunityApplicationResponseBody,
   CommunityApplicationsResponseBody,
   CommunityArchiveResponseBody,
   CommunityInvitesResponseBody,
@@ -64,6 +66,12 @@ export const COMMUNITIES_CORE_DECLARATIONS = [
     'web.communities.application-questions.default',
     communitiesApplicationQuestionsDefault,
     context => context.server.communities.getCommunityApplicationQuestions('test-community'),
+  ),
+  defineWebApiFixture<CommunityApplicationResponseBody>()(
+    'web.communities.application.default',
+    communitiesApplicationDefault,
+    context =>
+      context.client.communities.getCommunityApplication('test-community', 'application-1'),
   ),
   defineWebApiFixture<CommunityApplicationsResponseBody>()(
     'web.communities.applications.default',

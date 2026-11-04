@@ -19524,7 +19524,7 @@
           "tool": {
             "name": "read_community_moderation",
             "title": "read community moderation",
-            "description": "list_applications: GET /api/v1/communities/:idOrSlug/applications\nlist_automod_actions: GET /api/v1/communities/:idOrSlug/automod/recent-actions\nlist_bans: GET /api/v1/communities/:idOrSlug/bans\nlist_invites: GET /api/v1/communities/:idOrSlug/invites\nread_moderation_analytics: GET /api/v1/communities/:idOrSlug/moderation-analytics\nread_moderator_stats: GET /api/v1/communities/:idOrSlug/moderator-stats\nread_moderator_vacation: GET /api/v1/communities/:idOrSlug/moderator-vacation\nread_modlog: GET /api/v1/communities/:idOrSlug/modlog\nlist_pending_posts: GET /api/v1/communities/:idOrSlug/posts/pending\nlist_pending_reports: GET /api/v1/communities/:idOrSlug/reports/pending\nlist_restrictions: GET /api/v1/communities/:idOrSlug/restrictions\nlist_saved_replies: GET /api/v1/communities/:idOrSlug/saved-replies",
+            "description": "list_applications: GET /api/v1/communities/:idOrSlug/applications\nread_application: GET /api/v1/communities/:idOrSlug/applications/:id\nlist_automod_actions: GET /api/v1/communities/:idOrSlug/automod/recent-actions\nlist_bans: GET /api/v1/communities/:idOrSlug/bans\nlist_invites: GET /api/v1/communities/:idOrSlug/invites\nread_moderation_analytics: GET /api/v1/communities/:idOrSlug/moderation-analytics\nread_moderator_stats: GET /api/v1/communities/:idOrSlug/moderator-stats\nread_moderator_vacation: GET /api/v1/communities/:idOrSlug/moderator-vacation\nread_modlog: GET /api/v1/communities/:idOrSlug/modlog\nlist_pending_posts: GET /api/v1/communities/:idOrSlug/posts/pending\nlist_pending_reports: GET /api/v1/communities/:idOrSlug/reports/pending\nlist_restrictions: GET /api/v1/communities/:idOrSlug/restrictions\nlist_saved_replies: GET /api/v1/communities/:idOrSlug/saved-replies",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -19554,6 +19554,32 @@
                         }
                       },
                       "required": ["community"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["read_application"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "minLength": 36,
+                          "maxLength": 36
+                        }
+                      },
+                      "required": ["community", "id"],
                       "additionalProperties": false
                     }
                   },
@@ -19947,21 +19973,15 @@
                 {
                   "additionalProperties": false,
                   "properties": {
-                    "community_applications": {
+                    "community_application_summaries": {
                       "additionalProperties": {
                         "additionalProperties": false,
                         "properties": {
                           "__entity_type": {
-                            "const": "community_application"
+                            "const": "community_application_summary"
                           },
-                          "answers": {
-                            "$ref": "#/$defs/S3"
-                          },
-                          "approved_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "community_id": {
-                            "type": "string"
+                          "answer_count": {
+                            "type": "number"
                           },
                           "created_at": {
                             "type": "string"
@@ -19969,20 +19989,12 @@
                           "id": {
                             "type": "string"
                           },
-                          "message": {
+                          "message_preview": {
                             "$ref": "#/$defs/S3"
                           },
-                          "rejected_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "rejection_reason": {
-                            "$ref": "#/$defs/S3"
-                          },
-                          "reviewed_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "reviewed_by_id": {
-                            "$ref": "#/$defs/S2"
+                          "status": {
+                            "enum": ["pending", "approved", "rejected"],
+                            "type": "string"
                           },
                           "user_id": {
                             "type": "string"
@@ -19990,16 +20002,11 @@
                         },
                         "required": [
                           "__entity_type",
-                          "answers",
-                          "approved_at",
-                          "community_id",
+                          "answer_count",
                           "created_at",
                           "id",
-                          "message",
-                          "rejected_at",
-                          "rejection_reason",
-                          "reviewed_at",
-                          "reviewed_by_id",
+                          "message_preview",
+                          "status",
                           "user_id"
                         ],
                         "type": "object"
@@ -20014,7 +20021,7 @@
                         "additionalProperties": false,
                         "properties": {
                           "__entity_type": {
-                            "const": "community_application"
+                            "const": "community_application_summary"
                           },
                           "id": {
                             "type": "string"
@@ -20029,7 +20036,70 @@
                       "$ref": "#/$defs/S1"
                     }
                   },
-                  "required": ["results", "page_info", "community_applications", "users"],
+                  "required": ["results", "page_info", "community_application_summaries", "users"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "community_application": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "__entity_type": {
+                          "const": "community_application"
+                        },
+                        "answers": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "approved_at": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "community_id": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "rejected_at": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "rejection_reason": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "reviewed_at": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "reviewed_by_id": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "user_id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "__entity_type",
+                        "answers",
+                        "approved_at",
+                        "community_id",
+                        "created_at",
+                        "id",
+                        "message",
+                        "rejected_at",
+                        "rejection_reason",
+                        "reviewed_at",
+                        "reviewed_by_id",
+                        "user_id"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["community_application"],
                   "type": "object"
                 },
                 {
@@ -22812,17 +22882,18 @@
               "voucha/requiredScopes": ["community-moderation:read"],
               "voucha/optionOutputPointers": {
                 "list_applications": "#/anyOf/0",
-                "list_automod_actions": "#/anyOf/1",
-                "list_bans": "#/anyOf/2",
-                "list_invites": "#/anyOf/3",
-                "read_moderation_analytics": "#/anyOf/4",
-                "read_moderator_stats": "#/anyOf/5",
-                "read_moderator_vacation": "#/anyOf/6",
-                "read_modlog": "#/anyOf/7",
-                "list_pending_posts": "#/anyOf/8",
-                "list_pending_reports": "#/anyOf/9",
-                "list_restrictions": "#/anyOf/10",
-                "list_saved_replies": "#/anyOf/11"
+                "read_application": "#/anyOf/1",
+                "list_automod_actions": "#/anyOf/2",
+                "list_bans": "#/anyOf/3",
+                "list_invites": "#/anyOf/4",
+                "read_moderation_analytics": "#/anyOf/5",
+                "read_moderator_stats": "#/anyOf/6",
+                "read_moderator_vacation": "#/anyOf/7",
+                "read_modlog": "#/anyOf/8",
+                "list_pending_posts": "#/anyOf/9",
+                "list_pending_reports": "#/anyOf/10",
+                "list_restrictions": "#/anyOf/11",
+                "list_saved_replies": "#/anyOf/12"
               }
             }
           },
@@ -22832,6 +22903,10 @@
             {
               "method": "GET",
               "path": "/api/v1/communities/:idOrSlug/applications"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/applications/:id"
             },
             {
               "method": "GET",

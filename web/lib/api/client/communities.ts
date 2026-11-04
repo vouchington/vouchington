@@ -4,6 +4,7 @@ import type { CreateCommunityInput, UpdateCommunityInput } from './community-inp
 import { searchMyCommunities } from './community-search'
 import type {
   Community,
+  CommunityApplicationResponseBody,
   CommunityResponseBody,
   CommunityInvite,
   CreatedCommunityInvite,
@@ -58,6 +59,14 @@ export function applyToCommunity(
     answers,
     ...(message ? { message } : {}),
   })
+}
+export function getCommunityApplication(
+  idOrSlug: string,
+  applicationId: string,
+): Promise<CommunityApplicationResponseBody> {
+  return clientApi.get<CommunityApplicationResponseBody>(
+    `/api/v1/communities/${idOrSlug}/applications/${applicationId}`,
+  )
 }
 export function approveApplication(idOrSlug: string, applicationId: string): Promise<void> {
   return clientApi.patch(`/api/v1/communities/${idOrSlug}/applications/${applicationId}`, {

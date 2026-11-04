@@ -6,6 +6,7 @@ export const communityModerationUuidPaths: Readonly<Record<string, string>> = {
   deescalate_report: 'reportId',
   open_report_mod_internal_thread: 'reportId',
   resolve_report: 'reportId',
+  read_application: 'id',
   lift_restriction: 'id',
   delete_saved_reply: 'id',
 }

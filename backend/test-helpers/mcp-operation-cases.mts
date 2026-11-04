@@ -123,7 +123,7 @@ function communityModerationCases(): OperationCase[] {
       }
     }),
   )
-  if (cases.length !== 59) throw new Error('community moderation option inventory drift')
+  if (cases.length !== 60) throw new Error('community moderation option inventory drift')
   return cases
 }
 
@@ -177,8 +177,8 @@ export function currentOperationCases(): OperationCase[] {
     ...audiences.flatMap(audience => singleCases(audience, mergedNames)),
   ]
   if (
-    cases.length !== 347 ||
-    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 342
+    cases.length !== 348 ||
+    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 343
   )
     throw new Error('current operation inventory drift')
   for (const audience of audiences) {

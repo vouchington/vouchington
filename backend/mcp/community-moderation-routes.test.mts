@@ -10,6 +10,7 @@ const prefix = '/api/v1/communities/:idOrSlug'
 const routes = {
   read_community_moderation: [
     ['list_applications', 'GET', '/applications'],
+    ['read_application', 'GET', '/applications/:id'],
     ['list_automod_actions', 'GET', '/automod/recent-actions'],
     ['list_bans', 'GET', '/bans'],
     ['list_invites', 'GET', '/invites'],
@@ -97,7 +98,7 @@ const expectedFlags = {
 } as const
 
 describe('community moderator MCP routes', () => {
-  it('publishes the 59 guarded REST operations in exactly four option groups', () => {
+  it('publishes the 60 guarded REST operations in exactly four option groups', () => {
     expect(communityModerationGroups.map(group => group.name)).toEqual(Object.keys(routes))
     for (const group of communityModerationGroups) {
       const name = group.name as keyof typeof routes

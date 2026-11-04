@@ -8,6 +8,7 @@ type CommunityMember = Deps.CommunityMember
 type CommunityMetrics = Deps.CommunityMetrics
 type CommunityApplicationQuestion = Deps.CommunityApplicationQuestion
 type CommunityApplication = Deps.CommunityApplication
+type CommunityApplicationSummary = Deps.CommunityApplicationSummary
 type CommunityInvite = Deps.CommunityInvite
 
 // Re-export for convenience
@@ -47,10 +48,14 @@ export type CommunityPostsResponseBody = {
 }
 
 export type CommunityApplicationsResponseBody = {
-  results: Array<{ __entity_type: 'community_application'; id: string }>
+  results: Array<{ __entity_type: 'community_application_summary'; id: string }>
   page_info: PageInfo
-  community_applications: Record<string, CommunityApplication>
+  community_application_summaries: Record<string, CommunityApplicationSummary>
   users: Record<string, PublicUser>
+}
+
+export type CommunityApplicationResponseBody = {
+  community_application: CommunityApplication
 }
 
 export type CommunityApplicationQuestionsResponseBody = {

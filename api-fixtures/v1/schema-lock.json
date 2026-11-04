@@ -183,6 +183,10 @@
       "fixtureIds": ["web.communities.applications.default"],
       "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
     },
+    "GET:/api/v1/communities/:communitySlug/applications/:id": {
+      "fixtureIds": ["web.communities.application.default"],
+      "hash": "d8af6451a5b26fb7ac2af21ad890ede24f05e8c04859842decb4c287d2d47633"
+    },
     "GET:/api/v1/communities/:communitySlug/automod/recent-actions": {
       "fixtureIds": ["web.communities.automod-recent-actions.default"],
       "hash": "3ae14ccd0a08c90659b455fa79f75b78799cc84ae329e150783fe5152fc59fd9"
@@ -3061,9 +3065,13 @@
       "fixtureIds": ["web.communities.application-questions.default"],
       "hash": "07aca8a1df7e9904aa3b2688c7289aaa48b4236146fd88f3793007db6274174b"
     },
+    "web.communities.application.default": {
+      "fixtureIds": ["web.communities.application.default"],
+      "hash": "7f630e5486d264e21ede7bd715aa79cdcd37a750efd7d72112994081c13b6af9"
+    },
     "web.communities.applications.default": {
       "fixtureIds": ["web.communities.applications.default"],
-      "hash": "64d7f29e9a8a8d4a4cc1a38e3a0cebaac23bf7a5242d39b25ef08f0ad63e1c57"
+      "hash": "978244b9f4d81eb285a93475af94527e1cbabbb24a514272d21f27bf74660eae"
     },
     "web.communities.archive.default": {
       "fixtureIds": ["web.communities.archive.default"],

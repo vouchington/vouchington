@@ -68,6 +68,13 @@ describe('community moderation MCP application updates — real PostgreSQL and V
       readScopes,
     )
     expect(before.results).toEqual([expect.objectContaining({ id: application.id })])
+    expect(before.community_application_summaries).toMatchObject({
+      [application.id]: {
+        status: 'pending',
+        answer_count: 0,
+        message_preview: expect.stringContaining('I would like to join.'),
+      },
+    })
     const request = createRequest()
     await request.authenticateAs(moderator)
     const rest = await request
@@ -79,6 +86,41 @@ describe('community moderation MCP application updates — real PostgreSQL and V
       id: rest.body.users[applicant.id].id,
       username: expect.any(String),
     })
+    const detail = await callStructuredMcpTool(
+      moderator,
+      'read_community_moderation',
+      optionArgs('read_application', { community: community.slug, id: application.id }),
+      readScopes,
+    )
+    const restDetail = await request
+      .get(`/api/v1/communities/${community.slug}/applications/${application.id}`)
+      .expect(200)
+    expect(detail.community_application).toMatchObject({
+      id: application.id,
+      user_id: applicant.id,
+      community_id: community.id,
+    })
+    expect(restDetail.body.community_application.id).toBe(application.id)
+    const other = await insertTestCommunity({
+      createdById: moderator.id,
+      visibility: 'private',
+    })
+    await insertTestCommunityMember({
+      communityId: other.id,
+      userId: moderator.id,
+      role: 'owner',
+    })
+    expect(
+      await callRejectedMcpTool(
+        moderator,
+        'read_community_moderation',
+        optionArgs('read_application', { community: other.slug, id: application.id }),
+        readScopes,
+      ),
+    ).toContain('Application not found')
+    await request
+      .get(`/api/v1/communities/${other.slug}/applications/${application.id}`)
+      .expect(404)
     expect(
       await callStructuredMcpTool(
         moderator,
