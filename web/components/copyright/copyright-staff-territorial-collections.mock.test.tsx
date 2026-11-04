@@ -143,7 +143,11 @@ describe('CopyrightStaffTerritorialCollections', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Record referral' }))
     expect(await screen.findByText('Referral form')).toBeVisible()
     expect(mockPosters).toHaveBeenCalledTimes(3)
-    expect(mockPosters).toHaveBeenLastCalledWith('notice-1', { after: 'c2' })
+    // The dialog's first page uses the default size; the referral walk asks for the route's
+    // maximum and follows the cursor to the end.
+    expect(mockPosters).toHaveBeenNthCalledWith(1, 'notice-1')
+    expect(mockPosters).toHaveBeenNthCalledWith(2, 'notice-1', { after: 'c1', limit: 100 })
+    expect(mockPosters).toHaveBeenNthCalledWith(3, 'notice-1', { after: 'c2', limit: 100 })
     expect(mockClaimants).toHaveBeenCalledTimes(2)
     expect(mockClaimants).toHaveBeenLastCalledWith('notice-1', { after: 'r1' })
     // Poster 1 sits on two targets, so it has a row for each; the form is still offered once the

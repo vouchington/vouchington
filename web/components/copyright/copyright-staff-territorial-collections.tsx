@@ -103,12 +103,19 @@ export function CopyrightStaffTerritorialCollections(props: Props) {
   )
 }
 
+// The route's maximum page size: a referral walks every poster page, so a 10,000-target record
+// takes about 100 requests and fits one read rate-limit window.
+const POSTER_WALK_LIMIT = 100
+
 function LoadedCollections({ item, pending, onReview, pages }: Props & { pages: FirstPages }) {
   const posterList = usePaginatedList(
     pages.posters,
     `/api/v1/copyright-notices/${item.id}/territorial-posters`,
     {},
-    { loadPage: after => listCopyrightTerritorialPosters(item.id, { after }) },
+    {
+      loadPage: after =>
+        listCopyrightTerritorialPosters(item.id, { after, limit: POSTER_WALK_LIMIT }),
+    },
   )
   const claimantList = usePaginatedList(
     pages.claimants,

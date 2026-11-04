@@ -114,17 +114,17 @@ describe('territorial redress client', () => {
       call: () => listCopyrightTerritorialPosters('notice-4'),
       expectedArgs: [
         '/api/v1/copyright-notices/notice-4/territorial-posters',
-        { searchParams: { after: undefined } },
+        { searchParams: { after: undefined, limit: undefined } },
       ],
     })
     mockGet.mockClear()
     await expectApiWrapperCall({
       mock: mockGet,
       response: page,
-      call: () => listCopyrightTerritorialPosters('notice-4', { after: 'target-1' }),
+      call: () => listCopyrightTerritorialPosters('notice-4', { after: 'target-1', limit: 100 }),
       expectedArgs: [
         '/api/v1/copyright-notices/notice-4/territorial-posters',
-        { searchParams: { after: 'target-1' } },
+        { searchParams: { after: 'target-1', limit: 100 } },
       ],
     })
   })

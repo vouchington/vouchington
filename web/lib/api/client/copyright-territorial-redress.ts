@@ -52,10 +52,10 @@ export function listCopyrightTerritorialComplaints(
 
 export function listCopyrightTerritorialPosters(
   noticeId: string,
-  options: { after?: string } = {},
+  options: { after?: string; limit?: number } = {},
 ): Promise<CopyrightTerritorialPostersPage> {
   return clientApi.get(`/api/v1/copyright-notices/${noticeId}/territorial-posters`, {
-    searchParams: { after: options.after },
+    searchParams: { after: options.after, limit: options.limit },
   })
 }
 
