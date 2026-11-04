@@ -15,7 +15,7 @@ describe('worker-io backend automation flag', () => {
     const temporaryDirectory = mkdtempSync(join(tmpdir(), 'worker-io-automation-'))
     const outputPath = join(temporaryDirectory, 'github-output')
     try {
-      const result = spawnSync('.github/actions/build-backend-images/set-image-set.sh', {
+      const result = spawnSync('bash', ['.github/actions/build-backend-images/set-image-set.sh'], {
         cwd: process.cwd(),
         encoding: 'utf8',
         env: { ...process.env, GITHUB_OUTPUT: outputPath },
