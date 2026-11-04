@@ -1,3 +1,4 @@
+import { areHackerNewsLookupsEnabled, hackerNewsQueueConfig } from '@queues/hacker-news/config'
 import { setTimeout } from 'node:timers/promises'
 import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { Parser } from 'htmlparser2'
@@ -22,8 +23,10 @@ type Hit = Record<string, unknown>
 export async function fetchHackerNewsReferences(
   inputs: readonly HackerNewsLookupInput[],
 ): Promise<HackerNewsLookupResult[]> {
+  await hackerNewsQueueConfig.waitForInitialization()
   const results: HackerNewsLookupResult[] = []
   const search = async (url: string, kind: 'story' | 'comment') => {
+    if (!areHackerNewsLookupsEnabled()) return null
     try {
       return await searchAlgolia(url, kind)
     } finally {
@@ -43,6 +46,7 @@ export async function fetchHackerNewsReferences(
       : target.identity
     // oxlint-disable-next-line no-await-in-loop -- external API requests share the lane budget
     const stories = await search(query, 'story')
+    if (!stories) return []
     const storyIds = new Set<number>()
     for (const hit of stories) {
       const id = positiveInteger(hit.objectID)
@@ -58,6 +62,7 @@ export async function fetchHackerNewsReferences(
     }
     // oxlint-disable-next-line no-await-in-loop -- external API requests share the lane budget
     const comments = await search(query, 'comment')
+    if (!comments) return []
     const commentIds = new Set<number>()
     for (const hit of comments) {
       const id = positiveInteger(hit.objectID)
@@ -86,7 +91,7 @@ export async function fetchHackerNewsReferences(
 }
 
 /* no-mistakes: integration=algolia */
-async function searchAlgolia(query: string, kind: 'story' | 'comment'): Promise<Hit[]> {
+async function searchAlgolia(query: string, kind: 'story' | 'comment'): Promise<Hit[] | null> {
   const url = new URL('https://hn.algolia.com/api/v1/search')
   url.searchParams.set('query', query)
   url.searchParams.set('tags', kind)
@@ -95,6 +100,7 @@ async function searchAlgolia(query: string, kind: 'story' | 'comment'): Promise<
   const limit = getHackerNewsWorkLimit('hits_per_page')
   url.searchParams.set('hitsPerPage', String(limit))
   const timeout = getHackerNewsWorkLimit('request_timeout_ms')
+  if (!areHackerNewsLookupsEnabled()) return null
   const { response } = await fetchWithTimeout({
     url: url.href,
     headers: {},

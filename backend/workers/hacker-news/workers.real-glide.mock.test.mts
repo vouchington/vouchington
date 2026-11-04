@@ -6,6 +6,10 @@ import {
   enqueueHackerNewsLookups,
 } from '@queues/hacker-news/enqueues'
 import { hackerNewsQueue } from '@queues/hacker-news/queues'
+import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
+import { getHackerNewsSummariesByEntity } from '@services/urls/hacker-news-references'
+import { hackerNewsQueueConfig } from '@queues/hacker-news/config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { enqueueHeartbeat } from '@queues/heartbeat/enqueues'
 import { heartbeat as heartbeatQueue } from '@queues/heartbeat/queues'
 import {
@@ -31,6 +35,68 @@ describe('Hacker News lookup worker', () => {
       heartbeatQueue.close(),
     ])
   })
+  // no-mistakes-timeout-reason: Delayed promotion, global queue limiting, and provider pacing.
+  it('drops queued work while pulling is disabled and resumes admissions after it is enabled', async () => {
+    await hackerNewsQueueConfig.waitForInitialization()
+    expect(hackerNewsQueueConfig.defaultFields.lookups_enabled).toBe(true)
+    const row = await insertTestUrlDirect(null, `${recording.query}?utm_source=${randomUUID()}`)
+    if (!row) throw new Error('Expected a test URL')
+    const neverAdmitted = randomUUID()
+    const runAt = new Date(Date.now() + 2500).toISOString()
+    const refreshId = `hacker-news-refresh__${row.id}__${Buffer.from(runAt).toString('base64url')}`
+    const noRefreshId = `hacker-news-refresh__${neverAdmitted}__${Buffer.from(runAt).toString('base64url')}`
+    const agent = new MockAgent()
+    agent.disableNetConnect()
+    const pool = agent.get('https://hn.algolia.com')
+    for (const [kind, response] of Object.entries(recording.responses)) {
+      const tag = kind === 'stories' ? 'story' : 'comment'
+      pool
+        .intercept({
+          method: 'GET',
+          path(path) {
+            const request = new URL(path, recording.provider)
+            return (
+              request.pathname === '/api/v1/search' &&
+              request.searchParams.get('query') === recording.search_query &&
+              request.searchParams.get('tags') === tag
+            )
+          },
+        })
+        .reply(200, JSON.stringify(response))
+    }
+    let restore = () => {}
+    try {
+      await withMockAgentDefaultFetchForTest(agent, async () => {
+        const pending = completion(hackerNews, refreshId)
+        await enqueueHackerNewsLookupRefreshes([{ urlId: row.id, runAt }])
+        expect(await hackerNewsQueue.getJob(refreshId)).not.toBeNull()
+        restore = overrideDynamicConfigFieldsForTest(hackerNewsQueueConfig, {
+          lookups_enabled: false,
+        })
+        await enqueueHackerNewsLookups([neverAdmitted])
+        await enqueueHackerNewsLookupRefreshes([{ urlId: neverAdmitted, runAt }])
+        expect(await hackerNewsQueue.getJob(`hacker-news__${neverAdmitted}`)).toBeNull()
+        expect(await hackerNewsQueue.getJob(noRefreshId)).toBeNull()
+        await pending.promise
+        pending.stop()
+        expect((await getHackerNewsTotalsByUrlIds([row.id])).has(row.id)).toBe(false)
+        expect(agent.pendingInterceptors()).toHaveLength(2)
+        restore()
+        const completed = completion(hackerNews, `hacker-news__${row.id}`)
+        await enqueueHackerNewsLookups([row.id])
+        await completed.promise
+        completed.stop()
+        agent.assertNoPendingInterceptors()
+        expect((await getHackerNewsTotalsByUrlIds([row.id])).has(row.id)).toBe(true)
+      })
+    } finally {
+      restore()
+      const jobs = await hackerNewsQueue.searchJobs({ data: { urlId: row.id } })
+      await Promise.all(jobs.map(job => job.remove()))
+      await agent.close()
+    }
+  }, 15_000)
+  // no-mistakes-timeout-reason: Two queue jobs share global limiting and provider pacing.
   it('persists a lookup, skips a fresh duplicate, and leaves other queues free while refreshes wait', async () => {
     const identity = recording.search_query
     const url = `${recording.query}?utm_source=${randomUUID()}`
@@ -62,6 +128,9 @@ describe('Hacker News lookup worker', () => {
       id => `hacker-news-refresh__${id}__${Buffer.from(runAt).toString('base64url')}`,
     )
     const jobId = `hacker-news__${row.id}`
+    const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
+      references_visible: false,
+    })
     try {
       await withMockAgentDefaultFetchForTest(agent, async () => {
         const first = completion(hackerNews, jobId)
@@ -71,6 +140,18 @@ describe('Hacker News lookup worker', () => {
         agent.assertNoPendingInterceptors()
         const totals = await getHackerNewsTotalsByUrlIds([row.id])
         const items = await getHackerNewsItemsByUrlIds([row.id])
+        expect(await getHackerNewsSummariesByEntity({ item: [row.id] })).toEqual({})
+        restoreVisibility()
+        const restorePull = overrideDynamicConfigFieldsForTest(hackerNewsQueueConfig, {
+          lookups_enabled: false,
+        })
+        try {
+          expect(await getHackerNewsSummariesByEntity({ item: [row.id] })).toEqual({
+            item: { story_count: 8, comment_count: 10 },
+          })
+        } finally {
+          restorePull()
+        }
         expect(totals.get(row.id)).toEqual({
           canonical_url_id: row.id,
           story_count: 8,
@@ -103,12 +184,13 @@ describe('Hacker News lookup worker', () => {
         ])
       })
     } finally {
+      restoreVisibility()
       await Promise.all(refreshIds.map(async id => (await hackerNewsQueue.getJob(id))?.remove()))
       const generated = await hackerNewsQueue.searchJobs({ data: { urlId: row.id } })
       await Promise.all(generated.map(job => job.remove()))
       await agent.close()
     }
-  })
+  }, 15_000)
 })
 
 function completion(worker: Worker, id?: string) {

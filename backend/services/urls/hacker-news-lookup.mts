@@ -1,3 +1,4 @@
+import { areHackerNewsLookupsEnabled, hackerNewsQueueConfig } from '@queues/hacker-news/config'
 import { fetchHackerNewsReferences } from './hacker-news-algolia.mts'
 import { replaceHackerNewsReferences } from './hacker-news-references-write.mts'
 import { enqueueHackerNewsLookupRefreshes } from '@queues/hacker-news/enqueues'
@@ -11,12 +12,15 @@ import {
 
 /** One batch implementation; the queue supplies one canonical URL per job. */
 export async function lookupHackerNewsReferences(urlIds: string[]): Promise<void> {
+  await hackerNewsQueueConfig.waitForInitialization()
+  if (!areHackerNewsLookupsEnabled()) return
   const targets = await getHackerNewsLookupTargets(urlIds)
   const now = Date.now()
   const due = targets.filter(target => isHackerNewsLookupDue(target, now))
   const results = await fetchHackerNewsReferences(
     due.map(target => ({ urlId: target.id, url: target.url })),
   )
+  if (!areHackerNewsLookupsEnabled()) return
   // Canonicals can move during external I/O. Changed targets get their own lookup.
   const current = await getHackerNewsLookupTargets(due.map(target => target.id))
   const currentIds = new Set(current.map(target => target.id))
