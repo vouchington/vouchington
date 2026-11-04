@@ -147,3 +147,17 @@ export async function getActiveChildUrlIdsForTest(parentLinkId: string): Promise
   `)
   return rows.map(row => row.url_id)
 }
+
+/** Identify the next cleanup candidate's parent before starting an owned parent-delete race. */
+export async function getNextReferralChildCleanupParentForTest(userId: string): Promise<string> {
+  const { rows } = await read<{
+    parent_link_id: string
+  }>(sql`/* getNextReferralChildCleanupParentForTest */
+    SELECT parent_link_id FROM user_referral_program_links
+    WHERE user_id = ${userId} AND parent_link_id IS NOT NULL AND deleted_at IS NULL
+    ORDER BY referral_program_topic_id, url_id
+    LIMIT 1
+  `)
+  if (!rows[0]) throw new Error('Expected an active child cleanup candidate')
+  return rows[0].parent_link_id
+}

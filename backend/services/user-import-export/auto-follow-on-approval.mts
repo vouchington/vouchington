@@ -24,7 +24,6 @@ export async function autoFollowOnRecommendationApproval(
   const batchSize = getUserImportExportConfig().import_status_page_size
   let cursor: string | null = null
   // Approval must process the full set in this call; each read and write is bounded.
-  /* oxlint-disable no-await-in-loop -- ordered page operations depend on the preceding page */
   for (;;) {
     const pageQuery = sql`/* autoFollowOnRecommendationApproval:findPending */
       SELECT id, user_id
@@ -34,28 +33,35 @@ export async function autoFollowOnRecommendationApproval(
     `
     if (cursor) pageQuery.append(sql` AND id > ${cursor}::uuid`)
     pageQuery.append(sql` ORDER BY id LIMIT ${batchSize}`)
+    /* oxlint-disable no-await-in-loop -- the keyset cursor from the preceding page selects this page */
     // no-mistakes-disable-next-line query-reached-per-item: each read selects one validated ID-keyset page; invalid users are passed by the cursor and all pages must be attempted
     const { rows } = await read(pageQuery)
+    /* oxlint-enable no-await-in-loop */
     const requests = rows as PendingImportRequest[]
     if (requests.length === 0) return
     cursor = requests[requests.length - 1]!.id
 
     try {
+      /* oxlint-disable no-await-in-loop -- this page's users must be loaded before its follows are attempted */
       // no-mistakes-disable-next-line query-reached-per-item: one batch user lookup per bounded request page, not one lookup per import
       const users = await getPrivateUsersByAnyBatch(requests.map(request => request.user_id))
+      /* oxlint-enable no-await-in-loop */
       const usersById = new Map(
         users.flatMap(user => (isPrivateUser(user) ? [[user.id, user] as const] : [])),
       )
 
+      /* oxlint-disable no-await-in-loop -- this page's follows must settle before its successful IDs are written */
       // no-mistakes-disable-next-line query-reached-per-item: each bounded request page preserves per-user relation authorization and rate limits with bounded concurrency
       const validRequests = await followRequestsWithBoundedConcurrency(requests, usersById, {
         relation: followTopicRelation,
         objectId: topicId,
       })
+      /* oxlint-enable no-await-in-loop */
 
       if (validRequests.length > 0) {
         const requestIds = validRequests.map(request => request.id)
 
+        /* oxlint-disable no-await-in-loop -- this page's successful IDs must be marked before reading the next page */
         // no-mistakes-disable-next-line query-reached-per-item: one update by the successful ID array for the current bounded page
         await write(sql`/* autoFollowOnRecommendationApproval:markFollowed */
           UPDATE user_import_requests
@@ -63,13 +69,13 @@ export async function autoFollowOnRecommendationApproval(
               followed_at = CURRENT_TIMESTAMP
           WHERE id = ANY(${requestIds})
         `)
+        /* oxlint-enable no-await-in-loop */
       }
     } catch (err) {
       onError(err instanceof Error ? err : new Error(String(err)))
       return
     }
   }
-  /* oxlint-enable no-await-in-loop */
 }
 
 type PendingImportRequest = {
