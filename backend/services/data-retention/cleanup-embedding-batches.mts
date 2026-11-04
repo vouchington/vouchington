@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { runPersistedRetentionPages, type PersistedPage } from './run-persisted-pages.mts'
 
@@ -32,25 +33,22 @@ async function deleteTerminalEmbeddingBatchPage(
   options: Options,
 ): Promise<PersistedPage<Cursor>> {
   await using query = await beginTransaction()
-  const lowerBoundPredicate = options.lowerBoundDate
-    ? 'AND COALESCE(completed_at, failed_at, cancelled_at) >= $3::timestamptz'
-    : ''
-  const { rows: candidates } = await query<{ id: string; terminal_at: string }>(
-    `/* selectEmbeddingBatchRetentionPage */
+  const candidatesQuery = sql`
+    /* selectEmbeddingBatchRetentionPage */
     SELECT id, COALESCE(completed_at, failed_at, cancelled_at)::text AS terminal_at
     FROM bedrock_embedding_batches
     WHERE (completed_at IS NOT NULL OR failed_at IS NOT NULL OR cancelled_at IS NOT NULL)
-      AND COALESCE(completed_at, failed_at, cancelled_at) < $1::timestamptz
-      ${lowerBoundPredicate}${options.batchIds ? `${options.lowerBoundDate ? '\n      ' : ''}AND id = ANY($${options.lowerBoundDate ? 4 : 3}::uuid[])` : ''}
+      AND COALESCE(completed_at, failed_at, cancelled_at) < ${cutoff}`
+  if (options.lowerBoundDate) {
+    candidatesQuery.append(
+      sql` AND COALESCE(completed_at, failed_at, cancelled_at) >= ${options.lowerBoundDate}`,
+    )
+  }
+  if (options.batchIds) candidatesQuery.append(sql` AND id = ANY(${options.batchIds}::uuid[])`)
+  candidatesQuery.append(sql`
     ORDER BY COALESCE(completed_at, failed_at, cancelled_at), id
-    LIMIT $2 FOR UPDATE SKIP LOCKED`,
-    [
-      cutoff,
-      batchSize + 1,
-      ...(options.lowerBoundDate ? [options.lowerBoundDate] : []),
-      ...(options.batchIds ? [options.batchIds] : []),
-    ],
-  )
+    LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED`)
+  const { rows: candidates } = await query<{ id: string; terminal_at: string }>(candidatesQuery)
   const page = candidates.slice(0, batchSize)
   const ids = page.map(row => row.id)
   // One association budget covers the entire parent page, including a large first batch.
