@@ -31,6 +31,7 @@ import {
 } from './shared.mts'
 
 app.route('/api/v1/feeds/posts/:feed_type').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/feeds/posts/:feed_type', postFeedParser, postFeedExtraQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/feeds/posts/:feed_type')
 

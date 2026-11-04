@@ -22,7 +22,6 @@ import { attachPostProvenance } from '@services/content-provenance'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { indexById } from '@modules/utils'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   parseRssFeedItemsSearchParams,
   prepareRssFeedItemsSearchParams,
@@ -39,6 +38,7 @@ import {
 import { apiQuery } from '../../api-query-contract.mts'
 
 app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/rss-feed-items', parseRssFeedItemsSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feed-items')
   const preparedSearchParams = prepareRssFeedItemsSearchParams(ctx.query, getPaginationLimits(10))
@@ -50,10 +50,6 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   if (!currentUser) searchOptions.limit = clampAnonLimit(searchOptions.limit)
 
   if (shouldReturnEmpty) {
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
-
     const output: Record<string, unknown> = {
       results: [],
       stories: {},
@@ -97,10 +93,6 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
       : [{}, {}]
   const storyMemberItemIds = Object.values(storyMemberPagesMap).flatMap(page => page.item_ids)
   const allItemIds = [...new Set([...itemIds, ...storyMemberItemIds])]
-
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
 
   // Use streaming pattern: pass promises directly to allow independent streaming
   const itemsPromise = getRssFeedItemByIdCachedBatch(allItemIds)

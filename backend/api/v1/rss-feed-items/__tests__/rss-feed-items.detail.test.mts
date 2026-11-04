@@ -12,7 +12,6 @@ import {
 import { addUrl } from '@services/urls'
 import { insertTestCrawl } from '@voucha/test-helpers/entities/crawls'
 import { createHash } from 'node:crypto'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 describe('RSS Feed Items Routes', () => {
   describe('GET /api/v1/rss-feed-items/:id', () => {
     it('returns raw crawl fields only to administrators', async () => {
@@ -144,12 +143,7 @@ describe('RSS Feed Items Routes', () => {
       expect(response.body.page_info).toBeUndefined()
       expect(response.body.results).toBeUndefined()
       expect(response.body.rss_feed_item_embeds).toHaveProperty(itemId)
-      expect(response.headers['cache-control']).toContain('public')
-      expect(response.headers['cache-control']).toContain(
-        `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-      )
-      expect(response.headers['vary']).toContain('Cookie')
-      expect(response.headers['vary']).toContain('Authorization')
+      expect(response.headers['cache-control']).toBe('private, no-store')
     })
   })
 

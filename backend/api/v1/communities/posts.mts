@@ -20,7 +20,6 @@ import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@servic
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
 import { isAdminUser } from '@services/users'
 import { indexById } from '@modules/utils'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import type { TimeRange } from '@voucha/types/feed'
 import {
   communityPageQuery,
@@ -46,6 +45,7 @@ async function buildLinkEmbedsSidecar(
   return Object.keys(record).length > 0 ? record : undefined
 }
 app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/communities/:idOrSlug/posts', communityPostsQuery)
   const currentUser = await getOptionalAuthAndRateLimit(
     ctx,
@@ -81,10 +81,6 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
 
   const resultPostIds = result.results.map(p => p.id)
   const allPostIds = [...new Set([...pinnedPostIds, ...resultPostIds])]
-
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
 
   const rawPostsPromise = getPostByAnyCachedBatch(allPostIds).then(posts =>
     attachPostProvenance(posts, currentUser),

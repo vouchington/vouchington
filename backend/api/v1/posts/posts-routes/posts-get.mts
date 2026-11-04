@@ -20,7 +20,6 @@ import { isAdminUser } from '@services/users'
 import { getPostCommunitiesRecord } from '@services/communities/post-communities-record'
 import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { getUrlEmbedsByUrlIds, type UrlEmbed } from '@services/rss-feed-items/get-url-embed'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
 import { apiQuery } from '../../../api-query-contract.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
@@ -32,6 +31,7 @@ import {
 import type { PostsResponseInput } from './posts-response-types.mts'
 
 app.route('/api/v1/posts').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/posts', parsePostsSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts')
   const preparedSearchParams = preparePostsSearchParams(ctx.query, getPaginationLimits(25))
@@ -45,10 +45,6 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   }
 
   if (shouldReturnEmpty) {
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
-
     const output: PostsResponseInput = {
       results: [],
       page_info: {
@@ -94,9 +90,6 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
     ...posts,
     ...rootPosts,
   ])
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
 
   const { moderations: moderationsPromise, elections: electionsPromise } = getPostElectionSidecars(
     currentUser,

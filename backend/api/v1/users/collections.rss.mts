@@ -78,6 +78,7 @@ app.route('/api/v1/users/:idOrSlug/rss-feeds/:listType').get(async (ctx: Context
 })
 
 app.route('/api/v1/users/:idOrSlug/rss-feed-items/:listType').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery(
     'GET:/api/v1/users/:idOrSlug/rss-feed-items/:listType',
     relationCollectionPaginationParser,
