@@ -154,9 +154,9 @@ describe('Hacker News references', () => {
     expect(await getHackerNewsSummariesByEntity(entity)).toEqual({
       post: { story_count: 3, comment_count: 0 },
     })
-    expect((await getHackerNewsTotalsByUrlIds([aliasA, aliasB])).get(aliasA)?.canonical_url_id).toBe(
-      canonical,
-    )
+    expect(
+      (await getHackerNewsTotalsByUrlIds([aliasA, aliasB])).get(aliasA)?.canonical_url_id,
+    ).toBe(canonical)
   })
 
   it('reads nothing for empty input', async () => {

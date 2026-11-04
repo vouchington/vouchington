@@ -73,7 +73,6 @@ export function buildRssFeedItemHasHackerNewsReferences(): SQLStatement {
     .append(canonicalTotalsJoin('rss_feed_items.url_id'))
     .append(sql`
       AND `)
-    .append(URL_HAS_REFERENCES)
-    .append(sql`
+    .append(URL_HAS_REFERENCES).append(sql`
   )`)
 }
