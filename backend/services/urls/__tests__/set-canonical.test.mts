@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createTestUrlWithHostname,
   getTestUrlCanonicalId,
+  hasHackerNewsLookupForTest,
   insertHackerNewsReferencesForTest,
 } from '@voucha/test-helpers'
 import {
@@ -73,8 +74,13 @@ describe('setCanonicalUrl', () => {
     expect(await setCanonicalUrl(source, canonical)).toBe(canonical)
 
     const totals = await getHackerNewsTotalsByUrlIds([source, canonical])
-    expect(totals.has(source)).toBe(false)
-    expect(totals.get(canonical)).toEqual({ story_count: 1, comment_count: 0 })
+    expect(await hasHackerNewsLookupForTest(source)).toBe(false)
+    expect(totals.get(canonical)).toEqual({
+      canonical_url_id: canonical,
+      story_count: 1,
+      comment_count: 0,
+    })
+    expect(totals.get(source)).toEqual(totals.get(canonical))
     const items = await getHackerNewsItemsByUrlIds([source, canonical])
     expect(items.has(source)).toBe(false)
     expect(items.get(canonical)?.stories).toEqual([
