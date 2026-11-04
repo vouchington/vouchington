@@ -77,10 +77,17 @@ describe('GET /api/v1/appeals — list behavior', () => {
       (appeal: { id: string }) => appeal.id === enrichedAppealId,
     )
     expect(enrichedAppeal).toMatchObject({
+      appellant_user_id: appellant.id,
+      appellant: { id: appellant.id },
       target_context: {
         type: 'warning',
         public_message: publicWarningMessage,
       },
+    })
+    // list rows are summaries; the original decision loads from the detail route
+    expect(enrichedAppeal.staff_context).toBeUndefined()
+    const detail = await request.get(`/api/v1/appeals/${enrichedAppealId}`).expect(200)
+    expect(detail.body.appeal).toMatchObject({
       staff_context: {
         appellant: {
           id: appellant.id,

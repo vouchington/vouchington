@@ -95,14 +95,17 @@ test.describe('Appeals — staff view', () => {
     await expect(smokeRow).toBeVisible()
     await expect(smokeRow.getByTestId('appeal-context')).toBeVisible()
 
-    // Action UI renders only for pending appeals; our seeded appeal is always pending
-    await expect(smokeRow.getByTestId('appeal-public-response')).toBeVisible()
-    await expect(smokeRow.getByTestId('appeal-row-re-run-ai')).toBeVisible()
-    await expect(smokeRow.getByTestId('appeal-approve')).toBeVisible()
-    await expect(smokeRow.getByTestId('appeal-send')).toBeVisible()
-    await expect(smokeRow.getByTestId('appeal-accept')).toBeVisible()
-    await expect(smokeRow.getByTestId('appeal-reduce')).toBeVisible()
-    await expect(smokeRow.getByTestId('appeal-deny')).toBeVisible()
+    // Drafts and actions load from the detail route when the row is opened
+    await smokeRow.getByTestId('appeal-open').click()
+    const smokeDialog = page.getByTestId('appeal-detail-dialog')
+    await expect(smokeDialog.getByTestId('appeal-detail')).toBeVisible()
+    await expect(smokeDialog.getByTestId('appeal-public-response')).toBeVisible()
+    await expect(smokeDialog.getByTestId('appeal-row-re-run-ai')).toBeVisible()
+    await expect(smokeDialog.getByTestId('appeal-approve')).toBeVisible()
+    await expect(smokeDialog.getByTestId('appeal-send')).toBeVisible()
+    await expect(smokeDialog.getByTestId('appeal-accept')).toBeVisible()
+    await expect(smokeDialog.getByTestId('appeal-reduce')).toBeVisible()
+    await expect(smokeDialog.getByTestId('appeal-deny')).toBeVisible()
   })
 
   test('staff can run the full approve→send→accept lifecycle', async ({ page }) => {
@@ -113,29 +116,31 @@ test.describe('Appeals — staff view', () => {
 
     const appealRow = page.locator(`[data-appeal-id="${lifecycleAppealId}"]`)
     await expect(appealRow).toBeVisible()
+    await appealRow.getByTestId('appeal-open').click()
+    const dialog = page.getByTestId('appeal-detail-dialog')
 
     // Step 1: Approve (enabled because publicResponse is set)
-    const approveBtn = appealRow.getByTestId('appeal-approve')
+    const approveBtn = dialog.getByTestId('appeal-approve')
     await expect(approveBtn).toBeEnabled()
     await approveBtn.click()
 
     // After approve, the Send button becomes enabled (approved_at is set)
-    const sendBtn = appealRow.getByTestId('appeal-send')
+    const sendBtn = dialog.getByTestId('appeal-send')
     await expect(sendBtn).toBeEnabled()
 
     // Step 2: Send
     await sendBtn.click()
 
     // After send, the public response textarea is disabled (sent_at is set)
-    await expect(appealRow.getByTestId('appeal-public-response')).toBeDisabled()
+    await expect(dialog.getByTestId('appeal-public-response')).toBeDisabled()
 
     // Step 3: Resolve (accept)
-    const acceptBtn = appealRow.getByTestId('appeal-accept')
+    const acceptBtn = dialog.getByTestId('appeal-accept')
     await expect(acceptBtn).toBeVisible()
     await acceptBtn.click()
 
     // After resolving, the row is no longer pending — approve button disappears
-    await expect(appealRow.getByTestId('appeal-approve')).not.toBeAttached()
+    await expect(dialog.getByTestId('appeal-approve')).not.toBeAttached()
   })
 })
 

@@ -54,28 +54,30 @@ test.describe('Appeals — site moderator lifecycle', () => {
     // how many other pending appeals exist on a dirty database.
     const appealRow = page.locator(`[data-appeal-id="${lifecycleAppealId}"]`)
     await expect(appealRow).toBeVisible()
+    await appealRow.getByTestId('appeal-open').click()
+    const dialog = page.getByTestId('appeal-detail-dialog')
 
     // Step 1: Approve (enabled because publicResponse is set)
-    const approveBtn = appealRow.getByTestId('appeal-approve')
+    const approveBtn = dialog.getByTestId('appeal-approve')
     await expect(approveBtn).toBeEnabled()
     await approveBtn.click()
 
     // After approve, the Send button becomes enabled (approved_at is set).
-    const sendBtn = appealRow.getByTestId('appeal-send')
+    const sendBtn = dialog.getByTestId('appeal-send')
     await expect(sendBtn).toBeEnabled()
 
     // Step 2: Send
     await sendBtn.click()
 
     // After send, the public response textarea is disabled (sent_at is set).
-    await expect(appealRow.getByTestId('appeal-public-response')).toBeDisabled()
+    await expect(dialog.getByTestId('appeal-public-response')).toBeDisabled()
 
     // Step 3: Resolve (accept)
-    const acceptBtn = appealRow.getByTestId('appeal-accept')
+    const acceptBtn = dialog.getByTestId('appeal-accept')
     await expect(acceptBtn).toBeVisible()
     await acceptBtn.click()
 
     // After resolving, the row is no longer pending — approve button disappears.
-    await expect(appealRow.getByTestId('appeal-approve')).not.toBeAttached()
+    await expect(dialog.getByTestId('appeal-approve')).not.toBeAttached()
   })
 })

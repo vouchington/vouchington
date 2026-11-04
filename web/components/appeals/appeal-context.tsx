@@ -1,16 +1,9 @@
 'use client'
 
-import type {
-  ModerationActorSummary,
-  ModerationAppeal,
-  ModerationAppealTargetContext,
-} from '@/types/appeals'
+import type { ModerationAppealSummary, ModerationAppealTargetContext } from '@/types/appeals'
+import { actorLabel } from './actor-label'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { PostContentText } from '@/components/posts/post-content-text'
-
-function actorLabel(actor: ModerationActorSummary, deletedUserLabel: string): string {
-  return actor.verified_display_name ?? actor.username ?? deletedUserLabel
-}
 
 function targetDetail(context: ModerationAppealTargetContext | null): string | null {
   if (!context) return null
@@ -19,7 +12,10 @@ function targetDetail(context: ModerationAppealTargetContext | null): string | n
   return context.reason
 }
 
-function targetLabel(appeal: ModerationAppeal, t: ReturnType<typeof useTranslations>): string {
+function targetLabel(
+  appeal: ModerationAppealSummary,
+  t: ReturnType<typeof useTranslations>,
+): string {
   if (appeal.community_ban_id) return t('extracted.appeals.appealRow.communityBan_8ec5b51b')
   if (appeal.user_warning_id) return t('extracted.appeals.appealRow.warning_e981ddae')
   if (appeal.user_suspension_id) {
@@ -35,7 +31,7 @@ function targetLabel(appeal: ModerationAppeal, t: ReturnType<typeof useTranslati
   return t('extracted.appeals.appealRow.unknown_b764cdc0')
 }
 
-export function AppealContext({ appeal }: { appeal: ModerationAppeal }) {
+export function AppealContext({ appeal }: { appeal: ModerationAppealSummary }) {
   const t = useTranslations()
   const deletedUserLabel = t('shared.user.deletedUser')
   const detail = targetDetail(appeal.target_context)
@@ -43,7 +39,6 @@ export function AppealContext({ appeal }: { appeal: ModerationAppeal }) {
     appeal.target_context && 'community' in appeal.target_context
       ? appeal.target_context.community
       : null
-  const staffContext = appeal.staff_context
 
   return (
     <div
@@ -51,7 +46,7 @@ export function AppealContext({ appeal }: { appeal: ModerationAppeal }) {
       data-pw='appeal-context'
     >
       <p className='font-medium'>{targetLabel(appeal, t)}</p>
-      {staffContext ? <p>{actorLabel(staffContext.appellant, deletedUserLabel)}</p> : null}
+      {appeal.appellant ? <p>{actorLabel(appeal.appellant, deletedUserLabel)}</p> : null}
       {appeal.target_context?.type === 'post_removal' ? (
         <PostContentText
           as='p'
@@ -65,14 +60,6 @@ export function AppealContext({ appeal }: { appeal: ModerationAppeal }) {
       ) : null}
       {detail ? <p className='text-muted-foreground'>{detail}</p> : null}
       {community ? <p className='text-muted-foreground'>{community.name}</p> : null}
-      {staffContext?.original_decision.internal_reason ? (
-        <p className='text-muted-foreground'>{staffContext.original_decision.internal_reason}</p>
-      ) : null}
-      {staffContext?.original_decision.actor ? (
-        <p className='text-muted-foreground'>
-          {actorLabel(staffContext.original_decision.actor, deletedUserLabel)}
-        </p>
-      ) : null}
     </div>
   )
 }

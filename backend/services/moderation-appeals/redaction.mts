@@ -1,4 +1,4 @@
-import type { ModerationAppealResponse } from './types.mts'
+import type { ModerationAppealResponse, ModerationAppealSummary } from './types.mts'
 
 export type RedactedModerationAppeal = Omit<
   ModerationAppealResponse,
@@ -57,8 +57,23 @@ export function redactModerationAppeal(appeal: ModerationAppealResponse): Redact
   }
 }
 
+export type RedactedModerationAppealSummary = Omit<
+  ModerationAppealSummary,
+  'appellant_user_id' | 'recommended_action' | 'appellant' | 'has_ai_draft' | 'has_draft'
+>
+
+/** Member list rows: the staff summary without the appellant ids, the AI recommendation and draft flags. */
 export function listRedactedModerationAppeals(
-  appeals: ModerationAppealResponse[],
-): RedactedModerationAppeal[] {
-  return appeals.map(redactModerationAppeal)
+  appeals: ModerationAppealSummary[],
+): RedactedModerationAppealSummary[] {
+  return appeals.map(
+    ({
+      appellant_user_id: _au,
+      recommended_action: _ra,
+      appellant: _a,
+      has_ai_draft: _ha,
+      has_draft: _hd,
+      ...rest
+    }) => rest,
+  )
 }

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ReviewDispute } from '@/types/review-disputes'
 
 const h = vi.hoisted(() => ({
   mockApproveDispute: vi.fn<VitestLooseMock>(),
@@ -10,6 +11,7 @@ const h = vi.hoisted(() => ({
   mockRerunDisputeAI: vi.fn<VitestLooseMock>(),
   mockReconcileDisputeAIDraft: vi.fn<VitestLooseMock>(),
   mockUpdateDisputeDraft: vi.fn<VitestLooseMock>(),
+  mockGetReviewDispute: vi.fn<VitestLooseMock>(),
   mockOnError: vi.fn<VitestLooseMock>(),
 }))
 
@@ -22,12 +24,25 @@ vi.mock(import('@/lib/api/client/disputes'), () => ({
   rerunDisputeAI: h.mockRerunDisputeAI,
   reconcileDisputeAIDraft: h.mockReconcileDisputeAIDraft,
   updateDisputeDraft: h.mockUpdateDisputeDraft,
+  getReviewDisputeClient: h.mockGetReviewDispute,
 }))
 
 vi.mock(import('@/lib/on-error/on-error'), () => ({ default: h.mockOnError }))
 
 import { DisputesClient } from './disputes-client'
 import { makeDispute, makeDisputesData } from '@/test-helpers/disputes-client-fixtures'
+
+async function renderStaff(disputes: ReviewDispute[] = [makeDispute()]) {
+  h.mockGetReviewDispute.mockResolvedValueOnce(disputes[0])
+  render(
+    <DisputesClient
+      viewerTier='staff'
+      data={makeDisputesData(disputes)}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+  await screen.findByRole('dialog')
+}
 
 describe('DisputesClient — rendering and staff actions', () => {
   afterEach(() => {
@@ -44,12 +59,7 @@ describe('DisputesClient — rendering and staff actions', () => {
         ai_public_response: 'Draft from an earlier request',
       }),
     )
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData([before])}
-      />,
-    )
+    await renderStaff([before])
 
     fireEvent.click(screen.getByTitle('Re-run AI'))
     await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledOnce())
@@ -67,12 +77,7 @@ describe('DisputesClient — rendering and staff actions', () => {
         ai_draft_requested_run_id: 'request-101',
       }),
     )
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData([before])}
-      />,
-    )
+    await renderStaff([before])
 
     fireEvent.click(screen.getByTitle('Re-run AI'))
     await waitFor(() => expect(screen.getByRole('button', { name: /send/i })).toBeEnabled())
@@ -113,12 +118,7 @@ describe('DisputesClient — rendering and staff actions', () => {
   it('calls approveDispute when Approve is clicked', async () => {
     h.mockApproveDispute.mockResolvedValueOnce({ dispute: makeDispute({ approved_at: 'x' }) })
     h.mockUpdateDisputeDraft.mockResolvedValueOnce({ dispute: makeDispute() })
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData()}
-      />,
-    )
+    await renderStaff()
     fireEvent.click(screen.getByRole('button', { name: /approve/i }))
     await waitFor(() => expect(h.mockApproveDispute).toHaveBeenCalledWith('dispute-1'))
   })
@@ -126,24 +126,14 @@ describe('DisputesClient — rendering and staff actions', () => {
   it('calls sendDisputeResolution when Send is clicked', async () => {
     const approved = makeDispute({ approved_at: 'x', sent_at: null })
     h.mockSendDisputeResolution.mockResolvedValueOnce({ dispute: makeDispute({ sent_at: 'y' }) })
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData([approved])}
-      />,
-    )
+    await renderStaff([approved])
     fireEvent.click(screen.getByRole('button', { name: /send/i }))
     await waitFor(() => expect(h.mockSendDisputeResolution).toHaveBeenCalledWith('dispute-1'))
   })
 
   it('calls rerunDisputeAI when Re-run AI is clicked', async () => {
     h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: 'job-1' })
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData()}
-      />,
-    )
+    await renderStaff()
     fireEvent.click(screen.getByTitle('Re-run AI'))
     await waitFor(() => expect(h.mockRerunDisputeAI).toHaveBeenCalledWith('dispute-1'))
   })
@@ -152,12 +142,7 @@ describe('DisputesClient — rendering and staff actions', () => {
     h.mockResolveDisputeRemove.mockResolvedValueOnce({
       dispute: makeDispute({ status: 'resolved' }),
     })
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData()}
-      />,
-    )
+    await renderStaff()
     fireEvent.click(screen.getByRole('button', { name: /remove/i }))
     await waitFor(() =>
       expect(h.mockResolveDisputeRemove).toHaveBeenCalledWith('dispute-1', 'remove'),
@@ -166,12 +151,7 @@ describe('DisputesClient — rendering and staff actions', () => {
 
   it('calls dismissDispute when Dismiss is clicked', async () => {
     h.mockDismissDispute.mockResolvedValueOnce({ dispute: makeDispute({ status: 'dismissed' }) })
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData()}
-      />,
-    )
+    await renderStaff()
     fireEvent.click(screen.getByRole('button', { name: /dismiss/i }))
     await waitFor(() => expect(h.mockDismissDispute).toHaveBeenCalledWith('dispute-1'))
   })
@@ -180,12 +160,7 @@ describe('DisputesClient — rendering and staff actions', () => {
     h.mockResolveDisputeAnnotate.mockResolvedValueOnce({
       dispute: makeDispute({ status: 'resolved' }),
     })
-    render(
-      <DisputesClient
-        viewerTier='staff'
-        data={makeDisputesData()}
-      />,
-    )
+    await renderStaff()
     fireEvent.click(screen.getByTitle('Attach the response above as a public rebuttal'))
     await waitFor(() =>
       expect(h.mockResolveDisputeAnnotate).toHaveBeenCalledWith('dispute-1', 'Some response'),

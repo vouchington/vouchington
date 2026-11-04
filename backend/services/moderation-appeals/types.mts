@@ -54,3 +54,35 @@ export type ModerationAppealResponse = ModerationAppeal & {
     original_decision: OriginalModerationDecision
   }
 }
+
+/**
+ * One row of the appeal list. Staff and members both get summaries; the detail read carries the
+ * appeal reason, drafts, notes and the original decision. `public_response` is set only once it
+ * was sent.
+ */
+export type ModerationAppealSummary = Pick<
+  ModerationAppeal,
+  | 'id'
+  | 'appellant_user_id'
+  | 'user_warning_id'
+  | 'community_ban_id'
+  | 'post_id'
+  | 'user_suspension_id'
+  | 'community_id'
+  | 'post_removal_kind'
+  | 'status'
+  | 'recommended_action'
+  | 'is_overdue'
+  | 'public_response'
+  | 'approved_at'
+  | 'sent_at'
+  | 'resolved_at'
+  | 'resolution_action'
+  | 'created_at'
+  | 'updated_at'
+> & {
+  target_context: ModerationAppealTargetContext | null
+  appellant: ModerationActorSummary
+  has_ai_draft: boolean
+  has_draft: boolean
+}

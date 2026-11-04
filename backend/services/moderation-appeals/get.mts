@@ -7,10 +7,18 @@ import {
   MODERATION_APPEAL_HISTORY_RETENTION_MONTHS,
   type ModerationAppealStatus,
 } from './config.mts'
-import type { ModerationAppealResponse } from './types.mts'
-import { APPEAL_JOINS, APPEAL_SELECT } from './get-query.mts'
+import type { ModerationAppealResponse, ModerationAppealSummary } from './types.mts'
+import {
+  APPEAL_JOINS,
+  APPEAL_SELECT,
+  APPEAL_SUMMARY_JOINS,
+  APPEAL_SUMMARY_SELECT,
+} from './get-query.mts'
 
-function addIsOverdue(appeal: ModerationAppealResponse, now: Date): ModerationAppealResponse {
+function addIsOverdue<T extends { status: ModerationAppealStatus; created_at: Date }>(
+  appeal: T,
+  now: Date,
+): T {
   if (appeal.status !== 'pending') return appeal
   const ageHours = (now.getTime() - appeal.created_at.getTime()) / 3_600_000
   return { ...appeal, is_overdue: ageHours > APPEAL_SLA_HOURS }
@@ -76,17 +84,17 @@ export type ListModerationAppealsOptions = {
 
 export async function listModerationAppeals(
   options: ListModerationAppealsOptions = {},
-): Promise<{ appeals: ModerationAppealResponse[]; hasNextPage: boolean }> {
+): Promise<{ appeals: ModerationAppealSummary[]; hasNextPage: boolean }> {
   const { status = 'pending', limit = 25, beforeId, appellantUserId, now = new Date() } = options
   const fetchLimit = limit + 1
 
   const query = sql`/* listModerationAppeals */
     SELECT `
-    .append(APPEAL_SELECT)
+    .append(APPEAL_SUMMARY_SELECT)
     .append(sql`
     FROM moderation_appeals ma
     `)
-    .append(APPEAL_JOINS).append(sql`
+    .append(APPEAL_SUMMARY_JOINS).append(sql`
     WHERE `)
   query.append(moderationAppealStatusPredicate(status))
   query.append(sql`
@@ -103,7 +111,7 @@ export async function listModerationAppeals(
   query.append(sql` ORDER BY ma.id DESC LIMIT ${fetchLimit}`)
 
   const { rows } = await read(query)
-  const appeals = (rows as ModerationAppealResponse[]).map(appeal => addIsOverdue(appeal, now))
+  const appeals = (rows as ModerationAppealSummary[]).map(appeal => addIsOverdue(appeal, now))
   const hasNextPage = appeals.length > limit
   return { appeals: appeals.slice(0, limit), hasNextPage }
 }

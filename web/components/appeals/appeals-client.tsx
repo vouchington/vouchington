@@ -1,29 +1,20 @@
 'use client'
-import { useReducer, useRef } from 'react'
-import onError from '@/lib/on-error/on-error'
+import { useReducer } from 'react'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-import { useLoadingIds } from '@/hooks/use-loading-ids'
-import {
-  approveAppeal,
-  sendAppealResolution,
-  updateAppealDraft,
-  resolveAppeal,
-  enqueueAppealAIDraftRerun,
-  reconcileAppealAIDraft,
-  AppealDraftReconciliationTimeoutError,
-  listModerationAppealsClient,
-} from '@/lib/api/client/appeals'
+import { listModerationAppealsClient } from '@/lib/api/client/appeals'
 import { AppealsTable } from './appeals-table'
-import { appealsClientReducer, initialAppealsClientState } from './appeals-client-state'
-import type {
-  ModerationAppeal,
-  ModerationAppealAction,
-  ModerationAppealViewerRole,
-} from '@/types/appeals'
+import { AppealDetailDialog } from './appeal-detail-dialog'
+import {
+  appealsClientReducer,
+  initialAppealsClientState,
+  withAppealOverrides,
+} from './appeals-client-state'
+import { useAppealActions } from './use-appeal-actions'
+import type { ModerationAppealSummary, ModerationAppealViewerRole } from '@/types/appeals'
 import { useTranslations } from '@/lib/i18n/use-translations'
 interface AppealsData {
-  appeals: ModerationAppeal[]
+  appeals: ModerationAppealSummary[]
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
 interface AppealsClientProps {
@@ -33,7 +24,7 @@ interface AppealsClientProps {
   statusFilter?: string
   mine?: boolean
 }
-const uniqueAppeals = (appeals: ModerationAppeal[]): ModerationAppeal[] => [
+const uniqueAppeals = (appeals: ModerationAppealSummary[]): ModerationAppealSummary[] => [
   ...new Map(appeals.map(appeal => [appeal.id, appeal])).values(),
 ]
 
@@ -56,104 +47,12 @@ export function AppealsClient({
       },
     )
   const [state, dispatch] = useReducer(appealsClientReducer, initialAppealsClientState)
-  const { loadingIds, runWithLoadingId } = useLoadingIds()
-  const rerunEnqueuesRef = useRef(new Map<string, ReturnType<typeof enqueueAppealAIDraftRerun>>())
-  const appeals = uniqueAppeals(pages.flatMap(page => page.appeals)).map(
-    appeal => state.appealOverrides[appeal.id] ?? appeal,
+  const actions = useAppealActions(state, dispatch)
+  const appeals = withAppealOverrides(
+    uniqueAppeals(pages.flatMap(page => page.appeals)),
+    state.appealOverrides,
   )
-
-  async function handleApprove(id: string) {
-    await runWithLoadingId(id, async () => {
-      try {
-        const result = await approveAppeal(id)
-        dispatch({ type: 'update_appeal', appeal: result.appeal })
-      } catch (err) {
-        onError(err, {
-          fallback: t('extracted.appeals.appealsClient.failedToApproveAppeal_b5452349'),
-          tags: { form: 'appeal-approve' },
-        })
-      }
-    })
-  }
-
-  async function handleSend(id: string) {
-    await runWithLoadingId(id, async () => {
-      try {
-        const result = await sendAppealResolution(id)
-        dispatch({ type: 'update_appeal', appeal: result.appeal })
-      } catch (err) {
-        onError(err, {
-          fallback: t('extracted.appeals.appealsClient.failedToSendAppealResolution_87938c2e'),
-          tags: { form: 'appeal-send' },
-        })
-      }
-    })
-  }
-
-  async function handleRerunAI(id: string) {
-    await runWithLoadingId(id, async () => {
-      try {
-        const appeal = appeals.find(candidate => candidate.id === id)
-        if (!appeal) throw new Error(`Could not find appeal ${id}`)
-        let enqueue = rerunEnqueuesRef.current.get(id)
-        if (!enqueue) {
-          enqueue = enqueueAppealAIDraftRerun(id)
-          rerunEnqueuesRef.current.set(id, enqueue)
-        }
-        try {
-          await enqueue
-        } catch (err) {
-          rerunEnqueuesRef.current.delete(id)
-          throw err
-        }
-        let result: Awaited<ReturnType<typeof reconcileAppealAIDraft>>
-        try {
-          result = await reconcileAppealAIDraft(appeal)
-        } catch (err) {
-          if (err instanceof AppealDraftReconciliationTimeoutError) {
-            rerunEnqueuesRef.current.delete(id)
-          }
-          throw err
-        }
-        rerunEnqueuesRef.current.delete(id)
-        dispatch({ type: 'reconcile_rerun_appeal', appeal: result.appeal })
-      } catch (err) {
-        onError(err, {
-          fallback: t('extracted.appeals.appealsClient.failedToReRunAi_8c594308'),
-          tags: { form: 'appeal-rerun' },
-        })
-      }
-    })
-  }
-
-  async function handleResolve(id: string, action: ModerationAppealAction) {
-    await runWithLoadingId(id, async () => {
-      try {
-        const result = await resolveAppeal(id, action)
-        dispatch({ type: 'update_appeal', appeal: result.appeal })
-      } catch (err) {
-        onError(err, {
-          fallback: t('extracted.appeals.appealsClient.failedToResolveAppeal_162e0dc1'),
-          tags: { form: 'appeal-resolve' },
-        })
-      }
-    })
-  }
-
-  async function handleSaveAndApprove(id: string) {
-    const text = state.draftEdits[id]
-    if (text !== undefined) {
-      try {
-        await updateAppealDraft(id, { public_response: text })
-      } catch (err) {
-        onError(err, {
-          fallback: t('extracted.appeals.appealsClient.failedToSaveDraft_350705d0'),
-        })
-        return
-      }
-    }
-    await handleApprove(id)
-  }
+  const open = state.openId ? state.appealOverrides[state.openId] : undefined
 
   return (
     <div
@@ -174,17 +73,28 @@ export function AppealsClient({
       >
         <AppealsTable
           viewerTier={viewerTier}
-          viewerRole={viewerRole}
           appeals={appeals}
-          draftEdits={state.draftEdits}
-          loadingIds={loadingIds}
-          onEdit={(id, text) => dispatch({ type: 'edit_draft', id, text })}
-          onApprove={handleSaveAndApprove}
-          onSend={handleSend}
-          onRerunAI={handleRerunAI}
-          onResolve={handleResolve}
+          loadingIds={actions.loadingIds}
+          onOpen={actions.handleOpen}
         />
       </InfiniteScroll>
+      {viewerTier === 'staff' ? (
+        <AppealDetailDialog
+          appeal={
+            open
+              ? { ...open, public_response: state.draftEdits[open.id] ?? open.public_response }
+              : null
+          }
+          onClose={() => dispatch({ type: 'close_appeal' })}
+          viewerRole={viewerRole}
+          disabled={Boolean(open && actions.loadingIds.has(open.id))}
+          onEdit={(id, text) => dispatch({ type: 'edit_draft', id, text })}
+          onApprove={actions.handleSaveAndApprove}
+          onSend={actions.handleSend}
+          onRerunAI={actions.handleRerunAI}
+          onResolve={actions.handleResolve}
+        />
+      ) : null}
     </div>
   )
 }

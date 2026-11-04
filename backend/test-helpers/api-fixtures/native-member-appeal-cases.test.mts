@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { redactModerationAppeal } from '../../services/moderation-appeals/redaction.mts'
+import {
+  listRedactedModerationAppeals,
+  redactModerationAppeal,
+} from '../../services/moderation-appeals/redaction.mts'
 import { nativeModerationApiFixtureCases } from './native-moderation-cases.mts'
 import { backendResponseContracts } from './response-contracts.mts'
 import { responseBody } from './static-response-bodies.mts'
@@ -25,10 +28,14 @@ describe('native member appeal fixtures', () => {
       appeal_reason: '[other] Please review this again.',
     })
     const staff = responseBody('native.moderation.appeals.default') as {
-      appeals: Parameters<typeof redactModerationAppeal>[0][]
+      appeals: Parameters<typeof listRedactedModerationAppeals>[0]
+    }
+    const staffDetail = responseBody('native.moderation.appeals.detail.default') as {
+      appeal: Parameters<typeof redactModerationAppeal>[0]
     }
     const appeal = (list.appeals as unknown[])[0]
-    expect(appeal).toEqual(redactModerationAppeal(staff.appeals[0]!))
+    expect(appeal).toEqual(listRedactedModerationAppeals(staff.appeals)[0])
+    expect(appeal).toEqual(redactModerationAppeal(staffDetail.appeal))
     expect(detail.appeal).toEqual(appeal)
     expect(submission).toMatchObject({
       isDuplicate: false,

@@ -1,4 +1,4 @@
-import type { ModerationAppeal } from '@/types/appeals'
+import { toModerationAppealSummary, type ModerationAppeal } from '@/types/appeals'
 
 export const pendingAppeal: ModerationAppeal = {
   id: 'appeal-1',
@@ -120,7 +120,7 @@ const suspensionAppeal: ModerationAppeal = {
 }
 
 export const staffData = {
-  appeals: [pendingAppeal, resolvedAppeal, suspensionAppeal],
+  appeals: [pendingAppeal, resolvedAppeal, suspensionAppeal].map(toModerationAppealSummary),
   page_info: { has_next_page: false, end_cursor: null },
 }
 

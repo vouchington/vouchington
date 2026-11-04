@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { ModerationAppealResponse } from './types.mts'
+import type { ModerationAppealResponse, ModerationAppealSummary } from './types.mts'
 import { redactModerationAppeal, listRedactedModerationAppeals } from './redaction.mts'
 
 function makeAppeal(overrides: Partial<ModerationAppealResponse> = {}): ModerationAppealResponse {
@@ -118,12 +118,56 @@ describe('redactModerationAppeal', () => {
   })
 })
 
+function makeSummary(overrides: Partial<ModerationAppealSummary> = {}): ModerationAppealSummary {
+  return {
+    id: crypto.randomUUID(),
+    appellant_user_id: crypto.randomUUID(),
+    user_warning_id: crypto.randomUUID(),
+    community_ban_id: null,
+    post_id: null,
+    user_suspension_id: null,
+    community_id: null,
+    post_removal_kind: null,
+    status: 'pending',
+    recommended_action: 'accept',
+    public_response: null,
+    approved_at: null,
+    sent_at: null,
+    resolved_at: null,
+    resolution_action: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+    target_context: null,
+    appellant: {
+      id: crypto.randomUUID(),
+      username: 'appellant',
+      verified_display_name: null,
+      profile_image_id: null,
+    },
+    has_ai_draft: true,
+    has_draft: true,
+    ...overrides,
+  }
+}
+
 describe('listRedactedModerationAppeals', () => {
-  it('maps each appeal through redactModerationAppeal', () => {
-    const appeals = [makeAppeal({ sent_at: null }), makeAppeal({ sent_at: new Date() })]
-    const redacted = listRedactedModerationAppeals(appeals)
-    expect(redacted.length).toBe(2)
-    expect(redacted[0].public_response).toBeNull()
-    expect(redacted[1].public_response).toBe('Final public response')
+  it('drops the appellant ids, the AI recommendation and the draft flags from every row', () => {
+    const rows = listRedactedModerationAppeals([makeSummary(), makeSummary()])
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(row).not.toHaveProperty('appellant')
+      expect(row).not.toHaveProperty('appellant_user_id')
+      expect(row).not.toHaveProperty('recommended_action')
+      expect(row).not.toHaveProperty('has_ai_draft')
+      expect(row).not.toHaveProperty('has_draft')
+    }
+  })
+
+  it('keeps the public fields, including a sent response', () => {
+    const [row] = listRedactedModerationAppeals([
+      makeSummary({ sent_at: new Date(), public_response: 'Final public response' }),
+    ])
+    expect(row!.public_response).toBe('Final public response')
+    expect(row!.status).toBe('pending')
   })
 })

@@ -2,11 +2,11 @@
 
 import { PostContentText } from '@/components/posts/post-content-text'
 import { TimeAgo } from '@/components/shared/time-ago'
-import type { ReviewDispute } from '@/types/review-disputes'
+import type { ReviewDisputeSummary } from '@/types/review-disputes'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface MemberDisputeRowProps {
-  dispute: ReviewDispute
+  dispute: ReviewDisputeSummary
 }
 
 export function MemberDisputeRow({ dispute }: MemberDisputeRowProps) {

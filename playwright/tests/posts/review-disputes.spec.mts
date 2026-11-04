@@ -108,14 +108,17 @@ test.describe('Admin - topic claims and dispute queue', () => {
     const disputeRows = page.getByTestId('dispute-row')
     await expect(disputeRows.first()).toBeVisible()
     await expect(disputeRows.first().getByTestId('dispute-context')).toBeVisible()
-    // Staff controls should be present
-    await expect(page.getByTestId('dispute-public-response').first()).toBeVisible()
-    await expect(page.getByTestId('dispute-row-re-run-ai').first()).toBeVisible()
-    await expect(page.getByTestId('dispute-approve').first()).toBeVisible()
-    await expect(page.getByTestId('dispute-send').first()).toBeVisible()
-    await expect(page.getByTestId('dispute-annotate').first()).toBeVisible()
-    await expect(page.getByTestId('dispute-remove').first()).toBeVisible()
-    await expect(page.getByTestId('dispute-dismiss').first()).toBeVisible()
+    // Drafts and staff controls load from the detail route when the row is opened
+    await disputeRows.first().getByTestId('dispute-open').click()
+    const dialog = page.getByTestId('dispute-detail-dialog')
+    await expect(dialog.getByTestId('dispute-detail')).toBeVisible()
+    await expect(dialog.getByTestId('dispute-public-response')).toBeVisible()
+    await expect(dialog.getByTestId('dispute-row-re-run-ai')).toBeVisible()
+    await expect(dialog.getByTestId('dispute-approve')).toBeVisible()
+    await expect(dialog.getByTestId('dispute-send')).toBeVisible()
+    await expect(dialog.getByTestId('dispute-annotate')).toBeVisible()
+    await expect(dialog.getByTestId('dispute-remove')).toBeVisible()
+    await expect(dialog.getByTestId('dispute-dismiss')).toBeVisible()
   })
 })
 
@@ -133,8 +136,10 @@ test.describe('Disputes — Site Moderator staff queue', () => {
     // A dispute was seeded in the module-level beforeAll
     const disputeRows = page.getByTestId('dispute-row')
     await expect(disputeRows.first()).toBeVisible()
-    await expect(page.getByTestId('dispute-approve').first()).toBeVisible()
-    await expect(page.getByTestId('dispute-dismiss').first()).toBeVisible()
+    await disputeRows.first().getByTestId('dispute-open').click()
+    const dialog = page.getByTestId('dispute-detail-dialog')
+    await expect(dialog.getByTestId('dispute-approve')).toBeVisible()
+    await expect(dialog.getByTestId('dispute-dismiss')).toBeVisible()
   })
 })
 

@@ -1,27 +1,16 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import { AppealRow } from './appeal-row'
 import { MemberAppealRow } from './member-appeal-row'
 import { DividedTableShell, type DividedTableColumn } from '@/components/admin/divided-table-shell'
-import type {
-  ModerationAppeal,
-  ModerationAppealAction,
-  ModerationAppealViewerRole,
-} from '@/types/appeals'
+import type { ModerationAppealSummary } from '@/types/appeals'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface AppealsTableProps {
   viewerTier: 'staff' | 'member'
-  viewerRole?: ModerationAppealViewerRole
-  appeals: ModerationAppeal[]
-  draftEdits: Record<string, string>
+  appeals: ModerationAppealSummary[]
   loadingIds: Set<string>
-  onEdit: (id: string, text: string) => void
-  onApprove: (id: string) => void
-  onSend: (id: string) => void
-  onRerunAI: (id: string) => void
-  onResolve: (id: string, action: ModerationAppealAction) => void
+  onOpen: (id: string) => void
 }
 
 function appealColumns(
@@ -44,54 +33,30 @@ function appealColumns(
   return [...shared, ['resolution', t('extracted.appeals.appealsTable.resolution_d4055faf')]]
 }
 
-function appealRows({
-  viewerTier,
-  viewerRole = 'member',
-  appeals,
-  draftEdits,
-  loadingIds,
-  onEdit,
-  onApprove,
-  onSend,
-  onRerunAI,
-  onResolve,
-}: AppealsTableProps): ReactNode {
-  if (viewerTier === 'staff') {
-    return appeals.map(appeal => (
-      <AppealRow
-        key={appeal.id}
-        appeal={{
-          ...appeal,
-          public_response: draftEdits[appeal.id] ?? appeal.public_response,
-        }}
-        viewerRole={viewerRole}
-        disabled={loadingIds.has(appeal.id)}
-        onEdit={onEdit}
-        onApprove={onApprove}
-        onSend={onSend}
-        onRerunAI={onRerunAI}
-        onResolve={onResolve}
-      />
-    ))
-  }
-  return appeals.map(appeal => (
-    <MemberAppealRow
-      key={appeal.id}
-      appeal={appeal}
-    />
-  ))
-}
-
-export function AppealsTable(props: AppealsTableProps) {
+export function AppealsTable({ viewerTier, appeals, loadingIds, onOpen }: AppealsTableProps) {
   const t = useTranslations()
   return (
     <DividedTableShell
       aria-label={t('extracted.appeals.page.moderationAppeals_3982fa5d')}
-      columns={appealColumns(t, props.viewerTier)}
+      columns={appealColumns(t, viewerTier)}
       emptyMessage={t('extracted.appeals.appealsTable.noAppeals_ebe16e15')}
-      isEmpty={props.appeals.length === 0}
+      isEmpty={appeals.length === 0}
     >
-      {appealRows(props)}
+      {viewerTier === 'staff'
+        ? appeals.map(appeal => (
+            <AppealRow
+              key={appeal.id}
+              appeal={appeal}
+              disabled={loadingIds.has(appeal.id)}
+              onOpen={onOpen}
+            />
+          ))
+        : appeals.map(appeal => (
+            <MemberAppealRow
+              key={appeal.id}
+              appeal={appeal}
+            />
+          ))}
     </DividedTableShell>
   )
 }

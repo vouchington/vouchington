@@ -4,18 +4,17 @@ import Link from 'next/link'
 import { PostContentText } from '@/components/posts/post-content-text'
 import { reviewHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import type { ReviewDispute } from '@/types/review-disputes'
+import type { ReviewDisputeSummary } from '@/types/review-disputes'
 import { getUserLabel } from '@/lib/users/user-helpers'
 
-export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
+/** The disputed review and who disputed it: everything a list row can say without the detail read. */
+export function DisputeContext({ dispute }: { dispute: ReviewDisputeSummary }) {
   const t = useTranslations()
-  const review = dispute.staff_context?.review
-  const reviewSlug = review?.post.slug
   const target = dispute.post_content ? (
-    reviewSlug ? (
+    dispute.post_slug ? (
       <PostContentText
         as={Link}
-        href={reviewHref(reviewSlug)}
+        href={reviewHref(dispute.post_slug)}
         className='font-medium underline'
         prefetch={false}
         content={dispute.post_content}
@@ -41,34 +40,16 @@ export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
       data-pw='dispute-context'
     >
       {target}
-      {review?.post.markdown_preview ? (
-        <PostContentText
-          as='p'
-          className='line-clamp-2 text-muted-foreground'
-          content={{
-            text: review.post.markdown_preview,
-            declared_language: review.post.declared_language,
-            lingua_rs_detected_language: review.post.lingua_rs_detected_language,
-          }}
-        />
-      ) : null}
-      {review?.topic ? <p className='text-muted-foreground'>{review.topic.name}</p> : null}
-      {review?.rating !== null && review?.rating !== undefined ? (
-        <p className='text-muted-foreground'>{review.rating}/5</p>
-      ) : null}
-      {dispute.staff_context ? (
+      {dispute.disputant ? (
         <p>
           {getUserLabel(
             {
-              username: dispute.staff_context.disputant.username,
-              display_account: { name: dispute.staff_context.disputant.verified_display_name },
+              username: dispute.disputant.username,
+              display_account: { name: dispute.disputant.verified_display_name },
             },
             t('shared.user.deletedUser'),
           )}
         </p>
-      ) : null}
-      {dispute.claim_text ? (
-        <p className='line-clamp-3 text-muted-foreground'>{dispute.claim_text}</p>
       ) : null}
     </div>
   )

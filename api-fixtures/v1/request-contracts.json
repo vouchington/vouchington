@@ -1191,51 +1191,8 @@
               "items": {
                 "additionalProperties": false,
                 "properties": {
-                  "ai_draft_requested_run_id": {
-                    "type": "string"
-                  },
-                  "ai_draft_run_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "ai_drafted_at": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "ai_internal_response": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "ai_public_response": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "appeal_reason": {
-                    "type": "string"
+                  "appellant": {
+                    "$ref": "#/components/schemas/ModerationActorSummary"
                   },
                   "appellant_user_id": {
                     "type": "string"
@@ -1249,19 +1206,6 @@
                         "type": "string"
                       }
                     ]
-                  },
-                  "approved_by_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "case_id": {
-                    "type": "string"
                   },
                   "community_ban_id": {
                     "anyOf": [
@@ -1286,71 +1230,17 @@
                   "created_at": {
                     "type": "string"
                   },
-                  "drafted_at": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
+                  "has_ai_draft": {
+                    "type": "boolean"
                   },
-                  "edited_at": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "edited_by_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
+                  "has_draft": {
+                    "type": "boolean"
                   },
                   "id": {
                     "type": "string"
                   },
-                  "internal_notes": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
                   "is_overdue": {
                     "type": "boolean"
-                  },
-                  "latest_lifecycle_change_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "model": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
                   },
                   "post_id": {
                     "anyOf": [
@@ -1427,16 +1317,6 @@
                       }
                     ]
                   },
-                  "resolved_by_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
                   "sent_at": {
                     "anyOf": [
                       {
@@ -1446,19 +1326,6 @@
                         "type": "string"
                       }
                     ]
-                  },
-                  "staff_context": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "appellant": {
-                        "$ref": "#/components/schemas/ModerationActorSummary"
-                      },
-                      "original_decision": {
-                        "$ref": "#/components/schemas/OriginalModerationDecision"
-                      }
-                    },
-                    "required": ["appellant", "original_decision"],
-                    "type": "object"
                   },
                   "status": {
                     "enum": ["dismissed", "pending", "resolved"],
@@ -1714,35 +1581,24 @@
                   }
                 },
                 "required": [
-                  "ai_draft_requested_run_id",
-                  "ai_draft_run_id",
-                  "ai_drafted_at",
-                  "ai_internal_response",
-                  "ai_public_response",
-                  "appeal_reason",
+                  "appellant",
                   "appellant_user_id",
                   "approved_at",
-                  "approved_by_id",
-                  "case_id",
                   "community_ban_id",
                   "community_id",
                   "created_at",
-                  "drafted_at",
-                  "edited_at",
-                  "edited_by_id",
+                  "has_ai_draft",
+                  "has_draft",
                   "id",
-                  "internal_notes",
-                  "latest_lifecycle_change_id",
-                  "model",
                   "post_id",
                   "post_removal_kind",
                   "public_response",
                   "recommended_action",
                   "resolution_action",
                   "resolved_at",
-                  "resolved_by_id",
                   "sent_at",
                   "status",
+                  "target_context",
                   "updated_at",
                   "user_suspension_id",
                   "user_warning_id"
@@ -4713,49 +4569,6 @@
               "items": {
                 "additionalProperties": false,
                 "properties": {
-                  "ai_draft_requested_run_id": {
-                    "type": "string"
-                  },
-                  "ai_draft_run_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "ai_drafted_at": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "ai_internal_response": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "ai_public_response": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
                   "approved_at": {
                     "anyOf": [
                       {
@@ -4766,90 +4579,26 @@
                       }
                     ]
                   },
-                  "approved_by_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "claim_text": {
-                    "type": "string"
-                  },
                   "created_at": {
                     "type": "string"
+                  },
+                  "disputant": {
+                    "$ref": "#/components/schemas/ReviewDisputeActorSummary"
                   },
                   "disputant_user_id": {
                     "type": "string"
                   },
-                  "drafted_at": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
+                  "has_ai_draft": {
+                    "type": "boolean"
                   },
-                  "edited_at": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "edited_by_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
+                  "has_draft": {
+                    "type": "boolean"
                   },
                   "id": {
                     "type": "string"
                   },
-                  "internal_notes": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
                   "is_overdue": {
                     "type": "boolean"
-                  },
-                  "latest_lifecycle_change_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "model": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
                   },
                   "post_content": {
                     "anyOf": [
@@ -4866,6 +4615,16 @@
                   },
                   "post_label": {
                     "type": "string"
+                  },
+                  "post_slug": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
                   },
                   "public_response": {
                     "anyOf": [
@@ -4935,16 +4694,6 @@
                       }
                     ]
                   },
-                  "resolved_by_id": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
                   "sent_at": {
                     "anyOf": [
                       {
@@ -4954,120 +4703,6 @@
                         "type": "string"
                       }
                     ]
-                  },
-                  "staff_context": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "disputant": {
-                        "$ref": "#/components/schemas/ReviewDisputeActorSummary"
-                      },
-                      "review": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "post": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "created_at": {
-                                "type": "string"
-                              },
-                              "created_by_id": {
-                                "anyOf": [
-                                  {
-                                    "type": "null"
-                                  },
-                                  {
-                                    "type": "string"
-                                  }
-                                ]
-                              },
-                              "declared_language": {
-                                "anyOf": [
-                                  {
-                                    "type": "null"
-                                  },
-                                  {
-                                    "type": "string"
-                                  }
-                                ]
-                              },
-                              "id": {
-                                "type": "string"
-                              },
-                              "lingua_rs_detected_language": {
-                                "anyOf": [
-                                  {
-                                    "type": "null"
-                                  },
-                                  {
-                                    "type": "string"
-                                  }
-                                ]
-                              },
-                              "markdown_preview": {
-                                "type": "string"
-                              },
-                              "slug": {
-                                "anyOf": [
-                                  {
-                                    "type": "null"
-                                  },
-                                  {
-                                    "type": "string"
-                                  }
-                                ]
-                              },
-                              "title": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "created_at",
-                              "created_by_id",
-                              "declared_language",
-                              "id",
-                              "lingua_rs_detected_language",
-                              "markdown_preview",
-                              "slug",
-                              "title"
-                            ],
-                            "type": "object"
-                          },
-                          "rating": {
-                            "type": "number"
-                          },
-                          "topic": {
-                            "anyOf": [
-                              {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "id": {
-                                    "type": "string"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "slug": {
-                                    "type": "string"
-                                  },
-                                  "topic_type": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": ["id", "name", "slug", "topic_type"],
-                                "type": "object"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "required": ["post", "rating", "topic"],
-                        "type": "object"
-                      }
-                    },
-                    "required": ["disputant", "review"],
-                    "type": "object"
                   },
                   "status": {
                     "enum": ["dismissed", "pending", "resolved"],
@@ -5081,32 +4716,22 @@
                   }
                 },
                 "required": [
-                  "ai_draft_requested_run_id",
-                  "ai_draft_run_id",
-                  "ai_drafted_at",
-                  "ai_internal_response",
-                  "ai_public_response",
                   "approved_at",
-                  "approved_by_id",
-                  "claim_text",
                   "created_at",
+                  "disputant",
                   "disputant_user_id",
-                  "drafted_at",
-                  "edited_at",
-                  "edited_by_id",
+                  "has_ai_draft",
+                  "has_draft",
                   "id",
-                  "internal_notes",
-                  "latest_lifecycle_change_id",
-                  "model",
                   "post_content",
                   "post_id",
                   "post_label",
+                  "post_slug",
                   "public_response",
                   "reason",
                   "recommended_action",
                   "resolution_action",
                   "resolved_at",
-                  "resolved_by_id",
                   "sent_at",
                   "status",
                   "topic_id",

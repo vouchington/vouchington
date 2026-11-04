@@ -87,6 +87,66 @@ export interface ModerationAppeal {
   }
 }
 
+/**
+ * One row of the appeal list. Staff rows add the appellant and draft flags; members get only the
+ * public fields. The appeal reason, drafts, notes and original decision load from the detail read.
+ */
+export type ModerationAppealSummary = Pick<
+  ModerationAppeal,
+  | 'id'
+  | 'appellant_user_id'
+  | 'user_warning_id'
+  | 'community_ban_id'
+  | 'post_id'
+  | 'user_suspension_id'
+  | 'community_id'
+  | 'post_removal_kind'
+  | 'status'
+  | 'recommended_action'
+  | 'is_overdue'
+  | 'public_response'
+  | 'approved_at'
+  | 'sent_at'
+  | 'resolved_at'
+  | 'resolution_action'
+  | 'created_at'
+  | 'updated_at'
+  | 'target_context'
+> & {
+  appellant?: ModerationActorSummary
+  has_ai_draft?: boolean
+  has_draft?: boolean
+}
+
+/** The list row a full detail read stands for, after a staff action changed it. */
+export function toModerationAppealSummary(appeal: ModerationAppeal): ModerationAppealSummary {
+  return {
+    id: appeal.id,
+    appellant_user_id: appeal.appellant_user_id,
+    user_warning_id: appeal.user_warning_id,
+    community_ban_id: appeal.community_ban_id,
+    post_id: appeal.post_id,
+    user_suspension_id: appeal.user_suspension_id,
+    community_id: appeal.community_id,
+    post_removal_kind: appeal.post_removal_kind,
+    status: appeal.status,
+    recommended_action: appeal.recommended_action,
+    is_overdue: appeal.is_overdue,
+    // A response is public only once it was sent; an unsent one is a draft.
+    public_response: appeal.sent_at ? appeal.public_response : null,
+    approved_at: appeal.approved_at,
+    sent_at: appeal.sent_at,
+    resolved_at: appeal.resolved_at,
+    resolution_action: appeal.resolution_action,
+    created_at: appeal.created_at,
+    updated_at: appeal.updated_at,
+    target_context: appeal.target_context,
+    appellant: appeal.staff_context?.appellant,
+    has_ai_draft: Boolean(appeal.ai_drafted_at),
+    has_draft: Boolean(appeal.public_response),
+  }
+}
+
 export function canResolveModerationAppealAction(
   appeal: ModerationAppeal,
   action: ModerationAppealAction,

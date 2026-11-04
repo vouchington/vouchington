@@ -1,20 +1,6 @@
 import sql from 'sql-template-strings'
 
-export const APPEAL_SELECT = sql`
-  ma.id, ma.case_id, ma.appellant_user_id, ma.user_warning_id, ma.community_ban_id, ma.post_id, ma.user_suspension_id, ma.community_id, ma.post_removal_kind,
-  ma.appeal_reason,
-  CASE
-    WHEN ma.resolved_at IS NULL THEN 'pending'
-    WHEN ma.resolution_action = 'deny' THEN 'dismissed'
-    ELSE 'resolved'
-  END AS status,
-  ma.recommended_action, ma.ai_public_response, ma.ai_internal_response,
-  ma.model, ma.ai_drafted_at, ma.ai_draft_run_id,
-  ('appeal_resolution_' || ma.ai_draft_request_token::text) AS ai_draft_requested_run_id,
-  ma.public_response, ma.internal_notes, ma.drafted_at, ma.edited_at, ma.edited_by_id,
-  ma.approved_at, ma.approved_by_id, ma.sent_at, ma.resolved_at, ma.resolved_by_id,
-  ma.resolution_action, ma.latest_lifecycle_change_id, ma.updated_at,
-  uuid_extract_timestamp(ma.id) AS created_at,
+const APPEAL_TARGET_CONTEXT = sql`
   CASE
     WHEN uw.id IS NOT NULL THEN jsonb_build_object(
       'type', 'warning',
@@ -49,7 +35,25 @@ export const APPEAL_SELECT = sql`
       'community', CASE WHEN pc.id IS NULL THEN NULL ELSE jsonb_build_object('id', pc.id, 'name', pc.name) END
     )
     ELSE NULL
-  END AS target_context,
+  END AS target_context
+`
+
+export const APPEAL_SELECT = sql`
+  ma.id, ma.case_id, ma.appellant_user_id, ma.user_warning_id, ma.community_ban_id, ma.post_id, ma.user_suspension_id, ma.community_id, ma.post_removal_kind,
+  ma.appeal_reason,
+  CASE
+    WHEN ma.resolved_at IS NULL THEN 'pending'
+    WHEN ma.resolution_action = 'deny' THEN 'dismissed'
+    ELSE 'resolved'
+  END AS status,
+  ma.recommended_action, ma.ai_public_response, ma.ai_internal_response,
+  ma.model, ma.ai_drafted_at, ma.ai_draft_run_id,
+  ('appeal_resolution_' || ma.ai_draft_request_token::text) AS ai_draft_requested_run_id,
+  ma.public_response, ma.internal_notes, ma.drafted_at, ma.edited_at, ma.edited_by_id,
+  ma.approved_at, ma.approved_by_id, ma.sent_at, ma.resolved_at, ma.resolved_by_id,
+  ma.resolution_action, ma.latest_lifecycle_change_id, ma.updated_at,
+  uuid_extract_timestamp(ma.id) AS created_at,
+`.append(APPEAL_TARGET_CONTEXT).append(sql`,
   jsonb_build_object(
     'appellant', jsonb_build_object(
       'id', ma.appellant_user_id,
@@ -70,10 +74,9 @@ export const APPEAL_SELECT = sql`
       END
     )
   ) AS staff_context
-`
+`)
 
-export const APPEAL_JOINS = sql`
-  LEFT JOIN view_users_public appellant ON appellant.id = ma.appellant_user_id
+const APPEAL_TARGET_JOINS = sql`
   LEFT JOIN user_warnings uw ON uw.id = ma.user_warning_id
   LEFT JOIN communities wc ON wc.id = uw.community_id
   LEFT JOIN community_bans cb ON cb.id = ma.community_ban_id
@@ -81,6 +84,41 @@ export const APPEAL_JOINS = sql`
   LEFT JOIN user_suspensions us ON us.id = ma.user_suspension_id
   LEFT JOIN posts p ON p.id = ma.post_id
   LEFT JOIN communities pc ON pc.id = ma.community_id
+`
+
+export const APPEAL_JOINS = sql`
+  LEFT JOIN view_users_public appellant ON appellant.id = ma.appellant_user_id
+`.append(APPEAL_TARGET_JOINS).append(sql`
   LEFT JOIN retained_user_identities decision_actor_ref ON decision_actor_ref.id = ma.original_decided_by_id
   LEFT JOIN view_users_public decision_actor ON decision_actor.id = decision_actor_ref.id
-`
+`)
+
+/**
+ * List rows are summaries. Drafts, unsent responses, internal notes, the appeal reason and the
+ * original decision load from the detail read when a row is opened. A response is public only once
+ * sent. The target context is the public description of the decision being appealed.
+ */
+export const APPEAL_SUMMARY_SELECT = sql`
+  ma.id, ma.appellant_user_id, ma.user_warning_id, ma.community_ban_id, ma.post_id, ma.user_suspension_id, ma.community_id, ma.post_removal_kind,
+  CASE
+    WHEN ma.resolved_at IS NULL THEN 'pending'
+    WHEN ma.resolution_action = 'deny' THEN 'dismissed'
+    ELSE 'resolved'
+  END AS status,
+  ma.recommended_action,
+  CASE WHEN ma.sent_at IS NOT NULL THEN ma.public_response END AS public_response,
+  (ma.ai_drafted_at IS NOT NULL) AS has_ai_draft,
+  (ma.public_response IS NOT NULL) AS has_draft,
+  ma.approved_at, ma.sent_at, ma.resolved_at, ma.resolution_action, ma.updated_at,
+  uuid_extract_timestamp(ma.id) AS created_at,
+  jsonb_build_object(
+    'id', ma.appellant_user_id,
+    'username', appellant.username,
+    'verified_display_name', appellant.verified_display_name,
+    'profile_image_id', appellant.profile_image_id
+  ) AS appellant,
+`.append(APPEAL_TARGET_CONTEXT)
+
+export const APPEAL_SUMMARY_JOINS = sql`
+  LEFT JOIN view_users_public appellant ON appellant.id = ma.appellant_user_id
+`.append(APPEAL_TARGET_JOINS)

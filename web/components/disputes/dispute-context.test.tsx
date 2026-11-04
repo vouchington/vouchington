@@ -4,46 +4,31 @@ import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { mergeMessages } from '@/lib/i18n/use-translations'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { DisputeContext } from './dispute-context'
+import { toReviewDisputeSummary, type ReviewDisputeSummary } from '@/types/review-disputes'
 import { makeDispute } from '@/test-helpers/disputes-client-fixtures'
 
+const makeSummary = (overrides: Partial<ReviewDisputeSummary> = {}): ReviewDisputeSummary => ({
+  ...toReviewDisputeSummary(makeDispute()),
+  ...overrides,
+})
+
 describe('DisputeContext', () => {
-  it('renders the disputed review, topic, rating, disputant, and claim', () => {
+  it('renders the disputed review link and the disputant from summary fields', () => {
     render(
       <DisputeContext
-        dispute={makeDispute({
-          staff_context: {
-            disputant: {
-              id: 'claimant-1',
-              username: 'claimant',
-              verified_display_name: 'Claimant Name',
-              profile_image_id: null,
-            },
-            review: {
-              post: {
-                id: 'post-1',
-                title: 'A disputed review',
-                declared_language: 'ar',
-                lingua_rs_detected_language: 'en',
-                slug: 'a-disputed-review',
-                markdown_preview: 'The review being disputed.',
-                created_by_id: 'author-1',
-                created_at: '2026-01-01T00:00:00Z',
-              },
-              topic: {
-                id: 'topic-1',
-                name: 'Acme',
-                slug: 'acme',
-                topic_type: 'business',
-              },
-              rating: 2,
-            },
-          },
+        dispute={makeSummary({
+          post_slug: 'a-disputed-review',
           post_content: {
             text: 'A disputed review',
             declared_language: 'ar',
             lingua_rs_detected_language: 'en',
           },
-          claim_text: 'The published terms are inaccurate.',
+          disputant: {
+            id: 'claimant-1',
+            username: 'claimant',
+            verified_display_name: 'Claimant Name',
+            profile_image_id: null,
+          },
         })}
       />,
     )
@@ -54,22 +39,21 @@ describe('DisputeContext', () => {
     )
     expect(screen.getByRole('link', { name: 'A disputed review' })).toHaveAttribute('lang', 'ar')
     expect(screen.getByRole('link', { name: 'A disputed review' })).toHaveAttribute('dir', 'rtl')
-    expect(screen.getByText('The review being disputed.')).toBeInTheDocument()
-    expect(screen.getByText('Acme')).toBeInTheDocument()
-    expect(screen.getByText('2/5')).toBeInTheDocument()
     expect(screen.getByText('Claimant Name')).toBeInTheDocument()
-    expect(screen.getByText('The published terms are inaccurate.')).toBeInTheDocument()
   })
 
-  it('renders review content without a link when staff context has no slug', () => {
-    const dispute = makeDispute({
-      post_content: {
-        text: 'A review without a slug',
-        declared_language: null,
-        lingua_rs_detected_language: null,
-      },
-    })
-    render(<DisputeContext dispute={dispute} />)
+  it('renders review content without a link when the summary has no slug', () => {
+    render(
+      <DisputeContext
+        dispute={makeSummary({
+          post_content: {
+            text: 'A review without a slug',
+            declared_language: null,
+            lingua_rs_detected_language: null,
+          },
+        })}
+      />,
+    )
 
     expect(screen.getByText('A review without a slug')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'A review without a slug' })).toBeNull()
@@ -78,29 +62,13 @@ describe('DisputeContext', () => {
   it('shows factual review label and deleted-user text when optional context is absent', () => {
     render(
       <DisputeContext
-        dispute={makeDispute({
+        dispute={makeSummary({
           post_content: null,
-          staff_context: {
-            disputant: {
-              id: 'claimant-fallback',
-              username: null,
-              verified_display_name: null,
-              profile_image_id: null,
-            },
-            review: {
-              post: {
-                id: 'post-1',
-                title: '',
-                declared_language: null,
-                lingua_rs_detected_language: null,
-                slug: null,
-                markdown_preview: '',
-                created_by_id: null,
-                created_at: '2026-01-01T00:00:00Z',
-              },
-              topic: null,
-              rating: null,
-            },
+          disputant: {
+            id: 'claimant-fallback',
+            username: null,
+            verified_display_name: null,
+            profile_image_id: null,
           },
         })}
       />,
@@ -117,7 +85,7 @@ describe('DisputeContext', () => {
     render(
       <UiLocaleProvider uiLocale='es'>
         <DisputeContext
-          dispute={makeDispute({
+          dispute={makeSummary({
             post_id: 'post-private',
             post_label: 'review',
             post_content: null,
