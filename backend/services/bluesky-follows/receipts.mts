@@ -143,6 +143,7 @@ export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers(
           WHERE followee_user_id = ${followeeUserId}
             AND follower_user_id <> ${followeeUserId}
           LIMIT ${batchSize}
+          FOR UPDATE
         )`,
       options,
     )
