@@ -9,21 +9,23 @@ export async function updateRssFeedImportRowCompleted(
 ): Promise<void> {
   await write(
     sql`/* updateRssFeedImportRowCompleted */
-      WITH prev AS (
-        SELECT (failed_at IS NOT NULL)::int AS was_failed, error_message
+      WITH prev AS MATERIALIZED (
+        SELECT id, (failed_at IS NOT NULL)::int AS was_failed, error_message
         FROM user_rss_feed_import_rows
         WHERE id = ${rowId}
+        FOR UPDATE
       ), updated_row AS (
-        UPDATE user_rss_feed_import_rows
+        UPDATE user_rss_feed_import_rows target
         SET completed_at = CURRENT_TIMESTAMP,
             failed_at = NULL,
             outcome = ${outcome},
             rss_feed_id = ${rssFeedId}::uuid,
             error_message = NULL
-        WHERE id = ${rowId}
-          AND completed_at IS NULL
-          AND (failed_at IS NULL OR error_message = 'RELATION_LIMIT_REACHED')
-        RETURNING batch_id
+        FROM prev
+        WHERE target.id = prev.id
+          AND target.completed_at IS NULL
+          AND (target.failed_at IS NULL OR target.error_message = 'RELATION_LIMIT_REACHED')
+        RETURNING target.batch_id
       )
       UPDATE user_rss_feed_import_batches
       SET completed_rows = completed_rows + 1,

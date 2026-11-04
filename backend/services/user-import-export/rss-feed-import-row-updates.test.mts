@@ -103,4 +103,26 @@ describe('RSS import skipped counters', () => {
       pending_rows: 0,
     })
   })
+
+  it('keeps counters consistent when final failure and completion overlap', async () => {
+    const user = await createTestUser()
+    const created = await createRssFeedImport(
+      user.id,
+      WEB_PROVENANCE,
+      [`https://counter-${randomUUID()}.example.com/rss`],
+      true,
+    )
+    const rowId = await getFirstRssFeedImportRowId(created.import.id)
+    const feed = await insertTestRssFeedDirect({})
+    await Promise.all([
+      updateRssFeedImportRowFailed(rowId, 'RELATION_LIMIT_REACHED', { isFinalAttempt: true }),
+      updateRssFeedImportRowCompleted(rowId, 'followed', feed.id),
+    ])
+    expect(await getRssFeedImportSummary(user.id, created.import.id)).toMatchObject({
+      completed_rows: 1,
+      failed_rows: 0,
+      skipped_rows: 0,
+      pending_rows: 0,
+    })
+  })
 })
