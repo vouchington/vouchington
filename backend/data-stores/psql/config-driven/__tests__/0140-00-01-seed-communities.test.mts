@@ -25,12 +25,20 @@ describe('0140-00-01-seed-communities', () => {
     }
   })
 
-  it('inserts owner membership with ON CONFLICT', () => {
+  it('creates system owner membership only for newly inserted communities', () => {
     const sql = generateSeedCommunitiesSQL()
-    expect(sql).toContain('INSERT INTO community_members')
-    expect(sql).toContain("'owner'")
-    expect(sql).toContain('removed_at IS NULL')
-    expect(sql).toContain('DO UPDATE SET role')
+    const statements = sql.split(';').filter(statement => statement.trim())
+    expect(statements).toHaveLength(2)
+    for (const statement of statements) {
+      // New communities and their initial owner are created atomically. Replays must not
+      // grant a membership or overwrite a role after an owner transfer or removal.
+      expect(statement).toMatch(/inserted AS \([\s\S]*INSERT INTO communities[\s\S]*RETURNING id/)
+      expect(statement).toMatch(
+        /owner_membership AS \(\s*INSERT INTO community_members \(community_id, user_id, role\)\s*SELECT inserted\.id, users\.id, 'owner'\s*FROM inserted CROSS JOIN users\s*WHERE users\.username = 'system'\s*\)/,
+      )
+      expect(statement).not.toContain('ON CONFLICT')
+      expect(statement).not.toMatch(/UPDATE community_members/)
+    }
   })
 
   it('restores soft-deleted communities', () => {

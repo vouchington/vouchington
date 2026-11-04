@@ -2,6 +2,7 @@ import createError from 'http-errors'
 import { write, beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ModmailThread } from './types.mts'
+import { COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES } from '@services/entity-cache/community-memberships'
 
 export async function openModmailThread(
   currentUserId: string,
@@ -60,7 +61,12 @@ export async function openModmailThread(
         WHERE community_id = ${communityId}
           AND role IN ('owner', 'moderator')
           AND removed_at IS NULL
+        LIMIT ${COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES.moderators_per_community + 1}
       `)
+
+    if (modRows.length > COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES.moderators_per_community) {
+      throw new Error('Community moderator recipients exceed the enforced hard limit.')
+    }
 
     if (modRows.length > 0) {
       const typedModRows = modRows as Array<{ user_id: string }>

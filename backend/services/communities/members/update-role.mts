@@ -1,4 +1,5 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getActiveCommunityMembersForUsers } from './batch.mts'
@@ -16,6 +17,7 @@ import {
   enqueueCommunityLifecycleNotificationPush,
 } from '@services/notifications'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
+import { assertCommunityModeratorCapacity } from '../membership-limits.mts'
 
 const ROLE_RANK: Record<CommunityMemberRole, number> = { member: 0, moderator: 1, owner: 2 }
 
@@ -48,8 +50,11 @@ export async function updateMemberRole(
   const targetMembership = members.get(targetUserId) ?? null
   assert(targetMembership, 404, 'Target user is not a member of this community')
   assert(targetMembership.role !== 'owner', 422, 'Cannot change the role of another owner')
+  if (targetMembership.role === 'member' && role !== 'member') {
+    await assertCommunityModeratorCapacity(communityId, options)
+  }
 
-  const { rows } = await write<{ updated_at: Date }>(
+  const { rows } = await writeCommunityMembershipMutation<{ updated_at: Date }>(
     sql`/* updateMemberRole */
       UPDATE community_members
       SET role = ${role}
@@ -59,6 +64,7 @@ export async function updateMemberRole(
         AND role <> ${role}
       RETURNING updated_at
       `,
+    { userIds: [targetUserId], communityIds: [communityId] },
     options,
   )
 

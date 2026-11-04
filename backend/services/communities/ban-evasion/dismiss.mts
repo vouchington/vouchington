@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
@@ -13,7 +13,8 @@ export async function dismissBanEvasionFlag(
   await currentUserCanReviewBanEvasionFlag(currentUser, communityId)
   assert(currentUser.id !== userId, 403, 'Cannot dismiss your own ban-evasion flag')
 
-  const { rowCount } = await write(sql`/* dismissBanEvasionFlag:update-member */
+  const { rowCount } = await writeCommunityMembershipMutation(
+    sql`/* dismissBanEvasionFlag:update-member */
     UPDATE community_members
     SET suspected_ban_evader_dismissed_at = CURRENT_TIMESTAMP,
         suspected_ban_evader_dismissed_by_id = ${currentUser.id}
@@ -22,7 +23,9 @@ export async function dismissBanEvasionFlag(
       AND removed_at IS NULL
       AND suspected_ban_evader_at IS NOT NULL
       AND suspected_ban_evader_dismissed_at IS NULL
-  `)
+  `,
+    { userIds: [userId], communityIds: [communityId] },
+  )
   assert(rowCount, 404, 'No active ban-evasion flag found for this user in this community')
 
   await resolveBanEvasionSystemReports(currentUser.id, communityId, userId, 'dismissed')

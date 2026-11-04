@@ -14,6 +14,7 @@ import {
   parseCreateUserModNoteInput,
   isModerationStaff,
   loadUserModNoteAccess,
+  assertCanAccessUserModNotes,
 } from '@services/user-mod-notes'
 import { getPrivateUserByAny } from '@services/users/get'
 import { assertNotSuspended } from '@services/users'
@@ -93,8 +94,7 @@ app.route('/api/v1/users/:userId/mod-notes').get(async (ctx: Context) => {
 app.route('/api/v1/users/:userId/mod-notes').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/users/:userId/mod-notes')
   assertNotSuspended(currentUser)
-  const { allowed, moderatedCommunityIds } = await loadUserModNoteAccess(currentUser)
-  ctx.assert(allowed, 403, 'Forbidden')
+  await assertCanAccessUserModNotes(currentUser)
   const userId = validateUUIDParam(ctx, 'userId')
   const body = await parseJsonBody<CreateUserModNoteRequest>(ctx)
   validateRequestContract(ctx, 'POST:/api/v1/users/:userId/mod-notes', {
@@ -106,7 +106,7 @@ app.route('/api/v1/users/:userId/mod-notes').post(async (ctx: Context) => {
     communityId: body.community_id,
     body: body.body,
   })
-  const note = await createUserModNote(currentUser, input, { moderatedCommunityIds })
+  const note = await createUserModNote(currentUser, input)
   ctx.setStatus(201)
   ctx.json({ note })
 })
@@ -114,13 +114,12 @@ app.route('/api/v1/users/:userId/mod-notes').post(async (ctx: Context) => {
 app.route('/api/v1/users/:userId/mod-notes/:noteId').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/users/:userId/mod-notes/:noteId')
   assertNotSuspended(currentUser)
-  const { allowed, moderatedCommunityIds } = await loadUserModNoteAccess(currentUser)
-  ctx.assert(allowed, 403, 'Forbidden')
+  await assertCanAccessUserModNotes(currentUser)
   const userId = validateUUIDParam(ctx, 'userId')
   const noteId = validateUUIDParam(ctx, 'noteId')
   validateRequestContract(ctx, 'DELETE:/api/v1/users/:userId/mod-notes/:noteId', {
     path: ctx.params,
   })
-  await deleteUserModNote(currentUser, noteId, userId, { moderatedCommunityIds })
+  await deleteUserModNote(currentUser, noteId, userId)
   ctx.json({ ok: true })
 })

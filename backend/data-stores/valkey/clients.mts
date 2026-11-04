@@ -10,6 +10,12 @@ import { config } from '@data-stores/valkey-core/config'
 
 export { cacheValkeyClient, dynamicConfigValkeyClient, rateLimiterValkeyClient }
 
+// Membership cache invalidations must be visible to the next cache lookup.
+export const primaryCacheValkeyClient = getValkeyClientByUrl(config.cache_url, {
+  name: 'primary-cache',
+  readFrom: 'primary',
+})
+
 export const sessionValkeyClient = getValkeyClientByUrl(config.session_url, {
   readFrom: 'primary',
 })

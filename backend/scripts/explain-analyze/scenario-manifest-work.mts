@@ -4,6 +4,8 @@ import { PUBLICATION_SCOPE_SCENARIO_IDS } from './publication-scope-scenario-ids
 import { NOTIFICATION_VISIBILITY_SCENARIO_IDS } from './notification-visibility-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
+  'community-membership-auth-target',
+  'community-membership-cache-moderator-miss',
   'post-moderation-retention-idle-keepers',
   'post-moderation-version-retention-page',
   'post-moderation-pass-evidence-idle-keepers',

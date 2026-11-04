@@ -1,4 +1,5 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { LoadedCommunity } from '../load-with-viewer.mts'
@@ -33,7 +34,7 @@ export async function leaveCommunity(
     'Owners cannot leave a community. Transfer ownership first or delete the community.',
   )
 
-  const { rowCount } = await write(
+  const { rowCount } = await writeCommunityMembershipMutation(
     sql`/* leaveCommunity */
     UPDATE community_members
     SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${currentUserId}
@@ -42,6 +43,7 @@ export async function leaveCommunity(
       AND removed_at IS NULL
       AND role <> 'owner'
     `,
+    { userIds: [currentUserId], communityIds: [communityId] },
     options,
   )
   assert(

@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES } from '@services/entity-cache/community-memberships'
 
 export async function addModParticipants(
   query: TransactionQuery,
@@ -20,7 +21,12 @@ export async function addModParticipants(
           AND v.starts_at   <= COALESCE(${observedTime}::timestamptz, now())
           AND (v.ends_at IS NULL OR v.ends_at > COALESCE(${observedTime}::timestamptz, now()))
       )
+    LIMIT ${COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES.moderators_per_community + 1}
   `)
+
+  if (modRows.length > COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES.moderators_per_community) {
+    throw new Error('Community moderator recipients exceed the enforced hard limit.')
+  }
 
   if (modRows.length === 0) return
 

@@ -5,6 +5,7 @@ import { validateUUID } from '@modules/utils'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import type { CommunityMember } from '../types.mts'
+import { getCachedUserMemberships } from '@services/entity-cache/community-memberships'
 
 export async function getMyCommunityMemberships(
   userId: string,
@@ -18,18 +19,24 @@ export async function getMyCommunityMemberships(
     ? decodeScopedUuidCursor(after, scope, 'Invalid my-communities cursor').id
     : undefined
 
-  // community_members.created_at is a generated column derived from the id's uuidv7
-  // timestamp bits, so ordering by id is equivalent to ordering by created_at and lets this
-  // query use the (user_id, id) index instead of an unindexed timestamp comparison.
-  const query = sql`/* getMyCommunityMemberships */
-    SELECT id, community_id, user_id, role, approved_by_id, created_at, updated_at, removed_at, removed_by_id
-    FROM community_members
-    WHERE user_id = ${userId}
-      AND removed_at IS NULL`
-  if (cursorId) query.append(sql` AND id > ${cursorId}`)
-  query.append(sql` ORDER BY id ASC LIMIT ${limit + 1}`)
-
-  const { rows } = await read<CommunityMember>(query, options)
+  const memberships =
+    options.query || options.client ? null : await getCachedUserMemberships(userId)
+  let rows: CommunityMember[]
+  if (memberships) {
+    rows = memberships
+      .filter(member => !cursorId || member.id > cursorId.toLowerCase())
+      .slice(0, limit + 1)
+  } else {
+    // UUIDv7 id order matches the generated created_at order and uses (user_id, id).
+    const query = sql`/* getMyCommunityMemberships */
+      SELECT id, community_id, user_id, role, approved_by_id, created_at, updated_at, removed_at, removed_by_id
+      FROM community_members
+      WHERE user_id = ${userId}
+        AND removed_at IS NULL`
+    if (cursorId) query.append(sql` AND id > ${cursorId}`)
+    query.append(sql` ORDER BY id ASC LIMIT ${limit + 1}`)
+    ;({ rows } = await read<CommunityMember>(query, options))
+  }
   const hasNextPage = rows.length > limit
   const results = rows.slice(0, limit)
   const page_info = buildPageInfo(results, {

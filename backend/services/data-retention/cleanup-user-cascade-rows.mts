@@ -1,3 +1,4 @@
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -43,10 +44,14 @@ export async function cleanupUserCommunityMemberships(
   userId: string,
   limit: number,
 ): Promise<number> {
-  const { rowCount } = await query(sql`/* cleanupUserCommunityMemberships */
+  const { rowCount } = await writeCommunityMembershipMutation<{ community_id: string }>(
+    sql`/* cleanupUserCommunityMemberships */
     WITH candidates AS (SELECT id FROM community_members WHERE user_id = ${userId}
       ORDER BY id LIMIT ${limit} FOR UPDATE)
-    DELETE FROM community_members WHERE id IN (SELECT id FROM candidates)`)
+    DELETE FROM community_members WHERE id IN (SELECT id FROM candidates) RETURNING community_id`,
+    rows => ({ userIds: [userId], communityIds: rows.map(row => row.community_id) }),
+    { query },
+  )
   return rowCount ?? 0
 }
 

@@ -1,3 +1,4 @@
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CommunityMemberVacation, CommunityMemberVacationSettings } from './types.mts'
@@ -80,9 +81,10 @@ export async function setSuppressCommunityDigestsWhileOnVacation(
   currentUserId: string,
   options: { communityId: string; suppress: boolean },
 ): Promise<boolean> {
-  const { rows } = await write<{
+  const { rows } = await writeCommunityMembershipMutation<{
     should_suppress_community_digests_while_on_vacation: boolean
-  }>(sql`
+  }>(
+    sql`
     /* setSuppressCommunityDigestsWhileOnVacation */
     UPDATE community_members
     SET should_suppress_community_digests_while_on_vacation = ${options.suppress}
@@ -90,6 +92,8 @@ export async function setSuppressCommunityDigestsWhileOnVacation(
       AND user_id = ${currentUserId}
       AND removed_at IS NULL
     RETURNING should_suppress_community_digests_while_on_vacation
-  `)
+  `,
+    { userIds: [currentUserId], communityIds: [options.communityId] },
+  )
   return rows[0]?.should_suppress_community_digests_while_on_vacation ?? false
 }

@@ -1,3 +1,4 @@
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -88,7 +89,7 @@ export async function banUserFromCommunity(
   // Role writers (updateMemberRole, transferLockedCommunityOwnership) take lockCommunityUsers
   // before changing community_members.role. The kick WHERE is the promotion guard: RETURNING
   // the role of the row this statement removed, with no follow-up membership read.
-  await write<{ role: CommunityMemberRole }>(
+  await writeCommunityMembershipMutation<{ role: CommunityMemberRole }>(
     sql`/* banUserFromCommunity:kick */
     UPDATE community_members
     SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${currentUser.id}
@@ -99,6 +100,7 @@ export async function banUserFromCommunity(
       .append(' ')
       .append(kickRolePredicate)
       .append(sql` RETURNING role`),
+    { userIds: [targetUserId], communityIds: [communityId] },
     options,
   )
 

@@ -1,3 +1,4 @@
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
 import type { TransactionQuery } from '@data-stores/psql'
 import { archiveCommunities } from '@services/communities/archive'
 import sql from 'sql-template-strings'
@@ -22,9 +23,13 @@ export async function archiveUserOwnedCommunities(
   const lockedIds = rows.map(row => row.id)
   if (lockedIds.length === 0) return []
   await archiveCommunities(lockedIds, null, { query })
-  await query(sql`/* cleanupUserOwnedCommunities:removeArchivedOwners */
+  await writeCommunityMembershipMutation(
+    sql`/* cleanupUserOwnedCommunities:removeArchivedOwners */
     UPDATE community_members SET removed_at = CURRENT_TIMESTAMP
     WHERE community_id = ANY(${lockedIds}::uuid[]) AND user_id = ${ownerUserId}
-      AND role = 'owner' AND removed_at IS NULL`)
+      AND role = 'owner' AND removed_at IS NULL`,
+    { userIds: [ownerUserId], communityIds: lockedIds },
+    { query },
+  )
   return lockedIds
 }

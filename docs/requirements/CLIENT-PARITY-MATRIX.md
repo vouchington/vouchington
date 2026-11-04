@@ -222,6 +222,13 @@ after the feed is removed, with no linked feed ID in the result.
 
 ## Community moderation MCP handoff
 
+Community admission and moderator promotion return distinct HTTP 409 codes,
+`COMMUNITY_MEMBERSHIP_LIMIT_REACHED` and `COMMUNITY_MODERATOR_LIMIT_REACHED`, preserved through
+MCP. Staff share these limits. Lowering an admission setting leaves existing memberships and
+notification recipients intact. Swift and .NET need localized handling that explains the limit
+without retrying the unchanged request; dependent adoption is tracked in
+[vouchington-clients#539](https://github.com/vouchington/vouchington-clients/issues/539).
+
 The four community moderation tools use exact `community-moderation:read` and
 `community-moderation:write` grants on API keys and OAuth; write requires read and user umbrella
 grants cover neither. Web consent and credential selection provide localized descriptions.

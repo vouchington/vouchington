@@ -1,4 +1,5 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
+import { read, beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getCommunity } from '../get.mts'
@@ -9,6 +10,7 @@ import type { CommunityInvite } from '../types.mts'
 import { invalidateCommunityMemberUserMetrics } from '../members/invalidate-user-metrics.mts'
 import { hashCommunityInviteCode } from './code.mts'
 import { deletePendingInvitesForMember } from './delete-pending-for-member.mts'
+import { assertCommunityMembershipCapacity } from '../membership-limits.mts'
 
 export async function redeemInviteCode(
   currentUserId: string,
@@ -51,10 +53,11 @@ export async function redeemInviteCode(
   const existing = await getCommunityMember(found.community_id, currentUserId, options)
   assert(!existing, 409, 'You are already a member of this community')
   await assertNotBanned(found.community_id, currentUserId, options)
+  await assertCommunityMembershipCapacity(currentUserId, found.community_id, options)
 
   // Accepting the invite and adding the member are one statement: the member row is derived from
   // the invite row this statement accepted, so a lost race inserts nothing and fails the count.
-  const { rows: acceptRows } = await write(
+  const { rows: acceptRows } = await writeCommunityMembershipMutation(
     sql`/* redeemInviteCode:accept */
     WITH accepted AS (
       UPDATE community_invites
@@ -94,6 +97,7 @@ export async function redeemInviteCode(
     )
     SELECT COUNT(*)::int AS accepted_count FROM accepted
     `,
+    { userIds: [currentUserId], communityIds: [found.community_id] },
     options,
   )
   assert(acceptRows[0]?.accepted_count === 1, 409, 'Invite has already been redeemed')

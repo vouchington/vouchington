@@ -1,3 +1,4 @@
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
 import { beginTransaction, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -11,6 +12,7 @@ import { deletePendingInvitesForMember } from '../invites/delete-pending-for-mem
 import type { Community, CommunityMember } from '../types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
+import { assertCommunityMembershipCapacity } from '../membership-limits.mts'
 
 export async function joinCommunity(
   currentUserId: string,
@@ -92,13 +94,15 @@ async function insertJoinedCommunityMember(
     'This community is temporarily limited to approved members',
   )
 
-  const { rows } = await write(
+  await assertCommunityMembershipCapacity(currentUserId, communityId, options)
+  const { rows } = await writeCommunityMembershipMutation(
     sql`/* joinCommunity */
     INSERT INTO community_members (community_id, user_id, role)
     VALUES (${communityId}, ${currentUserId}, 'member')
     RETURNING id, community_id, user_id, role, approved_by_id, created_at, updated_at,
       removed_at, removed_by_id
     `,
+    { userIds: [currentUserId], communityIds: [communityId] },
     options,
   )
 

@@ -9,6 +9,8 @@ import {
   NOT_FOUND,
   CONTRIBUTION_ADMISSION_IN_PROGRESS,
   COPYRIGHT_EMAIL_THREAD_CHANGED,
+  COMMUNITY_MEMBERSHIP_LIMIT_REACHED,
+  COMMUNITY_MODERATOR_LIMIT_REACHED,
   CONTRIBUTION_QUOTA_EXCEEDED,
   IDEMPOTENCY_KEY_REUSED,
   NEUTRAL_REQUIRES_EXISTING_BALLOT,
@@ -117,7 +119,7 @@ export async function callMcpTool(
             : err.status === 403
               ? FORBIDDEN
               : INVALID_INPUT
-      const admissionCodes = [
+      const domainCodes = [
         CONTRIBUTION_ADMISSION_IN_PROGRESS,
         CONTRIBUTION_QUOTA_EXCEEDED,
         IDEMPOTENCY_KEY_REUSED,
@@ -126,16 +128,18 @@ export async function callMcpTool(
         EMAIL_VERIFICATION_REQUIRED,
         FEED_NOT_DISCOVERABLE,
         COPYRIGHT_EMAIL_THREAD_CHANGED,
+        COMMUNITY_MEMBERSHIP_LIMIT_REACHED,
+        COMMUNITY_MODERATOR_LIMIT_REACHED,
       ]
-      const admissionCode =
-        typeof err['code'] === 'string' && admissionCodes.includes(err['code']) ? err['code'] : null
+      const domainCode =
+        typeof err['code'] === 'string' && domainCodes.includes(err['code']) ? err['code'] : null
       const retryAfterSeconds = err['retryAfterSeconds']
       const error = {
         status: err.status,
-        code: admissionCode ?? code,
+        code: domainCode ?? code,
         message: err.message,
-        retryable: admissionCode === CONTRIBUTION_ADMISSION_IN_PROGRESS,
-        ...(admissionCode && Number.isInteger(retryAfterSeconds) && retryAfterSeconds > 0
+        retryable: domainCode === CONTRIBUTION_ADMISSION_IN_PROGRESS,
+        ...(domainCode && Number.isInteger(retryAfterSeconds) && retryAfterSeconds > 0
           ? { retryAfterSeconds }
           : {}),
       }

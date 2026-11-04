@@ -197,6 +197,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members__unique ON community_mem
 CREATE INDEX IF NOT EXISTS idx_community_members__active_community_id_id
   ON community_members (community_id, id)
   WHERE removed_at IS NULL;
+-- Moderator discovery must skip regular members even in a large community.
+CREATE INDEX IF NOT EXISTS idx_community_members__active_moderators
+  ON community_members (community_id, user_id)
+  WHERE removed_at IS NULL AND role IN ('owner', 'moderator');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__user_id_desc
   ON community_members (user_id, id DESC)

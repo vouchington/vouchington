@@ -1,4 +1,5 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getActiveCommunityMembersForUsers } from './batch.mts'
@@ -45,7 +46,7 @@ export async function removeMember(
     assert(targetMembership.role === 'member', 403, 'Moderators can only remove regular members')
   }
 
-  const { rowCount } = await write(
+  const { rowCount } = await writeCommunityMembershipMutation(
     sql`/* removeMember */
       UPDATE community_members
       SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${currentUserId}
@@ -53,6 +54,7 @@ export async function removeMember(
         AND user_id = ${targetUserId}
         AND removed_at IS NULL
       `,
+    { userIds: [targetUserId], communityIds: [communityId] },
     options,
   )
 

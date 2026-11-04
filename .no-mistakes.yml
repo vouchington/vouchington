@@ -8,6 +8,10 @@ effects:
     targets:
       - { module: '@data-stores/psql', export: read }
       - { module: '@data-stores/psql', export: write }
+      - {
+          module: '@services/communities/members/write-membership',
+          export: writeCommunityMembershipMutation,
+        }
       - { module: '@data-stores/psql', export: query }
       - { module: '@data-stores/psql/clients', export: query }
       - { module: '@data-stores/psql', export: createAsyncGeneratorFromCursor }
