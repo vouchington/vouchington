@@ -7,6 +7,7 @@ import {
 
 /** Retained legal rows cannot be deleted for cleanup, so none escape the supplied transaction. */
 export async function insertRetentionMediaFixture(query: TransactionQuery, old: Date, now: Date) {
+  const idAt = (offset: number) => new Date(old.getTime() + offset)
   const uploaderId = v7()
   const imageId = v7()
   const placementId = v7()
@@ -42,7 +43,7 @@ export async function insertRetentionMediaFixture(query: TransactionQuery, old: 
     record.id,
     record.generation,
     'allow',
-    old,
+    idAt(0),
     old,
     query,
   )
@@ -51,7 +52,7 @@ export async function insertRetentionMediaFixture(query: TransactionQuery, old: 
     record.id,
     withheld,
     'withheld',
-    old,
+    idAt(1),
     old,
     query,
   )
@@ -60,7 +61,7 @@ export async function insertRetentionMediaFixture(query: TransactionQuery, old: 
     record.id,
     allowed,
     'allow',
-    old,
+    idAt(2),
     old,
     query,
   )
@@ -68,7 +69,7 @@ export async function insertRetentionMediaFixture(query: TransactionQuery, old: 
     record.id,
     allowed,
     'allow',
-    old,
+    idAt(3),
     now,
     query,
   )

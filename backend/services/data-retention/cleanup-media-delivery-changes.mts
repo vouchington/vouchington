@@ -12,6 +12,7 @@ type Options = {
   now?: Date
   lowerBoundDate?: Date
   query?: TransactionQuery
+  changeIds?: readonly string[]
 }
 
 type Progress = { cursor_change_id: string | null; sweep_upper_bound_change_id: string | null }
@@ -60,12 +61,13 @@ async function deleteMediaDeliveryChangeSweepPage(
         WHERE id < $1::uuid
           AND id > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
           AND NOT (change_type = 'completed' AND desired_state = 'withheld')
-          ${lower}
-        ORDER BY id LIMIT $${options.lowerBoundDate ? 4 : 3} FOR UPDATE`,
+          ${lower}${options.changeIds ? `${options.lowerBoundDate ? '\n          ' : ''}AND id = ANY($${options.lowerBoundDate ? 4 : 3}::uuid[])` : ''}
+        ORDER BY id LIMIT $${options.lowerBoundDate ? (options.changeIds ? 5 : 4) : options.changeIds ? 4 : 3} FOR UPDATE`,
         [
           upperBound,
           progress.cursor_change_id,
           ...(options.lowerBoundDate ? [getMinUUIDv7ForDate(options.lowerBoundDate)] : []),
+          ...(options.changeIds ? [options.changeIds] : []),
           limit,
         ],
       )

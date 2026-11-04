@@ -9,6 +9,7 @@ type Options = {
   maxBatches: number
   now?: Date
   lowerBoundDate?: Date
+  batchIds?: readonly string[]
 }
 export async function cleanupTerminalEmbeddingBatches(
   options: Options,
@@ -40,10 +41,15 @@ async function deleteTerminalEmbeddingBatchPage(
     FROM bedrock_embedding_batches
     WHERE (completed_at IS NOT NULL OR failed_at IS NOT NULL OR cancelled_at IS NOT NULL)
       AND COALESCE(completed_at, failed_at, cancelled_at) < $1::timestamptz
-      ${lowerBoundPredicate}
+      ${lowerBoundPredicate}${options.batchIds ? `${options.lowerBoundDate ? '\n      ' : ''}AND id = ANY($${options.lowerBoundDate ? 4 : 3}::uuid[])` : ''}
     ORDER BY COALESCE(completed_at, failed_at, cancelled_at), id
     LIMIT $2 FOR UPDATE SKIP LOCKED`,
-    [cutoff, batchSize + 1, ...(options.lowerBoundDate ? [options.lowerBoundDate] : [])],
+    [
+      cutoff,
+      batchSize + 1,
+      ...(options.lowerBoundDate ? [options.lowerBoundDate] : []),
+      ...(options.batchIds ? [options.batchIds] : []),
+    ],
   )
   const page = candidates.slice(0, batchSize)
   const ids = page.map(row => row.id)

@@ -252,12 +252,18 @@ export type DataRetentionCleanupOptions = {
     upperBoundDate?: Date
     continuation?: AgentModerationCleanupContinuation
   }>
-  textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions>
-  terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions>
+  textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions> & {
+    contentHashes?: readonly string[]
+  }
+  terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions> & {
+    batchIds?: readonly string[]
+  }
   completedAdminImportBatches?: OptionalRetentionLimits<CleanupOptions>
   completedRssImportBatches?: OptionalRetentionLimits<CleanupOptions>
   expiredUserDataRequestAttempts?: OptionalRetentionLimits<CleanupOptions>
-  oldMediaDeliveryChanges?: OptionalRetentionLimits<CleanupOptions>
+  oldMediaDeliveryChanges?: OptionalRetentionLimits<CleanupOptions> & {
+    changeIds?: readonly string[]
+  }
   classifierRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>> & {
     runIds?: readonly string[]
     requestIds?: readonly string[]
