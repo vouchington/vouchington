@@ -22,7 +22,9 @@ describe('paged Bluesky disconnect', () => {
       overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 1 }),
     )
     vi.stubEnv('SITE_ORIGIN', 'https://example.voucha.ai')
-    onTestFinished(() => vi.unstubAllEnvs())
+    onTestFinished(() => {
+      vi.unstubAllEnvs()
+    })
     const follower = await createTestUserDirect()
     const account = await insertTestBlueskyLinkedAccount({ userId: follower.id })
     const followees = await Promise.all([
