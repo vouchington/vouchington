@@ -57,9 +57,11 @@ describe('Hacker News Algolia lookup', () => {
     expect(result.stories.map(story => story.hacker_news_item_id)).toEqual([
       12578028, 16356942, 2822983, 9353080, 41391722, 38256529, 46367225, 17515494,
     ])
-    expect(result.comments.map(comment => comment.hacker_news_item_id)).toEqual([
-      9977143, 8955934, 7799144, 7434274, 7172511, 669817, 6282205, 6004930, 5888703, 5888652,
-    ])
+    expect(result.comments.map(comment => comment.hacker_news_item_id)).toEqual(
+      [
+        9977143, 8955934, 7799144, 7434274, 7172511, 669817, 6282205, 6004930, 5888703, 5888652,
+      ].toSorted((a, b) => b - a),
+    )
     expect(result.stories[0]).toMatchObject({ points: recording.responses.stories.hits[0]!.points })
   })
 
@@ -107,6 +109,39 @@ describe('Hacker News Algolia lookup', () => {
     ]
     const result = await replay(recording.responses.stories, { hits: comments })
     expect(result.comments.map(comment => comment.hacker_news_item_id)).toEqual([108])
+  })
+
+  it('orders stories by points and verified comments by date before the writer caps them', async () => {
+    const story = recording.responses.stories.hits[0]!
+    const comment = recording.responses.comments.hits[0]!
+    const result = await replay(
+      {
+        hits: [
+          { ...story, objectID: '101', points: 1 },
+          { ...story, objectID: '102', points: 9 },
+        ],
+      },
+      {
+        hits: [
+          {
+            ...comment,
+            objectID: '103',
+            story_id: 999,
+            story_url: null,
+            created_at: '2026-01-01T00:00:00Z',
+          },
+          {
+            ...comment,
+            objectID: '104',
+            story_id: 999,
+            story_url: null,
+            created_at: '2026-01-03T00:00:00Z',
+          },
+        ],
+      },
+    )
+    expect(result.stories.map(hit => hit.hacker_news_item_id)).toEqual([102, 101])
+    expect(result.comments.map(hit => hit.hacker_news_item_id)).toEqual([104, 103])
   })
 
   it('skips bare domains and invalid URLs without contacting the provider', async () => {

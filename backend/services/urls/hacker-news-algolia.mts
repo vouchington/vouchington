@@ -74,6 +74,13 @@ export async function fetchHackerNewsReferences(
         posted_at: postedAt,
       })
     }
+    result.stories.sort(
+      (a, b) => b.points - a.points || b.hacker_news_item_id - a.hacker_news_item_id,
+    )
+    result.comments.sort(
+      (a, b) =>
+        b.posted_at.localeCompare(a.posted_at) || b.hacker_news_item_id - a.hacker_news_item_id,
+    )
   }
   return results
 }
