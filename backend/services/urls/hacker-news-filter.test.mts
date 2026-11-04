@@ -1,4 +1,4 @@
-import { getPostIdsCached, searchRssFeedItemsCached } from '@services/entity-fetch/search-caches'
+import { getPostIdsCached, searchRssFeedItemsCached } from '../entity-fetch/search-caches.mts'
 import { createHash } from 'node:crypto'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { hackerNewsVisibilityConfig } from './hacker-news-visibility-config.mts'
