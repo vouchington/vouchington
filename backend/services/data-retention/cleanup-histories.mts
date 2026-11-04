@@ -53,7 +53,6 @@ export async function cleanupHistory(
   let testCursorId: string | null = null
   /* oxlint-disable no-await-in-loop -- each page commits its mutation with its checkpoint */
   for (let batch = 0; batch < maxBatches; batch++) {
-    // no-mistakes-disable-next-line query-reached-per-item: bounded page loop, one transaction and checkpoint per raw candidate page.
     const page = await cleanupHistoryPage(
       kind,
       batchSize,
