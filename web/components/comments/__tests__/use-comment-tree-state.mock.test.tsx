@@ -27,13 +27,13 @@ function countNodes(nodes: CommentNodeData[]): number {
   return nodes.reduce((total, node) => total + 1 + countNodes(node.children), 0)
 }
 
-function renderState(data: PostsResponseBody) {
+function renderState(data: PostsResponseBody, isAdmin = false) {
   return renderHook(
     ({ data: current }) =>
       useCommentTreeState({
         currentUserId: 'viewer-1',
         data: current,
-        isAdmin: false,
+        isAdmin,
         rootPostId: 'root-1',
       }),
     { initialProps: { data } },
@@ -72,6 +72,27 @@ describe('useCommentTreeState replies of a hidden comment', () => {
     await waitFor(() =>
       expect(result.current.commentNodes[0]?.children[0]?.election).toEqual(election),
     )
+  })
+
+  it('keeps the moderation records of fetched replies for an admin', async () => {
+    const moderation = { id: 'm-2', post_id: '2' }
+    const moderationElection = { id: 'me-2', votes_count_up: 1, votes_count_down: 0 }
+    vi.mocked(fetchPostDescendants).mockResolvedValueOnce({
+      ...makeData([child]),
+      post_moderations: { '2': [moderation] },
+      agent_moderation_elections: { 'm-2': moderationElection },
+    } as unknown as PostsResponseBody)
+    const { result } = renderState(hiddenParentData(), true)
+
+    await act(async () => {
+      result.current.handleToggleCollapse('1')
+    })
+
+    await waitFor(() => {
+      const node = result.current.commentNodes[0]?.children[0]
+      expect(node?.moderations).toEqual([moderation])
+      expect(node?.moderationElections).toEqual({ 'm-2': moderationElection })
+    })
   })
 
   it('renders a reply once when a later page of the thread returns it too', async () => {

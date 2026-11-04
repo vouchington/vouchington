@@ -7,19 +7,10 @@ import { fetchPostDescendants } from '@/lib/api/client/posts'
 import { useCommentCollapse } from './use-comment-collapse'
 import { previewMarkdown } from '@/lib/api/client/markdown'
 import type { CommentTreeViewModel } from './comment-tree-view-model'
-import type { ElectionVote, Post, PostMetrics } from '@/types/posts'
+import { EMPTY_SIDECARS, mergeSidecars, type Sidecars } from './comment-tree-sidecars'
+import type { Post } from '@/types/posts'
 
 const EMPTY_POSTS_MAP: Record<string, Post> = {}
-const EMPTY_ELECTIONS_MAP: NonNullable<CommentTreeViewModel['post_elections']> = {}
-const EMPTY_ELECTION_VOTES_MAP: Record<string, ElectionVote> = {}
-
-interface ExtraSidecars {
-  elections: NonNullable<CommentTreeViewModel['post_elections']>
-  bookmarks: Record<string, Record<string, boolean>>
-  metrics: Record<string, PostMetrics>
-  votes: Record<string, ElectionVote>
-}
-const EMPTY_SIDECARS: ExtraSidecars = { elections: {}, bookmarks: {}, metrics: {}, votes: {} }
 
 interface UseCommentTreeStateOptions {
   currentUserId: string | null
@@ -37,17 +28,15 @@ export function useCommentTreeState({
   const postsMap = data.posts ?? EMPTY_POSTS_MAP
   const [extraComments, setExtraComments] = useState<Post[]>([])
   const [extraMarkdownToHtml, setExtraMarkdownToHtml] = useState<Record<string, string>>({})
-  const [extra, setExtra] = useState<ExtraSidecars>(EMPTY_SIDECARS)
+  const [extra, setExtra] = useState<Sidecars>(EMPTY_SIDECARS)
   const [moreAfter, setMoreAfter] = useState<Record<string, string>>({})
   const [replyToId, setReplyToId] = useState<string | null>(null)
   const [sort, setSort] = useState<'new' | 'best'>('new')
   const [quoteMarkdown, setQuoteMarkdown] = useState<string>('')
   const requestedReplies = useRef(new Set<string>())
-  const electionsMap = { ...(data.post_elections ?? EMPTY_ELECTIONS_MAP), ...extra.elections }
-  const electionVotesMap: Record<string, ElectionVote> = {
-    ...(data.election_votes ?? EMPTY_ELECTION_VOTES_MAP),
-    ...extra.votes,
-  }
+  const merged = mergeSidecars(data, extra)
+  const electionsMap = merged.post_elections
+  const electionVotesMap = merged.election_votes
 
   // A later page of the root thread can return a reply that was already fetched on expand, and
   // buildTree attaches one node per entry, so each id is kept once across both sources.
@@ -85,8 +74,7 @@ export function useCommentTreeState({
     () => Object.keys(mergedPostsMap).toSorted().join(','),
     [mergedPostsMap],
   )
-  const bookmarks = { ...data.bookmarks, ...extra.bookmarks }
-  const metrics = { ...data.posts_metrics, ...extra.metrics }
+  const { bookmarks, posts_metrics: metrics } = merged
 
   async function loadReplies(id: string, after?: string) {
     try {
@@ -96,12 +84,7 @@ export function useCommentTreeState({
         return [...prev, ...page.results.flatMap(r => (known.has(r.id) ? [] : [page.posts[r.id]!]))]
       })
       setExtraMarkdownToHtml(prev => ({ ...prev, ...page.markdown_to_html }))
-      setExtra(prev => ({
-        elections: { ...prev.elections, ...page.post_elections },
-        bookmarks: { ...prev.bookmarks, ...page.bookmarks },
-        metrics: { ...prev.metrics, ...page.posts_metrics },
-        votes: { ...prev.votes, ...page.election_votes },
-      }))
+      setExtra(prev => mergeSidecars(prev, page))
       setMoreAfter(prev => {
         const { [id]: _drop, ...rest } = prev
         return page.page_info.has_next_page && page.page_info.end_cursor
@@ -138,8 +121,8 @@ export function useCommentTreeState({
       electionVotesMap,
       electionsMap,
       markdownToHtml,
-      moderationElections: isAdmin ? data.agent_moderation_elections : undefined,
-      postModerations: isAdmin ? data.post_moderations : undefined,
+      moderationElections: isAdmin ? merged.agent_moderation_elections : undefined,
+      postModerations: isAdmin ? merged.post_moderations : undefined,
       bookmarks,
       metrics,
     }),
