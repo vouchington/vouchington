@@ -2,7 +2,6 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import {
   getHackerNewsItemsByUrlIds,
   getHackerNewsTotalsByUrlIds,
-  type HackerNewsCanonicalTotals,
   type HackerNewsUrlItems,
 } from './hacker-news-references-read.mts'
 import {
