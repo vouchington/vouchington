@@ -7,6 +7,7 @@ import {
   processDeliverNotificationPushIntent,
   processReconcileNotificationPushIntents,
   processFollowNotification,
+  processMarkAllNotificationsRead,
 } from './processors.mts'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { upsertRssFeedItems } from '../../services/rss-feed-items/upsert.mts'
@@ -19,8 +20,10 @@ import {
   insertTestRssFeedDirect,
   setEntityRelationCreatedAt,
 } from '@voucha/test-helpers'
-import { listAvailableNotificationPushIntents } from '@services/notifications-push'
-import { withTestNotificationPushRecoveryBacklog } from '@voucha/test-helpers/notification-push-recovery'
+import {
+  getTestNotificationPushRecoveryIntentStates,
+  withTestNotificationPushRecoveryBacklog,
+} from '@voucha/test-helpers/notification-push-recovery'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { listNotifications } from '@services/notifications/list'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
@@ -35,6 +38,26 @@ async function queuedPushes(userIds: string[]) {
     .filter(data => userIds.includes(data.userId))
 }
 
+describe('notification read processor ownership', () => {
+  it('marks only the payload owner read and leaves an eligible neighboring owner unread', async () => {
+    const owner = await createTestUserDirect()
+    const neighbor = await createTestUserDirect()
+    const follower = await createTestUserDirect()
+    const [foreign] = await createFollowNotification(neighbor.id, follower.id, follower.username)
+    const [owned] = await createFollowNotification(owner.id, follower.id, follower.username)
+
+    await expect(
+      processMarkAllNotificationsRead({ userId: owner.id, throughId: owned!.id }),
+    ).resolves.toEqual({
+      marked_read: 1,
+      has_more: false,
+      through_id: owned!.id,
+      last_page_id: owned!.id,
+    })
+    expect((await listNotifications(neighbor.id)).notifications[foreign!.id]?.read_at).toBeNull()
+  })
+})
+
 describe('processFollowNotification', () => {
   it('does not notify a user blocked by the follower', async () => {
     const followee = await createTestUser()
@@ -46,15 +69,6 @@ describe('processFollowNotification', () => {
     expect((await listNotifications(followee.id)).results).toHaveLength(0)
   })
 })
-
-function scopedTo(notificationIds: readonly string[]) {
-  return {
-    listAvailableNotificationPushIntents: (
-      limit: number,
-      page: Parameters<typeof listAvailableNotificationPushIntents>[1],
-    ) => listAvailableNotificationPushIntents(limit, { ...page, notificationIds }),
-  }
-}
 
 async function notificationIdsFor(userIds: string[]) {
   const pages = await Promise.all(userIds.map(userId => listNotifications(userId)))
@@ -182,16 +196,24 @@ describe('notification push intent processors', () => {
   it('reports a nonempty durable-intent reconciliation batch', async () => {
     const recipient = await createTestUserDirect()
     await withTestNotificationPushRecoveryBacklog(
-      { userId: recipient.id, count: 1 },
+      { userId: recipient.id, count: 1, neighborCount: 1 },
       async fixture => {
         await expect(
           processReconcileNotificationPushIntents(
             { scanBefore: fixture.scanBefore, after: fixture.after },
-            scopedTo(fixture.notificationIds),
+            fixture.notificationIds,
           ),
         ).resolves.toEqual({ enqueued: 1 })
         await expect(queuedPushes([recipient.id])).resolves.toEqual([
           { userId: recipient.id, notificationId: fixture.notificationIds[0] },
+        ])
+        await expect(
+          getTestNotificationPushRecoveryIntentStates({
+            userId: recipient.id,
+            notificationIds: fixture.neighborNotificationIds,
+          }),
+        ).resolves.toEqual([
+          { notification_id: fixture.neighborNotificationIds[0], status: 'pending' },
         ])
       },
     )

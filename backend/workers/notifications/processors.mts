@@ -96,26 +96,22 @@ export async function processReconcileContentVisibility(data: ReconcileContentVi
   return page
 }
 
-/** Tests scope the recovery read to the fixture's ids; the shared-DB guard rejects an unscoped read. */
-type PushIntentRecoveryDependencies = {
-  listAvailableNotificationPushIntents: typeof listAvailableNotificationPushIntents
-}
-
 export async function processReconcileNotificationPushIntents(
   data: ReconcileNotificationPushIntentsData = {},
-  dependencies: Partial<PushIntentRecoveryDependencies> = {},
+  notificationIds?: readonly string[],
+  batchSize = getNotificationsWorkLimit('push_intent_recovery_page_size'),
 ) {
-  const listIntents =
-    dependencies.listAvailableNotificationPushIntents ?? listAvailableNotificationPushIntents
-  const pageSize = getNotificationsWorkLimit('push_intent_recovery_page_size')
-  const intents = await listIntents(pageSize, data)
+  const intents = await listAvailableNotificationPushIntents(batchSize, {
+    ...data,
+    notificationIds,
+  })
   await Promise.all(
     intents.map(intent =>
       enqueueDeliverNotificationPushIntent(intent.user_id, intent.notification_id),
     ),
   )
   const lastIntent = intents.at(-1)
-  if (intents.length === pageSize && lastIntent) {
+  if (intents.length === batchSize && lastIntent) {
     await enqueueContinueNotificationPushIntentReconciliation({
       scanBefore: lastIntent.scan_before,
       after: {

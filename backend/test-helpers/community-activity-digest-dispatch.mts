@@ -80,11 +80,6 @@ export async function readTestCommunityActivityDigestDelivery(userId: string, wi
   return rows[0] ?? { notification_count: 0, intent_count: 0 }
 }
 
-export function beforeTestDigestUserId(userId: string): string {
-  const hex = (BigInt(`0x${userId.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
-}
-
 /** Adjacent UUIDv7 identities bound a recipient page to only this fixture's users. */
 export async function createTestDigestAdjacentUsers(): Promise<[string, string]> {
   const prefix = uuidv7().slice(0, -1)

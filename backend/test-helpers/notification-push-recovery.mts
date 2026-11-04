@@ -5,6 +5,7 @@ import { v7 } from 'uuid'
 type NotificationPushRecoveryFixture = {
   userId: string
   notificationIds: readonly string[]
+  neighborNotificationIds: readonly string[]
   scanBefore: string
   after: { updatedAt: string; userId: string; notificationId: string }
 }
@@ -28,7 +29,7 @@ type NotificationPushRecoveryEndpointState = {
 
 /** Creates one isolated, fixed recovery page boundary and removes its owned notifications afterward. */
 export async function withTestNotificationPushRecoveryBacklog<T>(
-  input: { userId: string; count: number },
+  input: { userId: string; count: number; neighborCount?: number },
   run: (fixture: NotificationPushRecoveryFixture) => Promise<T>,
 ): Promise<T> {
   if (!Number.isSafeInteger(input.count) || input.count < 1)
@@ -77,9 +78,12 @@ export async function getTestNotificationPushRecoveryEndpointStates(input: {
 async function createTestNotificationPushRecoveryBacklog(input: {
   userId: string
   count: number
+  neighborCount?: number
 }): Promise<CreatedNotificationPushRecoveryFixture> {
-  const ownedNotificationIds = Array.from({ length: input.count }, () => v7()).toSorted()
-  const notificationIds = Object.freeze([...ownedNotificationIds])
+  const total = input.count + (input.neighborCount ?? 0)
+  const ownedNotificationIds = Array.from({ length: total }, () => v7()).toSorted()
+  const notificationIds = Object.freeze(ownedNotificationIds.slice(0, input.count))
+  const neighborNotificationIds = Object.freeze(ownedNotificationIds.slice(input.count))
   await using transaction = await beginTransaction()
   await transaction(sql`/* createTestNotificationPushRecoveryBacklog */
         INSERT INTO notifications (id, user_id, entity_type, delivery_type, title, body, target_path)
@@ -106,7 +110,7 @@ async function createTestNotificationPushRecoveryBacklog(input: {
   if (
     !snapshot?.scan_before ||
     !snapshot.after_updated_at ||
-    snapshot.notification_count !== input.count ||
+    snapshot.notification_count !== total ||
     snapshot.timestamp_count !== 1
   ) {
     throw new Error('Notification push recovery fixture requires one complete transaction snapshot')
@@ -118,6 +122,7 @@ async function createTestNotificationPushRecoveryBacklog(input: {
     fixture: {
       userId: input.userId,
       notificationIds,
+      neighborNotificationIds,
       scanBefore: snapshot.scan_before,
       after: {
         updatedAt: snapshot.after_updated_at,

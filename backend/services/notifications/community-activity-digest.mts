@@ -13,16 +13,19 @@ export async function createCommunityActivityDigestBatch(input: {
   afterUserId?: string
   throughUserId?: string
   now?: Date
+  userIds?: readonly string[]
+  batchSize?: number
 }): Promise<{
   created: Array<{ userId: string; notificationId: string }>
   nextUserId: string | null
 }> {
-  const COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE = getNotificationsWorkLimit(
-    'community_digest_recipient_batch_size',
-  )
+  const batchSize =
+    input.batchSize ?? getNotificationsWorkLimit('community_digest_recipient_batch_size')
   const { rows: recipientRows, page } = await listCommunityActivityDigestRecipientPage(
     input.afterUserId,
     input.throughUserId,
+    input.userIds,
+    batchSize,
   )
   if (page.length === 0) return { created: [], nextUserId: null }
   const digestRows = await aggregateCommunityActivityDigestBatch({
@@ -61,9 +64,6 @@ export async function createCommunityActivityDigestBatch(input: {
   await ensureNotificationPushIntents(created)
   return {
     created,
-    nextUserId:
-      recipientRows.length > COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE
-        ? (page.at(-1)?.user_id ?? null)
-        : null,
+    nextUserId: recipientRows.length > batchSize ? (page.at(-1)?.user_id ?? null) : null,
   }
 }

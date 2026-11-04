@@ -1,9 +1,9 @@
+import { createTestUserDirect } from '@voucha/test-helpers'
 import { once } from 'node:events'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { QueueEvents, type Job } from 'glide-mq'
 import {
   addTestDigestMember,
-  beforeTestDigestUserId,
   createTestDigestAdjacentUsers,
   getTestCommunityActivityDigestQueueConnection,
   readTestCommunityActivityDigestCursor,
@@ -17,11 +17,6 @@ import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-gli
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import { notificationsWorkConfig } from '@services/notifications/work-limits'
-import { createCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest'
-import {
-  advanceCommunityActivityDigestCursor,
-  isCommunityActivityDigestWindowComplete,
-} from '@services/notifications/community-activity-digest-dispatch'
 import {
   enqueueCommunityActivityDigestWindows,
   type CommunityActivityDigestDispatchData,
@@ -59,6 +54,8 @@ describe('community activity digest native worker', () => {
     })
     onTestFinished(restore)
     const { now, start, end } = ownedWindow()
+    const neighbor = await createTestUserDirect()
+    await addTestDigestMember(neighbor.id, now)
     const [first, second] = await createTestDigestAdjacentUsers()
     await addTestDigestMember(first, now)
     await addTestDigestMember(second, now)
@@ -80,19 +77,9 @@ describe('community activity digest native worker', () => {
           }
           return processCommunityActivityDigestDispatch(
             job as Job<CommunityActivityDigestDispatchData>,
-            {
-              createCommunityActivityDigestBatch: input =>
-                createCommunityActivityDigestBatch({
-                  ...input,
-                  afterUserId: input.afterUserId ?? beforeTestDigestUserId(first),
-                  throughUserId: second,
-                  now,
-                }),
-              isCommunityActivityDigestWindowComplete: windowEnd =>
-                isCommunityActivityDigestWindowComplete(windowEnd, { query }),
-              advanceCommunityActivityDigestCursor: (windowStart, windowEnd) =>
-                advanceCommunityActivityDigestCursor(windowStart, windowEnd, { query }),
-            },
+            [first, second],
+            1,
+            { query, now },
           )
         },
       })
@@ -118,6 +105,10 @@ describe('community activity digest native worker', () => {
         })
         releaseSecond.resolve()
         expect(await harness.settled(job)).toBe('completed')
+        expect(await readTestCommunityActivityDigestDelivery(neighbor.id, start)).toEqual({
+          notification_count: 0,
+          intent_count: 0,
+        })
         expect(await readTestCommunityActivityDigestCursor(query)).toEqual(end)
         expect(await readTestCommunityActivityDigestDelivery(second, start)).toEqual({
           notification_count: 1,
@@ -133,6 +124,8 @@ describe('community activity digest native worker', () => {
 
   it('acknowledges an already-complete window without writing its recipient digest', async () => {
     const { now, start, end } = ownedWindow()
+    const neighbor = await createTestUserDirect()
+    await addTestDigestMember(neighbor.id, now)
     const [user] = await createTestDigestAdjacentUsers()
     await addTestDigestMember(user, now)
     await withTestCommunityActivityDigestCursor(end, async (query, owner) => {
@@ -145,19 +138,9 @@ describe('community activity digest native worker', () => {
             ? Promise.resolve()
             : processCommunityActivityDigestDispatch(
                 job as Job<CommunityActivityDigestDispatchData>,
-                {
-                  createCommunityActivityDigestBatch: input =>
-                    createCommunityActivityDigestBatch({
-                      ...input,
-                      afterUserId: beforeTestDigestUserId(user),
-                      throughUserId: user,
-                      now,
-                    }),
-                  isCommunityActivityDigestWindowComplete: windowEnd =>
-                    isCommunityActivityDigestWindowComplete(windowEnd, { query }),
-                  advanceCommunityActivityDigestCursor: (windowStart, windowEnd) =>
-                    advanceCommunityActivityDigestCursor(windowStart, windowEnd, { query }),
-                },
+                [user],
+                1,
+                { query, now },
               ),
       })
       owner.beforeRelease(() => harness.close())
@@ -166,6 +149,10 @@ describe('community activity digest native worker', () => {
         const [job] = await enqueueCommunityActivityDigestWindows([windowData(start, end)])
         if (!job) throw new Error('Expected native digest job')
         expect(await harness.settled(job)).toBe('completed')
+        expect(await readTestCommunityActivityDigestDelivery(neighbor.id, start)).toEqual({
+          notification_count: 0,
+          intent_count: 0,
+        })
         expect(await readTestCommunityActivityDigestCursor(query)).toEqual(end)
         expect(await readTestCommunityActivityDigestDelivery(user, start)).toEqual({
           notification_count: 0,
@@ -183,6 +170,8 @@ describe('community activity digest native worker', () => {
     })
     onTestFinished(restore)
     const { now, start, end } = ownedWindow()
+    const neighbor = await createTestUserDirect()
+    await addTestDigestMember(neighbor.id, now)
     const [user] = await createTestDigestAdjacentUsers()
     await addTestDigestMember(user, now)
     await withTestCommunityActivityDigestCursor(start, async (query, owner) => {
@@ -198,19 +187,9 @@ describe('community activity digest native worker', () => {
           await release.promise
           return processCommunityActivityDigestDispatch(
             job as Job<CommunityActivityDigestDispatchData>,
-            {
-              createCommunityActivityDigestBatch: input =>
-                createCommunityActivityDigestBatch({
-                  ...input,
-                  afterUserId: beforeTestDigestUserId(user),
-                  throughUserId: user,
-                  now,
-                }),
-              isCommunityActivityDigestWindowComplete: windowEnd =>
-                isCommunityActivityDigestWindowComplete(windowEnd, { query }),
-              advanceCommunityActivityDigestCursor: (windowStart, windowEnd) =>
-                advanceCommunityActivityDigestCursor(windowStart, windowEnd, { query }),
-            },
+            [user],
+            1,
+            { query, now },
           )
         },
       })
@@ -235,6 +214,10 @@ describe('community activity digest native worker', () => {
         const [delay] = await delayed
         expect((delay as { jobId: string }).jobId).toBe(job.id)
         expect(await harness.settled(marker)).toBe('completed')
+        expect(await readTestCommunityActivityDigestDelivery(neighbor.id, start)).toEqual({
+          notification_count: 0,
+          intent_count: 0,
+        })
         expect((await queue.getJobs('delayed')).map(queued => queued.id)).toContain(job.id)
         expect(await readTestCommunityActivityDigestCursor(query)).toEqual(start)
         expect(await readTestCommunityActivityDigestDelivery(user, start)).toEqual({

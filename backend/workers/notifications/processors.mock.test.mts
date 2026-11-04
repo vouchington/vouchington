@@ -8,7 +8,6 @@ import {
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { notificationsWorkConfig } from '@services/notifications/work-limits'
-import { listAvailableNotificationPushIntents } from '@services/notifications-push'
 import type { ReconcileNotificationPushIntentsData } from '@queues/notifications/enqueues'
 import { BACKGROUND_QUEUE_NAME, PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
 import { background } from '@queues/background/queues'
@@ -69,14 +68,14 @@ describe('notification push-intent recovery across pages', () => {
     const recipient = await createTestUserDirect()
     let notificationIds: readonly string[] = []
     await withTestNotificationPushRecoveryBacklog(
-      { userId: recipient.id, count: 3 },
+      { userId: recipient.id, count: 3, neighborCount: 1 },
       async fixture => {
         notificationIds = fixture.notificationIds
         try {
           await expect(
             processReconcileNotificationPushIntents(
               { scanBefore: fixture.scanBefore, after: fixture.after },
-              scopedTo(fixture.notificationIds),
+              fixture.notificationIds,
             ),
           ).resolves.toEqual({ enqueued: 2 })
           const firstJobs = await recoveryJobs(recipient.id)
@@ -121,7 +120,7 @@ describe('notification push-intent recovery across pages', () => {
           await expect(
             processReconcileNotificationPushIntents(
               firstContinuation.data as ReconcileNotificationPushIntentsData,
-              scopedTo(fixture.notificationIds),
+              fixture.notificationIds,
             ),
           ).resolves.toEqual({ enqueued: 1 })
           const secondJobs = await recoveryJobs(recipient.id)
@@ -228,6 +227,20 @@ describe('notification push-intent recovery across pages', () => {
               status: 'delivered',
             },
           ])
+          await expect(
+            getTestNotificationPushRecoveryIntentStates({
+              userId: recipient.id,
+              notificationIds: fixture.neighborNotificationIds,
+            }),
+          ).resolves.toEqual([
+            { notification_id: fixture.neighborNotificationIds[0], status: 'pending' },
+          ])
+          expect(
+            (await recoveryJobs(recipient.id)).deliveries.map(job => job.data),
+          ).not.toContainEqual({
+            userId: recipient.id,
+            notificationId: fixture.neighborNotificationIds[0],
+          })
         } finally {
           await deleteRecoveryJobs(recipient.id)
         }
@@ -239,14 +252,7 @@ describe('notification push-intent recovery across pages', () => {
     ).resolves.toEqual([])
   })
 })
-function scopedTo(notificationIds: readonly string[]) {
-  return {
-    listAvailableNotificationPushIntents: (
-      limit: number,
-      page: Parameters<typeof listAvailableNotificationPushIntents>[1],
-    ) => listAvailableNotificationPushIntents(limit, { ...page, notificationIds }),
-  }
-}
+
 async function createSubscription(userId: string, endpoint: string) {
   return upsertWebPushSubscription({
     userId,

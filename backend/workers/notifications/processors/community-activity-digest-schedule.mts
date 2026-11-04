@@ -2,21 +2,18 @@ import {
   enqueueCommunityActivityDigestWindows,
   getCommunityActivityDigestDispatchData,
 } from '@queues/notifications/enqueues'
-import { prepareCommunityActivityDigestWindows } from '@services/notifications/community-activity-digest-dispatch'
-
-type Dependencies = {
-  prepareCommunityActivityDigestWindows: typeof prepareCommunityActivityDigestWindows
-}
+import {
+  prepareCommunityActivityDigestWindows,
+  type DigestCursorOptions,
+} from '@services/notifications/community-activity-digest-dispatch'
 
 export async function processCommunityActivityDigestScheduleTick(
   data: { targetWindowStart?: string },
-  dependencies: Partial<Dependencies> = {},
+  options: DigestCursorOptions = {},
 ): Promise<void> {
   const targetWindowStart =
     data.targetWindowStart ?? getCommunityActivityDigestDispatchData().windowStart
-  const prepare =
-    dependencies.prepareCommunityActivityDigestWindows ?? prepareCommunityActivityDigestWindows
-  const result = await prepare(new Date(targetWindowStart))
+  const result = await prepareCommunityActivityDigestWindows(new Date(targetWindowStart), options)
   await enqueueCommunityActivityDigestWindows(
     result.windows.map(window => ({
       windowStart: window.windowStart.toISOString(),
