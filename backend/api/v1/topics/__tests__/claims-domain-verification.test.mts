@@ -1,25 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic, insertTestUrlHostname } from '@voucha/test-helpers'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { issueDomainVerificationToken } from '@services/topic-claims/generate-verification-token'
 import { requireTopicClaimOnTopic } from '@services/topic-claims/require-on-topic'
 import { rejectTopicClaim } from '@services/topic-claims/admin-verify'
-import * as topicClaimsModule from '@services/topic-claims'
-import { verifyTopicClaimDomain as verifyTopicClaimDomainReal } from '@services/topic-claims/verify-domain'
-
-const h = vi.hoisted(() => ({
-  mockResolveTxtRecords: vi.fn<() => Promise<string[]>>(),
-  mockFetchWellKnownToken: vi.fn<() => Promise<string | null>>(),
-}))
-
-const verifyTopicClaimDomainSpy = vi.spyOn(topicClaimsModule, 'verifyTopicClaimDomain')
-verifyTopicClaimDomainSpy.mockImplementation((currentUserId, claimId) =>
-  verifyTopicClaimDomainReal(currentUserId, claimId, {
-    resolveTxtRecords: h.mockResolveTxtRecords,
-    fetchWellKnownToken: h.mockFetchWellKnownToken,
-  }),
-)
+import * as dns from '@services/topic-claims/domain-verification-dns'
+import * as wellKnown from '@services/topic-claims/domain-verification-well-known'
 
 async function makeClaimOnTopicWithHostname() {
   const claimant = await createTestUser()
@@ -43,10 +30,17 @@ async function makeClaimOnTopicWithHostname() {
 }
 
 describe('topic claim domain-verification API', () => {
+  const resolveTxtRecords = vi.spyOn(dns, 'resolveTxtRecords')
+  const fetchWellKnownToken = vi.spyOn(wellKnown, 'fetchWellKnownToken')
+
   beforeEach(() => {
-    vi.clearAllMocks()
-    h.mockResolveTxtRecords.mockReset()
-    h.mockFetchWellKnownToken.mockReset()
+    resolveTxtRecords.mockReset()
+    fetchWellKnownToken.mockReset()
+  })
+
+  afterAll(() => {
+    resolveTxtRecords.mockRestore()
+    fetchWellKnownToken.mockRestore()
   })
 
   it('issues a verification token then verifies via DNS TXT', async () => {
@@ -63,8 +57,8 @@ describe('topic claim domain-verification API', () => {
     expect(typeof rawToken).toBe('string')
     expect(tokenResponse.body.dnsInstructions.value).toBe(rawToken)
 
-    h.mockResolveTxtRecords.mockResolvedValueOnce([rawToken])
-    h.mockFetchWellKnownToken.mockResolvedValueOnce(null)
+    resolveTxtRecords.mockResolvedValueOnce([rawToken])
+    fetchWellKnownToken.mockResolvedValueOnce(null)
 
     const verifyRequest = createRequest()
     await verifyRequest.authenticateAs(claimant)
@@ -76,9 +70,7 @@ describe('topic claim domain-verification API', () => {
     expect(verifyResponse.body.claim.verified_at).not.toBeNull()
     expect(verifyResponse.body.claim.verification_method).toBe('dns_txt')
     expect(verifyResponse.body.claim.state).toBe('verified')
-    expect(h.mockResolveTxtRecords).toHaveBeenCalledWith(
-      tokenResponse.body.dnsInstructions.hostname,
-    )
+    expect(resolveTxtRecords).toHaveBeenCalledWith(tokenResponse.body.dnsInstructions.hostname)
   })
 
   it('returns 409 when verifying a rejected claim', async () => {
