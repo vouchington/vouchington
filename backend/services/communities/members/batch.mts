@@ -29,12 +29,12 @@ export async function getCommunityMemberBatch(
 }
 
 const memberColumns = sql`
-  id, community_id, user_id, role,
-  should_suppress_community_digests_while_on_vacation, approved_by_id,
-  created_at, updated_at, removed_at, removed_by_id,
-  suspected_ban_evader_at, suspected_ban_evader_source_user_id,
-  suspected_ban_evader_score, suspected_ban_evader_dismissed_at,
-  suspected_ban_evader_dismissed_by_id
+  member.id, member.community_id, member.user_id, member.role,
+  member.should_suppress_community_digests_while_on_vacation, member.approved_by_id,
+  member.created_at, member.updated_at, member.removed_at, member.removed_by_id,
+  member.suspected_ban_evader_at, member.suspected_ban_evader_source_user_id,
+  member.suspected_ban_evader_score, member.suspected_ban_evader_dismissed_at,
+  member.suspected_ban_evader_dismissed_by_id
 `
 
 /** Actor and target membership in one community, after the caller holds their user locks. */
@@ -48,10 +48,18 @@ export async function getActiveCommunityMembersForUsers(
     SELECT `
   statement.append(memberColumns)
   statement.append(sql`
-    FROM community_members
-    WHERE community_id = ${communityId}
-      AND user_id = ANY(${userIds}::uuid[])
-      AND removed_at IS NULL
+    FROM (SELECT DISTINCT unnest(${userIds}::uuid[]) AS user_id) requested
+    CROSS JOIN LATERAL (
+      SELECT `)
+  statement.append(memberColumns)
+  statement.append(sql`
+      FROM community_members member
+      WHERE member.community_id = ${communityId}
+        AND member.user_id >= requested.user_id
+        AND member.user_id <= requested.user_id
+        AND member.removed_at IS NULL
+      LIMIT 1
+    ) member
   `)
   const execute = (query: QueryExecutor) => query<CommunityMember>(statement)
   const { rows } = await execute(options?.query ?? read)
