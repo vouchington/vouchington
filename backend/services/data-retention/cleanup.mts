@@ -347,6 +347,14 @@ export type VoteRetentionSelection = {
   voteIntegrityDetails: boolean
 }
 
+export type VoteRetentionCleanupOptions = {
+  voteIdsByTable?: Readonly<Record<string, readonly string[]>>
+  userAgentStringIds?: readonly string[]
+  voteIntegrityFlagIds?: readonly string[]
+  batchSize?: number
+  now?: Date
+}
+
 type VoteRetentionPage = Pick<
   DataRetentionCleanupResult,
   'supersededVoteBallots' | 'orphanedUserAgentStrings' | 'voteIntegrityDetails'
@@ -356,19 +364,21 @@ type VoteRetentionPage = Pick<
 export async function runVoteRetentionCleanupPage(
   limits: DataRetentionLimits,
   selection: VoteRetentionSelection,
+  options: VoteRetentionCleanupOptions = {},
 ): Promise<VoteRetentionPage> {
-  const now = new Date()
+  const now = options.now ?? new Date()
+  const batchSize = options.batchSize ?? limits.batchSize
   const supersededVoteBallots = await cleanupSupersededVoteBallots(
-    limits.batchSize,
+    batchSize,
     now,
-    undefined,
+    options.voteIdsByTable,
     selection.voteTables,
   )
   const orphanedUserAgentStrings = selection.userAgentStrings
-    ? await cleanupOrphanedUserAgentStrings(limits.batchSize)
+    ? await cleanupOrphanedUserAgentStrings(batchSize, options.userAgentStringIds, options.now)
     : { scanned: 0, deleted: 0, hasMore: false }
   const voteIntegrityDetails = selection.voteIntegrityDetails
-    ? await cleanupVoteIntegrityDetails(limits.batchSize, now)
+    ? await cleanupVoteIntegrityDetails(batchSize, now, options.voteIntegrityFlagIds)
     : { scanned: 0, redacted: 0, hasMore: false }
   return { supersededVoteBallots, orphanedUserAgentStrings, voteIntegrityDetails }
 }
