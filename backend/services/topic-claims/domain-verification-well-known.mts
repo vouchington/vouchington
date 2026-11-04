@@ -10,30 +10,17 @@ const FETCH_TIMEOUT_MS = 10000
 // mandatory, not a tuning knob.
 const DNS_TIMEOUT_MS = 5000
 
-type FetchWellKnownTokenDeps = {
-  fetchWithTimeout: typeof fetchWithTimeout
-  validateUrl: typeof validateUrl
-}
-
-const defaultDeps: FetchWellKnownTokenDeps = {
-  fetchWithTimeout,
-  validateUrl,
-}
-
 /**
  * Fetches the verification token from a claimant-controlled domain.
  * SSRF-guarded: the hostname is resolved and validated against private/loopback ranges
  * before any request, and the connection is pinned to the validated addresses.
  */
 /* no-mistakes: integration=http */
-export async function fetchWellKnownToken(
-  hostname: string,
-  deps: FetchWellKnownTokenDeps = defaultDeps,
-): Promise<string | null> {
+export async function fetchWellKnownToken(hostname: string): Promise<string | null> {
   const transport: SecureHttpTransport = {
     async get(url, options) {
-      const resolvedAddresses = await deps.validateUrl(url, { timeoutMs: DNS_TIMEOUT_MS })
-      const { response, responseSignal } = await deps.fetchWithTimeout({
+      const resolvedAddresses = await validateUrl(url, { timeoutMs: DNS_TIMEOUT_MS })
+      const { response, responseSignal } = await fetchWithTimeout({
         url,
         headers: options.headers,
         requestTimeoutMs: options.timeoutMs,
