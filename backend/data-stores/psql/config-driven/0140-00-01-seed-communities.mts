@@ -39,20 +39,22 @@ updated AS (
   UPDATE communities SET deleted_at = NULL, name = '${safeName}', markdown = '${safeMd}', visibility = 'public'
   WHERE id = (SELECT id FROM existing) RETURNING id
 ),
+fresh_values (name, slug, markdown, visibility, created_by_id, created_via) AS (
+  SELECT '${safeName}', '${safeSlug}', '${safeMd}', 'public'::privacy_types,
+    (SELECT id FROM users WHERE username = 'system'), 'system'::content_creation_channels
+  WHERE NOT EXISTS (SELECT 1 FROM existing)
+),
 inserted AS (
   INSERT INTO communities (name, slug, markdown, visibility, created_by_id, created_via)
-  SELECT '${safeName}', '${safeSlug}', '${safeMd}', 'public', (SELECT id FROM users WHERE username = 'system'), 'system'
-  WHERE NOT EXISTS (SELECT 1 FROM existing)
+  (TABLE fresh_values)
+  ON CONFLICT DO NOTHING
   RETURNING id
-),
-owner_membership AS (
-  INSERT INTO community_members (community_id, user_id, role)
-  SELECT inserted.id, users.id, 'owner'
-  FROM inserted CROSS JOIN users
-  WHERE users.username = 'system'
-  ON CONFLICT (community_id, user_id) WHERE removed_at IS NULL DO NOTHING
 )
-SELECT id FROM updated UNION ALL SELECT id FROM inserted;`)
+INSERT INTO community_members (community_id, user_id, role)
+SELECT inserted.id, users.id, 'owner'
+FROM inserted CROSS JOIN users
+WHERE users.username = 'system'
+ON CONFLICT (community_id, user_id) WHERE removed_at IS NULL DO NOTHING;`)
   }
 
   return parts.join('\n')

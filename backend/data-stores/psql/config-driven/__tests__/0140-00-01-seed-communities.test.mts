@@ -17,12 +17,8 @@ describe('0140-00-01-seed-communities', () => {
 
   it('records seeded communities as platform-created content', () => {
     const sql = generateSeedCommunitiesSQL()
-    const inserts = sql.match(/INSERT INTO communities \([^)]*\)\s+SELECT [^\n]*/g) ?? []
-
-    expect(inserts).toHaveLength(2)
-    for (const insert of inserts) {
-      expect(insert).toMatch(/, created_via\)\s+SELECT .*, 'system'$/)
-    }
+    expect(sql.match(/'system'::content_creation_channels/g)).toHaveLength(2)
+    expect(sql.match(/created_by_id, created_via\)\s*\(TABLE fresh_values\)/g)).toHaveLength(2)
   })
 
   it('creates system owner membership only for newly inserted communities', () => {
@@ -30,13 +26,14 @@ describe('0140-00-01-seed-communities', () => {
     const statements = sql.split(';').filter(statement => statement.trim())
     expect(statements).toHaveLength(2)
     for (const statement of statements) {
-      // New communities and their initial owner are created atomically. Replays must not
-      // grant a membership or overwrite a role after an owner transfer or removal.
-      expect(statement).toMatch(/inserted AS \([\s\S]*INSERT INTO communities[\s\S]*RETURNING id/)
+      // Fresh values are absent on replay, so replay cannot re-grant or promote a membership.
+      expect(statement).toMatch(/fresh_values[\s\S]*WHERE NOT EXISTS \(SELECT 1 FROM existing\)/)
       expect(statement).toMatch(
-        /owner_membership AS \(\s*INSERT INTO community_members \(community_id, user_id, role\)\s*SELECT inserted\.id, users\.id, 'owner'\s*FROM inserted CROSS JOIN users\s*WHERE users\.username = 'system'\s*ON CONFLICT \(community_id, user_id\) WHERE removed_at IS NULL DO NOTHING\s*\)/,
+        /INSERT INTO communities[\s\S]*\(TABLE fresh_values\)[\s\S]*RETURNING id/,
       )
-      expect(statement).not.toContain('DO UPDATE')
+      expect(statement).toMatch(
+        /INSERT INTO community_members[\s\S]*SELECT inserted\.id, users\.id, 'owner'/,
+      )
       expect(statement).not.toMatch(/UPDATE community_members/)
     }
   })
