@@ -1509,8 +1509,8 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_work_item(p_post_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO post_moderation_retention_post_work_items (post_id) VALUES (p_post_id)\n  ON CONFLICT (post_id) DO UPDATE\n  SET cursor_version_record_id = '00000000-0000-0000-0000-000000000000',\n      cursor_processing_version_record_id = NULL,\n      cursor_disposition_record_id = '00000000-0000-0000-0000-000000000000',\n      changed_at = CURRENT_TIMESTAMP;\nEND $function$\n",
       "returnsSet": false
     },
-    "fn_create_url_crawl_state()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_url_crawl_state()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO url_crawl_state (url_id, hostname_id) VALUES (NEW.id, NEW.hostname_id);\n  RETURN NEW;\nEND;\n$function$\n"
+    "fn_create_url_crawl_states()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_url_crawl_states()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO url_crawl_states (url_id, hostname_id) VALUES (NEW.id, NEW.hostname_id);\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_user_individual_household()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id)\n  VALUES (NEW.id)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id)\n  VALUES (new_household_id, new_individual_id);\n\n  RETURN NEW;\nEND;\n$function$\n",
@@ -143719,7 +143719,7 @@
       },
       "uniqueConstraints": {}
     },
-    "url_crawl_state": {
+    "url_crawl_states": {
       "checkConstraints": {},
       "columns": {
         "hostname_id": {
@@ -143765,7 +143765,7 @@
       },
       "comment": "Current refresh facts for every live URL, isolated from URL content revisions and deleted with its URL.",
       "foreignKeys": {
-        "fk_url_crawl_state__url": {
+        "fk_url_crawl_states__url": {
           "columns": ["hostname_id", "url_id"],
           "onDelete": "CASCADE",
           "onUpdate": "CASCADE",
@@ -143775,10 +143775,10 @@
         }
       },
       "indexes": {
-        "idx_url_crawl_state__hostname_recency": {
+        "idx_url_crawl_states__hostname_recency": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_crawl_state__hostname_recency ON public.url_crawl_state USING btree (hostname_id, last_successful_crawl_at NULLS FIRST, url_id)",
+          "definition": "CREATE INDEX idx_url_crawl_states__hostname_recency ON public.url_crawl_states USING btree (hostname_id, last_successful_crawl_at NULLS FIRST, url_id)",
           "immediate": true,
           "keys": [
             {
@@ -143816,10 +143816,10 @@
           "unique": false,
           "valid": true
         },
-        "url_crawl_state_pkey": {
+        "url_crawl_states_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX url_crawl_state_pkey ON public.url_crawl_state USING btree (url_id)",
+          "definition": "CREATE UNIQUE INDEX url_crawl_states_pkey ON public.url_crawl_states USING btree (url_id)",
           "immediate": true,
           "keys": [
             {
@@ -146058,8 +146058,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_create_url_crawl_state": {
-          "definition": "CREATE TRIGGER trigger_create_url_crawl_state AFTER INSERT ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_create_url_crawl_state()"
+        "trigger_create_url_crawl_states": {
+          "definition": "CREATE TRIGGER trigger_create_url_crawl_states AFTER INSERT ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_create_url_crawl_states()"
         },
         "trigger_urls_updated_at": {
           "definition": "CREATE TRIGGER trigger_urls_updated_at BEFORE UPDATE ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"

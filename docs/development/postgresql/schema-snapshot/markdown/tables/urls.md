@@ -54,5 +54,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_create_url_crawl_state`: `CREATE TRIGGER trigger_create_url_crawl_state AFTER INSERT ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_create_url_crawl_state()`
+- `trigger_create_url_crawl_states`: `CREATE TRIGGER trigger_create_url_crawl_states AFTER INSERT ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_create_url_crawl_states()`
 - `trigger_urls_updated_at`: `CREATE TRIGGER trigger_urls_updated_at BEFORE UPDATE ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

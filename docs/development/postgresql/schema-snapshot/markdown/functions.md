@@ -193,10 +193,10 @@ CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_work_
  LANGUAGE plpgsql
 ```
 
-## `fn_create_url_crawl_state`
+## `fn_create_url_crawl_states`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_create_url_crawl_state()
+CREATE OR REPLACE FUNCTION public.fn_create_url_crawl_states()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
