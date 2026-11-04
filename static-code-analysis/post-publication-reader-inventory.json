@@ -348,13 +348,6 @@
       "owner_classification": "canonical-builder"
     },
     {
-      "path": "backend/data-stores/psql/views/2025-01-19-topic-metrics.sql",
-      "classification": "projection-owner",
-      "reason": "Public topic aggregate composes view_public_post_eligibility for every post count.",
-      "owner_path": "backend/data-stores/psql/views/2025-01-18-public-post-eligibility.sql",
-      "owner_classification": "projection-owner"
-    },
-    {
       "path": "backend/data-stores/psql/views/2026-04-03-community-metrics.sql",
       "classification": "projection-owner",
       "reason": "Public community post counts compose view_public_post_eligibility and approved community review state.",
