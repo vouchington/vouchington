@@ -3,15 +3,17 @@ import type { QueryExecutor } from '@data-stores/psql'
 export async function reconsiderChangedPost(
   query: QueryExecutor,
   batchSize: number,
+  postIds?: readonly string[],
 ): Promise<{ processed: boolean; hasMore: boolean }> {
   const { rows: work } = await query<{ post_id: string }>(
     `/* listChangedAgentModerationRetentionPost */
-     SELECT post_id FROM agent_moderation_retention_post_work_items
+     SELECT post_id FROM agent_moderation_retention_post_work_items${postIds ? '\n     WHERE post_id = ANY($1::uuid[])' : ''}
      ORDER BY changed_at, post_id LIMIT 1`,
+    postIds ? [postIds] : [],
   )
   const postId = work[0]?.post_id
   if (!postId) return { processed: false, hasMore: false }
-  return reconsiderChangedPostById(query, postId, batchSize)
+  return reconsiderChangedPostById(query, postId, batchSize, postIds)
 }
 
 /** Process one owned post's transactional hash-work page. */
@@ -19,6 +21,7 @@ export async function reconsiderChangedPostById(
   query: QueryExecutor,
   postId: string,
   batchSize: number,
+  postIds?: readonly string[],
 ): Promise<{ processed: boolean; hasMore: boolean }> {
   await query(
     `/* lockChangedAgentModerationRetentionPost */
@@ -72,7 +75,8 @@ export async function reconsiderChangedPostById(
   )
   const { rows: remaining } = await query<{ post_id: string }>(
     `/* hasChangedAgentModerationRetentionPosts */
-     SELECT post_id FROM agent_moderation_retention_post_work_items LIMIT 1`,
+     SELECT post_id FROM agent_moderation_retention_post_work_items${postIds ? '\n     WHERE post_id = ANY($1::uuid[])' : ''} LIMIT 1`,
+    postIds ? [postIds] : [],
   )
   return { processed: true, hasMore: remaining.length > 0 }
 }

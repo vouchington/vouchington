@@ -17,6 +17,7 @@ import {
   runDataRetentionCleanup,
   runVoteRetentionCleanupPage,
   type VoteRetentionCleanupOptions,
+  type AgentModerationRetentionOptions,
 } from '@services/data-retention'
 import { admitDataRetentionContinuations } from './processors/data-retention-continuation.mts'
 import {
@@ -26,7 +27,6 @@ import {
 import {
   processAgentModerationRetentionContinuation,
   startAgentModerationRetentionContinuation,
-  type AgentModerationRetentionDependencies,
 } from './processors/agent-moderation-retention.mts'
 import { enqueueAIRetentionContinuations } from '@queues/psql/enqueues'
 import {
@@ -49,16 +49,15 @@ import {
   type CopyrightRetentionScope,
 } from './processors/copyright-retention.mts'
 
-type ProcessPsqlDependencies = PartitionCleanupDependencies &
-  AgentModerationRetentionDependencies & {
-    createPartitions: typeof createMonthlyPartitions
-    dataRetentionCleanup: typeof runDataRetentionCleanup
-    enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
-    refreshMaterializedView: typeof refreshMaterializedView
-    runConfigDriven: typeof runConfigDriven
-    runMigrations: typeof runMigrations
-    runViews: typeof runViews
-  }
+type ProcessPsqlDependencies = PartitionCleanupDependencies & {
+  createPartitions: typeof createMonthlyPartitions
+  dataRetentionCleanup: typeof runDataRetentionCleanup
+  enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
+  refreshMaterializedView: typeof refreshMaterializedView
+  runConfigDriven: typeof runConfigDriven
+  runMigrations: typeof runMigrations
+  runViews: typeof runViews
+}
 
 export default async function processPsql(
   jobName: PsqlJobs,
@@ -73,6 +72,7 @@ export default async function processPsql(
   jobId?: string,
   options?: {
     vote?: VoteRetentionCleanupOptions
+    agentModeration?: AgentModerationRetentionOptions
     copyright?: CopyrightRetentionScope
   },
 ) {
@@ -123,11 +123,7 @@ export default async function processPsql(
         )
       }
       await admitDataRetentionContinuations(result, data?.continuation, jobId)
-      await startAgentModerationRetentionContinuation(
-        result.agentModerations.continuation,
-        jobId,
-        dependencies,
-      )
+      await startAgentModerationRetentionContinuation(result.agentModerations.continuation, jobId)
       // Cleanup continuations rerun the same bounded families, so only the first run chains vote pages.
       if (!data?.continuation) {
         await enqueueVoteRetentionContinuationIfNeeded(result, jobId)
@@ -135,7 +131,7 @@ export default async function processPsql(
       return result
     }
     case 'continueAgentModerationRetentionCleanup':
-      return processAgentModerationRetentionContinuation(data, dependencies)
+      return processAgentModerationRetentionContinuation(data, options?.agentModeration)
     case 'continueVoteRetentionCleanup': {
       const selection = requireVoteRetentionSelection(data)
       // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.

@@ -4,6 +4,7 @@ import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
 import { backgroundQueue } from './shared-background-queue.mts'
 export { rejectNextClassifierRunDispatcherAddForTest } from './injected-classifier-queue-failures.mts'
+export { rejectNextQueueJobAddForTest } from './injected-queue-failures.mts'
 
 /** Reject one write made through a caller-owned executor while preserving its transaction. */
 export function rejectQuery<Query extends QueryExecutor>(
@@ -171,10 +172,7 @@ export function runAfterBackgroundJobAddForTest(
   return () => spy.mockRestore()
 }
 
-/**
- * Wrap real transactions and run `beforeStatement` once before the first matching marker.
- * Its writes use that transaction and are visible to the following statement; a throw rejects it.
- */
+/** Run a one-shot hook inside the real transaction before a matching statement. */
 export function runBeforePostgresStatementForTest(
   marker: string,
   beforeStatement: (transaction: QueryExecutor) => Promise<void>,
