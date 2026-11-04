@@ -1,4 +1,8 @@
 import {
+  hackerNewsVisibilityConfig,
+  HACKER_NEWS_POST_TIME_RANGES,
+} from '@services/urls/hacker-news-visibility-config'
+import {
   listImportConfig,
   LIST_IMPORT_MAX_ITEMS,
   COMMUNITY_LIST_MAX_FEEDS,
@@ -11,7 +15,10 @@ import {
 } from '@services/rss-feeds/crawl-config'
 import { rssFeedDiscoverabilityConfig } from '@services/rss-feeds/discoverability-config'
 import { webRiskConfig } from '@services/web-risk/config'
-import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
+import {
+  defineDynamicConfigNamespace,
+  DynamicConfigValidationError,
+} from 'valkyries/dynamic-config'
 import { scoreField } from './registry-entry-utils.mts'
 import { activityPubInboxRegistryEntry } from './registry-activitypub-entry.mts'
 import { membershipBillingRegistryEntry } from './registry-membership-billing-entry.mts'
@@ -26,6 +33,22 @@ import {
 } from './product-config-validators.mts'
 
 export const operationalDynamicConfigRegistryEntries = [
+  defineDynamicConfigNamespace({
+    namespace: 'hacker-news-visibility-config',
+    label: 'Hacker News visibility',
+    description: 'Controls display and filtering of Hacker News references.',
+    config: hackerNewsVisibilityConfig,
+    access: { update_roles: [] },
+    fields: {
+      references_visible: { description: 'Show and filter Hacker News references.' },
+      post_time_range_cap: { description: 'Widest post search range: 1w, 1m, 1y, or all.' },
+    },
+    validate: next => {
+      if (!HACKER_NEWS_POST_TIME_RANGES.some(range => range === next.post_time_range_cap)) {
+        throw new DynamicConfigValidationError('post_time_range_cap: must be 1w|1m|1y|all')
+      }
+    },
+  }),
   defineDynamicConfigNamespace({
     namespace: 'list-import-config',
     label: 'List Import',

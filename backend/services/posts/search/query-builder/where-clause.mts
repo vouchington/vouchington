@@ -1,3 +1,4 @@
+import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visibility-config'
 import type { BasicUser } from '@services/users/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PostSearchOptions } from '../types.mts'
@@ -56,7 +57,7 @@ function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchO
         AND story_posts.story_id = ${options.story_id}
     )`)
   }
-  if (options.has_hacker_news_references !== undefined) {
+  if (areHackerNewsReferencesVisible() && options.has_hacker_news_references !== undefined) {
     const references = buildPostHasHackerNewsReferences()
     filters.push(options.has_hacker_news_references ? references : sql`NOT `.append(references))
   }

@@ -1,3 +1,4 @@
+import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visibility-config'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { getRssFeedItemSearchCursor } from './search-cursor.mts'
 import {
@@ -122,7 +123,7 @@ export function buildRssFeedItemFilters(options: SearchRssFeedItemsOptions): SQL
     filters.push(sql`NOT `.append(related))
   }
 
-  if (has_hacker_news_references !== undefined) {
+  if (areHackerNewsReferencesVisible() && has_hacker_news_references !== undefined) {
     const references = buildRssFeedItemHasHackerNewsReferences()
     filters.push(has_hacker_news_references ? references : sql`NOT `.append(references))
   }

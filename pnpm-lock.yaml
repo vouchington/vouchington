@@ -1651,6 +1651,9 @@ importers:
       '@services/queue-monitoring':
         specifier: workspace:^
         version: link:../../services/queue-monitoring
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../../services/urls
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -6465,6 +6468,9 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../urls
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../urls-domains-blacklist
@@ -11694,6 +11700,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/membership-helpers':
         specifier: workspace:^
         version: link:../../modules/membership-helpers

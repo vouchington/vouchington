@@ -8,6 +8,7 @@ type StartupDeps = Parameters<typeof startApiServer>[2]
 
 function makeStartupDeps(overrides: Partial<StartupDeps> = {}): StartupDeps {
   return {
+    waitForVisibilityConfig: vi.fn<() => Promise<void>>(() => Promise.resolve()),
     exitWithFailure: vi.fn<() => void>(),
     flushErrorReporting: vi.fn<() => Promise<void>>(() => Promise.resolve()),
     logListening: vi.fn<(port: number) => void>(),
@@ -53,6 +54,15 @@ function makeServer() {
 describe('startApiServer', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
+  })
+
+  it('does not listen when Hacker News visibility configuration fails to initialize', async () => {
+    const { server } = makeServer()
+    const error = new Error('visibility config unavailable')
+    const deps = makeStartupDeps({ waitForVisibilityConfig: () => Promise.reject(error) })
+    await startApiServer(server, 4321, deps)
+    expect(deps.reportError).toHaveBeenCalledWith(error)
+    expect(server.listen).not.toHaveBeenCalled()
   })
 
   it.each(['staging', 'production'])(

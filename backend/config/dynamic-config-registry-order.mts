@@ -94,6 +94,7 @@ export const REGISTRY_ORDER = [
   'account-data-requests-work-config',
   'memberships-work-config',
   'copyright-notices-work-config',
+  'hacker-news-visibility-config',
   'web-risk-config',
   'moderation-ai-config',
   'moderation-ai-dispatch-config',

@@ -1,13 +1,14 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { HACKER_NEWS_RELATED_URLS_PER_POST_MAX } from './hacker-news-references-types.mts'
+import {
+  HACKER_NEWS_RELATED_URLS_PER_POST_MAX,
+  HACKER_NEWS_URL_BATCH_MAX,
+} from './hacker-news-references-types.mts'
 
 /**
- * The URLs a post can show Hacker News references for: its own link URL plus its live,
- * positively voted related URLs, at most HACKER_NEWS_RELATED_URLS_PER_POST_MAX related URLs
- * per post, best first. The reference filter (`buildPostHasHackerNewsReferences`) accepts any
- * positively voted related URL, so a post can match it yet show nothing when its only
- * referenced URL ranks below that cap. One read.
+ * The post's link URL followed by at most ten live, positively voted related URLs, best first.
+ * Each per-post lateral probe stops through the subject/best index. The search filter accepts
+ * any positive related URL, so a lower-ranked referenced URL can match without a card label.
  */
 export async function getHackerNewsUrlIdsByPostIds(
   postIds: readonly string[],
@@ -15,38 +16,37 @@ export async function getHackerNewsUrlIdsByPostIds(
 ): Promise<Record<string, string[]>> {
   const ids = [...new Set(postIds)]
   const urlIdsByPostId: Record<string, string[]> = {}
-  if (ids.length === 0) return urlIdsByPostId
-  const { rows } = await read(
-    `/* getHackerNewsUrlIdsByPostIds */
-    SELECT id AS post_id, url_id
-    FROM posts
-    WHERE id = ANY($1::uuid[])
-      AND post_type = 'link'
-      AND url_id IS NOT NULL
-    UNION
-    SELECT ranked.post_id, ranked.url_id
-    FROM (
-      SELECT rel.subject_id AS post_id,
-             rel.object_id AS url_id,
-             ROW_NUMBER() OVER (
-               PARTITION BY rel.subject_id
-               ORDER BY rel.votes_score_net DESC, rel.object_id DESC
-             ) AS rank
-      FROM "relation__post__related__url" rel
-      WHERE rel.subject_id = ANY($1::uuid[])
-        AND rel.deleted_at IS NULL
-        AND rel.votes_score_net > 0
-    ) ranked
-    WHERE ranked.rank <= $2
-  `,
-    [ids, HACKER_NEWS_RELATED_URLS_PER_POST_MAX],
-    options,
-  )
-  for (const row of rows) {
-    const postId = row.post_id as string
-    const urlIds = urlIdsByPostId[postId] ?? []
-    urlIds.push(row.url_id as string)
-    urlIdsByPostId[postId] = urlIds
+  for (let start = 0; start < ids.length; start += HACKER_NEWS_URL_BATCH_MAX) {
+    // no-mistakes-disable-next-line query-reached-per-item: one bounded chunk of post ids per query, not an individual post.
+    const { rows } = await read<{ post_id: string; url_id: string }>( // oxlint-disable-line no-await-in-loop -- bounded chunks avoid concurrent database fan-out.
+      `/* getHackerNewsUrlIdsByPostIds */
+      SELECT post_id, url_id FROM (
+        SELECT id AS post_id, url_id, 0 AS source_order,
+               NULL::double precision AS votes_score_sort, NULL::timestamptz AS created_at
+        FROM posts
+        WHERE id = ANY($1::uuid[]) AND post_type = 'link' AND url_id IS NOT NULL
+        UNION ALL
+        SELECT requested.post_id, related.url_id, 1 AS source_order,
+               related.votes_score_sort, related.created_at
+        FROM unnest($1::uuid[]) AS requested(post_id)
+        CROSS JOIN LATERAL (
+          SELECT rel.object_id AS url_id, rel.votes_score_sort, rel.created_at
+          FROM "relation__post__related__url" rel
+          WHERE rel.subject_id = requested.post_id
+            AND rel.deleted_at IS NULL AND rel.votes_score_net > 0
+          ORDER BY rel.votes_score_sort DESC, rel.created_at DESC, rel.object_id DESC
+          LIMIT $2
+        ) related
+      ) selected
+      ORDER BY post_id, source_order, votes_score_sort DESC, created_at DESC, url_id DESC`,
+      [ids.slice(start, start + HACKER_NEWS_URL_BATCH_MAX), HACKER_NEWS_RELATED_URLS_PER_POST_MAX],
+      options,
+    )
+    for (const row of rows) {
+      const urlIds = urlIdsByPostId[row.post_id] ?? []
+      urlIdsByPostId[row.post_id] = urlIds
+      if (!urlIds.includes(row.url_id)) urlIds.push(row.url_id)
+    }
   }
   return urlIdsByPostId
 }

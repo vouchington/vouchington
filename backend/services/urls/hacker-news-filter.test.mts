@@ -1,4 +1,7 @@
+import { getPostIdsCached, searchRssFeedItemsCached } from '@services/entity-fetch/search-caches'
 import { createHash } from 'node:crypto'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { hackerNewsVisibilityConfig } from './hacker-news-visibility-config.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestPost,
@@ -67,6 +70,29 @@ describe('has_hacker_news_references', () => {
     expect(withRefs.results.map(r => r.id)).toEqual([seen])
     expect(without.results.map(r => r.id)).toEqual([plain])
     expect(
+      (
+        await searchRssFeedItemsCached({ rss_feed_ids: [feedId], has_hacker_news_references: true })
+      ).results.map(row => row.id),
+    ).toEqual([seen])
+    const restore = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
+      references_visible: false,
+    })
+    try {
+      for (const filter of [true, false]) {
+        const unfiltered = await searchRssFeedItemsCached({
+          rss_feed_ids: [feedId],
+          has_hacker_news_references: filter,
+        })
+        expect(unfiltered.results.map(r => r.id).toSorted()).toEqual([seen, plain].toSorted())
+      }
+      expect(await getRssFeedItemHackerNewsSummaries([{ id: seen, url: { id: seenUrl } }])).toEqual(
+        {},
+      )
+    } finally {
+      restore()
+    }
+
+    expect(
       await getRssFeedItemHackerNewsSummaries([
         { id: seen, url: { id: seenUrl } },
         { id: plain, url: { id: plainUrl } },
@@ -96,6 +122,29 @@ describe('has_hacker_news_references', () => {
       has_hacker_news_references: true,
     })
     expect(page.results.map(r => r.id)).toEqual([viaRelation.id])
+    expect(
+      (await getPostIdsCached({ user_id: user!.id, has_hacker_news_references: true })).results.map(
+        row => row.id,
+      ),
+    ).toEqual([viaRelation.id])
+    const restore = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
+      references_visible: false,
+    })
+    try {
+      for (const filter of [true, false]) {
+        const unfiltered = await getPostIdsCached({
+          user_id: user!.id,
+          has_hacker_news_references: filter,
+        })
+        expect(unfiltered.results.map(r => r.id).toSorted()).toEqual(
+          [viaRelation.id, unrelated.id].toSorted(),
+        )
+      }
+      expect(await getPostHackerNewsDetails([viaRelation.id])).toEqual({})
+    } finally {
+      restore()
+    }
+
     expect(Object.keys(await getPostHackerNewsDetails([viaRelation.id, unrelated.id]))).toEqual([
       viaRelation.id,
     ])

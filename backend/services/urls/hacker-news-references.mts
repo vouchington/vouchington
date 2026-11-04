@@ -1,3 +1,4 @@
+import { areHackerNewsReferencesVisible } from './hacker-news-visibility-config.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import {
   getHackerNewsItemsByUrlIds,
@@ -68,6 +69,7 @@ async function loadEntityReferences(
   includeItems: boolean,
   options: QueryOptions,
 ): Promise<Record<string, EntityReferences>> {
+  if (!areHackerNewsReferencesVisible()) return {}
   const allUrlIds = [...new Set(Object.values(urlIdsByEntityId).flat())]
   const resolved = await getHackerNewsTotalsByUrlIds(allUrlIds, options)
   if (resolved.size === 0) return {}
