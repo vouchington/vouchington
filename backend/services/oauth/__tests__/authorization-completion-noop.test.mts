@@ -9,10 +9,12 @@ import {
   insertCompletionReadyAuthorization,
   registerCleanup,
 } from '@voucha/test-helpers/services/oauth/authorization-completion'
+import {
+  readAccountSecurityEmailJobs,
+  readGithubFriendSyncJobs,
+} from '@voucha/test-helpers/oauth-completion-effects'
 import { readOwnedVoteWeightRecalculationJobs } from '@voucha/test-helpers/vote-weight-dirty-marker'
-import { completionDependencies } from '@voucha/test-helpers/oauth-completion-fixtures'
 import { completeOAuthAuthorization } from '../authorization-completion.mts'
-import { completeOAuthAuthorizationTransaction } from '../authorization-completion-transaction.mts'
 
 // Real receipt persistence and actor admission remain required even when the link already exists.
 describe('already-linked OAuth connection completion', () => {
@@ -37,8 +39,6 @@ describe('already-linked OAuth connection completion', () => {
       },
       cleanup,
     )
-    const dependencies = completionDependencies({ kind: 'pending' })
-    dependencies.completeTransaction = completeOAuthAuthorizationTransaction
     const options = {
       flowId,
       completionToken,
@@ -48,10 +48,10 @@ describe('already-linked OAuth connection completion', () => {
       sessionId: actor.session.sid,
     }
     const jobsBefore = await readOwnedVoteWeightRecalculationJobs(user.id)
-    await expect(completeOAuthAuthorization(options, dependencies)).resolves.toMatchObject({
+    await expect(completeOAuthAuthorization(options)).resolves.toMatchObject({
       status: 'connected',
     })
-    await expect(completeOAuthAuthorization(options, dependencies)).resolves.toMatchObject({
+    await expect(completeOAuthAuthorization(options)).resolves.toMatchObject({
       status: 'connected',
     })
     expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
@@ -62,8 +62,8 @@ describe('already-linked OAuth connection completion', () => {
     expect(
       (await getActiveTestUserSessions(user.id)).map(session => session.id).toSorted(),
     ).toEqual([actor.session.sid, other.session.sid].toSorted())
-    expect(dependencies.notifyAccountSecurityChange).not.toHaveBeenCalled()
+    expect(await readAccountSecurityEmailJobs(user.email_address!)).toEqual([])
     expect(await readOwnedVoteWeightRecalculationJobs(user.id)).toEqual(jobsBefore)
-    expect(dependencies.enqueueFriendSync).not.toHaveBeenCalled()
+    expect(await readGithubFriendSyncJobs(account.account_id)).toEqual([])
   })
 })

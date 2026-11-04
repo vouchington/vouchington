@@ -12,27 +12,10 @@ import type {
   OAuthAuthorizationCompletionOptions,
 } from './authorization-completion-types.mts'
 
-type OAuthAuthorizationCompletionDependencies = {
-  notifyAccountSecurityChange: typeof notifyAccountSecurityChange
-  completeTransaction: typeof completeOAuthAuthorizationTransaction
-  createFlowResult: typeof createOAuthFlowResultForUser
-  enqueueFriendSync: typeof enqueueOAuthFriendSyncBestEffort
-  requireUser: typeof requireCompletionUser
-}
-
-const defaultDependencies: OAuthAuthorizationCompletionDependencies = {
-  notifyAccountSecurityChange,
-  completeTransaction: completeOAuthAuthorizationTransaction,
-  createFlowResult: createOAuthFlowResultForUser,
-  enqueueFriendSync: enqueueOAuthFriendSyncBestEffort,
-  requireUser: requireCompletionUser,
-}
-
 export async function completeOAuthAuthorization(
   options: OAuthAuthorizationCompletionOptions,
-  dependencies: OAuthAuthorizationCompletionDependencies = defaultDependencies,
 ): Promise<CompletedOAuthAuthorization> {
-  const durableResult = await dependencies.completeTransaction(options)
+  const durableResult = await completeOAuthAuthorizationTransaction(options)
   if (durableResult.kind === 'pending') return { status: 'pending' }
   if (durableResult.kind === 'reauthenticated') {
     return {
@@ -44,17 +27,14 @@ export async function completeOAuthAuthorization(
   if (durableResult.kind === 'connected') {
     if (durableResult.newlyCompleted) {
       try {
-        await dependencies.notifyAccountSecurityChange(durableResult.notificationEmailAddress)
+        await notifyAccountSecurityChange(durableResult.notificationEmailAddress)
       } catch (err) {
         reportPostCommitError(err)
       }
       // Reports its own failures, so it never rejects.
       await runOAuthAccountConnectionPostCommitEffects(durableResult.userId)
-      try {
-        await dependencies.enqueueFriendSync(durableResult.provider, durableResult.account)
-      } catch (err) {
-        reportPostCommitError(err)
-      }
+      // Reports its own failures, so it never rejects.
+      await enqueueOAuthFriendSyncBestEffort(durableResult.provider, durableResult.account)
     }
     return {
       status: 'connected',
@@ -65,8 +45,8 @@ export async function completeOAuthAuthorization(
   if (durableResult.kind === 'mfa_required') {
     return { status: 'mfa_required', loginAttemptId: durableResult.loginAttemptId }
   }
-  const user = await dependencies.requireUser(durableResult.userId)
-  const result = await dependencies.createFlowResult({
+  const user = await requireCompletionUser(durableResult.userId)
+  const result = await createOAuthFlowResultForUser({
     user,
     firstFactor: durableResult.firstFactor,
     deviceId: durableResult.deviceId,
