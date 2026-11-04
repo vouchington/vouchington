@@ -8,10 +8,11 @@ export const processUrlCreated = async (
   { id }: { id: string },
   options: Parameters<typeof getUrlById>[1] = {},
 ) => {
+  // Lookup admission resolves on the primary even if this listener's ordinary URL read lags.
+  await enqueueMissingHackerNewsLookups([id])
+
   const url = await getUrlById(id, options)
   if (!url) return
-
-  await enqueueMissingHackerNewsLookups([id])
 
   if (url.hostname.is_blocked || !url.hostname.is_crawlable) return
 
