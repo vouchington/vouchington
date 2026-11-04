@@ -27,6 +27,7 @@ const DATABASE_CREDENTIAL_NAMES =
 /** Checks both audited gates, materializes eligible decisions once, and never enqueues without credentials. */
 export async function prepareDsaStatementSubmissionSweep(
   options: { restrictionIds?: readonly string[] } = {},
+  batchSize = getCopyrightSweepLimits().batchSize,
 ): Promise<{ from: Date; hasMore: boolean } | null> {
   const { restrictionIds } = options
   if (!(await isCopyrightDsaSorDatabaseEnabled())) return null
@@ -39,7 +40,7 @@ export async function prepareDsaStatementSubmissionSweep(
   // One bounded page per scheduled run. Inserted rows disappear from the next run's
   // NOT EXISTS work predicate, so the table itself is the durable resume marker.
   const page = await queryCopyrightSweepIdPage(
-    { limit: getCopyrightSweepLimits().batchSize, ids: restrictionIds },
+    { limit: batchSize, ids: restrictionIds },
     'Invalid DSA submission restriction cursor',
     'searchUnmaterializedDsaStatementRestrictionIds',
     'rowId',

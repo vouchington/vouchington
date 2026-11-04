@@ -126,12 +126,7 @@ export function answerPostgresWritesForTest(
   return () => spy.mockRestore()
 }
 
-/**
- * Run every default-pool `write()` for real, then call `after` with its statement text, bound
- * values and result once it settles. Use to act exactly when a write has committed instead of
- * waiting on timing. Install at most one write hook per test, because they replace each other;
- * returns the restore.
- */
+/** Run each default-pool write for real, then observe its committed result. One hook per test. */
 export function runAfterPostgresWriteForTest(
   after: (
     statement: string,
@@ -149,11 +144,7 @@ export function runAfterPostgresWriteForTest(
   return () => spy.mockRestore()
 }
 
-/**
- * Reject the next `add` of one job name on the real shared background queue, then behave
- * normally. Other jobs added meanwhile (entity listeners, for example) pass through untouched;
- * returns the restore.
- */
+/** Reject the next add of one named job on the real shared queue; unrelated jobs pass through. */
 export function rejectNextBackgroundJobAddForTest(jobName: string, error: Error): () => void {
   const realAdd = backgroundQueue.add
   let rejected = false
@@ -167,13 +158,23 @@ export function rejectNextBackgroundJobAddForTest(jobName: string, error: Error)
   return () => spy.mockRestore()
 }
 
+/** Reject the next bulk admission containing one named job; unrelated admissions run for real. */
+export function rejectNextBackgroundJobAddBulkForTest(jobName: string, error: Error): () => void {
+  const realAddBulk = backgroundQueue.addBulk
+  let rejected = false
+  const spy = vi.spyOn(backgroundQueue, 'addBulk').mockImplementation(jobs => {
+    if (!rejected && jobs.some(job => job.name === jobName)) {
+      rejected = true
+      return Promise.reject(error)
+    }
+    return Reflect.apply(realAddBulk, backgroundQueue, [jobs])
+  })
+  return () => spy.mockRestore()
+}
+
 /**
- * While installed, wrap every transaction opened through `psql.beginTransaction`. Run
- * `beforeStatement` once, on the first statement (in whichever transaction reaches it) whose text
- * contains `marker`, immediately before that statement. The callback receives that
- * transaction's executor, so a lifecycle change it writes is visible to the statement that follows,
- * as a concurrent commit between two statements would be; a throw rejects that statement. Returns
- * the restore.
+ * Wrap real transactions and run `beforeStatement` once before the first matching marker.
+ * Its writes use that transaction and are visible to the following statement; a throw rejects it.
  */
 export function runBeforePostgresStatementForTest(
   marker: string,

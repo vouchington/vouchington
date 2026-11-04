@@ -3,6 +3,7 @@ import {
   createTestUser,
   overrideDynamicConfigFieldsForTest,
   readEnqueuedJob,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { DSA_TEST_UUID } from '@voucha/test-helpers/dsa-transparency-database-fixtures'
 import {
@@ -14,16 +15,19 @@ import {
   readTestDsaAttempts,
   readTestDsaSubmission,
   seedTestDsaDeadLetter,
+  countTestDsaSubmissionsForRestriction,
+  makeTestDsaSubmissionDue,
 } from '@voucha/test-helpers/dsa-statement-submission-fixtures'
 import { useDsaStatementSubmissions } from '@voucha/test-helpers/dsa-switches'
 import { copyrightConfig } from '@services/copyright-notices/config'
-import {
-  enqueueBulkSubmitDsaStatementOfReasons,
-  enqueueSubmitDsaStatementOfReasons,
-} from '@queues/notifications/enqueues'
+import { enqueueSubmitDsaStatementOfReasons } from '@queues/notifications/enqueues'
 import { notifications } from '@queues/notifications/queues'
 import { replayDsaStatementSubmission } from '@services/copyright-notices/dsa-statement-submission-replay'
-import { searchRecoverableDsaStatementSubmissionIds } from '@services/copyright-notices/dsa-statement-submission-sweep'
+import {
+  createTestCopyrightImageFixture,
+  createTestCopyrightRestrictionForImage,
+} from '@voucha/test-helpers/copyright-surface-target-fixtures'
+import { rejectNextBackgroundJobAddBulkForTest } from '@voucha/test-helpers/injected-failures'
 import {
   processReconcileDsaStatementSubmissions,
   processSubmitDsaStatementOfReasons,
@@ -112,47 +116,70 @@ describe('DSA submission notification processor while disabled', () => {
 })
 
 describe('DSA statement reconciliation notification processor', () => {
-  useDsaStatementSubmissions(false)
+  useDsaStatementSubmissions()
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
 
   it('leaves durable work untouched when the submission gate is closed', async () => {
     const submissionId = await createTestDsaSubmission()
-    const search = vi.fn<typeof searchRecoverableDsaStatementSubmissionIds>(async () => ({
-      results: [submissionId],
-      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-    }))
-
-    await expect(processReconcileDsaStatementSubmissions({ search })).resolves.toEqual({
-      enqueued: 0,
-      hasMore: false,
-    })
-    expect(search).not.toHaveBeenCalled()
-    expect(await readTestDsaAttempts(submissionId)).toEqual([])
+    const excludedId = await createTestDsaSubmission()
+    await makeTestDsaSubmissionDue(submissionId)
+    await makeTestDsaSubmissionDue(excludedId)
+    const excludedRestriction = await createTestCopyrightRestrictionForImage(
+      await createTestCopyrightImageFixture('post-image'),
+    )
+    const restore = overrideDynamicConfigFieldsForTest(copyrightConfig, { dsaSorDatabase: false })
+    try {
+      await expect(
+        processReconcileDsaStatementSubmissions(
+          { restrictionIds: [], submissionIds: [submissionId] },
+          1,
+        ),
+      ).resolves.toEqual({ enqueued: 0, hasMore: false })
+      expect(await readTestDsaAttempts(submissionId)).toEqual([])
+      expect((await readTestDsaSubmission(excludedId)).lease_token).toBeNull()
+      expect(await countTestDsaSubmissionsForRestriction(excludedRestriction.restrictionId)).toBe(0)
+      expect(
+        (await readAllQueueJobs(notifications)).filter(
+          job =>
+            job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
+            [submissionId, excludedId].includes(
+              (job.data as { submissionId: string }).submissionId,
+            ),
+        ),
+      ).toEqual([])
+    } finally {
+      restore()
+    }
   })
 
   it('enqueues each due durable ID once from a bounded page without claiming it', async () => {
+    vi.stubEnv('DSA_TRANSPARENCY_DATABASE_URL', `${DSA_TEST_PROVIDER_ORIGIN}/api/v1`)
+    vi.stubEnv('DSA_TRANSPARENCY_DATABASE_TOKEN', 'synthetic-token')
     const firstId = await createTestDsaSubmission()
     const secondId = await createTestDsaSubmission()
-    const from = new Date('2020-01-01T00:00:00.000Z')
-    const search = vi.fn<typeof searchRecoverableDsaStatementSubmissionIds>(async () => ({
-      results: [firstId, secondId],
-      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-    }))
-    const enqueuedJobs: unknown[] = []
-    const enqueue = vi.fn<typeof enqueueBulkSubmitDsaStatementOfReasons>(async ids => {
-      const jobs = await enqueueBulkSubmitDsaStatementOfReasons(ids)
-      for (const job of jobs) enqueuedJobs.push(await readEnqueuedJob(notifications, job))
-      return jobs
-    })
-
+    const excludedId = await createTestDsaSubmission()
+    await makeTestDsaSubmissionDue(firstId)
+    await makeTestDsaSubmissionDue(secondId)
+    await makeTestDsaSubmissionDue(excludedId)
+    const excludedRestriction = await createTestCopyrightRestrictionForImage(
+      await createTestCopyrightImageFixture('post-image'),
+    )
     await expect(
-      processReconcileDsaStatementSubmissions({
-        prepare: async () => ({ from, hasMore: false }),
-        search,
-        enqueue,
-      }),
+      processReconcileDsaStatementSubmissions(
+        { restrictionIds: [], submissionIds: [firstId, secondId] },
+        2,
+      ),
     ).resolves.toEqual({ enqueued: 2, hasMore: false })
-    expect(search).toHaveBeenCalledExactlyOnceWith({ from, limit: 100 })
-    expect(enqueue).toHaveBeenCalledExactlyOnceWith([firstId, secondId])
+    const enqueuedJobs = (await readAllQueueJobs(notifications)).filter(
+      job =>
+        job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
+        [firstId, secondId, excludedId].includes(
+          (job.data as { submissionId: string }).submissionId,
+        ),
+    )
     expect(enqueuedJobs).toMatchObject([
       {
         name: 'notifications.processSubmitDsaStatementOfReasons',
@@ -179,28 +206,46 @@ describe('DSA statement reconciliation notification processor', () => {
     ])
     expect(await readTestDsaAttempts(firstId)).toEqual([])
     expect(await readTestDsaAttempts(secondId)).toEqual([])
+    expect((await readTestDsaSubmission(excludedId)).lease_token).toBeNull()
+    expect(await countTestDsaSubmissionsForRestriction(excludedRestriction.restrictionId)).toBe(0)
   })
 
   it('fails the reconciliation job if bulk page admission fails', async () => {
+    vi.stubEnv('DSA_TRANSPARENCY_DATABASE_URL', `${DSA_TEST_PROVIDER_ORIGIN}/api/v1`)
+    vi.stubEnv('DSA_TRANSPARENCY_DATABASE_TOKEN', 'synthetic-token')
     const submissionId = await createTestDsaSubmission()
+    const excludedId = await createTestDsaSubmission()
+    await makeTestDsaSubmissionDue(submissionId)
+    await makeTestDsaSubmissionDue(excludedId)
+    const excludedRestriction = await createTestCopyrightRestrictionForImage(
+      await createTestCopyrightImageFixture('post-image'),
+    )
     const failure = new Error('bulk enqueue failed')
-    const enqueue = vi.fn<typeof enqueueBulkSubmitDsaStatementOfReasons>(async () => {
-      throw failure
-    })
-    await expect(
-      processReconcileDsaStatementSubmissions({
-        prepare: async () => ({
-          from: new Date('2020-01-01T00:00:00.000Z'),
-          hasMore: false,
-        }),
-        search: async () => ({
-          results: [submissionId],
-          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-        }),
-        enqueue,
-      }),
-    ).rejects.toBe(failure)
-    expect(enqueue).toHaveBeenCalledExactlyOnceWith([submissionId])
-    expect(await readTestDsaAttempts(submissionId)).toEqual([])
+    const restore = rejectNextBackgroundJobAddBulkForTest(
+      'notifications.processSubmitDsaStatementOfReasons',
+      failure,
+    )
+    try {
+      await expect(
+        processReconcileDsaStatementSubmissions(
+          { restrictionIds: [], submissionIds: [submissionId] },
+          1,
+        ),
+      ).rejects.toBe(failure)
+      expect(await readTestDsaAttempts(submissionId)).toEqual([])
+      expect((await readTestDsaSubmission(excludedId)).lease_token).toBeNull()
+      expect(await countTestDsaSubmissionsForRestriction(excludedRestriction.restrictionId)).toBe(0)
+      expect(
+        (await readAllQueueJobs(notifications)).filter(
+          job =>
+            job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
+            [submissionId, excludedId].includes(
+              (job.data as { submissionId: string }).submissionId,
+            ),
+        ),
+      ).toEqual([])
+    } finally {
+      restore()
+    }
   })
 })
