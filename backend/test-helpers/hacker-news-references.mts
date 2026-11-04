@@ -16,7 +16,7 @@ export type SeedHackerNewsReferences = {
   comments?: readonly SeedComment[]
 }
 
-/** Seeds the totals row and item rows of one URL. The lookup job that writes them is not built. */
+/** Seeds the totals row and item rows of one URL. */
 export async function insertHackerNewsReferencesForTest(
   seed: SeedHackerNewsReferences,
 ): Promise<void> {

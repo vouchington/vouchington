@@ -52,6 +52,7 @@ async function cleanupHackerNewsReferenceBatch(
   )
   const ids = page.rows.map(row => row.url_id)
   if (ids.length === 0) return 0
+  // ast-grep-ignore: no-three-sequential-awaits -- the locked snapshot is deleted on one transaction connection before its totals row is removed.
   await query(
     `/* deleteExpiredHackerNewsStories */
       WITH candidates AS (
