@@ -34,6 +34,7 @@ export function useCommentTreeState({
   const [sort, setSort] = useState<'new' | 'best'>('new')
   const [quoteMarkdown, setQuoteMarkdown] = useState<string>('')
   const requestedReplies = useRef(new Set<string>())
+  const collapsedHere = useRef(new Set<string>())
   const merged = mergeCommentSidecars(data, extra)
   const electionsMap = merged.post_elections
   const electionVotesMap = merged.election_votes
@@ -104,10 +105,12 @@ export function useCommentTreeState({
     serverHidden: id => bookmarks[id]?.hide === true,
     onExpand: id => {
       // The server walk stops at a comment the viewer hid, so its replies load when it opens.
+      // A comment collapsed in this session may have had only some replies loaded: later root
+      // pages skipped the rest once the hide was saved, so it fetches once on reopen (ids dedupe).
       const loaded = Object.values(mergedPostsMap).some(post => post.parent_post_id === id)
       // Not gated on count.children: it counts public direct replies only, so it misses the
       // viewer's own uncleared replies and placeholders that lead to a valid reply.
-      if (loaded || requestedReplies.current.has(id)) return
+      if ((loaded && !collapsedHere.current.has(id)) || requestedReplies.current.has(id)) return
       requestedReplies.current.add(id)
       void loadReplies(id)
     },
@@ -147,7 +150,11 @@ export function useCommentTreeState({
     collapsedIds: collapse.collapsedIds,
     commentNodes,
     handleCommentAdded,
-    handleToggleCollapse: collapse.toggle,
+    handleToggleCollapse: (id: string) => {
+      // Only a saved hide changes what later root pages return; signed-out collapse is local.
+      if (currentUserId !== null && !collapse.collapsedIds.has(id)) collapsedHere.current.add(id)
+      collapse.toggle(id)
+    },
     handleLoadMoreReplies: (id: string) => loadReplies(id, moreAfter[id]),
     moreRepliesIds: new Set(Object.keys(moreAfter)),
     quoteMarkdown,

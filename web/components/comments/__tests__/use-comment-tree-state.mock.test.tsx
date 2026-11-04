@@ -173,6 +173,35 @@ describe('useCommentTreeState replies of a hidden comment', () => {
     expect(countNodes(result.current.commentNodes)).toBe(3)
   })
 
+  it('fetches the replies a collapsed comment missed when the viewer opens it again', async () => {
+    const { result } = renderState(makeData([parent, child]) as PostsResponseBody)
+    const missed = makeComment('3', '1', 'cy')
+    vi.mocked(fetchPostDescendants).mockResolvedValueOnce({
+      ...makeData([missed]),
+      page_info: { has_next_page: true, end_cursor: 'cursor-1', start_cursor: null },
+    })
+
+    await act(async () => {
+      result.current.handleToggleCollapse('1')
+    })
+    expect(fetchPostDescendants).not.toHaveBeenCalled()
+    await act(async () => {
+      result.current.handleToggleCollapse('1')
+    })
+
+    await waitFor(() => expect(countNodes(result.current.commentNodes)).toBe(3))
+    expect(fetchPostDescendants).toHaveBeenCalledWith('1', undefined)
+    expect(result.current.moreRepliesIds.has('1')).toBe(true)
+
+    await act(async () => {
+      result.current.handleToggleCollapse('1')
+    })
+    await act(async () => {
+      result.current.handleToggleCollapse('1')
+    })
+    expect(fetchPostDescendants).toHaveBeenCalledTimes(1)
+  })
+
   it('puts a comment back when saving its collapse fails', async () => {
     vi.mocked(bookmarkEntity).mockRejectedValueOnce(new Error('offline'))
     const { result } = renderState(makeData([parent]) as PostsResponseBody)
