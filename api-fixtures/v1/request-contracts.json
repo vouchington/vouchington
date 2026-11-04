@@ -44476,6 +44476,20 @@
       }
     },
     "GET:/api/v1/memberships/history/:userId": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "path": {
         "properties": {
           "userId": {

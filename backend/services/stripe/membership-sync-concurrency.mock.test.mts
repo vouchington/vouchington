@@ -169,7 +169,7 @@ describe('concurrent Stripe membership source routing', () => {
       stripe_subscription_id: subscriptionId,
       stripe_customer_id: customerId,
     })
-    await expect(getMembershipHistory(member.id)).resolves.toEqual(
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           membership_id: membership!.id,

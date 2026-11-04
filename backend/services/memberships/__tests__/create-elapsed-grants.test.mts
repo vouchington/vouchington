@@ -71,7 +71,7 @@ describe('createMembership with elapsed grants', () => {
       projection_ended_at: expect.any(Date),
       status: 'cancelled',
     })
-    await expect(getMembershipHistory(user.id)).resolves.toEqual(
+    await expect(getMembershipHistory(user.id).then(page => page.results)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           membership_id: terminalStripeMembership.id,
@@ -121,7 +121,7 @@ describe('createMembership with elapsed grants', () => {
       grant_ids: expect.arrayContaining([promotedGrant.grantId, queued.grantId]),
       open_activation_count: 1,
     })
-    await expect(getMembershipHistory(grantUser.id)).resolves.toEqual(
+    await expect(getMembershipHistory(grantUser.id).then(page => page.results)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           change_type: 'admin_grant',

@@ -67,6 +67,11 @@ describe('dynamic config registry entry ordering', () => {
       max_rows_per_run: { integer: true, minValue: 1 },
     })
   })
+  it('registers the referral link cleanup batch ceiling', () => {
+    expect(dynamicConfigRegistry.get('referral-link-cleanup-work-config')?.fields).toMatchObject({
+      batch_size: { integer: true, minValue: 1, maxValue: 5_000 },
+    })
+  })
   it('registers the friends per-provider budget', () => {
     expect(dynamicConfigRegistry.get('friends-dispatch-work-config')?.fields).toMatchObject({
       batch_size: { integer: true, minValue: 1 },

@@ -37,7 +37,7 @@ describe('elapsed membership replacement', () => {
       plan: 'pro',
       status: 'active',
     })
-    await expect(getMembershipHistory(member.id)).resolves.toEqual(
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           membership_id: elapsedMembership.id,

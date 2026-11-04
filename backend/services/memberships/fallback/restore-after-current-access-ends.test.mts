@@ -60,7 +60,7 @@ describe('fallback access after current direct or administrator-grant access end
         projection_ended_at: expect.any(Date),
         status,
       })
-      const restoration = (await getMembershipHistory(user.id)).find(
+      const restoration = (await getMembershipHistory(user.id)).results.find(
         change => change.membership_id === restored?.id,
       )
       expect(restoration).toMatchObject({

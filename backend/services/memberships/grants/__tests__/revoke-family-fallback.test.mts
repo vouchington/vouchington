@@ -77,7 +77,7 @@ describe('revokeMembershipGrant family fallback', () => {
     expect(restored).toMatchObject({ plan: 'plus', status: 'active' })
     expect(restored?.id).not.toBe(family.id)
     expect(restored?.id).not.toBe(grant.id)
-    const history = await getMembershipHistory(member.id)
+    const history = (await getMembershipHistory(member.id)).results
     const revocation = history.find(
       change => change.membership_id === grant.id && change.change_type === 'admin_revoke',
     )
@@ -143,7 +143,7 @@ describe('revokeMembershipGrant family fallback', () => {
     expect(restored).toMatchObject({ plan: 'plus', status: 'active' })
     expect(restored?.id).not.toBe(family.id)
     expect(restored?.id).not.toBe(activeGrant?.id)
-    const history = await getMembershipHistory(member.id)
+    const history = (await getMembershipHistory(member.id)).results
     const revocation = history.find(
       change => change.membership_id === activeGrant?.id && change.change_type === 'admin_revoke',
     )

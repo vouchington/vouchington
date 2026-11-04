@@ -1,3 +1,7 @@
+import {
+  referralLinkCleanupConfig,
+  referralLinkCleanupMaxValues,
+} from '@services/user-referral-program-links/work-limits'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import { aiUsageWorkConfig, aiUsageWorkMaxValues } from '@services/ai-usage/work-limits'
 import {
@@ -15,6 +19,15 @@ import {
 } from '@services/report-integrity/work-limits'
 
 export const backgroundWorkEntries1 = [
+  defineBoundedWorkNamespace({
+    namespace: 'referral-link-cleanup-work-config',
+    config: referralLinkCleanupConfig,
+    label: 'Referral link cleanup',
+    maxValues: referralLinkCleanupMaxValues,
+    descriptions: {
+      batch_size: 'Maximum child referral links soft-deleted per cleanup statement.',
+    },
+  }),
   defineBoundedWorkNamespace({
     namespace: 'ai-usage-work-config',
     config: aiUsageWorkConfig,

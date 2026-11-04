@@ -127,7 +127,7 @@ describe('reconcileStripeMembershipSource hardening', () => {
       })
       const grant = await grantMembership(admin.id, member.id, grantPlan, grantSku.id, 30)
       const retainedBeforeUpdate = await getTestMembershipRaw(retained.id)
-      const historyBeforeUpdate = await getMembershipHistory(member.id)
+      const historyBeforeUpdate = (await getMembershipHistory(member.id)).results
 
       await expectRetainedSourceWithoutDirectMembership(sourceIdentity)
       await expect(
@@ -158,7 +158,9 @@ describe('reconcileStripeMembershipSource hardening', () => {
         source_paused_at: expect.any(Date),
         projection_ended_at: expect.any(Date),
       })
-      await expect(getMembershipHistory(member.id)).resolves.toEqual(historyBeforeUpdate)
+      await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
+        historyBeforeUpdate,
+      )
     },
   )
 
@@ -189,7 +191,7 @@ describe('reconcileStripeMembershipSource hardening', () => {
       provider_environment: 'production',
       provider_application_id: applicationId,
     })
-    const historyBeforeUpdate = await getMembershipHistory(member.id)
+    const historyBeforeUpdate = (await getMembershipHistory(member.id)).results
 
     await expectRetainedSourceWithoutDirectMembership(sourceIdentity)
     await expect(
@@ -209,6 +211,8 @@ describe('reconcileStripeMembershipSource hardening', () => {
       id: current.id,
       stripe_subscription_id: current.stripe_subscription_id,
     })
-    await expect(getMembershipHistory(member.id)).resolves.toEqual(historyBeforeUpdate)
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
+      historyBeforeUpdate,
+    )
   })
 })

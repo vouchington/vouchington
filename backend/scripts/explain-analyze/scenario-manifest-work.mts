@@ -64,6 +64,8 @@ export const BOUNDED_WORK_SCENARIOS = [
   'topic-alias-item-category-fan-in',
   'topic-alias-unlinked-category-fan-in',
   'import-retention-parent',
+  'user-import-approval-first-page',
+  'user-import-approval-continuation',
   'import-retention-child-continuation',
   'request-attempt-retention-continuation',
   'request-attempt-retention-delete',

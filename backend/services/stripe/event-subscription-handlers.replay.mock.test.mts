@@ -73,7 +73,7 @@ describe('replayed Stripe invoice payment failures', () => {
       applicationContext,
     )
     const afterSchedule = await getTestMembershipRaw(membership.id)
-    const history = await getMembershipHistory(member.id)
+    const history = (await getMembershipHistory(member.id)).results
 
     expect(afterFirstFailure).toMatchObject({ status: 'past_due' })
     await expect(getTestMembershipRaw(membership.id)).resolves.toMatchObject({

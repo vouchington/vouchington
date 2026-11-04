@@ -19,7 +19,7 @@ describe('direct membership change classification', () => {
       stripeSubscriptionId: `sub_direct_change_${member.id}`,
     })
 
-    const change = (await getMembershipHistory(member.id)).find(
+    const change = (await getMembershipHistory(member.id)).results.find(
       candidate => candidate.membership_id === direct.id,
     )
     expect(change).toMatchObject({

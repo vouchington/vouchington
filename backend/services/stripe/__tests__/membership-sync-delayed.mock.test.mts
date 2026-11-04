@@ -96,7 +96,7 @@ describe('delayed Stripe membership synchronization', () => {
         }),
       ),
     ).resolves.toBeNull()
-    const terminalChange = (await getMembershipHistory(member.id)).find(
+    const terminalChange = (await getMembershipHistory(member.id)).results.find(
       change => change.stripe_event_id === eventId,
     )
     if (!terminalChange)
@@ -164,7 +164,7 @@ describe('delayed Stripe membership synchronization', () => {
       cancelled_at: endedAt,
       source_cancelled_at: endedAt,
     })
-    await expect(getMembershipHistory(member.id)).resolves.toEqual([
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual([
       expect.objectContaining({
         membership_id: existing.id,
         change_type: 'cancellation',
@@ -190,7 +190,7 @@ describe('delayed Stripe membership synchronization', () => {
         }),
       ),
     ).resolves.toBeNull()
-    const terminalChange = (await getMembershipHistory(member.id)).find(
+    const terminalChange = (await getMembershipHistory(member.id)).results.find(
       change => change.stripe_event_id === eventId,
     )
     if (!terminalChange)

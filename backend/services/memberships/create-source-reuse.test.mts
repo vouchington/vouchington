@@ -48,7 +48,7 @@ describe('createMembership provider-source reuse', () => {
       projection_ended_at: null,
       stripe_subscription_id: subscriptionId,
     })
-    await expect(getMembershipHistory(user.id)).resolves.toEqual([
+    await expect(getMembershipHistory(user.id).then(page => page.results)).resolves.toEqual([
       expect.objectContaining({
         membership_id: first.id,
         change_type: 'renewal',
@@ -75,7 +75,7 @@ describe('createMembership provider-source reuse', () => {
     ])
 
     expect(invoice.id).toBe(checkout.id)
-    await expect(getMembershipHistory(user.id)).resolves.toHaveLength(1)
+    await expect(getMembershipHistory(user.id).then(page => page.results)).resolves.toHaveLength(1)
     await expect(getTestMembershipRaw(checkout.id)).resolves.toMatchObject({
       id: checkout.id,
       projection_ended_at: null,
@@ -115,7 +115,7 @@ describe('createMembership provider-source reuse', () => {
       past_due_at: expect.any(Date),
       source_auto_renews: true,
     })
-    await expect(getMembershipHistory(user.id)).resolves.toHaveLength(2)
+    await expect(getMembershipHistory(user.id).then(page => page.results)).resolves.toHaveLength(2)
   })
 
   it('resolves provider evidence when reconciling an existing source', async () => {
@@ -153,7 +153,7 @@ describe('createMembership provider-source reuse', () => {
       },
     )
 
-    await expect(getMembershipHistory(user.id)).resolves.toEqual([
+    await expect(getMembershipHistory(user.id).then(page => page.results)).resolves.toEqual([
       expect.objectContaining({
         change_type: 'renewal',
         membership_provider_evidence_record_id: observation.membership_provider_evidence_record_id,

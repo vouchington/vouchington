@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
@@ -31,7 +32,8 @@
     "@voucha/types": "workspace:^",
     "@vouchington/sentry": "^0.5.0",
     "http-assert": "^1.5.0",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

@@ -1,12 +1,7 @@
 import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import type {
-  Membership,
-  MembershipChange,
-  MembershipPlanSlug,
-  MembershipStatus,
-} from './types.mts'
+import type { Membership, MembershipPlanSlug, MembershipStatus } from './types.mts'
 import type { StripeMembershipSourceIdentity } from './create-types.mts'
 export { getSkuByStripePriceIdForLifecycle } from './get-catalog.mts'
 export {
@@ -16,6 +11,7 @@ export {
   getStripeSubscriptionIdByMembershipSourceId,
 } from './refunds/index.mts'
 export { getLatestMembershipByUserId } from './get-by-id.mts'
+export { getMembershipHistory } from './history.mts'
 
 export async function getUserActivePlan(
   userId: string,
@@ -142,34 +138,4 @@ export async function getRetainedDirectMembershipSourceByStripeIdentity(
   return retained
     ? { membershipId: retained.membership_id, userId: retained.user_id, status: retained.status }
     : null
-}
-
-export async function getMembershipHistory(userId: string): Promise<MembershipChange[]> {
-  const { rows } = await read(sql`/* getMembershipHistory */
-    SELECT
-      membership_change.id,
-      membership_change.membership_id,
-      membership_change.user_id,
-      membership_change.change_type,
-      from_product.plan AS from_plan,
-      to_product.plan AS to_plan,
-      membership_change.from_membership_product_id AS from_sku_id,
-      membership_change.to_membership_product_id AS to_sku_id,
-      membership_change.cancelled_at,
-      membership_change.expired_at,
-      membership_change.past_due_at,
-      membership_change.paused_at,
-      membership_change.should_cancel_at_period_end,
-      membership_change.changed_by_id,
-      membership_change.note,
-      membership_change.stripe_event_id,
-      membership_change.membership_provider_evidence_record_id,
-      membership_change.created_at
-    FROM membership_changes membership_change
-    LEFT JOIN membership_products from_product ON from_product.id = membership_change.from_membership_product_id
-    LEFT JOIN membership_products to_product ON to_product.id = membership_change.to_membership_product_id
-    WHERE membership_change.user_id = ${userId}
-    ORDER BY membership_change.id DESC
-  `)
-  return rows as MembershipChange[]
 }

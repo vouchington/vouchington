@@ -213,7 +213,7 @@ describe('get', () => {
   describe('getMembershipHistory', () => {
     it('returns empty array for user with no history', async () => {
       const noHistoryUser = await createTestUser()
-      const result = await getMembershipHistory(noHistoryUser.id)
+      const result = (await getMembershipHistory(noHistoryUser.id)).results
       expect(result).toEqual([])
     })
 
@@ -226,7 +226,7 @@ describe('get', () => {
         changeType: 'admin_grant',
         toSkuId: membership.sku_id,
       })
-      const result = await getMembershipHistory(histUser.id)
+      const result = (await getMembershipHistory(histUser.id)).results
       expect(result.length).toBeGreaterThanOrEqual(1)
       expect(result[0]!.membership_id).toBe(membership.id)
       expect(result[0]!.user_id).toBe(histUser.id)

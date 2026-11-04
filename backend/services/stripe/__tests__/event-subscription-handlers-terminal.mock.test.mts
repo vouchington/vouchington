@@ -93,10 +93,10 @@ describe('terminal membership subscription event handlers', () => {
       { id: subscriptionId },
       applicationContext,
     )
-    await expect(getMembershipHistory(member.id)).resolves.toEqual(
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ stripe_event_id: firstEventId })]),
     )
-    await expect(getMembershipHistory(member.id)).resolves.not.toEqual(
+    await expect(getMembershipHistory(member.id).then(page => page.results)).resolves.not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ stripe_event_id: repeatedTerminalEventId }),
       ]),

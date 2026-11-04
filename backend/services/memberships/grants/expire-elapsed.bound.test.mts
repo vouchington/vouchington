@@ -27,7 +27,9 @@ describe('membership expiry run budget', () => {
       withPostgresTransactionForTest(query => expireElapsedMemberships(member.id, query)),
     ).rejects.toMatchObject({ status: 409 })
     expect(
-      (await getMembershipHistory(member.id)).filter(row => row.change_type === 'expiration'),
+      (await getMembershipHistory(member.id)).results.filter(
+        row => row.change_type === 'expiration',
+      ),
     ).toHaveLength(0)
     await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
       expired: 1,
@@ -43,7 +45,9 @@ describe('membership expiry run budget', () => {
     })
     await expect(getMembershipByUserId(member.id)).resolves.toBeNull()
     expect(
-      (await getMembershipHistory(member.id)).filter(row => row.change_type === 'expiration'),
+      (await getMembershipHistory(member.id)).results.filter(
+        row => row.change_type === 'expiration',
+      ),
     ).toHaveLength(3)
   })
 })

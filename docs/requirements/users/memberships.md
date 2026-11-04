@@ -3,6 +3,12 @@
 Memberships provide tiered access plans from one server-owned entitlement authority. Plans, limits,
 and statuses are read from code and configuration.
 
+## Administrative history
+
+Membership history is an administrator-only audit read. Administrators can request older changes
+through owner-scoped continuation cursors; newest changes appear first. A page is a window of
+changes rather than the user's complete audit history.
+
 ## Native billing decision
 
 Web Stripe remains the production billing path. Native clients may read membership status and the

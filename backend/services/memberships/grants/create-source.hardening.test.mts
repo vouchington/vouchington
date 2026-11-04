@@ -68,7 +68,7 @@ describe('grant issuer snapshots', () => {
     await expect(getTestMembershipRaw(result.id)).resolves.toMatchObject({
       issuer_snapshot: `@${admin.username}`,
     })
-    await expect(getMembershipHistory(target.id)).resolves.toEqual([
+    await expect(getMembershipHistory(target.id).then(page => page.results)).resolves.toEqual([
       expect.objectContaining({
         change_type: 'admin_grant',
         changed_by_id: admin.id,
