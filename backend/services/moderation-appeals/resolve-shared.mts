@@ -1,9 +1,5 @@
 import sql from 'sql-template-strings'
-import {
-  registerPostCommitAction,
-  runWithTransaction,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import { maybeResolveCase } from '@services/moderation-cases'
 import {
   recordModerationTrainingFeedback,
@@ -56,11 +52,10 @@ export async function finalizeDeliveredModerationAppeal(
   appealId: string,
   resolution: DeliveredAppealResolution,
   trainingEvidence: ModerationTrainingEvidence,
-  options: { query?: TransactionQuery } = {},
 ): Promise<ModerationAppealResponse> {
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
-  const response = await runWithTransaction(options.query, async (query: TransactionQuery) => {
+  const response = await runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rows } = await query(
       sql`/* finalizeDeliveredModerationAppeal */
       UPDATE moderation_appeals
@@ -109,9 +104,8 @@ export async function finalizeDeliveredModerationAppeal(
       { query },
     )
     afterCommit = () => maybeResolveCase(row.case_id, staffUserId)
-    if (options.query) registerPostCommitAction(query, afterCommit)
     return getModerationAppealAfterMutation(appealId, { query })
   })
-  if (!options.query) await afterCommit?.()
+  await afterCommit?.()
   return response
 }

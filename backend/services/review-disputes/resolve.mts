@@ -24,10 +24,9 @@ export async function resolveReviewDisputeRemove(
   staffUserId: string,
   disputeId: string,
   trainingEvidence: ModerationTrainingEvidence,
-  options: { query?: TransactionQuery } = {},
 ): Promise<ReviewDisputeResponse> {
   const now = new Date()
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rows } = await query(
       sql`/* resolveReviewDisputeRemove */
       UPDATE review_disputes
@@ -82,14 +81,13 @@ export async function resolveReviewDisputeAnnotate(
   disputeId: string,
   bodyText: string,
   trainingEvidence: ModerationTrainingEvidence,
-  options: { query?: TransactionQuery } = {},
 ): Promise<ReviewDisputeResponse> {
   assert(bodyText.trim().length > 0, 422, 'body_text is required for annotation')
   assert(bodyText.length <= 2000, 422, 'body_text too long')
   const trimmedBody = bodyText.trim()
   const now = new Date()
 
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rows: disputeRows } = await query(
       sql`/* resolveReviewDisputeAnnotate:resolve */
       UPDATE review_disputes
