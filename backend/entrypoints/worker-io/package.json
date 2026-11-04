@@ -35,6 +35,7 @@
     "@queues/emails": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
+    "@queues/hacker-news": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/oauth-authorization-exchange": "workspace:^",

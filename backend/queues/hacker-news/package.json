@@ -19,6 +19,7 @@
   "dependencies": {
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/scheduled-job-manifest": "workspace:^",
     "valkyries": "^0.15.0"
   }
 }

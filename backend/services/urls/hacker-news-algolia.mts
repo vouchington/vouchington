@@ -1,7 +1,7 @@
+import { hasHackerNewsLink, hackerNewsUrlIdentity } from './hacker-news-algolia-identity.mts'
 import { areHackerNewsLookupsEnabled, hackerNewsQueueConfig } from '@queues/hacker-news/config'
 import { setTimeout } from 'node:timers/promises'
 import { throwIfRateLimitedResponse } from '@modules/queue-errors'
-import { Parser } from 'htmlparser2'
 import { canonicalizeUrl, isBareDomainUrl } from '@vouchington/utils/urls'
 import { cancelResponseBody, fetchWithTimeout, handleHttpErrors } from '@modules/utils/http'
 import { getHackerNewsWorkLimit, hackerNewsWorkConfig } from './hacker-news-work-limits.mts'
@@ -51,7 +51,13 @@ export async function fetchHackerNewsReferences(
     for (const hit of stories) {
       const id = positiveInteger(hit.objectID)
       const postedAt = timestamp(hit.created_at)
-      if (!id || !postedAt || identity(hit.url) !== target.identity || storyIds.has(id)) continue
+      if (
+        !id ||
+        !postedAt ||
+        hackerNewsUrlIdentity(hit.url) !== target.identity ||
+        storyIds.has(id)
+      )
+        continue
       storyIds.add(id)
       result.stories.push({
         hacker_news_item_id: id,
@@ -69,8 +75,12 @@ export async function fetchHackerNewsReferences(
       const storyId = positiveInteger(hit.story_id)
       const postedAt = timestamp(hit.created_at)
       if (!id || !storyId || !postedAt || commentIds.has(id)) continue
-      if (storyIds.has(storyId) || identity(hit.story_url) === target.identity) continue
-      if (typeof hit.comment_text !== 'string' || !hasLink(hit.comment_text, target.identity))
+      if (storyIds.has(storyId) || hackerNewsUrlIdentity(hit.story_url) === target.identity)
+        continue
+      if (
+        typeof hit.comment_text !== 'string' ||
+        !hasHackerNewsLink(hit.comment_text, target.identity)
+      )
         continue
       commentIds.add(id)
       result.comments.push({
@@ -118,21 +128,6 @@ async function searchAlgolia(query: string, kind: 'story' | 'comment'): Promise<
   } finally {
     cancelResponseBody(response)
   }
-}
-
-function hasLink(html: string, targetIdentity: string): boolean {
-  let found = false
-  const parser = new Parser({
-    onopentag(name, attributes) {
-      if (name === 'a' && identity(attributes.href) === targetIdentity) found = true
-    },
-  })
-  parser.end(html)
-  return found
-}
-
-function identity(value: unknown): string | null {
-  return typeof value === 'string' ? (canonicalizeUrl(value)?.identity ?? null) : null
 }
 
 function positiveInteger(value: unknown): number | null {
