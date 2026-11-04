@@ -1,3 +1,4 @@
+import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -39,6 +40,11 @@ app.route('/api/v1/bookmarks/:entityType/:entityId').get(async (ctx: Context) =>
 app
   .route('/api/v1/bookmarks/:entityType/:entityId/:predicate')
   .put(async (ctx: Context) => {
+    apiHeaders('PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate', {
+      responses: {
+        409: { errors: [{ code: 'RELATION_LIMIT_REACHED', message: 'Relation limit reached' }] },
+      },
+    })
     const currentUser = await requireAuth(
       ctx,
       'PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate',

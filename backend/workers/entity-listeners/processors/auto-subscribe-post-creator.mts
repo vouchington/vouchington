@@ -1,3 +1,4 @@
+import { isRelationLimitError } from '@services/entity-relations/relation-limits'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import type { Post } from '@services/posts/types'
 import type { PrivateUser } from '@services/users/types'
@@ -14,6 +15,7 @@ export async function autoSubscribePostCreator(post: Post, creator?: PrivateUser
   try {
     await bookmarkEntity(creator, 'post', { id: post.id }, 'subscribe')
   } catch (err) {
+    if (isRelationLimitError(err)) return
     if (err instanceof Error) {
       const enrichedError = err as ReportableError
       enrichedError.tags = { creatorId: creator.id, postId: post.id }

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from '@/lib/i18n/use-translations'
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import {
@@ -25,6 +26,7 @@ interface Options {
 }
 
 export function useImportExportActions({ isTopics, selectedType, state, dispatch }: Options) {
+  const t = useTranslations()
   const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => () => abortControllerRef.current?.abort(), [])
@@ -33,7 +35,9 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
     abortControllerRef.current?.abort()
     const controller = new AbortController()
     abortControllerRef.current = controller
-    dispatch({ importProgress: { batchId, completed: 0, failed: 0, total, done: false } })
+    dispatch({
+      importProgress: { batchId, completed: 0, failed: 0, skipped: 0, total, done: false },
+    })
     try {
       await streamImportProgress(
         batchId,
@@ -87,8 +91,13 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
       if (isTopics) {
         const { results } = await importTopics({ names: items })
         const failed = results.filter(r => r.status === 'error').length
+        const skipped = results.filter(r => r.status === 'skipped').length
         dispatch({ rssFeedUrls: '', importingFeeds: false })
-        if (failed > 0) {
+        if (skipped > 0) {
+          toast.error(
+            `${t('shared.relationLimit.importResult', { completed: results.length - failed - skipped, failed, skipped })} ${t('shared.relationLimit.importSkipped', { count: skipped })}`,
+          )
+        } else if (failed > 0) {
           onError(new Error(`${failed}/${results.length} topic(s) failed`), {
             fallback: 'Some topics failed to import',
           })

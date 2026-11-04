@@ -10,6 +10,7 @@ export type UserRssFeedImportSummary = {
   total_rows: number
   completed_rows: number
   failed_rows: number
+  skipped_rows: number
   pending_rows: number
   completed_at: Date | null
   created_at: Date
@@ -30,6 +31,7 @@ export type RssFeedImportErrorCode =
   | 'FEED_FETCH_TIMEOUT'
   | 'CONTRIBUTION_LIMIT_EXCEEDED'
   | 'ACCOUNT_SUSPENDED'
+  | 'RELATION_LIMIT_REACHED'
   | 'IMPORT_FAILED'
 
 export type UserRssFeedImport = {
@@ -48,6 +50,7 @@ export type UserRssFeedImportBatchRow = {
   total_rows: number
   completed_rows: number
   failed_rows: number
+  skipped_rows?: number
   completed_at: Date | null
   created_at: Date
 }
@@ -85,6 +88,7 @@ export function toImportSummary(batch: UserRssFeedImportBatchRow): UserRssFeedIm
     total_rows: batch.total_rows,
     completed_rows: batch.completed_rows,
     failed_rows: batch.failed_rows,
+    skipped_rows: batch.skipped_rows ?? 0,
     pending_rows: batch.total_rows - batch.completed_rows - batch.failed_rows,
     completed_at: batch.completed_at,
     created_at: batch.created_at,
@@ -108,6 +112,7 @@ export function toImportRowResult(
 }
 
 function publicImportErrorCode(message: string): RssFeedImportErrorCode {
+  if (message === 'RELATION_LIMIT_REACHED') return 'RELATION_LIMIT_REACHED'
   if (
     message === 'Invalid URL format' ||
     message === 'URL is empty' ||

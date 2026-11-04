@@ -43,6 +43,7 @@ const mockImport = {
   total_rows: 2,
   completed_rows: 0,
   failed_rows: 0,
+  skipped_rows: 0,
   pending_rows: 2,
   completed_at: null,
   created_at: '2026-05-31T00:00:00.000Z',
@@ -124,7 +125,14 @@ describe('ImportExportManager — file import and stream', () => {
 
   it('invokes progress callback during stream', async () => {
     mockStreamImportProgress.mockImplementation(async (_id, onProgress) => {
-      onProgress({ batchId: mockImport.id, completed: 1, failed: 0, total: 2, done: false })
+      onProgress({
+        batchId: mockImport.id,
+        completed: 1,
+        failed: 0,
+        skipped: 0,
+        total: 2,
+        done: false,
+      })
     })
     render(<ImportExportManager feedType='article' />)
     const textarea = screen.getByLabelText('Source URLs to import')

@@ -1,7 +1,7 @@
+import { followSource } from './create-source-follow.mts'
 import type { BasicUser } from '@services/users/types'
 import { normalizeUrlForUrlTable } from '@modules/utils/urls'
 import { resolveHostname } from '@services/topics/resolve-hostname'
-import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertAutomaticTopicUpvote } from '@services/elections-votes/topic/automatic-upvote'
 import assert from 'http-assert'
 import { createRssFeedUrlId } from './rss-feed-url-id.mts'
@@ -9,7 +9,7 @@ import { buildSourceTopicName } from './validate.mts'
 import { setCanonicalUrl, CircularCanonicalReferenceError } from '@services/urls/set-canonical'
 import { safeResolveUrl } from '@services/crawls/crawl-url-utils'
 import onError from '@modules/on-error'
-import { followRssFeedRelation, createSourceWithRetry } from './create-source-helpers.mts'
+import { createSourceWithRetry } from './create-source-helpers.mts'
 import { findExistingFeedByUrlId, findExistingFeedByUrl } from './find-existing-feed.mts'
 import { resolveProtocolAndClassify } from './resolve-protocol.mts'
 import { assertUrlAllowedByWebRisk } from '@services/web-risk/check'
@@ -61,13 +61,10 @@ async function createSource(
     const existing = existingHttps ?? (await findExistingFeedByUrl(httpUrl))
     if (existing) {
       await upsertAutomaticTopicUpvote(currentUser, existing.topic_id)
-      if (follow) {
-        await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
-          { id: existing.id },
-        ]).catch(onError)
-      }
+      const followSkipped = follow ? await followSource(currentUser, existing.id) : false
       return {
         status: 'upvoted',
+        follow_skipped: followSkipped,
         rss_feed_id: existing.id,
         topic_id: existing.topic_id,
         topic_slug: existing.topic_slug,
@@ -134,13 +131,10 @@ async function createSource(
   const existing = await findExistingFeedByUrl(normalizedFeedUrl)
   if (existing) {
     await upsertAutomaticTopicUpvote(currentUser, existing.topic_id)
-    if (follow) {
-      await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
-        { id: existing.id },
-      ]).catch(onError)
-    }
+    const followSkipped = follow ? await followSource(currentUser, existing.id) : false
     return {
       status: 'upvoted',
+      follow_skipped: followSkipped,
       rss_feed_id: existing.id,
       topic_id: existing.topic_id,
       topic_slug: existing.topic_slug,
@@ -173,13 +167,10 @@ async function createSource(
     const raceExisting = await findExistingFeedByUrlId(rssFeedUrlId)
     assert(raceExisting, 500, 'Concurrent source creation race condition')
     await upsertAutomaticTopicUpvote(currentUser, raceExisting.topic_id)
-    if (follow) {
-      await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
-        { id: raceExisting.id },
-      ]).catch(onError)
-    }
+    const followSkipped = follow ? await followSource(currentUser, raceExisting.id) : false
     return {
       status: 'upvoted',
+      follow_skipped: followSkipped,
       rss_feed_id: raceExisting.id,
       topic_id: raceExisting.topic_id,
       topic_slug: raceExisting.topic_slug,
@@ -190,11 +181,13 @@ async function createSource(
 
   upsertAutomaticTopicUpvote(currentUser, topicId).catch(onError)
 
-  if (follow) {
-    await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
-      { id: rssFeedId },
-    ]).catch(onError)
-  }
+  const followSkipped = follow ? await followSource(currentUser, rssFeedId) : false
 
-  return { status: 'created', rss_feed_id: rssFeedId, topic_id: topicId, topic_slug: slug }
+  return {
+    status: 'created',
+    rss_feed_id: rssFeedId,
+    topic_id: topicId,
+    topic_slug: slug,
+    follow_skipped: followSkipped,
+  }
 }

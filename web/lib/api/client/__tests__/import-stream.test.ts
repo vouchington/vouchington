@@ -11,7 +11,8 @@ function importResponse(overrides?: Partial<ImportProgress>): Response {
     import: {
       id: overrides?.batchId ?? 'import-1',
       completed_rows: completed,
-      failed_rows: failed,
+      failed_rows: failed + (overrides?.skipped ?? 0),
+      skipped_rows: overrides?.skipped ?? 0,
       total_rows: total,
       pending_rows: done ? 0 : total - completed - failed,
       completed_at: done ? '2026-05-31T00:00:00.000Z' : null,
@@ -34,7 +35,21 @@ describe('streamImportProgress', () => {
     await streamImportProgress('import-1', progress => received.push(progress))
 
     expect(received).toEqual([
-      { batchId: 'import-1', completed: 2, failed: 0, total: 2, done: true },
+      { batchId: 'import-1', completed: 2, failed: 0, skipped: 0, total: 2, done: true },
+    ])
+  })
+
+  it('separates follow-limit skips from failures in terminal progress', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(importResponse({ completed: 1, failed: 1, skipped: 2, total: 4 })),
+    )
+    const received: ImportProgress[] = []
+    await streamImportProgress('import-1', progress => received.push(progress))
+    expect(received).toEqual([
+      { batchId: 'import-1', completed: 1, failed: 1, skipped: 2, total: 4, done: true },
     ])
   })
 
@@ -97,7 +112,7 @@ describe('streamImportProgress', () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(received).toEqual([
-      { batchId: 'import-1', completed: 2, failed: 0, total: 2, done: true },
+      { batchId: 'import-1', completed: 2, failed: 0, skipped: 0, total: 2, done: true },
     ])
   })
 
@@ -151,7 +166,7 @@ describe('streamImportProgress', () => {
 
     await firstProgress.promise
     expect(received).toEqual([
-      { batchId: 'import-1', completed: 1, failed: 0, total: 2, done: false },
+      { batchId: 'import-1', completed: 1, failed: 0, skipped: 0, total: 2, done: false },
     ])
 
     await vi.advanceTimersByTimeAsync(2000)
@@ -159,8 +174,8 @@ describe('streamImportProgress', () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(received).toEqual([
-      { batchId: 'import-1', completed: 1, failed: 0, total: 2, done: false },
-      { batchId: 'import-1', completed: 2, failed: 0, total: 2, done: true },
+      { batchId: 'import-1', completed: 1, failed: 0, skipped: 0, total: 2, done: false },
+      { batchId: 'import-1', completed: 2, failed: 0, skipped: 0, total: 2, done: true },
     ])
   })
 

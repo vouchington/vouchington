@@ -1,5 +1,7 @@
+import { relationLimitsConfig } from '@services/entity-relations/relation-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestTopic,
   createTestUser,
@@ -73,5 +75,43 @@ describe('topic import follow errors', () => {
       error: 'Your account has been suspended',
     })
     await expect(getTopicFollowExistsForTest(caller.id, topic.id)).resolves.toBe(false)
+  })
+})
+
+describe('topic import follow capacity', () => {
+  it('follows the available prefix, reports skipped inputs, and replays the result', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { follow_topic: 1 }))
+    const user = await createTestUser()
+    const [first, second] = await Promise.all([createTestTopic(), createTestTopic()])
+    const options = {
+      assertCanCreateTopicRecommendations: async () => {},
+      importAttemptId: randomUUID(),
+    }
+    const names = [first.name, first.name, second.name, second.name]
+    const results = await importTopics(user, WEB_PROVENANCE, names, options)
+    expect(results.map(result => result.status)).toEqual([
+      'followed',
+      'already_following',
+      'skipped',
+      'skipped',
+    ])
+    expect(results.slice(2)).toEqual([
+      {
+        input: second.name,
+        entity_id: second.id,
+        status: 'skipped',
+        error_code: 'RELATION_LIMIT_REACHED',
+      },
+      {
+        input: second.name,
+        entity_id: second.id,
+        status: 'skipped',
+        error_code: 'RELATION_LIMIT_REACHED',
+      },
+    ])
+    expect(await getTopicFollowExistsForTest(user.id, first.id)).toBe(true)
+    expect(await getTopicFollowExistsForTest(user.id, second.id)).toBe(false)
+    expect(await importTopics(user, WEB_PROVENANCE, names, options)).toEqual(results)
   })
 })

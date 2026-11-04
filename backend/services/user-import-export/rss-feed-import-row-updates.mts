@@ -43,7 +43,7 @@ export async function updateRssFeedImportRowCompleted(
 export async function updateRssFeedImportRowFailed(
   rowId: string,
   errorMessage: string,
-  options: { isFinalAttempt: boolean },
+  options: { isFinalAttempt: boolean; rssFeedId?: string },
 ): Promise<void> {
   if (!options.isFinalAttempt) {
     await write(
@@ -68,6 +68,7 @@ export async function updateRssFeedImportRowFailed(
         UPDATE user_rss_feed_import_rows
         SET failed_at = COALESCE(failed_at, CURRENT_TIMESTAMP),
             outcome = 'error',
+            rss_feed_id = COALESCE(${options.rssFeedId ?? null}::uuid, rss_feed_id),
             error_message = ${errorMessage.trim()}
         WHERE id = ${rowId}
           AND completed_at IS NULL

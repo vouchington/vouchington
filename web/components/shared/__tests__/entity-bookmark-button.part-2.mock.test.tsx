@@ -1,3 +1,4 @@
+import { ApiError } from '@vouchington/api-client'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import type { ReactNode } from 'react'
@@ -61,6 +62,49 @@ describe('EntityBookmarkButton', () => {
     mockGetEntityBookmarks.mockReset()
     mockToastError.mockReset()
   })
+
+  it.each([
+    [
+      'follow',
+      'Follow',
+      'Following',
+      'Follow limit reached. Unfollow another item of this type to continue.',
+    ],
+    [
+      'subscribe',
+      'Subscribe',
+      'Subscribed',
+      'Subscription limit reached. Unsubscribe from another item of this type to continue.',
+    ],
+  ])(
+    'explains a refused %s and restores the inactive button',
+    async (predicate, inactiveLabel, activeLabel, message) => {
+      mockBookmarkEntity.mockRejectedValueOnce(
+        new ApiError('Conflict', 409, { code: 'RELATION_LIMIT_REACHED' }),
+      )
+      const onChange = vi.fn<(active: boolean) => void>()
+      render(
+        <EntityBookmarkButton
+          entityType='post'
+          entityId='post-1'
+          predicate={predicate}
+          inactiveLabel={inactiveLabel}
+          activeLabel={activeLabel}
+          initialActive={false}
+          onChange={onChange}
+        />,
+      )
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: inactiveLabel }))
+      })
+      expect(screen.getByRole('button', { name: inactiveLabel })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
+      expect(mockToastError).toHaveBeenCalledWith(message)
+      expect(onChange).not.toHaveBeenCalled()
+    },
+  )
 
   it('applies subscribe preset defaults', async () => {
     mockBookmarkEntity.mockResolvedValue(undefined)

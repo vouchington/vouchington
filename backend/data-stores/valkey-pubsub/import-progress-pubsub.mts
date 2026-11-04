@@ -3,6 +3,7 @@ import { createChannelPubSub } from './channel-pubsub.mts'
 export type ImportProgressChunk = {
   batchId: string
   completed: number
+  skipped?: number
   failed: number
   total: number
   done: boolean

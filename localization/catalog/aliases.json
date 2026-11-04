@@ -9367,6 +9367,10 @@
 {"alias":"shared.provenance.viaApi","consumer":"web","copyId":"copy.shared.provenance.viaApi"},
 {"alias":"shared.provenance.viaApp","consumer":"web","copyId":"copy.shared.provenance.viaApp"},
 {"alias":"shared.provenance.viaMcp","consumer":"web","copyId":"copy.shared.provenance.viaMcp"},
+{"alias":"shared.relationLimit.follow","consumer":"web","copyId":"copy.shared.relationLimit.follow"},
+{"alias":"shared.relationLimit.importResult","consumer":"web","copyId":"copy.shared.relationLimit.importResult"},
+{"alias":"shared.relationLimit.importSkipped","consumer":"web","copyId":"copy.shared.relationLimit.importSkipped"},
+{"alias":"shared.relationLimit.subscribe","consumer":"web","copyId":"copy.shared.relationLimit.subscribe"},
 {"alias":"shared.timeAgo.relativeDuration","consumer":"web","copyId":"copy.shared.timeAgo.relativeDuration"},
 {"alias":"shared.topic.unavailable","consumer":"web","copyId":"copy.shared.topic.unavailable"},
 {"alias":"shared.user.deletedUser","consumer":"web","copyId":"copy.shared.user.deletedUser"}

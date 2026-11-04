@@ -1,6 +1,7 @@
+import { withRelationLimitAdmission } from '@services/entity-relations/relation-limits'
 import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
-import { bookmarkEntity, unbookmarkEntity } from '@services/bookmarks/upsert'
+import { bookmarkEntities, unbookmarkEntity } from '@services/bookmarks/upsert'
 import type {
   EntityRelationEntityType,
   EntityRelationPredicateType,
@@ -19,51 +20,146 @@ export type BookmarkActionInput = {
   readonly predicate: string
 }
 
-/**
- * Sets one bookmark-class relation (save, follow, mute, block and the rest) for the current user.
- * Shared by the session REST route and credential-delegated callers, which differ only in the
- * authority: a delegated credential reaches a private post only through its exact consent scope.
- */
+/** Resolve and authorize each input independently for callers reporting per-target errors. */
+export async function prepareBookmarkActions(
+  currentUser: PrivateUser,
+  authority: EntityRelationActionAuthority,
+  inputs: readonly BookmarkActionInput[],
+) {
+  assertNotSuspended(currentUser)
+  return Promise.allSettled(
+    inputs.map(async input => {
+      const { entityType, entityId, predicate } = input
+      assert(isUUID(entityId), 422, 'Invalid entity ID')
+      const relation = entityRelationMetadatum.find(
+        candidate =>
+          candidate.subject_type === 'user' &&
+          candidate.object_type === entityType &&
+          candidate.predicate === predicate &&
+          candidate.is_bookmark,
+      )
+      assert(relation, 422, 'Invalid bookmark type.')
+      const type = entityType as EntityRelationEntityType
+      const targetId =
+        type === 'topic' ? (await getTopicByAnyWithRedirectCached(entityId))?.topic.id : entityId
+      assert(targetId, 404, 'Entity not found')
+      assert(
+        // no-mistakes-disable-next-line query-reached-per-item: preserve individual target visibility errors before grouped mutation
+        await currentUserCanBookmarkTarget(currentUser, type, targetId),
+        404,
+        'Entity not found',
+      )
+      let guard: Awaited<ReturnType<typeof assertPostTargetAccess>> | undefined
+      if (type === 'post' && authority.kind === 'delegated') {
+        // no-mistakes-disable-next-line query-reached-per-item: delegated post guards preserve per-target consent refusals
+        guard = await assertPostTargetAccess(currentUser, authority, entityId)
+      }
+      return {
+        userId: currentUser.id,
+        relation,
+        type,
+        targetId,
+        predicate: predicate as EntityRelationPredicateType,
+        guard,
+      }
+    }),
+  )
+}
+
+type PreparedBookmarkAction = Awaited<ReturnType<typeof prepareBookmarkActions>>[number] & {
+  status: 'fulfilled'
+}
+type AuthorizedBookmarkAction = PreparedBookmarkAction['value']
+
+/** Writes authorized targets in relation batches, refusing all capacity checks before writes. */
+export async function upsertPreparedBookmarkActions(
+  currentUser: PrivateUser,
+  prepared: readonly AuthorizedBookmarkAction[],
+) {
+  assertNotSuspended(currentUser)
+  assert(
+    prepared.every(item => item.userId === currentUser.id),
+    403,
+    'Forbidden',
+  )
+  const groups = new Map<string, AuthorizedBookmarkAction[]>()
+  for (const item of prepared) {
+    const group = groups.get(item.relation.table_name) ?? []
+    group.push(item)
+    groups.set(item.relation.table_name, group)
+  }
+  return withRelationLimitAdmission(
+    currentUser.id,
+    [...groups.values()].map(group => ({
+      relation: group[0]!.relation,
+      objectIds: group.map(item => item.targetId),
+    })),
+    () => writePreparedBookmarkGroups(currentUser, groups, prepared),
+  )
+}
+
+async function writePreparedBookmarkGroups(
+  currentUser: PrivateUser,
+  groups: ReadonlyMap<string, AuthorizedBookmarkAction[]>,
+  prepared: readonly AuthorizedBookmarkAction[],
+) {
+  const results = new Map<string, Awaited<ReturnType<typeof bookmarkEntities>>[number]>()
+  for (const group of groups.values()) {
+    const first = group[0]!
+    const guards = group.flatMap(item => (item.guard ? [item.guard] : []))
+    const postMutationGuard = guards.length
+      ? {
+          postIds: [...new Set(guards.flatMap(guard => guard.postIds))],
+          assertAllowed: async (query: Parameters<(typeof guards)[number]['assertAllowed']>[0]) => {
+            // oxlint-disable-next-line no-await-in-loop -- authorization checks share this transaction client
+            for (const guard of guards) await guard.assertAllowed(query)
+          },
+        }
+      : undefined
+    try {
+      const ids = [...new Set(group.map(item => item.targetId.toLowerCase()))]
+      // oxlint-disable no-await-in-loop -- relation groups apply their ordered side effects after whole-request admission
+      // no-mistakes-disable-next-line query-reached-per-item: one batch mutation per distinct relation table after whole-request admission
+      const relations = await bookmarkEntities(
+        currentUser,
+        first.type,
+        ids.map(id => ({ id })),
+        first.predicate,
+        postMutationGuard ? { postMutationGuard } : undefined,
+      )
+      // oxlint-enable no-await-in-loop
+      for (const relation of relations)
+        results.set(`${first.relation.table_name}:${relation.object_id}`, relation)
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === '23503') assert(false, 404, 'Entity not found')
+      throw err
+    }
+  }
+  return prepared.map(item =>
+    results.get(`${item.relation.table_name}:${item.targetId.toLowerCase()}`),
+  )
+}
+
+export async function upsertBookmarkActions(
+  currentUser: PrivateUser,
+  authority: EntityRelationActionAuthority,
+  inputs: readonly BookmarkActionInput[],
+) {
+  const settled = await prepareBookmarkActions(currentUser, authority, inputs)
+  const prepared = settled.map(result => {
+    if (result.status === 'rejected') throw result.reason
+    return result.value
+  })
+  return upsertPreparedBookmarkActions(currentUser, prepared)
+}
+
 export async function upsertBookmarkAction(
   currentUser: PrivateUser,
   authority: EntityRelationActionAuthority,
   input: BookmarkActionInput,
 ) {
-  assertNotSuspended(currentUser)
-  const { entityType, entityId, predicate } = input
-  assert(isUUID(entityId), 422, 'Invalid entity ID')
-  const isBookmarkable = entityRelationMetadatum.some(
-    relation =>
-      relation.subject_type === 'user' &&
-      relation.object_type === entityType &&
-      relation.predicate === predicate &&
-      relation.is_bookmark,
-  )
-  assert(isBookmarkable, 422, 'Invalid bookmark type.')
-  const type = entityType as EntityRelationEntityType
-  const targetId =
-    type === 'topic' ? (await getTopicByAnyWithRedirectCached(entityId))?.topic.id : entityId
-  assert(targetId, 404, 'Entity not found')
-  assert(await currentUserCanBookmarkTarget(currentUser, type, targetId), 404, 'Entity not found')
-  // A first-party session keeps the ordinary visibility rule above; only a credential needs more.
-  const postMutationGuard =
-    type === 'post' && authority.kind === 'delegated'
-      ? await assertPostTargetAccess(currentUser, authority, entityId)
-      : undefined
-
-  try {
-    return await bookmarkEntity(
-      currentUser,
-      type,
-      { id: targetId },
-      predicate as EntityRelationPredicateType,
-      postMutationGuard ? { postMutationGuard } : undefined,
-    )
-  } catch (err: unknown) {
-    // FK violation: the entity does not exist.
-    if ((err as { code?: string }).code === '23503') assert(false, 404, 'Entity not found')
-    throw err
-  }
+  const [relation] = await upsertBookmarkActions(currentUser, authority, [input])
+  return relation
 }
 
 /**

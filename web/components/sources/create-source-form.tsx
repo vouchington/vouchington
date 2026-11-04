@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
+import { ImportProgressBar } from '@/components/my/import-export/import-progress-bar'
 import { createSource } from '@/lib/api/client'
 import { getSourceImportErrorMessages, waitForSourceImport } from '@/lib/api/client/source-import'
 import { importRssFeeds } from '@/lib/api/client/import-export'
@@ -18,7 +18,6 @@ import { onSuccess as onSuccessToast } from '@/lib/on-error'
 export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
   const t = useTranslations()
   const { push } = useRouter()
-  const progressLabelId = useId()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [urls, setUrls] = useState('')
@@ -69,6 +68,7 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
           batchId: data.import.id,
           completed: 0,
           failed: 0,
+          skipped: 0,
           total: data.import.total_rows,
           done: false,
         })
@@ -106,13 +106,6 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
       setLoading(false)
     }
   }
-
-  const progressPct =
-    importProgress && importProgress.total > 0
-      ? Math.round(
-          ((importProgress.completed + importProgress.failed) / importProgress.total) * 100,
-        )
-      : 0
 
   return (
     <form
@@ -156,24 +149,7 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
           className='space-y-2'
           data-pw='create-source-form-progress'
         >
-          <Progress
-            value={progressPct}
-            aria-labelledby={progressLabelId}
-          />
-          <p
-            id={progressLabelId}
-            className='text-sm text-muted-foreground'
-          >
-            {importProgress.done
-              ? t('extracted.sources.createSourceForm.doneCompletedImportedFailedFailed_d5eddc9e', {
-                  completed: importProgress.completed,
-                  failed: importProgress.failed,
-                })
-              : t('extracted.sources.createSourceForm.processingProcessedTotal_3076ee5e', {
-                  processed: importProgress.completed + importProgress.failed,
-                  total: importProgress.total,
-                })}
-          </p>
+          <ImportProgressBar progress={importProgress} />
         </div>
       )}
     </form>

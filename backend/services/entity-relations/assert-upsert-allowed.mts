@@ -1,3 +1,4 @@
+import { assertRelationLimit } from './relation-limits.mts'
 import type { BasicUser } from '@voucha/types/entities/user'
 import type { EntityRelationMetadata } from './metadata.mts'
 import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
@@ -21,4 +22,10 @@ export async function assertEntityRelationUpsertAllowed(
   await assertPublisherTypeObjectsAreValid(relation, subject, objects)
   await assertUserTagObjectsAreValid(relation, objects)
   await assertPostRelatedUrlsAllowed(creator, relation, subject, objects)
+  await assertRelationLimit(
+    relation,
+    subject.id,
+    objects.map(object => object.id),
+    options,
+  )
 }

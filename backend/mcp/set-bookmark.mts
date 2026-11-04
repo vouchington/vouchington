@@ -1,3 +1,4 @@
+import type { BookmarkTargetResult, SetBookmarkArgs } from './bookmark-batch-types.mts'
 import { isUUID } from '@modules/utils'
 import type { BasicUser } from '@services/users/types'
 import type { MergedToolSource } from './create-merged-tool.mts'
@@ -5,12 +6,7 @@ import { BOOKMARK_TOOL_ENTITY_TYPES, BOOKMARK_TOOL_PREDICATES } from './bookmark
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
-import {
-  setBookmarkTargets,
-  SET_BOOKMARK_LIMIT,
-  type BookmarkTargetResult,
-  type SetBookmarkArgs,
-} from './set-bookmark-batch.mts'
+import { setBookmarkTargets, SET_BOOKMARK_LIMIT } from './set-bookmark-batch.mts'
 
 function isTopicTarget(target: unknown): boolean {
   return (
@@ -112,7 +108,14 @@ const tool: MergedToolSource<SetBookmarkArgs, { success: true; results: Bookmark
               entity: { type: 'string' },
               status: {
                 type: 'string',
-                enum: ['set', 'error', 'followed', 'already_following', 'recommendation_created'],
+                enum: [
+                  'set',
+                  'error',
+                  'followed',
+                  'already_following',
+                  'recommendation_created',
+                  'skipped',
+                ],
               },
             },
             required: ['entity_type', 'entity', 'status'],

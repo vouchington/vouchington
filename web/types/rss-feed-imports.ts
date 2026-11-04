@@ -3,6 +3,7 @@ export interface RssFeedImportSummary {
   total_rows: number
   completed_rows: number
   failed_rows: number
+  skipped_rows: number
   pending_rows: number
   completed_at: string | null
   created_at: string

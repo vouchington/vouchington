@@ -7,6 +7,7 @@ import { emitBookmarkChange, onBookmarkChange } from '@/hooks/use-bookmark-inval
 import { useDidHydrate } from '@/hooks/use-did-hydrate'
 import { toast } from 'sonner'
 import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-error'
+import { getRelationLimitMessage } from '@/lib/api/relation-limit-error'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 // Mirrors backend/services/bookmarks/upsert.mts IMPLICIT_UNFOLLOW — adding a mute/block
@@ -130,11 +131,12 @@ export function useEntityBookmarkState({
     } catch (err) {
       setBookmarkState(state => (state.key === requestKey ? { ...state, isActive: !next } : state))
       toast.error(
-        isRateLimitError(err)
-          ? getRateLimitMessage(err)
-          : t('extracted.shared.entityBookmarkButton.failedToUpdateLabelPleaseTry_fa7fe6f1', {
-              label: resolvedErrorLabel,
-            }),
+        getRelationLimitMessage(err, resolvedPredicate, t) ??
+          (isRateLimitError(err)
+            ? getRateLimitMessage(err)
+            : t('extracted.shared.entityBookmarkButton.failedToUpdateLabelPleaseTry_fa7fe6f1', {
+                label: resolvedErrorLabel,
+              })),
       )
     } finally {
       setBookmarkState(state => (state.key === requestKey ? { ...state, isPending: false } : state))

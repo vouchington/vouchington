@@ -467,3 +467,14 @@ full history; `all` restores it, and draft listings default to `all`. Swift and 
 code from a time dropdown, reusing the web options, and must page with the returned cursor under
 the same range. Client work is dependent (vouchington-clients#537) and does not gate this
 repository.
+
+## Follow and subscription admission
+
+REST and MCP share the same refusal when an account cannot add another follow or subscription of
+that type. The API returns HTTP 409 with `RELATION_LIMIT_REACHED`; clients compose localized
+recovery guidance from the code and requested action. Web retains the previous
+button state and explains that removing another relation of the same type frees room. Imports
+report skipped additions rather than presenting them as successful follows.
+
+Swift and .NET adoption is tracked in [vouchington-clients#538](https://github.com/vouchington/vouchington-clients/issues/538). Native implementation
+does not gate the producer, and this change makes no new native UI parity claim.

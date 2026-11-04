@@ -1,3 +1,4 @@
+import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
@@ -159,6 +160,11 @@ app
 app
   .route('/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType')
   .post(async (ctx: Context) => {
+    apiHeaders('POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType', {
+      responses: {
+        409: { errors: [{ code: 'RELATION_LIMIT_REACHED', message: 'Relation limit reached' }] },
+      },
+    })
     const currentUser = await requireAuth(
       ctx,
       'POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType',

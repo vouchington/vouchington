@@ -24,6 +24,18 @@ read from code and configuration.
   order. A retained suppression targets only the awaited statement and states the ordering
   invariant. Never parallelize operations that share a transaction client or cursor.
 
+## Personal follows and subscriptions
+
+Personalized reads depend on the viewer's follows and subscriptions. Admission limits keep those
+sets manageable before they amplify the cost of feed and recommendation reads. Each relation type
+has its own allowance, so following sources does not consume the allowance for following people.
+
+A refusal leaves existing follows and subscriptions intact. Removing an existing relation frees
+room for another of the same type, while lowering an allowance never deletes a user's choices.
+Imports report skipped additions, and incidental auto-follows do not prevent the user's primary
+action from succeeding. System moves preserve existing relationships even above an allowance.
+Safety actions, including blocks and mutes, remain available independently of these limits.
+
 ## Related
 
 - [API design decisions](../api/README.md)

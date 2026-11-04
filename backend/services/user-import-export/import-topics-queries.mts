@@ -1,5 +1,5 @@
 import { createSlugFromTitle } from '@modules/utils'
-import { read, write, type QueryExecutor } from '@data-stores/psql'
+import { write, type QueryExecutor } from '@data-stores/psql'
 import { getTopicsByReferenceBatch } from '@services/topics/resolve-references'
 import sql from 'sql-template-strings'
 
@@ -43,24 +43,6 @@ export async function findTopicsBySlugOrName(
       return topic ? [[input.index, topic.id] as const] : []
     }),
   )
-}
-
-export async function getFollowedTopicIds(
-  userId: string,
-  topicIds: string[],
-  query: QueryExecutor = read,
-): Promise<Set<string>> {
-  if (topicIds.length === 0) return new Set()
-  const { rows } = await query<{ object_id: string }>(
-    sql`/* isUserFollowingTopic */
-      SELECT object_id
-      FROM relation__user__follow__topic
-      WHERE subject_id = ${userId}
-        AND object_id = ANY(${topicIds}::uuid[])
-        AND deleted_at IS NULL
-    `,
-  )
-  return new Set(rows.map(row => row.object_id))
 }
 
 export async function recordTopicImportRequests(

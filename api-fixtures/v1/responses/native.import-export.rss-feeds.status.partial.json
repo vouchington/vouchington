@@ -6,6 +6,7 @@
     "failed_rows": 1,
     "id": "70000000-0000-7000-8000-000000000001",
     "pending_rows": 0,
+    "skipped_rows": 0,
     "total_rows": 2
   },
   "page_info": {
