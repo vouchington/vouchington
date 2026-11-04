@@ -19,14 +19,18 @@ import { computeRateLimitForHostname } from '@services/crawls/hostname-rate-limi
 import { runBoundedBatches } from '@services/data-retention/run-bounded-batches'
 import type { Job } from 'glide-mq'
 
-async function processCrawlCleanup(job: Job, deleteCrawls: typeof deleteOldInvalidCrawls) {
+async function processCrawlCleanup(job: Job, crawlIds?: readonly string[], batchSize?: number) {
   const cutoffId = job.data?.cutoffId ?? getCrawlCleanupCutoff()
   await job.updateData({ cutoffId })
   return processRetainedSweep(job, async () => {
-    const result = await runBoundedBatches(getCrawlCleanupLimits(), async batchSize => {
-      const page = await deleteCrawls({ cutoffId, limit: batchSize })
-      return page.deleted
-    })
+    const limits = getCrawlCleanupLimits()
+    const result = await runBoundedBatches(
+      { ...limits, batchSize: Math.min(batchSize ?? limits.batchSize, limits.batchSize) },
+      async pageSize => {
+        const page = await deleteOldInvalidCrawls({ cutoffId, ids: crawlIds, limit: pageSize })
+        return page.deleted
+      },
+    )
     return { crawls_deleted_invalid: result.deleted, hasMore: result.hasMore }
   })
 }
@@ -67,10 +71,10 @@ async function processRefreshHostnameCrawler(hostnameId: string) {
   return result
 }
 
-// The unscoped cleanup sweep would delete other tests' crawls on the shared database, so tests scope its read.
 export async function processCrawlHostnamesJob(
   job: Job,
-  dependencies: { deleteOldInvalidCrawls?: typeof deleteOldInvalidCrawls } = {},
+  crawlIds?: readonly string[],
+  batchSize?: number,
 ): Promise<unknown> {
   switch (job.name) {
     case 'crawl.crawl_hostnames_dispatcher':
@@ -125,7 +129,7 @@ export async function processCrawlHostnamesJob(
         dispatchTier2CrawlUrls(job.data?.cursor, cursor => save({ cursor })),
       )
     case 'crawl.crawl_cleanup':
-      return processCrawlCleanup(job, dependencies.deleteOldInvalidCrawls ?? deleteOldInvalidCrawls)
+      return processCrawlCleanup(job, crawlIds, batchSize)
     case 'crawl.refresh_hostname_crawler_dispatcher':
       return processRetainedSweep(job, save =>
         dispatchWeeklyHostnameCrawlerRefresh(

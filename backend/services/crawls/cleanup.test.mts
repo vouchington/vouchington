@@ -19,17 +19,26 @@ describe('invalid crawl cleanup bounds', () => {
       insertOldInvalidCrawlForTest(urlId),
       insertOldInvalidCrawlForTest(urlId),
     ])
-    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
-      cleanup_batch_size: 1,
-      cleanup_max_batches_per_run: 1,
-      cleanup_age_days: 30,
+    const neighborId = await insertOldInvalidCrawlForTest(urlId)
+    const neighborBefore = await getCrawlData(urlId, neighborId)
+    expect(neighborBefore).toBeDefined()
+    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { cleanup_age_days: 30 })
+    await expect(deleteOldInvalidCrawls({ ids, limit: 1 })).resolves.toEqual({
+      deleted: 1,
+      hasMore: true,
     })
-    await expect(deleteOldInvalidCrawls({ ids })).resolves.toEqual({ deleted: 1, hasMore: true })
     expect(
       (await Promise.all(ids.map(id => getCrawlData(urlId, id)))).filter(Boolean),
     ).toHaveLength(1)
-    await expect(deleteOldInvalidCrawls({ ids })).resolves.toEqual({ deleted: 1, hasMore: true })
-    await expect(deleteOldInvalidCrawls({ ids })).resolves.toEqual({ deleted: 0, hasMore: false })
+    await expect(deleteOldInvalidCrawls({ ids, limit: 1 })).resolves.toEqual({
+      deleted: 1,
+      hasMore: true,
+    })
+    await expect(deleteOldInvalidCrawls({ ids, limit: 1 })).resolves.toEqual({
+      deleted: 0,
+      hasMore: false,
+    })
+    expect(await getCrawlData(urlId, neighborId)).toEqual(neighborBefore)
   })
 
   it('applies the configured age cutoff before deleting a page', async () => {
@@ -37,13 +46,24 @@ describe('invalid crawl cleanup bounds', () => {
     const hostnameId = await insertTestUrlHostname({ hostname })
     const urlId = await insertTestUrl({ hostnameId, url: `https://${hostname}/age` })
     const id = await insertOldInvalidCrawlForTest(urlId)
+    const neighborId = await insertOldInvalidCrawlForTest(urlId)
+    const neighborBefore = await getCrawlData(urlId, neighborId)
+    expect(neighborBefore).toBeDefined()
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { cleanup_age_days: 60 })
-    await expect(deleteOldInvalidCrawls({ ids: [id] })).resolves.toEqual({
+    await expect(deleteOldInvalidCrawls({ ids: [id], limit: 1 })).resolves.toEqual({
       deleted: 0,
       hasMore: false,
     })
     expect(await getCrawlData(urlId, id)).toBeDefined()
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { cleanup_age_days: 30 })
-    await expect(deleteOldInvalidCrawls({ ids: [id] })).resolves.toMatchObject({ deleted: 1 })
+    await expect(deleteOldInvalidCrawls({ ids: [id], limit: 1 })).resolves.toEqual({
+      deleted: 1,
+      hasMore: true,
+    })
+    await expect(deleteOldInvalidCrawls({ ids: [id], limit: 1 })).resolves.toEqual({
+      deleted: 0,
+      hasMore: false,
+    })
+    expect(await getCrawlData(urlId, neighborId)).toEqual(neighborBefore)
   })
 })

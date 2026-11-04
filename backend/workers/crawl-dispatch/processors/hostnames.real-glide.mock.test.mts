@@ -27,6 +27,7 @@ import {
   setTestHostnameCrawlSweep,
 } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/crawl-dispatch-plans'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { processCrawlDispatchJob } from '../processors.mts'
 import { processCrawlHostnamesJob } from './hostnames.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
@@ -217,27 +218,46 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     expect(await childCount('crawl.crawl_url', { url_id: singleUrl.id })).toBe(0)
     expect(await childCount('crawl.crawl_url', { url_id: ids[0] })).toBeGreaterThan(0)
   })
-  it('deletes an old invalid crawl from PostgreSQL', async () => {
+  it('deletes an owned old invalid crawl from PostgreSQL', async () => {
     const { url } = await crawlableUrl('old-invalid')
     const { url: otherUrl } = await crawlableUrl('old-invalid-neighbor')
-    const oldCrawlId = await insertOldInvalidCrawlForTest(url.id)
-    onTestFinished(async () => {
-      await deleteOldInvalidCrawls({ ids: [oldCrawlId] })
-    })
+    const crawlId = await insertOldInvalidCrawlForTest(url.id)
     const otherCrawlId = await insertOldInvalidCrawlForTest(otherUrl.id)
     onTestFinished(async () => {
-      await deleteOldInvalidCrawls({ ids: [otherCrawlId] })
+      await deleteOldInvalidCrawls({ ids: [crawlId, otherCrawlId] })
     })
-    expect(await getCrawlData(url.id, oldCrawlId)).toBeDefined()
-    expect(await getCrawlData(otherUrl.id, otherCrawlId)).toBeDefined()
+    const neighbor = await getCrawlData(otherUrl.id, otherCrawlId)
+    expect(neighbor).toBeDefined()
+    expect(await getCrawlData(url.id, crawlId)).toBeDefined()
     const result = await runJob('crawl.crawl_cleanup', {}, current =>
-      processCrawlHostnamesJob(current, {
-        deleteOldInvalidCrawls: () => deleteOldInvalidCrawls({ ids: [oldCrawlId] }),
-      }),
+      processCrawlHostnamesJob(current, [crawlId], 2),
     )
-    expect(result).toMatchObject({ crawls_deleted_invalid: expect.any(Number) })
-    expect(await getCrawlData(url.id, oldCrawlId)).toBeUndefined()
+    expect(result).toEqual({ crawls_deleted_invalid: 1, hasMore: false })
+    expect(await getCrawlData(url.id, crawlId)).toBeUndefined()
     expect(await countCrawlsForUrl(url.id)).toBe(0)
-    expect(await getCrawlData(otherUrl.id, otherCrawlId)).toBeDefined()
+    expect(await getCrawlData(otherUrl.id, otherCrawlId)).toEqual(neighbor)
+  })
+  it('rejects cleanup on a PostgreSQL failure without changing eligible crawls', async () => {
+    const { url } = await crawlableUrl('invalid-write-failure')
+    const { url: otherUrl } = await crawlableUrl('invalid-write-failure-neighbor')
+    const crawlId = await insertOldInvalidCrawlForTest(url.id)
+    const otherCrawlId = await insertOldInvalidCrawlForTest(otherUrl.id)
+    const owned = await getCrawlData(url.id, crawlId)
+    const neighbor = await getCrawlData(otherUrl.id, otherCrawlId)
+    expect(owned).toBeDefined()
+    expect(neighbor).toBeDefined()
+    const restore = rejectPostgresWriteForTest(
+      'deleteOldInvalidCrawls',
+      new Error('crawl cleanup write failed for test'),
+    )
+    onTestFinished(async () => {
+      restore()
+      await deleteOldInvalidCrawls({ ids: [crawlId, otherCrawlId] })
+    })
+    await expect(
+      runJob('crawl.crawl_cleanup', {}, current => processCrawlHostnamesJob(current, [crawlId])),
+    ).rejects.toThrow('crawl cleanup write failed for test')
+    expect(await getCrawlData(url.id, crawlId)).toEqual(owned)
+    expect(await getCrawlData(otherUrl.id, otherCrawlId)).toEqual(neighbor)
   })
 })

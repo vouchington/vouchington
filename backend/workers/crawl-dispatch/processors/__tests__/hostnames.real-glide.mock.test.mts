@@ -8,7 +8,13 @@ import { getMinUUIDv7ForDate } from '@modules/utils'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { crawlDispatchConfig } from '@services/crawls/work-limits'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
-import { insertTestUrlHostname } from '@voucha/test-helpers'
+import {
+  getCrawlData,
+  insertOldInvalidCrawlForTest,
+  insertTestUrl,
+  insertTestUrlHostname,
+} from '@voucha/test-helpers'
+import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { processCrawlHostnamesJob } from '../hostnames.mts'
 
@@ -119,6 +125,80 @@ describe('weekly hostname refresh cap through real GlideMQ', () => {
       await Promise.all([workerToClose?.close(true), events.close()])
       await queue.obliterate({ force: true })
       await queue.close()
+    }
+  })
+})
+
+describe('crawl cleanup retained work', () => {
+  it('retains the cleanup job after deleting one bounded owned page', async () => {
+    const restoreLimits = overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+      cleanup_batch_size: 1,
+      cleanup_max_batches_per_run: 1,
+      cleanup_age_days: 30,
+    })
+    const fixtureIds: string[] = []
+    let queue: Queue | undefined
+    let events: QueueEvents | undefined
+    let worker: Worker | undefined
+    try {
+      const hostname = `cleanup-retained-${randomUUID()}.example.com`
+      const hostnameId = await insertTestUrlHostname({ hostname })
+      const urlId = await insertTestUrl({ hostnameId, url: `https://${hostname}/cleanup` })
+      const firstId = await insertOldInvalidCrawlForTest(urlId)
+      fixtureIds.push(firstId)
+      const secondId = await insertOldInvalidCrawlForTest(urlId)
+      fixtureIds.push(secondId)
+      const neighborId = await insertOldInvalidCrawlForTest(urlId)
+      fixtureIds.push(neighborId)
+      const neighbor = await getCrawlData(urlId, neighborId)
+      expect(neighbor).toBeDefined()
+
+      const prefix = `${workerQueuePrefix}-crawl-cleanup-retained-${randomUUID()}`
+      queue = new Queue(BACKGROUND_CPU_QUEUE_NAME, { connection: workerQueueConnection, prefix })
+      events = new QueueEvents(BACKGROUND_CPU_QUEUE_NAME, {
+        connection: workerQueueConnection,
+        prefix,
+        lastEventId: '0',
+        blockTimeout: 1_000,
+      })
+      const cleanupWorker = new Worker(
+        BACKGROUND_CPU_QUEUE_NAME,
+        (job: Job) => processCrawlHostnamesJob(job, [firstId, secondId]),
+        { connection: workerQueueConnection, prefix, concurrency: 1, blockTimeout: 1_000 },
+      )
+      worker = cleanupWorker
+      const paused = Promise.withResolvers<void>()
+      cleanupWorker.once('active', () => {
+        void cleanupWorker.pause(true).then(paused.resolve, paused.reject)
+      })
+      await Promise.all([events.waitUntilReady(), cleanupWorker.waitUntilReady()])
+      const delayed = once(events, 'delay-changed')
+      const job = await queue.add('crawl.crawl_cleanup', {}, { attempts: 1 })
+      if (!job) throw new Error('Expected the crawl cleanup job')
+      const [[event]] = await Promise.all([delayed, paused.promise])
+      await cleanupWorker.close()
+      worker = undefined
+
+      expect(event.jobId).toBe(job.id)
+      expect(await (await queue.getJob(job.id))?.getState()).toBe('delayed')
+      expect(
+        (await Promise.all([getCrawlData(urlId, firstId), getCrawlData(urlId, secondId)])).filter(
+          Boolean,
+        ),
+      ).toHaveLength(1)
+      expect(await getCrawlData(urlId, neighborId)).toEqual(neighbor)
+    } finally {
+      try {
+        await Promise.all([worker?.close(true), events?.close()])
+        await queue?.obliterate({ force: true })
+      } finally {
+        try {
+          await queue?.close()
+        } finally {
+          restoreLimits()
+        }
+        await deleteOldInvalidCrawls({ ids: fixtureIds, limit: 3 })
+      }
     }
   })
 })
