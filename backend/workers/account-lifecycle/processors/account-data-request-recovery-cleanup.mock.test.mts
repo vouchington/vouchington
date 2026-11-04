@@ -1,8 +1,8 @@
+import { createTestDataRequestSweepNeighbor } from '@voucha/test-helpers/account-data-request-sweep-neighbor'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { S3Buckets } from '@modules/aws'
 import {
   createDataRequest,
-  expireDataRequests,
   markDataRequestProcessing,
   markDataRequestReady,
 } from '@services/account-data-requests'
@@ -41,6 +41,7 @@ describe('processCleanupExpiredExports', () => {
   })
 
   it('expires database records and deletes their S3 objects', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor('expired')
     const requests = await createExpiredRequests(2)
 
     await expect(cleanup(requests)).resolves.toEqual({ hasMore: false })
@@ -53,18 +54,22 @@ describe('processCleanupExpiredExports', () => {
       { status: 'expired', s3_key: null },
       { status: 'expired', s3_key: null },
     ])
+    expect(await neighbor.readState()).toEqual(neighbor.state)
   })
 
   it('does not call S3 for an empty batch', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor('expired')
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)
 
     await expect(cleanup([request])).resolves.toEqual({ hasMore: false })
 
     expect(mockS3Send).not.toHaveBeenCalled()
+    expect(await neighbor.readState()).toEqual(neighbor.state)
   })
 
   it('treats a bulk S3 deletion failure as non-fatal', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor('expired')
     const requests = await createExpiredRequests(1)
     mockS3Send.mockRejectedValue(new Error('S3 error'))
 
@@ -72,9 +77,11 @@ describe('processCleanupExpiredExports', () => {
 
     expect(mockS3Send).toHaveBeenCalledOnce()
     expect(await statuses(requests)).toEqual([{ status: 'expired', s3_key: null }])
+    expect(await neighbor.readState()).toEqual(neighbor.state)
   })
 
   it('expires one bounded page per run and resumes after clearing the first page', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor('expired')
     const requests = await createExpiredRequests(2)
     onTestFinished(
       overrideDynamicConfigFieldsForTest(dataRequestConfig, {
@@ -93,6 +100,7 @@ describe('processCleanupExpiredExports', () => {
 
     await expect(cleanup(requests)).resolves.toEqual({ hasMore: false })
     expect(mockS3Send).toHaveBeenCalledTimes(2)
+    expect(await neighbor.readState()).toEqual(neighbor.state)
   })
 })
 
@@ -133,13 +141,7 @@ type OwnedRequest = { id: string }
 
 // A scoped expiry keeps the sweep on rows this test owns in the shared database.
 function cleanup(requests: readonly OwnedRequest[]) {
-  return processCleanupExpiredExports({
-    expireDataRequests: batchSize =>
-      expireDataRequests(
-        batchSize,
-        requests.map(request => request.id),
-      ),
-  })
+  return processCleanupExpiredExports(requests.map(request => request.id))
 }
 
 function keyOf(request: OwnedRequest): string {

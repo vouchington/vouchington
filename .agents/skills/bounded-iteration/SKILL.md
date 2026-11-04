@@ -16,6 +16,13 @@ alone.
 
 ## Vouchington additions
 
+- **Sweep tests.** Keep every query bounded and pass owned ids and a small batch size through
+  plain processor parameters to the real sweep. Test-only parameters are allowed even without
+  production callers; injected replacement sweep functions are not. Age owned timestamps and
+  verify an equally eligible excluded row stays unchanged. Timestamps and page sizes alone are
+  not ownership scopes. Preserve production plans when adding optional ids predicates; follow
+  [parallel safety](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md).
+
 The canonical skill leaves run caps, tunable names and ceilings, schedules, and enforcement to the
 repository. Keep its rules authoritative; do not copy them here.
 

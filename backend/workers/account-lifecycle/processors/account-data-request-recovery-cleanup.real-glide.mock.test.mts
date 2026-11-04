@@ -1,11 +1,8 @@
+import { createTestDataRequestSweepNeighbor } from '@voucha/test-helpers/account-data-request-sweep-neighbor'
 import { describe, expect, it, vi } from 'vitest'
 import { enqueueExportRequest } from '@queues/account-lifecycle/enqueues/account-data-requests'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
-import {
-  claimRecoverableDataRequests,
-  createDataRequest,
-  markDataRequestProcessing,
-} from '@services/account-data-requests'
+import { createDataRequest, markDataRequestProcessing } from '@services/account-data-requests'
 import { createTestUser, makeUserDataRequestRecoverableForTest } from '@voucha/test-helpers'
 import { recoverExportRequests } from './account-data-request-recovery-cleanup.mts'
 
@@ -15,6 +12,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 describe('account data export recovery with a retained failed job under the attempt token', () => {
   it('re-dispatches the unstarted attempt so its job claims the token', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor()
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)
     const attempt = {
@@ -31,15 +29,13 @@ describe('account data export recovery with a retained failed job under the atte
       await expect((await accountLifecycle.getJob(jobId))?.getState()).resolves.toBe('failed')
       await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
 
-      await recoverExportRequests({
-        claimRecoverableDataRequests: (_requestIds, batchSize) =>
-          claimRecoverableDataRequests([request.id], batchSize),
-      })
+      await recoverExportRequests([request.id], 1)
 
       const redispatched = await accountLifecycle.getJob(jobId)
       if (!redispatched) throw new Error('Expected recovery to dispatch the attempt again')
       await expect(redispatched.getState()).resolves.not.toMatch(/^(completed|failed)$/)
       expect(redispatched.data).toEqual(attempt)
+      expect(await neighbor.readState()).toEqual(neighbor.state)
 
       // The first step of the export processor, with the token the re-dispatched job carries.
       await expect(
