@@ -49,7 +49,7 @@ export async function insertCompletionReadyAuthorization(
     deviceId: string
     sessionId: string
     completionToken: string
-    purpose: 'authenticate' | 'connect'
+    purpose: 'authenticate' | 'connect' | 're_auth'
     callbackMode: 'web' | 'native'
     initiatingUserId?: string
     proofChallenge?: string
