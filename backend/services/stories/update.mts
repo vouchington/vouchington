@@ -1,6 +1,6 @@
 import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { registerPostCommitAction, runWithTransaction, write } from '@data-stores/psql'
+import { runWithTransaction, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PostStory, Story } from './types.mts'
@@ -10,9 +10,8 @@ export async function updateStoryTitle(
   actorId: string,
   storyId: string,
   title: string,
-  options: { query?: TransactionQuery } = {},
 ): Promise<Story | null> {
-  const story = await runWithTransaction(options.query, async query => {
+  const story = await runWithTransaction(undefined, async query => {
     const { rows } = await write(
       sql`/* updateStoryTitle */
     UPDATE stories
@@ -39,10 +38,9 @@ export async function updateStoryTitle(
         { actionType: 'story_rename', metadata: { story_id: storyId, title } },
         { query },
       )
-    if (story && options.query) registerPostCommitAction(query, () => invalidateStories(story.id))
     return story
   })
-  if (story && !options.query) await invalidateStories(story.id)
+  if (story) await invalidateStories(story.id)
   return story
 }
 
@@ -53,9 +51,8 @@ export async function adminSetStoryOfficialItem(
   actorId: string,
   storyId: string,
   officialItemId: string,
-  options: { query?: TransactionQuery } = {},
 ): Promise<Story | null> {
-  const story = await runWithTransaction(options.query, async query => {
+  const story = await runWithTransaction(undefined, async query => {
     await lockOfficialItemMembership(query, storyId, officialItemId)
     const { rows } = await write(
       sql`/* adminSetStoryOfficialItem */
@@ -89,10 +86,9 @@ export async function adminSetStoryOfficialItem(
         },
         { query },
       )
-    if (story && options.query) registerPostCommitAction(query, () => invalidateStories(story.id))
     return story
   })
-  if (story && !options.query) await invalidateStories(story.id)
+  if (story) await invalidateStories(story.id)
   return story
 }
 

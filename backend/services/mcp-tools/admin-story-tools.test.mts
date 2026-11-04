@@ -8,10 +8,7 @@ import {
   createTestUrlWithHostname,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
-import {
-  readStaffActionHistory,
-  withRejectedStaffActionHistory,
-} from '@voucha/test-helpers/staff-action-history'
+import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import { getStoryItemIds } from '@services/stories'
@@ -55,28 +52,21 @@ describe('shared editorial story operations', () => {
       })
       if (operation !== 'add') await setTestItemStoryId(itemId, story.id)
       const before = await getStoryItemIds(story.id)
-      const restore =
-        operation === 'official'
-          ? undefined
-          : rejectPostgresWriteForTest(
-              '/* recordModeratorAction',
-              new Error('staff history rejected for test'),
-              values => values.some(value => typeof value === 'string' && value.includes(admin.id)),
-            )
+      const restore = rejectPostgresWriteForTest(
+        '/* recordModeratorAction',
+        new Error('staff history rejected for test'),
+        values => values.some(value => typeof value === 'string' && value.includes(admin.id)),
+      )
       try {
         await expect(
-          operation === 'official'
-            ? withRejectedStaffActionHistory(query =>
-                setEditorialStoryOfficialItem(admin, story.id, itemId, { query }),
-              )
-            : (operation === 'add' ? addEditorialStoryItem : removeEditorialStoryItem)(
-                admin,
-                story.id,
-                itemId,
-              ),
+          (operation === 'add'
+            ? addEditorialStoryItem
+            : operation === 'remove'
+              ? removeEditorialStoryItem
+              : setEditorialStoryOfficialItem)(admin, story.id, itemId),
         ).rejects.toThrow('staff history rejected for test')
       } finally {
-        restore?.()
+        restore()
       }
       expect(await getStoryItemIds(story.id)).toEqual(before)
       expect((await getStoryById(story.id))?.official_rss_feed_item_id).toBeNull()
@@ -134,11 +124,18 @@ describe('shared editorial story operations', () => {
   it('rolls back the story rename when staff history fails', async () => {
     const user = await createTestUserDirect({ administrator: true })
     const story = await insertTestStory({ title: 'Before' })
-    await withRejectedStaffActionHistory(async query => {
-      await expect(renameEditorialStory(user, story.id, 'After', { query })).rejects.toThrow(
+    const restore = rejectPostgresWriteForTest(
+      '/* recordModeratorAction',
+      new Error('staff history rejected for test'),
+      values => values.some(value => typeof value === 'string' && value.includes(user.id)),
+    )
+    try {
+      await expect(renameEditorialStory(user, story.id, 'After')).rejects.toThrow(
         'staff history rejected for test',
       )
-    })
+    } finally {
+      restore()
+    }
     expect((await getStoryById(story.id))?.title).toBe('Before')
     expect(await readStaffActionHistory(user.id)).toEqual([])
   })
