@@ -1,12 +1,12 @@
-import { DEFAULT_PERSONAL_LINK_LIMIT } from './config.mts'
 import { getInNetworkLinks } from './in-network.mts'
 import { filterLinks } from './link-rows.mts'
 import { getOfficialAccountId } from './official-account.mts'
 import { getOutOfNetworkLinks } from './out-of-network.mts'
 import type { ReferralLinksWithUsers } from './types.mts'
+import { getPersonalizedLinkLimit } from './work-limits.mts'
 
 /**
- * Official links first, then the viewer's network (up to five links), or the shared top links
+ * Official links first, then the viewer's network (up to the personalized link limit), or the shared top links
  * when the viewer has none. Anonymous viewers get the shared list unfiltered.
  */
 export async function getPrioritizedReferralLinks(
@@ -35,7 +35,7 @@ function withOthers(
   others: ReferralLinksWithUsers,
   keep: Parameters<typeof filterLinks>[1],
 ): ReferralLinksWithUsers {
-  const top = others.links.filter(keep).slice(0, DEFAULT_PERSONAL_LINK_LIMIT)
+  const top = others.links.filter(keep).slice(0, getPersonalizedLinkLimit())
   return combine(
     official,
     filterLinks({ links: top, users: others.users }, () => true),

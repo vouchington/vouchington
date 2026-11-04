@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import {
   createReferralProgramFixture,
@@ -12,7 +12,9 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { loadOutOfNetworkLinks } from '../out-of-network.mts'
+import { prioritizedReferralLinksWorkConfig } from '../work-limits.mts'
 
 let admin: PrivateUser
 
@@ -55,6 +57,15 @@ describe('get-prioritized prioritized referral out-of-network ranking', () => {
       pathname: '/ref/%',
     })
     referralProgramId = fixture.referralProgramId
+  })
+
+  // These tests rank more links than the default limit keeps.
+  beforeEach(() => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(prioritizedReferralLinksWorkConfig, {
+        personalized_link_limit: 25,
+      }),
+    )
   })
 
   it('sorts by contribution rank within a group', async () => {

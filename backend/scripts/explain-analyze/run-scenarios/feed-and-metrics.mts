@@ -5,6 +5,7 @@ import { seedUuid } from '../seed-data/common.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import * as services from '../run-services.mts'
 import { runFeedRssScenarios } from './feed-rss.mts'
+import { runPrioritizedReferralLinkScenarios } from './prioritized-referral-links.mts'
 import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
 
 const {
@@ -12,14 +13,11 @@ const {
   getConversationMessagesByConversationId,
   getElectionVotesByUser,
   getFriendRecommendations,
-  getAllReferralLinksPage,
   getPostFeedIds,
   getPostIdsByUrlIds,
   getPostMetricsByAny,
   getPostMetricsByAnyBatch,
-  getPrioritizedReferralLinks,
   getTopicIds,
-  loadOutOfNetworkLinks,
   getTopicMetricsByAnyBatch,
   getTopicViewerCounts,
   getTopUrlsByHostnameIds,
@@ -55,17 +53,7 @@ export async function runFeedAndMetricScenarios() {
     `${SEED_PREFIX}-0200-7000-8000-000000000002`,
   ]
   await runAndCapture('top-urls-by-hostname-ids', () => getTopUrlsByHostnameIds(seedHostnameIds))
-  const seedReferralProgramId = `${SEED_PREFIX}-0900-7000-8000-000000000000`
-  await runAndCapture('prioritized-referral-links', async () => {
-    await getPrioritizedReferralLinks(seedUser.id, seedReferralProgramId)
-  })
-  await runAndCapture('prioritized-referral-links-all-page', () =>
-    getAllReferralLinksPage(seedUser.id, seedReferralProgramId, { limit: 25 }),
-  )
-  // The cached read hides this ranking on a warm cache, so explain the uncached loader itself.
-  await runAndCapture('prioritized-referral-links-cache-miss', () =>
-    loadOutOfNetworkLinks(seedReferralProgramId),
-  )
+  await runPrioritizedReferralLinkScenarios()
   const seedUrlIds = [
     `${SEED_PREFIX}-0300-7000-8000-000000000000`,
     `${SEED_PREFIX}-0300-7000-8000-000000000001`,

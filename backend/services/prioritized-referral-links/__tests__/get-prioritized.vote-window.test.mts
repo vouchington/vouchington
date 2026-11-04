@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links'
 import { getPrioritizedReferralLinks } from '../get-prioritized.mts'
-import { getRecentVoteWindowDays } from '../work-limits.mts'
+import { getVotedPostMaxAgeDays } from '../work-limits.mts'
 
 const MILLISECONDS_PER_DAY = 86_400_000
 
@@ -48,7 +48,7 @@ describe('get-prioritized rated-positively vote window', () => {
       createAuthorWithLink('stale'),
     ])
     const staleCreatedAt = new Date(
-      Date.now() - (getRecentVoteWindowDays() + 10) * MILLISECONDS_PER_DAY,
+      Date.now() - (getVotedPostMaxAgeDays() + 10) * MILLISECONDS_PER_DAY,
     )
     const [recentPostId, stalePostId] = await Promise.all([
       insertTestPost({

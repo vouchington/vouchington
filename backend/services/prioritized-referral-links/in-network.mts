@@ -1,13 +1,13 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { childVisibilitySql } from '@services/user-referral-program-links'
 import { buildViewerPostDiscoveryEligibilityFilter } from '@modules/feed-query-builders'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import { DEFAULT_PERSONAL_LINK_LIMIT, RECENT_VOTE_LIMIT } from './config.mts'
+import { RECENT_VOTE_LIMIT } from './config.mts'
 import { appendLinkUserJoin, toLinksWithUsers, type LinkRow } from './link-rows.mts'
+import { networkGroupsSql } from './network-groups.mts'
 import { RANK_ORDER_SQL, RANKED_COLUMNS_SQL, rankingCtesSql } from './ranking-ctes.mts'
 import type { ReferralLinksWithUsers } from './types.mts'
-import { getRecentVoteWindowDays } from './work-limits.mts'
+import { getPersonalizedLinkLimit, getVotedPostMaxAgeDays } from './work-limits.mts'
 
 const MILLISECONDS_PER_DAY = 86_400_000
 
@@ -20,7 +20,8 @@ export type InNetworkResult = {
 /**
  * One read for a signed-in viewer: up to five links from people in their network (mutual follow,
  * follow, referred them, rated their posts positively), plus which of `candidateUserIds` they
- * muted or blocked so the shared out-of-network list can be filtered per viewer.
+ * muted or blocked so the shared out-of-network list can be filtered per viewer. Each group keeps
+ * its newest links after its link filters, and the same limit caps each group and the total.
  */
 export async function getInNetworkLinks(
   viewerId: string,
@@ -34,8 +35,9 @@ export async function getInNetworkLinks(
   })
   // Votes on posts older than the window do not count; the post id bound also prunes partitions.
   const minVotedPostId = getMinUUIDv7ForDate(
-    new Date(Date.now() - getRecentVoteWindowDays() * MILLISECONDS_PER_DAY),
+    new Date(Date.now() - getVotedPostMaxAgeDays() * MILLISECONDS_PER_DAY),
   )
+  const personalizedLinkLimit = getPersonalizedLinkLimit()
   const query = sql`/* getInNetworkReferralLinks */
 WITH recent_votes AS (
   -- Newest votes first; an older vote on the same post is superseded below.
@@ -53,59 +55,19 @@ rated_positively AS (
   WHERE pv.score > 0
     AND `
     .append(votedPostEligibility)
+    .append(sql`
+),
+`)
     .append(
-      sql`
-),
-network AS (
-  SELECT f.object_id AS user_id, 2 AS priority_group
-  FROM relation__user__follow__user f
-  WHERE f.subject_id = ${viewerId} AND f.deleted_at IS NULL
-  UNION ALL
-  SELECT sra.referrer_user_id, 3
-  FROM session_referral_attributions sra
-  WHERE sra.user_id = ${viewerId} AND sra.referrer_user_id IS NOT NULL
-  UNION ALL
-  SELECT user_id, 4 FROM rated_positively
-),
-best_group AS (
-  SELECT user_id, MIN(priority_group) AS priority_group FROM network GROUP BY user_id
-),
-active_links AS (
-  SELECT DISTINCT ON (al.user_id)
-    al.id, al.user_id, al.referral_program_topic_id, u.url, al.label, al.activated_at,
-    -- Group 2 here means the viewer follows them; mutual follow is checked only for links that
-    -- survive the program join, not for every followee.
-    CASE WHEN bg.priority_group = 2 AND EXISTS (
-      SELECT 1 FROM relation__user__follow__user back
-      WHERE back.subject_id = al.user_id AND back.object_id = ${viewerId}
-        AND back.deleted_at IS NULL
-    ) THEN 1 ELSE bg.priority_group END AS priority_group
-  FROM best_group bg
-  JOIN user_referral_program_links al ON al.user_id = bg.user_id
-  JOIN urls u ON u.id = al.url_id
-  WHERE al.referral_program_topic_id = ${referralProgramId}
-    AND al.user_id <> ${viewerId}
-    AND al.user_id IS DISTINCT FROM ${officialUserId}::uuid
-    AND al.activated_at IS NOT NULL
-    AND al.deleted_at IS NULL
-    AND al.deactivated_at IS NULL
-    AND NOT EXISTS (
-      SELECT 1 FROM relation__user__mute__user m
-      WHERE m.subject_id = ${viewerId} AND m.object_id = al.user_id AND m.deleted_at IS NULL
+      networkGroupsSql({
+        viewerId,
+        referralProgramId,
+        officialUserId,
+        limit: personalizedLinkLimit,
+      }),
     )
-    AND NOT EXISTS (
-      SELECT 1 FROM relation__user__block__user b
-      WHERE b.subject_id = ${viewerId} AND b.object_id = al.user_id AND b.deleted_at IS NULL
-    )
-    AND `,
-    )
-    .append(childVisibilitySql('al.parent_link_id', 'al.user_id'))
-    .append(
-      `
-  ORDER BY al.user_id, al.activated_at DESC, al.id
-),
-`,
-    )
+    .append(`,
+`)
     .append(rankingCtesSql(referralProgramId))
     .append(
       `,
@@ -115,7 +77,7 @@ ranked AS (
 top_ranked AS (
   SELECT * FROM ranked
   ORDER BY priority_group, ${RANK_ORDER_SQL}
-  LIMIT ${DEFAULT_PERSONAL_LINK_LIMIT}
+  LIMIT ${personalizedLinkLimit}
 ),
 links AS (
   SELECT id, user_id, referral_program_id, url, label, priority_group, contribution_rank,

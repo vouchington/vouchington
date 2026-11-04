@@ -1,11 +1,11 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { childVisibilitySql, prioritizedLinksCache } from '@services/user-referral-program-links'
-import { OUT_OF_NETWORK_CACHE_LIMIT } from './config.mts'
 import { appendLinkUserJoin, filterLinks, toLinksWithUsers, type LinkRow } from './link-rows.mts'
 import { RANK_ORDER_SQL, RANKED_COLUMNS_SQL, rankingCtesSql } from './ranking-ctes.mts'
 import { getOfficialAccountId } from './official-account.mts'
 import type { ReferralLinksWithUsers } from './types.mts'
+import { getPersonalizedLinkLimit } from './work-limits.mts'
 
 /** What every viewer shares for one program: official links plus the top ranked other links. */
 export type OutOfNetworkLinks = {
@@ -23,6 +23,7 @@ export async function getOutOfNetworkLinks(referralProgramId: string): Promise<O
 
 export async function loadOutOfNetworkLinks(referralProgramId: string): Promise<OutOfNetworkLinks> {
   const officialUserId = await getOfficialAccountId()
+  const personalizedLinkLimit = getPersonalizedLinkLimit()
   const query = sql`/* getOutOfNetworkReferralLinks */
 WITH official_links AS (
   -- Deduplicate by URL so each distinct official URL appears at most once,
@@ -65,7 +66,7 @@ ranked AS (
 top_ranked AS (
   SELECT * FROM ranked
   ORDER BY ${RANK_ORDER_SQL}
-  LIMIT ${OUT_OF_NETWORK_CACHE_LIMIT}
+  LIMIT ${personalizedLinkLimit}
 ),
 combined AS (
   SELECT id, user_id, referral_program_id, url, label,

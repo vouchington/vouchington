@@ -108,8 +108,10 @@ export const backgroundWorkRegistryEntries9 = {
     label: 'Prioritized referral links',
     maxValues: prioritizedReferralLinksWorkMaxValues,
     descriptions: {
-      recent_vote_window_days:
-        'Days back a viewer vote on a post still counts toward ranking referral links; cost grows with the window.',
+      personalized_link_limit:
+        'Personalized referral links shown in total; every ranking subquery uses the same limit. A raise reaches the cached out-of-network list within 5 minutes.',
+      voted_post_max_age_days:
+        'Maximum age in days of a post for a viewer vote on it to count toward ranking referral links (post age, not vote age); cost grows with the window.',
     },
   }),
   'find-your-friends-work-config': defineBoundedWorkNamespace({
