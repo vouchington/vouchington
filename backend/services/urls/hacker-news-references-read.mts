@@ -1,6 +1,8 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import {
+  HACKER_NEWS_COMMENT_CAP_PER_URL,
+  HACKER_NEWS_STORY_CAP_PER_URL,
   HACKER_NEWS_URL_BATCH_MAX,
   type HackerNewsCommentReference,
   type HackerNewsReferenceCounts,
@@ -22,6 +24,24 @@ function urlIdChunks(urlIds: readonly string[]): string[][] {
   return chunks
 }
 
+/**
+ * Runs one read per chunk of unique url ids and concatenates the rows. Chunks run one after
+ * another so a large page holds one pool connection, not one per chunk. The input is one list
+ * page of entities (page size is clamped by the routes) with at most
+ * 1 + HACKER_NEWS_RELATED_URLS_PER_POST_MAX urls each, so the chunk count follows that page.
+ */
+async function readInChunks<Row>(
+  urlIds: readonly string[],
+  readChunk: (ids: string[]) => Promise<Row[]>,
+): Promise<Row[]> {
+  const rows: Row[] = []
+  for (const ids of urlIdChunks(urlIds)) {
+    // oxlint-disable-next-line no-await-in-loop -- sequential chunks hold one pool connection
+    rows.push(...(await readChunk(ids)))
+  }
+  return rows
+}
+
 /** Totals of a URL's canonical row, plus that row's id so callers can dedupe and read items. */
 export type HackerNewsCanonicalTotals = HackerNewsReferenceCounts & { canonical_url_id: string }
 
@@ -36,9 +56,7 @@ export async function getHackerNewsTotalsByUrlIds(
   urlIds: readonly string[],
   options: QueryOptions = {},
 ): Promise<Map<string, HackerNewsCanonicalTotals>> {
-  // no-mistakes-disable-next-line query-reached-per-item: one read per HACKER_NEWS_URL_BATCH_MAX ids, so the count follows one card page of entities, never an unbounded set
-  const results = await Promise.all(urlIdChunks(urlIds).map(ids => readTotals(ids, options)))
-  return new Map(results.flat())
+  return new Map(await readInChunks(urlIds, ids => readTotals(ids, options)))
 }
 
 async function readTotals(ids: string[], options: QueryOptions) {
@@ -80,9 +98,7 @@ export async function getHackerNewsItemsByUrlIds(
   options: QueryOptions = {},
 ): Promise<Map<string, HackerNewsUrlItems>> {
   const itemsByUrlId = new Map<string, HackerNewsUrlItems>()
-  // no-mistakes-disable-next-line query-reached-per-item: one read per HACKER_NEWS_URL_BATCH_MAX ids, so the count follows one card page of entities, never an unbounded set
-  const chunks = await Promise.all(urlIdChunks(urlIds).map(ids => readItemRows(ids, options)))
-  for (const row of chunks.flat()) {
+  for (const row of await readInChunks(urlIds, ids => readItemRows(ids, options))) {
     const urlId = row.url_id as string
     const items = itemsByUrlId.get(urlId) ?? { stories: [], comments: [] }
     itemsByUrlId.set(urlId, items)
@@ -116,8 +132,9 @@ async function readItemRows(ids: string[], options: QueryOptions) {
     SELECT url_id, 'comment', hacker_news_item_id, NULL, NULL, parent_story_item_id, posted_at
     FROM url_hacker_news_comments
     WHERE url_id = ANY($1::uuid[])
+    LIMIT $2
   `,
-    [ids],
+    [ids, ids.length * (HACKER_NEWS_STORY_CAP_PER_URL + HACKER_NEWS_COMMENT_CAP_PER_URL)],
     options,
   )
   return rows
