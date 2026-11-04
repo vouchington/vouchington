@@ -4188,9 +4188,6 @@ rules:
         - table: view_rss_feeds
           requireColumns:
             - id
-        - table: view_topic_metrics
-          requireColumns:
-            - id
         - table: view_topics
           requireColumns:
             - id

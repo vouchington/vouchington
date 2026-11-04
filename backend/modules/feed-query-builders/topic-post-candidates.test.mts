@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE,
@@ -38,26 +36,6 @@ describe('buildTopicPostCandidateSelect', () => {
       '(CASE WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0 THEN alias_relation.object_id END) = alias.id',
     )
     expect(select.values).toEqual(['topic-1', 'topic-1'])
-  })
-
-  it('stays textually identical to the count__discussions candidate body in the view', () => {
-    const viewPath = fileURLToPath(
-      new URL('../../data-stores/psql/views/2025-01-19-topic-metrics.sql', import.meta.url),
-    )
-    const viewSql = readFileSync(viewPath, 'utf8')
-    const start = viewSql.indexOf('SELECT rel.subject_id AS post_id')
-    const endMarker = 'WHERE alias.topic_id = topic_metrics.topic_id'
-    const end = viewSql.indexOf(endMarker) + endMarker.length
-    expect(start).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-
-    const viewCandidateBody = viewSql
-      .slice(start, end)
-      .replace(/topic_metrics\.topic_id/g, '$PARAM')
-
-    const builderSql = buildTopicPostCandidateSelect('unused').text
-
-    expect(normalizeSqlFragment(builderSql)).toBe(normalizeSqlFragment(viewCandidateBody))
   })
 })
 

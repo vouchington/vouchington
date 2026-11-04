@@ -223,6 +223,20 @@ describe('metrics', () => {
       expect(metrics?.count.discussions).toBe(1)
     })
 
+    it('resolves a topic alias to the aliased topic metrics', async () => {
+      const topic = await createTestTopic({
+        user,
+        name: `Metrics Alias Lookup ${Math.random().toString(36).slice(2, 8)}`,
+        topic_type: 'topic',
+      })
+      const alias = `metrics-lookup-${topic.id}`
+      await createTopHashtagAliasForTest(topic.id, alias)
+
+      const metrics = await getTopicMetricsByAny(alias)
+
+      expect(metrics?.id).toBe(topic.id)
+    })
+
     it('returns null for a non-existent slug', async () => {
       const metrics = await getTopicMetricsByAny(`nonexistent-${Date.now()}`)
 

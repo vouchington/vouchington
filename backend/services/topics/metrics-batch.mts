@@ -32,7 +32,7 @@ type TopicMetricsBatchRow = {
 export const getTopicMetricsByAnyBatch = async (
   idsOrSlugs: string[],
   options: QueryOptions = {},
-): Promise<Array<TopicMetrics | null | undefined>> => {
+): Promise<Array<TopicMetrics | null>> => {
   if (idsOrSlugs.length === 0) return []
 
   const normalizedInputs = normalizeBatchIdentifiers(idsOrSlugs, input => {

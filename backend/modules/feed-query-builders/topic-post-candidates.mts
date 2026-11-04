@@ -17,10 +17,6 @@ function assertSafePostIdColumn(postIdColumn: string): void {
  * directly or through one of its hashtag aliases. Meant for a `FROM (…) candidate` subselect —
  * candidate-binding from this indexed topic side (instead of a per-row correlated `EXISTS`) lets
  * the planner drive the query from the topic's relation rows.
- *
- * Kept textually identical to the `count__discussions` candidate body in
- * `backend/data-stores/psql/views/2025-01-19-topic-metrics.sql` (lines 14-30) — update both
- * together if the shape changes.
  */
 export function buildTopicPostCandidateSelect(topicId: string): SQLStatement {
   return sql`
