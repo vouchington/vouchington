@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest'
 import {
   createTestUser,
   insertTestTopic,
@@ -13,6 +13,8 @@ import { adminVerifyTopicClaim, rejectTopicClaim } from './admin-verify.mts'
 import { revokeTopicClaim } from './revoke.mts'
 import { issueDomainVerificationToken } from './generate-verification-token.mts'
 import { verifyTopicClaimDomain } from './verify-domain.mts'
+import * as dns from './domain-verification-dns.mts'
+import * as wellKnown from './domain-verification-well-known.mts'
 import { TOPIC_CLAIM_DNS_TXT_PREFIX } from './config.mts'
 import { requireTopicClaimOnTopic } from './require-on-topic.mts'
 
@@ -58,20 +60,24 @@ async function makeClaimWithToken() {
 }
 
 describe('verifyTopicClaimDomain', () => {
-  const resolveTxtRecords = vi.fn<() => Promise<string[]>>()
-  const fetchWellKnownToken = vi.fn<() => Promise<string | null>>()
+  // Real DNS and real SSRF-guarded HTTP are the network edges; spy on the modules that own them.
+  const resolveTxtRecords = vi.spyOn(dns, 'resolveTxtRecords')
+  const fetchWellKnownToken = vi.spyOn(wellKnown, 'fetchWellKnownToken')
 
   async function verifyClaim(currentUserId: string, claimId: string) {
     const stored = await getTestTopicClaimVerificationState(claimId)
     const context = await requireTopicClaimOnTopic(stored?.topic_id ?? '', claimId)
-    return verifyTopicClaimDomain(currentUserId, context, {
-      resolveTxtRecords,
-      fetchWellKnownToken,
-    })
+    return verifyTopicClaimDomain(currentUserId, context)
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    resolveTxtRecords.mockReset()
+    fetchWellKnownToken.mockReset()
+  })
+
+  afterAll(() => {
+    resolveTxtRecords.mockRestore()
+    fetchWellKnownToken.mockRestore()
   })
 
   it('verifies via DNS TXT record match', async () => {

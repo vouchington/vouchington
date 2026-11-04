@@ -12,18 +12,10 @@ import {
 import type { TopicClaimWriteContext } from './require-on-topic.mts'
 import { getTopicClaimById } from './get.mts'
 
-type VerifyTopicClaimDomainDeps = {
-  resolveTxtRecords: typeof resolveTxtRecords
-  fetchWellKnownToken: typeof fetchWellKnownToken
-}
-
 export async function verifyTopicClaimDomain(
   currentUserId: string,
   context: TopicClaimWriteContext,
-  deps?: VerifyTopicClaimDomainDeps,
 ): Promise<TopicClaim> {
-  // Read the resolver at call time so a test can replace the DNS module binding.
-  const lookup = deps ?? { resolveTxtRecords, fetchWellKnownToken }
   const {
     claim,
     verificationHostname: hostname,
@@ -39,7 +31,7 @@ export async function verifyTopicClaimDomain(
   let matchedMethod: TopicClaimVerificationMethod | null = null
 
   try {
-    const txtRecords = await lookup.resolveTxtRecords(`${TOPIC_CLAIM_DNS_TXT_PREFIX}.${hostname}`)
+    const txtRecords = await resolveTxtRecords(`${TOPIC_CLAIM_DNS_TXT_PREFIX}.${hostname}`)
     for (const record of txtRecords) {
       const recordHash = hashToken('topic_claim_domain', record)
       if (recordHash === verification_token_hash) {
@@ -52,7 +44,7 @@ export async function verifyTopicClaimDomain(
   }
 
   if (!matchedMethod) {
-    const wellKnownContent = await lookup.fetchWellKnownToken(hostname)
+    const wellKnownContent = await fetchWellKnownToken(hostname)
     if (wellKnownContent) {
       const contentHash = hashToken('topic_claim_domain', wellKnownContent)
       if (contentHash === verification_token_hash) {
