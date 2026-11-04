@@ -11,7 +11,11 @@ vi.resetModules()
 const { getProviderReAuthMethods } = await import('../provider-reauth-methods.mts')
 
 describe('getProviderReAuthMethods', () => {
-  afterAll(() => vi.unstubAllEnvs())
+  afterAll(() => {
+    vi.unstubAllEnvs()
+    // isolate: false keeps the config evaluated with the stubbed client ID cached for later files.
+    vi.resetModules()
+  })
 
   it('returns a configured provider linked to the user and omits unlinked ones', async () => {
     const linkedUser = await createTestUserDirect()
