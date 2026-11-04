@@ -265,7 +265,7 @@
       },
       "manage_bookmark": {
         "measured": {
-          "list": 2180,
+          "list": 2190,
           "core": 1350
         },
         "max": {
@@ -435,7 +435,7 @@
       },
       "submit_rss_feed": {
         "measured": {
-          "list": 3358,
+          "list": 3431,
           "core": 1460
         },
         "max": {
