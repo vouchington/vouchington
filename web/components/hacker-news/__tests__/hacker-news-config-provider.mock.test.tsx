@@ -2,6 +2,7 @@ import '@/test-helpers/i18n/mock-json-messages'
 import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
+import type { HackerNewsConfig } from '@/lib/hacker-news-config'
 import { HackerNewsConfigProvider } from '../hacker-news-config-provider'
 import { HackerNewsFilterToggle } from '../hacker-news-filter-toggle'
 import { HackerNewsReferenceLabel } from '../hacker-news-reference-label'
@@ -11,17 +12,16 @@ vi.mock(
   import('next/navigation'),
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
-const mockGet = vi.hoisted(() => vi.fn<() => Promise<unknown>>())
-vi.mock(
-  import('@/lib/api/client/instance'),
-  () => ({ clientApi: { get: mockGet } }) as unknown as typeof import('@/lib/api/client/instance'),
-)
+const mockGet = vi.hoisted(() => vi.fn<() => Promise<HackerNewsConfig>>())
+vi.mock(import('@/lib/api/client/hacker-news-config'), () => ({
+  getHackerNewsConfigClient: mockGet,
+}))
 const nav = createNavMock()
 
 describe('Hacker News runtime visibility', () => {
   it('hides preloaded references and the filter when a refresh disables visibility', async () => {
     nav.reset()
-    let resolve!: (value: unknown) => void
+    let resolve!: (value: HackerNewsConfig) => void
     mockGet.mockReturnValue(
       new Promise(done => {
         resolve = done

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { clientApi } from '@/lib/api/client/instance'
-import { parseHackerNewsConfig, type HackerNewsConfig } from '@/lib/hacker-news-config'
+import { getHackerNewsConfigClient } from '@/lib/api/client/hacker-news-config'
+import type { HackerNewsConfig } from '@/lib/hacker-news-config'
 
 import { HackerNewsConfigContext } from './hacker-news-config-context'
 
@@ -21,9 +21,7 @@ export function HackerNewsConfigProvider({
     let active = true
     async function refresh() {
       try {
-        const next = parseHackerNewsConfig(
-          await clientApi.get<HackerNewsConfig>('/api/v1/hacker-news-config'),
-        )
+        const next = await getHackerNewsConfigClient()
         if (!active) return
         if (
           next.references_visible !== current.current.references_visible ||
