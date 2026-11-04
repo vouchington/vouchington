@@ -129,7 +129,7 @@ export function buildUnboundedUnpartitionedTables(
       ...['url_hacker_news_comments', 'url_hacker_news_stories', 'url_hacker_news_totals'].map(
         (table): [string, string] => [
           table,
-          'At most 51 rows per URL (25 stories, 25 comments, one totals row). These are refetchable third-party facts; the lookup job in PR 3 owns the retention window, and cascade deletes never fire today because urls are never deleted.',
+          'At most 51 rows per URL (25 stories, 25 comments, one totals row). The daily maintenance schedule expires these refetchable facts by looked_up_at through cleanupHackerNewsReferences and hacker-news-work-config; indexed, capped transactions delete children and totals, including zero-hit lookups. URLs themselves remain retained, so URL cascade deletion does not enforce this window.',
         ],
       ),
       [

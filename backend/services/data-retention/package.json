@@ -37,6 +37,7 @@
     "@services/oauth-authorization-server": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/post-publication": "workspace:^",
+    "@services/urls": "workspace:^",
     "@services/user-import-export": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",

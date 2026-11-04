@@ -6145,6 +6145,9 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../urls
       '@services/user-import-export':
         specifier: workspace:^
         version: link:../user-import-export
