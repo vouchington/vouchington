@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestPost,
   createTestUser,
@@ -7,6 +8,7 @@ import {
   setTestPostClearanceStatus,
 } from '@voucha/test-helpers'
 import { getVisibleCommentDescendantIdsPage } from './descendant-ids.mts'
+import { commentPlaceholderConfig } from './placeholder-config.mts'
 import { commentPlaceholderHasValidReply } from './placeholder-state.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUser>>
@@ -85,14 +87,32 @@ describe('comment placeholders in the descendant walk', () => {
     expect(await walk(null)).toEqual([])
   })
 
-  it('keeps every placeholder above a valid reply deeper than the look-down depth', async () => {
+  it('keeps a deleted boundary placeholder and restarts the walk below it', async () => {
     const { root, reply, walk } = await thread()
     const chain = [await reply(root)]
     for (let i = 0; i < 7; i += 1) chain.push(await reply(chain.at(-1)!))
     const valid = await reply(chain.at(-1)!)
     for (const post of chain) await deleteTestPost(post.id)
 
-    expect(await walk(null)).toEqual([...chain, valid].map(post => post.id))
+    expect(await walk(null)).toEqual(chain.slice(0, 7).map(post => post.id))
+    expect(await walk(null, chain[6]!.id)).toEqual([chain[7]!.id, valid.id])
+  })
+
+  it('keeps an unmoderated boundary placeholder for a signed-out viewer', async () => {
+    const { root, user, reply, walk } = await thread()
+    const parent = await reply(root)
+    const pending = await reply(parent)
+    const valid = await reply(pending)
+    await setTestPostClearanceStatus(pending.id, 'pending', user.id)
+    const restore = overrideDynamicConfigFieldsForTest(commentPlaceholderConfig, {
+      descendant_max_depth: 2,
+    })
+    try {
+      expect(await walk(null)).toEqual([parent.id, pending.id])
+      expect(await walk(null, pending.id)).toEqual([valid.id])
+    } finally {
+      restore()
+    }
   })
 
   it('keeps a hidden placeholder when the look-down limits end the search without an answer', async () => {

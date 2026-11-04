@@ -10,7 +10,6 @@ import { seedPostCreationModerationBypass } from './seed-data/post-creation-mode
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
 import {
   seedAnchorPostReviewTopicRating,
-  seedComments,
   seedCrawlChunks,
   seedCrawls,
   seedHostnameVoteAggregation,
@@ -99,6 +98,7 @@ import { seedModerationReportContexts } from './seed-data/moderation-report-cont
 import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/seed-anchor.mts'
 import { seedImportRequestRetention } from './seed-data/import-request-retention.mts'
 import { seedPostModerationRetention } from './seed-data/post-moderation-retention.mts'
+import { seedCommentsAndDescendantDepth } from './seed-data/comment-descendant-depth.mts'
 async function main() {
   assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
   await cleanupPublicationScopePages()
@@ -151,7 +151,7 @@ async function main() {
   await seedFollowRssFeedRelations(2500)
   await seedFollowTopicRelations(2500)
   await seedHeavyFollowRelations()
-  await seedComments()
+  await seedCommentsAndDescendantDepth()
   await seedNotifications(2000)
   await seedConversations(500)
   await seedVotes(20_000, 5000)

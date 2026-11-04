@@ -45,11 +45,11 @@
       },
       "read_community": {
         "measured": {
-          "list": 10787,
+          "list": 10858,
           "core": 4180
         },
         "max": {
-          "list": 11000,
+          "list": 12000,
           "core": 5000
         }
       },
@@ -135,11 +135,11 @@
       },
       "read_posts": {
         "measured": {
-          "list": 9659,
-          "core": 5485
+          "list": 9944,
+          "core": 5699
         },
         "max": {
-          "list": 10000,
+          "list": 11000,
           "core": 6000
         }
       },

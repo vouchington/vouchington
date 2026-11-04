@@ -7,6 +7,7 @@ import * as services from '../run-services.mts'
 import { runFeedRssScenarios } from './feed-rss.mts'
 import { runPrioritizedReferralLinkScenarios } from './prioritized-referral-links.mts'
 import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
+import { runCommentDescendantDepthScenario } from './comment-descendant-depth.mts'
 
 const {
   getCommentAncestorsByAny,
@@ -47,6 +48,7 @@ export async function runFeedAndMetricScenarios() {
   // Comment ancestors — use a known seeded post id that exists; if not found it throws 422 which is caught above
   const seedPostId = seedUuid(0, '05')
   await runAndCapture('comment-ancestors', () => getCommentAncestorsByAny(seedPostId))
+  await runCommentDescendantDepthScenario()
   const seedHostnameIds = [
     `${SEED_PREFIX}-0200-7000-8000-000000000000`,
     `${SEED_PREFIX}-0200-7000-8000-000000000001`,

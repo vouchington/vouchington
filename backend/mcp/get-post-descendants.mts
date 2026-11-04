@@ -28,7 +28,7 @@ const { min, max, default: defaultLimit } = COMMENT_DESCENDANTS_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Get a post's replies in id order. A deleted or unmoderated reply is a placeholder with placeholder_state and no text or author, listed only when a valid reply sits below it. A missing or not fully public post returns Post not found.",
+      'Get a depth-bounded window of replies in id order; page_info paginates that window. Use a returned reply as post_id to reach deeper replies. Deleted or unmoderated replies are content-free placeholders with placeholder_state when needed to preserve a possible valid branch. A missing or not fully public post returns Post not found.',
     parameters: {
       type: 'object',
       properties: {

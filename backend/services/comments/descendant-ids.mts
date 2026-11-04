@@ -5,17 +5,17 @@ import { isModerationStaff } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import createError from 'http-errors'
 import sql from 'sql-template-strings'
-import { getCommentLookDownLimits } from './placeholder-config.mts'
+import { getCommentDescendantMaxDepth, getCommentLookDownLimits } from './placeholder-config.mts'
 import { buildCommentIsValidSql, buildLookDownKeepLateral } from './placeholder-sql.mts'
 
 /**
  * One id-ordered page of the comments below `startId` that the viewer can read. A reply is readable
  * when the thread root is. A deleted or unmoderated comment is a placeholder: it is returned only
- * when a valid reply sits below it, so a chain of placeholders with no valid reply is not. That is
- * decided from the rows the walk already has: one climb from the valid rows to their parents, no
- * table read. Only a hidden placeholder, below which the walk loaded nothing, asks a bounded
- * look-down. The walk does not descend through a comment the viewer hid, but it returns the hidden
- * comment; expanding it starts a new walk from that comment. A signed-out viewer has no hide.
+ * when a valid reply sits below it or a look-down bound prevents a definite answer. Valid rows
+ * in the walk seed one climb to their parents without another table read. A hidden or depth-boundary
+ * placeholder, below which the walk loaded nothing, asks a bounded look-down. The walk does not
+ * descend through a comment the viewer hid, but it returns the hidden comment; expanding it starts
+ * a new walk from that comment.
  */
 export async function getVisibleCommentDescendantIdsPage(
   currentUser: PrivateUser | null,
@@ -32,6 +32,7 @@ export async function getVisibleCommentDescendantIdsPage(
     isModerationStaff: isModerationStaff(currentUser),
   }
   const rootReadable = buildDirectPostEligibilityFilter('access_post', 'access_post', eligibility)
+  const maxDepth = getCommentDescendantMaxDepth()
   const hiddenOf = (alias: string) =>
     currentUser
       ? sql`EXISTS (
@@ -42,7 +43,8 @@ export async function getVisibleCommentDescendantIdsPage(
       : sql`false`
   const query = sql`/* getVisibleCommentDescendantIdsPage */
     WITH RECURSIVE descendants AS (
-      SELECT p.id, p.parent_post_id, p.deleted_at, p.approved_at, p.created_by_id, `
+      SELECT p.id, p.parent_post_id, p.deleted_at, p.approved_at, p.created_by_id,
+        1 AS depth, `
     .append(hiddenOf('p'))
     .append(
       sql` AS is_hidden
@@ -58,7 +60,7 @@ export async function getVisibleCommentDescendantIdsPage(
       sql`
       UNION ALL
       SELECT child.id, child.parent_post_id, child.deleted_at, child.approved_at,
-        child.created_by_id, `,
+        child.created_by_id, parent.depth + 1 AS depth, `,
     )
     .append(hiddenOf('child'))
     .append(
@@ -68,34 +70,35 @@ export async function getVisibleCommentDescendantIdsPage(
       WHERE child.root_post_id = ${rootId}
         AND child.post_type = 'comment'
         AND NOT parent.is_hidden
+        AND parent.depth < ${maxDepth}
     ),
     walk AS MATERIALIZED (
       SELECT descendants.* FROM descendants`,
     )
   if (options.afterId) query.append(sql` WHERE descendants.id > ${options.afterId}`)
-  // Seeds are the valid rows, plus a hidden placeholder whose replies the walk did not load: only
-  // there does a lookup read the table. Every other placeholder is kept by the climb below.
+  // Seeds are valid rows, plus a hidden or depth-boundary placeholder whose replies the walk did
+  // not load. Only those placeholders need a look-down; the climb keeps all other ancestors.
   query.append(sql`
     ),
     seeds AS (
       SELECT walk.id, walk.parent_post_id
       FROM walk
       `)
-  if (currentUser) {
-    query.append(
-      buildLookDownKeepLateral(
-        'walk.id',
-        rootId,
-        eligibility,
-        getCommentLookDownLimits(),
-        sql`walk.is_hidden AND NOT `.append(buildCommentIsValidSql('walk', eligibility)),
+  query.append(
+    buildLookDownKeepLateral(
+      'walk.id',
+      rootId,
+      eligibility,
+      getCommentLookDownLimits(),
+      sql`(walk.is_hidden OR walk.depth = ${maxDepth}) AND NOT `.append(
+        buildCommentIsValidSql('walk', eligibility),
       ),
-    )
-  }
+    ),
+  )
   query.append(sql`
       WHERE `)
   query.append(buildCommentIsValidSql('walk', eligibility))
-  if (currentUser) query.append(sql` OR COALESCE(look_down_result.keep, false)`)
+  query.append(sql` OR COALESCE(look_down_result.keep, false)`)
   query.append(sql`
     ),
     kept AS (

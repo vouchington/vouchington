@@ -8,10 +8,16 @@ export const commentPlaceholderRegistryEntry = defineDynamicConfigNamespace({
   namespace: 'comment-placeholder-config',
   label: 'Comment Placeholders',
   description:
-    'Bounds on the search below a deleted or unmoderated comment for a valid reply. A placeholder whose search hits a bound is kept.',
+    'Bounds on a descendant walk and the search below a deleted or unmoderated comment for a valid reply. A placeholder whose search hits a bound is kept.',
   config: commentPlaceholderConfig,
   access: { update_roles: ['developer'] },
   fields: {
+    descendant_max_depth: {
+      description: 'Comment levels one descendant walk reads, counting immediate children as one.',
+      minValue: 1,
+      maxValue: COMMENT_PLACEHOLDER_MAX_VALUES.descendant_max_depth,
+      integer: true,
+    },
     look_down_max_depth: {
       description: 'Levels below a placeholder searched for a valid reply.',
       minValue: 1,
