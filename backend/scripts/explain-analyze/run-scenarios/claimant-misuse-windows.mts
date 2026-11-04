@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
+import { encodeScopedUuidCursor } from '@modules/pagination'
 import { getPendingCopyrightStaffCases } from '@services/copyright-notices/read-models-staff-case'
 import { readClaimantMisuseSummaryPage } from '@services/copyright-notices/claimant-misuse-summary'
 import { verifyCopyrightCaseChildPage } from '@services/copyright-notices/retention-case-purge-children'
@@ -11,6 +12,7 @@ import {
   CLAIMANT_MISUSE_DENSE_NOTICE_ID,
   CLAIMANT_MISUSE_EVENT_COUNT,
   CLAIMANT_MISUSE_NOTICE_COUNT,
+  CLAIMANT_MISUSE_NEAR_OLDEST_CURSOR_ID,
   CLAIMANT_MISUSE_USER_IDS,
   seedClaimantMisuseWindows,
 } from '../seed-data/claimant-misuse-windows.mts'
@@ -43,7 +45,7 @@ export async function runClaimantMisuseWindowScenarios(): Promise<void> {
   )
   const first = await readClaimantMisuseSummaryPage(CLAIMANT_MISUSE_USER_IDS[0]!)
   assert.ok(first.page_info.end_cursor)
-  registerWindow('copyright-claimant-misuse-older-window')
+  registerWindow('copyright-claimant-misuse-older-window', true)
   await runAndCapture(
     'copyright-claimant-misuse-older-window',
     async () => {
@@ -55,6 +57,34 @@ export async function runClaimantMisuseWindowScenarios(): Promise<void> {
       assert.equal(older.notice_withdrawn, 500)
       assert.equal(older.page_info.has_next_page, true)
       assert.notEqual(older.page_info.start_cursor, first.page_info.start_cursor)
+    },
+    undefined,
+    'readClaimantMisuseSummaries',
+  )
+  const claimantUserId = CLAIMANT_MISUSE_USER_IDS[0]!
+  const nearOldestCursor = encodeScopedUuidCursor(
+    CLAIMANT_MISUSE_NEAR_OLDEST_CURSOR_ID,
+    `copyright-claimant-misuse:${claimantUserId}`,
+  )
+  registerScenarioContract('copyright-claimant-misuse-near-oldest-window', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_copyright_notices__claimant_user'] },
+      // Up to one candidate and one receipt lookup per selected notice.
+      { kind: 'maxProcessedRows', relation: 'copyright_notices', max: 2200 },
+      { kind: 'custom', name: 'claimantMisuseCursorSeek' },
+    ],
+    seededRows: {
+      copyright_notices: CLAIMANT_MISUSE_NOTICE_COUNT + 1000,
+      copyright_claimant_misuse_events: CLAIMANT_MISUSE_EVENT_COUNT,
+    },
+  })
+  await runAndCapture(
+    'copyright-claimant-misuse-near-oldest-window',
+    async () => {
+      const oldestWindow = await readClaimantMisuseSummaryPage(claimantUserId, nearOldestCursor)
+      assert.equal(oldestWindow.notice_count, 1000)
+      assert.equal(oldestWindow.notice_withdrawn, 500)
+      assert.equal(oldestWindow.page_info.has_next_page, false)
     },
     undefined,
     'readClaimantMisuseSummaries',
@@ -94,7 +124,7 @@ async function runOrderedPurgeProbe(): Promise<void> {
   )
 }
 
-function registerWindow(id: string): void {
+function registerWindow(id: string, cursor = false): void {
   registerScenarioContract(id, {
     expectations: [
       {
@@ -104,9 +134,10 @@ function registerWindow(id: string): void {
           'idx_copyright_claimant_misuse_events__notice_outcome',
         ],
       },
-      // Both modes read 1,051 notices and 525 event hits for three claimants; add ~20% headroom.
-      { kind: 'maxProcessedRows', relation: 'copyright_notices', max: 1300 },
+      // 1,051 candidates plus 1,050 bounded receipt lookups; add ~20% headroom.
+      { kind: 'maxProcessedRows', relation: 'copyright_notices', max: 2500 },
       { kind: 'maxProcessedRows', relation: 'copyright_claimant_misuse_events', max: 650 },
+      ...(cursor ? [{ kind: 'custom' as const, name: 'claimantMisuseCursorSeek' }] : []),
     ],
     seededRows: {
       copyright_notices: CLAIMANT_MISUSE_NOTICE_COUNT + 1000,

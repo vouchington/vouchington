@@ -3,6 +3,7 @@ export const COPYRIGHT_DELIVERY_SCENARIO_IDS = [
   'copyright-claimant-decision-flags',
   'copyright-claimant-misuse-case-page',
   'copyright-claimant-misuse-older-window',
+  'copyright-claimant-misuse-near-oldest-window',
   'copyright-claimant-misuse-purge-page',
   'copyright-delivery-batches',
   'copyright-delivery-inputs',

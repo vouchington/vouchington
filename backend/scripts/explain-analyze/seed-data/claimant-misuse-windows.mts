@@ -10,6 +10,8 @@ export const CLAIMANT_MISUSE_CASE_IDS = [19_999, 20_024, 20_049].map(index =>
   seedUuid(1_900_000 + index, 'e2'),
 )
 export const CLAIMANT_MISUSE_DENSE_NOTICE_ID = seedUuid(1_900_000 + 19_998, 'e2')
+/** Cursor boundary with exactly one page of this claimant's oldest notices below it. */
+export const CLAIMANT_MISUSE_NEAR_OLDEST_CURSOR_ID = seedUuid(1_900_000 + 1_000, 'e2')
 
 /** A large filer and two small filers share one staff case page; repeated events stay one notice. */
 export async function seedClaimantMisuseWindows(): Promise<void> {

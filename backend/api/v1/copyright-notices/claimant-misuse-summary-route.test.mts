@@ -26,6 +26,8 @@ describe('claimant misuse summary route', () => {
         restriction_reversed_by_counter_notice: 0,
         restriction_reversed_by_appeal: 0,
         notice_count: 0,
+        oldest_notice_at: null,
+        newest_notice_at: null,
         page_info: {
           has_next_page: false,
           start_cursor: null,

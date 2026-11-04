@@ -21,6 +21,34 @@ describe('claimant misuse notice windows', () => {
     restore = undefined
   })
 
+  it('reports receipt time bounds for each window and null bounds when empty', async () => {
+    restore = overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantMisuseWindowSize: 2 })
+    const claimant = await createTestUser()
+    const empty = await createTestUser()
+    const oldestPageTime = new Date('2025-03-01T00:00:00.000Z')
+    const firstPageEarlier = new Date('2025-01-01T00:00:00.000Z')
+    const firstPageLater = new Date('2025-02-01T00:00:00.000Z')
+    await createClearScreenedForm(1, { claimant }, { now: oldestPageTime })
+    await createClearScreenedForm(1, { claimant }, { now: firstPageLater })
+    await createClearScreenedForm(1, { claimant }, { now: firstPageEarlier })
+    const first = await readClaimantMisuseSummaryPage(claimant.id)
+    expect(first).toMatchObject({
+      notice_count: 2,
+      oldest_notice_at: firstPageEarlier.toISOString(),
+      newest_notice_at: firstPageLater.toISOString(),
+    })
+    const older = await readClaimantMisuseSummaryPage(claimant.id, first.page_info.end_cursor!)
+    expect(older).toMatchObject({
+      notice_count: 1,
+      oldest_notice_at: oldestPageTime.toISOString(),
+      newest_notice_at: oldestPageTime.toISOString(),
+    })
+    expect(await readClaimantMisuseSummaryPage(empty.id)).toMatchObject({
+      notice_count: 0,
+      oldest_notice_at: null,
+      newest_notice_at: null,
+    })
+  })
   it('pages independently for each claimant and includes notices without misuse', async () => {
     restore = overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantMisuseWindowSize: 2 })
     const claimant = await createTestUser()
@@ -76,6 +104,8 @@ describe('claimant misuse notice windows', () => {
       restriction_reversed_by_counter_notice: 0,
       restriction_reversed_by_appeal: 0,
       notice_count: 0,
+      oldest_notice_at: null,
+      newest_notice_at: null,
       page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     })
     const first = summaries.get(claimant.id)!

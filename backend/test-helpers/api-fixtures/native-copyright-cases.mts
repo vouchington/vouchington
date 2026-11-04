@@ -1,3 +1,4 @@
+import { claimantMisuseSummaryFixture } from './claimant-misuse-cases.mts'
 import { nativeCopyrightClaimantApiFixtureCases } from './native-copyright-claimant-cases.mts'
 import { formGuidance, reviewedStaffCase } from './native-copyright-staff-form-review.mts'
 import { webCopyrightTerritorialStaffApiFixtureCases } from './web-copyright-territorial-staff-cases.mts'
@@ -67,18 +68,7 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
             display_name: 'Claimant',
             contact: 'claimant@example.test',
             user_id: claimantUserId,
-            misuse: {
-              notice_withdrawn: 1,
-              notice_rejected: 2,
-              restriction_reversed_by_counter_notice: 0,
-              restriction_reversed_by_appeal: 1,
-              notice_count: 4,
-              page_info: {
-                has_next_page: false,
-                start_cursor: null,
-                end_cursor: null,
-              },
-            },
+            misuse: claimantMisuseSummaryFixture,
           },
           work_description: 'Original photograph.',
           targets: [],

@@ -43695,6 +43695,12 @@
                               {
                                 "additionalProperties": false,
                                 "properties": {
+                                  "newest_notice_at": {
+                                    "$ref": "#/$defs/S6"
+                                  },
+                                  "oldest_notice_at": {
+                                    "$ref": "#/$defs/S6"
+                                  },
                                   "notice_count": {
                                     "minimum": 0,
                                     "type": "integer"
@@ -43720,7 +43726,9 @@
                                   }
                                 },
                                 "required": [
+                                  "newest_notice_at",
                                   "notice_count",
+                                  "oldest_notice_at",
                                   "notice_rejected",
                                   "notice_withdrawn",
                                   "page_info",
@@ -44669,6 +44677,11 @@
                     "type": "string"
                   },
                   "type": "array"
+                },
+                "S6": {
+                  "format": "date-time",
+                  "pattern": "Z$",
+                  "type": ["string", "null"]
                 }
               }
             },
@@ -45091,6 +45104,12 @@
                 "claimant_misuse": {
                   "additionalProperties": false,
                   "properties": {
+                    "newest_notice_at": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "oldest_notice_at": {
+                      "$ref": "#/$defs/S1"
+                    },
                     "notice_count": {
                       "minimum": 0,
                       "type": "integer"
@@ -45143,7 +45162,9 @@
                     }
                   },
                   "required": [
+                    "newest_notice_at",
                     "notice_count",
+                    "oldest_notice_at",
                     "notice_rejected",
                     "notice_withdrawn",
                     "page_info",
@@ -45154,7 +45175,14 @@
                 }
               },
               "required": ["claimant_misuse"],
-              "type": "object"
+              "type": "object",
+              "$defs": {
+                "S1": {
+                  "format": "date-time",
+                  "pattern": "Z$",
+                  "type": ["string", "null"]
+                }
+              }
             },
             "annotations": {
               "readOnlyHint": true,

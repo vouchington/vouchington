@@ -138,7 +138,11 @@ staff review remain tracked by the existing parity rows in
 
 Repeat-misuse evidence is a bounded latest-notice window, with a claimant-scoped opaque cursor for
 separate later windows. The staff-only claimant REST read and legal MCP tool share the same counts
-and window metadata; a window's counts are not cumulative.
+and window metadata; a window's counts are not cumulative. Web labels each window's oldest and
+newest original receipt times in the staff member's UI locale. These times describe the notices
+in that count-based window, not a fixed calendar period. Delayed ingestion can make receipt-time
+ranges overlap between windows. Native staff presentation must preserve separate window counts
+and the receipt-time context; this adds no native UI parity claim.
 
 Staff associate email replies with an existing case by claimant, work, or received date. REST and
 legal MCP share a bounded candidate search with opaque continuation; an empty result page can

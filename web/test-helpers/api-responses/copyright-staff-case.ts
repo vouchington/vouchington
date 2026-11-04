@@ -40,6 +40,8 @@ export function makeBusyUsStaffCase(): CopyrightStaffQueueItem {
         restriction_reversed_by_counter_notice: 0,
         restriction_reversed_by_appeal: 1,
         notice_count: 4,
+        oldest_notice_at: '2025-12-01T08:00:00.000Z',
+        newest_notice_at: '2026-01-01T09:30:00.000Z',
         page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
       },
     },

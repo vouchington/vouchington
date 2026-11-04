@@ -12805,6 +12805,16 @@
     "ClaimantMisuseSummary": {
       "additionalProperties": false,
       "properties": {
+        "newest_notice_at": {
+          "format": "date-time",
+          "pattern": "Z$",
+          "type": ["string", "null"]
+        },
+        "oldest_notice_at": {
+          "format": "date-time",
+          "pattern": "Z$",
+          "type": ["string", "null"]
+        },
         "notice_count": {
           "minimum": 0,
           "type": "integer"
@@ -12830,7 +12840,9 @@
         }
       },
       "required": [
+        "newest_notice_at",
         "notice_count",
+        "oldest_notice_at",
         "notice_rejected",
         "notice_withdrawn",
         "page_info",

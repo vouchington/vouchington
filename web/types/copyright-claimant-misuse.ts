@@ -5,6 +5,8 @@ export type CopyrightClaimantMisuse = {
   restriction_reversed_by_counter_notice: number
   restriction_reversed_by_appeal: number
   notice_count: number
+  oldest_notice_at: string | null
+  newest_notice_at: string | null
   page_info: { has_next_page: boolean; start_cursor: string | null; end_cursor: string | null }
 }
 

@@ -9,6 +9,8 @@ import { getCopyrightClaimantMisuseWindowSize } from './config.mts'
 /** Distinct notices per outcome within one newest-first window, never running totals. */
 export type ClaimantMisuseSummary = Record<ClaimantMisuseEvent['outcome'], number> & {
   notice_count: number
+  oldest_notice_at: string | null
+  newest_notice_at: string | null
   page_info: PageInfo
 }
 
@@ -41,7 +43,8 @@ export async function readClaimantMisuseSummaries(
     SELECT claimant.id AS claimant_user_id,
       summary.ids[1] AS first_id,
       summary.ids[array_length(summary.ids, 1)] AS last_id,
-      summary.has_more, summary.notice_count, summary.notice_withdrawn,
+      summary.has_more, summary.notice_count, summary.oldest_notice_at, summary.newest_notice_at,
+      summary.notice_withdrawn,
       summary.notice_rejected, summary.restriction_reversed_by_counter_notice,
       summary.restriction_reversed_by_appeal
     FROM unnest(${claimantIds}::uuid[]) AS claimant(id)
@@ -51,9 +54,9 @@ export async function readClaimantMisuseSummaries(
         WHERE claimant_user_id = claimant.id
           `
   // Keep the seek on the claimant-prefixed index even for a generic cursor plan.
-  if (afterId) statement.append(sql`AND (claimant_user_id, id) < (claimant.id, ${afterId}::uuid)`)
+  if (afterId) statement.append(sql`AND id < ${afterId}::uuid`)
   statement.append(sql`
-        ORDER BY id DESC
+        ORDER BY claimant_user_id, id DESC
         LIMIT ${limit + 1}
       ), page AS MATERIALIZED (
         SELECT id FROM candidates ORDER BY id DESC LIMIT ${limit}
@@ -61,29 +64,29 @@ export async function readClaimantMisuseSummaries(
       SELECT array_agg(notice.id ORDER BY notice.id DESC) AS ids,
         (SELECT count(*) FROM candidates) > ${limit} AS has_more,
         count(*)::int AS notice_count,
-        count(*) FILTER (WHERE COALESCE((
-          SELECT true FROM copyright_claimant_misuse_events event
+        min(receipt.received_at) AS oldest_notice_at,
+        max(receipt.received_at) AS newest_notice_at,
+        count(*) FILTER (WHERE EXISTS (
+          SELECT 1 FROM copyright_claimant_misuse_events event
           WHERE event.copyright_notice_id = notice.id AND event.outcome = 'notice_withdrawn'
-          LIMIT 1
-        ), false))::int AS notice_withdrawn,
-        count(*) FILTER (WHERE COALESCE((
-          SELECT true FROM copyright_claimant_misuse_events event
+        ))::int AS notice_withdrawn,
+        count(*) FILTER (WHERE EXISTS (
+          SELECT 1 FROM copyright_claimant_misuse_events event
           WHERE event.copyright_notice_id = notice.id AND event.outcome = 'notice_rejected'
-          LIMIT 1
-        ), false))::int AS notice_rejected,
-        count(*) FILTER (WHERE COALESCE((
-          SELECT true FROM copyright_claimant_misuse_events event
+        ))::int AS notice_rejected,
+        count(*) FILTER (WHERE EXISTS (
+          SELECT 1 FROM copyright_claimant_misuse_events event
           WHERE event.copyright_notice_id = notice.id
             AND event.outcome = 'restriction_reversed_by_counter_notice'
-          LIMIT 1
-        ), false))::int AS restriction_reversed_by_counter_notice,
-        count(*) FILTER (WHERE COALESCE((
-          SELECT true FROM copyright_claimant_misuse_events event
+        ))::int AS restriction_reversed_by_counter_notice,
+        count(*) FILTER (WHERE EXISTS (
+          SELECT 1 FROM copyright_claimant_misuse_events event
           WHERE event.copyright_notice_id = notice.id
             AND event.outcome = 'restriction_reversed_by_appeal'
-          LIMIT 1
-        ), false))::int AS restriction_reversed_by_appeal
+        ))::int AS restriction_reversed_by_appeal
       FROM page notice
+      JOIN copyright_notices receipt
+        ON receipt.claimant_user_id = claimant.id AND receipt.id = notice.id
     ) summary
   `)
   const { rows } = await query<{
@@ -92,6 +95,8 @@ export async function readClaimantMisuseSummaries(
     last_id: string | null
     has_more: boolean
     notice_count: number
+    oldest_notice_at: Date | null
+    newest_notice_at: Date | null
     notice_withdrawn: number
     notice_rejected: number
     restriction_reversed_by_counter_notice: number
@@ -107,6 +112,8 @@ export async function readClaimantMisuseSummaries(
       restriction_reversed_by_counter_notice: row.restriction_reversed_by_counter_notice,
       restriction_reversed_by_appeal: row.restriction_reversed_by_appeal,
       notice_count: row.notice_count,
+      oldest_notice_at: row.oldest_notice_at?.toISOString() ?? null,
+      newest_notice_at: row.newest_notice_at?.toISOString() ?? null,
       page_info: buildPageInfo(boundaries, {
         hasNextPage: row.has_more,
         getCursor: notice => ({ id: notice.id, scope: cursorScope(row.claimant_user_id) }),

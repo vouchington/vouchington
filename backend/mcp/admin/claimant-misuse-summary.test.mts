@@ -20,14 +20,16 @@ describe('copyright claimant misuse summary legal tool', () => {
   it('matches the staff REST window and its declared output schema', async () => {
     const administrator = await createTestUser({ administrator: true })
     const claimant = await createTestUser()
-    const oldest = await createClearScreenedForm(1, { claimant })
+    const olderTime = new Date('2025-03-01T00:00:00.000Z')
+    const newerTime = new Date('2025-01-01T00:00:00.000Z')
+    const oldest = await createClearScreenedForm(1, { claimant }, { now: olderTime })
     await reviewCopyrightFormIntake({
       intakeId: oldest.notice.intake.id,
       currentUser: administrator,
       is_accepted: false,
       rationale: 'The notice does not identify the claimed work.',
     })
-    await createClearScreenedForm(1, { claimant })
+    await createClearScreenedForm(1, { claimant }, { now: newerTime })
     onTestFinished(
       overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantMisuseWindowSize: 1 }),
     )
@@ -46,6 +48,8 @@ describe('copyright claimant misuse summary legal tool', () => {
     expect(response.body.claimant_misuse).toMatchObject({
       notice_count: 1,
       notice_rejected: 0,
+      oldest_notice_at: newerTime.toISOString(),
+      newest_notice_at: newerTime.toISOString(),
       page_info: { has_next_page: true },
     })
     expect(tool.meta?.outputSchema).toBeDefined()
@@ -65,6 +69,8 @@ describe('copyright claimant misuse summary legal tool', () => {
     expect(olderResponse.body.claimant_misuse).toMatchObject({
       notice_count: 1,
       notice_rejected: 1,
+      oldest_notice_at: olderTime.toISOString(),
+      newest_notice_at: olderTime.toISOString(),
       page_info: { has_next_page: false },
     })
     expect(findSchemaViolation(tool.meta!.outputSchema!, olderResult)).toBeNull()

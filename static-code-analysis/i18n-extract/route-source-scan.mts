@@ -6,7 +6,15 @@ export type ClosureScanIssue = {
 /** First segment of every web catalog alias. A quoted token under any other namespace is never
  * scanned, so its copy would reach no route or chrome selector. The route-selector CLI validates
  * every web catalog namespace before discovering routes. */
-const ALIAS_NAMESPACES = ['common', 'extracted', 'moderation', 'nav', 'settings', 'shared']
+const ALIAS_NAMESPACES = [
+  'common',
+  'copyright',
+  'extracted',
+  'moderation',
+  'nav',
+  'settings',
+  'shared',
+]
 const ALIAS_BODY = `(?:${ALIAS_NAMESPACES.join('|')})\\.(?:[A-Za-z0-9_]+\\.)*[A-Za-z0-9_]+`
 const QUOTED_ALIAS_RE = new RegExp(`['"\`](${ALIAS_BODY})['"\`]`, 'g')
 const UNBOUNDED_KEY_RE = /\bt\(\s*(?:`[^`]*\$\{|(?:['"][^'"]*['"]|[_$A-Za-z][\w$.]*)\s*\+)/

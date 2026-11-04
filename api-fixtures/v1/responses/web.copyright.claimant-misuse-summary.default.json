@@ -1,8 +1,10 @@
 {
   "claimant_misuse": {
+    "newest_notice_at": "2026-07-01T12:00:00.000Z",
     "notice_count": 4,
     "notice_rejected": 2,
     "notice_withdrawn": 1,
+    "oldest_notice_at": "2026-06-01T12:00:00.000Z",
     "page_info": {
       "end_cursor": null,
       "has_next_page": false,

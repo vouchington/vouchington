@@ -2,6 +2,21 @@ import type { ApiFixtureCase } from './types.mts'
 
 const claimantUserId = '00000000-0000-7000-8000-000000000807'
 
+export const claimantMisuseSummaryFixture = {
+  notice_withdrawn: 1,
+  notice_rejected: 2,
+  restriction_reversed_by_counter_notice: 0,
+  restriction_reversed_by_appeal: 1,
+  notice_count: 4,
+  oldest_notice_at: '2026-06-01T12:00:00.000Z',
+  newest_notice_at: '2026-07-01T12:00:00.000Z',
+  page_info: {
+    has_next_page: false,
+    start_cursor: null,
+    end_cursor: null,
+  },
+}
+
 export const claimantMisuseApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'web.copyright.claimant-misuse-summary.default',
@@ -14,18 +29,7 @@ export const claimantMisuseApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-admin',
     status: 200,
     body: {
-      claimant_misuse: {
-        notice_withdrawn: 1,
-        notice_rejected: 2,
-        restriction_reversed_by_counter_notice: 0,
-        restriction_reversed_by_appeal: 1,
-        notice_count: 4,
-        page_info: {
-          has_next_page: false,
-          start_cursor: null,
-          end_cursor: null,
-        },
-      },
+      claimant_misuse: claimantMisuseSummaryFixture,
     },
     consumers: ['web'],
     migratedFrom: ['backend/api/v1/copyright-notices/claimant-misuse-summary-route.mts'],

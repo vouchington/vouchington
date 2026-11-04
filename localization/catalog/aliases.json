@@ -4587,6 +4587,8 @@
 {"alias":"common.currency","consumer":"web","copyId":"copy.common.currency"},
 {"alias":"common.loading","consumer":"web","copyId":"copy.common.loading"},
 {"alias":"common.save","consumer":"web","copyId":"copy.common.save"},
+{"alias":"copyright.claimantMisuse.newestNoticeReceived","consumer":"web","copyId":"copy.copyright.claimantMisuse.newestNoticeReceived"},
+{"alias":"copyright.claimantMisuse.oldestNoticeReceived","consumer":"web","copyId":"copy.copyright.claimantMisuse.oldestNoticeReceived"},
 {"alias":"extracted.accountStatus.page.accountStatus_dafb01ab","consumer":"web","copyId":"copy.extracted.accountStatus.page.accountStatus_dafb01ab"},
 {"alias":"extracted.accountStatus.page.theCurrentStatusOfYourAccount_5e6f7a8b","consumer":"web","copyId":"copy.extracted.accountStatus.page.theCurrentStatusOfYourAccount_5e6f7a8b"},
 {"alias":"extracted.accountStatus.page.thereAreNoActiveRestrictionsOn_f182965b","consumer":"web","copyId":"copy.extracted.accountStatus.page.thereAreNoActiveRestrictionsOn_f182965b"},

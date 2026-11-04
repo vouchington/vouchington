@@ -36,6 +36,7 @@ describe('quotedAliasesFromText', () => {
     expect(() =>
       assertScannableWebAliases([
         'common.page.title',
+        'copyright.page.title',
         'extracted.page.title',
         'moderation.page.title',
         'nav.page.title',

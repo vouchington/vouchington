@@ -17652,6 +17652,20 @@
           "ClaimantMisuseSummary": {
             "additionalProperties": false,
             "properties": {
+              "newest_notice_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
               "notice_count": {
                 "required": true,
                 "schema": {
@@ -17668,6 +17682,20 @@
                 "required": true,
                 "schema": {
                   "type": "number"
+                }
+              },
+              "oldest_notice_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "page_info": {
@@ -17758,6 +17786,20 @@
           "ClaimantMisuseSummary": {
             "additionalProperties": false,
             "properties": {
+              "newest_notice_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
               "notice_count": {
                 "required": true,
                 "schema": {
@@ -17774,6 +17816,20 @@
                 "required": true,
                 "schema": {
                   "type": "number"
+                }
+              },
+              "oldest_notice_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "page_info": {
@@ -107438,7 +107494,7 @@
       "migratedFrom": ["backend/api/v1/copyright-notices/claimant-misuse-summary-route.mts"],
       "path": "/api/v1/copyright-notices/claimants/00000000-0000-7000-8000-000000000807/misuse-summary",
       "responseSchema": {
-        "hash": "59a3f4c3df29692730bd05885743b3099553922e3c38dcbc75f7e8bd1283ee55",
+        "hash": "1fbe3014129bb34db6bc080af298f71db128329f339b91efa2e6572755eb8d63",
         "key": "web.copyright.claimant-misuse-summary.default"
       },
       "route": {
@@ -107679,7 +107735,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "e6377d4b4336cfc8f9c4dadfb61f9cb2653a41677499b5d552585045af4404b8",
+        "hash": "ad1038d33c6cc90d2e8597b7bfd105ba9aab42d243cc41f9ded6168335baf9ab",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

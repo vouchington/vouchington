@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import { Button } from '@/components/ui/button'
 import { getClaimantMisuseSummary } from '@/lib/api/client/copyright-notices'
 import type { CopyrightClaimantMisuse } from '@/types/copyright-claimant-misuse'
@@ -17,6 +19,22 @@ export function CopyrightStaffClaimantMisuse({
   claimantUserId: string | null
   misuse: CopyrightClaimantMisuse | null
 }) {
+  const t = useTranslations()
+  const uiLocale = useUiLocale()
+  const receiptTime = useMemo(
+    () =>
+      new Intl.DateTimeFormat(uiLocale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'UTC',
+        timeZoneName: 'short',
+      }),
+    [uiLocale],
+  )
   const [older, setOlder] = useState<CopyrightClaimantMisuse[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
@@ -55,6 +73,28 @@ export function CopyrightStaffClaimantMisuse({
               {index === 0 ? 'Latest notices' : `Older notices, window ${index + 1}`}
             </h4>
             <p className='text-sm'>{window.notice_count} notices inspected</p>
+            <dl className='text-sm text-muted-foreground'>
+              {window.oldest_notice_at && (
+                <>
+                  <dt>{t('copyright.claimantMisuse.oldestNoticeReceived')}</dt>
+                  <dd>
+                    <time dateTime={window.oldest_notice_at}>
+                      {receiptTime.format(new Date(window.oldest_notice_at))}
+                    </time>
+                  </dd>
+                </>
+              )}
+              {window.newest_notice_at && (
+                <>
+                  <dt>{t('copyright.claimantMisuse.newestNoticeReceived')}</dt>
+                  <dd>
+                    <time dateTime={window.newest_notice_at}>
+                      {receiptTime.format(new Date(window.newest_notice_at))}
+                    </time>
+                  </dd>
+                </>
+              )}
+            </dl>
             {recorded.length === 0 ? (
               <p className='text-sm'>No misuse recorded in this window.</p>
             ) : (

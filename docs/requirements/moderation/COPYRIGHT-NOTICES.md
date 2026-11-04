@@ -45,6 +45,9 @@ Staff sees those outcomes as counts within a bounded latest-notice window for on
 staff-only REST and legal MCP reads use the same claimant-scoped opaque cursor to open the next
 window; each window reports its own counts and notice count rather than cumulative totals. This
 keeps a claimant's full history inspectable without making each queue page scan that history.
+Original receipt times show the span of each count-based window, so staff can distinguish a burst
+of notices from activity spread over a longer period. These spans can overlap when a notice is
+ingested late; they do not imply fixed calendar periods or cumulative evidence.
 
 ## Immutable decision statements
 
