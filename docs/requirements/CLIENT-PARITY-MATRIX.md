@@ -75,6 +75,14 @@ without exposing a UUID in presentation. The ID remains the API and MCP referenc
 joins, and exact reads. Native clients can adopt the hostname fact when rendering these records;
 the added response field does not change their existing request contract.
 
+## Landing page candidate paging
+
+The web picker loads eligible candidates in pages and preserves the current draft while loading
+more. Saved content remains visible when its candidate lies on an older page. Re-adding removed
+content requires loading its eligible candidate page. Swift and .NET adoption of paging and the
+effective item cap is tracked in [clients #541](https://github.com/vouchington/vouchington-clients/issues/541);
+the candidate-picker row remains partial for both clients until that work has executable evidence.
+
 ## Landing page analytics identity
 
 Staff analytics reads identify a landing page by its owner's username and page slug. This matches
