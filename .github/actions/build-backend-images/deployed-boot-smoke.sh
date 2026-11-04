@@ -28,7 +28,7 @@ process.stdout.write(Buffer.from(JSON.stringify(jwk)).toString('base64'))
 
 docker run -d --name "$NAME" --network "${SMOKE_DOCKER_NETWORK:-host}" \
   --env-file "$ACTION_DIR/s3-test-buckets.env" \
-  -e NODE_ENV=staging -e ENVIRONMENT=staging \
+  -e NODE_ENV=staging -e ENVIRONMENT=staging -e CI=true \
   -e IMAGE_ORIGIN=https://images.example.test \
   -e CLOUDFLARE_TURNSTILE_SECRET_KEY=synthetic-smoke-turnstile-secret \
   -e CF_WORKER_SECRET=synthetic-smoke-worker-secret-0123456789 \
@@ -61,6 +61,14 @@ EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' "$NAME")
 if [ "$EXIT_CODE" != "0" ]; then
   echo "✗ docker stop ended $IMAGE with exit code $EXIT_CODE, expected 0. Logs:"
   docker logs "$NAME" 2>&1
+  exit 1
+fi
+# The HTTP drain callback calls Agent.close(); Bun's undici shim lacks it. Shutdown catches
+# that TypeError and can still exit 0, so CI enables console reporting and checks the logs too.
+LOGS=$(docker logs "$NAME" 2>&1)
+if grep -qF 'TypeError:' <<<"$LOGS"; then
+  echo "✗ $IMAGE logged a runtime TypeError during boot or shutdown:"
+  printf '%s\n' "$LOGS"
   exit 1
 fi
 echo "✓ $IMAGE exited 0 on docker stop"
