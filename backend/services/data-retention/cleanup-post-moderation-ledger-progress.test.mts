@@ -54,6 +54,7 @@ describe('post moderation ledger progress', () => {
       })
     }
     const options = {
+      postIds: [postId],
       now,
       lowerBoundDate,
       retentionDays: 90,
