@@ -40,6 +40,7 @@ export async function persistDomainDiff(
   )
   await query(
     `/* syncDomainsWithDatabase */
+        -- no-mistakes-disable-next-line postgres-bounded-statements: driven by the COPY-loaded removed-domain temp table, bounded by this feed's diff.
         DELETE FROM blocklisted_domains d
         USING ${REMOVED_DOMAINS_TABLE} r
         WHERE d.source_id = $1 AND d.domain = r.domain
@@ -53,6 +54,7 @@ async function lockExistingAffectedHostnames(query: TransactionQuery): Promise<v
   // Staff blocks lock these same hostname rows in UUID order. Lock both existing
   // children and their existing ancestors before inserting any missing child;
   // the subsequent inheritance query gets a fresh snapshot after any wait.
+  // no-mistakes-disable-next-line postgres-bounded-statements: driven by the COPY-loaded added-domain temp table, bounded by this feed's diff.
   await query(`/* syncDomainsWithDatabase:lockAffectedHostnames */
     WITH RECURSIVE parent_candidates(child_hostname, parent_hostname) AS (
       SELECT domain, domain FROM ${ADDED_DOMAINS_TABLE}

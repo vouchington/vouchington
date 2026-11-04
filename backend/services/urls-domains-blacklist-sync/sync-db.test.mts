@@ -35,7 +35,7 @@ describe('sync-db', () => {
       url: 'https://example.com/sync-failure.txt',
     })
     try {
-      for (const feed of [`${domain}\n`, '']) {
+      for (const feed of [`${domain}\n`, `other-${suffix}.example.com\n`]) {
         const restoreFailure = failNextHostnameCacheDeleteForTest(hostnameId)
         try {
           await syncDomainsWithDatabase(sourceId, new Response(feed))
@@ -71,7 +71,7 @@ describe('sync-db', () => {
     expect(hostname?.is_blocked).toBe(true)
     if (!hostname) throw new Error('Expected feed-created child hostname')
 
-    await syncDomainsWithDatabase(sourceId, new Response(''), 'url')
+    await syncDomainsWithDatabase(sourceId, new Response(`other-${suffix}.example.com\n`), 'url')
     expect((await getTestHostnameRow(hostname.id))?.is_blocked).toBe(true)
     expect((await getUrlHostnameByAnyCached(child))?.is_blocked).toBe(true)
   })
@@ -107,7 +107,7 @@ describe('sync-db', () => {
       expect((await getTestHostnameRow(hostnameIds.get(domain)!))?.is_blocked).toBe(true)
     }
 
-    await syncDomainsWithDatabase(sourceId, new Response(''), 'url')
+    await syncDomainsWithDatabase(sourceId, new Response(`other-${suffix}.com\n`), 'url')
     for (const domain of domains) {
       expect((await getTestHostnameRow(hostnameIds.get(domain)!))?.is_blocked).toBe(false)
     }
@@ -216,7 +216,7 @@ describe('sync-db', () => {
       const blocked = await getUrlHostnameByAnyCached(hostnameId)
       await caches.url_hostnames.set(hostnameId, blocked)
       await caches.url_hostnames.set(domain, blocked)
-      await syncDomainsWithDatabase(sourceId, new Response(''))
+      await syncDomainsWithDatabase(sourceId, new Response(`other-${crypto.randomUUID()}.com\n`))
       for (const key of [hostnameId, domain]) {
         expect((await getUrlHostnameByAnyCached(key))?.is_blocked).toBe(false)
       }

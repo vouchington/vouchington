@@ -40,6 +40,8 @@ External spam/malware domain lists are synced weekly:
 2. `blocklisted_domains` — normalized domains from all sources
 3. Bloom filters in Valkey — O(1) negative checks; populated after each sync
 
+A successful response with no valid domains (an HTML error page, an empty body) is rejected: the sync reports an error, changes nothing, and saves no validators, so the next run downloads again. Otherwise it would remove every domain the feed contributed. Feed size changes are deliberately not checked, because several feeds are imported on purpose.
+
 `checkDomainBlacklisted()` logic:
 
 - **Feature flag off**: one full query (`url_hostnames` flags plus `blocklisted_domains`), no Bloom read
