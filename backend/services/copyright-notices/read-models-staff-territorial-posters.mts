@@ -2,7 +2,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import sql from 'sql-template-strings'
 import {
-  territorialDeliverySql,
+  selectTerritorialPosterDelivery,
   type TerritorialDeliveryState,
 } from './read-models-staff-territorial-delivery.mts'
 
@@ -15,53 +15,67 @@ export type CopyrightTerritorialStaffPoster = {
   state: TerritorialDeliveryState | null
 }
 
-type PosterRow = CopyrightTerritorialStaffPoster & { has_next_page: boolean }
-
 export function territorialPosterCursorScope(noticeId: string, decisionId: string): string {
   return `copyright-territorial-posters:${noticeId}:${decisionId}:target-asc`
 }
 
 /**
  * One page of the notice's targets, ordered by target id, with the posters to notify for each.
- * The parties are computed only for the page's targets. Pass the last returned target id as
- * `afterTargetId` to continue. `limit` counts targets, so a page holds a row per target and poster.
+ * The parties are computed only for the page's targets, and delivery once per distinct poster on
+ * the page. Pass the last returned target id as `afterTargetId` to continue. `limit` counts
+ * targets, so a page holds a row per target and poster.
  */
 export async function selectTerritorialStaffPosters(
   decision: { noticeId: string; decisionId: string; decidedAt: Date },
   query: TransactionQuery,
   options: { limit: number; afterTargetId?: string },
 ): Promise<{ results: CopyrightTerritorialStaffPoster[]; hasNextPage: boolean }> {
-  const statement = sql`/* selectTerritorialStaffPosters */
-    WITH candidates AS (
-      SELECT target.id, target.copyright_notice_id, target.placement_id,
-        target.surface_activation_revision, target.surface_owner_user_id
-      FROM copyright_notice_targets target
-      WHERE target.copyright_notice_id = ${decision.noticeId}
-        AND EXISTS (SELECT 1 FROM copyright_notices notice
-          WHERE notice.id = target.copyright_notice_id
-            AND notice.current_territorial_decision_identity_id = ${decision.decisionId}
-            AND notice.territorial_decision_outcome = 'restrict')`
-  if (options.afterTargetId) statement.append(sql` AND target.id > ${options.afterTargetId}`)
-  statement.append(sql`
-      ORDER BY target.id
-      LIMIT ${options.limit + 1}
-    ), source AS (
-      SELECT * FROM candidates ORDER BY id LIMIT ${options.limit}
+  // The decision check does not depend on the target, so it runs once and a stale decision stops
+  // before any target is read.
+  const targetsSql = sql`/* selectTerritorialStaffPosterTargets */
+    WITH live AS MATERIALIZED (
+      SELECT notice.id FROM copyright_notices notice
+      WHERE notice.id = ${decision.noticeId}
+        AND notice.current_territorial_decision_identity_id = ${decision.decisionId}
+        AND notice.territorial_decision_outcome = 'restrict'
     )
-    SELECT target.id AS target_id, party.user_id, delivery.informed_at, delivery.state,
-      (SELECT count(*) FROM candidates) > ${options.limit} AS has_next_page
-    FROM source target
-    LEFT JOIN LATERAL `)
-  statement.append(copyrightPlacementPartiesSql('notify'))
-  statement.append(sql` party ON true
-    `)
-  statement.append(territorialDeliverySql('poster', decision.decidedAt))
-  statement.append(sql`
-    ORDER BY target.id, party.user_id
-  `)
-  const { rows } = await query<PosterRow>(statement)
+    SELECT target.id FROM copyright_notice_targets target
+    WHERE target.copyright_notice_id = ${decision.noticeId}
+      AND EXISTS (SELECT 1 FROM live)`
+  if (options.afterTargetId) targetsSql.append(sql` AND target.id > ${options.afterTargetId}`)
+  targetsSql.append(sql` ORDER BY target.id LIMIT ${options.limit + 1}`)
+  const { rows: targetRows } = await query<{ id: string }>(targetsSql)
+  const hasNextPage = targetRows.length > options.limit
+  const targetIds = targetRows.slice(0, options.limit).map(row => row.id)
+  if (targetIds.length === 0) return { results: [], hasNextPage: false }
+
+  const partiesSql = sql`/* selectTerritorialStaffPosterParties */
+    SELECT target.id AS target_id, party.user_id
+    FROM copyright_notice_targets target
+    LEFT JOIN LATERAL `
+  partiesSql.append(copyrightPlacementPartiesSql('notify'))
+  partiesSql.append(sql` party ON true
+    WHERE target.copyright_notice_id = ${decision.noticeId}
+      AND target.id = ANY(${targetIds}::uuid[])
+    ORDER BY target.id, party.user_id`)
+  // no-mistakes-disable-next-line postgres-bounded-statements: The placement roots are correlated to the page's targets, which `target.id = ANY(targetIds)` limits to at most `options.limit` ids of one notice.
+  const { rows } = await query<{ target_id: string; user_id: string | null }>(partiesSql)
+  const delivery = await selectTerritorialPosterDelivery(
+    decision.noticeId,
+    decision.decidedAt,
+    rows.flatMap(row => (row.user_id ? [row.user_id] : [])),
+    query,
+  )
   return {
-    results: rows.map(({ has_next_page: _hasNext, ...poster }) => poster),
-    hasNextPage: rows[0]?.has_next_page ?? false,
+    results: rows.map(row => {
+      const reached = row.user_id ? delivery.get(row.user_id) : undefined
+      return {
+        target_id: row.target_id,
+        user_id: row.user_id,
+        informed_at: reached?.informed_at ?? null,
+        state: reached?.state ?? null,
+      }
+    }),
+    hasNextPage,
   }
 }

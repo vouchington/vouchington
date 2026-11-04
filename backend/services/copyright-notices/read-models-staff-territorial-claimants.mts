@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
-  territorialDeliverySql,
+  territorialClaimantDeliveryCte,
   type TerritorialDeliveryState,
 } from './read-models-staff-territorial-delivery.mts'
 
@@ -37,14 +37,14 @@ export async function selectTerritorialStaffClaimants(
       LIMIT ${options.limit + 1}
     ), source AS (
       SELECT * FROM candidates ORDER BY id LIMIT ${options.limit}
-    )
+    ), `)
+  statement.append(territorialClaimantDeliveryCte(decision.noticeId, decision.decidedAt))
+  statement.append(sql`
     SELECT receipt.id AS receipt_id, receipt.requester_user_id AS user_id,
       delivery.informed_at, delivery.state,
       (SELECT count(*) FROM candidates) > ${options.limit} AS has_next_page
     FROM source receipt
-    `)
-  statement.append(territorialDeliverySql('claimant', decision.decidedAt))
-  statement.append(sql`
+    CROSS JOIN delivery
     ORDER BY receipt.id
   `)
   const { rows } = await query<ClaimantRow>(statement)
