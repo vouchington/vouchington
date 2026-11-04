@@ -64,7 +64,7 @@ CREATE INDEX IF NOT EXISTS idx_user_import_requests__pending_id
 ON user_import_requests (id) WHERE followed_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_user_import_requests__topic_recommendation
-ON user_import_requests (topic_recommendation_post_id, id)
+ON user_import_requests (topic_recommendation_post_id, id) INCLUDE (user_id)
 WHERE followed_at IS NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_import_requests__user_topic_recommendation

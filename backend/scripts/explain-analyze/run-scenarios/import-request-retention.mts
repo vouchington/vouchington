@@ -49,7 +49,7 @@ export async function runImportRequestRetentionScenarios(): Promise<void> {
        WHERE topic_recommendation_post_id = $1::uuid AND followed_at IS NULL
          AND id > $2::uuid
        ORDER BY id LIMIT $3`,
-      [seedUuid(3, '05'), '019e0000-7e00-7000-8000-000000001388', 100],
+      [seedUuid(3, '05'), '019e0000-7e00-7000-8000-000000002710', 100],
     ),
   )
 
