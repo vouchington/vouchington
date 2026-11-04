@@ -1,4 +1,5 @@
 import { UPLOAD_CLEANUP_TOTAL_ROWS } from './seed-data/upload-cleanup-cohort.mts'
+import { LANDING_PAGE_REVIEW_COUNT } from './seed-data/landing-page-candidates.mts'
 import { FOLLOWER_DISTRIBUTION_SEED_COUNT } from './seed-data/common.mts'
 import { REPORT_CONTEXT_SEED_ROW_COUNT } from './seed-data/moderation-report-context-counts.mts'
 import {
@@ -17,7 +18,7 @@ import * as claimantMisuse from './seed-data/claimant-misuse-windows.mts'
 const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   url_hostname_cache_invalidation_work_items: 20_000,
-  users: 20_004,
+  users: 20_005,
   follower_distributions: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   user_email_addresses: 40_000,
@@ -27,7 +28,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   individual_rewards_program_point_valuations: 10_000,
   spending_entries: 20_000,
   individual_rewards_program_statuses: 10_000,
-  posts: 102_021,
+  posts: 102_021 + LANDING_PAGE_REVIEW_COUNT,
   agent_moderations: AGENT_MODERATION_RETENTION_ROWS,
   moderation_transparency_released_daily_rollups:
     AGENT_MODERATION_RETENTION_RELEASED_NOISE + ANCILLARY_SEED_ROW_UPPER_BOUND,
@@ -84,8 +85,8 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   membership_sources: 300,
   memberships: 300,
   podcast_shows: 0,
-  post_review_topic_ratings: 1_001,
-  post_slugs: 1_256,
+  post_review_topic_ratings: 1_001 + LANDING_PAGE_REVIEW_COUNT * 2,
+  post_slugs: 1_256 + LANDING_PAGE_REVIEW_COUNT,
   relation__post__related__url: 2,
   relation__topic__parent__topic: 1_500,
   relation__user__mute__topic: 0,

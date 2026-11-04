@@ -10,8 +10,10 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { runAndCapture, seedUser } from '../run-support.mts'
+import { runLandingPageCandidateScenarios } from './landing-page-candidates.mts'
 
 export async function runUserProfileRoundTripScenarios(): Promise<void> {
+  await runLandingPageCandidateScenarios()
   const { rows: cardTopics } = await read<{ id: string }>(
     `/* explain-card-topic-fixture */
       SELECT id FROM topics WHERE topic_type = 'card' AND deleted_at IS NULL LIMIT 1`,

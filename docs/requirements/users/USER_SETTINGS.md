@@ -12,8 +12,9 @@ Headers use `text-xs font-medium uppercase tracking-wide text-muted-foreground`.
 
 ## Landing pages
 
-The item picker pages through profile links, public reviews, and active referral links by type,
-with newer entities first within each type. Older content requires loading more candidates. Saved
+The item picker pages through profile links, public reviews, and active referral links by type.
+Profile links keep the owner's chosen order; reviews and referral links run newest first. Older
+content requires loading more candidates. Saved
 items remain available for editing through the page detail even when their candidate page has not
 been loaded. The picker has no search.
 

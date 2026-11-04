@@ -1,11 +1,12 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { validateUUID } from '@modules/utils'
-import { buildPageInfo, decodeScopedTierCursor } from '@modules/pagination'
+import { buildPageInfo } from '@modules/pagination'
 import { clampLimit } from '@services/pagination'
 import { getLandingPageProfileLinksByIds, getLandingPageReviewsByIds } from './item-lookups.mts'
 import { getLandingPageReferralLinksByIds } from './topic-lookups.mts'
 import { getLandingPageCandidateIds } from './candidate-ids.mts'
+import { decodeLandingPageCandidateCursor } from './candidate-cursor.mts'
 import { getLandingPageItemLimit } from './limits.mts'
 import type { LandingPageCandidatesPage } from './types.mts'
 
@@ -23,10 +24,8 @@ export async function getMyLandingPageCandidates(
 ): Promise<LandingPageCandidatesPage> {
   validateUUID(userId)
   const limit = Math.floor(clampLimit(options.limit, 25, 100))
-  const scope = `landing-page-candidates:user:${userId}:type-desc-id-desc`
-  const cursor = options.after
-    ? decodeScopedTierCursor(options.after, scope, 'Invalid landing page candidates cursor')
-    : null
+  const scope = `landing-page-candidates:user:${userId}:type-desc-profile-order-id`
+  const cursor = options.after ? decodeLandingPageCandidateCursor(options.after, scope) : null
   const candidates = await getLandingPageCandidateIds(userId, limit + 1, cursor)
   const results = candidates.slice(0, limit)
   const [canCreate, profileLinks, reviews, referralLinks] = await Promise.all([

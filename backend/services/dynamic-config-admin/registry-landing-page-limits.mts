@@ -13,6 +13,7 @@ export const landingPageLimitsRegistryEntry = defineDynamicConfigNamespace({
   fields: {
     items_per_page: {
       description: 'Maximum combined number of top-level items and nested topic-group entries.',
+      integer: true,
       minValue: 1,
       maxValue: LANDING_PAGE_LIMIT_MAX_VALUES.items_per_page,
     },

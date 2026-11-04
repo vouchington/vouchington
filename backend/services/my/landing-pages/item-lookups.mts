@@ -35,7 +35,24 @@ export async function getLandingPageReviewsByIds(
   publicOnly: boolean,
 ): Promise<Map<string, LandingPageCandidateReview>> {
   if (ids.length === 0) return new Map()
+  // Choose the submitted ids before owner filtering so generic plans cannot scan an author's history.
   const query = sql`/* getReviewsByIds */
+    WITH selected_posts AS MATERIALIZED (
+      SELECT p.id, p.title, p.declared_language, p.lingua_rs_detected_language, p.markdown,
+        p.created_at, p.created_by_id, p.post_type, p.deleted_at
+      FROM posts p
+      WHERE p.id = ANY(${ids}::uuid[])
+  `
+  if (publicOnly) {
+    query.append(sql`
+      AND EXISTS (
+        SELECT 1
+        FROM view_public_post_eligibility eligibility
+        WHERE eligibility.post_id = p.id
+      )`)
+  }
+  query.append(sql`
+    )
     SELECT
       p.id,
       p.title,
@@ -55,24 +72,14 @@ export async function getLandingPageReviewsByIds(
       prtr.order_index,
       t.name AS topic_name,
       t.slug AS topic_slug
+    FROM selected_posts p
     -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
-    FROM posts p
     LEFT JOIN post_review_topic_ratings prtr ON prtr.post_id = p.id
     LEFT JOIN topics t ON t.id = prtr.topic_id AND t.deleted_at IS NULL
     WHERE p.created_by_id = ${userId}
-      AND p.id = ANY(${ids}::uuid[])
       AND p.post_type = 'review'
       AND p.deleted_at IS NULL
-  `
-  if (publicOnly) {
-    query.append(sql`
-      AND EXISTS (
-        SELECT 1
-        FROM view_public_post_eligibility eligibility
-        WHERE eligibility.post_id = p.id
-      )`)
-  }
-  query.append(sql` ORDER BY p.id DESC, prtr.order_index ASC`)
+    ORDER BY p.id DESC, prtr.order_index ASC`)
   const { rows } = await read(query)
   return buildReviewMap(rows)
 }

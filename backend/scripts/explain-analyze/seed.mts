@@ -1,4 +1,4 @@
-import { seedUploadCleanup } from './seed-data/upload-cleanup.mts'
+import { seedFinalExplainFixtures } from './seed-data/final-fixtures.mts'
 import { seedIngestionRawPages } from './seed-data/ingestion-raw-pages.mts'
 import { seedRelationVoteReads } from './seed-data/relation-vote-reads.mts'
 import { cleanupPublicationScopePages } from './seed-data/publication-scope-cleanup.mts'
@@ -187,7 +187,7 @@ async function main() {
   await seedViewDrivenIdentity()
   await seedClassifierHumanVoteComparison()
   await seedRelationVoteReads()
-  await seedUploadCleanup()
+  await seedFinalExplainFixtures()
   await runAnalyze()
   await refreshExplainMaterializedViews(refreshMaterializedView, statement => write(statement))
   await printRowCounts()
