@@ -62,8 +62,10 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   Its signed cursor binds the target, root, and continuation boundary. `end_cursor` is the
   shallowest displayed non-root item because `after` walks toward the root; `start_cursor` is the
   deepest. The root is the sole intentional duplicate across pages and sidecars are page-local.
-  The temporary no-query full-chain response is an expand/contract compatibility path, not a
-  public unbounded mode; clients must migrate to `limit=5` before that fallback is removed.
+  A request with no paging parameters gets the same default window; there is no unbounded mode.
+  `read_posts` option `ancestors` pages the same way over MCP. MCP checks readability of the whole
+  chain before paging, so a hidden ancestor above the window still hides the reply; REST checks
+  only the root and the returned window.
 
 ### Messaging Traversal And Query Plans
 

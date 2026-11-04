@@ -96,7 +96,7 @@ describe('post and story read tool output schemas', () => {
 
   it.each([
     ['read_posts', getPostTool, ['post']],
-    ['read_posts', getPostAncestorsTool, ['ancestors']],
+    ['read_posts', getPostAncestorsTool, ['ancestors', 'page_info']],
     ['read_posts', getPostDescendantsTool, ['descendants', 'page_info']],
     ['get_story', getStoryTool, ['story', 'items', 'page_info']],
   ] as const)('publishes %s as a found-or-not-found object', (name, tool, fields) => {

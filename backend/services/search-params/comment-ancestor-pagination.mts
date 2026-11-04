@@ -15,15 +15,9 @@ export const commentAncestorPaginationQuery = defineQueryContract({
 })
 
 export function prepareCommentAncestorPagination(query: Record<string, unknown>): {
-  hasBoundedQuery: boolean
   validationQuery: Record<string, unknown>
-  pageQuery: { after?: unknown; limit: number } | null
+  pageQuery: { after?: unknown; limit: number }
 } {
-  const hasBoundedQuery = query.after !== undefined || query.limit !== undefined
-  if (!hasBoundedQuery) {
-    return { hasBoundedQuery, validationQuery: {}, pageQuery: null }
-  }
-
   const bounds = getPaginationLimits(
     COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
     COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
@@ -40,9 +34,5 @@ export function prepareCommentAncestorPagination(query: Record<string, unknown>)
   )
   if (query.limit !== undefined) validationQuery.limit = limit
 
-  return {
-    hasBoundedQuery,
-    validationQuery,
-    pageQuery: { after: query.after, limit },
-  }
+  return { validationQuery, pageQuery: { after: query.after, limit } }
 }

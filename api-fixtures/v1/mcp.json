@@ -6208,7 +6208,7 @@
           "tool": {
             "name": "read_posts",
             "title": "Read Posts",
-            "description": "ancestors: Get a comment's parent chain from thread root to direct parent, excluding the comment. Root posts have none. Deleted ancestors are omitted, so parent_post_id may name an unlisted comment. A deleted, missing or not fully public comment returns Post not found.\ndescendants: Get a post's replies in id order. An unreadable reply hides its subtree; a deleted reply is omitted but its descendants remain, so parent_post_id may name an unlisted reply. A deleted, missing or not fully public post returns Post not found.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; comments require a fully public thread. Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\ntrending: Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.\nsearch: Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.",
+            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. Deleted ancestors are omitted, so parent_post_id may name an unlisted comment. A deleted, missing or not fully public comment returns Post not found.\ndescendants: Get a post's replies in id order. An unreadable reply hides its subtree; a deleted reply is omitted but its descendants remain, so parent_post_id may name an unlisted reply. A deleted, missing or not fully public post returns Post not found.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; comments require a fully public thread. Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\ntrending: Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.\nsearch: Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -6219,7 +6219,23 @@
                       "enum": ["ancestors"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S2"
+                      "type": "object",
+                      "properties": {
+                        "post_id": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 5,
+                          "description": "Parents per page (default 5)"
+                        },
+                        "after": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["post_id"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -6235,8 +6251,7 @@
                       "type": "object",
                       "properties": {
                         "post_id": {
-                          "type": "string",
-                          "description": "Post id or slug"
+                          "$ref": "#/$defs/S3"
                         },
                         "limit": {
                           "type": "integer",
@@ -6262,7 +6277,14 @@
                       "enum": ["details"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S2"
+                      "type": "object",
+                      "properties": {
+                        "post_id": {
+                          "$ref": "#/$defs/S3"
+                        }
+                      },
+                      "required": ["post_id"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -6360,12 +6382,12 @@
                           "description": "Sort order: new (most recent), best (highest voted), hot, relevance (search relevance; the default when searching), following_new"
                         },
                         "post_type": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S2"
                         },
                         "post_types": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S2"
                           }
                         },
                         "categories": {
@@ -6434,17 +6456,6 @@
                   "description": "Topic id, slug, or exact name"
                 },
                 "S2": {
-                  "type": "object",
-                  "properties": {
-                    "post_id": {
-                      "type": "string",
-                      "description": "Post id or slug"
-                    }
-                  },
-                  "required": ["post_id"],
-                  "additionalProperties": false
-                },
-                "S3": {
                   "type": "string",
                   "enum": [
                     "discussion",
@@ -6456,6 +6467,10 @@
                     "blog_post",
                     "story"
                   ]
+                },
+                "S3": {
+                  "type": "string",
+                  "description": "Post id or slug"
                 }
               }
             },
@@ -6476,9 +6491,12 @@
                           "items": {
                             "$ref": "#/$defs/S1"
                           }
+                        },
+                        "page_info": {
+                          "$ref": "#/$defs/S3"
                         }
                       },
-                      "required": ["success", "ancestors"],
+                      "required": ["success", "ancestors", "page_info"],
                       "additionalProperties": false
                     },
                     {
@@ -6502,34 +6520,7 @@
                           }
                         },
                         "page_info": {
-                          "type": "object",
-                          "properties": {
-                            "has_next_page": {
-                              "type": "boolean"
-                            },
-                            "start_cursor": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "end_cursor": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["has_next_page", "start_cursor", "end_cursor"],
-                          "additionalProperties": false
+                          "$ref": "#/$defs/S3"
                         }
                       },
                       "required": ["success", "descendants", "page_info"],
@@ -6591,7 +6582,7 @@
                           }
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["success", "time_range", "results", "page_info"],
@@ -6634,7 +6625,7 @@
                           }
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["success", "results", "page_info"],
@@ -6812,6 +6803,36 @@
                   "additionalProperties": false
                 },
                 "S3": {
+                  "type": "object",
+                  "properties": {
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "end_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["has_next_page", "start_cursor", "end_cursor"],
+                  "additionalProperties": false
+                },
+                "S4": {
                   "additionalProperties": false,
                   "properties": {
                     "end_cursor": {

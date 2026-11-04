@@ -71,7 +71,7 @@ export const processPostCreated = async ({ id }: { id: string }) => {
     }
   }
 
-  await handlePostCommentAction(post.id)
+  await handlePostCommentAction(post)
 
   await recoverPostCreatedEffects(post)
 }
@@ -110,10 +110,10 @@ export const processPostUpdated = async ({
     enqueuePostMentions(id),
   ])
 
-  await handlePostCommentAction(post.id)
+  await handlePostCommentAction(post)
 }
 
 export const processPostDeleted = async ({ id }: { id: string }) => {
   const post = await getDeletedPostByAny(id)
-  await handlePostCommentAction(post?.id ?? id)
+  await handlePostCommentAction(post)
 }

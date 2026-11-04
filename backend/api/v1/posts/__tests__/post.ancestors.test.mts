@@ -21,7 +21,7 @@ describe('post.ancestors', () => {
     await followUser(follower, creator)
   })
   describe('GET /api/v1/posts/:idOrSlug/ancestors', () => {
-    it('resolves a comment slug through full-chain and bounded ancestor reads', async () => {
+    it('resolves a comment slug with and without a page limit', async () => {
       const suffix = crypto.randomUUID()
       const rootId = await insertTestPost({
         title: 'Slug ancestor root',

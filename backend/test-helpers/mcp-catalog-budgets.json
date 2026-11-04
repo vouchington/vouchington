@@ -6,7 +6,7 @@
       "all": {
         "on": {
           "count": 78,
-          "list": 259000,
+          "list": 260000,
           "core": 111000,
           "output": 242000
         }
@@ -15,8 +15,8 @@
         "on": {
           "count": 9,
           "list": 55000,
-          "core": 25000,
-          "output": 53000
+          "core": 26000,
+          "output": 54000
         }
       },
       "Plus": {

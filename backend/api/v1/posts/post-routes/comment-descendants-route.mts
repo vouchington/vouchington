@@ -1,7 +1,7 @@
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
-import { type CommentNode, getCommentAncestorsByAny } from '@services/comments'
+import { getCommentAncestorTargetByAny, resolveCommentAncestorPage } from '@services/comments'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
@@ -22,12 +22,12 @@ import app from '../../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost } from '@services/posts/route-access'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { apiQuery } from '../../../api-query-contract.mts'
 import {
   commentAncestorPaginationQuery,
   prepareCommentAncestorPagination,
 } from '@services/search-params/comment-ancestor-pagination'
-import { resolveCommentAncestorPage } from './comment-ancestor-pagination.mts'
 
 app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/posts/:idOrSlug/ancestors', commentAncestorPaginationQuery)
@@ -41,28 +41,16 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
     query: preparedPagination.validationQuery,
   })
 
-  let ancestors: CommentNode[]
-  let targetId: string | undefined
-  let pageInfo = {
-    has_next_page: false,
-    end_cursor: null as string | null,
-    start_cursor: null as string | null,
-  }
-
-  if (preparedPagination.hasBoundedQuery) {
-    if (!preparedPagination.pageQuery) throw new Error('Missing bounded ancestor pagination query')
-    const page = await resolveCommentAncestorPage({
-      idOrSlug: ctx.params.idOrSlug!,
-      ...preparedPagination.pageQuery,
-    })
-    ctx.assert(page, 404, 'Post not found')
-    ancestors = page.ancestors
-    targetId = page.targetId
-    pageInfo = page.pageInfo
-  } else {
-    ancestors = await getCommentAncestorsByAny(ctx.params.idOrSlug!)
-    targetId = ancestors.at(-1)?.id
-  }
+  const target = await getCommentAncestorTargetByAny(ctx.params.idOrSlug!)
+  ctx.assert(target, 404, 'Post not found')
+  const { ancestors, targetId, pageInfo } = await resolveCommentAncestorPage({
+    after:
+      preparedPagination.pageQuery.after === undefined
+        ? undefined
+        : stringFromUnknown(preparedPagination.pageQuery.after),
+    limit: preparedPagination.pageQuery.limit,
+    target,
+  })
   ctx.assert(ancestors.length > 0, 404, 'Post not found')
   ctx.assert(targetId, 404, 'Post not found')
 

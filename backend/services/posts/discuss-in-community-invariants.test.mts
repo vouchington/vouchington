@@ -9,11 +9,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers/entities/communities'
-import {
-  getCommentAncestorIds,
-  getCommentAncestorsByAny,
-  getVisibleCommentDescendantIdsPage,
-} from '@services/comments'
+import { getCommentAncestorsByAny, getVisibleCommentDescendantIdsPage } from '@services/comments'
 import { WEB_PROVENANCE } from '@voucha/test-helpers'
 
 describe('discuss-in-community-invariants', () => {
@@ -112,7 +108,6 @@ describe('discuss-in-community-invariants', () => {
       await expect(getPostMetricsByAny(discussInCommunity.id)).resolves.toMatchObject({
         count: { ancestors: 0 },
       })
-      await expect(getCommentAncestorIds(comment.id)).resolves.toEqual([discussInCommunity.id])
       await expect(getCommentAncestorsByAny(comment.id)).resolves.toEqual([
         expect.objectContaining({ id: discussInCommunity.id }),
         expect.objectContaining({ id: comment.id }),

@@ -1,24 +1,48 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { postReferenceSchema } from './entity-reference-schema.mts'
+import { COMMENT_ANCESTOR_PAGE_MAX_LIMIT, resolveCommentAncestorPage } from '@services/comments'
+import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import type { BasicUser } from '@services/users/types'
+import createHttpError from 'http-errors'
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
   post_id: string
+  limit?: number
+  after?: string
 }
 
-type ToolResult = { success: true; ancestors: McpPost[] } | { success: false; error: string }
+type PageInfo = {
+  has_next_page: boolean
+  start_cursor: string | null
+  end_cursor: string | null
+}
+
+type ToolResult =
+  | { success: true; ancestors: McpPost[]; page_info: PageInfo }
+  | { success: false; error: string }
+
+const EMPTY_PAGE_INFO: PageInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
+const LIMIT = COMMENT_ANCESTOR_PAGE_MAX_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Get a comment's parent chain from thread root to direct parent, excluding the comment. Root posts have none. Deleted ancestors are omitted, so parent_post_id may name an unlisted comment. A deleted, missing or not fully public comment returns Post not found.",
+      "Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. Deleted ancestors are omitted, so parent_post_id may name an unlisted comment. A deleted, missing or not fully public comment returns Post not found.",
     parameters: {
       type: 'object',
       properties: {
         post_id: postReferenceSchema,
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: LIMIT,
+          description: `Parents per page (default ${LIMIT})`,
+        },
+        after: { type: 'string' },
       },
       required: ['post_id'],
     },
@@ -29,14 +53,43 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['posts:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/posts/:idOrSlug/ancestors' }],
-    outputSchema: foundOrNotFoundSchema({ ancestors: { type: 'array', items: mcpPostSchema() } }),
+    outputSchema: foundOrNotFoundSchema({
+      ancestors: { type: 'array', items: mcpPostSchema() },
+      page_info: closedObject(
+        pickProperties('PageInfo', ['has_next_page', 'start_cursor', 'end_cursor']),
+      ),
+    }),
   },
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const thread = await resolveReadableThread(currentUser, args.post_id)
       if (!thread) return { success: false, error: 'Post not found' }
-      return { success: true, ancestors: await toMcpPosts(thread.ancestors) }
+      if (thread.ancestors.length === 0) {
+        return { success: true, ancestors: [], page_info: EMPTY_PAGE_INFO }
+      }
+      // The full chain was checked above, so a hidden ancestor above this window still hides the
+      // reply. The window itself is a bounded read, as in the REST twin.
+      const page = await resolveCommentAncestorPage({
+        after: args.after,
+        limit: clampToolLimit(args.limit, LIMIT, LIMIT),
+        target: thread.post,
+      }).catch((err: unknown) => {
+        if (createHttpError.isHttpError(err) && err.status === 400) return null
+        throw err
+      })
+      if (!page) return { success: false, error: 'Invalid cursor' }
+      const ids = page.ancestors.filter(node => node.id !== thread.post.id && !node.deleted_at)
+      const loaded = new Map(
+        (await getPostByAnyCachedBatch(ids.map(node => node.id))).flatMap(post =>
+          post ? [[post.id, post] as const] : [],
+        ),
+      )
+      return {
+        success: true,
+        ancestors: await toMcpPosts(ids.flatMap(node => loaded.get(node.id) ?? [])),
+        page_info: page.pageInfo,
+      }
     },
 }
 

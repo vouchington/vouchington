@@ -90,6 +90,7 @@ function buildCommentAncestorPageQuery({
         AND (posts.id = ${rootId} OR posts.root_post_id = ${rootId})
       UNION ALL
       SELECT posts.id, posts.post_type, posts.root_post_id, posts.parent_post_id, posts.community_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, ancestor_window.depth + 1
+      -- no-mistakes-disable-next-line postgres-bounded-statements: each step joins one parent by primary key and stops at the depth cap below, so the window is at most limit + 2 rows.
       FROM posts JOIN ancestor_window ON ancestor_window.parent_post_id = posts.id
       WHERE ancestor_window.post_type = 'comment'
         AND (posts.id = ${rootId} OR posts.root_post_id = ${rootId})

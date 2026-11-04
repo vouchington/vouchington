@@ -1,13 +1,6 @@
-import {
-  decodeCommentAncestorCursor,
-  encodeCommentAncestorCursor,
-  type CommentNode,
-} from '@services/comments'
-import {
-  getCommentAncestorPage,
-  getCommentAncestorTargetByAny,
-} from '@services/comments/ancestor-page'
-import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import { decodeCommentAncestorCursor, encodeCommentAncestorCursor } from './ancestor-cursor.mts'
+import { getCommentAncestorPage, type CommentAncestorTarget } from './ancestor-page.mts'
+import type { CommentNode } from './types.mts'
 
 interface ResolvedCommentAncestorPage {
   ancestors: CommentNode[]
@@ -19,22 +12,21 @@ interface ResolvedCommentAncestorPage {
   }
 }
 
+/** The root plus one bounded window of the target's ancestors, with a signed cursor to continue. */
 export async function resolveCommentAncestorPage({
   after,
-  idOrSlug,
   limit,
+  target,
 }: {
-  after?: unknown
-  idOrSlug: string
+  after?: string
   limit: number
-}): Promise<ResolvedCommentAncestorPage | null> {
-  const target = await getCommentAncestorTargetByAny(idOrSlug)
-  if (!target) return null
+  target: CommentAncestorTarget
+}): Promise<ResolvedCommentAncestorPage> {
   const rootId = target.root_post_id ?? target.id
   const cursor =
     after === undefined
       ? undefined
-      : decodeCommentAncestorCursor(stringFromUnknown(after), {
+      : decodeCommentAncestorCursor(after, {
           root_post_id: rootId,
           target_id: target.id,
         })
