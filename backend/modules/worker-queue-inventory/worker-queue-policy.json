@@ -3,6 +3,7 @@
   "ioCapableQueues": [
     "background",
     "emails",
+    "hacker-news",
     "find-your-friends",
     "rss-feed-maintenance",
     "crawl_embeds",

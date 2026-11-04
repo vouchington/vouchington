@@ -55,6 +55,7 @@
     "@workers/crawl-embeds": "workspace:^",
     "@workers/emails": "workspace:^",
     "@workers/find-your-friends": "workspace:^",
+    "@workers/hacker-news": "workspace:^",
     "@workers/memberships": "workspace:^",
     "@workers/psql": "workspace:^",
     "@workers/rss-feed-maintenance": "workspace:^",

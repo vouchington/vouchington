@@ -74,6 +74,10 @@ flowchart LR
 
 ## Why queues are shaped this way
 
+Hacker News lookups have a dedicated external-service rate limit, isolating a flood of new URLs
+from other background work. Detail reads re-admit missing or stale results after a lost or terminal
+job; unread URLs may remain without references until a detail read occurs.
+
 Moderation reconciliation and Bedrock batch polling carry a fixed sweep boundary through bounded
 continuations, so unchanged active rows cannot monopolize every page. Moderation reconciliation
 indexes unfinished work so completed history cannot dominate page reads. Invalid-crawl cleanup

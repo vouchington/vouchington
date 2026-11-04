@@ -16,6 +16,7 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
   it('each worker definition points at the expected lazy import export', () => {
     const expectedDefinitions = [
       ['background', 'background', 'createBackgroundWorker'],
+      ['hacker-news', 'hacker-news', 'hackerNews'],
       ['find-your-friends', 'find-your-friends', 'findYourFriends'],
       ['rss-feed-maintenance', 'rss-feed-maintenance', 'rssFeedMaintenance'],
       ['crawl_embeds', 'crawl-embeds', 'crawlEmbeds'],

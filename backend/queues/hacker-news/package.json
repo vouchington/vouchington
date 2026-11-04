@@ -1,0 +1,24 @@
+{
+  "name": "@queues/hacker-news",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "valkyries": "^0.15.0"
+  }
+}
