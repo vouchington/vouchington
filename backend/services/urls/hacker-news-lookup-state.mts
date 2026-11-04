@@ -10,7 +10,10 @@ export type HackerNewsLookupTarget = {
   looked_up_at: Date | null
 }
 
-/** Resolve complete canonical chains, including two-hop links left by concurrent updates. */
+/**
+ * Resolve complete canonical chains, including two-hop links left by concurrent updates.
+ * Lateral point probes keep recursive cardinality estimates from scanning the whole URL store.
+ */
 export async function getHackerNewsLookupTargets(
   urlIds: readonly string[],
   options: QueryOptions = {},
@@ -29,12 +32,19 @@ export async function getHackerNewsLookupTargets(
         FROM urls WHERE id = ANY($1::uuid[])
         UNION ALL
         SELECT u.id, u.canonical_url_id, u.url, u.created_at, chain.depth + 1
-        FROM urls u JOIN chain ON u.id = chain.canonical_url_id
+        FROM chain
+        CROSS JOIN LATERAL (
+          SELECT id, canonical_url_id, url, created_at FROM urls
+          WHERE id = chain.canonical_url_id LIMIT 1
+        ) u
         WHERE chain.depth < 10
       )
       SELECT DISTINCT chain.id, chain.url, chain.created_at, totals.looked_up_at
       FROM chain
-      LEFT JOIN url_hacker_news_totals totals ON totals.url_id = chain.id
+      LEFT JOIN LATERAL (
+        SELECT looked_up_at FROM url_hacker_news_totals
+        WHERE url_id = chain.id LIMIT 1
+      ) totals ON TRUE
       WHERE chain.canonical_url_id IS NULL`,
       [ids.slice(start, start + batchSize)],
       options,
