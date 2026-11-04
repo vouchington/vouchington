@@ -2,6 +2,7 @@ import { createCopyrightActionSweepReview } from '@voucha/test-helpers/copyright
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { removeQueuedJobsById } from '@voucha/test-helpers/shared-queue-cleanup'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { notifications } from '@queues/notifications/queues'
 import type { CopyrightSweepContinuation } from '@queues/notifications/types'
@@ -22,6 +23,17 @@ describe('processReconcileCopyrightActionIntents continuation', () => {
     const page = await searchRecoverableCopyrightFormReviewIntakeIds({ ids, limit: 1 })
     expect(page.results).toEqual([first.id])
     expect(page.page_info.has_next_page).toBe(true)
+    onTestFinished(async () => {
+      const continuations = (await readAllQueueJobs(notifications)).filter(
+        job =>
+          job.name === 'notifications.processReconcileCopyrightActionIntents' &&
+          (job.data as CopyrightSweepContinuation).cursors?.forms === page.page_info.end_cursor,
+      )
+      await removeQueuedJobsById(
+        notifications,
+        continuations.map(job => job.id),
+      )
+    })
     const failure = new Error('head review transaction failed')
     onTestFinished(rejectNextPostgresTransactionForTest(failure))
     const evaluatedAt = '2030-01-02T03:04:05.000Z'
@@ -75,6 +87,17 @@ describe('processReconcileCopyrightActionIntents continuation', () => {
     const page = await searchRecoverableCopyrightFormReviewIntakeIds({ ids, limit: 1 })
     expect(page.results).toEqual([first.id])
     expect(page.page_info.has_next_page).toBe(true)
+    onTestFinished(async () => {
+      const continuations = (await readAllQueueJobs(notifications)).filter(
+        job =>
+          job.name === 'notifications.processReconcileCopyrightActionIntents' &&
+          (job.data as CopyrightSweepContinuation).cursors?.forms === page.page_info.end_cursor,
+      )
+      await removeQueuedJobsById(
+        notifications,
+        continuations.map(job => job.id),
+      )
+    })
     const evaluatedAt = new Date().toISOString()
     await expect(processReconcileCopyrightActionIntents({ evaluatedAt }, ids, 1)).resolves.toEqual({
       enqueued: 0,
