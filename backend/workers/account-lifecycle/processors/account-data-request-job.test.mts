@@ -1,12 +1,9 @@
+import { createTestDataRequestSweepNeighbor } from '@voucha/test-helpers/account-data-request-sweep-neighbor'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import type { Job } from 'glide-mq'
-import {
-  claimRecoverableDataRequests,
-  createDataRequest,
-  getDataRequestById,
-} from '@services/account-data-requests'
+import { createDataRequest, getDataRequestById } from '@services/account-data-requests'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
-import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { createTestUser, makeUserDataRequestRecoverableForTest } from '@voucha/test-helpers'
 import {
   ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
@@ -37,7 +34,11 @@ describe('processAccountDataRequestJob', () => {
   })
 
   it('routes a recovery job to the recovery sweep', async () => {
-    onTestFinished(rejectNextPostgresTransactionForTest(new Error('recovery sweep reached')))
+    onTestFinished(
+      runBeforePostgresStatementForTest('claimRecoverableDataRequests:candidates', async () => {
+        throw new Error('recovery sweep reached')
+      }),
+    )
 
     await expect(
       processAccountDataRequestJob(job(ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name)),
@@ -47,16 +48,15 @@ describe('processAccountDataRequestJob', () => {
 
 describe('recoverExportRequests', () => {
   it('enqueues every claimed database attempt', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor()
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)
     await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
 
-    await expect(
-      recoverExportRequests({
-        claimRecoverableDataRequests: (_requestIds, batchSize) =>
-          claimRecoverableDataRequests([request.id], batchSize),
-      }),
-    ).resolves.toEqual({ enqueued: 1, hasMore: false })
+    await expect(recoverExportRequests([request.id], 1)).resolves.toEqual({
+      enqueued: 1,
+      hasMore: false,
+    })
 
     const queued = await accountLifecycle.getJob(exportJobId(request))
     expect(queued?.data).toEqual({
@@ -64,20 +64,21 @@ describe('recoverExportRequests', () => {
       userId: user.id,
       processingAttemptId: request.processing_attempt_id,
     })
+    expect(await neighbor.readState()).toEqual(neighbor.state)
   })
 
   it('does not enqueue an empty recovery batch', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor()
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)
 
-    await expect(
-      recoverExportRequests({
-        claimRecoverableDataRequests: (_requestIds, batchSize) =>
-          claimRecoverableDataRequests([request.id], batchSize),
-      }),
-    ).resolves.toEqual({ enqueued: 0, hasMore: false })
+    await expect(recoverExportRequests([request.id], 1)).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
 
     expect(await accountLifecycle.getJob(exportJobId(request))).toBeNull()
+    expect(await neighbor.readState()).toEqual(neighbor.state)
   })
 })
 

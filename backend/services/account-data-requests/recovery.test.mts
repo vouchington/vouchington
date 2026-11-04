@@ -1,3 +1,4 @@
+import { createTestDataRequestSweepNeighbor } from '@voucha/test-helpers/account-data-request-sweep-neighbor'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -17,6 +18,7 @@ import {
 
 describe('account data request recovery', () => {
   it('uses updated dispatch and processing recovery windows in the actual claim predicates', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor('stale')
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)
     await makeUserDataRequestRecoverableForTest(request.id, 'unstarted', 3)
@@ -33,25 +35,28 @@ describe('account data request recovery', () => {
       const processing = await claimRecoverableDataRequests([request.id])
       expect(processing.requests.map(row => row.requestId)).toEqual([request.id])
       expect(processing.requests[0]!.processingAttemptId).not.toBe(request.processing_attempt_id)
+      expect(await neighbor.readState()).toEqual(neighbor.state)
     } finally {
       restore()
     }
   })
 
   it('reuses the token for an unstarted attempt and rotates stale attempts', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor('stale')
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)
     await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
-    const unstarted = (await claimRecoverableDataRequests()).requests.find(
+    const unstarted = (await claimRecoverableDataRequests([request.id])).requests.find(
       candidate => candidate.requestId === request.id,
     )
     expect(unstarted?.processingAttemptId).toBe(request.processing_attempt_id)
 
     await makeUserDataRequestRecoverableForTest(request.id, 'stale')
-    const stale = (await claimRecoverableDataRequests()).requests.find(
+    const stale = (await claimRecoverableDataRequests([request.id])).requests.find(
       candidate => candidate.requestId === request.id,
     )
     expect(stale?.processingAttemptId).not.toBe(request.processing_attempt_id)
+    expect(await neighbor.readState()).toEqual(neighbor.state)
   })
 
   it('fences stale completion and failure writes by processing attempt id', async () => {
@@ -74,13 +79,15 @@ describe('account data request recovery', () => {
   })
 
   it('does not recover an export after its owner is deleted', async () => {
+    const neighbor = await createTestDataRequestSweepNeighbor()
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)
     await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
     try {
       await softDeleteUser(user.id)
-      const { requests: recovered } = await claimRecoverableDataRequests()
-      expect(recovered.some(candidate => candidate.requestId === request.id)).toBe(false)
+      const { requests: recovered } = await claimRecoverableDataRequests([request.id])
+      expect(recovered).toEqual([])
+      expect(await neighbor.readState()).toEqual(neighbor.state)
     } finally {
       await restoreUser(user.id)
     }
