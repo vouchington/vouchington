@@ -31,15 +31,9 @@ export async function processReconcileCopyrightAgentDispatches(
   let cursor = data.after
   for (let batch = 0; batch < maxBatches; batch++) {
     // oxlint-disable-next-line no-await-in-loop -- advance only after the page's dispatches settle.
-    const page = await getPendingCopyrightAgentDispatches({
-      ...(cursor ? { after: cursor } : {}),
-      limit: batchSize,
-      ids: options.ids,
-    })
-    const dispatches = intakeEnabled ? page.results : page.results.filter(isInCaseDispatch)
-    // oxlint-disable-next-line no-await-in-loop -- preserves at-least-once delivery before cursor advance.
-    errors.push(...(await dispatchCopyrightAgentPage(dispatches))) // no-mistakes-disable-line query-reached-per-item: capped at maxBatches pages and the cursor advances only after a page settles
-    cursor = page.page_info.has_next_page ? (page.page_info.end_cursor ?? undefined) : undefined
+    const result = await reconcileDispatchPage(cursor, intakeEnabled, batchSize, options.ids) // no-mistakes-disable-line query-reached-per-item: capped at maxBatches pages and the cursor advances only after a page settles
+    cursor = result.nextCursor
+    errors.push(...result.errors)
     if (!cursor) break
   }
   if (cursor) await enqueueReconcileCopyrightAgentDispatches({ after: cursor })
@@ -47,6 +41,25 @@ export async function processReconcileCopyrightAgentDispatches(
     throw new AggregateError(errors, 'Copyright agent dispatch reconciliation failed')
   }
   return { hasMore: cursor !== undefined }
+}
+
+async function reconcileDispatchPage(
+  cursor: string | undefined,
+  intakeEnabled: boolean,
+  batchSize: number,
+  ids?: readonly string[],
+): Promise<{ errors: unknown[]; nextCursor: string | undefined }> {
+  const page = await getPendingCopyrightAgentDispatches({
+    ...(cursor ? { after: cursor } : {}),
+    limit: batchSize,
+    ids,
+  })
+  const dispatches = intakeEnabled ? page.results : page.results.filter(isInCaseDispatch)
+  const errors = await dispatchCopyrightAgentPage(dispatches)
+  const nextCursor = page.page_info.has_next_page
+    ? (page.page_info.end_cursor ?? undefined)
+    : undefined
+  return { errors, nextCursor }
 }
 
 function isInCaseDispatch(item: CopyrightAgentDispatch): boolean {
