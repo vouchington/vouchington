@@ -33,6 +33,7 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
 
   registerScenarioContract('agent-moderation-retention-page', {
     seededRows,
+    forbidSequentialScans: ['agent_moderations'],
     expectations: [
       {
         kind: 'usesIndexes',
@@ -90,6 +91,7 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
 
   registerScenarioContract('agent-moderation-retention-delete', {
     seededRows,
+    forbidSequentialScans: ['agent_moderations'],
     expectations: [
       {
         kind: 'usesIndexes',

@@ -16,10 +16,8 @@ import {
   PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS,
   PURGE_EVIDENCE_SEEDED_ROWS,
 } from '../seed-data/copyright-case-purge-volume.mts'
-
 const PAGE = 25
 const LEGAL_ACTIVITY_INDEX = 'idx_copyright_notices__legal_activity'
-
 export async function runCopyrightCasePurgeScenarios(): Promise<void> {
   const dueId = await seedPurgeCases()
   registerScenarioContract('copyright-case-purge-admission', {
@@ -97,7 +95,11 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
   )
 
   registerScenarioContract('copyright-case-purge-evidence-reads', {
-    // One case holds over 150,000 artifacts and linked intakes; each source read must find its first row by index.
+    forbidSequentialScans: [
+      'copyright_notice_evidence_artifacts',
+      'copyright_notice_email_intakes',
+      'copyright_notice_email_intake_notice_links',
+    ],
     expectations: [
       {
         kind: 'usesIndexes',

@@ -1,7 +1,7 @@
 import { read, write } from '@data-stores/psql'
 
-/** Extra evidence rows on the one due case; with the single real row each source exceeds 150,000. */
-export const PURGE_EVIDENCE_VOLUME_ROWS = 150_000
+/** Extra evidence rows on the one due case; with the single real row each source exceeds 10,000. */
+export const PURGE_EVIDENCE_VOLUME_ROWS = 10_000
 export const PURGE_EVIDENCE_SEEDED_ROWS = PURGE_EVIDENCE_VOLUME_ROWS + 1
 
 const ARTIFACT_KEY = 'explain-purge-volume-artifact-'
@@ -9,11 +9,11 @@ const EMAIL_KEY = 'explain-purge-volume-email-'
 const CHUNK = 10_000
 const LINK_CHUNK = 1_000
 const SPREAD_KEY = 'explain-purge-volume-spread-'
-const SPREAD_SUBMISSIONS = 3000
+const SPREAD_SUBMISSIONS = 200
 export const PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS = PURGE_EVIDENCE_SEEDED_ROWS + SPREAD_SUBMISSIONS
 
 /**
- * Hundreds of thousands of artifacts and linked email intakes on one case, all later than the
+ * Thousands of artifacts and linked email intakes on one case, all later than the
  * real rows, so the evidence page must find the first row of each source through its index
  * instead of scanning the case. Idempotent: a marked registry row means the volume exists.
  */
@@ -108,11 +108,7 @@ export async function seedDueCaseEvidenceVolume(
   )
 }
 
-/**
- * One artifact on each of thousands of later submissions of the case. The big submission alone would
- * make the statistics say every submission holds tens of thousands of artifacts, so a staff read of
- * other cases would plan a scan; real cases have many small submissions.
- */
+/** Retain many small submissions beside the dominant one instead of seeding only one huge group. */
 async function seedSpreadSubmissions(dueId: string, mediaTypeId: string): Promise<void> {
   await write(
     `/* seedExplainCopyrightPurgeVolume:spreadObjects */

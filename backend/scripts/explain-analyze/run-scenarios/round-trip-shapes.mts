@@ -132,6 +132,10 @@ async function runCopyrightStaffCases(): Promise<void> {
       'The copyright staff case scenario needs the development seed notices; run backend/scripts/seeds/dev-seed.mts before the EXPLAIN seed',
     )
   registerScenarioContract('copyright-staff-case-batch', {
+    forbidSequentialScans: [
+      'copyright_notice_evidence_artifacts',
+      'copyright_notice_email_intakes',
+    ],
     expectations: [{ kind: 'maxProcessedRows', relation: 'copyright_notices', max: 100 }],
     // The development seed, the review-target breach and the purge fixture leave a handful of intakes.
     seededRows: { copyright_notice_email_intakes: PURGE_EVIDENCE_SEEDED_ROWS + 7 },

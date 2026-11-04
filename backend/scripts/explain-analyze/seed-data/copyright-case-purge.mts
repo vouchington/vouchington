@@ -50,9 +50,24 @@ export async function seedPurgeCases(): Promise<string> {
     [[1, 2, 3].map(index => seedUuid(index, 'c1'))],
   )
   await seedDueCaseEvidence(dueId)
+  // Prove keyed generation reads against unrelated cases without depending on update bloat.
+  await write(
+    `/* seedExplainCopyrightPurgeGenerations */
+     WITH fixture_cases AS MATERIALIZED (
+       SELECT id FROM copyright_notices
+       WHERE claimant_user_id = $1::uuid AND policy_version = 'explain-fixture'
+     ), party_generations AS (
+       INSERT INTO copyright_notice_thread_party_generations (copyright_notice_id)
+       SELECT id FROM fixture_cases ON CONFLICT (copyright_notice_id) DO NOTHING
+     )
+     INSERT INTO copyright_notice_thread_blocker_generations (copyright_notice_id)
+     SELECT id FROM fixture_cases ON CONFLICT (copyright_notice_id) DO NOTHING`,
+    [seedUser.id],
+  )
   await write(
     `/* seedExplainCopyrightPurgeCases:analyze */
-    ANALYZE copyright_notices, retained_copyright_notice_identities`,
+    ANALYZE copyright_notices, retained_copyright_notice_identities,
+      copyright_notice_thread_party_generations, copyright_notice_thread_blocker_generations`,
   )
   return dueId
 }

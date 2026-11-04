@@ -169,7 +169,10 @@ function assertUniversalPlanShape(
       throw new Error(
         `${result.name} sequentially scanned unbounded ${relation} without a declared seeded row count`,
       )
-    if (seededRows > SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD)
+    if (
+      seededRows > SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD ||
+      contract.forbidSequentialScans?.includes(relation)
+    )
       throw new Error(
         `${result.name} sequentially scanned ${relation} with ${seededRows} seeded rows`,
       )
