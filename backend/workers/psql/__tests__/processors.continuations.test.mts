@@ -145,7 +145,6 @@ describe('processPsql retention continuations', () => {
       )
     })
   })
-
   it('does not restart a finished independent classifier sweep while another page drains', async () => {
     await withClassifierRetentionSweepLock(async () => {
       const fixture = await createIndependentClassifierContinuationFixture()
@@ -213,7 +212,6 @@ describe('processPsql retention continuations', () => {
       expect(await readContinuationRequestIds(outsideRequests)).toEqual(outsideRequests)
     })
   })
-
   it('continues only the membership families that exceeded their cap', async () => {
     const reservation = await acquireMembershipOperationalRetentionTestLock()
     onTestFinished(() => reservation.release())
