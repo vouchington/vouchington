@@ -17,6 +17,7 @@ export async function cleanupSoftDeletedUserBatch(
   batchSize: number,
   lowerBoundDate?: Date,
   cursor?: UserPurgeCursor,
+  userIds?: readonly string[],
 ): Promise<UserPurgeResult> {
   if (cursor) {
     const result = await cleanupSoftDeletedUser(
@@ -58,6 +59,7 @@ export async function cleanupSoftDeletedUserBatch(
       )
   `
   if (lowerBoundDate !== undefined) targetQuery.append(sql` AND deleted_at >= ${lowerBoundDate}`)
+  if (userIds !== undefined) targetQuery.append(sql` AND id = ANY(${userIds}::uuid[])`)
   targetQuery.append(sql`
     ORDER BY deleted_at ASC, id ASC
     LIMIT ${batchSize}`)

@@ -5,22 +5,8 @@ import { cleanupPartitions } from '@data-stores/psql/migration-runner/monthly-pa
 import sql from 'sql-template-strings'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
+import type { AiUsageCleanupOptions, AiUsageCleanupResult } from './cleanup-ai-usage-types.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
-
-export type AiUsageCleanupOptions = {
-  retentionDays?: number
-  batchSize?: number
-  maxBatches: number
-  now?: Date
-  lowerBoundDate?: Date
-  upperBoundDate?: Date
-}
-
-export type AiUsageCleanupResult = {
-  deleted: number
-  hasMore: boolean
-  cursorId: string | null
-}
 
 type AiUsagePageResult = AiUsageCleanupResult & { completedMonth: Date | null }
 
@@ -28,6 +14,7 @@ type AiUsagePageResult = AiUsageCleanupResult & { completedMonth: Date | null }
 export async function cleanupAiUsageRecords(
   options: AiUsageCleanupOptions,
 ): Promise<AiUsageCleanupResult> {
+  const ids = options.recordIds
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
   const now = options.now ?? new Date()
@@ -35,8 +22,7 @@ export async function cleanupAiUsageRecords(
     Math.max(180, normalizeRetentionDays(options.retentionDays, 180)),
     now,
   )
-  // #3544 owns 90-day response-key retirement. A background response can write a key today while
-  // its raw usage id is backdated, so raw age alone must never cascade a younger replay key.
+  // #3544 owns 90-day key retirement: a backdated usage id must not cascade a younger replay key.
   const responseKeyCutoff = getMinUUIDv7ForDate(getRetentionCutoffDate(90, now))
   const cutoff = getMinUUIDv7ForDate(
     options.upperBoundDate && options.upperBoundDate < retentionCutoff
@@ -47,7 +33,7 @@ export async function cleanupAiUsageRecords(
   let result: AiUsageCleanupResult = { deleted: 0, hasMore: false, cursorId: null }
   for (let batch = 0; batch < maxBatches; batch++) {
     // no-mistakes-disable-next-line query-reached-per-item: at most maxBatches transactions each lock a UUIDv7 keyset page, fold and delete its rows atomically, then checkpoint; the next page depends on that commit.
-    const page = await cleanupAiUsagePage(cutoff, responseKeyCutoff, lowerBound, batchSize) // oxlint-disable-line no-await-in-loop -- the committed cursor selects the next bounded page
+    const page = await cleanupAiUsagePage(cutoff, responseKeyCutoff, lowerBound, batchSize, ids) // oxlint-disable-line no-await-in-loop -- the committed cursor selects the next bounded page
     result = {
       deleted: result.deleted + page.deleted,
       hasMore: page.hasMore,
@@ -77,6 +63,7 @@ async function cleanupAiUsagePage(
   responseKeyCutoff: string,
   lowerBound: string | null,
   batchSize: number,
+  recordIds?: readonly string[],
 ): Promise<AiUsagePageResult> {
   await using transaction = await beginTransaction()
   // The job owns its singleton cursor row; the schema does not seed it.
@@ -93,8 +80,11 @@ async function cleanupAiUsagePage(
     WHERE is_singleton = true FOR UPDATE
   `)
   const progress = cursors[0]!
-  const cursorId = progress.cursor_id
-  const persistedUpperBound = progress.sweep_upper_bound_id
+  const cursorId =
+    recordIds === undefined || (progress.cursor_id && recordIds.includes(progress.cursor_id))
+      ? progress.cursor_id
+      : null
+  const persistedUpperBound = recordIds === undefined ? progress.sweep_upper_bound_id : null
   const upperBound =
     persistedUpperBound && persistedUpperBound < cutoff ? persistedUpperBound : cutoff
   // Read the ordered physical page before applying the sweep ceiling. A generic plan with both
@@ -104,11 +94,15 @@ async function cleanupAiUsagePage(
     cursorId && (!lowerBound || cursorId >= lowerBound)
       ? sql`/* cleanupAiUsagePage.candidates */
           SELECT record.id FROM ai_usage_records record WHERE record.id > ${cursorId}::uuid
-          ORDER BY id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED`
+          `
       : sql`/* cleanupAiUsagePage.candidates */
           SELECT record.id FROM ai_usage_records record
           WHERE record.id >= ${lowerBound ?? '00000000-0000-0000-0000-000000000000'}::uuid
-          ORDER BY id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED`
+          `
+  if (recordIds !== undefined)
+    candidates.append(sql`AND record.id = ANY(${recordIds}::uuid[])
+          `)
+  candidates.append(sql`ORDER BY id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED`)
   const { rows: physicalRows } = await transaction<{ id: string }>(candidates)
   const rows = physicalRows.filter(row => row.id < upperBound)
   const scannedIds = rows.slice(0, batchSize).map(row => row.id)

@@ -32,7 +32,8 @@ import {
   cleanupClassifierRecords,
   type ClassifierCleanupResult,
 } from './cleanup-classifier-records.mts'
-import { cleanupAiUsageRecords, type AiUsageCleanupResult } from './cleanup-ai-usage.mts'
+import { cleanupAiUsageRecords } from './cleanup-ai-usage.mts'
+import type { AiUsageCleanupResult } from './cleanup-ai-usage-types.mts'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -197,7 +198,7 @@ export type DataRetentionCleanupOptions = {
   retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
-  softDeletedUsers?: OptionalRetentionLimits<CleanupOptions>
+  softDeletedUsers?: OptionalRetentionLimits<CleanupOptions> & { userIds?: readonly string[] }
   oldReferralAttributions?: OptionalRetentionLimits<CleanupOptions>
   histories?: OptionalRetentionLimits<HistoryCleanupOptions>
   orphanedOAuthAccounts?: OptionalRetentionLimits<CleanupOptions>
@@ -273,6 +274,7 @@ export type DataRetentionCleanupOptions = {
   appAttestationKeys?: OptionalRetentionLimits<OperationalCleanupOptions>
   aiUsageRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>> & {
     active?: boolean
+    recordIds?: readonly string[]
   }
 }
 
@@ -879,7 +881,9 @@ async function cleanupExpiredTopicImportAttempts(
   )
 }
 
-export async function cleanupSoftDeletedUsers(options: CleanupOptions): Promise<UserPurgeResult> {
+export async function cleanupSoftDeletedUsers(
+  options: CleanupOptions & { userIds?: readonly string[] },
+): Promise<UserPurgeResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
@@ -893,6 +897,7 @@ export async function cleanupSoftDeletedUsers(options: CleanupOptions): Promise<
       batchSize,
       options.lowerBoundDate,
       options.userPurge,
+      options.userIds,
     )
     deleted += result.deleted
     hasMore = result.hasMore
