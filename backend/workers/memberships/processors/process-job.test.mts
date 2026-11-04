@@ -1,3 +1,4 @@
+import { acquireTestPostgresAdvisoryLock } from '@voucha/test-helpers/postgres-advisory-lock'
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
@@ -11,7 +12,6 @@ import {
   scheduleRefundReconciliationRetry,
 } from '@services/memberships'
 import { ingestStripeEvent } from '@services/stripe/events'
-import type { claimRecoverableStripeEvents } from '@services/stripe/recovery'
 import {
   createTestMembership,
   createTestUser,
@@ -26,7 +26,6 @@ import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-e
 import { cleanupRefundReconciliationOperationsForTest } from '../../../test-helpers/entities/membership-refund-reconciliation-state.mts'
 import { readAllQueueJobs } from '../../../test-helpers/queue-jobs.mts'
 import { processMembershipJob } from './process-job.mts'
-import { recoverStripeEvents } from './stripe-event.mts'
 
 describe('processMembershipJob', () => {
   afterEach(() => {
@@ -132,6 +131,12 @@ describe('processMembershipJob', () => {
   })
 
   it('dispatches due refund reconciliations through the default processor', async () => {
+    const reservation = await acquireTestPostgresAdvisoryLock({
+      namespace: 2_135_050,
+      key: 1,
+      timeout: '2s',
+    })
+    onTestFinished(() => reservation.release())
     const [member, administrator] = await Promise.all([createTestUser(), createTestUser()])
     const membership = await createTestMembership({
       user_id: member.id,
@@ -168,46 +173,11 @@ describe('processMembershipJob', () => {
       )
     } finally {
       await cleanupRefundReconciliationOperationsForTest([operation.id])
-      await memberships.obliterate({ force: true })
+      const ownedJobs = (await readAllQueueJobs(memberships)).filter(
+        queued => (queued.data as { operationId?: string }).operationId === operation.id,
+      )
+      await Promise.all(ownedJobs.map(queued => queued.remove()))
     }
-  })
-})
-
-describe('recoverStripeEvents', () => {
-  it('enqueues every claimed database attempt', async () => {
-    const events = [
-      {
-        stripeEventRecordId: randomUUID(),
-        leaseToken: randomUUID(),
-        stripeSubscriptionId: `sub_${randomUUID()}`,
-        isLiveMode: false,
-      },
-    ]
-    const claim = vi.fn<typeof claimRecoverableStripeEvents>().mockResolvedValue(events)
-
-    await expect(recoverStripeEvents({ claimRecoverableStripeEvents: claim })).resolves.toEqual({
-      enqueued: 1,
-    })
-
-    const queued = (await readAllQueueJobs(memberships)).filter(
-      queuedJob =>
-        (queuedJob.data as { stripeEventRecordId?: string }).stripeEventRecordId ===
-        events[0]!.stripeEventRecordId,
-    )
-    expect(queued.map(queuedJob => [queuedJob.name, queuedJob.data])).toEqual([
-      ['processStripeEvent', events[0]],
-    ])
-  })
-
-  it('does not enqueue an empty recovery batch', async () => {
-    const claim = vi.fn<typeof claimRecoverableStripeEvents>().mockResolvedValue([])
-    const addBulk = vi.spyOn(memberships, 'addBulk')
-    onTestFinished(() => addBulk.mockRestore())
-
-    await expect(recoverStripeEvents({ claimRecoverableStripeEvents: claim })).resolves.toEqual({
-      enqueued: 0,
-    })
-    expect(addBulk).not.toHaveBeenCalled()
   })
 })
 

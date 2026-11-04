@@ -42,7 +42,10 @@ const sweepRoutes: [string, () => SweepSpy][] = [
   ],
   [
     'recoverAppleNotifications',
-    () => vi.spyOn(appleRecovery, 'recoverAppleNotifications').mockResolvedValue({ enqueued: 0 }),
+    () =>
+      vi
+        .spyOn(appleRecovery, 'recoverAppleNotifications')
+        .mockResolvedValue({ enqueued: 0, hasMore: false }),
   ],
   [
     'recoverGooglePlayNotifications',
@@ -69,7 +72,10 @@ const sweepRoutes: [string, () => SweepSpy][] = [
   ],
   [
     'recoverStripeEvents',
-    () => vi.spyOn(stripeEvent, 'recoverStripeEvents').mockResolvedValue({ enqueued: 0 }),
+    () =>
+      vi
+        .spyOn(stripeEvent, 'recoverStripeEvents')
+        .mockResolvedValue({ enqueued: 0, hasMore: false }),
   ],
 ]
 

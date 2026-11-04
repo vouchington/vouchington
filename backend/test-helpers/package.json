@@ -86,6 +86,7 @@
     "vouchington-tooling": "^0.85.1"
   },
   "devDependencies": {
+    "@apple/app-store-server-library": "^3.1.0",
     "@jongleberry/api-server": "^3.1.0",
     "@ts-shared/utils": "workspace:^",
     "@types/pg": "^8.23.1",

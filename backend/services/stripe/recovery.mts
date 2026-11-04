@@ -12,9 +12,10 @@ export type RecoverableStripeEvent = {
 /** `stripeEventRecordIds` limits the claim to those events, so a test can own the rows it recovers. */
 export async function claimRecoverableStripeEvents(
   stripeEventRecordIds?: readonly string[],
+  batchSize = getStripeWorkLimit('recovery_batch_size'),
 ): Promise<RecoverableStripeEvent[]> {
   const dispatchTimeout = getStripeWorkLimit('dispatch_timeout_minutes')
-  const pageSize = getStripeWorkLimit('recovery_batch_size')
+  const pageSize = batchSize
   const { rows } = await write(sql`/* claimRecoverableStripeEvents */
     WITH candidates AS (
       SELECT stripe_event_id FROM stripe_event_processing_work_items

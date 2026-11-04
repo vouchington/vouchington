@@ -1,3 +1,4 @@
+import { getStripeWorkLimit } from '@services/stripe/work-limits'
 import {
   getStripeEventById,
   markStripeEventCompleted,
@@ -12,10 +13,6 @@ import {
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
 import type { ProcessStripeEventData } from '@queues/memberships/types'
-
-type RecoverStripeEventsDependencies = {
-  claimRecoverableStripeEvents: typeof claimRecoverableStripeEvents
-}
 
 export async function processStripeEvent(
   data: ProcessStripeEventData,
@@ -44,13 +41,14 @@ export async function processStripeEvent(
   }
 }
 
+/** A full page reports possible work for a later scheduled pass. */
 export async function recoverStripeEvents(
-  dependencies?: Partial<RecoverStripeEventsDependencies>,
-): Promise<{ enqueued: number }> {
-  const claimEvents = dependencies?.claimRecoverableStripeEvents ?? claimRecoverableStripeEvents
-  const events = await claimEvents()
+  ids?: readonly string[],
+  batchSize = getStripeWorkLimit('recovery_batch_size'),
+): Promise<{ enqueued: number; hasMore: boolean }> {
+  const events = await claimRecoverableStripeEvents(ids, batchSize)
   if (events.length > 0) await enqueueOrReactivateBulkProcessStripeEvents(events)
-  return { enqueued: events.length }
+  return { enqueued: events.length, hasMore: events.length === batchSize }
 }
 
 function getErrorMessage(error: unknown): string {
