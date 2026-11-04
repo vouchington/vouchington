@@ -45,10 +45,12 @@ export const getMyLandingPages = cache(
 )
 
 export const getMyLandingPageCandidates = cache(
-  async (options?: HeaderOptions): Promise<LandingPageCandidatesResponseBody> =>
+  async (options?: PaginationOptions): Promise<LandingPageCandidatesResponseBody> =>
     serverApi.get<LandingPageCandidatesResponseBody>(
       '/api/v1/my/landing-pages/candidates',
-      options,
+      options
+        ? { headers: options.headers, searchParams: { after: options.after, limit: options.limit } }
+        : undefined,
     ),
 )
 

@@ -52,7 +52,6 @@ export const REQUEST_CONTRACT_EXEMPTIONS: Readonly<Record<string, RequestContrac
     'GET:/api/v1/my/identity-verification': 'no-input',
     'GET:/api/v1/my/identity-verification/session-url': 'no-input',
     'GET:/api/v1/my/landing-pages': 'no-input',
-    'GET:/api/v1/my/landing-pages/candidates': 'no-input',
     'GET:/api/v1/my/notifications/unread': 'no-input',
     'GET:/api/v1/my/profile': 'no-input',
     'GET:/api/v1/my/profile/links': 'no-input',

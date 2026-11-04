@@ -10,6 +10,18 @@ Settings sidebar groups items with section headers:
 
 Headers use `text-xs font-medium uppercase tracking-wide text-muted-foreground`. Active page is highlighted. Desktop shows grouped vertical nav; mobile uses flat horizontal scroll.
 
+## Landing pages
+
+The item picker pages through profile links, public reviews, and active referral links by type,
+with newer entities first within each type. Older content requires loading more candidates. Saved
+items remain available for editing through the page detail even when their candidate page has not
+been loaded. The picker has no search.
+
+The configurable item cap counts both a topic group and each entry in that group. Replacing a
+page validates only the submitted selections, including ownership, public eligibility, and group
+topic membership. Lowering the cap leaves saved content visible; a replacement must fit the
+current cap.
+
 ## Identity
 
 - `username` - allow the user to select a username. Cannot select a used username.

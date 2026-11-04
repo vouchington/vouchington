@@ -119,7 +119,7 @@ describe('landing page services', () => {
       slug: 'mixed-links',
     })
 
-    const candidates = await getMyLandingPageCandidates(user.id)
+    const { candidates } = await getMyLandingPageCandidates(user.id)
     expect(candidates.can_create_landing_pages).toBe(true)
     expect(candidates.profile_links.some(link => link.id === fixtures.profileLinkId)).toBe(true)
     expect(candidates.reviews.some(review => review.id === fixtures.reviewId)).toBe(true)
@@ -196,7 +196,7 @@ describe('landing page services', () => {
   it('reports landing page creation as unavailable until the user has a username', async () => {
     const user = await createTestUser({ noUsername: true })
 
-    const candidates = await getMyLandingPageCandidates(user.id)
+    const { candidates } = await getMyLandingPageCandidates(user.id)
 
     expect(candidates.can_create_landing_pages).toBe(false)
   })

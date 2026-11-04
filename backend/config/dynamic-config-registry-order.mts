@@ -10,6 +10,7 @@ export const REGISTRY_ORDER = [
   'bot-challenge-config',
   'post-content-limits-config',
   'community-membership-limits-config',
+  'landing-page-limits-config',
   'post-related-url-display-config',
   'story-related-items-config',
   'rate-limit-thresholds',

@@ -1,3 +1,4 @@
+import type { buildPageInfo } from '@modules/pagination'
 import type { PublicUser } from '@services/users'
 import type { ProfileLink } from '../profile-links-types.mts'
 
@@ -43,6 +44,12 @@ export type LandingPageCandidates = {
   profile_links: ProfileLink[]
   reviews: LandingPageCandidateReview[]
   referral_links: LandingPageCandidateReferralLink[]
+}
+
+export type LandingPageCandidatesPage = {
+  candidates: LandingPageCandidates
+  page_info: ReturnType<typeof buildPageInfo>
+  item_limit: number
 }
 
 export type LandingPageItemInput =
@@ -106,4 +113,10 @@ export type LandingPageItemRow = {
   link_label: string | null
   url_id: string | null
   url: string | null
+}
+
+export type LandingPageSelections = {
+  profileLinksById: Map<string, ProfileLink>
+  reviewsById: Map<string, LandingPageCandidateReview>
+  referralLinksById: Map<string, LandingPageCandidateReferralLink>
 }

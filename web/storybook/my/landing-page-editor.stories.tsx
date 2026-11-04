@@ -23,7 +23,11 @@ export const WithContent: Story = {
     <StoryFrame>
       <LandingPageEditor
         initialPage={landingPageWithItems}
-        candidates={landingPageCandidates}
+        candidatesData={{
+          candidates: landingPageCandidates,
+          item_limit: 100,
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }}
         username={username}
       />
     </StoryFrame>
@@ -35,7 +39,11 @@ export const Empty: Story = {
     <StoryFrame>
       <LandingPageEditor
         initialPage={{ ...landingPageWithItems, items: [] }}
-        candidates={{ profile_links: [], reviews: [], referral_links: [] }}
+        candidatesData={{
+          candidates: { profile_links: [], reviews: [], referral_links: [] },
+          item_limit: 100,
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }}
         username={username}
       />
     </StoryFrame>

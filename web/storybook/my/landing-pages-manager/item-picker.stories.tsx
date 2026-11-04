@@ -32,10 +32,15 @@ const sapphire = topics[1]!
 function Editor({
   addType,
   initialItems,
+  itemLimit = 100,
+  initiallyHasMore = false,
 }: {
   addType: LandingPageAddType
   initialItems: LandingPageItem[]
+  itemLimit?: number
+  initiallyHasMore?: boolean
 }) {
+  const [hasMore, setHasMore] = useState(initiallyHasMore)
   const [type, setType] = useState(addType)
   const [items, setItems] = useState(initialItems)
   const [candidateId, setCandidateId] = useState(landingPageCandidates.reviews[0]?.id ?? '')
@@ -85,6 +90,11 @@ function Editor({
   return (
     <LandingPageItemEditor
       loading={false}
+      itemLimit={itemLimit}
+      hasNextPage={hasMore}
+      loadingCandidates={false}
+      candidatesError={false}
+      onLoadMore={() => setHasMore(false)}
       addType={type}
       selectedCandidateId={candidateId}
       selectedTopicId={topicId}
@@ -132,6 +142,37 @@ export const Empty: Story = {
       <Editor
         addType='link'
         initialItems={[]}
+      />
+    </StoryFrame>
+  ),
+}
+
+export const AtItemLimit: Story = {
+  render: () => (
+    <StoryFrame>
+      <Editor
+        addType='link'
+        initialItems={[
+          {
+            id: 'link',
+            type: 'link',
+            label: 'Award wallet',
+            url: 'https://wallet.example/cardholder',
+          },
+        ]}
+        itemLimit={1}
+      />
+    </StoryFrame>
+  ),
+}
+
+export const MoreCandidates: Story = {
+  render: () => (
+    <StoryFrame>
+      <Editor
+        addType='review'
+        initialItems={[]}
+        initiallyHasMore
       />
     </StoryFrame>
   ),

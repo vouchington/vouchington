@@ -640,7 +640,7 @@
     },
     "GET:/api/v1/my/landing-pages/:pageId": {
       "fixtureIds": ["native.landing-page-detail.default"],
-      "hash": "7f5b6764dd66d596835103ede61b174d6266fdfd349f1684eabd5abb273b2f91"
+      "hash": "3073ecc6b7ca7a6567f42c2352da5285b1685a802de37548d7c7948a6e0bfd74"
     },
     "GET:/api/v1/my/landing-pages/:pageId/analytics": {
       "fixtureIds": ["native.landing-page-analytics.default"],
@@ -648,7 +648,7 @@
     },
     "GET:/api/v1/my/landing-pages/candidates": {
       "fixtureIds": ["native.landing-page-candidates.default"],
-      "hash": "272b995592a5244f5268c55146265793bbbf287bb75c03a3bca8b93ff6d7a589"
+      "hash": "f1ffc255ff99d7308179ac2360511235d9cb39d336e40fc955723e056dd071e5"
     },
     "GET:/api/v1/my/messages": {
       "fixtureIds": [
@@ -1095,7 +1095,7 @@
     },
     "PATCH:/api/v1/my/landing-pages/:pageId": {
       "fixtureIds": ["native.landing-page-mutation.default"],
-      "hash": "ce46a63be1a8571f5d3b7c423386ab3f4cc013767229c7623d3eab4f1b28f17a"
+      "hash": "ae65cdbd84216b9d6864a03fe1c6e14454a2ab87e871da48ee3b55aa11f01d93"
     },
     "PATCH:/api/v1/my/messages/:conversationId": {
       "fixtureIds": ["native.messages.policy.default"],
@@ -1573,7 +1573,7 @@
     },
     "PUT:/api/v1/my/landing-pages/:pageId/items": {
       "fixtureIds": ["native.landing-page-items-mutation.default"],
-      "hash": "7f5b6764dd66d596835103ede61b174d6266fdfd349f1684eabd5abb273b2f91"
+      "hash": "3073ecc6b7ca7a6567f42c2352da5285b1685a802de37548d7c7948a6e0bfd74"
     }
   },
   "schemas": {
@@ -2079,19 +2079,19 @@
     },
     "native.landing-page-candidates.default": {
       "fixtureIds": ["native.landing-page-candidates.default"],
-      "hash": "42142bf10047a96ee6e070dbe4ef32b67c8c4f1c1e219e1acb1cb056dd00cf38"
+      "hash": "546ed77efa904ec94ecc1c372e1313307a839722f3ec8089181fd6c6acfc952d"
     },
     "native.landing-page-detail.default": {
       "fixtureIds": ["native.landing-page-detail.default"],
-      "hash": "88b4dcc62d0bc722a1dc8a20594897b806343b5d4855da8642d7c7c03429a175"
+      "hash": "e75372e7596af87663e6dd44a4c154541122d445770f96bb6306320cc374a781"
     },
     "native.landing-page-items-mutation.default": {
       "fixtureIds": ["native.landing-page-items-mutation.default"],
-      "hash": "88b4dcc62d0bc722a1dc8a20594897b806343b5d4855da8642d7c7c03429a175"
+      "hash": "e75372e7596af87663e6dd44a4c154541122d445770f96bb6306320cc374a781"
     },
     "native.landing-page-mutation.default": {
       "fixtureIds": ["native.landing-page-mutation.default"],
-      "hash": "c942e26fba6100f8fa2b384f64b6af348e184b24760adc7fcbdac5dea3f52e3e"
+      "hash": "de580248c960217b8dbc3692240fb9b6e72835e145478f7b8331eb72bfea5c7e"
     },
     "native.landing-pages.default": {
       "fixtureIds": ["native.landing-pages.default"],

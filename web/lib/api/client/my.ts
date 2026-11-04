@@ -7,6 +7,7 @@ import type {
   IdentityResponseBody,
   ListResponse,
   LandingPageDetailResponseBody,
+  LandingPageCandidatesResponseBody,
   LandingPageResponseBody,
   RewardsProgramStatusResponseBody,
   PointValuationResponseBody,
@@ -80,6 +81,13 @@ export function replaceMyLandingPageItems(
     `/api/v1/my/landing-pages/${encodeURIComponent(safeId)}/items`,
     body,
   )
+}
+export function getMyLandingPageCandidatesClient(
+  after: string,
+): Promise<LandingPageCandidatesResponseBody> {
+  return clientApi.get<LandingPageCandidatesResponseBody>('/api/v1/my/landing-pages/candidates', {
+    searchParams: { after },
+  })
 }
 export function getMyLandingPageClient(pageId: string): Promise<LandingPageDetailResponseBody> {
   const safeId = assertEncodablePathSegmentIdentifier(pageId)

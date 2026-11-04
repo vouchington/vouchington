@@ -73,10 +73,13 @@ export interface MyLandingPageListResponseBody {
 
 export interface LandingPageDetailResponseBody {
   landing_page: LandingPageWithItems
+  item_limit: number
 }
 
 export interface LandingPageCandidatesResponseBody {
   candidates: LandingPageCandidates
+  page_info: Api.PageInfo
+  item_limit: number
 }
 
 export type PublicLandingPageResponseBody = PublicLandingPage
