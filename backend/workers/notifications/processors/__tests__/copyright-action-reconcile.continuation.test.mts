@@ -1,111 +1,155 @@
+import { createCopyrightActionSweepReview } from '@voucha/test-helpers/copyright-action-sweep-fixtures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
+import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { removeQueuedJobsById } from '@voucha/test-helpers/shared-queue-cleanup'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { notifications } from '@queues/notifications/queues'
+import type { CopyrightSweepContinuation } from '@queues/notifications/types'
+import { searchRecoverableCopyrightFormReviewIntakeIds } from '@services/copyright-notices'
 import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { processReconcileCopyrightActionIntents } from '../copyright-action-reconcile.mts'
 
-type Deps = Required<NonNullable<Parameters<typeof processReconcileCopyrightActionIntents>[0]>>
-type DuePage = Awaited<ReturnType<Deps['searchDueRestorations']>>
-
-const NOW = new Date('2026-07-01T12:00:00.000Z')
-const RUN = crypto.randomUUID()
-
-function page(results: string[], endCursor: string | null): DuePage {
-  return {
-    results,
-    page_info: { has_next_page: endCursor !== null, start_cursor: null, end_cursor: endCursor },
-    candidates: {},
-  }
-}
-
-function reconcileDeps(pages: { forms?: DuePage; decisions?: DuePage } = {}) {
-  const empty = async () => page([], null)
-  return {
-    searchFormReviews: vi.fn<Deps['searchFormReviews']>(async () => pages.forms ?? page([], null)),
-    recoverFormReview: vi.fn<Deps['recoverFormReview']>(async () => undefined),
-    recoverDecisionAssessments: vi.fn<Deps['recoverDecisionAssessments']>(
-      async () => pages.decisions ?? page([], null),
-    ),
-    searchPendingEnforcement: vi.fn<Deps['searchPendingEnforcement']>(empty),
-    enforceAssessment: vi.fn<Deps['enforceAssessment']>(async () => undefined),
-    searchSuspendedClaimantRestrictions: vi.fn<Deps['searchSuspendedClaimantRestrictions']>(empty),
-    liftSuspendedClaimantRestrictions: vi.fn<Deps['liftSuspendedClaimantRestrictions']>(
-      async () => undefined,
-    ),
-    searchBlockedHoldRestorations: vi.fn<Deps['searchBlockedHoldRestorations']>(empty),
-    recoverBlockedHoldRestorations: vi.fn<Deps['recoverBlockedHoldRestorations']>(async () => 0),
-    searchDueRestorations: vi.fn<Deps['searchDueRestorations']>(empty),
-    createDueRestoreIntents: vi.fn<Deps['createDueRestoreIntents']>(async () => 0),
-    searchActionIntents: vi.fn<Deps['searchActionIntents']>(empty),
-  }
-}
-
 describe('processReconcileCopyrightActionIntents continuation', () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(NOW)
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-  })
-
   it('continues only unfinished stages at the configured cap even when a head item fails', async () => {
     onTestFinished(
-      overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
-        batch_size: 1,
-        max_batches_per_run: 1,
-      }),
+      overrideDynamicConfigFieldsForTest(copyrightSweepConfig, { max_batches_per_run: 1 }),
     )
-    const headCursor = `head-cursor-${RUN}`
-    const decisionCursor = `decision-cursor-${RUN}`
-    const continuations: unknown[] = []
-    const realAdd = notifications.add
-    vi.spyOn(notifications, 'add').mockImplementation((name, ...args) => {
-      if (name === 'notifications.processReconcileCopyrightActionIntents')
-        continuations.push(args[0])
-      return realAdd.call(notifications, name, ...args)
+    const first = await createCopyrightActionSweepReview(false)
+    const second = await createCopyrightActionSweepReview(false)
+    const neighbor = await createCopyrightActionSweepReview(false)
+    const ids = [first.id, second.id]
+    const page = await searchRecoverableCopyrightFormReviewIntakeIds({ ids, limit: 1 })
+    expect(page.results).toEqual([first.id])
+    expect(page.page_info.has_next_page).toBe(true)
+    onTestFinished(async () => {
+      const continuations = (await readAllQueueJobs(notifications)).filter(
+        job =>
+          job.name === 'notifications.processReconcileCopyrightActionIntents' &&
+          (job.data as CopyrightSweepContinuation).cursors?.forms === page.page_info.end_cursor,
+      )
+      await removeQueuedJobsById(
+        notifications,
+        continuations.map(job => job.id),
+      )
     })
-    const deps = reconcileDeps({ forms: page(['head'], headCursor) })
-    deps.recoverFormReview.mockRejectedValueOnce(new Error('head failed'))
+    const failure = new Error('head review transaction failed')
+    onTestFinished(rejectNextPostgresTransactionForTest(failure))
+    const evaluatedAt = '2030-01-02T03:04:05.000Z'
 
-    await expect(processReconcileCopyrightActionIntents(deps)).rejects.toBeInstanceOf(
-      AggregateError,
+    const result = await processReconcileCopyrightActionIntents({ evaluatedAt }, ids, 1).catch(
+      (err: unknown) => err,
     )
 
-    expect(continuations).toEqual([
-      {
-        evaluatedAt: NOW.toISOString(),
-        pending: [
-          'decisions',
-          'enforcement',
-          'suspended',
-          'blocked',
-          'restorations',
-          'actions',
-          'forms',
-        ],
-        cursors: { forms: headCursor },
-      },
-    ])
-    const round = reconcileDeps({ decisions: page(['decision-tail'], decisionCursor) })
-    await processReconcileCopyrightActionIntents(round, continuations[0] as never)
-    expect(round.searchFormReviews).not.toHaveBeenCalled()
-    expect(round.recoverDecisionAssessments).toHaveBeenCalledExactlyOnceWith({ limit: 1 })
-    expect(round.searchPendingEnforcement).not.toHaveBeenCalled()
-    expect(continuations[1]).toEqual({
-      evaluatedAt: NOW.toISOString(),
+    expect(result).toBeInstanceOf(AggregateError)
+    expect((result as AggregateError).errors).toEqual([failure])
+    const jobs = await readAllQueueJobs(notifications)
+    expect(
+      jobs.find(
+        job =>
+          job.name === 'notifications.processReconcileCopyrightActionIntents' &&
+          (job.data as CopyrightSweepContinuation).cursors?.forms === page.page_info.end_cursor,
+      )?.data,
+    ).toEqual({
+      evaluatedAt,
       pending: [
+        'decisions',
         'enforcement',
         'suspended',
         'blocked',
         'restorations',
         'actions',
         'forms',
-        'decisions',
       ],
-      cursors: { forms: headCursor, decisions: decisionCursor },
+      cursors: { forms: page.page_info.end_cursor },
     })
+    expect(
+      (await getCopyrightNoticePrivateAggregate(first.copyright_notice_id))?.assessments,
+    ).toEqual([])
+    expect(
+      (await getCopyrightNoticePrivateAggregate(second.copyright_notice_id))?.assessments,
+    ).toEqual([])
+    expect(
+      (await getCopyrightNoticePrivateAggregate(neighbor.copyright_notice_id))?.assessments,
+    ).toEqual([])
+  })
+
+  it('rotates unfinished stages under the shared page budget', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(copyrightSweepConfig, { max_batches_per_run: 1 }),
+    )
+    const first = await createCopyrightActionSweepReview(false)
+    const second = await createCopyrightActionSweepReview(false)
+    const decision = await createCopyrightActionSweepReview(true)
+    const neighbor = await createCopyrightActionSweepReview(false)
+    const ids = [first.id, second.id, decision.copyright_notice_submission_id]
+    const page = await searchRecoverableCopyrightFormReviewIntakeIds({ ids, limit: 1 })
+    expect(page.results).toEqual([first.id])
+    expect(page.page_info.has_next_page).toBe(true)
+    onTestFinished(async () => {
+      const continuations = (await readAllQueueJobs(notifications)).filter(
+        job =>
+          job.name === 'notifications.processReconcileCopyrightActionIntents' &&
+          (job.data as CopyrightSweepContinuation).cursors?.forms === page.page_info.end_cursor,
+      )
+      await removeQueuedJobsById(
+        notifications,
+        continuations.map(job => job.id),
+      )
+    })
+    const evaluatedAt = new Date().toISOString()
+    await expect(processReconcileCopyrightActionIntents({ evaluatedAt }, ids, 1)).resolves.toEqual({
+      enqueued: 0,
+      hasMore: true,
+    })
+    const jobs = await readAllQueueJobs(notifications)
+    const continuation = jobs.find(
+      job =>
+        job.name === 'notifications.processReconcileCopyrightActionIntents' &&
+        (job.data as CopyrightSweepContinuation).cursors?.forms === page.page_info.end_cursor,
+    )?.data as CopyrightSweepContinuation
+    expect(continuation).toEqual({
+      evaluatedAt,
+      pending: [
+        'decisions',
+        'enforcement',
+        'suspended',
+        'blocked',
+        'restorations',
+        'actions',
+        'forms',
+      ],
+      cursors: { forms: page.page_info.end_cursor },
+    })
+    await expect(processReconcileCopyrightActionIntents(continuation, ids, 1)).resolves.toEqual({
+      enqueued: 0,
+      hasMore: true,
+    })
+    expect(
+      (await getCopyrightNoticePrivateAggregate(first.copyright_notice_id))?.assessments,
+    ).toHaveLength(1)
+    expect(
+      (await getCopyrightNoticePrivateAggregate(second.copyright_notice_id))?.assessments,
+    ).toEqual([])
+    expect(
+      (await getCopyrightNoticePrivateAggregate(decision.copyright_notice_id))?.assessments,
+    ).toHaveLength(1)
+    expect(
+      (await getCopyrightNoticePrivateAggregate(neighbor.copyright_notice_id))?.assessments,
+    ).toEqual([])
+    const nextJobs = await readAllQueueJobs(notifications)
+    expect(
+      nextJobs.some(
+        job =>
+          job.name === 'notifications.processReconcileCopyrightActionIntents' &&
+          JSON.stringify(job.data) ===
+            JSON.stringify({
+              evaluatedAt,
+              pending: ['enforcement', 'suspended', 'blocked', 'restorations', 'actions', 'forms'],
+              cursors: { forms: page.page_info.end_cursor },
+            }),
+      ),
+    ).toBe(true)
   })
 })

@@ -1,4 +1,7 @@
 import { afterAll, describe, expect, it, vi } from 'vitest'
+import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { pendingFormEffect } from '@voucha/test-helpers/copyright-dispatch-reconcile-fixtures'
+import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { createTestUser } from '@voucha/test-helpers'
 import { closeTestDataStores } from '@voucha/test-helpers/close-data-stores'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
@@ -20,12 +23,14 @@ const jobId = (submissionId: string) => `copyright_submission_guidance_${submiss
 
 describe('copyright submission guidance backlog with new intake off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })
+  useAutomaticProvisionalWithholding()
 
   afterAll(closeTestDataStores)
 
   it.each(['counter_notice', 'court_or_ccb_hold'] as const)(
     'reads a live %s gap from PostgreSQL and enqueues it through real GlideMQ',
     async kind => {
+      const excluded = await pendingFormEffect()
       const poster = await createTestUser()
       const { intake } = await createSignedInCopyrightForm(1, { poster })
       const noticeId = intake.copyright_notice_id
@@ -71,16 +76,10 @@ describe('copyright submission guidance backlog with new intake off', () => {
           { kind: 'submission-guidance', submissionId },
         ])
         expect(await ai_agents.getJob(jobId(submissionId))).toBeNull()
-        // The helper scopes the production PostgreSQL query to this test's submission.
-        await processReconcileCopyrightAgentDispatches(
-          {},
-          {
-            getPending: async () => ({
-              results: await readTestPendingCopyrightAgentDispatches(submissionId),
-              page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-            }),
-          },
-        )
+        await expect(
+          processReconcileCopyrightAgentDispatches({}, { ids: [submissionId], batchSize: 1 }),
+        ).resolves.toEqual({ hasMore: false })
+        await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
         const job = await ai_agents.getJob(jobId(submissionId))
         expect(job?.name).toBe('copyright-submission-guidance')
         expect(job?.data).toEqual({ submission_id: submissionId })

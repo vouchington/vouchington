@@ -26,36 +26,6 @@ import {
   type CopyrightSweepTally,
 } from './copyright-sweep-walk.mts'
 
-type ReconcileCopyrightActionIntentsDeps = {
-  searchFormReviews: typeof searchRecoverableCopyrightFormReviewIntakeIds
-  recoverFormReview: typeof recoverRejectedCopyrightFormReviewEffect
-  recoverDecisionAssessments: typeof recoverMissingDecisionAssessments
-  searchPendingEnforcement: typeof searchPendingCopyrightEnforcementAssessmentIds
-  enforceAssessment: typeof enforceCopyrightAssessment
-  searchSuspendedClaimantRestrictions: typeof searchSuspendedClaimantAutomaticRestrictionNoticeIds
-  liftSuspendedClaimantRestrictions: typeof liftSuspendedClaimantAutomaticRestrictions
-  searchBlockedHoldRestorations: typeof searchBlockedCopyrightHoldRestorationNoticeIds
-  recoverBlockedHoldRestorations: typeof recoverBlockedCopyrightHoldRestorations
-  searchDueRestorations: typeof searchDueStatutoryCopyrightRestorationDeadlineIds
-  createDueRestoreIntents: typeof createDueStatutoryCopyrightRestoreIntentsForDeadline
-  searchActionIntents: typeof searchRecoverableCopyrightActionIntentIds
-}
-
-const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
-  searchFormReviews: searchRecoverableCopyrightFormReviewIntakeIds,
-  recoverFormReview: recoverRejectedCopyrightFormReviewEffect,
-  recoverDecisionAssessments: recoverMissingDecisionAssessments,
-  searchPendingEnforcement: searchPendingCopyrightEnforcementAssessmentIds,
-  enforceAssessment: enforceCopyrightAssessment,
-  searchSuspendedClaimantRestrictions: searchSuspendedClaimantAutomaticRestrictionNoticeIds,
-  liftSuspendedClaimantRestrictions: liftSuspendedClaimantAutomaticRestrictions,
-  searchBlockedHoldRestorations: searchBlockedCopyrightHoldRestorationNoticeIds,
-  recoverBlockedHoldRestorations: recoverBlockedCopyrightHoldRestorations,
-  searchDueRestorations: searchDueStatutoryCopyrightRestorationDeadlineIds,
-  createDueRestoreIntents: createDueStatutoryCopyrightRestoreIntentsForDeadline,
-  searchActionIntents: searchRecoverableCopyrightActionIntentIds,
-}
-
 /**
  * Processes capped pages of each copyright action sweep in stage order: rejected form reviews, lost
  * decision assessments, pending enforcement, suspended claimants' pending automatic restrictions,
@@ -63,13 +33,13 @@ const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
  * job fails afterwards with every error so its retry covers what is still pending.
  */
 export async function processReconcileCopyrightActionIntents(
-  dependencyOverrides: Partial<ReconcileCopyrightActionIntentsDeps> = {},
   data: CopyrightSweepContinuation = {},
+  ids?: readonly string[],
+  batchSize?: number,
 ): Promise<{ enqueued: number; hasMore: boolean }> {
-  const deps = { ...defaultDeps, ...dependencyOverrides }
   const evaluatedAt = data.evaluatedAt ? new Date(data.evaluatedAt) : new Date()
   const cursors = new Map(Object.entries(data.cursors ?? {}))
-  const budget = createCopyrightSweepBudget()
+  const budget = createCopyrightSweepBudget(batchSize)
   const deferred = new Set<string>()
   const options = (stage: string) => {
     const after = cursors.get(stage) ?? undefined
@@ -91,15 +61,18 @@ export async function processReconcileCopyrightActionIntents(
     () =>
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
-          page => deps.searchFormReviews(page),
-          ids => settleCopyrightSweepSequentially(ids, id => deps.recoverFormReview(id)),
+          page => searchRecoverableCopyrightFormReviewIntakeIds({ ...page, ids }),
+          ids =>
+            settleCopyrightSweepSequentially(ids, id =>
+              recoverRejectedCopyrightFormReviewEffect(id),
+            ),
           options('forms'),
         ),
       ),
     () =>
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
-          page => deps.recoverDecisionAssessments(page),
+          page => recoverMissingDecisionAssessments({ ...page, ids }),
           async () => [],
           options('decisions'),
         ),
@@ -107,18 +80,18 @@ export async function processReconcileCopyrightActionIntents(
     () =>
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
-          page => deps.searchPendingEnforcement(page),
-          ids => settleCopyrightSweepSequentially(ids, id => deps.enforceAssessment(id)),
+          page => searchPendingCopyrightEnforcementAssessmentIds({ ...page, ids }),
+          ids => settleCopyrightSweepSequentially(ids, id => enforceCopyrightAssessment(id)),
           options('enforcement'),
         ),
       ),
     () =>
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
-          page => deps.searchSuspendedClaimantRestrictions(page),
+          page => searchSuspendedClaimantAutomaticRestrictionNoticeIds({ ...page, ids }),
           ids =>
             settleCopyrightSweepSequentially(ids, id =>
-              deps.liftSuspendedClaimantRestrictions(id, evaluatedAt),
+              liftSuspendedClaimantAutomaticRestrictions(id, evaluatedAt),
             ),
           options('suspended'),
         ),
@@ -126,10 +99,10 @@ export async function processReconcileCopyrightActionIntents(
     () =>
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
-          page => deps.searchBlockedHoldRestorations(page),
+          page => searchBlockedCopyrightHoldRestorationNoticeIds({ ...page, ids }),
           ids =>
             settleCopyrightSweepSequentially(ids, id =>
-              deps.recoverBlockedHoldRestorations(id, evaluatedAt),
+              recoverBlockedCopyrightHoldRestorations(id, evaluatedAt),
             ),
           options('blocked'),
         ),
@@ -137,10 +110,14 @@ export async function processReconcileCopyrightActionIntents(
     () =>
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
-          page => deps.searchDueRestorations({ now: evaluatedAt, ...page }),
+          page =>
+            searchDueStatutoryCopyrightRestorationDeadlineIds({ now: evaluatedAt, ...page, ids }),
           (ids, page) =>
             settleCopyrightSweepSequentially(ids, id =>
-              deps.createDueRestoreIntents(page.candidates[id]!, evaluatedAt),
+              createDueStatutoryCopyrightRestoreIntentsForDeadline(
+                page.candidates[id]!,
+                evaluatedAt,
+              ),
             ),
           options('restorations'),
         ),
@@ -148,7 +125,7 @@ export async function processReconcileCopyrightActionIntents(
     () =>
       enqueueBulkCopyrightSweepPages(
         tally,
-        page => deps.searchActionIntents({ now: evaluatedAt, ...page }),
+        page => searchRecoverableCopyrightActionIntentIds({ now: evaluatedAt, ...page, ids }),
         enqueueBulkApplyCopyrightActions,
         options('actions'),
       ),

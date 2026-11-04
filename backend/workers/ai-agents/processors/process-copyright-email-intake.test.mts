@@ -39,15 +39,7 @@ describe('processCopyrightEmailIntake while intake is switched off', () => {
       await (await ai_agents.getJob(jobId))?.remove()
     })
     const reconcile = () =>
-      processReconcileCopyrightAgentDispatches(
-        {},
-        {
-          getPending: async () => ({
-            results: await readTestPendingCopyrightAgentDispatches(intake.id),
-            page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-          }),
-        },
-      )
+      processReconcileCopyrightAgentDispatches({}, { ids: [intake.id], batchSize: 1 })
 
     await processCopyrightEmailIntake(jobFor(intake.id), callModel)
     await reconcile()

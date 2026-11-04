@@ -14,9 +14,9 @@ export type CopyrightSweepWalkOptions = {
   budget?: ReturnType<typeof createCopyrightSweepBudget>
 }
 
-export function createCopyrightSweepBudget() {
-  const { batchSize, maxBatches } = getCopyrightSweepLimits()
-  return { batchSize, remainingPages: maxBatches }
+export function createCopyrightSweepBudget(batchSize?: number) {
+  const limits = getCopyrightSweepLimits()
+  return { batchSize: batchSize ?? limits.batchSize, remainingPages: limits.maxBatches }
 }
 
 /** Runs one reconcile stage without rejecting: its item errors, or its own failure, go to the tally. */

@@ -59,15 +59,29 @@ export async function queryCopyrightSweepIdPage(
   if (options.ids?.length === 0) return toCopyrightSweepIdPage([], options.limit ?? 100)
   const parsed = parseCopyrightSweepPageOptions(options, cursorMessage)
   if (options.ids) {
-    if (column !== 'rowId') throw new Error('Copyright sweep id filters require the row id column')
     observeSharedDbScope(operation, sharedDbIdsScope(options.ids))
-    selectWhere.append(sql` AND id = ANY(${options.ids}::uuid[])`)
+    selectWhere.append(copyrightSweepIds(column, options.ids))
   } else {
     observeSharedDbScope(operation, sharedDbCursorScope(parsed.afterId))
   }
   selectWhere.append(copyrightSweepKeyset(column, parsed.afterId, parsed.limit))
   const { rows } = await query(selectWhere)
   return toCopyrightSweepIdPage(rows, parsed.limit)
+}
+
+function copyrightSweepIds(column: CopyrightSweepIdColumn, ids: readonly string[]): SQLStatement {
+  switch (column) {
+    case 'enforcementAssessment':
+      return sql` AND assessment.id = ANY(${ids}::uuid[])`
+    case 'formReviewIntake':
+      return sql` AND review.copyright_notice_form_intake_id = ANY(${ids}::uuid[])`
+    case 'restorationDeadline':
+      return sql` AND deadline.id = ANY(${ids}::uuid[])`
+    case 'rowId':
+      return sql` AND id = ANY(${ids}::uuid[])`
+    default:
+      return assertNever(column, 'Unknown copyright sweep id column')
+  }
 }
 
 function copyrightSweepKeyset(

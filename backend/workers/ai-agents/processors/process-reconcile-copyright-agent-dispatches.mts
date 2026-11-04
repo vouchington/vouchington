@@ -12,15 +12,6 @@ import { enqueueOrRetryCopyrightFormScreening } from '@queues/ai-agents/enqueues
 import { enqueueOrRetryCopyrightAppealRecommendation } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
 import { enqueueOrRetryCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 
-type ReconcileCopyrightAgentDispatchesDeps = {
-  /** Lets a test scope the sweep to its own rows in a database shared with parallel tests. */
-  getPending: typeof getPendingCopyrightAgentDispatches
-}
-
-const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
-  getPending: getPendingCopyrightAgentDispatches,
-}
-
 /**
  * Processes capped pages of pending copyright dispatches. One failed dispatch does not stop the others or
  * later pages; the job fails afterwards with every error so its retry covers what is still pending.
@@ -31,19 +22,18 @@ const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
  */
 export async function processReconcileCopyrightAgentDispatches(
   data: CopyrightAgentSweepData = {},
-  deps: ReconcileCopyrightAgentDispatchesDeps = defaultDeps,
+  options: { ids?: readonly string[]; batchSize?: number } = {},
 ): Promise<{ hasMore: boolean }> {
   const intakeEnabled = isCopyrightIntakeEnabled()
   const errors: unknown[] = []
-  const { batchSize, maxBatches } = getCopyrightSweepLimits()
+  const { batchSize: defaultBatchSize, maxBatches } = getCopyrightSweepLimits()
+  const batchSize = options.batchSize ?? defaultBatchSize
   let cursor = data.after
   for (let batch = 0; batch < maxBatches; batch++) {
     // oxlint-disable-next-line no-await-in-loop -- advance only after the page's dispatches settle.
-    const page = await deps.getPending({ ...(cursor ? { after: cursor } : {}), limit: batchSize })
-    const dispatches = intakeEnabled ? page.results : page.results.filter(isInCaseDispatch)
-    // oxlint-disable-next-line no-await-in-loop -- preserves at-least-once delivery before cursor advance.
-    errors.push(...(await dispatchCopyrightAgentPage(dispatches))) // no-mistakes-disable-line query-reached-per-item: capped at maxBatches pages and the cursor advances only after a page settles
-    cursor = page.page_info.has_next_page ? (page.page_info.end_cursor ?? undefined) : undefined
+    const result = await reconcileDispatchPage(cursor, intakeEnabled, batchSize, options.ids) // no-mistakes-disable-line query-reached-per-item: capped at maxBatches pages and the cursor advances only after a page settles
+    cursor = result.nextCursor
+    errors.push(...result.errors)
     if (!cursor) break
   }
   if (cursor) await enqueueReconcileCopyrightAgentDispatches({ after: cursor })
@@ -51,6 +41,25 @@ export async function processReconcileCopyrightAgentDispatches(
     throw new AggregateError(errors, 'Copyright agent dispatch reconciliation failed')
   }
   return { hasMore: cursor !== undefined }
+}
+
+async function reconcileDispatchPage(
+  cursor: string | undefined,
+  intakeEnabled: boolean,
+  batchSize: number,
+  ids?: readonly string[],
+): Promise<{ errors: unknown[]; nextCursor: string | undefined }> {
+  const page = await getPendingCopyrightAgentDispatches({
+    ...(cursor ? { after: cursor } : {}),
+    limit: batchSize,
+    ids,
+  })
+  const dispatches = intakeEnabled ? page.results : page.results.filter(isInCaseDispatch)
+  const errors = await dispatchCopyrightAgentPage(dispatches)
+  const nextCursor = page.page_info.has_next_page
+    ? (page.page_info.end_cursor ?? undefined)
+    : undefined
+  return { errors, nextCursor }
 }
 
 function isInCaseDispatch(item: CopyrightAgentDispatch): boolean {

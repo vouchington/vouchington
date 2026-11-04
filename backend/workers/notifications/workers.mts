@@ -6,7 +6,6 @@ import {
 } from '@queues/notifications/enqueues'
 import {
   backgroundHandler,
-  backgroundContinuationHandler,
   backgroundDataHandler,
   backgroundSweepHandler,
 } from '@queues/background/enqueues/define-handler'
@@ -149,7 +148,7 @@ export const notificationsHandlers = [
     NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
     processors.processApplyCopyrightAction,
   ),
-  backgroundContinuationHandler(
+  backgroundDataHandler(
     NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
     processors.processReconcileCopyrightActionIntents,
   ),

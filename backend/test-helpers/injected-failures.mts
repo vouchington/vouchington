@@ -4,7 +4,12 @@ import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
 import { backgroundQueue } from './shared-background-queue.mts'
 export { rejectNextClassifierRunDispatcherAddForTest } from './injected-classifier-queue-failures.mts'
-export { rejectNextQueueJobAddForTest } from './injected-queue-failures.mts'
+export {
+  rejectNextQueueJobAddForTest,
+  rejectQueueJobAddForTest,
+  rejectNextBackgroundJobAddForTest,
+  rejectNextBackgroundJobAddBulkForTest,
+} from './injected-queue-failures.mts'
 
 /** Reject one write made through a caller-owned executor while preserving its transaction. */
 export function rejectQuery<Query extends QueryExecutor>(
@@ -126,34 +131,6 @@ export function runAfterPostgresWriteForTest(
     if (typeof query === 'string') after(query, [], result)
     else after(query.text, query.values ?? [], result)
     return result
-  })
-  return () => spy.mockRestore()
-}
-
-/** Reject the next add of one named job on the real shared queue; unrelated jobs pass through. */
-export function rejectNextBackgroundJobAddForTest(jobName: string, error: Error): () => void {
-  const realAdd = backgroundQueue.add
-  let rejected = false
-  const spy = vi.spyOn(backgroundQueue, 'add').mockImplementation((name, data, opts) => {
-    if (!rejected && name === jobName) {
-      rejected = true
-      return Promise.reject(error)
-    }
-    return Reflect.apply(realAdd, backgroundQueue, [name, data, opts])
-  })
-  return () => spy.mockRestore()
-}
-
-/** Reject the next bulk admission containing one named job; unrelated admissions run for real. */
-export function rejectNextBackgroundJobAddBulkForTest(jobName: string, error: Error): () => void {
-  const realAddBulk = backgroundQueue.addBulk
-  let rejected = false
-  const spy = vi.spyOn(backgroundQueue, 'addBulk').mockImplementation(jobs => {
-    if (!rejected && jobs.some(job => job.name === jobName)) {
-      rejected = true
-      return Promise.reject(error)
-    }
-    return Reflect.apply(realAddBulk, backgroundQueue, [jobs])
   })
   return () => spy.mockRestore()
 }
