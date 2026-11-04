@@ -121,12 +121,17 @@ export async function runReferralLinkUnfurl(parentLinkId: string): Promise<void>
   )
   const keptUrlIds = children.map(child => child.url_id)
 
-  if (keptUrlIds.length > 0) {
-    await reconcileChildrenForParent(parentLinkId, keptUrlIds, { query })
-  }
+  // A dropped child can sit in a program no current candidate resolves to; clear that one too.
+  const droppedProgramIds =
+    keptUrlIds.length > 0
+      ? await reconcileChildrenForParent(parentLinkId, keptUrlIds, { query })
+      : []
   await query.commit()
   await clearPrioritizedLinksCache([
-    ...new Set(validCandidates.map(candidate => candidate.referralProgramId)),
+    ...new Set([
+      ...validCandidates.map(candidate => candidate.referralProgramId),
+      ...droppedProgramIds,
+    ]),
   ])
 
   if (keptUrlIds.length === 0) {

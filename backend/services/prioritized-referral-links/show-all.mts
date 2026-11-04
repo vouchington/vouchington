@@ -33,7 +33,7 @@ SELECT al.id, al.user_id, al.referral_program_topic_id AS referral_program_id, u
   CASE WHEN al.user_id = ${officialUserId}::uuid THEN 0 ELSE 5 END AS priority_group,
   0 AS contribution_rank, 0 AS tier_rank, 0 AS best_score,
   NULL::uuid AS review_post_id, NULL::text AS review_post_slug, NULL::numeric AS review_avg_rating,
-  al.user_id = ${officialUserId}::uuid AS is_official,
+  COALESCE(al.user_id = ${officialUserId}::uuid, FALSE) AS is_official,
   vup.username, vup.account_type, vup.display_account->>'name' AS user_display_name
 FROM user_referral_program_links al
 JOIN urls u ON u.id = al.url_id

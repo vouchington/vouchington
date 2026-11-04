@@ -96,6 +96,24 @@ describe('get-prioritized client limit and cursor', () => {
     )
   })
 
+  it('returns an empty last page when the viewer muted the whole capped list', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(prioritizedReferralLinksWorkConfig, {
+        personalized_link_max_limit: 2,
+      }),
+    )
+    await createAuthors(3)
+    const viewer = await createTestUser()
+    const capped = await getPrioritizedReferralLinks(null, referralProgramId, { limit: 25 })
+    expect(capped.links).toHaveLength(2)
+    await Promise.all(capped.links.map(link => insertTestMute(viewer.id, link.user_id!)))
+
+    const page = await getPrioritizedReferralLinks(viewer.id, referralProgramId, { limit: 25 })
+
+    expect(page.links).toEqual([])
+    expect(page.page_info).toEqual({ has_next_page: false, start_cursor: null, end_cursor: null })
+  })
+
   it('keeps its place when the link at the cursor is muted between pages', async () => {
     await createAuthors(5)
     const viewer = await createTestUser()

@@ -11,21 +11,24 @@ import { getReferralLinkCleanupBatchSize } from './work-limits.mts'
  * downgrade/expiry cleanup path.
  */
 
+/** Returns the referral programs of the children it deleted, so callers can clear their caches. */
 export async function softDeleteChildrenOfParent(
   parentLinkId: string,
   options?: QueryOptions,
-): Promise<void> {
+): Promise<string[]> {
   validateUUID(parentLinkId)
 
-  await write(
+  const { rows } = await write<{ referral_program_topic_id: string }>(
     sql`/* softDeleteChildrenOfParent */
       UPDATE user_referral_program_links
       SET deleted_at = CURRENT_TIMESTAMP
       WHERE parent_link_id = ${parentLinkId}
         AND deleted_at IS NULL
+      RETURNING referral_program_topic_id
     `,
     options,
   )
+  return rows.map(row => row.referral_program_topic_id)
 }
 
 export async function softDeleteChildrenForUser(
@@ -63,23 +66,28 @@ export async function softDeleteChildrenForUser(
   /* oxlint-enable no-await-in-loop */
 }
 
-/** Soft-deletes any active child of `parentLinkId` whose url_id is not in `keepUrlIds`. */
+/**
+ * Soft-deletes any active child of `parentLinkId` whose url_id is not in `keepUrlIds` and returns
+ * the referral programs of the children it deleted, so callers can clear their caches.
+ */
 export async function reconcileChildrenForParent(
   parentLinkId: string,
   keepUrlIds: string[],
   options?: QueryOptions,
-): Promise<void> {
+): Promise<string[]> {
   validateUUID(parentLinkId)
   keepUrlIds.forEach(validateUUID)
 
-  await write(
+  const { rows } = await write<{ referral_program_topic_id: string }>(
     sql`/* reconcileChildrenForParent */
       UPDATE user_referral_program_links
       SET deleted_at = CURRENT_TIMESTAMP
       WHERE parent_link_id = ${parentLinkId}
         AND deleted_at IS NULL
         AND NOT (url_id = ANY(${keepUrlIds}::uuid[]))
+      RETURNING referral_program_topic_id
     `,
     options,
   )
+  return rows.map(row => row.referral_program_topic_id)
 }

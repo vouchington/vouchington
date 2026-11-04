@@ -83,7 +83,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         after: {
           type: 'string',
           description:
-            'page_info.end_cursor of the previous page. Links from your own network are one page and ignore it.',
+            'page_info.end_cursor of the previous page. The list can change; on an invalid cursor, restart. Own-network links ignore it.',
         },
       },
       required: ['topic_id'],
