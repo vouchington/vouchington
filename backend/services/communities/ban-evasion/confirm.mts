@@ -57,7 +57,6 @@ export async function confirmBanEvasion(
     // Restore the flag so the member re-appears in the moderation queue rather than
     // silently disappearing without a ban when the ban itself fails.
     await write(sql`/* confirmBanEvasion:restore-flag */
-      -- no-mistakes-disable-next-line postgres-bounded-statements: failed ban restoration clears every matching dismissal by this staff user, including historical memberships; limiting it would leave flags dismissed
       UPDATE community_members
       SET suspected_ban_evader_dismissed_at = NULL,
           suspected_ban_evader_dismissed_by_id = NULL
