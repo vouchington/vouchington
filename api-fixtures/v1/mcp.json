@@ -6418,7 +6418,8 @@
                         },
                         "time_range": {
                           "type": "string",
-                          "enum": ["1d", "1w", "1m", "1y", "all"]
+                          "enum": ["1d", "1w", "1m", "1y", "all"],
+                          "description": "Only posts from this window. Defaults to 1m (30 days); pass all for the full history."
                         },
                         "topic": {
                           "$ref": "#/$defs/S1"
