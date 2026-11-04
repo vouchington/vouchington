@@ -1,4 +1,9 @@
 import { read, write } from '@data-stores/psql'
+import { createTestUser } from './entities/users.mts'
+import {
+  createDeliveredMembershipEffectForRetention,
+  createEndedMembershipRenewalNoticeForRetention,
+} from './membership-operational-retention.mts'
 import sql from 'sql-template-strings'
 import { createClassifierFixture } from './data-stores/psql/classifiers.mts'
 import { seedOldClassifierDefaultDecision } from './classifier-default-retention.mts'
@@ -123,4 +128,70 @@ export async function readMembershipContinuationOutsideState(
     (SELECT to_jsonb(notice) FROM membership_renewal_price_increase_notification_work_items notice
       WHERE notice.membership_id = ${membershipId}) AS notice`)
   return rows
+}
+
+/** The two scoped membership families share one continuation while retaining excluded neighbors. */
+export async function createMembershipContinuationFixture() {
+  const at = new Date('2001-01-01T00:00:00Z')
+  const now = new Date('2002-01-01T00:00:00Z')
+  const effectUser = await createTestUser()
+  const firstEffect = await createDeliveredMembershipEffectForRetention(effectUser.id, at)
+  const secondEffect = await createDeliveredMembershipEffectForRetention(
+    (await createTestUser()).id,
+    at,
+  )
+  const firstNotice = await createEndedMembershipRenewalNoticeForRetention(
+    (await createTestUser()).id,
+    at,
+  )
+  const secondNotice = await createEndedMembershipRenewalNoticeForRetention(
+    (await createTestUser()).id,
+    at,
+  )
+  const thirdNotice = await createEndedMembershipRenewalNoticeForRetention(
+    (await createTestUser()).id,
+    at,
+  )
+  const outsideEffect = await createDeliveredMembershipEffectForRetention(
+    (await createTestUser()).id,
+    at,
+  )
+  const outsideNotice = await createEndedMembershipRenewalNoticeForRetention(
+    (await createTestUser()).id,
+    at,
+  )
+  const outsideBefore = await readMembershipContinuationOutsideState(
+    outsideEffect.effectId,
+    outsideNotice,
+  )
+  const options = {
+    retention: {
+      families: ['deliveredMembershipEntitlementEffects', 'endedMembershipRenewalNotices'] as const,
+      deliveredMembershipEntitlementEffects: {
+        recordIds: [firstEffect.effectId, secondEffect.effectId],
+        now,
+        batchSize: 1,
+        maxBatches: 1,
+      },
+      endedMembershipRenewalNotices: {
+        recordIds: [firstNotice, secondNotice, thirdNotice],
+        now,
+        batchSize: 1,
+        maxBatches: 1,
+      },
+    },
+  }
+  return {
+    at,
+    effectUser,
+    firstEffect,
+    secondEffect,
+    firstNotice,
+    secondNotice,
+    thirdNotice,
+    outsideEffect,
+    outsideNotice,
+    outsideBefore,
+    options,
+  }
 }

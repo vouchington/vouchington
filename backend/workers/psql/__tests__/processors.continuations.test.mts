@@ -2,7 +2,6 @@ import { createHash, randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { psql } from '@queues/psql/queues'
 import type { PsqlRetentionJobData } from '@queues/psql/types'
-import { createTestUser } from '@voucha/test-helpers'
 import { dataRetentionConfig } from '@services/data-retention/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { withClassifierRetentionSweepLock } from '@voucha/test-helpers/classifier-retention-sweep-lock'
@@ -15,14 +14,13 @@ import {
   createContinuationRunFixture,
   createIndependentClassifierContinuationFixture,
   createDailyCopyrightContinuationFixture,
+  createMembershipContinuationFixture,
   readContinuationRequestIds,
   rearmMembershipEffectForContinuation,
   readMembershipContinuationOutsideState,
 } from '@voucha/test-helpers/retention-processor-continuations'
 import {
   acquireMembershipOperationalRetentionTestLock,
-  createDeliveredMembershipEffectForRetention,
-  createEndedMembershipRenewalNoticeForRetention,
   membershipEffectExists,
   membershipRenewalNoticeExists,
   resetMembershipOperationalRetentionCursor,
@@ -221,38 +219,19 @@ describe('processPsql retention continuations', () => {
     onTestFinished(() => reservation.release())
     await resetMembershipOperationalRetentionCursor('entitlement_effects')
     await resetMembershipOperationalRetentionCursor('renewal_notices')
-    const at = new Date('2001-01-01T00:00:00Z')
-    const now = new Date('2002-01-01T00:00:00Z')
-    const effectUser = await createTestUser()
-    const firstEffect = await createDeliveredMembershipEffectForRetention(effectUser.id, at)
-    const secondEffect = await createDeliveredMembershipEffectForRetention(
-      (await createTestUser()).id,
+    const {
       at,
-    )
-    const firstNotice = await createEndedMembershipRenewalNoticeForRetention(
-      (await createTestUser()).id,
-      at,
-    )
-    const secondNotice = await createEndedMembershipRenewalNoticeForRetention(
-      (await createTestUser()).id,
-      at,
-    )
-    const thirdNotice = await createEndedMembershipRenewalNoticeForRetention(
-      (await createTestUser()).id,
-      at,
-    )
-    const outsideEffect = await createDeliveredMembershipEffectForRetention(
-      (await createTestUser()).id,
-      at,
-    )
-    const outsideNotice = await createEndedMembershipRenewalNoticeForRetention(
-      (await createTestUser()).id,
-      at,
-    )
-    const outsideBefore = await readMembershipContinuationOutsideState(
-      outsideEffect.effectId,
+      effectUser,
+      firstEffect,
+      secondEffect,
+      firstNotice,
+      secondNotice,
+      thirdNotice,
+      outsideEffect,
       outsideNotice,
-    )
+      outsideBefore,
+      options,
+    } = await createMembershipContinuationFixture()
     expect(outsideBefore).toMatchObject([
       {
         effect: { id: outsideEffect.effectId },
@@ -265,26 +244,6 @@ describe('processPsql retention continuations', () => {
     onTestFinished(async () => {
       await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
     })
-    const options = {
-      retention: {
-        families: [
-          'deliveredMembershipEntitlementEffects',
-          'endedMembershipRenewalNotices',
-        ] as const,
-        deliveredMembershipEntitlementEffects: {
-          recordIds: [firstEffect.effectId, secondEffect.effectId],
-          now,
-          batchSize: 1,
-          maxBatches: 1,
-        },
-        endedMembershipRenewalNotices: {
-          recordIds: [firstNotice, secondNotice, thirdNotice],
-          now,
-          batchSize: 1,
-          maxBatches: 1,
-        },
-      },
-    }
     const initial = await processPsql('dataRetentionCleanup', {}, undefined, initialJobId, options)
     expect(initial).toMatchObject({
       deliveredMembershipEntitlementEffects: { deleted: 1, hasMore: true },
