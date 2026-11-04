@@ -6,7 +6,6 @@ import {
   runWithTransaction,
   type TransactionQuery,
 } from '@data-stores/psql'
-import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { refreshStoryPostForStory, type StoryPostRefreshResult } from './refresh-story-post.mts'
@@ -64,11 +63,7 @@ export async function adminAssignItemToStory(
       for (const affectedStoryId of affectedStoryIds) {
         // oxlint-disable no-await-in-loop -- sorted refreshes acquire story relation locks in one global order.
         // no-mistakes-disable-next-line query-reached-per-item: at most two stories (new and prior); each refresh rewrites one story post under its own publication lock, posts are never batched, and sorted order is the global story lock order.
-        const refreshResult = await refreshStoryPostForStory(
-          affectedStoryId,
-          { query },
-          { enqueueAgent: false },
-        )
+        const refreshResult = await refreshStoryPostForStory(affectedStoryId, { query })
         // oxlint-enable no-await-in-loop
         refreshResults.push({ storyId: affectedStoryId, result: refreshResult })
         if (refreshResult) {
@@ -98,7 +93,6 @@ export async function adminAssignItemToStory(
     afterCommit = async () => {
       await dispatchPostCommitEffectsBestEffort(
         refreshResults.flatMap(({ result }) => (result ? [result] : [])),
-        onError,
       )
       for (const { result } of refreshResults) {
         if (result) void enqueueStoryPostAgent(result.postId, { force: true })
@@ -156,11 +150,7 @@ export async function adminRemoveItemFromStory(
     if (row?.prior_story_id) {
       const priorStoryId = row.prior_story_id
       await clearMovedStoryOfficialItem(query, priorStoryId, itemId)
-      const refreshResult = await refreshStoryPostForStory(
-        priorStoryId,
-        { query },
-        { enqueueAgent: false },
-      )
+      const refreshResult = await refreshStoryPostForStory(priorStoryId, { query })
       if (refreshResult) {
         refreshResults = [refreshResult]
         await recordPostPublicationChange(query, {
@@ -181,7 +171,7 @@ export async function adminRemoveItemFromStory(
       )
     if (!row) return null
     afterCommit = async () => {
-      await dispatchPostCommitEffectsBestEffort(refreshResults, onError)
+      await dispatchPostCommitEffectsBestEffort(refreshResults)
       for (const refreshResult of refreshResults)
         void enqueueStoryPostAgent(refreshResult.postId, { force: true })
       await invalidateStories(row.prior_story_id)

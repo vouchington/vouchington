@@ -7,21 +7,16 @@ import { refreshStoryPostForStory } from './refresh-story-post.mts'
 async function refreshAndCaptureStoryRetry(
   query: Parameters<typeof recordStoryPostPublicationChanges>[0],
   storyId: string,
-  refresh: typeof refreshStoryPostForStory,
 ) {
-  const result = await refresh(storyId, { query }, { enqueueAgent: false })
+  const result = await refreshStoryPostForStory(storyId, { query })
   await recordStoryPostPublicationChanges(query, storyId, result?.impactedTopicIds)
   return result
 }
 
-export async function replayClusteredStory(
-  storyId: string,
-  refresh = refreshStoryPostForStory,
-  complete = completeClusteredStory,
-): Promise<void> {
+export async function replayClusteredStory(storyId: string): Promise<void> {
   await using query = await beginTransaction()
   await lockStoryLifecycles(query, [storyId])
-  const refreshResult = await refreshAndCaptureStoryRetry(query, storyId, refresh)
+  const refreshResult = await refreshAndCaptureStoryRetry(query, storyId)
   await query.commit()
-  await complete(storyId, refreshResult)
+  await completeClusteredStory(storyId, refreshResult)
 }

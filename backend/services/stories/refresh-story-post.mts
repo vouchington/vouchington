@@ -15,10 +15,6 @@ import { lockStoryPostRelations } from './story-post-relation-locks.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
 import type { PrivateUser } from '@services/users/types'
 
-type RefreshStoryPostOptions = {
-  enqueueAgent?: boolean
-}
-
 type RefreshStoryPostQueryOptions = Omit<QueryOptions, 'query'> & {
   query?: TransactionQuery
 }
@@ -45,7 +41,6 @@ export type StoryPostRefreshResult = {
 export async function refreshStoryPostForStory(
   storyId: string,
   options: RefreshStoryPostQueryOptions = {},
-  refreshOptions: RefreshStoryPostOptions = {},
 ): Promise<StoryPostRefreshResult | null> {
   const query = options.query
   if (!query) {
@@ -55,8 +50,7 @@ export async function refreshStoryPostForStory(
     await query.commit()
     if (result) {
       await result.dispatchPostCommitEffects()
-      if (refreshOptions.enqueueAgent !== false)
-        void enqueueStoryPostAgent(result.postId, { force: true })
+      void enqueueStoryPostAgent(result.postId, { force: true })
     }
     return result
   }
