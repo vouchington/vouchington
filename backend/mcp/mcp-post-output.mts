@@ -29,6 +29,8 @@ export function mcpPostSchema() {
  */
 async function toMcpPost(post: Post): Promise<McpPost> {
   const publicPost = projectPublicPost(post)
+  // A placeholder has no user text, so there is nothing to sanitize or wrap as external content.
+  if (publicPost.placeholder_state) return publicPost
   return {
     ...publicPost,
     title: await sanitizePromptInjection(publicPost.title, { isTitle: true }),

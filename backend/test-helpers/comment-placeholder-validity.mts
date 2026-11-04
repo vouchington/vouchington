@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { buildCommentIsValidSql } from '@services/comments/placeholder-sql'
+import { buildCommentIsValidSql } from '../services/comments/placeholder-sql.mts'
 import sql from 'sql-template-strings'
 
 export type TestCommentStateRow = {
