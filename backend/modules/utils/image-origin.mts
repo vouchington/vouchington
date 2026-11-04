@@ -15,7 +15,7 @@ export function getImageOrigin(): string {
 }
 
 export function validateRuntimeImageOrigin(): void {
-  if (isDeployedEnvironment() && process.env.NODE_PREWARM !== '1') getImageOrigin()
+  if (isDeployedEnvironment()) getImageOrigin()
 }
 
 function parsePureHttpOrigin(value: string): string {

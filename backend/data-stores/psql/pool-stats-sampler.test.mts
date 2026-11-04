@@ -168,21 +168,6 @@ describe('pool-stats-sampler', () => {
     sampler.startPoolStatsSampler(sampledPools(0))
     expect(clock.schedule).toHaveBeenCalledWith(expect.any(Function), expected)
   })
-
-  it('does not sample during prewarm', () => {
-    const pools = sampledPools(0)
-    sampler.startConfiguredPoolStatsSampler(
-      {
-        writePool: pools.write,
-        readPool: pools.read,
-        advisoryLockPool: pools.advisoryLock,
-        jobSerializationPool: pools.jobSerialization,
-      },
-      { readMax: 1, writeMax: 1, advisoryLockMax: 1 },
-      true,
-    )
-    expect(clock.schedule).not.toHaveBeenCalled()
-  })
 })
 
 function restore(key: string, value: string | undefined): void {

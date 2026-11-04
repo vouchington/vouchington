@@ -34,9 +34,7 @@ export function createPoolStatsSampler(schedule: PoolStatsScheduler = schedulePo
       jobSerializationPool: SampledPools['jobSerialization']
     },
     limits: { readMax: number; writeMax: number; advisoryLockMax: number },
-    nodePrewarm: boolean,
   ): void {
-    if (nodePrewarm) return
     startPoolStatsSampler({
       write: pools.writePool,
       read: pools.readPool,

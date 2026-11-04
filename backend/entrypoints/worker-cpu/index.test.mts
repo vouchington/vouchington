@@ -48,12 +48,10 @@ describe('worker-cpu entrypoint wrapper', () => {
     vi.resetModules()
   })
 
-  it('initializes in prewarm mode and exposes worker collections', async () => {
-    const originalNodePrewarm = process.env.NODE_PREWARM
+  it('exposes worker collections without starting the runtime', async () => {
     const originalQueues = process.env.QUEUES
 
     try {
-      process.env.NODE_PREWARM = '1'
       process.env.QUEUES = [...WORKER_DEFINITIONS, ...SQS_CONSUMER_DEFINITIONS]
         .map(definition => `-${definition.queueName}`)
         .join(',')
@@ -65,12 +63,6 @@ describe('worker-cpu entrypoint wrapper', () => {
       await Promise.all(entrypoint.default.map(worker => worker.close()))
       await Promise.all(entrypoint.sqsConsumers.map(consumer => consumer.close()))
     } finally {
-      if (originalNodePrewarm === undefined) {
-        delete process.env.NODE_PREWARM
-      } else {
-        process.env.NODE_PREWARM = originalNodePrewarm
-      }
-
       if (originalQueues === undefined) {
         delete process.env.QUEUES
       } else {

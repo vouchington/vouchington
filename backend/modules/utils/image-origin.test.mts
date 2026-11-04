@@ -42,21 +42,6 @@ describe('image origin', () => {
 
   it('validates IMAGE_ORIGIN during production runtime startup', () => {
     vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('NODE_PREWARM', undefined)
-    vi.stubEnv('IMAGE_ORIGIN', undefined)
-    expect(() => validateRuntimeImageOrigin()).toThrow('IMAGE_ORIGIN')
-  })
-
-  it('skips runtime-only IMAGE_ORIGIN validation during production prewarm', () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('NODE_PREWARM', '1')
-    vi.stubEnv('IMAGE_ORIGIN', undefined)
-    expect(() => validateRuntimeImageOrigin()).not.toThrow()
-  })
-
-  it('does not treat a false-like prewarm value as the Docker build sentinel', () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('NODE_PREWARM', '0')
     vi.stubEnv('IMAGE_ORIGIN', undefined)
     expect(() => validateRuntimeImageOrigin()).toThrow('IMAGE_ORIGIN')
   })

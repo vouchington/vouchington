@@ -3,9 +3,11 @@ import { addGracefulShutdownCallback } from '@data-stores/graceful-shutdown'
 import onError, { flushSentry } from '@modules/on-error'
 import { validateRuntimeImageOrigin } from '@modules/utils/image-origin'
 import { registerWorkerServe } from '@vouchington/worker-runtime'
-import workers, { sqsConsumers } from './index.mts'
+import workers, { sqsConsumers, startWorkerRuntime } from './index.mts'
 
 validateRuntimeImageOrigin()
+/* c8 ignore next -- connects to Valkey and the queues; the backend image smoke boots it. */
+await startWorkerRuntime()
 
 registerWorkerServe({
   workers: [...workers, ...sqsConsumers],
