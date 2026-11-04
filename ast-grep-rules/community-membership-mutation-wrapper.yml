@@ -39,7 +39,7 @@ examples:
   - file: backend/api/example.mts
     code: |
       await write(`delete
-      from public.community_members where id = $1`) 
+      from public.community_members where id = $1`)
     isValid: false
   - file: backend/services/communities/example.mts
     code: 'await write(sql`SELECT 1`.append(sql`DELETE FROM community_members WHERE id = ${id}`))'
