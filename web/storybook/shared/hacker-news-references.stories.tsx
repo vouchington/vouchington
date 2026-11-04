@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
+import { HackerNewsConfigProvider } from '@/components/hacker-news/hacker-news-config-provider'
 import { HackerNewsFilterToggle } from '@/components/hacker-news/hacker-news-filter-toggle'
 import { HackerNewsReferenceLabel } from '@/components/hacker-news/hacker-news-reference-label'
 import { HackerNewsReferencesAside } from '@/components/hacker-news/hacker-news-references-aside'
@@ -73,6 +74,18 @@ export const DetailAside: Story = {
           ],
         }}
       />
+    </StoryFrame>
+  ),
+}
+
+export const VisibilityDisabled: Story = {
+  render: () => (
+    <StoryFrame>
+      <HackerNewsConfigProvider
+        initialConfig={{ references_visible: false, post_time_range_cap: '1y' }}
+      >
+        <HackerNewsFilterToggle />
+      </HackerNewsConfigProvider>
     </StoryFrame>
   ),
 }
