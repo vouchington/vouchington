@@ -1,11 +1,23 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '../../test-helpers/dynamic-config.mts'
 import { createHackerNewsRetentionFixtureForTest } from '../../test-helpers/hacker-news-retention.mts'
+import { hackerNewsVisibilityConfig } from '../urls/hacker-news-visibility-config.mts'
+import { hackerNewsQueueConfig } from '@queues/hacker-news/config'
 import { hackerNewsWorkConfig } from '../urls/hacker-news-work-limits.mts'
 
 describe('Hacker News reference retention', () => {
   it('caps each run, resumes expired rows, and retains zero-hit lookups at the cutoff', async () => {
-    await hackerNewsWorkConfig.waitForInitialization()
+    await Promise.all([
+      hackerNewsWorkConfig.waitForInitialization(),
+      hackerNewsQueueConfig.waitForInitialization(),
+      hackerNewsVisibilityConfig.waitForInitialization(),
+    ])
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(hackerNewsQueueConfig, { lookups_enabled: false }),
+    )
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, { references_visible: false }),
+    )
     onTestFinished(
       overrideDynamicConfigFieldsForTest(hackerNewsWorkConfig, {
         retention_days: 30,
