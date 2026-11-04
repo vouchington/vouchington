@@ -3,10 +3,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { Story } from './types.mts'
 
-export async function getStoryItemIds(
-  storyId: string,
-  options: QueryOptions = {},
-): Promise<string[]> {
+export async function getStoryItemIds(storyId: string): Promise<string[]> {
   const { rows } = await read(
     sql`/* getStoryItemIds */
     SELECT id
@@ -16,7 +13,6 @@ export async function getStoryItemIds(
       AND deleted_at IS NULL
     ORDER BY id DESC
   `,
-    options,
   )
   return rows.map(r => r.id as string)
 }
