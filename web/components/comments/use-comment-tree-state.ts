@@ -7,7 +7,7 @@ import { fetchPostDescendants } from '@/lib/api/client/posts'
 import { useCommentCollapse } from './use-comment-collapse'
 import { previewMarkdown } from '@/lib/api/client/markdown'
 import type { CommentTreeViewModel } from './comment-tree-view-model'
-import { EMPTY_SIDECARS, mergeSidecars, type Sidecars } from './comment-tree-sidecars'
+import { EMPTY_SIDECARS, mergeCommentSidecars, type Sidecars } from './comment-tree-sidecars'
 import type { Post } from '@/types/posts'
 
 const EMPTY_POSTS_MAP: Record<string, Post> = {}
@@ -34,7 +34,7 @@ export function useCommentTreeState({
   const [sort, setSort] = useState<'new' | 'best'>('new')
   const [quoteMarkdown, setQuoteMarkdown] = useState<string>('')
   const requestedReplies = useRef(new Set<string>())
-  const merged = mergeSidecars(data, extra)
+  const merged = mergeCommentSidecars(data, extra)
   const electionsMap = merged.post_elections
   const electionVotesMap = merged.election_votes
 
@@ -84,7 +84,7 @@ export function useCommentTreeState({
         return [...prev, ...page.results.flatMap(r => (known.has(r.id) ? [] : [page.posts[r.id]!]))]
       })
       setExtraMarkdownToHtml(prev => ({ ...prev, ...page.markdown_to_html }))
-      setExtra(prev => mergeSidecars(prev, page))
+      setExtra(prev => mergeCommentSidecars(prev, page))
       setMoreAfter(prev => {
         const { [id]: _drop, ...rest } = prev
         return page.page_info.has_next_page && page.page_info.end_cursor

@@ -22,7 +22,7 @@ const allSidecarsMerged: Exclude<
 void allSidecarsMerged
 export const EMPTY_SIDECARS = Object.fromEntries(SIDECAR_KEYS.map(key => [key, {}])) as Sidecars
 
-export function mergeSidecars(base: Partial<Sidecars>, page: Partial<Sidecars>): Sidecars {
+export function mergeCommentSidecars(base: Partial<Sidecars>, page: Partial<Sidecars>): Sidecars {
   return Object.fromEntries(
     SIDECAR_KEYS.map(key => [key, { ...base[key], ...page[key] }]),
   ) as Sidecars
