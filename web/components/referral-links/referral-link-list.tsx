@@ -12,12 +12,12 @@ interface ReferralLinkListProps {
 }
 
 const GROUP_LABEL_KEYS: Record<number, MessageKey> = {
-  0: 'extracted.referralLinks.referralLinkList.useOurOfficialLinks_1626a49d',
   1: 'extracted.referralLinks.referralLinkList.mutualFollows_d9732bd5',
   2: 'extracted.referralLinks.referralLinkList.peopleYouFollow_13f59bd0',
   3: 'extracted.referralLinks.referralLinkList.peopleWhoReferredYou_393a6746',
   4: 'extracted.referralLinks.referralLinkList.authorsYouRatedPositively_ae49c3c5',
-  5: 'extracted.referralLinks.referralLinkList.everyoneElse_919112f4',
+  5: 'extracted.referralLinks.referralLinkList.useOurOfficialLinks_1626a49d',
+  6: 'extracted.referralLinks.referralLinkList.everyoneElse_919112f4',
 }
 
 function ReferralLinkGroup({

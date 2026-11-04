@@ -11,6 +11,8 @@ import {
 import { insertTestCard, assignReferralProgramToCard } from '@voucha/test-helpers/entities/cards'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { createUserReferralLink } from '@services/user-referral-program-links'
+import { createOfficialReferralLink } from '@services/official-referral-program-links'
+import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
 
 describe('get-referral-links', () => {
@@ -117,7 +119,37 @@ describe('get-referral-links', () => {
       expect(successResult.links[0].url).toBe(url)
       expect(successResult.links[0].username).toBe(linkUser.username)
       expect(successResult.links[0].display_name).toBeNull()
-      expect(successResult.links[0].priority_group).toBe(5)
+      expect(successResult.links[0].priority_group).toBe(6)
+    })
+
+    it('ranks official links before everyone else and flags them, in default and all modes', async () => {
+      await upsertSystemUser('voucha', 'official')
+      const admin = await createTestUser({ administrator: true })
+      const { cardTopicId, referralProgramId, hostname } =
+        await createCardWithReferralProgram(admin)
+      const official = await createOfficialReferralLink(admin, WEB_PROVENANCE, {
+        referral_program_id: referralProgramId,
+        url: `https://${hostname}/ref/official-${createRandomString(8)}`,
+        label: 'Official',
+      })
+      const { link } = await createLinkForProgram({ referralProgramId, hostname })
+      const execute = getReferralLinksTool.function(admin)
+
+      for (const args of [{ topic_id: cardTopicId }, { topic_id: cardTopicId, all: true }]) {
+        const result = await execute(args)
+        const links = (result as Extract<typeof result, { success: true }>).links
+        expect(links.map(l => [l.id, l.priority_group, l.is_official]).toSorted()).toEqual(
+          [
+            [official.id, 5, true],
+            [link.id, 6, false],
+          ].toSorted(),
+        )
+      }
+      const result = await execute({ topic_id: cardTopicId })
+      expect((result as Extract<typeof result, { success: true }>).links.map(l => l.id)).toEqual([
+        official.id,
+        link.id,
+      ])
     })
 
     it('preserves null labels', async () => {

@@ -24,6 +24,7 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
       url: { type: 'string' },
       label: nullable({ type: 'string' }),
       priority_group: componentPropertySchema('PrioritizedReferralLink', 'priority_group'),
+      is_official: componentPropertySchema('PrioritizedReferralLink', 'is_official'),
       username: { type: 'string' },
       display_name: nullable({ type: 'string' }),
     }),
@@ -45,6 +46,7 @@ type ReferralLinkEntry = {
   url: string
   label: string | null
   priority_group: number
+  is_official: boolean
   username: string
   display_name: string | null
 }
@@ -66,7 +68,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_referral_links',
     type: 'function',
     description:
-      'Get prioritized referral links for a topic. Ranks links by social connections: mutual follows, follows, referrers, positive-choice authors, then everyone else.',
+      'Get prioritized referral links for a topic. Ranks links by social connections: mutual follows, follows, referrers, positive-choice authors, then official Voucha links, then everyone else.',
     parameters: {
       type: 'object',
       properties: {
@@ -146,6 +148,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
                 ? await sanitizePromptInjection(link.label, { isTitle: true })
                 : null,
             priority_group: link.priority_group,
+            is_official: link.is_official,
             username: user?.username ?? link.user_id ?? link.id,
             display_name: user?.display_name ?? null,
           }

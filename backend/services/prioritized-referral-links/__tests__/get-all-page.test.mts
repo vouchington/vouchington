@@ -73,7 +73,7 @@ describe('getAllReferralLinksPage', () => {
     const page = await getAllReferralLinksPage(viewer.id, referralProgramId)
 
     expect(page.links.map(l => l.id)).toEqual([other.linkId, own.id])
-    expect(page.links.every(l => l.priority_group === 5)).toBe(true)
+    expect(page.links.every(l => l.priority_group === 6)).toBe(true)
     // Never null, even when no official account exists to compare against.
     expect(page.links.map(l => l.is_official)).toEqual([false, false])
     expect(page.users[other.user.id]?.username).toBeTruthy()

@@ -185,6 +185,6 @@ describe('get-prioritized in-network priority groups', () => {
 
     const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
 
-    expect(result.links.find(link => link.user_id === author.id)?.priority_group).toBe(5)
+    expect(result.links.find(link => link.user_id === author.id)?.priority_group).toBe(6)
   })
 })

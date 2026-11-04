@@ -51,13 +51,13 @@ describe('get-prioritized shared list, exclusions and cache', () => {
     referralProgramId = fixture.referralProgramId
   })
 
-  it('gives anonymous viewers the top five shared links in group 5', async () => {
+  it('gives anonymous viewers the top five shared links in group 6', async () => {
     await Promise.all(Array.from({ length: 7 }, () => createUserWithLink('anon')))
 
     const result = await getPrioritizedReferralLinks(null, referralProgramId)
 
     expect(result.links).toHaveLength(5)
-    expect(result.links.every(l => l.priority_group === 5)).toBe(true)
+    expect(result.links.every(l => l.priority_group === 6)).toBe(true)
   })
 
   it('fills a viewer with no network from the shared links, up to five', async () => {
@@ -67,7 +67,7 @@ describe('get-prioritized shared list, exclusions and cache', () => {
     const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
 
     expect(result.links).toHaveLength(5)
-    expect(result.links.every(l => l.priority_group === 5)).toBe(true)
+    expect(result.links.every(l => l.priority_group === 6)).toBe(true)
   })
 
   it('removes muted and blocked users and the viewer from the shared list', async () => {

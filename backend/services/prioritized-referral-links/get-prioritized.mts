@@ -13,10 +13,11 @@ export type PrioritizedReferralLinksPage = ReferralLinksWithUsers & { page_info:
 const NO_NEXT_PAGE: PageInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
 
 /**
- * Official links first (extra, outside the limit), then up to `limit` personalized links: the
- * viewer's network when they have any (one page, no cursor), or else the shared ranked list with
- * the viewer's own link and their muted and blocked authors removed, paged by `after`. Anonymous
- * viewers page the shared list unfiltered.
+ * The viewer's network (up to `limit`) first, then the official links, which are always
+ * included and never count toward the limit. A viewer with no network gets the official links
+ * followed by up to `limit` links of the shared ranked list, paged by `after` (the viewer's own
+ * link and their muted and blocked authors removed). Anonymous viewers page the shared list
+ * unfiltered.
  */
 export async function getPrioritizedReferralLinks(
   currentUserId: string | null,
@@ -38,7 +39,7 @@ export async function getPrioritizedReferralLinks(
     limit,
   )
   if (inNetwork.links.length > 0) {
-    return { ...combine(shared.official, inNetwork), page_info: NO_NEXT_PAGE }
+    return { ...combine(inNetwork, shared.official), page_info: NO_NEXT_PAGE }
   }
   return page(
     shared.official,

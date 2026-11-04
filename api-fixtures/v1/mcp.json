@@ -17256,7 +17256,7 @@
           "tool": {
             "name": "get_referral_links",
             "title": "Get Referral Links",
-            "description": "Get prioritized referral links for a topic. Ranks links by social connections: mutual follows, follows, referrers, positive-choice authors, then everyone else.",
+            "description": "Get prioritized referral links for a topic. Ranks links by social connections: mutual follows, follows, referrers, positive-choice authors, then official Voucha links, then everyone else.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -17310,6 +17310,9 @@
                           "priority_group": {
                             "type": "number"
                           },
+                          "is_official": {
+                            "type": "boolean"
+                          },
                           "username": {
                             "type": "string"
                           },
@@ -17322,6 +17325,7 @@
                           "url",
                           "label",
                           "priority_group",
+                          "is_official",
                           "username",
                           "display_name"
                         ],
