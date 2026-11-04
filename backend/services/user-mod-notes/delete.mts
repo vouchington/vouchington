@@ -3,18 +3,13 @@ import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import {
-  isModerationStaff,
-  getModeratedCommunityIds,
-  type ModeratedCommunityIdsOption,
-} from './authorization.mts'
+import { isModerationStaff, isUserCommunityModerator } from './authorization.mts'
 import type { UserModNote } from './config.mts'
 
 export async function deleteUserModNote(
   currentUser: PrivateUser,
   noteId: string,
   targetUserId: string,
-  options: ModeratedCommunityIdsOption = {},
 ): Promise<void> {
   await using query = await beginTransaction()
   const { rows } = await query(sql`/* deleteUserModNote:lock */
@@ -34,9 +29,11 @@ export async function deleteUserModNote(
 
   if (!isStaff) {
     if (note.community_id !== null) {
-      const moderatedIds =
-        options.moderatedCommunityIds ?? (await getModeratedCommunityIds(currentUser, { query }))
-      assert(moderatedIds.includes(note.community_id), 403, 'Forbidden')
+      assert(
+        await isUserCommunityModerator(currentUser, note.community_id, { query }),
+        403,
+        'Forbidden',
+      )
     } else {
       assert(false, 403, 'Forbidden')
     }

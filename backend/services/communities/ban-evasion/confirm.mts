@@ -1,4 +1,5 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
@@ -19,7 +20,9 @@ export async function confirmBanEvasion(
   // touching community_bans so a dismissed false-positive is never promoted to a real ban.
   await using query = await beginTransaction()
 
-  const flagClaim = await write<{ suspected_ban_evader_source_user_id: string | null }>(
+  const flagClaim = await writeCommunityMembershipMutation<{
+    suspected_ban_evader_source_user_id: string | null
+  }>(
     sql`/* confirmBanEvasion:claim-flag */
       UPDATE community_members
       SET suspected_ban_evader_dismissed_at = CURRENT_TIMESTAMP,
@@ -31,6 +34,7 @@ export async function confirmBanEvasion(
         AND suspected_ban_evader_dismissed_at IS NULL
       RETURNING suspected_ban_evader_source_user_id
       `,
+    { userIds: [userId], communityIds: [communityId] },
     { query },
   )
 
@@ -56,14 +60,18 @@ export async function confirmBanEvasion(
   } catch (err) {
     // Restore the flag so the member re-appears in the moderation queue rather than
     // silently disappearing without a ban when the ban itself fails.
-    await write(sql`/* confirmBanEvasion:restore-flag */
+    await writeCommunityMembershipMutation(
+      sql`/* confirmBanEvasion:restore-flag */
       UPDATE community_members
       SET suspected_ban_evader_dismissed_at = NULL,
           suspected_ban_evader_dismissed_by_id = NULL
       WHERE community_id = ${communityId}
         AND user_id = ${userId}
+        AND removed_at IS NULL
         AND suspected_ban_evader_dismissed_by_id = ${currentUser.id}
-    `)
+    `,
+      { userIds: [userId], communityIds: [communityId] },
+    )
     throw err
   }
 

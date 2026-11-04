@@ -1,4 +1,5 @@
-import { registerPostCommitAction, write, type TransactionQuery } from '@data-stores/psql'
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
+import { registerPostCommitAction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
@@ -17,6 +18,7 @@ import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { invalidateCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
 import type { CreateCommunityInput } from './create-types.mts'
 import type { Community } from './types.mts'
+import { assertCommunityMembershipCapacity } from './membership-limits.mts'
 
 export type CommunityInsert = {
   id: string
@@ -39,8 +41,9 @@ export async function insertCommunity(
   await lockImageAssetAdmission(imageIds, query)
   await assertImagesReadyForSurface(imageIds, query)
   const options = { query }
+  await assertCommunityMembershipCapacity(currentUserId, id, options)
 
-  const { rows } = await write(
+  const { rows } = await writeCommunityMembershipMutation(
     sql`/* createCommunity */
     WITH new_community AS (
     INSERT INTO communities (
@@ -88,6 +91,7 @@ export async function insertCommunity(
     )
     SELECT id FROM new_community
     `,
+    { userIds: [currentUserId], communityIds: [id] },
     options,
   )
 

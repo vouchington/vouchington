@@ -211,11 +211,31 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
       u.moderation_email_days_of_week,
       u.moderation_email_time_of_day,
       COALESCE(u.moderation_email_timezone, 'America/Los_Angeles') AS moderation_email_timezone
-    FROM users u
+    FROM community_members cm
+    JOIN communities c
+      ON c.id = cm.community_id
+      AND c.deleted_at IS NULL
+      AND c.archived_at IS NULL
+    CROSS JOIN LATERAL (
+      -- Keep generic plans on one primary-key probe per moderator seat instead of scanning users.
+      SELECT recipient.id, recipient.username, recipient.ui_locale,
+        recipient.moderation_email_cadence, recipient.moderation_email_days_of_week,
+        recipient.moderation_email_time_of_day, recipient.moderation_email_timezone,
+        recipient.is_moderation_emails_enabled
+      FROM users recipient
+      WHERE recipient.id >= cm.user_id AND recipient.id <= cm.user_id
+      LIMIT 1
+    ) u
     JOIN user_email_addresses email
       ON email.user_id = u.id AND email.is_primary = TRUE
-    JOIN community_members cm
-      ON cm.user_id = u.id
+    CROSS JOIN LATERAL (
+      SELECT
+        ${now}::timestamptz AT TIME ZONE COALESCE(
+          u.moderation_email_timezone,
+          'America/Los_Angeles'
+        ) AS local_now
+    ) moderation_email_schedule
+    WHERE email.email_address IS NOT NULL
       AND cm.removed_at IS NULL
       AND cm.role IN ('owner', 'moderator')
       AND (
@@ -229,18 +249,6 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
           AND (v.ends_at IS NULL OR v.ends_at > ${now}::timestamptz)
         )
       )
-    JOIN communities c
-      ON c.id = cm.community_id
-      AND c.deleted_at IS NULL
-      AND c.archived_at IS NULL
-    CROSS JOIN LATERAL (
-      SELECT
-        ${now}::timestamptz AT TIME ZONE COALESCE(
-          u.moderation_email_timezone,
-          'America/Los_Angeles'
-        ) AS local_now
-    ) moderation_email_schedule
-    WHERE email.email_address IS NOT NULL
       AND u.is_moderation_emails_enabled = TRUE
       AND NOT EXISTS (
         SELECT 1 FROM user_suspensions suspension

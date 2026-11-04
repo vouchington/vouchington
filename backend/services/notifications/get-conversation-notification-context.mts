@@ -1,5 +1,6 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getCachedCommunityModerators } from '@services/entity-cache/community-memberships'
 
 export type ConversationNotificationContext = {
   channel_type: 'direct_message' | 'modmail'
@@ -32,10 +33,12 @@ export async function getConversationNotificationContext(
 
   let participantRows: Array<{ user_id: string }>
   if (conv.channel_type === 'modmail' && conv.community_id) {
-    // Use live mod list so newly added/removed mods are correctly included/excluded.
+    const moderators = await getCachedCommunityModerators(conv.community_id)
+    // Recheck membership and vacations live, including after a concurrent removal.
     // Also union conversation_participants to include non-member staff (e.g. site admins
     // who opened or replied via the report-modmail endpoint).
     const modQuery = sql`/* getConversationNotificationContext:modmail-recipients */
+      SELECT mods.user_id FROM (
       SELECT cm.user_id
       FROM community_members cm
       JOIN users u ON u.id = cm.user_id AND u.deleted_at IS NULL
@@ -49,9 +52,11 @@ export async function getConversationNotificationContext(
             AND v.starts_at   <= now()
             AND (v.ends_at IS NULL OR v.ends_at > now())
         )`
+    modQuery.append(sql` AND cm.user_id = ANY(${moderators}::uuid[])`)
     if (excludeSenderId) {
       modQuery.append(sql` AND cm.user_id != ${excludeSenderId}`)
     }
+    modQuery.append(sql` LIMIT ${moderators.length}) mods`)
     if (conv.subject_user_id && conv.subject_user_id !== excludeSenderId) {
       modQuery.append(
         sql`
@@ -70,6 +75,11 @@ export async function getConversationNotificationContext(
       WHERE cp.conversation_id = ${conversationId}
         AND cp.removed_at IS NULL
         AND cp.user_id IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM user_roles ur
+          JOIN user_role_types urt ON urt.id = ur.role_type_id
+          WHERE ur.user_id = cp.user_id AND urt.slug IN ('administrator', 'moderator')
+        )
         AND NOT EXISTS (
           SELECT 1 FROM community_members cm2
           WHERE cm2.user_id = cp.user_id
@@ -80,7 +90,7 @@ export async function getConversationNotificationContext(
     if (excludeSenderId) {
       modQuery.append(sql` AND cp.user_id != ${excludeSenderId}`)
     }
-    const { rows } = await read(modQuery)
+    const { rows } = await write(modQuery)
     participantRows = rows as Array<{ user_id: string }>
   } else {
     const participantQuery = sql`/* getConversationNotificationContext:participants */

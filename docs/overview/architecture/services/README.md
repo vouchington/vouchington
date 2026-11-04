@@ -48,6 +48,20 @@ flowchart LR
 
 ## Decisions worth knowing
 
+Community membership admission has separate operator limits for a user's memberships and a
+community's moderators, with owners included. Staff follow the same limits. User admission is
+serialized across communities; moderator promotions use the community role fence. Lowering a limit
+blocks further admissions without hiding existing memberships or dropping notification recipients.
+Ownership transfers exchange existing moderator seats, and bootstrap replay preserves later
+membership and ownership choices. Deleted communities release admission capacity while retained
+membership history remains available; cache overflow falls back to paginated reads.
+
+Membership caches support display and moderator notification discovery. Membership writes clear
+both views after the owning transaction commits; a short expiry backs up invalidation. Authorization,
+visibility, vacation eligibility and participant creation within write transactions stay live.
+Notification eligibility also rechecks current moderator or site-staff authority, so a former
+moderator's old conversation participation does not retain access to modmail notifications.
+
 Ingestion services page from immutable source IDs before applying changing eligibility. This keeps
 scheduled reads bounded when most feeds are not due, social accounts were recently synced, or
 Bedrock batches are still fresh. Workers retain the raw position through queue continuations so

@@ -1,3 +1,4 @@
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
@@ -120,7 +121,7 @@ export async function detectBanEvasionForMember(
     const options = { query }
     const caseId = await openOrGetOpenCase({ entityType: 'user', entityId: userId }, options)
 
-    const { rowCount } = await write(
+    const { rowCount } = await writeCommunityMembershipMutation(
       sql`/* detectBanEvasionForMember:flag-member */
         UPDATE community_members
         SET suspected_ban_evader_at = CURRENT_TIMESTAMP,
@@ -131,6 +132,7 @@ export async function detectBanEvasionForMember(
           AND removed_at IS NULL
           AND suspected_ban_evader_at IS NULL
         `,
+      { userIds: [userId], communityIds: [communityId] },
       options,
     )
 

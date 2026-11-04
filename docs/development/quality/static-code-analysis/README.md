@@ -47,6 +47,11 @@ Nested Oxlint configs do not inherit ancestor `overrides` or `plugins`: they res
 
 ## Enforcement Policy
 
+Community membership mutations must use the shared writer so cache invalidation follows the
+owning transaction's commit. The application-specific AST-grep guard rejects direct mutation SQL,
+including mutations inside CTEs and appended fragments. Bootstrap seeds and test fixtures have
+separate lifecycles; production membership changes cannot use those exceptions.
+
 The `backend-no-enqueue-and-wait` ast-grep rule rejects queue result waits and misleading
 `enqueue*AndWait` names across backend code, including tests. Queue admission may still be awaited;
 the forbidden operation is waiting for another job's completion instead of durable state.

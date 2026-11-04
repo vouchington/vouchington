@@ -9,6 +9,7 @@ export const REGISTRY_ORDER = [
   'turnstile-config',
   'bot-challenge-config',
   'post-content-limits-config',
+  'community-membership-limits-config',
   'post-related-url-display-config',
   'story-related-items-config',
   'rate-limit-thresholds',

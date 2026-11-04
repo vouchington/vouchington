@@ -7,6 +7,8 @@ import {
   softDeleteUser,
   insertTestCommunity,
   insertTestCommunityMember,
+  removeTestCommunityMember,
+  updateTestCommunityMemberRole,
 } from '@voucha/test-helpers'
 import { getConversationNotificationContext } from './get-conversation-notification-context.mts'
 
@@ -177,7 +179,7 @@ describe('getConversationNotificationContext', () => {
     // The NOT EXISTS exclusion must only exclude active owner/moderator rows, not all members.
     const owner = await createTestUser()
     const subject = await createTestUser()
-    const staffMember = await createTestUser()
+    const staffMember = await createTestUser({ administrator: true })
 
     const community = await insertTestCommunity({ createdById: owner.id })
     await Promise.all([
@@ -201,4 +203,31 @@ describe('getConversationNotificationContext', () => {
     expect(result).not.toBeNull()
     expect(result!.participant_user_ids).toContain(staffMember.id)
   })
+  it.each(['removed', 'demoted'] as const)(
+    'stops notifying a %s moderator who participated in the thread',
+    async change => {
+      const owner = await createTestUser()
+      const mod = await createTestUser()
+      const subject = await createTestUser()
+      const community = await insertTestCommunity({ createdById: owner.id })
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: mod.id,
+        role: 'moderator',
+      })
+      const thread = await createTestModmailThread({
+        communityId: community.id,
+        subjectUserId: subject.id,
+        modUserId: mod.id,
+      })
+      expect(
+        (await getConversationNotificationContext(thread.id, subject.id))!.participant_user_ids,
+      ).toContain(mod.id)
+      if (change === 'removed') await removeTestCommunityMember(community.id, mod.id)
+      else await updateTestCommunityMemberRole(community.id, mod.id, 'member')
+      expect(
+        (await getConversationNotificationContext(thread.id, subject.id))!.participant_user_ids,
+      ).not.toContain(mod.id)
+    },
+  )
 })

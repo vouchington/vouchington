@@ -3870,6 +3870,9 @@ importers:
       '@services/user-financial-profiles':
         specifier: workspace:^
         version: link:../services/user-financial-profiles
+      '@services/user-mod-notes':
+        specifier: workspace:^
+        version: link:../services/user-mod-notes
       '@services/user-referral-program-links':
         specifier: workspace:^
         version: link:../services/user-referral-program-links
@@ -8459,6 +8462,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../moderation-reports
@@ -8558,6 +8564,9 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -8668,6 +8677,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -11994,6 +12006,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions

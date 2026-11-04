@@ -1,3 +1,4 @@
+import { runCommunityMembershipCapScenarios } from './community-membership-caps.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, read } from '@data-stores/psql'
 import { createCommunityLifecycleNotifications } from '@services/notifications'
@@ -111,6 +112,7 @@ async function runCommunityCreate(): Promise<void> {
 }
 
 export async function runCommunityRoundTripScenarios(): Promise<void> {
+  await runCommunityMembershipCapScenarios()
   const communityId = await seededCommunityId()
   await runPostReviewLoad(communityId)
   await runLifecycleNotifications(communityId)

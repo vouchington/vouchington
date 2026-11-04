@@ -95,6 +95,20 @@ export async function getTestBanEvasionFlagState(
   return rows[0] ?? null
 }
 
+/** Reads the specific membership generation, including a removed generation's dismissal. */
+export async function getTestMembershipBanEvasionFlagState(
+  membershipId: string,
+): Promise<BanEvasionFlagState | null> {
+  const { rows } = await read<BanEvasionFlagState>(sql`/* getTestMembershipBanEvasionFlagState */
+    SELECT suspected_ban_evader_at, suspected_ban_evader_dismissed_at,
+      suspected_ban_evader_dismissed_by_id
+    FROM community_members
+    WHERE id = ${membershipId}
+    LIMIT 1
+  `)
+  return rows[0] ?? null
+}
+
 export async function getTestActiveCommunityBan(
   communityId: string,
   userId: string,

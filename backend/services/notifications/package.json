@@ -30,6 +30,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/notifications": "workspace:^",
+    "@services/entity-cache": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/sentry": "^0.5.0",

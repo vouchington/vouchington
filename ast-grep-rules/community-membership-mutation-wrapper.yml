@@ -1,0 +1,76 @@
+id: community-membership-mutation-wrapper
+language: Tsx
+severity: error
+message: Execute community_members mutations through writeCommunityMembershipMutation so membership caches clear after commit.
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/scripts/**'
+  - 'backend/test-helpers/**'
+  - 'backend/data-stores/psql/config-driven/**'
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  all:
+    - any:
+        - kind: template_string
+        - kind: string
+    - regex: '(?is)\b(?:insert\s+into|update|delete\s+from)\s+(?:"?public"?\s*\.\s*)?"?community_members\b"?'
+    - not:
+        inside:
+          kind: call_expression
+          has:
+            field: function
+            any:
+              - kind: identifier
+                regex: ^writeCommunityMembershipMutation$
+              - kind: await_expression
+                has:
+                  kind: identifier
+                  regex: ^writeCommunityMembershipMutation$
+          stopBy: end
+examples:
+  - file: backend/services/communities/members/join.mts
+    code: 'await write(sql`INSERT INTO community_members (community_id) VALUES (${id})`)'
+    isValid: false
+  - file: backend/workers/example/processor.mts
+    code: 'await write(sql`WITH c AS (SELECT 1) UPDATE community_members SET removed_at = now()`)'
+    isValid: false
+  - file: backend/api/example.mts
+    code: |
+      await write(`delete
+      from public.community_members where id = $1`)
+    isValid: false
+  - file: backend/services/communities/example.mts
+    code: 'await write(sql`SELECT 1`.append(sql`DELETE FROM community_members WHERE id = ${id}`))'
+    isValid: false
+  - file: backend/services/communities/example.mts
+    code: 'await write("update community_members set role = $1")'
+    isValid: false
+  - file: backend/services/communities/members/join.mts
+    code: 'await writeCommunityMembershipMutation(sql`INSERT INTO community_members (community_id) VALUES (${id})`, scope, options)'
+    isValid: true
+  - file: backend/workers/example/processor.mts
+    code: 'await writeCommunityMembershipMutation(sql`SELECT 1`.append(sql`UPDATE community_members SET removed_at = now()`), scope, options)'
+    isValid: true
+  - file: backend/services/communities/example.mts
+    code: 'await writeCommunityMembershipMutation<{ id: string }>(sql`UPDATE community_members SET role = ${role}`, scope, options)'
+    isValid: true
+  - file: backend/workers/example/processor.mts
+    code: 'await writeCommunityMembershipMutation<Row>(sql`SELECT 1`.append(sql`DELETE FROM community_members`), scope)'
+    isValid: true
+  - file: backend/services/communities/example.mts
+    code: 'await write(sql`SELECT * FROM community_members WHERE user_id = ${id}`)'
+    isValid: true
+  - file: backend/services/communities/example.test.mts
+    code: 'await write(sql`UPDATE community_members SET role = ${role}`)'
+    isValid: true
+  - file: backend/test-helpers/entities/community-members.mts
+    code: 'await write(sql`UPDATE community_members SET role = ${role}`)'
+    isValid: true
+  - file: backend/scripts/seeds/example.mts
+    code: 'await write(sql`INSERT INTO community_members (user_id) VALUES (${id})`)'
+    isValid: true
+  - file: backend/data-stores/psql/config-driven/seed.mts
+    code: 'await write(sql`DELETE FROM community_members`)'
+    isValid: true

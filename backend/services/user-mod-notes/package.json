@@ -25,6 +25,7 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/entity-cache": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/user-rate-limits": "workspace:^",
     "@services/users": "workspace:^",

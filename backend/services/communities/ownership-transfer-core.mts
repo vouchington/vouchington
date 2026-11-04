@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { writeCommunityMembershipMutation } from '@services/communities/members/write-membership'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
@@ -18,7 +18,7 @@ export async function transferLockedCommunitiesOwnership(
   options: QueryOptions,
 ): Promise<OwnershipTransferOutcome[]> {
   if (transfers.length === 0) return []
-  const { rows } = await write<{
+  const { rows } = await writeCommunityMembershipMutation<{
     community_id: string
     owner_present: boolean
     demoted_updated_at: Date | null
@@ -78,6 +78,10 @@ export async function transferLockedCommunitiesOwnership(
     LEFT JOIN promote ON promote.community_id = input.community_id
     ORDER BY input.community_id
     `,
+    {
+      userIds: transfers.flatMap(transfer => [transfer.fromUserId, transfer.toUserId]),
+      communityIds: transfers.map(transfer => transfer.communityId),
+    },
     options,
   )
   const byCommunity = new Map(rows.map(row => [row.community_id, row]))
