@@ -13,16 +13,18 @@ import { withTopicReferenceAttachmentFences } from '@services/post-publication/l
 export const createCrawler = async (
   creator: PrivateUser | null,
   updates: CreateCrawlerUpdates,
-  options: QueryOptions = {},
 ): Promise<Crawler> => {
-  if (!options.query) {
-    await using query = await beginTransaction(
-      options.client ? { client: options.client } : undefined,
-    )
-    const crawler = await createCrawler(creator, updates, { query })
-    await query.commit()
-    return crawler
-  }
+  await using query = await beginTransaction()
+  const crawler = await createCrawlerInTransaction(creator, updates, { query })
+  await query.commit()
+  return crawler
+}
+
+async function createCrawlerInTransaction(
+  creator: PrivateUser | null,
+  updates: CreateCrawlerUpdates,
+  options: QueryOptions,
+): Promise<Crawler> {
   assert(updates.crawler_type, 422, 'Crawler type is required')
   assert(
     ['fetch', 'automation'].includes(updates.crawler_type),

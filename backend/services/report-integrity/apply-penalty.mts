@@ -1,7 +1,7 @@
 import { recordModeratorAction } from '@services/moderator-actions'
 import {
+  beginTransaction,
   registerPostCommitAction,
-  runWithTransaction,
   type TransactionQuery,
 } from '@data-stores/psql'
 import { markJwtStaleBatch } from '@services/jwt-session/invalidation'
@@ -39,35 +39,35 @@ export type ApplyReportAbusePenaltyResult = {
 export async function applyReportAbusePenalty(
   currentUserId: string,
   flagId: string,
-  options: { query?: TransactionQuery } = {},
 ): Promise<ApplyReportAbusePenaltyResult> {
-  return runWithTransaction(options.query, async query => {
-    const result = await applyPenaltyInTransaction(query)
-    await recordModeratorAction(
-      currentUserId,
-      {
-        actionType: 'report_integrity_penalty_apply',
-        reportIntegrityFlagId: flagId,
-        metadata: {
-          before: { resolution: null },
-          after: { resolution: 'penalized', penalized_user_count: result.penalties.length },
-        },
+  await using query = await beginTransaction()
+  const result = await applyPenaltyInTransaction(query)
+  await recordModeratorAction(
+    currentUserId,
+    {
+      actionType: 'report_integrity_penalty_apply',
+      reportIntegrityFlagId: flagId,
+      metadata: {
+        before: { resolution: null },
+        after: { resolution: 'penalized', penalized_user_count: result.penalties.length },
       },
-      { query },
-    )
-    // Invalidate the JWT trust-tier claim for each penalized user after commit.
-    if (result.penalties.length > 0) {
-      registerPostCommitAction(query, async () => {
-        await markJwtStaleBatch(result.penalties.map(p => p.user_id))
-      })
-    }
+    },
+    { query },
+  )
+  // Invalidate the JWT trust-tier claim for each penalized user after commit.
+  if (result.penalties.length > 0) {
+    registerPostCommitAction(query, async () => {
+      await markJwtStaleBatch(result.penalties.map(p => p.user_id))
+    })
+  }
 
-    return {
-      flag: (await attachReportFlagEntityLabels([result.flag], query))[0]!,
-      penalized_user_count: result.penalties.length,
-      penalties: result.penalties,
-    }
-  })
+  const applied = {
+    flag: (await attachReportFlagEntityLabels([result.flag], query))[0]!,
+    penalized_user_count: result.penalties.length,
+    penalties: result.penalties,
+  }
+  await query.commit()
+  return applied
 
   async function applyPenaltyInTransaction(query: TransactionQuery): Promise<{
     flag: ReportIntegrityFlag & { hostname: string | null }

@@ -1,11 +1,5 @@
-import {
-  beginTransaction,
-  write,
-  type QueryExecutor,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { rejectQuery } from './injected-failures.mts'
 
 export async function readStaffActionHistory(actorId: string) {
   const { rows } = await write<{
@@ -27,24 +21,6 @@ export async function readStaffActionHistory(actorId: string) {
     sql`/* readStaffActionHistory */ SELECT * FROM moderator_actions WHERE actor_user_id = ${actorId} ORDER BY id`,
   )
   return rows
-}
-
-/** Only this executor's history insert fails. */
-function rejectStaffActionHistoryQuery<Query extends QueryExecutor>(query: Query): Query {
-  return rejectQuery(
-    query,
-    statement =>
-      statement.startsWith('/* recordModeratorAction') && statement.includes('moderator_actions'),
-    'staff history rejected for test',
-  )
-}
-
-/** Lend a rejecting query to one mutation; disposal rolls back any partial writes. */
-export async function withRejectedStaffActionHistory<T>(
-  execute: (query: TransactionQuery) => Promise<T>,
-): Promise<T> {
-  await using transaction = await beginTransaction()
-  return await execute(rejectStaffActionHistoryQuery(transaction))
 }
 
 const HISTORY_TARGET_TABLES = {

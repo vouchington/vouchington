@@ -17,7 +17,6 @@ import type { PrivateUser } from '@services/users/types'
 import { getJwtStaleKey } from '@data-stores/valkey/jwt-stale'
 import { readTestJwtStaleMarker } from '@voucha/test-helpers/jwt-stale-markers'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
-import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
@@ -105,19 +104,6 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
 
     const penalties = await getTestReportAbusePenaltiesByFlagId(flagId)
     expect(penalties).toHaveLength(1)
-  })
-
-  it('claims a flag inserted in the supplied transaction without requiring another client', async () => {
-    const targetUser = await createTestUserDirect({ username: randomUsername() })
-    await withPostgresTransactionForTest(async query => {
-      const flagId = await insertTestReportIntegrityFlag({
-        reportedUserId: targetUser.id,
-        query,
-      })
-      const result = await applyReportAbusePenalty(adminUser.id, flagId, { query })
-      expect(result.flag).toMatchObject({ id: flagId, resolution: 'penalized' })
-    })
-    expect(await getTestReportIntegrityFlagsByUserId(targetUser.id)).toEqual([])
   })
 
   it('distinguishes a missing flag from an already resolved flag', async () => {
