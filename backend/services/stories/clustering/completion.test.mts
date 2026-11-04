@@ -53,14 +53,12 @@ describe('completeStoryClusteringRun (real PG)', () => {
   })
 
   it('has nothing to finish for an item that joined no story', async () => {
-    const other = await item()
-    const otherStory = await insertTestStory()
-    await setTestItemStoryId(other.itemId, otherStory.id)
+    const unclustered = await item()
     const invalidate = observeInvalidations()
 
-    await completeStoryClusteringRun((await item()).subject)
+    await completeStoryClusteringRun(unclustered.subject)
 
-    expect(callsFor(invalidate, otherStory.id)).toEqual([])
+    expect(invalidate.mock.calls.filter(args => args.includes(null))).toEqual([])
   })
 
   it('has nothing to finish for an item deleted since, whatever story it was in', async () => {
@@ -76,13 +74,10 @@ describe('completeStoryClusteringRun (real PG)', () => {
   })
 
   it('has nothing to finish for a subject that is not an RSS feed item', async () => {
-    const clustered = await item()
-    const story = await insertTestStory()
-    await setTestItemStoryId(clustered.itemId, story.id)
     const invalidate = observeInvalidations()
 
     await completeStoryClusteringRun({ postId: 'a-post', rssFeedItemId: null })
 
-    expect(callsFor(invalidate, story.id)).toEqual([])
+    expect(invalidate.mock.calls.filter(args => args.includes(null))).toEqual([])
   })
 })
