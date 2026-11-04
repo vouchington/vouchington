@@ -143,7 +143,8 @@ jobs:
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
         run: source "$GITHUB_WORKSPACE/.github/workflows/explain-analyze-seed-with-resource-samples.sh"
       - run: node backend/scripts/explain-analyze/run.mts
-        timeout-minutes: 10
+        # Full capture reached the former deadline after writing results; leave bounded headroom.
+        timeout-minutes: 12
         env:
           NODE_DISABLE_COMPILE_CACHE: '1'
           # Both canonical native runners append stock V8 records to the existing native coverage input.

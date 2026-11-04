@@ -152,7 +152,9 @@ Add service calls through `runAndCapture()` and register the new stable scenario
 The `EXPLAIN ANALYZE` workflow is called by `test-explain-analyze` in `backend.yml`, gated by the
 `explain-analyze:` path filter. Each run has its own PostgreSQL instance. The seed records
 per-batch timing and resource samples to the results artifact so a seed that hits the CI step limit
-shows which operation was interrupted.
+shows which operation was interrupted. The capture step leaves bounded headroom for fixture setup
+and both plan modes; the enclosing job budget also reserves time for plan gates, pruning and
+artifact publication. Diagnose scenario timings before changing a deadline.
 
 The `backend-data-stores` Vitest owner verifies prepared-target custom and generic plans,
 transaction-local settings, and rollback of an explained write against an owned user fixture.
