@@ -72,7 +72,9 @@ export function CopyrightStaffClaimantMisuse({
             <h4 className='text-sm font-medium'>
               {index === 0 ? 'Latest notices' : `Older notices, window ${index + 1}`}
             </h4>
-            <p className='text-sm'>{window.notice_count} notices inspected</p>
+            <p className='text-sm'>
+              {t('copyright.claimantMisuse.noticesInspected', { count: window.notice_count })}
+            </p>
             <dl className='text-sm text-muted-foreground'>
               {window.oldest_notice_at && (
                 <>

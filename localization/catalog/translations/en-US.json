@@ -8,6 +8,7 @@
 {"id":"copy.common.save","value":"Save"},
 {"id":"copy.common.support","value":"Support"},
 {"id":"copy.copyright.claimantMisuse.newestNoticeReceived","value":"Newest notice received"},
+{"id":"copy.copyright.claimantMisuse.noticesInspected","value":{"one":"{count} notice inspected","other":"{count} notices inspected"}},
 {"id":"copy.copyright.claimantMisuse.oldestNoticeReceived","value":"Oldest notice received"},
 {"id":"copy.email.api-key-expiry.action","value":"Rotate it and update your apps to keep them connected."},
 {"id":"copy.email.api-key-expiry.body","value":"Your API key “{label}” expires on {date}."},
