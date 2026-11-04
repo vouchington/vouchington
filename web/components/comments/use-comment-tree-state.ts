@@ -56,7 +56,6 @@ export function useCommentTreeState({
           ],
     ),
   ]
-  extraComments.forEach(c => seenIds.add(c.id))
 
   // useMemo is required here: mergedPostsMap and postIdsKey are in a
   // useLayoutEffect dep array (useCommentCollapse). Without stable
@@ -129,7 +128,8 @@ export function useCommentTreeState({
   )
 
   function handleCommentAdded(_parentId: string, comment: Post, renderedHtml?: string) {
-    setExtraComments(prev => [...prev, comment])
+    // An expand fetch that was in flight when the viewer replied may already hold this comment.
+    setExtraComments(prev => (prev.some(c => c.id === comment.id) ? prev : [...prev, comment]))
     if (renderedHtml !== undefined) {
       setExtraMarkdownToHtml(prev => ({ ...prev, [comment.id]: renderedHtml }))
       return

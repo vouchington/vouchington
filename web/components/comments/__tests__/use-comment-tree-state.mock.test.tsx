@@ -109,4 +109,20 @@ describe('useCommentTreeState replies of a hidden comment', () => {
 
     expect(countNodes(result.current.commentNodes)).toBe(2)
   })
+
+  it('renders a reply once when the viewer adds it after an expand fetch already returned it', async () => {
+    vi.mocked(fetchPostDescendants).mockResolvedValueOnce(makeData([child]))
+    const { result } = renderState(hiddenParentData())
+
+    await act(async () => {
+      result.current.handleToggleCollapse('1')
+    })
+    await waitFor(() => expect(countNodes(result.current.commentNodes)).toBe(2))
+
+    act(() => {
+      result.current.handleCommentAdded('1', child, '<p>reply</p>')
+    })
+
+    expect(countNodes(result.current.commentNodes)).toBe(2)
+  })
 })
