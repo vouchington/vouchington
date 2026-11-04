@@ -7,6 +7,23 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 const URL_HAS_REFERENCES = sql`(totals.story_count > 0 OR totals.comment_count > 0)`
 
 /**
+ * References live on the canonical URL, but a post or feed item can still point at a row that
+ * gained its canonical later, so every check first resolves the entity's URL through `urls`.
+ * `setCanonicalUrl` flattens chains, so one hop is the norm; the second join tolerates the
+ * two-hop chain a concurrent call can leave. That is two primary-key probes per candidate,
+ * deliberately not a recursive CTE, which the readers use once per request but would be
+ * costly per candidate post. A chain deeper than two hops is not followed and reads as
+ * unreferenced until the next `setCanonicalUrl` flattens it.
+ */
+function canonicalTotalsJoin(urlIdColumn: string): SQLStatement {
+  return sql`urls source
+      LEFT JOIN urls hop ON hop.id = source.canonical_url_id
+      JOIN url_hacker_news_totals totals
+        ON totals.url_id = COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id)
+      WHERE source.id = `.append(urlIdColumn)
+}
+
+/**
  * Posts that show Hacker News references: the post's own link URL or a live, positively
  * voted related URL is referenced. The related leg accepts any such URL, while the card and
  * detail reads (`getHackerNewsUrlIdsByPostIds`) keep only the top
@@ -20,16 +37,24 @@ export function buildPostHasHackerNewsReferences(): SQLStatement {
   return sql`(
     EXISTS (
       SELECT 1
-      FROM url_hacker_news_totals totals
-      WHERE totals.url_id = posts.url_id
-        AND `
+      FROM `
+    .append(canonicalTotalsJoin('posts.url_id'))
+    .append(sql`
+        AND `)
     .append(URL_HAS_REFERENCES)
     .append(
       sql`
     ) OR EXISTS (
       SELECT 1
       FROM "relation__post__related__url" rel
-      JOIN url_hacker_news_totals totals ON totals.url_id = rel.object_id
+      JOIN `,
+    )
+    .append(
+      // The relation row replaces the single-URL source: resolve its object through `urls`.
+      sql`urls source ON source.id = rel.object_id
+      LEFT JOIN urls hop ON hop.id = source.canonical_url_id
+      JOIN url_hacker_news_totals totals
+        ON totals.url_id = COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id)
       WHERE rel.subject_id = posts.id
         AND rel.deleted_at IS NULL
         AND rel.votes_score_net > 0
@@ -40,12 +65,15 @@ export function buildPostHasHackerNewsReferences(): SQLStatement {
   )`)
 }
 
-/** RSS feed items, including podcast episodes, whose URL has Hacker News references. */
+/** RSS feed items, including podcast episodes, whose URL (or its canonical) has references. */
 export function buildRssFeedItemHasHackerNewsReferences(): SQLStatement {
   return sql`EXISTS (
     SELECT 1
-    FROM url_hacker_news_totals totals
-    WHERE totals.url_id = rss_feed_items.url_id
-      AND `.append(URL_HAS_REFERENCES).append(sql`
+    FROM `
+    .append(canonicalTotalsJoin('rss_feed_items.url_id'))
+    .append(sql`
+      AND `)
+    .append(URL_HAS_REFERENCES)
+    .append(sql`
   )`)
 }

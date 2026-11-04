@@ -22,11 +22,20 @@ function urlIdChunks(urlIds: readonly string[]): string[][] {
   return chunks
 }
 
-/** Totals for URLs that Hacker News links at least once. One read per chunk of URL ids. */
+/** Totals of a URL's canonical row, plus that row's id so callers can dedupe and read items. */
+export type HackerNewsCanonicalTotals = HackerNewsReferenceCounts & { canonical_url_id: string }
+
+/**
+ * Totals for URLs whose canonical row Hacker News links at least once, keyed by the caller's
+ * url id. References are stored on the canonical row, which `urls.canonical_url_id` reaches
+ * after the fact, so each id resolves through `urls` first. Resolution follows two hops, the
+ * same bound as the list filter: `setCanonicalUrl` flattens chains and a concurrent call can
+ * leave one extra hop. One read per chunk of url ids.
+ */
 export async function getHackerNewsTotalsByUrlIds(
   urlIds: readonly string[],
   options: QueryOptions = {},
-): Promise<Map<string, HackerNewsReferenceCounts>> {
+): Promise<Map<string, HackerNewsCanonicalTotals>> {
   const results = await Promise.all(urlIdChunks(urlIds).map(ids => readTotals(ids, options)))
   return new Map(results.flat())
 }
@@ -34,10 +43,16 @@ export async function getHackerNewsTotalsByUrlIds(
 async function readTotals(ids: string[], options: QueryOptions) {
   const { rows } = await read(
     `/* getHackerNewsTotalsByUrlIds */
-    SELECT url_id, story_count, comment_count
-    FROM url_hacker_news_totals
-    WHERE url_id = ANY($1::uuid[])
-      AND (story_count > 0 OR comment_count > 0)
+    SELECT source.id AS url_id,
+           totals.url_id AS canonical_url_id,
+           totals.story_count,
+           totals.comment_count
+    FROM urls source
+    LEFT JOIN urls hop ON hop.id = source.canonical_url_id
+    JOIN url_hacker_news_totals totals
+      ON totals.url_id = COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id)
+    WHERE source.id = ANY($1::uuid[])
+      AND (totals.story_count > 0 OR totals.comment_count > 0)
   `,
     [ids],
     options,
@@ -46,12 +61,16 @@ async function readTotals(ids: string[], options: QueryOptions) {
     row =>
       [
         row.url_id as string,
-        { story_count: Number(row.story_count), comment_count: Number(row.comment_count) },
-      ] as [string, HackerNewsReferenceCounts],
+        {
+          canonical_url_id: row.canonical_url_id as string,
+          story_count: Number(row.story_count),
+          comment_count: Number(row.comment_count),
+        },
+      ] as [string, HackerNewsCanonicalTotals],
   )
 }
 
-/** Capped story and comment rows for a batch of URLs in one read. */
+/** Capped story and comment rows for a batch of canonical url ids (from the totals read). */
 export async function getHackerNewsItemsByUrlIds(
   urlIds: readonly string[],
   options: QueryOptions = {},

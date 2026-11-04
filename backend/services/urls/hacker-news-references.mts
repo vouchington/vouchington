@@ -2,6 +2,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import {
   getHackerNewsItemsByUrlIds,
   getHackerNewsTotalsByUrlIds,
+  type HackerNewsCanonicalTotals,
   type HackerNewsUrlItems,
 } from './hacker-news-references-read.mts'
 import {
@@ -13,7 +14,7 @@ import {
   type HackerNewsStoryReference,
 } from './hacker-news-references-types.mts'
 
-/** URL ids that belong to each entity (post, RSS feed item), keyed by entity id. */
+/** URL ids (canonical or not) that belong to each entity (post, RSS feed item), keyed by entity id. */
 export type UrlIdsByEntityId = Readonly<Record<string, readonly string[]>>
 
 type EntityReferences = HackerNewsReferenceCounts & Partial<HackerNewsUrlItems>
@@ -69,13 +70,22 @@ async function loadEntityReferences(
   options: QueryOptions,
 ): Promise<Record<string, EntityReferences>> {
   const allUrlIds = [...new Set(Object.values(urlIdsByEntityId).flat())]
-  const totals = await getHackerNewsTotalsByUrlIds(allUrlIds, options)
-  if (totals.size === 0) return {}
+  const resolved = await getHackerNewsTotalsByUrlIds(allUrlIds, options)
+  if (resolved.size === 0) return {}
 
+  // Two of an entity's URLs can share one canonical row; count that row once.
+  const totals = new Map<string, HackerNewsReferenceCounts>()
+  for (const { canonical_url_id, ...counts } of resolved.values()) {
+    totals.set(canonical_url_id, counts)
+  }
   const referencedByEntityId = new Map<string, string[]>()
   for (const [entityId, urlIds] of Object.entries(urlIdsByEntityId)) {
-    const referenced = [...new Set(urlIds)].filter(urlId => totals.has(urlId))
-    if (referenced.length > 0) referencedByEntityId.set(entityId, referenced)
+    const canonicalIds = new Set<string>()
+    for (const urlId of urlIds) {
+      const canonicalId = resolved.get(urlId)?.canonical_url_id
+      if (canonicalId) canonicalIds.add(canonicalId)
+    }
+    if (canonicalIds.size > 0) referencedByEntityId.set(entityId, [...canonicalIds])
   }
 
   // Counts for one URL are its totals. Several URLs need the stored rows to drop duplicates.
