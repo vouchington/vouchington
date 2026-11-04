@@ -43,3 +43,18 @@ export type CopyrightDeliveryRecipientRecord = {
   copyright_notice_delivery_work_item_id: string
   email_ciphertext: string
 }
+
+export type CopyrightDeliveryIntentInput = {
+  noticeId: string
+  /** Required for, and only for, the kinds in `copyrightTargetDeliveryKinds`. */
+  targetId?: string
+  submissionId: string | null
+  correspondenceId: string | null
+  recipientUserId: string | null
+  recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
+  deliveryKind: CopyrightNoticeDeliveryKind
+  channel: CopyrightDeliveryIntentRecord['channel']
+  idempotencyKey: string
+  recipientEmail?: string
+  targetPath?: string
+}

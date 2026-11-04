@@ -1,7 +1,7 @@
 import assert from 'http-assert'
-import type { CopyrightDeliveryIntentInput } from './delivery-intent-batch.mts'
 import {
   copyrightTargetDeliveryKinds,
+  type CopyrightDeliveryIntentInput,
   type CopyrightDeliveryIntentRecord,
 } from './delivery-types.mts'
 

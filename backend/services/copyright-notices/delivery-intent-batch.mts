@@ -3,29 +3,14 @@ import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type {
+  CopyrightDeliveryIntentInput,
   CopyrightDeliveryIntentRecord,
-  CopyrightNoticeDeliveryKind,
 } from './delivery-types.mts'
 import {
   assertDeliveryIntentInput,
   assertReplayMatches,
   type KeyedIntent,
 } from './delivery-intent-checks.mts'
-
-export type CopyrightDeliveryIntentInput = {
-  noticeId: string
-  /** Required for, and only for, the kinds in `copyrightTargetDeliveryKinds`. */
-  targetId?: string
-  submissionId: string | null
-  correspondenceId: string | null
-  recipientUserId: string | null
-  recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
-  deliveryKind: CopyrightNoticeDeliveryKind
-  channel: CopyrightDeliveryIntentRecord['channel']
-  idempotencyKey: string
-  recipientEmail?: string
-  targetPath?: string
-}
 
 /**
  * Creates every delivery intent, then every email recipient, in two statements however many
