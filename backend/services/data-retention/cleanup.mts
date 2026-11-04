@@ -203,7 +203,9 @@ type DataRetentionCleanupOptions = {
   oauthFriendEdges?: Partial<DataRetentionLimits> & { now?: Date }
   securityRecords?: Partial<DataRetentionLimits> & { now?: Date }
   legalRecords?: { now?: Date; recordIds?: readonly string[] }
-  expiredOAuthAuthorizations?: OptionalRetentionLimits<ExpiryCleanupOptions> & {
+  expiredOAuthAuthorizations?: OptionalRetentionLimits<
+    Pick<CleanupOptions, 'batchSize' | 'maxBatches'>
+  > & {
     authorizationIds?: readonly string[]
   }
   expiredOAuthServerArtifacts?: OptionalRetentionLimits<ExpiryCleanupOptions>

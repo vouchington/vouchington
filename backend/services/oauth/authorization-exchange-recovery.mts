@@ -152,7 +152,7 @@ export async function getRecoverableOAuthAuthorizationIds(
 
 export async function deleteExpiredOAuthAuthorizationBatch(
   limit: number,
-  options: { lowerBoundDate?: Date; now?: Date; authorizationIds?: readonly string[] } = {},
+  options: { authorizationIds?: readonly string[] } = {},
 ): Promise<number> {
   if (options.authorizationIds?.length === 0) return 0
   observeSharedDbScope(
@@ -165,13 +165,12 @@ export async function deleteExpiredOAuthAuthorizationBatch(
      WHERE id IN (
        SELECT id
        FROM oauth_authorizations
-       WHERE expires_at <= COALESCE($3::timestamptz, CURRENT_TIMESTAMP)
-         AND ($2::timestamptz IS NULL OR expires_at >= $2)
-         AND ($4::uuid[] IS NULL OR id = ANY($4::uuid[]))
+       WHERE expires_at <= CURRENT_TIMESTAMP
+         AND ($2::uuid[] IS NULL OR id = ANY($2::uuid[]))
        ORDER BY expires_at ASC, id ASC
        LIMIT $1
      )`,
-    [limit, options.lowerBoundDate ?? null, options.now ?? null, idScope],
+    [limit, idScope],
   )
   return rowCount ?? 0
 }
