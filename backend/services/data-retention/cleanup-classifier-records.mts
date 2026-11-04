@@ -16,6 +16,9 @@ type ClassifierCleanupOptions = {
   maxBatches: number
   now?: Date
   lowerBoundDate?: Date
+  runIds?: readonly string[]
+  requestIds?: readonly string[]
+  topicResultBatchIds?: readonly string[]
   activeSweeps?: readonly string[]
 }
 
@@ -74,6 +77,7 @@ export async function cleanupClassifierRecords(
         batchSize,
         maxBatches,
         deleteOldClassifierRuns,
+        options.runIds,
       )
     : skip
   const decisions = await cleanupClassifierDecisionRecords(
@@ -82,6 +86,7 @@ export async function cleanupClassifierRecords(
     batchSize,
     maxBatches,
     options.activeSweeps,
+    options.topicResultBatchIds,
   )
   const requests = active('requests')
     ? await sweepClassifierPages(
@@ -91,6 +96,7 @@ export async function cleanupClassifierRecords(
         batchSize,
         maxBatches,
         deleteDeletedSubjectClassifierRequests,
+        options.requestIds,
       )
     : skip
   const deletedSubjects = active('deletedSubjectIdentities')

@@ -26,6 +26,7 @@ export async function sweepClassifierPages(
   batchSize: number,
   maxBatches: number,
   deletePage: (query: OwnedTransaction, ids: readonly string[]) => Promise<number>,
+  recordIds?: readonly string[],
 ): Promise<PageResult> {
   assertPositiveInteger(batchSize, 'batchSize')
   assertPositiveInteger(maxBatches, 'maxBatches')
@@ -34,7 +35,14 @@ export async function sweepClassifierPages(
   let hasMore = false
   for (let batch = 0; batch < maxBatches; batch++) {
     // no-mistakes-disable-next-line query-reached-per-item: at most maxBatches transactions each read batchSize+1 raw UUIDv7 keys, delete one selected page, and persist a fixed-end cursor; blocked old batches require advancing over raw keys, so the canonical deleted-count helper cannot express this loop.
-    const page = await sweepClassifierPage(sweep, cutoffId, lowerBoundId, batchSize, deletePage)
+    const page = await sweepClassifierPage(
+      sweep,
+      cutoffId,
+      lowerBoundId,
+      batchSize,
+      deletePage,
+      recordIds,
+    )
     scanned += page.scanned
     deleted += page.deleted
     hasMore = page.hasMore
@@ -49,6 +57,7 @@ async function sweepClassifierPage(
   lowerBoundId: string,
   batchSize: number,
   deletePage: (query: OwnedTransaction, ids: readonly string[]) => Promise<number>,
+  recordIds?: readonly string[],
 ): Promise<PageResult> {
   const table = assertWhitelistedSqlIdentifier(
     SWEEP_TABLES[sweep],
@@ -77,6 +86,7 @@ async function sweepClassifierPage(
   const statement = sql`/* listClassifierRetentionPage */ SELECT id FROM `
     .append(table)
     .append(sql` WHERE id >= ${lowerBoundId} AND id < ${sweepEnd}`)
+  if (recordIds !== undefined) statement.append(sql` AND id = ANY(${[...recordIds]}::uuid[])`)
   if (cursor !== null) statement.append(sql` AND id > ${cursor}`)
   statement.append(sql` ORDER BY id LIMIT ${batchSize + 1}`)
   const { rows } = await query<{ id: string }>(statement)

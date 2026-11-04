@@ -1,206 +1,342 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import type { runDataRetentionCleanup } from '@services/data-retention'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { psql } from '@queues/psql/queues'
-import { AI_RETENTION_FAMILIES, type PsqlRetentionJobData } from '@queues/psql/types'
+import type { PsqlRetentionJobData } from '@queues/psql/types'
+import { createTestUser } from '@voucha/test-helpers'
+import { dataRetentionConfig } from '@services/data-retention/config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withClassifierRetentionSweepLock } from '@voucha/test-helpers/classifier-retention-sweep-lock'
+import { countClassifierRows } from '@voucha/test-helpers/classifier-retention'
+import { readClassifierDefaultLineage } from '@voucha/test-helpers/classifier-default-retention'
+import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
+import { readCopyrightOperationalRow } from '@voucha/test-helpers/copyright-operational-retention'
+import { loseNextPsqlJobAddReplyForTest } from '@voucha/test-helpers/injected-failures'
+import {
+  createContinuationRunFixture,
+  createIndependentClassifierContinuationFixture,
+  createDailyCopyrightContinuationFixture,
+  readContinuationRequestIds,
+  rearmMembershipEffectForContinuation,
+  readMembershipContinuationOutsideState,
+} from '@voucha/test-helpers/retention-processor-continuations'
+import {
+  acquireMembershipOperationalRetentionTestLock,
+  createDeliveredMembershipEffectForRetention,
+  createEndedMembershipRenewalNoticeForRetention,
+  membershipEffectExists,
+  membershipRenewalNoticeExists,
+  resetMembershipOperationalRetentionCursor,
+} from '@voucha/test-helpers/membership-operational-retention'
 import processPsql from '../processors.mts'
-
-const noAIRetention = {
-  softDeletedUsers: { deleted: 0, hasMore: false },
-  postModerationLedger: {
-    deletedVersions: 0,
-    clearedPassEvidence: 0,
-    hasMore: false,
-    remainingKinds: [],
-  },
-  agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
-  ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
-}
-const emptyCleanupResult = {
-  ...noAIRetention,
-  classifierRecords: { runs: { hasMore: false } },
-  supersededVoteBallots: [],
-  orphanedUserAgentStrings: { hasMore: false },
-  voteIntegrityDetails: { hasMore: false },
-  aiUsageRecords: { hasMore: false },
-} as unknown as Awaited<ReturnType<typeof runDataRetentionCleanup>>
 
 describe('processPsql retention continuations', () => {
   it('admits distinct deterministic continuation jobs until the capped sweep converges', async () => {
-    const initialJobId = `retention-test-${randomUUID()}`
-    const runId = createHash('sha256').update(initialJobId).digest('hex')
-    const continuationIds = [1, 2, 3].map(step => `data-retention-cleanup__${runId}__${step}`)
-    onTestFinished(async () => {
-      await Promise.all(continuationIds.map(async id => (await psql.getJob(id))?.remove()))
+    await withClassifierRetentionSweepLock(async () => {
+      const fixture = await createContinuationRunFixture()
+      const owned = fixture.terminalIds.slice(0, 3)
+      const outside = [fixture.terminalIds[3]!]
+      expect(await countClassifierRows('classifier_runs', outside)).toBe(1)
+      const initialJobId = `retention-test-${randomUUID()}`
+      const runId = createHash('sha256').update(initialJobId).digest('hex')
+      const continuationIds = [1, 2, 3].map(step => `data-retention-cleanup__${runId}__${step}`)
+      onTestFinished(async () => {
+        await Promise.all(continuationIds.map(async id => (await psql.getJob(id))?.remove()))
+      })
+      const options = {
+        retention: {
+          families: ['classifierRecords'] as const,
+          classifierRecords: {
+            activeSweeps: ['runs'],
+            runIds: owned,
+            now: fixture.now,
+            batchSize: 1,
+            maxBatches: 1,
+          },
+        },
+      }
+      const firstResult = await processPsql(
+        'dataRetentionCleanup',
+        {},
+        undefined,
+        initialJobId,
+        options,
+      )
+      expect(firstResult).toMatchObject({
+        classifierRecords: { runs: { scanned: 1, deleted: 1, hasMore: true } },
+      })
+      const first = await psql.getJob(continuationIds[0]!)
+      expect(first?.data).toMatchObject({ continuation: { runId, step: 1 } })
+      const secondResult = await processPsql(
+        'dataRetentionCleanup',
+        first?.data as PsqlRetentionJobData,
+        undefined,
+        first!.id,
+        options,
+      )
+      expect(secondResult).toMatchObject({
+        classifierRecords: { runs: { scanned: 1, deleted: 1, hasMore: true } },
+      })
+      const second = await psql.getJob(continuationIds[1]!)
+      expect(second?.data).toMatchObject({ continuation: { runId, step: 2 } })
+      const thirdResult = await processPsql(
+        'dataRetentionCleanup',
+        second?.data as PsqlRetentionJobData,
+        undefined,
+        second!.id,
+        options,
+      )
+      expect(thirdResult).toMatchObject({
+        classifierRecords: { runs: { scanned: 1, deleted: 1, hasMore: false } },
+      })
+      expect(await psql.getJob(continuationIds[2]!)).toBeNull()
+      expect(await countClassifierRows('classifier_runs', owned)).toBe(0)
+      expect(await countClassifierRows('classifier_runs', outside)).toBe(1)
     })
-    const hasMore = {
-      ...emptyCleanupResult,
-      classifierRecords: { runs: { scanned: 1, deleted: 0, hasMore: true } },
-    } as Awaited<ReturnType<typeof runDataRetentionCleanup>>
-    const cleanup = vi
-      .fn<typeof runDataRetentionCleanup>()
-      .mockResolvedValueOnce(hasMore)
-      .mockResolvedValueOnce(hasMore)
-      .mockResolvedValue(emptyCleanupResult)
-
-    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
-    const first = await psql.getJob(continuationIds[0]!)
-    expect(first?.data).toMatchObject({ continuation: { runId, step: 1 } })
-
-    await processPsql(
-      'dataRetentionCleanup',
-      first?.data as PsqlRetentionJobData,
-      { dataRetentionCleanup: cleanup },
-      first!.id,
-    )
-    const second = await psql.getJob(continuationIds[1]!)
-    expect(second?.data).toMatchObject({ continuation: { runId, step: 2 } })
-
-    await processPsql(
-      'dataRetentionCleanup',
-      second?.data as PsqlRetentionJobData,
-      { dataRetentionCleanup: cleanup },
-      second!.id,
-    )
-    expect(await psql.getJob(continuationIds[2]!)).toBeNull()
-    expect(cleanup).toHaveBeenCalledTimes(3)
   })
 
-  it('admits pending copyright families from the daily result and propagates admission failure', async () => {
-    const initialJobId = `retention-test-${randomUUID()}`
-    const runId = createHash('sha256').update(initialJobId).digest('hex')
-    const copyrightId = `data-retention-copyright__${runId}__1`
-    onTestFinished(async () => {
-      await (await psql.getJob(copyrightId))?.remove()
-    })
-    const result = {
-      ...emptyCleanupResult,
-      copyrightFormScreeningAttempts: { scanned: 1, deleted: 1, hasMore: true },
-      copyrightActionAttempts: { scanned: 0, deleted: 0, hasMore: false },
-    } satisfies Awaited<ReturnType<typeof runDataRetentionCleanup>>
-    const cleanup = vi.fn<typeof runDataRetentionCleanup>().mockResolvedValue(result)
-    const admit = psql.add
-    const add = vi.spyOn(psql, 'add')
-    onTestFinished(() => add.mockRestore())
-    add.mockImplementationOnce(async function (this: typeof psql, ...args) {
-      await Reflect.apply(admit, this, args)
-      throw new Error('admission acknowledgement failed')
-    })
-
-    await expect(
-      processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId),
-    ).rejects.toThrow('admission acknowledgement failed')
-    expect(add).toHaveBeenCalledOnce()
-    expect((await psql.getJob(copyrightId))?.data).toEqual({
-      continuation: {
-        runId,
-        step: 1,
-        activeClassifierSweeps: [],
-        activeMembershipFamilies: [],
-        activePostModerationKinds: [],
-        copyrightFamilies: ['copyrightFormScreeningAttempts'],
-      },
+  describe('daily copyright admission', () => {
+    useCopyrightOperationalCursorReservation()
+    it('admits pending copyright families from the daily result and propagates admission failure', async () => {
+      const fixture = await createDailyCopyrightContinuationFixture()
+      const initialJobId = `retention-test-${randomUUID()}`
+      const runId = createHash('sha256').update(initialJobId).digest('hex')
+      const copyrightId = `data-retention-copyright__${runId}__1`
+      onTestFinished(async () => {
+        await (await psql.getJob(copyrightId))?.remove()
+      })
+      await dataRetentionConfig.waitForInitialization()
+      onTestFinished(
+        overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
+          batch_size: 1,
+          max_batches_per_run: 1,
+        }),
+      )
+      onTestFinished(
+        loseNextPsqlJobAddReplyForTest(copyrightId, new Error('admission acknowledgement failed')),
+      )
+      expect(await readCopyrightOperationalRow('form_screening_attempts', fixture.outsideId)).toBe(
+        true,
+      )
+      await expect(
+        processPsql('dataRetentionCleanup', {}, undefined, initialJobId, {
+          retention: {
+            families: ['copyrightFormScreeningAttempts'],
+            copyrightFormScreeningAttemptIds: fixture.ids,
+            copyrightNow: fixture.now,
+          },
+        }),
+      ).rejects.toThrow('admission acknowledgement failed')
+      expect((await psql.getJob(copyrightId))?.data).toEqual({
+        continuation: {
+          runId,
+          step: 1,
+          activeClassifierSweeps: [],
+          activeMembershipFamilies: [],
+          activePostModerationKinds: [],
+          copyrightFamilies: ['copyrightFormScreeningAttempts'],
+        },
+      })
+      expect(await readCopyrightOperationalRow('form_screening_attempts', fixture.ids[0]!)).toBe(
+        false,
+      )
+      expect(await readCopyrightOperationalRow('form_screening_attempts', fixture.ids[1]!)).toBe(
+        true,
+      )
+      expect(await readCopyrightOperationalRow('form_screening_attempts', fixture.outsideId)).toBe(
+        true,
+      )
     })
   })
 
   it('does not restart a finished independent classifier sweep while another page drains', async () => {
+    await withClassifierRetentionSweepLock(async () => {
+      const fixture = await createIndependentClassifierContinuationFixture()
+      const ownedBatches = fixture.batches.slice(0, 3)
+      const ownedRequests = fixture.requests.slice(0, 2).map(row => row.requestId)
+      const outsideBatches = [fixture.batches[3]!]
+      const outsideRequests = [fixture.requests[2]!.requestId]
+      const beforeBatches = await readClassifierDefaultLineage(outsideBatches)
+      expect(beforeBatches).toEqual({ results: 1, candidates: 1, calls: 1, batches: 1 })
+      expect(await readContinuationRequestIds(outsideRequests)).toEqual(outsideRequests)
+      const initialJobId = `retention-test-${randomUUID()}`
+      const runId = createHash('sha256').update(initialJobId).digest('hex')
+      const ids = [1, 2, 3].map(step => `data-retention-cleanup__${runId}__${step}`)
+      onTestFinished(async () => {
+        await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
+      })
+      const options = {
+        retention: {
+          families: ['classifierRecords'] as const,
+          classifierRecords: {
+            activeSweeps: ['topicResults', 'requests'],
+            topicResultBatchIds: ownedBatches,
+            requestIds: ownedRequests,
+            now: fixture.now,
+            batchSize: 1,
+            maxBatches: 1,
+          },
+        },
+      }
+      await processPsql('dataRetentionCleanup', {}, undefined, initialJobId, options)
+      const first = await psql.getJob(ids[0]!)
+      const firstSweeps = (first!.data as PsqlRetentionJobData).continuation?.activeClassifierSweeps
+      expect(firstSweeps).toContain('requests')
+      expect(firstSweeps).toContain('topicResults')
+      await processPsql(
+        'dataRetentionCleanup',
+        first?.data as PsqlRetentionJobData,
+        undefined,
+        first!.id,
+        options,
+      )
+      const second = await psql.getJob(ids[1]!)
+      const secondSweeps = (second!.data as PsqlRetentionJobData).continuation
+        ?.activeClassifierSweeps
+      expect(secondSweeps).toContain('topicResults')
+      expect(secondSweeps).not.toContain('requests')
+      expect(await readContinuationRequestIds(ownedRequests)).toEqual([])
+      await fixture.rearmRequest()
+      await processPsql(
+        'dataRetentionCleanup',
+        second?.data as PsqlRetentionJobData,
+        undefined,
+        second!.id,
+        options,
+      )
+      expect(await psql.getJob(ids[2]!)).toBeNull()
+      expect(await readClassifierDefaultLineage(ownedBatches)).toEqual({
+        results: 0,
+        candidates: 3,
+        calls: 3,
+        batches: 3,
+      })
+      expect(await readContinuationRequestIds([ownedRequests[0]!])).toEqual([ownedRequests[0]!])
+      expect(await readClassifierDefaultLineage(outsideBatches)).toEqual(beforeBatches)
+      expect(await readContinuationRequestIds(outsideRequests)).toEqual(outsideRequests)
+    })
+  })
+
+  it('continues only the membership families that exceeded their cap', async () => {
+    const reservation = await acquireMembershipOperationalRetentionTestLock()
+    onTestFinished(() => reservation.release())
+    await resetMembershipOperationalRetentionCursor('entitlement_effects')
+    await resetMembershipOperationalRetentionCursor('renewal_notices')
+    const at = new Date('2001-01-01T00:00:00Z')
+    const now = new Date('2002-01-01T00:00:00Z')
+    const effectUser = await createTestUser()
+    const firstEffect = await createDeliveredMembershipEffectForRetention(effectUser.id, at)
+    const secondEffect = await createDeliveredMembershipEffectForRetention(
+      (await createTestUser()).id,
+      at,
+    )
+    const firstNotice = await createEndedMembershipRenewalNoticeForRetention(
+      (await createTestUser()).id,
+      at,
+    )
+    const secondNotice = await createEndedMembershipRenewalNoticeForRetention(
+      (await createTestUser()).id,
+      at,
+    )
+    const thirdNotice = await createEndedMembershipRenewalNoticeForRetention(
+      (await createTestUser()).id,
+      at,
+    )
+    const outsideEffect = await createDeliveredMembershipEffectForRetention(
+      (await createTestUser()).id,
+      at,
+    )
+    const outsideNotice = await createEndedMembershipRenewalNoticeForRetention(
+      (await createTestUser()).id,
+      at,
+    )
+    const outsideBefore = await readMembershipContinuationOutsideState(
+      outsideEffect.effectId,
+      outsideNotice,
+    )
+    expect(outsideBefore).toMatchObject([
+      {
+        effect: { id: outsideEffect.effectId },
+        notice: { membership_id: outsideNotice },
+      },
+    ])
     const initialJobId = `retention-test-${randomUUID()}`
     const runId = createHash('sha256').update(initialJobId).digest('hex')
     const ids = [1, 2, 3].map(step => `data-retention-cleanup__${runId}__${step}`)
     onTestFinished(async () => {
       await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
     })
-    const result = (topicResults: boolean, requests: boolean) =>
-      ({
-        ...emptyCleanupResult,
-        classifierRecords: {
-          topicResults: { hasMore: topicResults },
-          requests: { hasMore: requests },
+    const options = {
+      retention: {
+        families: [
+          'deliveredMembershipEntitlementEffects',
+          'endedMembershipRenewalNotices',
+        ] as const,
+        deliveredMembershipEntitlementEffects: {
+          recordIds: [firstEffect.effectId, secondEffect.effectId],
+          now,
+          batchSize: 1,
+          maxBatches: 1,
         },
-      }) as Awaited<ReturnType<typeof runDataRetentionCleanup>>
-    const cleanup = vi
-      .fn<typeof runDataRetentionCleanup>()
-      .mockResolvedValueOnce(result(true, true))
-      .mockResolvedValueOnce(result(true, false))
-      .mockResolvedValue(result(false, false))
-
-    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
-    const first = await psql.getJob(ids[0]!)
-    const firstSweeps = (first!.data as PsqlRetentionJobData).continuation?.activeClassifierSweeps
-    expect(firstSweeps).toContain('requests')
-    expect(firstSweeps).toContain('topicResults')
-    await processPsql(
-      'dataRetentionCleanup',
-      first?.data as PsqlRetentionJobData,
-      {
-        dataRetentionCleanup: cleanup,
+        endedMembershipRenewalNotices: {
+          recordIds: [firstNotice, secondNotice, thirdNotice],
+          now,
+          batchSize: 1,
+          maxBatches: 1,
+        },
       },
-      first!.id,
-    )
-    const second = await psql.getJob(ids[1]!)
-    const secondSweeps = (second!.data as PsqlRetentionJobData).continuation?.activeClassifierSweeps
-    expect(secondSweeps).toContain('topicResults')
-    expect(secondSweeps).not.toContain('requests')
-    await processPsql(
-      'dataRetentionCleanup',
-      second?.data as PsqlRetentionJobData,
-      {
-        dataRetentionCleanup: cleanup,
-      },
-      second!.id,
-    )
-    expect(await psql.getJob(ids[2]!)).toBeNull()
-    expect(cleanup).toHaveBeenCalledTimes(3)
-  })
-
-  it('continues only the membership families that exceeded their cap', async () => {
-    const initialJobId = `retention-test-${randomUUID()}`
-    const runId = createHash('sha256').update(initialJobId).digest('hex')
-    const ids = [1, 2].map(step => `data-retention-cleanup__${runId}__${step}`)
-    onTestFinished(async () => {
-      await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
+    }
+    const initial = await processPsql('dataRetentionCleanup', {}, undefined, initialJobId, options)
+    expect(initial).toMatchObject({
+      deliveredMembershipEntitlementEffects: { deleted: 1, hasMore: true },
+      endedMembershipRenewalNotices: { deleted: 1, hasMore: true },
     })
-    const result = (effects: boolean, notices: boolean) =>
-      ({
-        ...emptyCleanupResult,
-        classifierRecords: {},
-        softDeletedUsers: { deleted: 0, hasMore: false },
-        postModerationLedger: noAIRetention.postModerationLedger,
-        textEmbeddingCache: { hasMore: false },
-        terminalEmbeddingBatches: { hasMore: false },
-        oldMediaDeliveryChanges: { hasMore: false },
-        deliveredMembershipEntitlementEffects: { hasMore: effects },
-        endedMembershipRenewalNotices: { hasMore: notices },
-        terminalGooglePlayAcknowledgments: { hasMore: false },
-      }) as unknown as Awaited<ReturnType<typeof runDataRetentionCleanup>>
-    const cleanup = vi
-      .fn<typeof runDataRetentionCleanup>()
-      .mockResolvedValueOnce(result(true, true))
-      .mockResolvedValueOnce(result(false, true))
-      .mockResolvedValue(result(false, false))
-
-    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
     const first = await psql.getJob(ids[0]!)
     expect(first?.opts.attempts).toBe(3)
     expect((first!.data as PsqlRetentionJobData).continuation?.activeMembershipFamilies).toEqual([
       'deliveredMembershipEntitlementEffects',
       'endedMembershipRenewalNotices',
     ])
-    await processPsql(
+    const next = await processPsql(
       'dataRetentionCleanup',
       first?.data as PsqlRetentionJobData,
-      { dataRetentionCleanup: cleanup },
+      undefined,
       first!.id,
+      options,
     )
-    expect(cleanup.mock.calls[1]?.[1]).toMatchObject({
-      activeMembershipFamilies: [
-        'deliveredMembershipEntitlementEffects',
-        'endedMembershipRenewalNotices',
-      ],
+    expect(next).toMatchObject({
+      deliveredMembershipEntitlementEffects: { deleted: 1, hasMore: false },
+      endedMembershipRenewalNotices: { deleted: 1, hasMore: true },
     })
     const second = await psql.getJob(ids[1]!)
     expect((second!.data as PsqlRetentionJobData).continuation?.activeMembershipFamilies).toEqual([
       'endedMembershipRenewalNotices',
     ])
+    expect(await membershipEffectExists(firstEffect.effectId)).toBe(false)
+    expect(await membershipEffectExists(secondEffect.effectId)).toBe(false)
+    await rearmMembershipEffectForContinuation(
+      firstEffect.effectId,
+      firstEffect.changeId,
+      effectUser.id,
+      at,
+    )
+    const last = await processPsql(
+      'dataRetentionCleanup',
+      second?.data as PsqlRetentionJobData,
+      undefined,
+      second!.id,
+      options,
+    )
+    expect(last).toMatchObject({
+      deliveredMembershipEntitlementEffects: { deleted: 0, hasMore: false },
+      endedMembershipRenewalNotices: { deleted: 1, hasMore: false },
+    })
+    expect(await membershipEffectExists(firstEffect.effectId)).toBe(true)
+    expect(await membershipRenewalNoticeExists(firstNotice)).toBe(false)
+    expect(await membershipRenewalNoticeExists(secondNotice)).toBe(false)
+    expect(await membershipRenewalNoticeExists(thirdNotice)).toBe(false)
+    expect(await psql.getJob(ids[2]!)).toBeNull()
+    expect(
+      await readMembershipContinuationOutsideState(outsideEffect.effectId, outsideNotice),
+    ).toEqual(outsideBefore)
   })
 })

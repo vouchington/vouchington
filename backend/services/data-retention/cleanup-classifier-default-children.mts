@@ -25,6 +25,7 @@ export async function sweepClassifierDefaultChildren(
   lowerBoundId: string,
   batchSize: number,
   maxBatches: number,
+  batchIds?: readonly string[],
 ): Promise<PageResult> {
   assertPositiveInteger(batchSize, 'batchSize')
   assertPositiveInteger(maxBatches, 'maxBatches')
@@ -33,7 +34,13 @@ export async function sweepClassifierDefaultChildren(
   let hasMore = false
   for (let batch = 0; batch < maxBatches; batch++) {
     // no-mistakes-disable-next-line query-reached-per-item: each capped keyset page deletes at most batchSize physical DEFAULT rows and commits its cursor before the next page.
-    const page = await sweepClassifierDefaultChildPage(sweep, cutoffId, lowerBoundId, batchSize)
+    const page = await sweepClassifierDefaultChildPage(
+      sweep,
+      cutoffId,
+      lowerBoundId,
+      batchSize,
+      batchIds,
+    )
     scanned += page.scanned
     deleted += page.deleted
     hasMore = page.hasMore
@@ -47,6 +54,7 @@ async function sweepClassifierDefaultChildPage(
   cutoffId: string,
   lowerBoundId: string,
   batchSize: number,
+  batchIds?: readonly string[],
 ): Promise<PageResult> {
   await using query = await beginTransaction()
   const result = await sweepClassifierDefaultChildPageWithQuery(
@@ -55,6 +63,7 @@ async function sweepClassifierDefaultChildPage(
     cutoffId,
     lowerBoundId,
     batchSize,
+    batchIds,
   )
   await query.commit()
   return result
@@ -67,6 +76,7 @@ export async function sweepClassifierDefaultChildPageWithQuery(
   cutoffId: string,
   lowerBoundId: string,
   batchSize: number,
+  batchIds?: readonly string[],
 ): Promise<PageResult> {
   const table = assertWhitelistedSqlIdentifier(
     TABLES[sweep],
@@ -99,6 +109,7 @@ export async function sweepClassifierDefaultChildPageWithQuery(
     .append(sql` AS child_id FROM `)
     .append(table)
     .append(sql` WHERE batch_id >= ${lowerBoundId} AND batch_id < ${sweepEnd}`)
+  if (batchIds !== undefined) statement.append(sql` AND batch_id = ANY(${[...batchIds]}::uuid[])`)
   if (cursor !== null && stored.cursor_child_id !== null) {
     statement
       .append(sql` AND (batch_id, `)

@@ -111,7 +111,12 @@ export default async function processPsql(
             activeCopyrightFamilies: [],
             classifierRecords: {
               ...options?.retention?.classifierRecords,
-              activeSweeps: data.continuation.activeClassifierSweeps,
+              activeSweeps:
+                options?.retention?.classifierRecords?.activeSweeps === undefined
+                  ? data.continuation.activeClassifierSweeps
+                  : data.continuation.activeClassifierSweeps.filter(sweep =>
+                      options.retention?.classifierRecords?.activeSweeps?.includes(sweep),
+                    ),
             },
             activeMembershipFamilies: data.continuation.activeMembershipFamilies,
             postModerationLedger: {
