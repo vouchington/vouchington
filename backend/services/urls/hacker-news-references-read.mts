@@ -36,6 +36,7 @@ export async function getHackerNewsTotalsByUrlIds(
   urlIds: readonly string[],
   options: QueryOptions = {},
 ): Promise<Map<string, HackerNewsCanonicalTotals>> {
+  // no-mistakes-disable-next-line query-reached-per-item: one read per HACKER_NEWS_URL_BATCH_MAX ids, so the count follows one card page of entities, never an unbounded set
   const results = await Promise.all(urlIdChunks(urlIds).map(ids => readTotals(ids, options)))
   return new Map(results.flat())
 }
@@ -79,6 +80,7 @@ export async function getHackerNewsItemsByUrlIds(
   options: QueryOptions = {},
 ): Promise<Map<string, HackerNewsUrlItems>> {
   const itemsByUrlId = new Map<string, HackerNewsUrlItems>()
+  // no-mistakes-disable-next-line query-reached-per-item: one read per HACKER_NEWS_URL_BATCH_MAX ids, so the count follows one card page of entities, never an unbounded set
   const chunks = await Promise.all(urlIdChunks(urlIds).map(ids => readItemRows(ids, options)))
   for (const row of chunks.flat()) {
     const urlId = row.url_id as string
