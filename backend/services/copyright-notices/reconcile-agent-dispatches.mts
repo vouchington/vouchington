@@ -4,7 +4,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
-import { sharedDbCursorScope } from '@vouchington/postgres/query-telemetry'
+import { sharedDbCursorScope, sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { buildPendingCopyrightAgentDispatchesQuery } from './pending-agent-dispatches-query.mts'
 
 export type CopyrightAgentDispatch =
@@ -32,7 +32,7 @@ type CopyrightAgentDispatchRow = {
  * email decided while intake was paused is not sent to the model after the switch turns on.
  */
 export async function getPendingCopyrightAgentDispatches(
-  options: { after?: string; limit?: number } = {},
+  options: { after?: string; limit?: number; ids?: readonly string[] } = {},
 ): Promise<CopyrightAgentDispatchPage> {
   const limit = options.limit ?? 100
   assert(
@@ -43,9 +43,15 @@ export async function getPendingCopyrightAgentDispatches(
   const cursor = options.after
     ? decodeUuidCursor(options.after, isSimpleCursor, 'Invalid copyright agent dispatch cursor')
     : null
-  observeSharedDbScope('getPendingCopyrightAgentDispatches', sharedDbCursorScope(cursor?.id))
+  observeSharedDbScope(
+    'getPendingCopyrightAgentDispatches',
+    options.ids === undefined ? sharedDbCursorScope(cursor?.id) : sharedDbIdsScope(options.ids),
+  )
   const query = buildPendingCopyrightAgentDispatchesQuery()
-  if (cursor) query.append(sql`\n    WHERE id > ${cursor.id}`)
+  if (options.ids !== undefined) {
+    query.append(sql`\n    WHERE id = ANY(${[...options.ids]}::uuid[])`)
+    if (cursor) query.append(sql` AND id > ${cursor.id}`)
+  } else if (cursor) query.append(sql`\n    WHERE id > ${cursor.id}`)
   query.append(sql`\n    ORDER BY id LIMIT ${limit + 1}`)
   const { rows } = await read<CopyrightAgentDispatchRow>(query)
   const page = rows.slice(0, limit)

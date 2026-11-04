@@ -196,3 +196,4 @@ export function runBeforePostgresStatementForTest(
   )
 }
 export { loseNextPsqlJobAddReplyForTest } from './injected-psql-failures.mts'
+export { rejectQueueJobAddForTest, rejectQueueBulkAddForTest } from './injected-queue-failures.mts'
