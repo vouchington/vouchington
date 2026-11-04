@@ -44,7 +44,11 @@ export type ClassifierRunJobResult = {
 export type ClassifierRunHandler = {
   slug: string
   reserve(subject: ClassifierRunSubject): ReturnType<typeof reserveClassifierRun>
-  pendingRequests(after: string | null): Promise<DiscoveryPage<PendingClassifierRunRequest>>
+  pendingRequests(
+    after: string | null,
+    scope?: ClassifierRunHealthScope,
+    limit?: number,
+  ): Promise<DiscoveryPage<PendingClassifierRunRequest>>
   health(now: Date, scope?: ClassifierRunHealthScope): Promise<ClassifierRunHealth>
   run(job: Job<ClassifierRunJobData>): Promise<ClassifierRunJobResult>
 }
@@ -125,7 +129,8 @@ export function createClassifierRunHandler<C, L, E>(
   return {
     slug: adapter.slug,
     reserve: subject => reserveClassifierRun(adapter, subject),
-    pendingRequests: after => listPendingClassifierRunRequests(adapter, after),
+    pendingRequests: (after, scope, limit) =>
+      listPendingClassifierRunRequests(adapter, after, limit, scope),
     health: (now, scope) => readClassifierRunHealth(adapter, now, scope),
     run,
   }

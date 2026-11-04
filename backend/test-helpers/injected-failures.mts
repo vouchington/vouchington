@@ -3,6 +3,7 @@ import * as psql from '@data-stores/psql'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
 import { backgroundQueue } from './shared-background-queue.mts'
+export { rejectNextClassifierRunDispatcherAddForTest } from './injected-classifier-queue-failures.mts'
 
 /** Reject one write made through a caller-owned executor while preserving its transaction. */
 export function rejectQuery<Query extends QueryExecutor>(
@@ -38,12 +39,14 @@ export function rejectPostgresReadForTest(
   error: unknown,
   /** Observe the bound values of each rejected read, such as the lookup keys it was asked for. */
   onRejected: (values: readonly unknown[]) => void = () => {},
+  matchesValues: (values: readonly unknown[]) => boolean = () => true,
 ): () => void {
   const realRead = psql.read
   const spy = vi.spyOn(psql, 'read').mockImplementation((query, ...rest) => {
     const text = typeof query === 'string' ? query : query.text
-    if (!text.includes(marker)) return realRead(query, ...rest)
-    onRejected(typeof query === 'string' ? [] : (query.values ?? []))
+    const values = typeof query === 'string' ? [] : (query.values ?? [])
+    if (!text.includes(marker) || !matchesValues(values)) return realRead(query, ...rest)
+    onRejected(values)
     // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Callers inject non-Error rejection values on purpose.
     return Promise.reject(error)
   })
@@ -68,10 +71,7 @@ export function rejectPostgresWriteForTest(
   return () => spy.mockRestore()
 }
 
-/**
- * Reject the next default-pool `beginTransaction()` call, then behave normally. Use when the code
- * under test opens its own first transaction after only non-transactional work; returns the restore.
- */
+/** Reject the next default-pool transaction opening, then run normally; returns the restore. */
 export function rejectNextPostgresTransactionForTest(error: Error): () => void {
   const spy = vi.spyOn(psql, 'beginTransaction').mockRejectedValueOnce(error)
   return () => spy.mockRestore()

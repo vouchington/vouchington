@@ -9,7 +9,6 @@ import { ModelProviderError } from '@vouchington/ai/providers'
 import { generateToolTurn } from '@modules/model-providers/tool-turn'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
-import { ai_agents } from '@queues/ai-agents/queues'
 import { spendCapConfig } from '@services/ai-usage'
 import type { ClassifierRunSubject } from '@services/classifier-runs'
 import { findAiUsageRecordForPost } from '@voucha/test-helpers'
@@ -19,15 +18,15 @@ import {
   classifierRunDispatcherJobForFeedItem,
   classifierRunJobFor,
   createClassifierRunSweepScope,
+  createFollowedClassifierSubjectFixture as followedFixture,
+  expectClassifierRunDispatcherAddFailure,
+  readTestUnsettledClassifierRequest,
 } from '@voucha/test-helpers/classifier-run-worker'
 import {
   readClassifierRunDispatcherJobsForTest,
   readClassifierRunJobsForTest,
 } from '@voucha/test-helpers/classifier-run-queue-jobs'
-import {
-  AUTOTAGGER_AGENT_SLUG,
-  followTopicAsReader,
-} from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-agent-fixture'
+import { AUTOTAGGER_AGENT_SLUG } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-agent-fixture'
 import {
   createAutotaggerFeedItemFixture,
   createAutotaggerPostFixture,
@@ -91,13 +90,6 @@ type Fixture =
 
 const subjectIdOf = ({ subject }: { subject: ClassifierRunSubject }) =>
   subject.postId ?? subject.rssFeedItemId!
-
-/** A post or feed item with three topics a paying member follows, as C7's universe needs. */
-async function followedFixture<T extends Fixture>(create: () => Promise<T>): Promise<T> {
-  const fixture = await create()
-  await Promise.all(fixture.topics.map(topic => followTopicAsReader(topic.id)))
-  return fixture
-}
 
 const followedPost = () => followedFixture(() => createAutotaggerPostFixture({ topicCount: 3 }))
 
@@ -267,10 +259,7 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
     it('fails the C6 job when the C7 dispatcher cannot be enqueued, so the queue retries it', async () => {
       const fixture = await followedPost()
       const { run } = await tagWith(fixture, [fixture.topics[0]!.id])
-      const add = vi.spyOn(ai_agents, 'add').mockRejectedValueOnce(new Error('queue unavailable'))
-
-      await expect(run()).rejects.toThrow('queue unavailable')
-      add.mockRestore()
+      await expectClassifierRunDispatcherAddFailure(run)
 
       expect(await agentDispatchers(fixture)).toEqual([])
       expect(
@@ -282,19 +271,28 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
 
     it('lets the sweep dispatch a C7 request whose C6 job never enqueued it, once however often it runs', async () => {
       scope.reset()
+      const outside = await followedPost()
+      const { run: outsideRun } = await tagWith(outside, [outside.topics[0]!.id])
+      await expectClassifierRunDispatcherAddFailure(outsideRun)
+      const outsideBefore = await readTestUnsettledClassifierRequest(
+        outside.subject,
+        AUTOTAGGER_AGENT_SLUG,
+      )
       const fixture = await followedPost()
       const { run } = await tagWith(fixture, [fixture.topics[0]!.id])
-      const add = vi.spyOn(ai_agents, 'add').mockRejectedValueOnce(new Error('queue unavailable'))
-      await expect(run()).rejects.toThrow('queue unavailable')
-      add.mockRestore()
+      await expectClassifierRunDispatcherAddFailure(run)
       scope.postIds.add(subjectIdOf(fixture))
-      const sweep = () => processReconcileClassifierRuns(requests, scope.dependencies())
+      const sweep = () => processReconcileClassifierRuns(requests, scope.ids(), 2)
 
       await expect(sweep()).resolves.toEqual({ kind: 'requests', dispatched: 1, hasNext: false })
       await sweep()
 
       expect(await agentDispatchers(fixture)).toHaveLength(1)
       expect(await agentRuns(fixture)).toEqual([])
+      expect(
+        await getSubjectClassifierRunRequestFacts(outside.subject, AUTOTAGGER_AGENT_SLUG),
+      ).toEqual(outsideBefore)
+      expect(await agentDispatchers(outside)).toEqual([])
     })
   })
 })

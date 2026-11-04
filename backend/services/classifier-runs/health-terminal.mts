@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import sql from 'sql-template-strings'
+import type { ClassifierRunHealthScope } from './health-unrequested.mts'
 import { CLASSIFIER_TERMINAL_WINDOW_MS } from './health-thresholds.mts'
 
 /**
@@ -23,6 +24,7 @@ const FAILED_PREFIX = 'failed:'
 export async function readClassifierTerminalCounts(
   classifier: string,
   now: Date,
+  scope: ClassifierRunHealthScope = {},
 ): Promise<ClassifierTerminalCounts> {
   const since = timestampToUuidv7LowerBound(now.getTime() - CLASSIFIER_TERMINAL_WINDOW_MS)
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
@@ -38,6 +40,10 @@ export async function readClassifierTerminalCounts(
     FROM classifier_runs run
     WHERE run.classifier_id = (SELECT id FROM classifiers WHERE slug = ${classifier})
       AND run.id >= ${since}
+      AND (${scope.runIds ?? null}::uuid[] IS NULL OR run.id = ANY(${scope.runIds ?? null}::uuid[]))
+      AND ((${scope.postIds ?? null}::uuid[] IS NULL AND ${scope.rssFeedItemIds ?? null}::uuid[] IS NULL)
+        OR run.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR run.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))
     GROUP BY 1
   `)
   const counts: ClassifierTerminalCounts = {

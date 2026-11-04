@@ -6,6 +6,7 @@ import {
   type IneligibleClassifierRunRequest,
 } from './run-retirement.mts'
 import { CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND } from './run-sweep.mts'
+import type { ClassifierRunHealthScope } from './health-unrequested.mts'
 import type { ClassifierRunAdapter, ClassifierRunSubject } from './types.mts'
 
 const FIRST_UUID = '00000000-0000-0000-0000-000000000000'
@@ -47,6 +48,7 @@ type IncompleteRow = {
 export async function listIncompleteClassifierRuns(
   after: string | null,
   limit = getClassifierRunsWorkLimit('discovery_page_size'),
+  runIds?: readonly string[],
 ): Promise<DiscoveryPage<IncompleteClassifierRun>> {
   const { rows } = await write<IncompleteRow>(sql`/* listIncompleteClassifierRuns */
     SELECT run.id, classifier.slug AS classifier_slug, run.post_id, run.rss_feed_item_id,
@@ -54,6 +56,7 @@ export async function listIncompleteClassifierRuns(
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
     WHERE run.id > COALESCE(${after}::uuid, ${FIRST_UUID}::uuid)
+      AND (${runIds ?? null}::uuid[] IS NULL OR run.id = ANY(${runIds ?? null}::uuid[]))
       AND run.completed_at IS NULL AND run.superseded_at IS NULL AND run.terminal_failed_at IS NULL
       AND run.sweep_enqueue_count <= ${CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND}
     ORDER BY run.id
@@ -102,6 +105,7 @@ export async function listPendingClassifierRunRequests<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
   after: string | null,
   limit = getClassifierRunsWorkLimit('discovery_page_size'),
+  scope: ClassifierRunHealthScope = {},
 ): Promise<DiscoveryPage<PendingClassifierRunRequest>> {
   const { rows } = await write<RequestRow>(
     sql`/* listPendingClassifierRunRequests */
@@ -111,6 +115,9 @@ export async function listPendingClassifierRunRequests<C, L, E>(
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE classifier.slug = ${adapter.slug}
       AND request.id > COALESCE(${after}::uuid, ${FIRST_UUID}::uuid)
+      AND ((${scope.postIds ?? null}::uuid[] IS NULL AND ${scope.rssFeedItemIds ?? null}::uuid[] IS NULL)
+        OR request.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR request.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))
       AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
     ORDER BY request.id
     LIMIT ${limit}

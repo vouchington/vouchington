@@ -9,7 +9,7 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createStoryClusteringRunAdapter } from '@services/stories'
 import {
   createClassifierRunSweepScope,
-  createHealthyClassifierRunHealth,
+  dispatchApprovedClassifierPost,
   POST_CLASSIFIER_SLUG,
 } from '@voucha/test-helpers/classifier-run-worker'
 import {
@@ -23,23 +23,26 @@ import {
   reserveSyntheticRun,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { initializePostClassifierExecutionTests } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers'
+import {
+  readClassifierRunClockForTest,
+  readClassifierHealthClockForTest,
+  readClassifierFeedItemClockForTest,
+} from '@voucha/test-helpers/classifier-health-clock'
+import { rejectPostgresReadForTest } from '@voucha/test-helpers/injected-failures'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import {
   sentryCaptureExceptionMock,
   sentryCaptureMessageMock,
 } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createClassifierRunHandler } from './classifier-run-handler.mts'
-import { checkClassifierRunHealth, type ReadClassifierRunHealth } from './classifier-run-health.mts'
+import { checkClassifierRunHealth } from './classifier-run-health.mts'
 import { getClassifierRunHandler } from './classifier-run-registry.mts'
 import { processReconcileClassifierRuns } from './process-reconcile-classifier-runs.mts'
-
-const HOUR_MS = 60 * 60 * 1000
-const inHours = (hours: number) => new Date(Date.now() + hours * HOUR_MS)
 
 const handlerFor = (adapter: Parameters<typeof createClassifierRunHandler>[0]['adapter']) =>
   createClassifierRunHandler({ adapter, execute: async () => 'persisted' })
 
-/** The alarms of one kind raised for one classifier, which parallel tests never share. */
 const alarmsOf = (kind: string, classifier: string) =>
   sentryCaptureMessageMock.mock.calls
     .filter(
@@ -55,11 +58,12 @@ describe('classifier receipt health alarms: a stuck run or request (real PG)', (
     const setup = await createSyntheticFixture()
     const run = await reserveSyntheticRun(setup)
     const handler = handlerFor(setup.adapter)
+    const clock = await readClassifierHealthClockForTest(setup.slug)
 
-    await checkClassifierRunHealth([handler], new Date())
+    await checkClassifierRunHealth([handler], clock.fresh)
     expect(alarmsOf('run-age', setup.slug)).toHaveLength(0)
 
-    await checkClassifierRunHealth([handler], inHours(27))
+    await checkClassifierRunHealth([handler], clock.afterHours(27))
 
     const [alarm] = alarmsOf('run-age', setup.slug)
     expect(alarmsOf('run-age', setup.slug)).toHaveLength(1)
@@ -76,11 +80,12 @@ describe('classifier receipt health alarms: a stuck run or request (real PG)', (
     const setup = await createSyntheticFixture()
     await requestSyntheticRun(setup)
     const handler = handlerFor(setup.adapter)
+    const clock = await readClassifierHealthClockForTest(setup.slug)
 
-    await checkClassifierRunHealth([handler], new Date())
+    await checkClassifierRunHealth([handler], clock.fresh)
     expect(alarmsOf('request-age', setup.slug)).toHaveLength(0)
 
-    await checkClassifierRunHealth([handler], inHours(27))
+    await checkClassifierRunHealth([handler], clock.afterHours(27))
 
     const [alarm] = alarmsOf('request-age', setup.slug)
     expect(alarm!.extra).toMatchObject({
@@ -101,11 +106,13 @@ describe('classifier receipt health alarms: terminal failures (real PG)', () => 
       await reserveEndedSyntheticRun(setup, failure === 0 ? 'client-unavailable' : 'provider-error')
     }
 
-    await checkClassifierRunHealth([handler], new Date())
+    let clock = await readClassifierHealthClockForTest(setup.slug)
+    await checkClassifierRunHealth([handler], clock.afterHours(0))
     expect(alarmsOf('terminal-failures', setup.slug)).toHaveLength(0)
 
     await reserveEndedSyntheticRun(setup, 'client-unavailable')
-    await checkClassifierRunHealth([handler], new Date())
+    clock = await readClassifierHealthClockForTest(setup.slug)
+    await checkClassifierRunHealth([handler], clock.afterHours(0))
 
     const [alarm] = alarmsOf('terminal-failures', setup.slug)
     expect(alarm!.extra).toMatchObject({
@@ -129,13 +136,13 @@ describe('classifier receipt health alarms: an eligible item nobody requested (r
       feedId: (await createTestRssFeed({})).id,
       embedding: unit,
     })
-    const readHealth = (target: typeof handler, now: Date) =>
-      target.health(now, { rssFeedItemIds: [lost.itemId] })
+    const scope = { rssFeedItemIds: [lost.itemId], runIds: [], postIds: [] }
+    const clock = await readClassifierFeedItemClockForTest(lost.itemId)
 
-    await checkClassifierRunHealth([handler], new Date(), readHealth)
+    await checkClassifierRunHealth([handler], clock.fresh, scope)
     expect(alarmsOf('subject-unrequested', adapter.slug)).toHaveLength(0)
 
-    await checkClassifierRunHealth([handler], inHours(2), readHealth)
+    await checkClassifierRunHealth([handler], clock.afterHours(2), scope)
 
     const [alarm] = alarmsOf('subject-unrequested', adapter.slug)
     expect(alarm!.extra).toMatchObject({
@@ -153,10 +160,13 @@ describe('classifier receipt health alarms: an eligible item nobody requested (r
     const item = await createStoryClusteringItem({ feedId: feed.id, embedding: unit })
     await createStoryClusteringItem({ feedId: feed.id, embedding: near })
     await expect(handler.reserve(item.subject)).resolves.toMatchObject({ kind: 'reserved' })
+    const clock = await readClassifierFeedItemClockForTest(item.itemId)
 
-    await checkClassifierRunHealth([handler], inHours(2), (target, now) =>
-      target.health(now, { rssFeedItemIds: [item.itemId] }),
-    )
+    await checkClassifierRunHealth([handler], clock.afterHours(2), {
+      rssFeedItemIds: [item.itemId],
+      runIds: [],
+      postIds: [],
+    })
 
     expect(alarmsOf('subject-unrequested', adapter.slug)).toHaveLength(0)
   })
@@ -166,8 +176,9 @@ describe('classifier receipt health alarms: the alarm payload and failures', () 
   it('carries only identifiers, counts, ages and kinds', async () => {
     const setup = await createSyntheticFixture()
     await reserveSyntheticRun(setup)
+    const clock = await readClassifierHealthClockForTest(setup.slug)
 
-    await checkClassifierRunHealth([handlerFor(setup.adapter)], inHours(27))
+    await checkClassifierRunHealth([handlerFor(setup.adapter)], clock.afterHours(27))
 
     const [alarm] = alarmsOf('run-age', setup.slug)
     expect(Object.keys(alarm!.extra).toSorted()).toEqual([
@@ -184,11 +195,16 @@ describe('classifier receipt health alarms: the alarm payload and failures', () 
     const broken = await createSyntheticFixture()
     await reserveSyntheticRun(stuck)
     const failure = new Error('health read failed')
+    const clock = await readClassifierHealthClockForTest(stuck.slug)
+    onTestFinished(
+      rejectPostgresReadForTest('readOldestIncompleteClassifierRun', failure, undefined, values =>
+        values.includes(broken.slug),
+      ),
+    )
 
     await checkClassifierRunHealth(
       [handlerFor(broken.adapter), handlerFor(stuck.adapter)],
-      inHours(27),
-      (target, now) => (target.slug === broken.slug ? Promise.reject(failure) : target.health(now)),
+      clock.afterHours(27),
     )
 
     expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(failure, expect.anything())
@@ -198,10 +214,9 @@ describe('classifier receipt health alarms: the alarm payload and failures', () 
 
   it('stays quiet for a classifier with nothing to report', async () => {
     const setup = await createSyntheticFixture()
+    const clock = await readClassifierHealthClockForTest(setup.slug)
 
-    await checkClassifierRunHealth([handlerFor(setup.adapter)], inHours(27), async target =>
-      createHealthyClassifierRunHealth(target.slug),
-    )
+    await checkClassifierRunHealth([handlerFor(setup.adapter)], clock.afterHours(27))
 
     expect(sentryCaptureMessageMock).not.toHaveBeenCalled()
   })
@@ -209,58 +224,77 @@ describe('classifier receipt health alarms: the alarm payload and failures', () 
 
 describe('classifier receipt health alarms: the scheduled recovery tick (real PG)', () => {
   const scope = createClassifierRunSweepScope(getClassifierRunHandler(POST_CLASSIFIER_SLUG))
-  const readHealth = vi.fn<ReadClassifierRunHealth>(async handler =>
-    createHealthyClassifierRunHealth(handler.slug),
-  )
   const tick = (data = {}, overrides = {}) =>
-    processReconcileClassifierRuns(data, scope.dependencies({ readHealth, ...overrides }))
+    processReconcileClassifierRuns(data, { ...scope.ids(), ...overrides }, 2)
   let release: (() => Promise<void>) | undefined
   beforeAll(async () => {
     release = await initializePostClassifierExecutionTests()
   })
-  beforeEach(() => {
-    scope.reset()
-    readHealth.mockClear()
-  })
+  beforeEach(() => scope.reset())
   afterAll(async () => release?.())
 
   it('reads every classifier once on the scheduled tick', async () => {
-    await tick()
+    let reads = 0
+    await observeTestPostgresQueryPools(
+      'readOldestIncompleteClassifierRun',
+      () => tick(),
+      () => {
+        reads++
+      },
+    )
 
-    expect(readHealth).toHaveBeenCalledExactlyOnceWith(scope.handler, expect.any(Date))
+    expect(reads).toBe(1)
   })
 
   it('still reads it while the spend cap parks the queue, so a parked backlog is seen', async () => {
+    let reads = 0
     await withReservedAiUsageDay(0, async () => {
-      await expect(tick({})).resolves.toEqual({ kind: 'spend-cap-breach' })
+      const observed = await observeTestPostgresQueryPools(
+        'readOldestIncompleteClassifierRun',
+        () => tick(),
+        () => {
+          reads++
+        },
+      )
+      expect(observed.result).toEqual({ kind: 'spend-cap-breach' })
     })
 
-    expect(readHealth).toHaveBeenCalledOnce()
+    expect(reads).toBe(1)
   })
 
   it('leaves the chained pages of a sweep alone, so one tick alarms once', async () => {
-    await tick({ phase: 'requests', classifier: POST_CLASSIFIER_SLUG })
-    await tick({ phase: 'incomplete', after: null })
+    let reads = 0
+    await observeTestPostgresQueryPools(
+      'readOldestIncompleteClassifierRun',
+      async () => {
+        await tick({ phase: 'requests', classifier: POST_CLASSIFIER_SLUG })
+        await tick({ phase: 'incomplete', after: null })
+      },
+      () => {
+        reads++
+      },
+    )
 
-    expect(readHealth).not.toHaveBeenCalled()
+    expect(reads).toBe(0)
   })
 
   it('alarms from the tick on a stuck classifier and still runs the sweep', async () => {
-    const stuck: ReadClassifierRunHealth = async handler => ({
-      ...createHealthyClassifierRunHealth(handler.slug),
-      oldestIncompleteRun: { id: 'run-1', ageMs: CLASSIFIER_RUN_AGE_ALARM_MS + 1, total: 1 },
-    })
+    const stuck = await dispatchApprovedClassifierPost(false)
+    scope.track(stuck.post, stuck.runId)
+    const clock = await readClassifierRunClockForTest(stuck.runId)
 
-    await expect(tick({}, { readHealth: stuck })).resolves.toMatchObject({ kind: 'incomplete' })
+    await expect(tick({}, { now: clock.afterHours(27) })).resolves.toMatchObject({
+      kind: 'incomplete',
+    })
 
     expect(alarmsOf('run-age', POST_CLASSIFIER_SLUG)).toHaveLength(1)
   })
 
   it('does not let a failed health read stop the sweep', async () => {
-    const broken: ReadClassifierRunHealth = async () => {
-      throw new Error('health read failed')
-    }
+    const failure = new Error('health read failed')
+    onTestFinished(rejectPostgresReadForTest('readOldestIncompleteClassifierRun', failure))
 
-    await expect(tick({}, { readHealth: broken })).resolves.toMatchObject({ kind: 'incomplete' })
+    await expect(tick()).resolves.toMatchObject({ kind: 'incomplete' })
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(failure, expect.anything())
   })
 })

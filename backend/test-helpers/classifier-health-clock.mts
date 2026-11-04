@@ -3,6 +3,15 @@ import sql from 'sql-template-strings'
 
 type PersistedTimes = { first: Date; last: Date }
 
+/** The persisted creation time of one owned run, including a registered production classifier. */
+export async function readClassifierRunClockForTest(runId: string) {
+  const { rows } = await write<PersistedTimes>(sql`/* readClassifierRunClockForTest */
+    SELECT created_at AS first, created_at AS last FROM classifier_runs WHERE id = ${runId}
+  `)
+  if (!rows[0]) throw new Error('Missing owned run clock source')
+  return persistedClock(rows[0])
+}
+
 /** Read only this fixture's classifier receipts; never rewrite native receipt timestamps. */
 export async function readClassifierHealthClockForTest(classifierSlug: string) {
   const { rows } = await write<PersistedTimes>(sql`/* readClassifierHealthClockForTest */

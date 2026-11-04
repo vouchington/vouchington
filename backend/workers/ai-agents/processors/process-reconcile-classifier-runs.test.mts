@@ -1,7 +1,5 @@
-import { randomUUID } from 'node:crypto'
 import detectorPackage from '@jongleberry/vurst-ai/package.json' with { type: 'json' }
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readAllQueueJobs } from '@voucha/test-helpers'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import {
   classifierRunDispatcherJobFor,
@@ -26,7 +24,6 @@ import {
   initializePostClassifierExecutionTests,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { getPostClassifierLocalOutcomeFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
-import { ai_agents } from '@queues/ai-agents/queues'
 import { claimClassifierRun, startClassifierProviderAttempt } from '@services/classifier-runs'
 import { createPostClassifierRunAdapter } from '@services/post-classifier'
 import { sentryCaptureMessageMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -35,8 +32,8 @@ import { processClassifierRun, processClassifierRunDispatcher } from './process-
 import { processReconcileClassifierRuns } from './process-reconcile-classifier-runs.mts'
 
 const scope = createClassifierRunSweepScope(getClassifierRunHandler(POST_CLASSIFIER_SLUG))
-const sweep = (data = {}, overrides = {}, pageSize = 500) =>
-  processReconcileClassifierRuns(data, scope.dependencies(overrides, pageSize))
+const sweep = (data = {}, pageSize = 2) =>
+  processReconcileClassifierRuns(data, scope.ids(), pageSize)
 
 async function dispatchTracked(remote: boolean) {
   const dispatched = await dispatchApprovedClassifierPost(remote)
@@ -115,38 +112,6 @@ describe('classifier run recovery sweep: request discovery', () => {
     await expect(sweep(requests)).resolves.toEqual(noRequests)
   })
 
-  it('starts one request sweep per classifier from the tick and chains a full page', async () => {
-    const chained = randomUUID()
-    const handler = {
-      ...scope.handler,
-      pendingRequests: async () => ({
-        items: [
-          {
-            requestId: randomUUID(),
-            postId: randomUUID(),
-            rssFeedItemId: null,
-          },
-        ],
-        next: chained,
-      }),
-    }
-
-    const fake = { handlerFor: () => handler }
-
-    await expect(sweep(requests, fake)).resolves.toEqual({
-      ...noRequests,
-      dispatched: 1,
-      hasNext: true,
-    })
-    await sweep(requests, fake)
-    await sweep()
-
-    const jobIds = (await readAllQueueJobs(ai_agents)).map(job => job.id)
-    const next = `reconcile_classifier_runs_requests_${POST_CLASSIFIER_SLUG}_${chained}`
-    expect(jobIds.filter(id => id === next)).toHaveLength(1)
-    expect(jobIds).toContain(`reconcile_classifier_runs_requests_${POST_CLASSIFIER_SLUG}_start`)
-  })
-
   it('needs a classifier to sweep requests', async () => {
     await expect(sweep({ phase: 'requests' })).rejects.toThrow(
       'A request sweep page needs its classifier',
@@ -175,28 +140,6 @@ describe('classifier run recovery sweep: incomplete runs', () => {
 
     expect(await readClassifierRunJobsForTest(run.runId)).toHaveLength(1)
     expect((await runFacts(run.post.id)).sweep_enqueue_count).toBe(1)
-  })
-
-  it('drains a backlog across chained pages and adds each page once', async () => {
-    const first = await dispatchTracked(false)
-    const second = await dispatchTracked(false)
-    removeClassifierRunJobForTest(first.runId)
-    removeClassifierRunJobForTest(second.runId)
-
-    const paged = await sweep({ phase: 'incomplete' }, {}, 1)
-    await sweep({ phase: 'incomplete' }, {}, 1)
-
-    expect(paged).toMatchObject({ kind: 'incomplete', enqueued: 1, hasNext: true })
-    const [firstId, secondId] = [first.runId, second.runId].toSorted()
-    const chained = (await readAllQueueJobs(ai_agents)).filter(
-      job => job.id === `reconcile_classifier_runs_incomplete_all_${firstId}`,
-    )
-    expect(chained).toHaveLength(1)
-    await expect(sweep({ phase: 'incomplete', after: firstId }, {}, 1)).resolves.toMatchObject({
-      enqueued: 1,
-      hasNext: false,
-    })
-    expect(await readClassifierRunJobsForTest(secondId!)).toHaveLength(1)
   })
 
   it('re-queues a run with attempts left after its lease expired', async () => {

@@ -30,8 +30,8 @@ import { processClassifierRunDispatcher } from './process-classifier-run.mts'
 import { processReconcileClassifierRuns } from './process-reconcile-classifier-runs.mts'
 
 const scope = createClassifierRunSweepScope(getClassifierRunHandler(TAGGING_CLASSIFIER_SLUG))
-const sweep = (data = {}, overrides = {}, pageSize = 500) =>
-  processReconcileClassifierRuns(data, scope.dependencies(overrides, pageSize))
+const sweep = (data = {}, pageSize = 2) =>
+  processReconcileClassifierRuns(data, scope.ids(), pageSize)
 const requests = { phase: 'requests', classifier: TAGGING_CLASSIFIER_SLUG } as const
 const dispatched = (count: number) => ({ kind: 'requests', dispatched: count, hasNext: false })
 

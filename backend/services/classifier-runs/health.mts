@@ -34,9 +34,9 @@ export async function readClassifierRunHealth<C, L, E>(
 ): Promise<ClassifierRunHealth> {
   const [oldestIncompleteRun, oldestPendingRequest, terminal, unrequestedFeedItems] =
     await Promise.all([
-      readOldestIncompleteClassifierRun(adapter.slug, now),
-      readOldestPendingClassifierRequest(adapter.slug, now),
-      readClassifierTerminalCounts(adapter.slug, now),
+      readOldestIncompleteClassifierRun(adapter.slug, now, scope),
+      readOldestPendingClassifierRequest(adapter.slug, now, scope),
+      readClassifierTerminalCounts(adapter.slug, now, scope),
       readUnrequestedClassifierFeedItems(adapter, now, scope),
     ])
   return {

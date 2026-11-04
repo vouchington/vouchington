@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import type { ClassifierRunHealthScope } from './health-unrequested.mts'
 
 /** The oldest unfinished item of one classifier and how many there are in all. */
 export type OldestOpenClassifierItem = { id: string; ageMs: number; total: number }
@@ -19,6 +20,7 @@ function toOldest(row: OldestRow | undefined, now: Date): OldestOpenClassifierIt
 export async function readOldestIncompleteClassifierRun(
   classifier: string,
   now: Date,
+  scope: ClassifierRunHealthScope = {},
 ): Promise<OldestOpenClassifierItem | null> {
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
   // already terminal on the writer.
@@ -27,6 +29,10 @@ export async function readOldestIncompleteClassifierRun(
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
     WHERE classifier.slug = ${classifier}
+      AND (${scope.runIds ?? null}::uuid[] IS NULL OR run.id = ANY(${scope.runIds ?? null}::uuid[]))
+      AND ((${scope.postIds ?? null}::uuid[] IS NULL AND ${scope.rssFeedItemIds ?? null}::uuid[] IS NULL)
+        OR run.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR run.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))
       AND run.completed_at IS NULL AND run.superseded_at IS NULL AND run.terminal_failed_at IS NULL
     ORDER BY run.id
     LIMIT 1
@@ -42,6 +48,7 @@ export async function readOldestIncompleteClassifierRun(
 export async function readOldestPendingClassifierRequest(
   classifier: string,
   now: Date,
+  scope: ClassifierRunHealthScope = {},
 ): Promise<OldestOpenClassifierItem | null> {
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
   // already terminal on the writer.
@@ -50,6 +57,9 @@ export async function readOldestPendingClassifierRequest(
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE classifier.slug = ${classifier}
+      AND ((${scope.postIds ?? null}::uuid[] IS NULL AND ${scope.rssFeedItemIds ?? null}::uuid[] IS NULL)
+        OR request.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR request.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))
       AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
     ORDER BY request.id
     LIMIT 1
