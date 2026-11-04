@@ -26,6 +26,7 @@ export const REGISTRY_ORDER = [
   'psql-partition-cleanup-config',
   'list-import-config',
   'articles-work-config',
+  'hacker-news-work-config',
   'pagination-config',
   'moderation-analytics-work-config',
   'post-clearance-work-config',

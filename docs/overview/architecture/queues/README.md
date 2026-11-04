@@ -110,7 +110,8 @@ Source storage and quarantined-image renders are removed only after the final pa
 its listener work is admitted. Quarantine deletion still requires a confirmed permanent copy.
 
 The data-retention schedule runs in deployed environments so staging exposes retention failures
-before production. Staging assigns the job lower queue priority to keep interactive and recovery
+before production. Its Hacker News sweep removes a bounded number of expired URL snapshots;
+committed deletions advance the next scheduled pass through any remaining backlog. Staging assigns the job lower queue priority to keep interactive and recovery
 work ahead of housekeeping. Each AI retention family owns one fixed continuation identity in the
 PostgreSQL maintenance queue. Daily seeds recover finished records but coalesce with live work.
 Each bounded pass yields that same native job while backlog remains, so a large cleanup drains

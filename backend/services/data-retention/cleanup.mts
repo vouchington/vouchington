@@ -1,3 +1,4 @@
+import { cleanupHackerNewsReferences } from './cleanup-hacker-news.mts'
 import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
 /* oxlint-disable max-lines, react-doctor/async-parallel -- central retention orchestration preserves dependent cleanup order. */
 // Data retention necessarily accesses tables owned by other services. This cross-service SQL is intentional:
@@ -276,6 +277,7 @@ type DataRetentionCleanupOptions = {
 }
 
 type DataRetentionCleanupResult = {
+  hackerNewsReferences: Awaited<ReturnType<typeof cleanupHackerNewsReferences>>
   legalRecords: Awaited<ReturnType<typeof cleanupLegalRecords>>
   copyrightFormScreeningAttempts?: { scanned: number; deleted: number; hasMore: boolean }
   copyrightActionAttempts?: { scanned: number; deleted: number; hasMore: boolean }
@@ -465,6 +467,7 @@ export async function runDataRetentionCleanup(
     ...limits,
     batchSize: Math.min(limits.batchSize, getTopicImportAttemptDeletionBatchSize()),
   }
+  const hackerNewsReferences = await cleanupHackerNewsReferences()
   const retainedPageSize = Math.min(limits.batchSize, 1_000)
   // Ephemeral broker rows reference users and provider accounts. Remove expired rows first so a
   // long-interrupted cleanup run cannot retain avoidable references ahead of parent cleanup.
@@ -680,6 +683,7 @@ export async function runDataRetentionCleanup(
   await cleanupAnalyticsLocalFiles()
 
   return {
+    hackerNewsReferences,
     ...copyright,
     retainedRelationIdentities,
     retainedMediaBindings,

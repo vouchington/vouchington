@@ -39,6 +39,7 @@ import { runEngagementEmailRecipientScenarios } from './run-scenarios/engagement
 import { runTopicAliasCategoryWorkScenarios } from './run-scenarios/topic-alias-category-work.mts'
 import { runMembershipProviderRecoveryScenarios } from './run-scenarios/membership-provider-recovery.mts'
 import { runRetentionStagePageScenarios } from './run-scenarios/retention-stage-pages.mts'
+import { runHackerNewsRetentionScenario } from './run-scenarios/hacker-news-retention.mts'
 import { runStripeEventRecoveryScenario } from './run-scenarios/stripe-event-recovery.mts'
 import { runPaymentLedgerRetentionScenarios } from './run-scenarios/payment-ledger-retention.mts'
 import { runMembershipRenewalSelectionScenario } from './run-scenarios/membership-renewal-selection.mts'
@@ -86,7 +87,6 @@ async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
       moderation_transparency_released_daily_rollups`)
 }
 
-// A failing step is recorded and the run continues, so one run reports every failure.
 async function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
   try {
     await result
@@ -163,6 +163,7 @@ async function main() {
     await runStep(runDenseTopicViewerCountsScenario.name, runDenseTopicViewerCountsScenario())
     await runStep(runTopicAliasCategoryWorkScenarios.name, runTopicAliasCategoryWorkScenarios())
     await runStep(runRetentionStagePageScenarios.name, runRetentionStagePageScenarios())
+    await runStep(runHackerNewsRetentionScenario.name, runHackerNewsRetentionScenario())
     await runStep(runEmbeddingReconciliationScenarios.name, runEmbeddingReconciliationScenarios())
     await runStep(runStripeEventRecoveryScenario.name, runStripeEventRecoveryScenario())
     await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios())

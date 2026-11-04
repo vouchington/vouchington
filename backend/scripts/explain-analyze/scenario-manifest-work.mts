@@ -67,6 +67,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   'import-retention-child-continuation',
   'request-attempt-retention-continuation',
   'request-attempt-retention-delete',
+  'hacker-news-retention-page',
   'request-range-retirement-recent',
   ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
   ...COPYRIGHT_CASE_PURGE_SCENARIO_IDS,

@@ -97,6 +97,8 @@ export {
   getRssFeedItemTitleByGuidForTest,
 } from './sql-rss-feeds.mts'
 export {
+  getHackerNewsRowVersionsForTest,
+  hasHackerNewsLookupForTest,
   insertHackerNewsReferencesForTest,
   type SeedHackerNewsReferences,
 } from './hacker-news-references.mts'

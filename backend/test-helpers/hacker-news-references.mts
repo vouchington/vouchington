@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 
 type SeedStory = {
   hacker_news_item_id: number
@@ -54,4 +54,28 @@ export async function insertHackerNewsReferencesForTest(
       comments.map(c => c.posted_at),
     ],
   )
+}
+
+/** Check for a lookup row, including a zero-hit lookup hidden by public readers. */
+export async function hasHackerNewsLookupForTest(urlId: string): Promise<boolean> {
+  const result = await read(
+    `/* hasHackerNewsLookupForTest */ SELECT 1 FROM url_hacker_news_totals WHERE url_id = $1`,
+    [urlId],
+  )
+  return result.rows.length > 0
+}
+
+/** Capture row versions to check that unchanged cached facts are not rewritten. */
+export async function getHackerNewsRowVersionsForTest(urlId: string): Promise<string[]> {
+  const result = await write(
+    `/* getHackerNewsRowVersionsForTest */
+    SELECT 'story:' || hacker_news_item_id || ':' || xmin::text AS version
+    FROM url_hacker_news_stories WHERE url_id = $1
+    UNION ALL
+    SELECT 'comment:' || hacker_news_item_id || ':' || xmin::text
+    FROM url_hacker_news_comments WHERE url_id = $1
+    ORDER BY version`,
+    [urlId],
+  )
+  return result.rows.map(row => row.version as string)
 }
