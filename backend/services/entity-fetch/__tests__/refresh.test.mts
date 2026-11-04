@@ -14,7 +14,7 @@ describe('entity metrics refresh database failure', () => {
     expect(before).toMatchObject({ id: post.id })
 
     const { result, error } = await withPostgresPoolQueryFailureForTest(
-      '/* getPostMetricsByAny */',
+      '/* getPostMetricsByAnyBatch */',
       () => refresh.post_metrics(post.id).catch((err: unknown) => err),
     )
 

@@ -196,6 +196,40 @@ describe('metrics-batch', () => {
     expect(metrics?.count.ancestors).toBe(1)
   })
 
+  it('does not count a pending-clearance ancestor', async () => {
+    const user = (await createTestUser({ administrator: true })) as PrivateUser
+    const random = Math.random().toString(36).slice(2, 15)
+    const rootId = await insertTestPost({
+      title: `Batch pending root ${random}`,
+      slug: `batch-pending-root-${random}`,
+      createdById: user.id,
+      markdown: 'Root',
+    })
+    const pendingParentId = await insertTestPost({
+      title: '',
+      slug: `batch-pending-parent-${random}`,
+      createdById: user.id,
+      markdown: 'Pending parent',
+      postType: 'comment',
+      rootId,
+      parentId: rootId,
+      clearanceStatus: 'pending',
+    })
+    const childId = await insertTestPost({
+      title: '',
+      slug: `batch-pending-child-${random}`,
+      createdById: user.id,
+      markdown: 'Approved child',
+      postType: 'comment',
+      rootId,
+      parentId: pendingParentId,
+    })
+
+    const [metrics] = await getPostMetricsByAnyBatch([childId])
+
+    expect(metrics?.count.ancestors).toBe(1)
+  })
+
   it('getPostMetricsByAnyBatch fetches by slugs', async () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
     const slug1 = `metrics-slug-1-${Date.now()}-${Math.floor(Math.random() * 1000000)}`

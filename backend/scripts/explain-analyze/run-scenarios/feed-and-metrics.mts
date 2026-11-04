@@ -14,6 +14,7 @@ const {
   getFriendRecommendations,
   getPostFeedIds,
   getPostIdsByUrlIds,
+  getPostMetricsByAny,
   getPostMetricsByAnyBatch,
   getPrioritizedReferralLinks,
   getTopicIds,
@@ -153,6 +154,19 @@ export async function runFeedAndMetricScenarios() {
     crossPartition: { posts: 'The batch requests 200 post ids spanning seeded id ranges.' },
   })
   await runAndCapture('post-metrics-batch', () => getPostMetricsByAnyBatch(seedPostIds))
+  registerScenarioContract('post-metrics-single', {
+    expectations: [
+      { kind: 'queryBinds', token: 'requested_posts' },
+      { kind: 'forbidCorrelatedAggregates' },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 1_000 },
+      { kind: 'maxProcessedRows', relation: 'relation__user__follow__post', max: 100 },
+      { kind: 'maxProcessedRows', relation: 'relation__user__save__post', max: 100 },
+    ],
+    crossPartition: {
+      posts: 'The seeded thread root is read by id, then its comments by root and parent id.',
+    },
+  })
+  await runAndCapture('post-metrics-single', () => getPostMetricsByAny(seedUuid(0, '05')))
   const seedTopicId = `${SEED_PREFIX}-0400-7000-8000-000000000000`
   await runAndCapture('url-hostname-search-by-topic', () =>
     searchUrlHostnames({ topic_ids: [seedTopicId], limit: 25 }),
