@@ -25,5 +25,5 @@ export async function commentPlaceholderHasValidReply(
     .append(sql`
     WHERE c.id = ${commentId}`)
   const { rows } = await read<{ keep: boolean }>(query.text, query.values)
-  return rows[0]?.keep
+  return rows[0]?.keep ?? false
 }

@@ -236,14 +236,14 @@ test.describe('Comments', () => {
         has: page.getByTestId('comment-node-content').filter({ hasText: 'This is Comment A' }),
       })
       .first()
+    const hideWrite = page.waitForResponse(
+      r =>
+        r.request().method() === 'PUT' && /\/api\/v1\/bookmarks\/post\/[^/]+\/hide$/.test(r.url()),
+    )
     await commentA.getByTestId('comment-collapse-button').first().click()
-
+    expect((await hideWrite).ok()).toBe(true)
     await expect(commentBodies.filter({ hasText: 'This is Reply B' })).toBeHidden()
-
-    // Reload the page
     await navigateTo(page, `/discussion/${DISCUSSION_ID}`)
-
-    // Comment A's children should still be hidden
     await expect(commentBodies.filter({ hasText: 'This is Reply B' })).toBeHidden()
   })
 

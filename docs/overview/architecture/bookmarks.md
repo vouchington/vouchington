@@ -38,6 +38,7 @@ user's relation.
 | `subscribe_posts`          | topic                               | Notify when new posts are added to this topic (backend active; UI removed #6223)               |
 | `subscribe_rss_feed_items` | topic                               | Notify when new RSS items are published for this topic (backend active; UI removed #6223)      |
 | `proxy_follow`             | community                           | Apply `follow` to every entity in the community list                                           |
+| `proxy_mute`               | community                           | Apply `mute` to every entity in the community list                                             |
 
 ### Hide on a comment
 
@@ -53,7 +54,6 @@ exclusion skips comments, and web lists do not filter on it.
   reply sits below it. The `PUT` authorizes it on the same read state the thread uses.
 - Suspended users cannot write it, like every bookmark.
 - Signed-out readers keep the old browser-only collapse; there is no server state for them.
-  | `proxy_mute` | community | Apply `mute` to every entity in the community list |
 
 ## Implicit Unfollow
 
