@@ -193,6 +193,14 @@ CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_work_
  LANGUAGE plpgsql
 ```
 
+## `fn_create_url_crawl_state`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_url_crawl_state()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_user_individual_household`
 
 ```sql
