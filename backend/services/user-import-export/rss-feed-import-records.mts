@@ -34,7 +34,7 @@ export async function createRssFeedImport(
         ${should_follow_imported_feeds},
         ${urls.length}
       )
-      RETURNING id, total_rows, completed_rows, failed_rows, completed_at, created_at
+      RETURNING id, total_rows, completed_rows, failed_rows, skipped_rows, completed_at, created_at
       `,
     { query },
   )

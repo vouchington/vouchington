@@ -10,7 +10,7 @@ export async function updateRssFeedImportRowCompleted(
   await write(
     sql`/* updateRssFeedImportRowCompleted */
       WITH prev AS (
-        SELECT (failed_at IS NOT NULL)::int AS was_failed
+        SELECT (failed_at IS NOT NULL)::int AS was_failed, error_message
         FROM user_rss_feed_import_rows
         WHERE id = ${rowId}
       ), updated_row AS (
@@ -22,12 +22,15 @@ export async function updateRssFeedImportRowCompleted(
             error_message = NULL
         WHERE id = ${rowId}
           AND completed_at IS NULL
-          AND failed_at IS NULL
+          AND (failed_at IS NULL OR error_message = 'RELATION_LIMIT_REACHED')
         RETURNING batch_id
       )
       UPDATE user_rss_feed_import_batches
       SET completed_rows = completed_rows + 1,
           failed_rows = failed_rows - (SELECT was_failed FROM prev),
+          skipped_rows = skipped_rows - (SELECT CASE
+            WHEN was_failed = 1 AND error_message = 'RELATION_LIMIT_REACHED' THEN 1
+            ELSE 0 END FROM prev),
           completed_at = CASE
             WHEN completed_at IS NOT NULL THEN completed_at
             WHEN completed_rows + 1 + failed_rows - (SELECT was_failed FROM prev) >= total_rows
@@ -77,6 +80,10 @@ export async function updateRssFeedImportRowFailed(
       )
       UPDATE user_rss_feed_import_batches
       SET failed_rows = failed_rows + 1 - (SELECT was_failed FROM prev),
+          skipped_rows = skipped_rows + CASE
+            WHEN ${errorMessage.trim()} = 'RELATION_LIMIT_REACHED'
+              THEN 1 - (SELECT was_failed FROM prev)
+            ELSE 0 END,
           completed_at = CASE
             WHEN completed_at IS NOT NULL THEN completed_at
             WHEN completed_rows + failed_rows + 1 - (SELECT was_failed FROM prev) >= total_rows

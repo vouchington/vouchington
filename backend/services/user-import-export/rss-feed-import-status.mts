@@ -39,10 +39,7 @@ export async function getRssFeedImportSummary(
 
   const { rows } = await write<UserRssFeedImportBatchRow>(
     sql`/* getRssFeedImportSummary */
-      SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows, batch.completed_at, batch.created_at,
-        (SELECT count(*)::int FROM (SELECT 1 FROM user_rss_feed_import_rows skipped
-          WHERE skipped.batch_id = batch.id AND skipped.failed_at IS NOT NULL
-            AND skipped.error_message = 'RELATION_LIMIT_REACHED' LIMIT batch.total_rows) capped) AS skipped_rows
+      SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows, batch.completed_at, batch.created_at, batch.skipped_rows
       FROM user_rss_feed_import_batches batch
       WHERE batch.id = ${importId}
         AND batch.user_id = ${currentUserId}
@@ -72,10 +69,7 @@ export async function getRssFeedImport(
 
   const query = sql`/* getRssFeedImport */
     SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows,
-      batch.completed_at, batch.created_at,
-      (SELECT count(*)::int FROM (SELECT 1 FROM user_rss_feed_import_rows skipped
-        WHERE skipped.batch_id = batch.id AND skipped.failed_at IS NOT NULL
-          AND skipped.error_message = 'RELATION_LIMIT_REACHED' LIMIT batch.total_rows) capped) AS skipped_rows,
+      batch.completed_at, batch.created_at, batch.skipped_rows,
       page.id AS row_id, page.input_url, page.outcome,
       page.error_message, page.rss_feed_id, page.topic_slug,
       EXISTS (

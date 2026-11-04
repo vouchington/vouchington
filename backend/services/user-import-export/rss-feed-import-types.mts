@@ -50,7 +50,7 @@ export type UserRssFeedImportBatchRow = {
   total_rows: number
   completed_rows: number
   failed_rows: number
-  skipped_rows?: number
+  skipped_rows: number
   completed_at: Date | null
   created_at: Date
 }
@@ -88,7 +88,7 @@ export function toImportSummary(batch: UserRssFeedImportBatchRow): UserRssFeedIm
     total_rows: batch.total_rows,
     completed_rows: batch.completed_rows,
     failed_rows: batch.failed_rows,
-    skipped_rows: batch.skipped_rows ?? 0,
+    skipped_rows: batch.skipped_rows,
     pending_rows: batch.total_rows - batch.completed_rows - batch.failed_rows,
     completed_at: batch.completed_at,
     created_at: batch.created_at,
