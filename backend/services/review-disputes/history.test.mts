@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { TransactionQuery } from '@data-stores/psql'
 import {
   createStaffResolutionFixture,
   readStaffResolutionState,
   readStaffDraftHistory,
 } from '@voucha/test-helpers/staff-resolution-history'
-import { withRejectedStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { searchModeratorActions } from '@services/moderator-actions'
 import { resolveReviewDisputeRemove, resolveReviewDisputeAnnotate } from './resolve.mts'
 import { dismissReviewDispute } from './dismiss-dispute.mts'
@@ -16,8 +15,8 @@ describe('review-disputes staff history', () => {
     { name: 'remove', run: resolveReviewDisputeRemove, action: 'resolve_report' },
     {
       name: 'annotate',
-      run: (actor: string, id: string, _evidence: string, options?: { query?: TransactionQuery }) =>
-        resolveReviewDisputeAnnotate(actor, id, 'Staff annotation', 'staff_or_user', options),
+      run: (actor: string, id: string) =>
+        resolveReviewDisputeAnnotate(actor, id, 'Staff annotation', 'staff_or_user'),
       action: 'resolve_report',
     },
     { name: 'dismiss', run: dismissReviewDispute, action: 'dismiss_report' },
@@ -37,11 +36,16 @@ describe('review-disputes staff history', () => {
   it.each(resolutions)('$name rolls back when audit insertion fails', async ({ run }) => {
     const { actorId, id } = await createStaffResolutionFixture('dispute')
     const before = await readStaffResolutionState('dispute', id)
-    await expect(
-      withRejectedStaffActionHistory(async query => {
-        await run(actorId, id, 'staff_or_user', { query })
-      }),
-    ).rejects.toThrow('staff history rejected')
+    const restore = rejectPostgresWriteForTest(
+      '/* recordModeratorAction',
+      new Error('staff history rejected for test'),
+      values => values.some(value => typeof value === 'string' && value.includes(actorId)),
+    )
+    try {
+      await expect(run(actorId, id, 'staff_or_user')).rejects.toThrow('staff history rejected')
+    } finally {
+      restore()
+    }
     expect(await readStaffResolutionState('dispute', id)).toEqual(before)
     expect((await searchModeratorActions({ actorId })).results).toEqual([])
   })

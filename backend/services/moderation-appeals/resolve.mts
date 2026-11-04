@@ -1,8 +1,4 @@
-import {
-  registerPostCommitAction,
-  runWithTransaction,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { setPostClearanceStatus } from '@services/post-clearance'
@@ -38,11 +34,10 @@ export async function resolveModerationAppealAccept(
   staffUserId: string,
   appealId: string,
   trainingEvidence: ModerationTrainingEvidence,
-  options: { query?: TransactionQuery } = {},
 ): Promise<ModerationAppealResponse> {
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
-  const response = await runWithTransaction(options.query, async (query: TransactionQuery) => {
+  const response = await runWithTransaction(undefined, async (query: TransactionQuery) => {
     await lockSuspensionAppealAuthorLifecycle(query, appealId)
     const { rows } = await query(
       sql`/* resolveModerationAppealAccept */
@@ -141,10 +136,9 @@ export async function resolveModerationAppealAccept(
       }
       await Promise.all(postCommitWork)
     }
-    if (options.query) registerPostCommitAction(query, afterCommit)
     return getModerationAppealAfterMutation(appealId, { query })
   })
-  if (!options.query) await afterCommit?.()
+  await afterCommit?.()
   return response
 }
 
@@ -152,13 +146,11 @@ export async function resolveModerationAppealReduce(
   staffUserId: string,
   appealId: string,
   trainingEvidence: ModerationTrainingEvidence,
-  options: { query?: TransactionQuery } = {},
 ): Promise<ModerationAppealResponse> {
   return finalizeDeliveredModerationAppeal(
     staffUserId,
     appealId,
     REDUCE_DELIVERED_APPEAL_RESOLUTION,
     trainingEvidence,
-    options,
   )
 }

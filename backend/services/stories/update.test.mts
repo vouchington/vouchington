@@ -43,6 +43,15 @@ describe('update', () => {
     expect(result).toBeNull()
   })
 
+  it('adminSetStoryOfficialItem returns null for unknown story', async () => {
+    const result = await adminSetStoryOfficialItem(
+      (await createTestUserDirect()).id,
+      randomUUID(),
+      itemId,
+    )
+    expect(result).toBeNull()
+  })
+
   it('adminSetStoryOfficialItem sets lock', async () => {
     const story = await insertTestStory()
     await setTestItemStoryId(itemId, story.id)

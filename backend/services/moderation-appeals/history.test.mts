@@ -4,7 +4,7 @@ import {
   readStaffResolutionState,
   readStaffDraftHistory,
 } from '@voucha/test-helpers/staff-resolution-history'
-import { withRejectedStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { searchModeratorActions } from '@services/moderator-actions'
 import { resolveModerationAppealAccept, resolveModerationAppealReduce } from './resolve.mts'
 import { dismissModerationAppeal } from './dismiss-appeal.mts'
@@ -31,11 +31,16 @@ describe('moderation-appeals staff history', () => {
   it.each(resolutions)('$name rolls back when audit insertion fails', async ({ run }) => {
     const { actorId, id } = await createStaffResolutionFixture('appeal')
     const before = await readStaffResolutionState('appeal', id)
-    await expect(
-      withRejectedStaffActionHistory(async query => {
-        await run(actorId, id, 'staff_or_user', { query })
-      }),
-    ).rejects.toThrow('staff history rejected')
+    const restore = rejectPostgresWriteForTest(
+      '/* recordModeratorAction',
+      new Error('staff history rejected for test'),
+      values => values.some(value => typeof value === 'string' && value.includes(actorId)),
+    )
+    try {
+      await expect(run(actorId, id, 'staff_or_user')).rejects.toThrow('staff history rejected')
+    } finally {
+      restore()
+    }
     expect(await readStaffResolutionState('appeal', id)).toEqual(before)
     expect((await searchModeratorActions({ actorId })).results).toEqual([])
   })
