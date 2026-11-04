@@ -12,7 +12,11 @@ import contracts from '../../../../../api-fixtures/v1/request-contracts.json' wi
 
 const BASE = '/api/v1/topic-recommendations'
 const DIAGNOSTIC = /schema|must be|required|invalid/i
-const publicFields = [...PUBLIC_POST_FIELDS, 'topic_recommendation']
+// A recommendation is a post, never a comment, so it carries no placeholder_state.
+const publicFields = [
+  ...PUBLIC_POST_FIELDS.filter(field => field !== 'placeholder_state'),
+  'topic_recommendation',
+]
 
 function expectPublicRecommendation(post: Record<string, unknown>) {
   expect(Object.keys(post).every(field => new Set<string>(publicFields).has(field))).toBe(true)

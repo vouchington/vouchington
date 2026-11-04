@@ -1,6 +1,7 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { loginAsCollapsingUser } from '../../helpers/collapsing-user.mts'
 import {
   navigateTo,
   randomSuffix,
@@ -57,9 +58,9 @@ test.describe('Comments', () => {
   })
 
   test('comment collapse hides children', async ({ page }) => {
+    await loginAsCollapsingUser(page)
     await navigateTo(page, `/discussion/${DISCUSSION_ID}`)
 
-    // Wait for comments to load
     const commentBodies = page.getByTestId('comment-node-content')
     await expect(commentBodies.filter({ hasText: 'This is Comment A' })).toBeVisible()
     await waitForBelowFoldHydration(page)
@@ -91,7 +92,6 @@ test.describe('Comments', () => {
   test('comment reply form appears when authenticated and Reply clicked', async ({ page }) => {
     await navigateTo(page, `/discussion/${DISCUSSION_ID}`)
 
-    // Wait for comments to load
     const commentBodies = page.getByTestId('comment-node-content')
     await expect(commentBodies.filter({ hasText: 'This is Comment A' })).toBeVisible()
 
@@ -200,6 +200,7 @@ test.describe('Comments', () => {
   })
 
   test('clicking the metadata row collapses the comment thread', async ({ page }) => {
+    await loginAsCollapsingUser(page)
     await navigateTo(page, `/discussion/${DISCUSSION_ID}`)
 
     const commentBodies = page.getByTestId('comment-node-content')
@@ -222,6 +223,7 @@ test.describe('Comments', () => {
   })
 
   test('collapse state persists after page reload', async ({ page }) => {
+    await loginAsCollapsingUser(page)
     await navigateTo(page, `/discussion/${DISCUSSION_ID}`)
 
     const commentBodies = page.getByTestId('comment-node-content')

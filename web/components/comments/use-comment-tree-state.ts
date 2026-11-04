@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import * as Sentry from '@sentry/nextjs'
 import { buildTree, buildCommentNodeData } from './comment-tree-utils'
 import { fetchPostDescendants } from '@/lib/api/client/posts'
@@ -14,11 +14,12 @@ const EMPTY_ELECTIONS_MAP: NonNullable<CommentTreeViewModel['post_elections']> =
 const EMPTY_ELECTION_VOTES_MAP: Record<string, ElectionVote> = {}
 
 interface ExtraSidecars {
+  elections: NonNullable<CommentTreeViewModel['post_elections']>
   bookmarks: Record<string, Record<string, boolean>>
   metrics: Record<string, PostMetrics>
   votes: Record<string, ElectionVote>
 }
-const EMPTY_SIDECARS: ExtraSidecars = { bookmarks: {}, metrics: {}, votes: {} }
+const EMPTY_SIDECARS: ExtraSidecars = { elections: {}, bookmarks: {}, metrics: {}, votes: {} }
 
 interface UseCommentTreeStateOptions {
   currentUserId: string | null
@@ -34,7 +35,6 @@ export function useCommentTreeState({
   rootPostId,
 }: UseCommentTreeStateOptions) {
   const postsMap = data.posts ?? EMPTY_POSTS_MAP
-  const electionsMap = data.post_elections ?? EMPTY_ELECTIONS_MAP
   const [extraComments, setExtraComments] = useState<Post[]>([])
   const [extraMarkdownToHtml, setExtraMarkdownToHtml] = useState<Record<string, string>>({})
   const [extra, setExtra] = useState<ExtraSidecars>(EMPTY_SIDECARS)
@@ -42,20 +42,32 @@ export function useCommentTreeState({
   const [replyToId, setReplyToId] = useState<string | null>(null)
   const [sort, setSort] = useState<'new' | 'best'>('new')
   const [quoteMarkdown, setQuoteMarkdown] = useState<string>('')
+  const requestedReplies = useRef(new Set<string>())
+  const electionsMap = { ...(data.post_elections ?? EMPTY_ELECTIONS_MAP), ...extra.elections }
   const electionVotesMap: Record<string, ElectionVote> = {
     ...(data.election_votes ?? EMPTY_ELECTION_VOTES_MAP),
     ...extra.votes,
   }
 
+  // A later page of the root thread can return a reply that was already fetched on expand, and
+  // buildTree attaches one node per entry, so each id is kept once across both sources.
+  const seenIds = new Set(data.results.map(r => r.id))
   const allResults = [
     ...data.results,
-    ...extraComments.map(c => ({
-      id: c.id,
-      __entity_type: 'post' as const,
-      ranking: 0,
-      search_vector_ts: null,
-    })),
+    ...extraComments.flatMap(c =>
+      seenIds.has(c.id)
+        ? []
+        : [
+            {
+              id: c.id,
+              __entity_type: 'post' as const,
+              ranking: 0,
+              search_vector_ts: null,
+            },
+          ],
+    ),
   ]
+  extraComments.forEach(c => seenIds.add(c.id))
 
   // useMemo is required here: mergedPostsMap and postIdsKey are in a
   // useLayoutEffect dep array (useCommentCollapse). Without stable
@@ -85,6 +97,7 @@ export function useCommentTreeState({
       })
       setExtraMarkdownToHtml(prev => ({ ...prev, ...page.markdown_to_html }))
       setExtra(prev => ({
+        elections: { ...prev.elections, ...page.post_elections },
         bookmarks: { ...prev.bookmarks, ...page.bookmarks },
         metrics: { ...prev.metrics, ...page.posts_metrics },
         votes: { ...prev.votes, ...page.election_votes },
@@ -96,6 +109,7 @@ export function useCommentTreeState({
           : rest
       })
     } catch (err) {
+      requestedReplies.current.delete(id)
       Sentry.captureException(err)
     }
   }
@@ -109,7 +123,11 @@ export function useCommentTreeState({
     onExpand: id => {
       // The server walk stops at a comment the viewer hid, so its replies load when it opens.
       const loaded = Object.values(mergedPostsMap).some(post => post.parent_post_id === id)
-      if (!loaded && (metrics[id]?.count.children ?? 0) > 0) void loadReplies(id)
+      // Not gated on count.children: it counts public direct replies only, so it misses the
+      // viewer's own uncleared replies and placeholders that lead to a valid reply.
+      if (loaded || requestedReplies.current.has(id)) return
+      requestedReplies.current.add(id)
+      void loadReplies(id)
     },
   })
 
