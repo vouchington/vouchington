@@ -43,12 +43,11 @@ export function networkGroupsSql(input: NetworkGroupsInput): SQLStatement {
     query.append(`${name} AS (
   SELECT * FROM (
     SELECT DISTINCT ON (al.user_id)
-      al.id, al.user_id, al.referral_program_topic_id, u.url, al.label, al.activated_at,
+      al.id, al.user_id, al.referral_program_topic_id, al.url_id, al.label, al.activated_at,
       ${priorityGroup} AS priority_group
     FROM (`)
     query.append(source).append(sql`) src
     JOIN user_referral_program_links al ON al.user_id = src.user_id
-    JOIN urls u ON u.id = al.url_id
     WHERE al.referral_program_topic_id = ${input.referralProgramId}
       AND al.user_id <> ${input.viewerId}
       AND al.user_id IS DISTINCT FROM ${input.officialUserId}::uuid
@@ -73,13 +72,20 @@ export function networkGroupsSql(input: NetworkGroupsInput): SQLStatement {
 ),
 `)
   }
+  // `url` is output only and `url_id` is NOT NULL with a foreign key, so the urls join cannot
+  // filter; it runs once per kept person here instead of once per matching link per group.
   return query.append(`active_links AS (
-  SELECT DISTINCT ON (user_id) id, user_id, referral_program_topic_id, url, label, activated_at,
-    priority_group
+  SELECT best.id, best.user_id, best.referral_program_topic_id, u.url, best.label,
+    best.activated_at, best.priority_group
   FROM (
-    SELECT * FROM mutual_follows UNION ALL SELECT * FROM follows
-    UNION ALL SELECT * FROM referrers UNION ALL SELECT * FROM rated_authors
-  ) grouped
-  ORDER BY user_id, priority_group
+    SELECT DISTINCT ON (user_id) id, user_id, referral_program_topic_id, url_id, label,
+      activated_at, priority_group
+    FROM (
+      SELECT * FROM mutual_follows UNION ALL SELECT * FROM follows
+      UNION ALL SELECT * FROM referrers UNION ALL SELECT * FROM rated_authors
+    ) grouped
+    ORDER BY user_id, priority_group
+  ) best
+  JOIN urls u ON u.id = best.url_id
 )`)
 }
