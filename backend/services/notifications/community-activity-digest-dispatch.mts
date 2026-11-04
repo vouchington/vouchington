@@ -2,7 +2,7 @@ import { write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getNotificationsWorkLimit } from './work-limits.mts'
 
-type DigestCursorOptions = { query?: QueryExecutor }
+export type DigestCursorOptions = { query?: QueryExecutor }
 
 /** The scheduled job initializes its durable boundary before admitting any window jobs. */
 export async function prepareCommunityActivityDigestWindows(

@@ -1,8 +1,10 @@
+import { createTestUserDirect } from '@voucha/test-helpers'
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import {
-  beforeTestDigestUserId,
+  addTestDigestMember,
+  readTestCommunityActivityDigestDelivery,
   createTestDigestAdjacentUsers,
   getTestCommunityActivityDigestQueueConnection,
   readTestCommunityActivityDigestCursor,
@@ -12,12 +14,6 @@ import { NOTIFICATIONS_DIGEST_DISPATCH_JOB } from '@queues/background/enqueues/n
 import { redirectBackgroundQueue } from '@voucha/test-helpers/background-queue-redirect'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
-import { createCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest'
-import {
-  advanceCommunityActivityDigestCursor,
-  isCommunityActivityDigestWindowComplete,
-  prepareCommunityActivityDigestWindows,
-} from '@services/notifications/community-activity-digest-dispatch'
 import {
   communityActivityDigestWindowJobId,
   enqueueCommunityActivityDigestWindows,
@@ -51,6 +47,9 @@ describe('community digest gap recovery through the native queue', () => {
     const end = new Date(start.getTime() + WEEK_MS)
     const laterEnd = new Date(end.getTime() + WEEK_MS)
     const [user] = await createTestDigestAdjacentUsers()
+    const neighbor = await createTestUserDirect()
+    await addTestDigestMember(user, now)
+    await addTestDigestMember(neighbor.id, now)
     await withTestCommunityActivityDigestCursor(start, async (query, owner) => {
       const recoveredFirst = Promise.withResolvers<void>()
       const recoveredLater = Promise.withResolvers<void>()
@@ -58,6 +57,20 @@ describe('community digest gap recovery through the native queue', () => {
       void recoveredLater.promise.catch(() => undefined)
       const runs = new Map<string, number>()
       let rejectFirstAdvance = true
+      const rejectingQuery = rejectQuery(
+        query,
+        (statement, values) => {
+          if (
+            !statement.includes('advanceCommunityActivityDigestCursor') ||
+            !rejectFirstAdvance ||
+            (values[1] as Date).getTime() !== start.getTime()
+          )
+            return false
+          rejectFirstAdvance = false
+          return true
+        },
+        'injected predecessor cursor failure',
+      )
       const harness = await startRealGlideBackgroundLifecycle({
         queueNamePrefix: 'community_digest_gap',
         connection,
@@ -70,29 +83,9 @@ describe('community digest gap recovery through the native queue', () => {
           try {
             await processCommunityActivityDigestDispatch(
               job as Job<CommunityActivityDigestDispatchData>,
-              {
-                createCommunityActivityDigestBatch: input =>
-                  createCommunityActivityDigestBatch({
-                    ...input,
-                    afterUserId: beforeTestDigestUserId(user),
-                    throughUserId: user,
-                    now,
-                  }),
-                isCommunityActivityDigestWindowComplete: windowEnd =>
-                  isCommunityActivityDigestWindowComplete(windowEnd, { query }),
-                advanceCommunityActivityDigestCursor: (windowStart, windowEnd) => {
-                  if (windowStart.getTime() !== start.getTime() || !rejectFirstAdvance)
-                    return advanceCommunityActivityDigestCursor(windowStart, windowEnd, { query })
-                  rejectFirstAdvance = false
-                  return advanceCommunityActivityDigestCursor(windowStart, windowEnd, {
-                    query: rejectQuery(
-                      query,
-                      statement => statement.includes('advanceCommunityActivityDigestCursor'),
-                      'injected predecessor cursor failure',
-                    ),
-                  })
-                },
-              },
+              [user],
+              1,
+              { query: rejectingQuery, now },
             )
             if (count === 2) {
               if (key === start.toISOString()) recoveredFirst.resolve()
@@ -112,10 +105,7 @@ describe('community digest gap recovery through the native queue', () => {
       const tick = (target: Date) =>
         processCommunityActivityDigestScheduleTick(
           { targetWindowStart: target.toISOString() },
-          {
-            prepareCommunityActivityDigestWindows: date =>
-              prepareCommunityActivityDigestWindows(date, { query }),
-          },
+          { query },
         )
       try {
         await tick(start)
@@ -133,6 +123,14 @@ describe('community digest gap recovery through the native queue', () => {
         expect(await readTestCommunityActivityDigestCursor(query)).toEqual(laterEnd)
         expect(runs.get(start.toISOString())).toBe(2)
         expect(runs.get(end.toISOString())).toBe(2)
+        expect(await readTestCommunityActivityDigestDelivery(neighbor.id, start)).toEqual({
+          notification_count: 0,
+          intent_count: 0,
+        })
+        expect(await readTestCommunityActivityDigestDelivery(neighbor.id, end)).toEqual({
+          notification_count: 0,
+          intent_count: 0,
+        })
       } finally {
         await harness.close()
       }

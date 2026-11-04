@@ -5,6 +5,7 @@ import { background } from '@queues/background/queues'
 import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications/enqueues'
 import { createCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest'
 import {
+  type DigestCursorOptions,
   advanceCommunityActivityDigestCursor,
   isCommunityActivityDigestWindowComplete,
 } from '@services/notifications/community-activity-digest-dispatch'
@@ -15,23 +16,17 @@ type WindowJob = Pick<
   'data' | 'updateData' | 'moveToDelayed'
 >
 
-type Dependencies = {
-  createCommunityActivityDigestBatch: typeof createCommunityActivityDigestBatch
-  advanceCommunityActivityDigestCursor: typeof advanceCommunityActivityDigestCursor
-  isCommunityActivityDigestWindowComplete: typeof isCommunityActivityDigestWindowComplete
-}
-
 /** One recipient page per activation, with the same live job retaining the ordering slot. */
 export async function processCommunityActivityDigestDispatch(
   job: WindowJob,
-  dependencies: Partial<Dependencies> = {},
+  userIds?: readonly string[],
+  batchSize?: number,
+  options: DigestCursorOptions & { now?: Date } = {},
 ): Promise<unknown> {
   const { windowStart, windowEnd } = job.data
   const start = new Date(windowStart)
   const end = new Date(windowEnd)
-  const isComplete =
-    dependencies.isCommunityActivityDigestWindowComplete ?? isCommunityActivityDigestWindowComplete
-  if (await isComplete(end)) return
+  if (await isCommunityActivityDigestWindowComplete(end, options)) return
 
   const counts = await background.getJobCounts()
   const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)
@@ -41,17 +36,16 @@ export async function processCommunityActivityDigestDispatch(
     })
   }
 
-  const createBatch =
-    dependencies.createCommunityActivityDigestBatch ?? createCommunityActivityDigestBatch
-  const advance =
-    dependencies.advanceCommunityActivityDigestCursor ?? advanceCommunityActivityDigestCursor
   return processRetainedSweep<CommunityActivityDigestDispatchData, { hasMore: boolean }>(
     job,
     async save => {
-      const result = await createBatch({
+      const result = await createCommunityActivityDigestBatch({
         windowStart: start,
         windowEnd: end,
         afterUserId: job.data.afterUserId,
+        userIds,
+        batchSize,
+        now: options.now,
       })
       await enqueueBulkDeliverNotificationPushIntents(
         result.created.map(item => ({ userId: item.userId, notificationId: item.notificationId })),
@@ -61,7 +55,7 @@ export async function processCommunityActivityDigestDispatch(
         return { hasMore: true }
       }
       // A later window can finish before a failed predecessor. The next tick reactivates it.
-      await advance(start, end)
+      await advanceCommunityActivityDigestCursor(start, end, options)
       return { hasMore: false }
     },
   )

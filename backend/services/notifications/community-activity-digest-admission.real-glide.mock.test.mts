@@ -4,7 +4,7 @@ import { Queue, type Job } from 'glide-mq'
 import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import {
   getTestCommunityActivityDigestQueueConnection,
-  beforeTestDigestUserId,
+  addTestDigestMember,
   readTestCommunityActivityDigestCursor,
   readTestCommunityActivityDigestDelivery,
   withTestCommunityActivityDigestCursor,
@@ -17,13 +17,7 @@ import { createTestUserDirect } from '@voucha/test-helpers/entities/users-direct
 import { insertTestCommunity } from '@voucha/test-helpers/entities/communities'
 import { insertTestCommunityMember } from '@voucha/test-helpers/entities/community-members'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import { createCommunityActivityDigestBatch } from './community-activity-digest.mts'
 import { notifications } from '../../queues/notifications/queues.mts'
-import {
-  advanceCommunityActivityDigestCursor,
-  isCommunityActivityDigestWindowComplete,
-  prepareCommunityActivityDigestWindows,
-} from './community-activity-digest-dispatch.mts'
 import {
   communityActivityDigestWindowJobId,
   enqueueCommunityActivityDigestWindows,
@@ -88,8 +82,20 @@ describe('community activity digest real queue admission', () => {
       createdAt: businessNow,
     })
 
+    const neighbor = await createTestUserDirect()
+    await addTestDigestMember(neighbor.id, businessNow)
     await withTestCommunityActivityDigestCursor(windowStart, async (query, owner) => {
       let failAdvance = true
+      const rejectingQuery = rejectQuery(
+        query,
+        statement => {
+          if (!statement.includes('advanceCommunityActivityDigestCursor') || !failAdvance)
+            return false
+          failAdvance = false
+          return true
+        },
+        'injected failure after recipient write',
+      )
       let runs = 0
       const replaySettled = Promise.withResolvers<void>()
       void replaySettled.promise.catch(() => undefined)
@@ -103,29 +109,9 @@ describe('community activity digest real queue admission', () => {
           try {
             await processCommunityActivityDigestDispatch(
               job as Job<CommunityActivityDigestDispatchData>,
-              {
-                createCommunityActivityDigestBatch: input =>
-                  createCommunityActivityDigestBatch({
-                    ...input,
-                    afterUserId: beforeTestDigestUserId(user.id),
-                    throughUserId: user.id,
-                    now: businessNow,
-                  }),
-                isCommunityActivityDigestWindowComplete: end =>
-                  isCommunityActivityDigestWindowComplete(end, { query }),
-                advanceCommunityActivityDigestCursor: (start, end) => {
-                  if (!failAdvance)
-                    return advanceCommunityActivityDigestCursor(start, end, { query })
-                  failAdvance = false
-                  return advanceCommunityActivityDigestCursor(start, end, {
-                    query: rejectQuery(
-                      query,
-                      statement => statement.includes('advanceCommunityActivityDigestCursor'),
-                      'injected failure after recipient write',
-                    ),
-                  })
-                },
-              },
+              [user.id],
+              1,
+              { query: rejectingQuery, now: businessNow },
             )
             if (runs === 2) replaySettled.resolve()
           } catch (err) {
@@ -140,10 +126,7 @@ describe('community activity digest real queue admission', () => {
         const tick = () =>
           processCommunityActivityDigestScheduleTick(
             { targetWindowStart: windowStart.toISOString() },
-            {
-              prepareCommunityActivityDigestWindows: target =>
-                prepareCommunityActivityDigestWindows(target, { query }),
-            },
+            { query },
           )
         await tick()
         const jobId = `digest__${windowStart.getTime()}`
@@ -162,6 +145,10 @@ describe('community activity digest real queue admission', () => {
           intent_count: 1,
         })
         expect(harness.stalledJobIds).toEqual([])
+        expect(await readTestCommunityActivityDigestDelivery(neighbor.id, windowStart)).toEqual({
+          notification_count: 0,
+          intent_count: 0,
+        })
       } finally {
         await harness.close()
       }

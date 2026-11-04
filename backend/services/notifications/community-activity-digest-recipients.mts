@@ -5,10 +5,9 @@ import sql from 'sql-template-strings'
 export async function listCommunityActivityDigestRecipientPage(
   afterUserId?: string,
   throughUserId?: string,
+  userIds?: readonly string[],
+  batchSize = getNotificationsWorkLimit('community_digest_recipient_batch_size'),
 ) {
-  const COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE = getNotificationsWorkLimit(
-    'community_digest_recipient_batch_size',
-  )
   const query = sql`/* listCommunityActivityDigestRecipients */
     SELECT DISTINCT cm.user_id
     FROM community_members cm
@@ -24,14 +23,13 @@ export async function listCommunityActivityDigestRecipientPage(
         WHERE us.user_id = cm.user_id AND us.lifted_at IS NULL
       )
   `
+  if (userIds) query.append(sql` AND cm.user_id = ANY(${userIds}::uuid[])`)
   if (afterUserId) query.append(sql` AND cm.user_id > ${afterUserId}`)
   if (throughUserId) query.append(sql` AND cm.user_id <= ${throughUserId}`)
-  query.append(
-    sql` ORDER BY cm.user_id LIMIT ${COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE + 1}`,
-  )
+  query.append(sql` ORDER BY cm.user_id LIMIT ${batchSize + 1}`)
   const { rows } = await read<{ user_id: string }>(query)
   return {
     rows,
-    page: rows.slice(0, COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE),
+    page: rows.slice(0, batchSize),
   }
 }
