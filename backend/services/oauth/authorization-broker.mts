@@ -32,38 +32,23 @@ export type BeginOAuthAuthorizationResult = {
   expires_at: string
 }
 
-type BeginOAuthAuthorizationDependencies = {
-  getClientId: typeof getProviderClientId
-  isProviderEnabled: typeof isOAuthAuthorizationBrokerEnabled
-  isReAuthProviderEnabled: typeof isOAuthReAuthBrokerEnabled
-}
-
-const defaultBeginDependencies: BeginOAuthAuthorizationDependencies = {
-  getClientId: getProviderClientId,
-  isProviderEnabled: isOAuthAuthorizationBrokerEnabled,
-  isReAuthProviderEnabled: isOAuthReAuthBrokerEnabled,
-}
-
 export {
   decryptOAuthAuthorizationCode,
   decryptOAuthAuthorizationPkceVerifier,
   receiveOAuthAuthorizationCallback,
 } from './authorization-callback.mts'
 
-export async function beginOAuthAuthorization(
-  options: {
-    provider: BrokerOAuthProvider
-    purpose: BrokerPurpose
-    callbackMode: BrokerCallbackMode
-    completionProofChallenge?: string
-    currentUserId?: string
-    reAuthToken?: string
-    deviceId: string
-    sessionId: string
-    expectedOrigin: string
-  },
-  dependencies: Partial<BeginOAuthAuthorizationDependencies> = {},
-): Promise<BeginOAuthAuthorizationResult> {
+export async function beginOAuthAuthorization(options: {
+  provider: BrokerOAuthProvider
+  purpose: BrokerPurpose
+  callbackMode: BrokerCallbackMode
+  completionProofChallenge?: string
+  currentUserId?: string
+  reAuthToken?: string
+  deviceId: string
+  sessionId: string
+  expectedOrigin: string
+}): Promise<BeginOAuthAuthorizationResult> {
   assertBeginOwnership(options.purpose, options.currentUserId)
   assertCompletionProofChallenge(options.callbackMode, options.completionProofChallenge)
   await using query = await beginTransaction()
@@ -73,19 +58,14 @@ export async function beginOAuthAuthorization(
     await assertFreshReAuth(options.currentUserId!, session, options.reAuthToken, query)
   }
 
-  const isProviderEnabled =
-    dependencies.isProviderEnabled ?? defaultBeginDependencies.isProviderEnabled
   const enabled =
     options.purpose === 're_auth'
-      ? (dependencies.isReAuthProviderEnabled ?? defaultBeginDependencies.isReAuthProviderEnabled)(
-          options.provider,
-        )
-      : isProviderEnabled(options.provider, options.callbackMode)
+      ? isOAuthReAuthBrokerEnabled(options.provider)
+      : isOAuthAuthorizationBrokerEnabled(options.provider, options.callbackMode)
   if (!enabled) {
     throw createHttpError(404, 'OAuth authorization broker is unavailable')
   }
-  const getClientId = dependencies.getClientId ?? defaultBeginDependencies.getClientId
-  const clientId = getClientId(options.provider)
+  const clientId = getProviderClientId(options.provider)
 
   const id = uuidv7()
   const state = randomBytes(32).toString('base64url')

@@ -1,23 +1,33 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
-import {
+import { afterAll, describe, expect, it, onTestFinished, vi } from 'vitest'
+
+vi.stubEnv('FACEBOOK_APP_ID', 'synthetic-begin-facebook-app')
+vi.stubEnv('FACEBOOK_APP_SECRET', 'synthetic-begin-facebook-secret')
+vi.stubEnv('GITHUB_CLIENT_ID', 'synthetic-begin-github-client')
+vi.stubEnv('GITHUB_CLIENT_SECRET', 'synthetic-begin-github-secret')
+vi.stubEnv('GOOGLE_CLIENT_ID', 'synthetic-begin-google-client')
+vi.stubEnv('GOOGLE_CLIENT_SECRET', 'synthetic-begin-google-secret')
+vi.resetModules()
+const {
   deleteTestOAuthAuthorizationFixtures,
   getTestOAuthAuthorization,
   insertTestOAuthAuthorization,
-} from '@voucha/test-helpers/entities/oauth-authorizations'
-import {
-  closeScopedDynamicConfigContext,
-  overrideDynamicConfigFieldsForTest,
-} from '@voucha/test-helpers/dynamic-config'
-import { beginOAuthAuthorization } from '../authorization-broker.mts'
-import { oauthAuthorizationBrokerConfig } from '../broker-config.mts'
+} = await import('@voucha/test-helpers/entities/oauth-authorizations')
+const { closeScopedDynamicConfigContext, overrideDynamicConfigFieldsForTest } =
+  await import('@voucha/test-helpers/dynamic-config')
+const { beginOAuthAuthorization } = await import('../authorization-broker.mts')
+const { oauthAuthorizationBrokerConfig } = await import('../broker-config.mts')
 
 describe('OAuth authorization broker begin', () => {
+  afterAll(() => vi.unstubAllEnvs())
+
   it('begins enabled web and native authorizations with strict ownership and proof rules', async () => {
     const cleanup = registerCleanup()
+    await oauthAuthorizationBrokerConfig.waitForInitialization()
     overrideDynamicConfigFieldsForTest(oauthAuthorizationBrokerConfig, {
       facebook_web_enabled: true,
       facebook_native_enabled: true,
+      google_native_enabled: true,
     })
     registerConfigCleanup()
 
@@ -65,51 +75,41 @@ describe('OAuth authorization broker begin', () => {
       }),
     ).rejects.toMatchObject({ status: 422 })
 
-    const result = await beginOAuthAuthorization(
-      {
-        provider: 'facebook',
-        purpose: 'authenticate',
-        callbackMode: 'native',
-        completionProofChallenge: 'A'.repeat(43),
-        deviceId: randomUUID(),
-        sessionId: randomUUID(),
-        expectedOrigin: 'https://example.com/path',
-      },
-      {
-        getClientId: provider => `test-${provider}-client`,
-        isProviderEnabled: () => true,
-      },
-    )
+    const result = await beginOAuthAuthorization({
+      provider: 'facebook',
+      purpose: 'authenticate',
+      callbackMode: 'native',
+      completionProofChallenge: 'A'.repeat(43),
+      deviceId: randomUUID(),
+      sessionId: randomUUID(),
+      expectedOrigin: 'https://example.com/path',
+    })
     cleanup.authorizationIds.push(result.flow_id)
 
     expect(result.expires_at).toEqual(expect.any(String))
     const redirect = new URL(result.redirect_url)
+    expect(redirect.searchParams.get('client_id')).toBe('synthetic-begin-facebook-app')
     expect(redirect.searchParams.get('redirect_uri')).toBe(
       'https://example.com/auth/callback/facebook/broker',
     )
     expect(redirect.searchParams.get('state')).toEqual(expect.any(String))
     expect(await getTestOAuthAuthorization(result.flow_id)).toMatchObject({ status: 'pending' })
 
-    const google = await beginOAuthAuthorization(
-      {
-        provider: 'google',
-        purpose: 'authenticate',
-        callbackMode: 'native',
-        completionProofChallenge: 'B'.repeat(43),
-        deviceId: randomUUID(),
-        sessionId: randomUUID(),
-        expectedOrigin: 'https://example.com',
-      },
-      {
-        getClientId: provider => `test-${provider}-client`,
-        isProviderEnabled: () => true,
-      },
-    )
+    const google = await beginOAuthAuthorization({
+      provider: 'google',
+      purpose: 'authenticate',
+      callbackMode: 'native',
+      completionProofChallenge: 'B'.repeat(43),
+      deviceId: randomUUID(),
+      sessionId: randomUUID(),
+      expectedOrigin: 'https://example.com',
+    })
     cleanup.authorizationIds.push(google.flow_id)
     const googleRedirect = new URL(google.redirect_url)
     expect(googleRedirect.origin + googleRedirect.pathname).toBe(
       'https://accounts.google.com/o/oauth2/v2/auth',
     )
+    expect(googleRedirect.searchParams.get('client_id')).toBe('synthetic-begin-google-client')
     expect(googleRedirect.searchParams.get('code_challenge_method')).toBe('S256')
     expect(await getTestOAuthAuthorization(google.flow_id)).toMatchObject({
       status: 'pending',
@@ -138,20 +138,14 @@ describe('OAuth authorization broker begin', () => {
     cleanup.authorizationIds.push(existingFlowId)
 
     await expect(
-      beginOAuthAuthorization(
-        {
-          provider: 'github',
-          purpose: 'authenticate',
-          callbackMode: 'web',
-          deviceId,
-          sessionId,
-          expectedOrigin: 'https://example.com',
-        },
-        {
-          getClientId: () => 'test-github-client',
-          isProviderEnabled: () => false,
-        },
-      ),
+      beginOAuthAuthorization({
+        provider: 'github',
+        purpose: 'authenticate',
+        callbackMode: 'web',
+        deviceId,
+        sessionId,
+        expectedOrigin: 'https://example.com',
+      }),
     ).rejects.toMatchObject({ status: 404 })
 
     expect(await getTestOAuthAuthorization(existingFlowId)).toMatchObject({ status: 'pending' })
@@ -168,7 +162,7 @@ describe('OAuth authorization broker begin', () => {
       sessionId,
     })
     cleanup.authorizationIds.push(previousFlowId)
-    enableWebBrokerForTest()
+    await enableWebBrokerForTest()
 
     const replacement = await beginTestWebAuthentication(deviceId, sessionId)
     cleanup.authorizationIds.push(replacement.flow_id)
@@ -186,7 +180,7 @@ describe('OAuth authorization broker begin', () => {
     const cleanup = registerCleanup()
     const deviceId = randomUUID()
     const sessionId = randomUUID()
-    enableWebBrokerForTest()
+    await enableWebBrokerForTest()
 
     const results = await Promise.all([
       beginTestWebAuthentication(deviceId, sessionId),
@@ -210,7 +204,8 @@ function registerCleanup(): { authorizationIds: string[] } {
   return cleanup
 }
 
-function enableWebBrokerForTest(): void {
+async function enableWebBrokerForTest(): Promise<void> {
+  await oauthAuthorizationBrokerConfig.waitForInitialization()
   overrideDynamicConfigFieldsForTest(oauthAuthorizationBrokerConfig, {
     github_web_enabled: true,
   })
@@ -224,18 +219,12 @@ function registerConfigCleanup(): void {
 }
 
 function beginTestWebAuthentication(deviceId: string, sessionId: string) {
-  return beginOAuthAuthorization(
-    {
-      provider: 'github',
-      purpose: 'authenticate',
-      callbackMode: 'web',
-      deviceId,
-      sessionId,
-      expectedOrigin: 'https://example.com',
-    },
-    {
-      getClientId: provider => `test-${provider}-client`,
-      isProviderEnabled: () => true,
-    },
-  )
+  return beginOAuthAuthorization({
+    provider: 'github',
+    purpose: 'authenticate',
+    callbackMode: 'web',
+    deviceId,
+    sessionId,
+    expectedOrigin: 'https://example.com',
+  })
 }
