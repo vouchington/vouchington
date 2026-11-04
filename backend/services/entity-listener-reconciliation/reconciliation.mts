@@ -44,13 +44,11 @@ export async function* streamEntityReconciliationCandidateBatches(
         : {}),
       ...(row.entity_type === 'community' &&
       typeof row.details?.xmin === 'string' &&
-      typeof row.details.updatedAt === 'string' &&
-      typeof row.details.minimumReplayLsn === 'string'
+      typeof row.details.updatedAt === 'string'
         ? {
             communityInvalidation: {
               xmin: row.details.xmin,
               updatedAt: row.details.updatedAt,
-              minimumReplayLsn: row.details.minimumReplayLsn,
               upperBoundMembershipId:
                 typeof row.details.upperBoundMembershipId === 'string'
                   ? row.details.upperBoundMembershipId

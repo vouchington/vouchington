@@ -56,7 +56,6 @@ export type ReconcileEntityData = {
   communityInvalidation?: {
     xmin: string
     updatedAt: string
-    minimumReplayLsn: string
     upperBoundMembershipId: string | null
   }
 }

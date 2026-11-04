@@ -95,8 +95,6 @@ export function streamEntityReconciliationRows(
           ORDER BY updated_at, id::text LIMIT ${options.limits.maxRows + 1})
         SELECT 'community', community.id::text, floor(extract(epoch FROM community.updated_at) * 1000000)::text, NULL::text, jsonb_build_object(
             'xmin', community.row_xmin, 'updatedAt', community.updated_at::text,
-            'minimumReplayLsn', CASE WHEN current_setting('transaction_read_only') = 'off' THEN pg_current_wal_insert_lsn()::text
-              WHEN pg_is_in_recovery() THEN pg_last_wal_replay_lsn()::text ELSE '0/0' END,
             'upperBoundMembershipId', (
               SELECT member.id FROM community_members member
               WHERE member.community_id = community.id AND member.removed_at IS NULL

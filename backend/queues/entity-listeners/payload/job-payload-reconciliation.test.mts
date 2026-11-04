@@ -32,7 +32,7 @@ describe('reconciliation continuation contract', () => {
       parseEntityJob('reconcileEntity', { ...candidate, createdInWindow: 'yes' }),
     ).toThrow(/createdInWindow must be a boolean/)
   })
-  it('carries the community invalidation generation and replica barrier', () => {
+  it('carries the community invalidation generation and upper bound', () => {
     const candidate = {
       entityType: 'community',
       entityId: 'synthetic-community',
@@ -40,7 +40,6 @@ describe('reconciliation continuation contract', () => {
       communityInvalidation: {
         xmin: '42',
         updatedAt: '2026-07-01 00:00:00.000001+00',
-        minimumReplayLsn: '0/16B6C50',
         upperBoundMembershipId: '00000000-0000-7000-8000-000000000001',
       },
     }
@@ -58,7 +57,6 @@ describe('reconciliation continuation contract', () => {
     const missingUpperBound = {
       xmin: candidate.communityInvalidation.xmin,
       updatedAt: candidate.communityInvalidation.updatedAt,
-      minimumReplayLsn: candidate.communityInvalidation.minimumReplayLsn,
     }
     expect(() =>
       parseEntityJob('reconcileEntity', {
