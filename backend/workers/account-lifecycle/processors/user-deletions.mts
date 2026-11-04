@@ -5,10 +5,6 @@ import {
 import { claimRecoverableUserDeletions, processUserDeletionBatch } from '@services/user-deletions'
 import { processUserDeletionPhaseBatch } from '@services/users/delete-phases'
 
-type RecoverUserDeletionsDependencies = {
-  claimRecoverableUserDeletions: typeof claimRecoverableUserDeletions
-}
-
 export async function processUserDeletion(
   requestId: string,
   processingAttemptId: string,
@@ -24,10 +20,10 @@ export async function processUserDeletion(
 }
 
 export async function recoverUserDeletions(
-  dependencies?: Partial<RecoverUserDeletionsDependencies>,
+  requestIds?: readonly string[],
+  batchSize?: number,
 ): Promise<{ enqueued: number }> {
-  const claim = dependencies?.claimRecoverableUserDeletions ?? claimRecoverableUserDeletions
-  const requests = await claim()
+  const requests = await claimRecoverableUserDeletions(requestIds, batchSize)
   if (requests.length > 0) await enqueueOrReactivateBulkUserDeletions(requests)
   return { enqueued: requests.length }
 }

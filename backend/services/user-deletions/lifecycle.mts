@@ -49,6 +49,7 @@ export async function renewUserDeletionAttempt(
 /** `requestIds` limits the claim to those requests, so a test can own the rows it recovers. */
 export async function claimRecoverableUserDeletions(
   requestIds?: readonly string[],
+  batchSize = getUserDeletionsWorkLimit('lifecycle_recovery_batch_size'),
 ): Promise<UserDeletionAttempt[]> {
   const USER_DELETIONS_DISPATCH_TIMEOUT_MINUTES = getUserDeletionsWorkLimit(
     'dispatch_timeout_minutes',
@@ -56,7 +57,6 @@ export async function claimRecoverableUserDeletions(
   const USER_DELETIONS_PROCESSING_TIMEOUT_MINUTES = getUserDeletionsWorkLimit(
     'processing_timeout_minutes',
   )
-  const WORK_PAGE_SIZE = getUserDeletionsWorkLimit('lifecycle_recovery_batch_size')
   const { rows } = await write(sql`/* claimRecoverableUserDeletions */
     WITH candidates AS (
       SELECT request.id
@@ -68,7 +68,7 @@ export async function claimRecoverableUserDeletions(
           OR request.processing_started_at < NOW() - ${USER_DELETIONS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
         )
       ORDER BY request.id
-      LIMIT ${WORK_PAGE_SIZE}
+      LIMIT ${batchSize}
       FOR UPDATE SKIP LOCKED
     )
     UPDATE user_deletion_requests request
