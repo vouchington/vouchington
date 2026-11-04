@@ -3,10 +3,7 @@ import { getConfiguredOAuthProviders } from '@services/oauth-accounts/configurat
 import type { OAuthProvider } from './providers.mts'
 
 /** Each provider has at most one linked account for this user; the result is bounded by providers. */
-export async function getProviderReAuthMethods(
-  currentUserId: string,
-  configuredProviders: readonly OAuthProvider[] = getConfiguredOAuthProviders(),
-): Promise<OAuthProvider[]> {
+export async function getProviderReAuthMethods(currentUserId: string): Promise<OAuthProvider[]> {
   const { rows } = await read<{ provider: OAuthProvider }>(
     `/* getProviderReAuthMethods */ SELECT provider FROM (
        SELECT 'apple' AS provider FROM apple_accounts WHERE user_id = $1
@@ -20,5 +17,7 @@ export async function getProviderReAuthMethods(
     [currentUserId],
   )
   // Reauthentication uses configured providers without enabling ordinary login/link rollout modes.
-  return configuredProviders.filter(provider => rows.some(row => row.provider === provider))
+  return getConfiguredOAuthProviders().filter(provider =>
+    rows.some(row => row.provider === provider),
+  )
 }

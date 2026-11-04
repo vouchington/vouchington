@@ -72,11 +72,8 @@ export function isOAuthAuthorizationBrokerEnabled(
 }
 
 /** Apple and Google use their nonce-bound SDK assertion path for fresh reauthentication. */
-export function isOAuthReAuthBrokerEnabled(
-  provider: BrokerOAuthProvider,
-  configuredProviders: readonly OAuthProvider[] = getConfiguredOAuthProviders(),
-): boolean {
-  return provider !== 'google' && configuredProviders.includes(provider)
+export function isOAuthReAuthBrokerEnabled(provider: BrokerOAuthProvider): boolean {
+  return provider !== 'google' && getConfiguredOAuthProviders().includes(provider)
 }
 
 export function assertBrokerOAuthProvider(value: string): BrokerOAuthProvider {
