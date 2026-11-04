@@ -45,6 +45,7 @@ _none_
 
 - `community_members_pkey`: `CREATE UNIQUE INDEX community_members_pkey ON public.community_members USING btree (id)`
 - `idx_community_members__active_community_id_id`: `CREATE INDEX idx_community_members__active_community_id_id ON public.community_members USING btree (community_id, id) WHERE (removed_at IS NULL)`
+- `idx_community_members__active_moderators`: `CREATE INDEX idx_community_members__active_moderators ON public.community_members USING btree (community_id, user_id) WHERE ((removed_at IS NULL) AND (role = ANY (ARRAY['owner'::community_member_roles, 'moderator'::community_member_roles])))`
 - `idx_community_members__community_id`: `CREATE INDEX idx_community_members__community_id ON public.community_members USING btree (community_id)`
 - `idx_community_members__departed`: `CREATE INDEX idx_community_members__departed ON public.community_members USING btree (community_id, removed_at) WHERE (removed_at IS NOT NULL)`
 - `idx_community_members__moderator_community_id`: `CREATE INDEX idx_community_members__moderator_community_id ON public.community_members USING btree (community_id, id) WHERE ((role = 'moderator'::community_member_roles) AND (removed_at IS NULL))`
