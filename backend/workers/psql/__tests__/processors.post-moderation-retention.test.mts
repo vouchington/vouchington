@@ -8,6 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import {
   blockPostModerationRetentionFixtureVersions,
+  enqueuePostModerationRetentionFixtureWork,
   reservePostModerationRetentionPolicyCursor,
   setPostModerationRetentionPolicyCursor,
   createPostModerationRetentionContinuationFixture,
@@ -114,6 +115,12 @@ describe('post moderation retention continuation', () => {
     const restoreCursor = await reservePostModerationRetentionPolicyCursor()
     onTestFinished(restoreCursor)
     const fixture = await createPostModerationRetentionContinuationFixture()
+    const cleanupNeighborWork = await enqueuePostModerationRetentionFixtureWork(
+      fixture.neighbor.postId,
+    )
+    onTestFinished(cleanupNeighborWork)
+    const neighborWorkBefore = await getTestPostModerationPostWork(fixture.neighbor.postId)
+    expect(neighborWorkBefore).not.toBeNull()
     const oldIds = fixture.owned.versionIds.slice(0, 2)
     await blockPostModerationRetentionFixtureVersions([...oldIds, fixture.neighbor.versionIds[0]!])
     const neighborBefore = await getTestPostModerationVersionMarkers(
@@ -143,6 +150,7 @@ describe('post moderation retention continuation', () => {
     expect(initialized).toMatchObject({
       postModerationLedger: { deletedVersions: 0, hasMore: false },
     })
+    expect(await getTestPostModerationPostWork(fixture.neighbor.postId)).toEqual(neighborWorkBefore)
     expect((await getTestPostModerationPolicyRevisionCursor())?.observedRevision).not.toBeNull()
     await setPostModerationRetentionPolicyCursor('test-policy-before-current')
     const queued = await processPsql('dataRetentionCleanup', {}, undefined, initialJobId, {
@@ -156,7 +164,7 @@ describe('post moderation retention continuation', () => {
     })
     expect(queued).toMatchObject({ postModerationLedger: { deletedVersions: 0, hasMore: true } })
     expect(await getTestPostModerationPostWork(fixture.owned.postId)).not.toBeNull()
-    expect(await getTestPostModerationPostWork(fixture.neighbor.postId)).toBeNull()
+    expect(await getTestPostModerationPostWork(fixture.neighbor.postId)).toEqual(neighborWorkBefore)
     const first = await psql.getJob(ids[0]!)
     const advanced = await processPsql(
       'dataRetentionCleanup',
@@ -182,6 +190,6 @@ describe('post moderation retention continuation', () => {
     expect(await getTestPostModerationVersionMarkers(fixture.neighbor.versionIds[0]!)).toEqual(
       neighborBefore,
     )
-    expect(await getTestPostModerationPostWork(fixture.neighbor.postId)).toBeNull()
+    expect(await getTestPostModerationPostWork(fixture.neighbor.postId)).toEqual(neighborWorkBefore)
   })
 })

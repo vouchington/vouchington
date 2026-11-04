@@ -110,3 +110,12 @@ export async function blockPostModerationRetentionFixtureVersions(ids: string[])
     UPDATE post_moderation_versions SET retention_due_at = NULL,
       retention_hash_blocked_at = CURRENT_TIMESTAMP WHERE id = ANY(${ids}::uuid[])`)
 }
+
+export async function enqueuePostModerationRetentionFixtureWork(postId: string) {
+  await write(sql`/* enqueuePostModerationRetentionFixtureWork */
+    SELECT fn_create_post_moderation_retention_post_work_item(${postId}::uuid)`)
+  return async () => {
+    await write(sql`/* cleanupPostModerationRetentionFixtureWork */
+      DELETE FROM post_moderation_retention_post_work_items WHERE post_id = ${postId}::uuid`)
+  }
+}
