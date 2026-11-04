@@ -16,7 +16,7 @@ import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-
 import type { PostSearchRow } from './get-ids-types.mts'
 
 /** Window searched when the caller sends no time range, for every sort. */
-export const DEFAULT_POST_SEARCH_TIME_RANGE = '1m'
+const DEFAULT_POST_SEARCH_TIME_RANGE = '1m'
 
 type PostSearchResponse = {
   results: PostSearchResult[]
