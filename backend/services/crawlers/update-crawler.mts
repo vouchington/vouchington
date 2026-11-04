@@ -17,7 +17,6 @@ export const updateCrawler = async (
   updater: PrivateUser,
   crawlerId: string,
   updates: UpdateCrawlerUpdates,
-  options: { query?: TransactionQuery } = {},
 ): Promise<Crawler> => {
   assert(crawlerId, 422, 'Crawler ID is required')
   if (!isUUID(crawlerId)) throw createError(422, `Invalid crawler ID: ${crawlerId}`)
@@ -35,12 +34,12 @@ export const updateCrawler = async (
     updates.referral_program_id !== undefined
 
   if (!hasUpdates) {
-    const crawler = await getCrawlerById(crawlerId, { query: options.query })
+    const crawler = await getCrawlerById(crawlerId)
     if (!crawler) throw createError(404, `Crawler not found: ${crawlerId}`)
     return crawler
   }
 
-  return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
+  return runWithTransaction(undefined, async (transaction: TransactionQuery) => {
     let priorReferralProgramId: string | null = null
     if (updates.referral_program_id !== undefined) {
       const prior = await transaction<{ referral_program_topic_id: string | null }>(

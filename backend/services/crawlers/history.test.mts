@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestUrlHostname } from '@voucha/test-helpers'
 import { insertTestReferralProgram } from '@voucha/test-helpers/entities/cards'
-import {
-  readStaffActionHistory,
-  withRejectedStaffActionHistory,
-} from '@voucha/test-helpers/staff-action-history'
+import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { readStaffEditorialRows } from '@voucha/test-helpers/staff-editorial-history'
 import { createCrawler } from './create-crawler.mts'
 import { updateCrawler } from './update-crawler.mts'
@@ -62,17 +60,20 @@ describe('crawlers staff history', () => {
           : await createCrawler(actor, { hostname_id: hostnameId, crawler_type: 'fetch' })
       const before = await readStaffEditorialRows(actor.id)
       const history = await readStaffActionHistory(actor.id)
-      await expect(
-        withRejectedStaffActionHistory(async query => {
-          if (action === 'create')
-            return createCrawler(
-              actor,
-              { hostname_id: hostnameId, crawler_type: 'fetch' },
-              { query },
-            )
-          return updateCrawler(actor, crawler!.id, { description: 'Changed' }, { query })
-        }),
-      ).rejects.toThrow('staff history rejected')
+      const restore = rejectPostgresWriteForTest(
+        '/* recordModeratorAction',
+        new Error('staff history rejected for test'),
+        values => values.some(value => typeof value === 'string' && value.includes(actor.id)),
+      )
+      try {
+        await expect(
+          action === 'create'
+            ? createCrawler(actor, { hostname_id: hostnameId, crawler_type: 'fetch' })
+            : updateCrawler(actor, crawler!.id, { description: 'Changed' }),
+        ).rejects.toThrow('staff history rejected')
+      } finally {
+        restore()
+      }
       expect(await readStaffEditorialRows(actor.id)).toEqual(before)
       expect(await readStaffActionHistory(actor.id)).toEqual(history)
     },
