@@ -107,11 +107,15 @@ describe('processReconcileCopyrightActionIntents', () => {
     const owned = await createCopyrightActionSweepSuspended()
     const neighbor = await createCopyrightActionSweepSuspended()
     await expect(
-      processReconcileCopyrightActionIntents({ pending: ['suspended'] }, [owned], 1),
+      processReconcileCopyrightActionIntents(
+        { evaluatedAt: '2030-01-02T03:04:05.000Z', pending: ['suspended'] },
+        [owned],
+        1,
+      ),
     ).resolves.toEqual({ enqueued: 0, hasMore: false })
-    expect(
-      (await getCopyrightNoticePrivateAggregate(owned))?.restrictions[0]?.human_review_action,
-    ).toBe('reverse')
+    const restriction = (await getCopyrightNoticePrivateAggregate(owned))?.restrictions[0]
+    expect(restriction?.human_review_action).toBe('reverse')
+    expect(restriction?.human_reviewed_at).toEqual(new Date('2030-01-02T03:04:05.000Z'))
     expect(
       (await getCopyrightNoticePrivateAggregate(neighbor))?.restrictions[0]?.human_review_action,
     ).toBeNull()

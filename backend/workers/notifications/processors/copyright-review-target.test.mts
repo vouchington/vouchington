@@ -26,6 +26,11 @@ describe('processCheckCopyrightReviewTarget', () => {
     onTestFinished(overrideDynamicConfigFieldsForTest(copyrightConfig, { reviewTargetMinutes: 0 }))
     const fixture = await createCopyrightNoticeSchemaFixture()
     const excluded = await createCopyrightNoticeSchemaFixture()
+    await insertUnreviewedCopyrightSubmission({
+      noticeId: fixture.noticeId,
+      kind: 'appeal',
+      receivedAt: new Date('2026-07-01T00:00:00.000Z'),
+    })
     await insertOpenCopyrightDeadline({
       noticeId: excluded.noticeId,
       actorUserId: excluded.actorUserId,
