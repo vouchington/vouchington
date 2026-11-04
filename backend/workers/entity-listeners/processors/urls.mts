@@ -1,3 +1,4 @@
+import { enqueueMissingHackerNewsLookups } from '@services/urls/hacker-news-lookup-enqueue'
 import { getUrlById } from '@services/urls/get'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import { computeParentPath } from '@ts-shared/utils/urls'
@@ -9,6 +10,8 @@ export const processUrlCreated = async (
 ) => {
   const url = await getUrlById(id, options)
   if (!url) return
+
+  await enqueueMissingHackerNewsLookups([id])
 
   if (url.hostname.is_blocked || !url.hostname.is_crawlable) return
 

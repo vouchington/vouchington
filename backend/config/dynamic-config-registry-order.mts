@@ -34,6 +34,7 @@ export const REGISTRY_ORDER = [
   'articles-work-config',
   'prioritized-referral-links-work-config',
   'hacker-news-work-config',
+  'hacker-news-queue-config',
   'pagination-config',
   'moderation-analytics-work-config',
   'post-clearance-work-config',

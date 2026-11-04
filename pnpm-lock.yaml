@@ -6261,6 +6261,9 @@ importers:
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../../queues/find-your-friends
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
@@ -11742,6 +11745,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
       '@services/crawlers':
         specifier: workspace:^
         version: link:../crawlers
@@ -11772,6 +11778,12 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/utils':
+        specifier: ^0.11.1
+        version: 0.11.1
+      htmlparser2:
+        specifier: ^10.1.0
+        version: 10.1.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -14246,6 +14258,16 @@ importers:
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@queues/heartbeat':
+        specifier: workspace:^
+        version: link:../../queues/heartbeat
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+      '@workers/heartbeat':
+        specifier: workspace:^
+        version: link:../heartbeat
 
   backend/workers/heartbeat:
     dependencies:

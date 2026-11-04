@@ -22,5 +22,10 @@
     "@queues/hacker-news": "workspace:^",
     "@services/urls": "workspace:^",
     "glide-mq": "^0.20.0"
+  },
+  "devDependencies": {
+    "@queues/heartbeat": "workspace:^",
+    "@voucha/test-helpers": "workspace:^",
+    "@workers/heartbeat": "workspace:^"
   }
 }

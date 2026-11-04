@@ -1,3 +1,4 @@
+import { enqueueMissingHackerNewsLookups } from './hacker-news-lookup-enqueue.mts'
 import { write, beginTransaction } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import {
@@ -125,7 +126,9 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
 
   // A concurrent canonical update can leave a two-hop chain after flattening. Read the primary
   // after commit; lookup workers must resolve once more when they execute a queued lookup.
-  return await resolveCanonicalTarget(urlId, write)
+  const resolvedId = await resolveCanonicalTarget(urlId, write)
+  await enqueueMissingHackerNewsLookups([resolvedId])
+  return resolvedId
 }
 
 async function resolveCanonicalTarget(urlId: string, query: QueryExecutor): Promise<string> {

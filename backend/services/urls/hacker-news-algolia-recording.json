@@ -1,0 +1,722 @@
+{
+  "recorded_at": "2026-11-03",
+  "provider": "https://hn.algolia.com/api/v1/search",
+  "query": "https://www.sqlite.org/whentouse.html",
+  "hits_per_page": 10,
+  "responses": {
+    "stories": {
+      "exhaustive": {
+        "nbHits": false,
+        "typo": false
+      },
+      "exhaustiveNbHits": false,
+      "exhaustiveTypo": false,
+      "hits": [
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "ftclausen"
+            },
+            "title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "Appropriate Uses for SQLite"
+            },
+            "url": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "https://<em>sqlite.org</em>/<em>whentouse.html</em>"
+            }
+          },
+          "_tags": ["story", "author_ftclausen", "story_12578028"],
+          "author": "ftclausen",
+          "children": [
+            12578390, 12578422, 12578499, 12578509, 12578569, 12578615, 12578620, 12578622,
+            12578710, 12578727, 12578936, 12579016, 12579023, 12579089, 12579134, 12579345,
+            12579492, 12579515, 12579519, 12579604, 12580028, 12580086, 12580196, 12580203,
+            12580259, 12580260, 12580351, 12580352, 12580936, 12580998, 12581214, 12582032,
+            12582121, 12587228
+          ],
+          "created_at": "2016-09-25T23:27:39Z",
+          "created_at_i": 1474846059,
+          "num_comments": 254,
+          "objectID": "12578028",
+          "points": 413,
+          "story_id": 12578028,
+          "title": "Appropriate Uses for SQLite",
+          "updated_at": "2026-04-28T21:06:47Z",
+          "url": "https://sqlite.org/whentouse.html"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "tzhenghao"
+            },
+            "title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "Appropriate Uses for SQLite"
+            },
+            "url": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "https://<em>sqlite.org</em>/<em>whentouse.html</em>"
+            }
+          },
+          "_tags": ["story", "author_tzhenghao", "story_16356942"],
+          "author": "tzhenghao",
+          "children": [
+            16358099, 16358110, 16358207, 16358303, 16358461, 16358506, 16358525, 16358545,
+            16358678, 16358813, 16358850, 16359075, 16359465, 16359736, 16361590, 16361635,
+            16362064, 16362223, 16375102
+          ],
+          "created_at": "2018-02-12T06:26:07Z",
+          "created_at_i": 1518416767,
+          "num_comments": 150,
+          "objectID": "16356942",
+          "points": 359,
+          "story_id": 16356942,
+          "title": "Appropriate Uses for SQLite",
+          "updated_at": "2024-09-20T02:04:28Z",
+          "url": "https://sqlite.org/whentouse.html"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "ma2rten"
+            },
+            "title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "\"SQLite is not designed to replace Oracle. It is designed to replace fopen().\""
+            },
+            "url": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "http://www.<em>sqlite.org</em>/<em>whentouse.html</em>"
+            }
+          },
+          "_tags": ["story", "author_ma2rten", "story_2822983"],
+          "author": "ma2rten",
+          "children": [
+            2823611, 2823612, 2823792, 2823906, 2823948, 2823954, 2824039, 2824172, 2824295,
+            2824701, 2824774, 2828507
+          ],
+          "created_at": "2011-07-29T17:54:20Z",
+          "created_at_i": 1311962060,
+          "num_comments": 57,
+          "objectID": "2822983",
+          "points": 249,
+          "story_id": 2822983,
+          "title": "\"SQLite is not designed to replace Oracle. It is designed to replace fopen().\"",
+          "updated_at": "2024-09-19T17:51:06Z",
+          "url": "http://www.sqlite.org/whentouse.html"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "vince_refiti"
+            },
+            "story_text": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": ""
+            },
+            "title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "Appropriate Uses for SQLite"
+            },
+            "url": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "https://www.<em>sqlite.org</em>/<em>whentouse.html</em>"
+            }
+          },
+          "_tags": ["story", "author_vince_refiti", "story_9353080"],
+          "author": "vince_refiti",
+          "children": [
+            9353612, 9354530, 9354586, 9354589, 9354671, 9354726, 9355373, 9355700, 9357848
+          ],
+          "created_at": "2015-04-10T08:27:00Z",
+          "created_at_i": 1428654420,
+          "num_comments": 36,
+          "objectID": "9353080",
+          "points": 84,
+          "story_id": 9353080,
+          "story_text": "",
+          "title": "Appropriate Uses for SQLite",
+          "updated_at": "2024-09-19T21:48:06Z",
+          "url": "https://www.sqlite.org/whentouse.html"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "tosh"
+            },
+            "title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "Appropriate Uses for SQLite"
+            },
+            "url": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "https://www.<em>sqlite.org</em>/<em>whentouse.html</em>"
+            }
+          },
+          "_tags": ["story", "author_tosh", "story_41391722"],
+          "author": "tosh",
+          "created_at": "2024-08-29T15:20:38Z",
+          "created_at_i": 1724944838,
+          "num_comments": 0,
+          "objectID": "41391722",
+          "points": 14,
+          "story_id": 41391722,
+          "title": "Appropriate Uses for SQLite",
+          "updated_at": "2024-09-20T17:44:06Z",
+          "url": "https://www.sqlite.org/whentouse.html"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "reincoder"
+            },
+            "title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "Appropriate Uses for SQLite"
+            },
+            "url": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "https://www.<em>sqlite.org</em>/<em>whentouse.html</em>"
+            }
+          },
+          "_tags": ["story", "author_reincoder", "story_38256529"],
+          "author": "reincoder",
+          "created_at": "2023-11-13T22:57:15Z",
+          "created_at_i": 1699916235,
+          "num_comments": 0,
+          "objectID": "38256529",
+          "points": 6,
+          "story_id": 38256529,
+          "title": "Appropriate Uses for SQLite",
+          "updated_at": "2024-09-20T15:39:03Z",
+          "url": "https://www.sqlite.org/whentouse.html"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "whatisabcdefgh"
+            },
+            "title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "Appropriate Uses for SQLite"
+            },
+            "url": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "https://<em>sqlite.org</em>/<em>whentouse.html</em>"
+            }
+          },
+          "_tags": ["story", "author_whatisabcdefgh", "story_46367225"],
+          "author": "whatisabcdefgh",
+          "created_at": "2025-12-23T17:33:45Z",
+          "created_at_i": 1766511225,
+          "num_comments": 0,
+          "objectID": "46367225",
+          "points": 2,
+          "story_id": 46367225,
+          "title": "Appropriate Uses for SQLite",
+          "updated_at": "2026-03-05T23:17:12Z",
+          "url": "https://sqlite.org/whentouse.html"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "tosh"
+            },
+            "title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "Appropriate Uses for SQLite"
+            },
+            "url": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "https://www.<em>sqlite.org</em>/<em>whentouse.html</em>"
+            }
+          },
+          "_tags": ["story", "author_tosh", "story_17515494"],
+          "author": "tosh",
+          "created_at": "2018-07-12T15:22:44Z",
+          "created_at_i": 1531408964,
+          "num_comments": 0,
+          "objectID": "17515494",
+          "points": 1,
+          "story_id": 17515494,
+          "title": "Appropriate Uses for SQLite",
+          "updated_at": "2024-09-20T02:43:28Z",
+          "url": "https://www.sqlite.org/whentouse.html"
+        }
+      ],
+      "hitsPerPage": 10,
+      "nbHits": 8,
+      "nbPages": 1,
+      "page": 0,
+      "params": "query=sqlite.org%2Fwhentouse.html&tags=story&restrictSearchableAttributes=url&hitsPerPage=10&advancedSyntax=true&analyticsTags=backend",
+      "processingTimeMS": 15,
+      "processingTimingsMS": {
+        "_request": {
+          "queue": 104,
+          "roundTrip": 21
+        },
+        "fetch": {
+          "query": 13,
+          "total": 14
+        },
+        "total": 15
+      },
+      "query": "sqlite.org/whentouse.html",
+      "serverTimeMS": 120
+    },
+    "comments": {
+      "exhaustive": {
+        "nbHits": false,
+        "typo": false
+      },
+      "exhaustiveNbHits": false,
+      "exhaustiveTypo": false,
+      "hits": [
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "dr_zoidberg"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "It is indeed one of their use cases: <a href=\"https://www.sqlite.org/whentouse.html\" rel=\"nofollow\">https://www.<em>sqlite.org</em>/<em>whentouse.html</em></a>"
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "SQLite Release 3.8.11.1"
+            },
+            "story_url": {
+              "fullyHighlighted": false,
+              "matchLevel": "partial",
+              "matchedWords": ["sqlite", ".", "org"],
+              "value": "https://www.<em>sqlite.org</em>/releaselog/3_8_11_1.html"
+            }
+          },
+          "_tags": ["comment", "author_dr_zoidberg", "story_9975636"],
+          "author": "dr_zoidberg",
+          "comment_text": "It is indeed one of their use cases: <a href=\"https:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html\" rel=\"nofollow\">https:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html</a>",
+          "created_at": "2015-07-30T18:57:26Z",
+          "created_at_i": 1438282646,
+          "objectID": "9977143",
+          "parent_id": 9976000,
+          "story_id": 9975636,
+          "story_title": "SQLite Release 3.8.11.1",
+          "story_url": "https://www.sqlite.org/releaselog/3_8_11_1.html",
+          "updated_at": "2024-09-19T22:12:33Z"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "alexcasalboni"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "&quot;SQLite is not designed to compete with Oracle. SQLite is designed to compete with fopen().&quot;<p><a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http://www.<em>sqlite.org</em>/<em>whentouse.html</em></a><p>How about something towards the Cloud direction, like AWS RDS? MySQL, Oracle, SQL Server, PostgreSQL or Aurora might work better."
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "Isso \u2013 Open Source Alternative to Disqus"
+            },
+            "story_url": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "http://posativ.org/isso/"
+            }
+          },
+          "_tags": ["comment", "author_alexcasalboni", "story_8954424"],
+          "author": "alexcasalboni",
+          "comment_text": "&quot;SQLite is not designed to compete with Oracle. SQLite is designed to compete with fopen().&quot;<p><a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html</a><p>How about something towards the Cloud direction, like AWS RDS? MySQL, Oracle, SQL Server, PostgreSQL or Aurora might work better.",
+          "created_at": "2015-01-27T21:11:39Z",
+          "created_at_i": 1422393099,
+          "objectID": "8955934",
+          "parent_id": 8955808,
+          "points": null,
+          "story_id": 8954424,
+          "story_title": "Isso \u2013 Open Source Alternative to Disqus",
+          "story_url": "http://posativ.org/isso/",
+          "updated_at": "2023-09-06T23:22:34Z"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "ghshephard"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "From: <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http://www.<em>sqlite.org</em>/<em>whentouse.html</em></a><p>SQLite is not designed to replace Oracle. It is designed to replace fopen()."
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "The Design Of SQLite4"
+            },
+            "story_url": {
+              "fullyHighlighted": false,
+              "matchLevel": "partial",
+              "matchedWords": ["sqlite", ".", "org"],
+              "value": "http://<em>sqlite.org</em>/src4/doc/trunk/www/design.wiki"
+            }
+          },
+          "_tags": ["comment", "author_ghshephard", "story_7797025"],
+          "author": "ghshephard",
+          "comment_text": "From: <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html</a><p>SQLite is not designed to replace Oracle. It is designed to replace fopen().",
+          "created_at": "2014-05-26T09:05:04Z",
+          "created_at_i": 1401095104,
+          "objectID": "7799144",
+          "parent_id": 7797458,
+          "story_id": 7797025,
+          "story_title": "The Design Of SQLite4",
+          "story_url": "http://sqlite.org/src4/doc/trunk/www/design.wiki",
+          "updated_at": "2024-09-19T20:50:31Z"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "daliusd"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "SQLite does not discourage using it for websites <a href=\"https://www.sqlite.org/whentouse.html\" rel=\"nofollow\">https://www.<em>sqlite.org</em>/<em>whentouse.html</em></a> . I use it for some low traffic web sites and I don't see any reason why I shouldn't. Benchmarking shows that my website can handle up to 400 req/s - that's not magic but it is far from my needs. As well it is convenient when memory usage of your web app is no more than 100Mb.<p>You should absolutely understand what you are doing but SQLite is good choice in many cases. Not everyone works on next Facebook."
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "SQLite vs MySQL vs PostgreSQL"
+            },
+            "story_url": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "https://www.digitalocean.com/community/articles/sqlite-vs-mysql-vs-postgresql-a-comparison-of-relational-database-management-systems"
+            }
+          },
+          "_tags": ["comment", "author_daliusd", "story_7432619"],
+          "author": "daliusd",
+          "children": [7434651],
+          "comment_text": "SQLite does not discourage using it for websites <a href=\"https://www.sqlite.org/whentouse.html\" rel=\"nofollow\">https:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html</a> . I use it for some low traffic web sites and I don&#x27;t see any reason why I shouldn&#x27;t. Benchmarking shows that my website can handle up to 400 req&#x2F;s - that&#x27;s not magic but it is far from my needs. As well it is convenient when memory usage of your web app is no more than 100Mb.<p>You should absolutely understand what you are doing but SQLite is good choice in many cases. Not everyone works on next Facebook.",
+          "created_at": "2014-03-20T07:08:41Z",
+          "created_at_i": 1395299321,
+          "objectID": "7434274",
+          "parent_id": 7434076,
+          "story_id": 7432619,
+          "story_title": "SQLite vs MySQL vs PostgreSQL",
+          "story_url": "https://www.digitalocean.com/community/articles/sqlite-vs-mysql-vs-postgresql-a-comparison-of-relational-database-management-systems",
+          "updated_at": "2024-09-19T20:33:44Z"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "rpedela"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "Yeah so I see two use cases for this:<p>1. A NoSQL database but with SQL as the API and some support for relations. This is quite nice because I have often found NoSQL APIs to be lacking in many aspects.<p>2. A set of fully relational databases that need to be managed and/or load balanced. This is a use case I have. If the system administration is significantly easier than the tools natively provided by Postgres, MySQL, etc, then I can see this being a valid use case. The use of SQLite does not concern me since it has legitimate downsides [1][2].<p>[1] <a href=\"http://www.sqlite.org/omitted.html\" rel=\"nofollow\">http://www.<em>sqlite.org</em>/omitted.html</a><p>[2] <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http://www.<em>sqlite.org</em>/<em>whentouse.html</em></a>"
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "ActorDB: A distributed SQL database with the scalability of a KV store"
+            },
+            "story_url": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "http://www.actordb.com/"
+            }
+          },
+          "_tags": ["comment", "author_rpedela", "story_7171317"],
+          "author": "rpedela",
+          "comment_text": "Yeah so I see two use cases for this:<p>1. A NoSQL database but with SQL as the API and some support for relations. This is quite nice because I have often found NoSQL APIs to be lacking in many aspects.<p>2. A set of fully relational databases that need to be managed and&#x2F;or load balanced. This is a use case I have. If the system administration is significantly easier than the tools natively provided by Postgres, MySQL, etc, then I can see this being a valid use case. The use of SQLite does not concern me since it has legitimate downsides [1][2].<p>[1] <a href=\"http://www.sqlite.org/omitted.html\" rel=\"nofollow\">http:&#x2F;&#x2F;www.sqlite.org&#x2F;omitted.html</a><p>[2] <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html</a>",
+          "created_at": "2014-02-03T18:28:13Z",
+          "created_at_i": 1391452093,
+          "objectID": "7172511",
+          "parent_id": 7172264,
+          "story_id": 7171317,
+          "story_title": "ActorDB: A distributed SQL database with the scalability of a KV store",
+          "story_url": "http://www.actordb.com/",
+          "updated_at": "2024-09-19T20:27:02Z"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "lsb"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "SQLite is targeted, actually, at specifically those people who would just use fopen() to store data: <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http://www.<em>sqlite.org</em>/<em>whentouse.html</em></a>"
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "The SQL Trap"
+            },
+            "story_url": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "http://petewarden.typepad.com/searchbrowser/2009/06/the-sql-trap.html"
+            }
+          },
+          "_tags": ["comment", "author_lsb", "story_669682"],
+          "author": "lsb",
+          "comment_text": "SQLite is targeted, actually, at specifically those people who would just use fopen() to store data: <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http://www.sqlite.org/whentouse.html</a>",
+          "created_at": "2009-06-23T03:29:33Z",
+          "created_at_i": 1245727773,
+          "objectID": "669817",
+          "parent_id": 669752,
+          "points": null,
+          "story_id": 669682,
+          "story_title": "The SQL Trap",
+          "story_url": "http://petewarden.typepad.com/searchbrowser/2009/06/the-sql-trap.html",
+          "updated_at": "2023-09-06T19:51:41Z"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "simias"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "I love SQLite but I don't think it's fair to compare it directly to other rdbms. As the official website itself puts it:<p>&quot;Another way to look at SQLite is this: SQLite is not designed to replace Oracle. It is designed to replace fopen().&quot;<p><a href=\"https://www.sqlite.org/whentouse.html\" rel=\"nofollow\">https://www.<em>sqlite.org</em>/<em>whentouse.html</em></a><p>There are very few instances where I end up in a position where I have to decide whether I need to use postgres or sqlite, they have very different use cases."
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "SQLite 3.8.0 Release with next-generation query planner"
+            },
+            "story_url": {
+              "fullyHighlighted": false,
+              "matchLevel": "partial",
+              "matchedWords": ["sqlite", ".", "org"],
+              "value": "https://www.<em>sqlite.org</em>/news.html?year=2013"
+            }
+          },
+          "_tags": ["comment", "author_simias", "story_6280554"],
+          "author": "simias",
+          "children": [6283630],
+          "comment_text": "I love SQLite but I don&#x27;t think it&#x27;s fair to compare it directly to other rdbms. As the official website itself puts it:<p>&quot;Another way to look at SQLite is this: SQLite is not designed to replace Oracle. It is designed to replace fopen().&quot;<p><a href=\"https://www.sqlite.org/whentouse.html\" rel=\"nofollow\">https:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html</a><p>There are very few instances where I end up in a position where I have to decide whether I need to use postgres or sqlite, they have very different use cases.",
+          "created_at": "2013-08-27T08:35:42Z",
+          "created_at_i": 1377592542,
+          "objectID": "6282205",
+          "parent_id": 6280966,
+          "story_id": 6280554,
+          "story_title": "SQLite 3.8.0 Release with next-generation query planner",
+          "story_url": "https://www.sqlite.org/news.html?year=2013",
+          "updated_at": "2024-09-19T19:55:49Z"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "pvnick"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "Again, I must offer a disclaimer that I only read a fraction of the total source code, but I would assume it would involve similar use-cases to sqlite [1]. For example, IIRC, the Firefox web browser uses (used?) sqlite for storage. However, reading over the list I just referenced, I must correct myself and say that for <i>most</i> websites, you would probably be ok in using it; however, this seems to be an embeddable replacement for mongodb, which is typically used for high-traffic environments anyway. I'm coming more from a background of high-traffic sites with large datasets, so I typically rely upon more tailored solutions, but I should be careful not to see everything through my own narrow perspective!<p>[1] <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http://www.<em>sqlite.org</em>/<em>whentouse.html</em></a>"
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "EJDB: Embedded JSON Database for C/C++, .Net, NodeJS, Python, Lua, Java, Ruby"
+            },
+            "story_url": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "http://ejdb.org/"
+            }
+          },
+          "_tags": ["comment", "author_pvnick", "story_6004420"],
+          "author": "pvnick",
+          "comment_text": "Again, I must offer a disclaimer that I only read a fraction of the total source code, but I would assume it would involve similar use-cases to sqlite [1]. For example, IIRC, the Firefox web browser uses (used?) sqlite for storage. However, reading over the list I just referenced, I must correct myself and say that for <i>most</i> websites, you would probably be ok in using it; however, this seems to be an embeddable replacement for mongodb, which is typically used for high-traffic environments anyway. I&#x27;m coming more from a background of high-traffic sites with large datasets, so I typically rely upon more tailored solutions, but I should be careful not to see everything through my own narrow perspective!<p>[1] <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html</a>",
+          "created_at": "2013-07-08T03:09:42Z",
+          "created_at_i": 1373252982,
+          "objectID": "6004930",
+          "parent_id": 6004887,
+          "story_id": 6004420,
+          "story_title": "EJDB: Embedded JSON Database for C/C++, .Net, NodeJS, Python, Lua, Java, Ruby",
+          "story_url": "http://ejdb.org/",
+          "updated_at": "2024-09-19T19:45:05Z"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "rogerbinns"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "Code is unlikely to be accepted upstream because it very rarely is (assuming you mean by the SQLite team).  They are very picky about code contributions and almost always implement themselves.  One part is legal - there has to be <i>very</i> clear lineage/authoring to the code, patent clearances etc.<p>The second part is that the actual code to implement any particular functionality or even a bug fix is relatively trivial.  There is far more effort and far more lines of code for testing: <a href=\"http://www.sqlite.org/testing.html\" rel=\"nofollow\">http://www.<em>sqlite.org</em>/testing.html</a> - and implementing code to enable the rigourous testing usually results in a different structure.<p>The third part would be conflicting with the existing goals:  <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http://www.<em>sqlite.org</em>/<em>whentouse.html</em></a><p>OTOH if the intention isn't to be part of the core then upstream doesn't matter and the code can be distributed in any way you deem fit."
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "The lack of proper \u201calter table\u201d support in SQLite"
+            },
+            "story_url": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "http://dustycloud.org/blog/sqlite-alter-pain/"
+            }
+          },
+          "_tags": ["comment", "author_rogerbinns", "story_5886898"],
+          "author": "rogerbinns",
+          "comment_text": "Code is unlikely to be accepted upstream because it very rarely is (assuming you mean by the SQLite team).  They are very picky about code contributions and almost always implement themselves.  One part is legal - there has to be <i>very</i> clear lineage&#x2F;authoring to the code, patent clearances etc.<p>The second part is that the actual code to implement any particular functionality or even a bug fix is relatively trivial.  There is far more effort and far more lines of code for testing: <a href=\"http:&#x2F;&#x2F;www.sqlite.org&#x2F;testing.html\" rel=\"nofollow\">http:&#x2F;&#x2F;www.sqlite.org&#x2F;testing.html</a> - and implementing code to enable the rigourous testing usually results in a different structure.<p>The third part would be conflicting with the existing goals:  <a href=\"http:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html\" rel=\"nofollow\">http:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html</a><p>OTOH if the intention isn&#x27;t to be part of the core then upstream doesn&#x27;t matter and the code can be distributed in any way you deem fit.",
+          "created_at": "2013-06-16T15:20:02Z",
+          "created_at_i": 1371396002,
+          "objectID": "5888703",
+          "parent_id": 5888475,
+          "story_id": 5886898,
+          "story_title": "The lack of proper \u201calter table\u201d support in SQLite",
+          "story_url": "http://dustycloud.org/blog/sqlite-alter-pain/",
+          "updated_at": "2024-09-19T19:42:51Z"
+        },
+        {
+          "_highlightResult": {
+            "author": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "rogerbinns"
+            },
+            "comment_text": {
+              "fullyHighlighted": false,
+              "matchLevel": "full",
+              "matchedWords": ["sqlite", ".", "org", "whentouse", ".", "html"],
+              "value": "SQLite make it clear when you could use it: <a href=\"http://www.sqlite.org/whentouse.html\" rel=\"nofollow\">http://www.<em>sqlite.org</em>/<em>whentouse.html</em></a><p>It is okay not use SQLite, and no one will be upset if a different database is used.  Every source file starts with a blessing!"
+            },
+            "story_title": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "The lack of proper \u201calter table\u201d support in SQLite"
+            },
+            "story_url": {
+              "matchLevel": "none",
+              "matchedWords": [],
+              "value": "http://dustycloud.org/blog/sqlite-alter-pain/"
+            }
+          },
+          "_tags": ["comment", "author_rogerbinns", "story_5886898"],
+          "author": "rogerbinns",
+          "comment_text": "SQLite make it clear when you could use it: <a href=\"http:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html\" rel=\"nofollow\">http:&#x2F;&#x2F;www.sqlite.org&#x2F;whentouse.html</a><p>It is okay not use SQLite, and no one will be upset if a different database is used.  Every source file starts with a blessing!",
+          "created_at": "2013-06-16T15:04:00Z",
+          "created_at_i": 1371395040,
+          "objectID": "5888652",
+          "parent_id": 5887969,
+          "story_id": 5886898,
+          "story_title": "The lack of proper \u201calter table\u201d support in SQLite",
+          "story_url": "http://dustycloud.org/blog/sqlite-alter-pain/",
+          "updated_at": "2024-09-19T19:42:51Z"
+        }
+      ],
+      "hitsPerPage": 10,
+      "nbHits": 148,
+      "nbPages": 15,
+      "page": 0,
+      "params": "query=sqlite.org%2Fwhentouse.html&tags=comment&restrictSearchableAttributes=comment_text&hitsPerPage=10&advancedSyntax=true&analyticsTags=backend",
+      "processingTimeMS": 161,
+      "processingTimingsMS": {
+        "_request": {
+          "queue": 188,
+          "roundTrip": 21
+        },
+        "afterFetch": {
+          "format": {
+            "highlighting": 1,
+            "total": 1
+          },
+          "merge": {
+            "mergeLoop": {
+              "prepareNextHit": 12,
+              "total": 12
+            },
+            "total": 12
+          },
+          "total": 12
+        },
+        "fetch": {
+          "query": 141,
+          "scanning": 5,
+          "total": 147
+        },
+        "total": 161
+      },
+      "query": "sqlite.org/whentouse.html",
+      "serverTimeMS": 351
+    }
+  },
+  "search_query": "sqlite.org/whentouse.html"
+}

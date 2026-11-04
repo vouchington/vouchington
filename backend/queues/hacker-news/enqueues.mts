@@ -30,7 +30,7 @@ export function enqueueHackerNewsLookups(urlIds: string[]): Promise<void> {
   })
 }
 
-export type HackerNewsLookupRefresh = { urlId: string; lookedUpAt: string; delay: number }
+export type HackerNewsLookupRefresh = { urlId: string; runAt: string }
 
 const enqueueRefreshBulk = createBulkEnqueueFunction({
   queue: hackerNewsQueue,
@@ -42,23 +42,21 @@ const enqueueRefreshBulk = createBulkEnqueueFunction({
     removeOnComplete: true,
     removeOnFail: true,
   },
-  buildJob: ({ urlId, lookedUpAt, delay }: HackerNewsLookupRefresh) => ({
+  buildJob: ({ urlId, runAt }: HackerNewsLookupRefresh) => ({
     data: { urlId },
     opts: {
-      jobId: `hacker-news-refresh__${urlId}__${Buffer.from(lookedUpAt).toString('base64url')}`,
-      delay,
+      jobId: `hacker-news-refresh__${urlId}__${Buffer.from(runAt).toString('base64url')}`,
+      delay: Math.max(0, new Date(runAt).getTime() - Date.now()),
     },
   }),
 })
 
-export function enqueueHackerNewsLookupRefreshes(
+export async function enqueueHackerNewsLookupRefreshes(
   refreshes: HackerNewsLookupRefresh[],
 ): Promise<void> {
-  return awaitReportedEnqueueAdmission(async () => {
-    const size = getHackerNewsEnqueueBatchSize()
-    for (let index = 0; index < refreshes.length; index += size) {
-      // oxlint-disable-next-line no-await-in-loop -- bound admission backpressure
-      await enqueueRefreshBulk(refreshes.slice(index, index + size))
-    }
-  })
+  const size = getHackerNewsEnqueueBatchSize()
+  for (let index = 0; index < refreshes.length; index += size) {
+    // oxlint-disable-next-line no-await-in-loop -- bound admission backpressure
+    await enqueueRefreshBulk(refreshes.slice(index, index + size))
+  }
 }

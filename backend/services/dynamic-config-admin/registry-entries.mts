@@ -1,6 +1,7 @@
 import { relationLimitsRegistryEntry } from './registry-relation-limits-entry.mts'
 import { sessionLimitsRegistryEntry } from './registry-session-limits-entry.mts'
 import { landingPageLimitsRegistryEntry } from './registry-landing-page-limits.mts'
+import { hackerNewsRegistryEntries } from './registry-hacker-news-entry.mts'
 import {
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
@@ -34,6 +35,7 @@ const unorderedRegistryEntries = [
   sessionLimitsRegistryEntry,
   relationLimitsRegistryEntry,
   landingPageLimitsRegistryEntry,
+  ...hackerNewsRegistryEntries,
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
   membershipPurchaseCollisionQueueRegistryEntry,

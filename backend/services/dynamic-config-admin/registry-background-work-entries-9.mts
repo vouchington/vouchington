@@ -39,6 +39,12 @@ export const backgroundWorkRegistryEntries9 = {
     label: 'Hacker News references',
     maxValues: hackerNewsWorkMaxValues,
     descriptions: {
+      lookup_batch_size: 'URL identities resolved per lookup admission statement.',
+      recent_age_days: 'URL age below which the recent refresh interval applies.',
+      middle_age_days: 'URL age below which the middle refresh interval applies.',
+      recent_refresh_hours: 'Interval between lookups for the newest URLs.',
+      middle_refresh_hours: 'Interval between lookups for URLs past the recent age window.',
+      older_refresh_hours: 'Interval between lookups for older URLs within retention.',
       hits_per_page: 'Hits requested from each Hacker News search page.',
       write_batch_size: 'Canonical URLs refreshed in one database transaction.',
       request_timeout_ms: 'Maximum time for one search request.',
