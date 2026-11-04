@@ -138,6 +138,7 @@ import {
   cleanupObsoleteAgentModerations,
   type AgentModerationCleanupContinuation,
   type AgentModerationCleanupResult,
+  type AgentModerationRetentionOptions,
 } from './cleanup-agent-moderations.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
@@ -147,18 +148,14 @@ export { cleanupTerminalNotificationPushIntents }
 export { cleanupOldPendingNotificationPushIntents }
 export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
 export { cleanupObsoleteAgentModerations }
+export type { AgentModerationRetentionOptions }
 
 export function runAgentModerationRetentionCleanupPage(
   limits: DataRetentionLimits,
   continuation: AgentModerationCleanupContinuation,
+  options: AgentModerationRetentionOptions = {},
 ): Promise<AgentModerationCleanupResult> {
-  return cleanupObsoleteAgentModerations(
-    applyRetentionLimits<{
-      batchSize?: number
-      maxBatches?: number
-      continuation: AgentModerationCleanupContinuation
-    }>(limits, { continuation }),
-  )
+  return cleanupObsoleteAgentModerations(applyRetentionLimits(limits, { ...options, continuation }))
 }
 
 type CleanupOptions = {

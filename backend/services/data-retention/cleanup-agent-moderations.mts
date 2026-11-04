@@ -18,10 +18,15 @@ export type AgentModerationCleanupContinuation = {
   upperBoundId: string
 }
 
-type CleanupOptions = {
+export type AgentModerationRetentionOptions = {
+  postIds?: readonly string[]
   batchSize?: number
-  maxBatches: number
+  maxBatches?: number
   now?: Date
+}
+
+type CleanupOptions = AgentModerationRetentionOptions & {
+  maxBatches: number
   lowerBoundDate?: Date
   upperBoundDate?: Date
   continuation?: AgentModerationCleanupContinuation
@@ -78,6 +83,7 @@ export async function cleanupObsoleteAgentModerations(
       afterDueAt,
       afterId,
       afterPostId,
+      options.postIds,
     )
     scanned += page.scanned
     deleted += page.deleted
@@ -112,9 +118,10 @@ async function cleanupAgentModerationPage(
   afterDueAt: string,
   afterId: string,
   afterPostId: string,
+  postIds?: readonly string[],
 ): Promise<AgentModerationCleanupResult> {
   await using transaction = await beginTransaction()
-  const dirty = await reconsiderChangedPost(transaction, batchSize)
+  const dirty = await reconsiderChangedPost(transaction, batchSize, postIds)
   // Woken work may sort before this continuation's last candidate. A dirty-post page
   // restarts the due keyset; previously visited candidates were deleted or blocked.
   const pageAfterDueAt = dirty.processed ? lowerBoundDueAt.toISOString() : afterDueAt
@@ -131,7 +138,7 @@ async function cleanupAgentModerationPage(
      WHERE retention_due_at >= $1::timestamptz
        AND retention_due_at <= $2::timestamptz
        AND id >= $3::uuid AND id < $4::uuid
-       AND (retention_due_at, id, post_id) > ($5::timestamptz, $6::uuid, $7::uuid)
+       AND (retention_due_at, id, post_id) > ($5::timestamptz, $6::uuid, $7::uuid)${postIds ? '\n       AND post_id = ANY($9::uuid[])' : ''}
      ORDER BY retention_due_at, id, post_id LIMIT $8`,
     [
       lowerBoundDueAt,
@@ -142,6 +149,7 @@ async function cleanupAgentModerationPage(
       pageAfterId,
       pageAfterPostId,
       batchSize + 1,
+      ...(postIds ? [postIds] : []),
     ],
   )
   const page = candidates.slice(0, batchSize)
