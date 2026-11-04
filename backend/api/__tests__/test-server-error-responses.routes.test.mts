@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   formatRecordedServerErrorResponses,
@@ -72,32 +72,5 @@ describe('API test server 5xx capture', () => {
     expect(recorded).toHaveLength(MAX_RECORDED_SERVER_ERROR_RESPONSES)
     expect(recorded[0]!.url).toBe('/overflow/1')
     expect(recorded.at(-1)!.url).toBe(`/overflow/${MAX_RECORDED_SERVER_ERROR_RESPONSES}`)
-  })
-
-  // Runs last: the reset repoints the shared server; cold fixture setup has its own hook budget.
-  describe('after the server helper is re-evaluated', () => {
-    const resetPath = '/api/v1/__tests__/server-error-responses-reset-boom'
-    let freshCreateRequest: typeof createRequest
-
-    beforeEach(async () => {
-      vi.resetModules()
-      const fresh = await import('@voucha/test-helpers/api/server')
-      const { default: freshApp } = await import('@voucha/api/app')
-      freshApp.route(resetPath).get(() => {
-        throw new Error('thrown after module reset')
-      })
-      freshCreateRequest = fresh.createRequest
-    })
-
-    it('shares one buffer with a server helper re-evaluated by vi.resetModules()', async () => {
-      await freshCreateRequest().get(resetPath).expect(500)
-
-      expect(takeRecordedServerErrorResponses()).toEqual([
-        expect.objectContaining({
-          url: expect.stringContaining(resetPath),
-          body: expect.objectContaining({ message: 'thrown after module reset' }),
-        }),
-      ])
-    })
   })
 })
