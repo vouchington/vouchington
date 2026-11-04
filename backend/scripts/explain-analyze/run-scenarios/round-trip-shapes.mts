@@ -13,6 +13,7 @@ import {
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { commentSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
+import { PURGE_EVIDENCE_SEEDED_ROWS } from '../seed-data/copyright-case-purge-volume.mts'
 import { runNotificationBlockSet } from './notification-block-set.mts'
 
 async function runCommentAncestorsBatch(): Promise<void> {
@@ -133,7 +134,7 @@ async function runCopyrightStaffCases(): Promise<void> {
   registerScenarioContract('copyright-staff-case-batch', {
     expectations: [{ kind: 'maxProcessedRows', relation: 'copyright_notices', max: 100 }],
     // The development seed, the review-target breach and the purge fixture leave a handful of intakes.
-    seededRows: { copyright_notice_email_intakes: 8 },
+    seededRows: { copyright_notice_email_intakes: PURGE_EVIDENCE_SEEDED_ROWS + 7 },
   })
   await runAndCapture(
     'copyright-staff-case-batch',

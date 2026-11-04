@@ -72,7 +72,11 @@ exists. Expired Stripe events and every kind of settled membership operation are
 their fiscal retention window, including receipts, reversal-case links and dependent refund records
 in foreign-key order. A reversal or collision operation waits while its case still has unfinished
 sibling work or an open verification cycle; an administrator refund waits until a requested
-cancellation has revoked access. Each run reads one bounded page: both ledgers use persisted keyset
+cancellation has revoked access. A closed reversal case, with its provider refund-history scans and
+observations and its verification cycle, is removed once its collision year is past the same window
+and no reversal or collision operation of its binding remains; readers treat such a case as absent,
+so a provider event arriving after that point finds nothing to refund against. Each run reads one
+bounded page: all three ledgers use persisted keyset
 cursors that pass over rows that are not yet deletable and restart after a full pass. No separate permanent replay identity survives deletion. Verification-linked purchase
 intents remain because their accounting evidence must keep a valid reference. Failed Stripe
 processing work remains recoverable until it reaches a completed or ignored outcome.

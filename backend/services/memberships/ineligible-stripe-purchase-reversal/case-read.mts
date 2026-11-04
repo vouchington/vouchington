@@ -33,6 +33,7 @@ export async function getIneligiblePurchaseReversalCase(
       AND provider_context.application_id = ${options.providerApplicationId ?? 'voucha-web'}
       AND binding.source_kind = 'direct'
       AND binding.originating_invoice_id = ${options.originatingInvoiceId}
+      AND NOT fn_membership_reversal_case_expired(reversal_case.id)
   `)
   if (rows.length > 1)
     throw new Error('Stripe reversal case lookup matched more than one immutable case')

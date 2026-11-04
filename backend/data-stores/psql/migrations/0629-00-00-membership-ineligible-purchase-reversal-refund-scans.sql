@@ -86,7 +86,7 @@ ALTER TABLE membership_ineligible_purchase_reversal_refund_observations
 CREATE OR REPLACE TRIGGER trigger_purchase_reversal_refund_observations_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_refund_observations
 FOR EACH ROW
-EXECUTE FUNCTION fn_reject_mutation();
+EXECUTE FUNCTION fn_reject_membership_reversal_case_mutation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_purchase_reversal_refund_observation_currency()

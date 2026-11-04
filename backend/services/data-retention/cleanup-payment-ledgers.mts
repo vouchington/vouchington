@@ -2,7 +2,12 @@ import { DATA_RETENTION_MAX_VALUES, type DataRetentionLimits } from './config.mt
 import { cleanupStripeEventPage } from './cleanup-payment-stripe-events.mts'
 import { cleanupMembershipOperationPage } from './cleanup-payment-membership-operations.mts'
 
-export type PaymentLedgerFamily = 'stripe_event' | 'membership_operation'
+import { cleanupMembershipReversalCasePage } from './cleanup-payment-reversal-cases.mts'
+
+export type PaymentLedgerFamily =
+  | 'stripe_event'
+  | 'membership_operation'
+  | 'membership_reversal_case'
 export type PaymentLedgerCleanupPage = {
   family: PaymentLedgerFamily
   scanned: number
@@ -29,7 +34,11 @@ export async function cleanupPaymentLedgers(
   // A UTC fiscal year becomes erasable after the next seven whole years have ended.
   const fiscalCutoff = new Date(Date.UTC(new Date().getUTCFullYear() - 7, 0, 1))
   const results: PaymentLedgerCleanupPage[] = []
-  for (const family of ['stripe_event', 'membership_operation'] as const) {
+  for (const family of [
+    'stripe_event',
+    'membership_operation',
+    'membership_reversal_case',
+  ] as const) {
     const result: PaymentLedgerCleanupPage = { family, scanned: 0, deleted: 0, hasMore: false }
     for (let batch = 0; batch < (recordIds ? 1 : limits.maxBatches); batch++) {
       // oxlint-disable-next-line no-await-in-loop -- each bounded transaction commits before the next oldest-id page.
@@ -50,7 +59,8 @@ function cleanupPaymentLedgerPage(
   fiscalCutoff: Date,
   recordIds?: readonly string[],
 ) {
-  return family === 'stripe_event'
-    ? cleanupStripeEventPage(pageSize, fiscalCutoff, recordIds)
-    : cleanupMembershipOperationPage(pageSize, fiscalCutoff, recordIds)
+  if (family === 'stripe_event') return cleanupStripeEventPage(pageSize, fiscalCutoff, recordIds)
+  return family === 'membership_operation'
+    ? cleanupMembershipOperationPage(pageSize, fiscalCutoff, recordIds)
+    : cleanupMembershipReversalCasePage(pageSize, fiscalCutoff, recordIds)
 }

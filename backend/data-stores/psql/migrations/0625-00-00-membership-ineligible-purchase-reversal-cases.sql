@@ -25,6 +25,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_ca
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membershi_ineligibl_purchase_reversal_cases__source_lineage
   ON membership_ineligible_purchase_reversal_cases (membership_source_id, membership_provider_lineage_id);
+-- Fiscal retention scan: every case by collision time. Whether a case may go depends on other
+-- tables, so a persisted cursor steps past blocked rows and a run reads at most one page.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_member_inelig_purchase_reversal_cases__collision_at_id
+  ON membership_ineligible_purchase_reversal_cases (collision_at, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__currency
   ON membership_ineligible_purchase_reversal_cases (currency_code);
@@ -106,7 +111,7 @@ EXECUTE FUNCTION fn_reject_purchase_reversal_case_operation_context();
 CREATE OR REPLACE TRIGGER trigger_membership_ineligible_purchase_reversal_cases_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_cases
 FOR EACH ROW
-EXECUTE FUNCTION fn_reject_mutation();
+EXECUTE FUNCTION fn_reject_membership_reversal_case_mutation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_purchase_reversal_case_operations_immutable
@@ -115,7 +120,7 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_reject_membership_operation_child_mutation();
 
 COMMENT ON TABLE membership_ineligible_purchase_reversal_cases IS
-  'Immutable collision snapshot that bounds Stripe refund allocation as invoice payments arrive.';
+  'Collision snapshot that bounds Stripe refund allocation as invoice payments arrive; immutable until bounded retention deletes it after its fiscal window.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.membership_source_id IS
   'Membership source whose collision created this immutable reversal case.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.membership_provider_lineage_id IS

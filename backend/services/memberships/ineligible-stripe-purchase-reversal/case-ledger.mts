@@ -71,6 +71,7 @@ export async function getLockedIneligiblePurchaseReversalCase(
       AND lineage.provider_lineage_id = ${options.subscriptionId}
       AND binding.source_kind = 'direct'
       AND binding.originating_invoice_id = ${options.originatingInvoiceId}
+      AND NOT fn_membership_reversal_case_expired(reversal_case.id)
     FOR UPDATE OF reversal_case, binding, lineage
   `)
   if (rows.length > 1)

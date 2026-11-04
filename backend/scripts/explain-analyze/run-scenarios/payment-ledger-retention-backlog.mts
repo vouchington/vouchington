@@ -4,6 +4,7 @@ import { write } from '@data-stores/psql'
 import { cleanupPaymentLedgers } from '@services/data-retention/cleanup-payment-ledgers'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { runPaymentReversalCaseRetentionScenarios } from './payment-reversal-case-retention-backlog.mts'
 import {
   positionLedgerCursor,
   resetLedgerCursor,
@@ -99,6 +100,7 @@ export async function runPaymentLedgerRetentionBacklogScenarios(): Promise<void>
     ],
     { localSettings: { 'app.billing_retention_delete': 'on' } },
   )
+  await runPaymentReversalCaseRetentionScenarios(blockedPrefix)
 }
 
 /** Failed work keeps 2000 old events undeletable; the due event has a later id and no work. */
