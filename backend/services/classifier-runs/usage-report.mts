@@ -43,6 +43,7 @@ export async function readClassifierUsageReport(
 async function readClassifiersActiveDuring(window: ClassifierUsageWindow): Promise<string[]> {
   // The report tolerates replica lag because it summarizes a closed time window.
   const { rows } = await read<{ slug: string }>(sql`/* readClassifiersActiveDuring */
+    -- no-mistakes-disable-next-line postgres-bounded-statements: classifiers is the configuration-seeded catalogue; the report needs every classifier active in the window, including those with no runs
     SELECT slug FROM classifiers
     WHERE activated_at IS NOT NULL
       AND activated_at < ${window.to}

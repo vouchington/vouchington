@@ -33,6 +33,7 @@ export async function getPostRelatedUrlIds(
   const { rows } = await runQuery<{ object_id: string }>(
     sql`/* getPostRelatedUrlIds */
       SELECT object_id
+      -- no-mistakes-disable-next-line postgres-bounded-statements: post-created recovery needs every active positive related URL for this post; truncation would skip URL recovery effects
       FROM relation__post__related__url
       WHERE subject_id = ${postId}
         AND deleted_at IS NULL

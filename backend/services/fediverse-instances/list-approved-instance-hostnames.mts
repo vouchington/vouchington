@@ -21,12 +21,15 @@ export type ApprovedFediverseInstanceHostname = {
 export async function listApprovedFediverseInstanceHostnames(): Promise<
   ApprovedFediverseInstanceHostname[]
 > {
+  // no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
   const { rows } = await read<ApprovedFediverseInstanceHostname>(sql`
     /* listApprovedFediverseInstanceHostnames */
     SELECT uh.hostname
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+    -- no-mistakes-disable-next-line postgres-bounded-statements: the one-off ECS IPv6 diagnostic audits every approved federation instance; truncation would leave deployment evidence incomplete
     FROM fediverse_instance_topics tfi
+    -- no-mistakes-disable-next-line postgres-bounded-statements: the diagnostic needs the live topic for every approved federation instance, not a page of instances
     JOIN topics t ON t.id = tfi.topic_id
+    -- no-mistakes-disable-next-line postgres-bounded-statements: the diagnostic resolves the hostname of every approved live federation instance to produce complete IPv6 evidence
     JOIN url_hostnames uh ON uh.id = t.hostname_id
     WHERE tfi.integration_status = 'approved'
       AND t.deleted_at IS NULL

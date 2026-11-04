@@ -36,8 +36,9 @@ export async function revokeAllAuthenticatedSessions(currentUserId: string): Pro
   await query(
     sql`/* revokeAllAuthenticatedSessions */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`,
   )
+  // no-mistakes-disable-next-line postgres-required-predicates: user-wide revocation must update sessions across all session-ID partitions
   const result = await query(sql`/* revokeAllAuthenticatedSessions */
-      -- no-mistakes-disable-next-line postgres-required-predicates: user-wide revocation must update sessions across all session-ID partitions
+      -- no-mistakes-disable-next-line postgres-bounded-statements: revoke every unexpired user session, including already-revoked rows, to refresh last_seen_at and return every ID for key revocation
       UPDATE user_sessions
       SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP),
           last_seen_at = CURRENT_TIMESTAMP

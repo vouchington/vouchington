@@ -20,7 +20,6 @@ type GetHouseholdSpendingCategoriesOptions = QueryOptions & {
   after?: string
   limit?: number
 }
-
 type SpendingEntryRow = {
   id: string
   spending_category_topic_id: string
@@ -32,7 +31,6 @@ type SpendingEntryRow = {
   can_manage: boolean
   spending_category: { id: string; name: string; slug: string }
 }
-
 export type HouseholdSpendingCategory = {
   id: string
   spending_category_topic_id: string
@@ -86,7 +84,9 @@ export async function getHouseholdSpendingCategoriesByUserId(
     sql`
     /* getAccessibleHouseholdsForSpendingCategories */
     SELECT h.id
+    -- no-mistakes-disable-next-line postgres-bounded-statements: every accessible household ID supplies a UNION arm in the spending page; truncation would omit eligible entries
     FROM households h
+    -- no-mistakes-disable-next-line postgres-bounded-statements: membership in every accessible household must contribute to the complete household ID set used by the spending page
     LEFT JOIN household_members hm
       ON hm.household_id = h.id AND hm.individual_id = ${individualId}
     WHERE h.owner_user_id = ${user.id} OR hm.individual_id IS NOT NULL
