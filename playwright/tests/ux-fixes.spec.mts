@@ -74,6 +74,7 @@ test.describe('Feed Routes — Navigation and Sub-routes', () => {
 
     await expect(page.getByTestId('feed-title-dropdown-trigger')).toBeVisible()
     await expect(page.getByTestId('feed-sub-filter-trigger')).toContainText('Following')
+    await expect(page.getByTestId('post-time-range-trigger')).toHaveCount(0)
   })
 
   test('/feed/news renders dropdown navigation', async ({ page }) => {

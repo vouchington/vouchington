@@ -8,6 +8,7 @@
 import { Suspense } from 'react'
 import { ListFilters } from '@/components/shared/list-filters'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { PostTimeRangeSelect } from './post-time-range-select'
 
 interface PostFiltersProps {
   showSearch?: boolean
@@ -16,6 +17,8 @@ interface PostFiltersProps {
   defaultSort?: string
   enableHashtagSearch?: boolean
   enableRelevanceSort?: boolean
+  /** Adds the time range dropdown; lists that do not search by time leave it off. */
+  showTimeRange?: boolean
 }
 
 export function PostFilters(props: PostFiltersProps) {
@@ -33,6 +36,7 @@ function PostFiltersContent({
   defaultSort = 'new',
   enableHashtagSearch = true,
   enableRelevanceSort = true,
+  showTimeRange = false,
 }: PostFiltersProps) {
   const t = useTranslations()
   const resolvedSortOptions = sortOptions ?? [
@@ -66,6 +70,8 @@ function PostFiltersContent({
       showSearch={showSearch}
       showSort={showSort}
       enableHashtagSearch={enableHashtagSearch}
-    />
+    >
+      {showTimeRange && <PostTimeRangeSelect />}
+    </ListFilters>
   )
 }

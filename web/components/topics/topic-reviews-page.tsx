@@ -6,6 +6,7 @@ import { canCurrentUserSeeDownvotes } from '@/lib/permissions/can-see-downvotes'
 import { ListSearchError } from '@/components/shared/list-search-error'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { postTimeRangeParams } from '@/lib/posts/time-range'
 import { getTopicPostSort, TOPIC_POST_SORT_OPTIONS } from './topic-post-sort'
 
 export async function TopicReviewsPage({
@@ -24,6 +25,7 @@ export async function TopicReviewsPage({
     review_topic: id,
     post_types: 'review',
     ...(q ? { q } : {}),
+    ...postTimeRangeParams(searchParams?.time_range),
     sort,
     limit: 25,
   }
@@ -39,6 +41,7 @@ export async function TopicReviewsPage({
       <PostFilters
         sortOptions={TOPIC_POST_SORT_OPTIONS}
         defaultSort={sort}
+        showTimeRange
       />
       {hasSearchError ? (
         <ListSearchError

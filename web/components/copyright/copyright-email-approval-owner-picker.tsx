@@ -55,7 +55,9 @@ export function CopyrightEmailApprovalOwnerPicker({
           </>
         )}
         search={async (query, signal) =>
-          Object.values((await fetchPosts({ q: query, limit: 10, signal })).posts ?? {})
+          Object.values(
+            (await fetchPosts({ q: query, limit: 10, time_range: 'all', signal })).posts ?? {},
+          )
         }
       />
     )

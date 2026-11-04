@@ -6,6 +6,7 @@ import { canCurrentUserSeeDownvotes } from '@/lib/permissions/can-see-downvotes'
 import { ListSearchError } from '@/components/shared/list-search-error'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { postTimeRangeParams } from '@/lib/posts/time-range'
 import { getTopicPostSort, TOPIC_POST_SORT_OPTIONS } from './topic-post-sort'
 
 interface TopicPostsPageProps {
@@ -22,6 +23,7 @@ export async function TopicPostsPage({ id, searchParams }: TopicPostsPageProps) 
   const queryParams = {
     topics: id,
     ...(q ? { q } : {}),
+    ...postTimeRangeParams(searchParams?.time_range),
     sort,
     limit: 25,
   }
@@ -36,6 +38,7 @@ export async function TopicPostsPage({ id, searchParams }: TopicPostsPageProps) 
     <PostFilters
       sortOptions={TOPIC_POST_SORT_OPTIONS}
       defaultSort={sort}
+      showTimeRange
     />
   )
 

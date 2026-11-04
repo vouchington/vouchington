@@ -18,6 +18,23 @@ test.describe('All Posts Page', () => {
     await expect(page).toHaveURL(/.*sort=new/)
   })
 
+  test('keeps the selected time range in the URL and drops it at the default', async ({ page }) => {
+    await navigateTo(page, '/posts')
+    await waitForBelowFoldHydration(page)
+    await expect(page.getByTestId('post-time-range-trigger')).toContainText('30')
+
+    await page.getByTestId('post-time-range-trigger').press(' ')
+    await page.getByTestId('post-time-range-option-all').click()
+    await expect(page).toHaveURL(/time_range=all/)
+
+    await page.reload()
+    await expect(page.getByTestId('post-time-range-trigger')).toContainText('All')
+
+    await page.getByTestId('post-time-range-trigger').press(' ')
+    await page.getByTestId('post-time-range-option-1m').click()
+    await expect(page).not.toHaveURL(/time_range=/)
+  })
+
   test('does not show a separate Post Type filter', async ({ page }) => {
     await navigateTo(page, '/posts')
 

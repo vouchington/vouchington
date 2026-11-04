@@ -83,6 +83,14 @@ describe('PostFilters', () => {
     expect(screen.queryByRole('option', { name: 'Relevance' })).toBeNull()
   })
 
+  it('shows the time range dropdown only when asked', () => {
+    const { unmount } = renderWithProviders(<PostFilters />)
+    expect(screen.getAllByLabelText('Sort list')).toHaveLength(1)
+    unmount()
+    renderWithProviders(<PostFilters showTimeRange />)
+    expect(screen.getAllByLabelText('Sort list')).toHaveLength(2)
+  })
+
   it('updates URL when sort dropdown changes', () => {
     renderWithProviders(<PostFilters />)
     fireEvent.change(screen.getByLabelText('Sort list'), { target: { value: 'new' } })

@@ -20,6 +20,7 @@ describe('UserPostsAllRoute', () => {
   it('renders UserPostsPage with idOrUsername from params', async () => {
     const result = await UserPostsAllRoute({
       params: Promise.resolve({ idOrUsername: 'alice' }),
+      searchParams: Promise.resolve({}),
     })
     render(result)
     expect(screen.getByTestId('user-posts-page')).toHaveTextContent('alice')

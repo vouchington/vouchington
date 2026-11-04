@@ -20,6 +20,10 @@ vi.mock(import('@/components/posts/post-list'), () => ({
   PostList: mockPostList,
 }))
 
+vi.mock(import('@/components/posts/post-time-range-select'), () => ({
+  PostTimeRangeSelect: () => <div data-testid='time-range-select' />,
+}))
+
 import { UserPostsPage } from '../user-posts-page'
 
 describe('UserPostsPage', () => {
@@ -30,6 +34,18 @@ describe('UserPostsPage', () => {
     expect(mockPostList).toHaveBeenCalledWith(
       expect.objectContaining({
         nextPageParams: expect.objectContaining({ post_types: 'review,discussion,comment' }),
+      }),
+      undefined,
+    )
+  })
+
+  it('shows the time range dropdown and forwards a supported range to the API', async () => {
+    const result = await UserPostsPage({ idOrUsername: 'alice', timeRange: '1y' })
+    render(result as React.ReactElement)
+    expect(screen.getByTestId('time-range-select')).toBeDefined()
+    expect(mockPostList).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nextPageParams: expect.objectContaining({ time_range: '1y' }),
       }),
       undefined,
     )

@@ -15,6 +15,9 @@ import { isUUID } from '@modules/utils'
 import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
 
+/** Window searched when the caller sends no time range, for every sort. */
+export const DEFAULT_POST_SEARCH_TIME_RANGE = '1m'
+
 type PostSearchResponse = {
   results: PostSearchResult[]
   page_info: ReturnType<typeof buildPostSearchPageInfo>
@@ -46,12 +49,12 @@ export async function getPostIds(
     sort,
     hasRankingScore,
   )
-  // Default time_range to '1w' for hot sort when not explicitly provided
-  const effectiveTimeRange = sort === 'hot' && !options.time_range ? '1w' : options.time_range
+  // Post search is always time-bounded; callers needing the full history pass 'all'.
+  const effectiveTimeRange = options.time_range ?? DEFAULT_POST_SEARCH_TIME_RANGE
   // Build query - pass decoded cursor values and use limit + 1
   const queryOptions: PostSearchOptions = {
     ...options,
-    ...(effectiveTimeRange !== undefined && { time_range: effectiveTimeRange }),
+    time_range: effectiveTimeRange,
     semanticSearchEmbedding,
     limit: limit + 1,
   }

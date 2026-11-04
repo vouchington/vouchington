@@ -80,6 +80,7 @@ describe('FeedPostListPage', () => {
     expect(mockGetPostFeed).toHaveBeenCalledWith('follow_users', {
       searchParams: {
         limit: 25,
+        time_range: '1w',
         sort: 'new',
       },
     })
@@ -97,6 +98,7 @@ describe('FeedPostListPage', () => {
     expect(mockGetPostFeed).toHaveBeenCalledWith('follow_topics', {
       searchParams: {
         limit: 25,
+        time_range: '1w',
         sort: 'new',
       },
     })
@@ -111,6 +113,7 @@ describe('FeedPostListPage', () => {
     expect(mockGetPostFeed).toHaveBeenCalledWith('follow_topics', {
       searchParams: {
         limit: 25,
+        time_range: '1w',
         sort: 'new',
         q: 'cash #cards',
       },
