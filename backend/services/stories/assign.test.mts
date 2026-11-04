@@ -22,7 +22,7 @@ import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from './story-posts.mts'
 import { refreshStoryPostForStory } from './refresh-story-post.mts'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
-import { rejectPostgresWriteForTest, rejectQuery } from '@voucha/test-helpers/injected-failures'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { trackAgentQueueAdds } from '../../test-helpers/services/stories/story-post-agent-adds.mts'
 import * as cacheInvalidation from './cache-invalidation.mts'
 import { settleStoryPostTopicVoteCapture } from '../../test-helpers/services/stories/post-topic-vote-capture.mts'
@@ -78,26 +78,6 @@ describe('assign', () => {
     expect(result).toBe(newItemId)
     const ids = await getStoryItemIds(story.id)
     expect(ids).toContain(newItemId)
-  })
-  it('rolls back a caller-owned transaction when the relation refresh fails', async () => {
-    const [firstUrlId, secondUrlId] = await Promise.all([
-      createTestUrlWithHostname(),
-      createTestUrlWithHostname(),
-    ])
-    const { story } = await createStoryWithPost([firstUrlId, secondUrlId])
-    const itemId = await makeTestItem()
-    await expect(
-      (async () => {
-        await using transaction = await beginTransaction()
-        const query = rejectQuery(
-          transaction,
-          statement => statement.includes('markStoryPostRelatedUrlProjection'),
-          'refresh failed',
-        )
-        return await adminAssignItemToStory(storyPostUser.id, story.id, itemId, { query })
-      })(),
-    ).rejects.toThrow('refresh failed')
-    await expect(getStoryItemIds(story.id)).resolves.not.toContain(itemId)
   })
   it('rolls back its own transaction when the relation refresh fails', async () => {
     const [firstUrlId, secondUrlId] = await Promise.all([

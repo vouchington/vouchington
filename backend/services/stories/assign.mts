@@ -1,21 +1,13 @@
 import { clearMovedStoryOfficialItem } from './clear-moved-official-item.mts'
 import { dispatchPostCommitEffectsBestEffort } from './assignment-effects.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
-import {
-  registerPostCommitAction,
-  runWithTransaction,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { refreshStoryPostForStory, type StoryPostRefreshResult } from './refresh-story-post.mts'
 import { invalidateStories } from './cache-invalidation.mts'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
-type AssignmentDependencies = {
-  expectedStoryId?: string
-  query?: TransactionQuery
-}
 /**
  * Admin-only: assign item to story and lock the assignment.
  * Refreshes story-posts before invalidating stories after a successful assignment.
@@ -24,12 +16,10 @@ export async function adminAssignItemToStory(
   actorId: string,
   storyId: string,
   itemId: string,
-  dependencies: AssignmentDependencies = {},
 ): Promise<string | null> {
   let refreshResults: Array<{ storyId: string; result: StoryPostRefreshResult | null }> = []
   let afterCommit: (() => Promise<void>) | undefined
-  const selectedQuery = dependencies.query
-  const assignedId = await runWithTransaction(selectedQuery, async (query: TransactionQuery) => {
+  const assignedId = await runWithTransaction(undefined, async (query: TransactionQuery) => {
     const prior = await query(
       sql`/* adminAssignItemToStory:item */
       SELECT id, story_id FROM rss_feed_items
@@ -99,10 +89,9 @@ export async function adminAssignItemToStory(
       }
       await invalidateStories(storyId, row.prior_story_id)
     }
-    if (dependencies.query) registerPostCommitAction(query, afterCommit)
     return row.id
   })
-  if (!dependencies.query) await afterCommit?.()
+  await afterCommit?.()
   return assignedId
 }
 /**
@@ -112,14 +101,13 @@ export async function adminAssignItemToStory(
 export async function adminRemoveItemFromStory(
   actorId: string,
   itemId: string,
-  dependencies: AssignmentDependencies = {},
+  dependencies: { expectedStoryId?: string } = {},
 ): Promise<string | null> {
   let refreshResults: StoryPostRefreshResult[] = []
   let afterCommit: (() => Promise<void>) | undefined
   // Use a CTE to capture the old story_id before the SET clause nulls it.
   // PostgreSQL RETURNING reflects post-update values, so story_id would be NULL after SET.
-  const selectedQuery = dependencies.query
-  const removedId = await runWithTransaction(selectedQuery, async (query: TransactionQuery) => {
+  const removedId = await runWithTransaction(undefined, async (query: TransactionQuery) => {
     const result = await query(
       sql`/* adminRemoveItemFromStory */
     WITH old AS (
@@ -176,9 +164,8 @@ export async function adminRemoveItemFromStory(
         void enqueueStoryPostAgent(refreshResult.postId, { force: true })
       await invalidateStories(row.prior_story_id)
     }
-    if (dependencies.query) registerPostCommitAction(query, afterCommit)
     return row.id
   })
-  if (!dependencies.query) await afterCommit?.()
+  await afterCommit?.()
   return removedId
 }
