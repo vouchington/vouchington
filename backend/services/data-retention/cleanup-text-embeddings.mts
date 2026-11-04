@@ -47,28 +47,39 @@ async function deleteTextEmbeddingCachePage(
   candidatesQuery.append(sql`
       ORDER BY cache.updated_at, encode(cache.content_sha256, 'hex')
       LIMIT ${batchSize + 1}
+    ), candidate_stats AS MATERIALIZED (
+      SELECT count(*)::int AS candidate_count FROM candidates
     ), locked AS MATERIALIZED (
       SELECT cache.content_sha256
       FROM bedrock_nova_multimodal_v1_embeddings cache
       JOIN candidates USING (content_sha256)
+      WHERE cache.updated_at < ${cutoff}`)
+  if (options.lowerBoundDate) {
+    candidatesQuery.append(sql` AND cache.updated_at >= ${options.lowerBoundDate}`)
+  }
+  candidatesQuery.append(sql`
       ORDER BY cache.content_sha256
       FOR UPDATE OF cache
     )
-    SELECT encode(candidates.content_sha256, 'hex') AS content_sha256
-    FROM candidates JOIN locked USING (content_sha256)
+    SELECT encode(locked.content_sha256, 'hex') AS content_sha256,
+      candidate_stats.candidate_count
+    FROM candidate_stats
+    LEFT JOIN (locked JOIN candidates USING (content_sha256)) ON TRUE
     ORDER BY candidates.updated_at, encode(candidates.content_sha256, 'hex')`)
   const { rows: candidates } = await query<{
-    content_sha256: string
+    content_sha256: string | null
+    candidate_count: number
   }>(candidatesQuery)
-  const page = candidates.slice(0, batchSize)
-  const hashes = page.map(row => row.content_sha256)
+  const hashes = candidates
+    .flatMap(row => (row.content_sha256 === null ? [] : [row.content_sha256]))
+    .slice(0, batchSize)
   const { rowCount } = await query(
     `/* deleteTextEmbeddingRetentionPage */
     DELETE FROM bedrock_nova_multimodal_v1_embeddings
     WHERE content_sha256 = ANY(SELECT decode(hash, 'hex') FROM unnest($1::text[]) hash)`,
     [hashes],
   )
-  const hasMore = candidates.length > batchSize
+  const hasMore = (candidates[0]?.candidate_count ?? 0) > hashes.length
   await query.commit()
   return {
     deleted: rowCount ?? 0,
