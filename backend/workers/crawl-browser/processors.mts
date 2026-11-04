@@ -49,11 +49,33 @@ export async function processBrowserCrawl(
     const result = await crawlWithBrowser(url.url)
     await handleBrowserCrawlResult(url.id, linkId, crawler, crawl.id, result)
   } catch (err) {
-    const current = await getCrawlById(crawl.id, url.id, { readOnly: false })
-    if (current && !current.completed_at) {
-      await updateCrawl(crawl.id, url.id, { completed_at: new Date(), ...getCrawlErrorState(err) })
+    let recordingFailed = false
+    let recordingError: unknown
+    try {
+      const current = await getCrawlById(crawl.id, url.id, { readOnly: false })
+      if (current && !current.completed_at) {
+        await updateCrawl(crawl.id, url.id, {
+          completed_at: new Date(),
+          ...getCrawlErrorState(err),
+        })
+      }
+    } catch (recordingErr) {
+      recordingFailed = true
+      recordingError = recordingErr
     }
-    await handleBrowserCrawlError(linkId, err)
+    if (!recordingFailed) {
+      await handleBrowserCrawlError(linkId, err)
+      return
+    }
+    const errors = [err, recordingError]
+    try {
+      await handleBrowserCrawlError(linkId, err)
+    } catch (handlerErr) {
+      if (handlerErr !== err) errors.push(handlerErr)
+    }
+    throw new AggregateError(errors, 'Browser crawl and reservation recording failed', {
+      cause: err,
+    })
   }
 }
 

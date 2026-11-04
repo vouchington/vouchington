@@ -18,6 +18,7 @@ import {
   deleteTestRobotsTxtCache,
 } from '@voucha/test-helpers/entities/dispatch'
 import { suppressedError } from '@voucha/test-helpers/suppressed-error'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { processBrowserCrawl } from '../processors.mts'
 
 const hostnames: string[] = []
@@ -154,4 +155,52 @@ describe('browser crawl failed reservations', () => {
       { completed: true, status: 204, networkError: null },
     ])
   })
+
+  it.each(['getCrawlById', 'updateCrawl'])(
+    'preserves a provider failure when reservation %s fails',
+    async marker => {
+      const item = await fixture()
+      const providerError = new CrawlerConnectError(item.url.url, 1, new Error('refused'))
+      const databaseError = new Error('injected reservation failure')
+      vi.spyOn(browserCrawl, 'crawlWithBrowser').mockRejectedValue(providerError)
+      const restore = rejectPostgresWriteForTest(marker, databaseError, values =>
+        values.includes(item.url.id),
+      )
+      try {
+        const failure = await processBrowserCrawl(item.url, item.linkId, item.crawler).catch(
+          err => err,
+        )
+        expect(failure).toBeInstanceOf(AggregateError)
+        expect(failure.cause).toBe(providerError)
+        expect(failure.errors).toEqual(expect.arrayContaining([providerError, databaseError]))
+        expect((await getReferralLinkCrawlStatus(item.linkId)).consecutive_crawl_failures).toBe(0)
+      } finally {
+        restore()
+      }
+    },
+  )
+
+  it.each(['getCrawlById', 'updateCrawl'])(
+    'still records referral health when reservation %s fails',
+    async marker => {
+      const item = await fixture()
+      const crawlError = new CrawlerTimeoutError(item.url.url, 1, 2)
+      const databaseError = new Error('injected reservation failure')
+      vi.spyOn(browserCrawl, 'crawlWithBrowser').mockRejectedValue(crawlError)
+      const restore = rejectPostgresWriteForTest(marker, databaseError, values =>
+        values.includes(item.url.id),
+      )
+      try {
+        const failure = await processBrowserCrawl(item.url, item.linkId, item.crawler).catch(
+          err => err,
+        )
+        expect(failure).toBeInstanceOf(AggregateError)
+        expect(failure.cause).toBe(crawlError)
+        expect(failure.errors).toEqual(expect.arrayContaining([crawlError, databaseError]))
+        expect((await getReferralLinkCrawlStatus(item.linkId)).consecutive_crawl_failures).toBe(1)
+      } finally {
+        restore()
+      }
+    },
+  )
 })
