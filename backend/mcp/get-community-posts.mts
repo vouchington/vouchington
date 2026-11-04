@@ -1,6 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { getCommunityPostsPage } from '@services/communities'
+import type { TimeRange } from '@voucha/types/feed'
 import type { BasicUser } from '@services/users/types'
 import {
   COMMUNITY_NOT_FOUND,
@@ -17,6 +18,7 @@ import {
   type SearchPageInfo,
 } from './paged-search.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { postTimeRangeSchema } from './search-post-input.mts'
 import { clampToolLimit } from './search-system.mts'
 
 // The sorts GET /api/v1/communities/:idOrSlug/posts accepts.
@@ -26,6 +28,7 @@ type ToolArgs = {
   community_id: string
   sort?: (typeof POST_SORTS)[number]
   q?: string
+  time_range?: TimeRange
   limit?: number
   after?: string
 }
@@ -60,6 +63,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           description:
             'Keyword search over the posts. Same as the REST q: matches text and #hashtags.',
         },
+        time_range: postTimeRangeSchema,
         ...communityPageInputProperties('Posts'),
       },
       required: ['community_id'],
@@ -87,6 +91,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           currentUser: null,
           q: args.q,
           sort: args.sort ?? 'new',
+          time_range: args.time_range,
           limit: clampToolLimit(args.limit, defaultLimit, max),
           after: args.after,
         }),

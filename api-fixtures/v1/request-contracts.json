@@ -43112,6 +43112,10 @@
           "sort": {
             "enum": ["new", "hot"],
             "type": "string"
+          },
+          "time_range": {
+            "enum": ["1d", "1w", "1m", "1y", "all"],
+            "type": "string"
           }
         },
         "type": "object"

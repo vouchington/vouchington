@@ -1,10 +1,12 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import type { TimeRange } from '@voucha/types/feed'
 import { decodeUuidCursor, isScoreCursor, isSimpleCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import { getEntityRelationTableNameOrThrow } from '@services/entity-relations/metadata'
 import {
   buildPublicPostEligibilityFilter,
+  buildTimeRangeFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
 import type { BasicUser } from '@services/users/types'
@@ -36,6 +38,8 @@ export async function searchCommunityPosts(
     hashtag_alias_ids?: string[]
     has_unknown_hashtag?: boolean
     excludePostIds?: string[]
+    /** Only posts from this window; omitted reads the whole history (pickers, exact lookups). */
+    time_range?: TimeRange
     sort?: CommunityPostSort
     limit?: number
     after?: string
@@ -135,6 +139,9 @@ export async function searchCommunityPosts(
   if (options?.excludePostIds && options.excludePostIds.length > 0) {
     query.append(sql` AND posts.id != ALL(${options.excludePostIds}::uuid[])`)
   }
+
+  const timeRangeFilter = buildTimeRangeFilter(options?.time_range ?? 'all', 'posts.id')
+  if (timeRangeFilter) query.append(sql` AND `).append(timeRangeFilter)
 
   const eligibility = options?.currentUser
     ? buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {

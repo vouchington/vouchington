@@ -10,6 +10,7 @@ import { createPaginationParser } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   VALID_COMMUNITY_NEWS_FEED_TYPES,
+  VALID_FEED_TIME_RANGES,
   type CommunityNewsFeedType,
 } from '@ts-shared/feed-capabilities'
 
@@ -32,6 +33,10 @@ export const communityPostsQuery = defineQueryContract({
   ...communityPageQuery.queryContract,
   sort: queryEnum(['new', 'hot']),
   q: queryString(),
+  time_range: queryEnum(VALID_FEED_TIME_RANGES, {
+    description:
+      'Only posts from this window. Omitted means 1m (30 days); all is the full history.',
+  }),
 })
 
 export const communityModerationAnalyticsQuery = defineQueryContract({
