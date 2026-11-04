@@ -1,3 +1,4 @@
+import { ClientRequest } from '@vouchington/api-client'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
 import { HackerNewsConfigProvider } from '@/components/hacker-news/hacker-news-config-provider'
@@ -79,6 +80,20 @@ export const DetailAside: Story = {
 }
 
 export const VisibilityDisabled: Story = {
+  beforeEach: () => {
+    const previousGet = ClientRequest.prototype.get
+    ClientRequest.prototype.get = function storyConfigGet<T>(
+      endpoint: string,
+      options?: Parameters<ClientRequest['get']>[1],
+    ): Promise<T> {
+      if (endpoint === '/api/v1/hacker-news-config')
+        return Promise.resolve({ references_visible: false, post_time_range_cap: '1y' } as T)
+      return previousGet.call(this, endpoint, options) as Promise<T>
+    }
+    return () => {
+      ClientRequest.prototype.get = previousGet
+    }
+  },
   render: () => (
     <StoryFrame>
       <HackerNewsConfigProvider
