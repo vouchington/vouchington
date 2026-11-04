@@ -10,6 +10,7 @@ import { runHackerNewsRetentionScenario } from './hacker-news-retention.mts'
 
 /** The daily cleanup runs this after retained relations and media bindings. */
 export async function runRetentionStagePageScenarios(): Promise<void> {
+  await runHackerNewsRetentionScenario()
   await seedOAuthRetentionRows()
   await write(`/* seedExplainOAuthRetention:analyze */ ANALYZE oauth_authorizations`)
   registerScenarioContract('retention-expired-oauth-authorizations', {
