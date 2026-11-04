@@ -10,9 +10,9 @@ import {
   insertAgentModerationRetentionReferences,
 } from './agent-moderation-retention-references.mts'
 
-export const AGENT_MODERATION_RETENTION_ROWS = 75_000 * 3 + 66 + 5_000
-export const AGENT_MODERATION_RETENTION_RELEASED_NOISE = 20_000
-export const AGENT_MODERATION_RETENTION_REFERENCE_NOISE = 20_000
+export const AGENT_MODERATION_RETENTION_ROWS = 15_000 * 3 + 66 + 1_000
+export const AGENT_MODERATION_RETENTION_RELEASED_NOISE = 1_000
+export const AGENT_MODERATION_RETENTION_REFERENCE_NOISE = 1_000
 
 const DAY_MS = 24 * 60 * 60 * 1_000
 const BATCH_SIZE = 2_000
@@ -32,7 +32,7 @@ export async function seedAgentModerationRetention(): Promise<void> {
   const bulkStartMs = oldMs - 5 * 60_000 + 100
 
   await seedRetentionIdentities(new Date(oldMs - DAY_MS))
-  await insertModerationRows(oldMs, newMs, bulkStartMs, 75_000)
+  await insertModerationRows(oldMs, newMs, bulkStartMs, 15_000)
   await seedDeletedLiveLookupTail()
   await insertAgentModerationRetentionReferenceNoise(
     bulkStartMs,
@@ -69,7 +69,7 @@ async function seedDeletedLiveLookupTail(): Promise<void> {
        (post_id, input_sha256, prompt_id, agent_id, results, is_flagged, deleted_at)
      SELECT $1::uuid, decode(lpad(to_hex(sequence + 1000), 64, '0'), 'hex'),
        $2::uuid, $3::uuid, '{}'::jsonb, FALSE, CURRENT_TIMESTAMP
-     FROM generate_series(1, 5000) AS sequence
+     FROM generate_series(1, 1000) AS sequence
      ON CONFLICT (post_id, input_sha256, prompt_id) DO NOTHING`,
     [postId, BULK_PROMPT_ID, BULK_AGENT_ID],
   )

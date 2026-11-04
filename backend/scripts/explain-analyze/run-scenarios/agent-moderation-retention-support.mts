@@ -28,9 +28,10 @@ export async function runAgentModerationRetentionProgressScenarios(
   seededRows: Record<string, number>,
 ): Promise<void> {
   // The seeded newest result on each bulk post is itself old enough to be in
-  // retention scope. A changed-free pass must not visit these 75,000 keepers.
+  // retention scope. A changed-free pass must not visit these 15,000 keepers.
   registerScenarioContract('agent-moderation-retention-idle', {
     seededRows,
+    forbidSequentialScans: ['agent_moderations'],
     allowEmptyResult: true,
     expectations: [
       {
@@ -61,6 +62,7 @@ export async function runAgentModerationRetentionProgressScenarios(
 
   registerScenarioContract('agent-moderation-retention-live-predecessor', {
     seededRows,
+    forbidSequentialScans: ['agent_moderations'],
     expectations: [
       {
         kind: 'usesIndexes',
@@ -108,6 +110,7 @@ export async function runAgentModerationRetentionLockScenario(
   const lowerBoundDate = new Date(anchor.getTime() - 121 * DAY_MS)
   registerScenarioContract(scenarioId, {
     seededRows,
+    forbidSequentialScans: ['agent_moderations'],
     expectations: [
       { kind: 'usesIndexes', indexes: indexNames, anyOf: indexNames.length > 1 },
       { kind: 'maxProcessedRows', relation, max: PAGE_SIZE + 1 },

@@ -19,8 +19,8 @@ export async function insertAgentModerationRetentionReferenceNoise(
     return {
       id: seedUuidAtTimestamp(timestampMs, 2_100_000 + index),
       timestampMs,
-      postId: seedUuid(10_200 + index, '05'),
-      moderationId: seedUuidAtTimestamp(oldStartMs + (10_100 + index) * 2, 10_100 + index),
+      postId: seedUuid(600 + index, '05'),
+      moderationId: seedUuidAtTimestamp(oldStartMs + (500 + index) * 2, 500 + index),
       userId: seedUuid(index, '01'),
     }
   })
