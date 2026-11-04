@@ -145449,6 +145449,352 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "url_hacker_news_comments": {
+      "checkConstraints": {
+        "url_hacker_news_comments_hacker_news_item_id_check": {
+          "definition": "CHECK ((hacker_news_item_id > 0))",
+          "validated": true
+        },
+        "url_hacker_news_comments_parent_story_item_id_check": {
+          "definition": "CHECK ((parent_story_item_id > 0))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "hacker_news_item_id": {
+          "comment": "Hacker News item id of the comment; an outside identifier with no row here.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "parent_story_item_id": {
+          "comment": "Hacker News item id of the story whose thread holds the comment; an outside identifier that may not link the URL itself.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "posted_at": {
+          "comment": "When the comment was posted on Hacker News.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "url_id": {
+          "comment": "The URL the comment links. Removed with the URL.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Capped Hacker News comments that link a URL: item id, parent story id and posted time. No comment text, and no points because Hacker News publishes none.",
+      "foreignKeys": {
+        "url_hacker_news_comments_url_id_fkey": {
+          "columns": ["url_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "url_hacker_news_comments_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hacker_news_comments_pkey ON public.url_hacker_news_comments USING btree (url_id, hacker_news_item_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "hacker_news_item_id",
+              "descending": false,
+              "expression": "hacker_news_item_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id", "hacker_news_item_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "url_hacker_news_stories": {
+      "checkConstraints": {
+        "url_hacker_news_stories_hacker_news_item_id_check": {
+          "definition": "CHECK ((hacker_news_item_id > 0))",
+          "validated": true
+        },
+        "url_hacker_news_stories_points_check": {
+          "definition": "CHECK ((points >= 0))",
+          "validated": true
+        },
+        "url_hacker_news_stories_reply_count_check": {
+          "definition": "CHECK ((reply_count >= 0))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "hacker_news_item_id": {
+          "comment": "Hacker News item id of the story; an outside identifier with no row here.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "points": {
+          "comment": "Story points when last looked up.",
+          "dataType": "integer",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "posted_at": {
+          "comment": "When the story was posted on Hacker News.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
+        "reply_count": {
+          "comment": "Number of replies on the story thread when last looked up; not the number of comments that mention the URL.",
+          "dataType": "integer",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "url_id": {
+          "comment": "The URL the story links. Removed with the URL.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Capped Hacker News stories that link a URL: item id, points, reply count and posted time. No titles or text.",
+      "foreignKeys": {
+        "url_hacker_news_stories_url_id_fkey": {
+          "columns": ["url_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "url_hacker_news_stories_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hacker_news_stories_pkey ON public.url_hacker_news_stories USING btree (url_id, hacker_news_item_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "hacker_news_item_id",
+              "descending": false,
+              "expression": "hacker_news_item_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id", "hacker_news_item_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "url_hacker_news_totals": {
+      "checkConstraints": {
+        "url_hacker_news_totals_comment_count_check": {
+          "definition": "CHECK ((comment_count >= 0))",
+          "validated": true
+        },
+        "url_hacker_news_totals_story_count_check": {
+          "definition": "CHECK ((story_count >= 0))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "comment_count": {
+          "comment": "Total Hacker News comments linking the URL, including comments beyond the capped stored rows.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "looked_up_at": {
+          "comment": "When the totals and stored rows were last refreshed from Hacker News search, including lookups with zero hits.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "story_count": {
+          "comment": "Total Hacker News stories linking the URL, including stories beyond the capped stored rows.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "url_id": {
+          "comment": "The URL these totals describe. Removed with the URL.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Per-URL totals of Hacker News stories and comments that link the URL, with the time of the last lookup. Facts only; never a ranking or trust input.",
+      "foreignKeys": {
+        "url_hacker_news_totals_url_id_fkey": {
+          "columns": ["url_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_url_hacker_news_totals__url_id__referenced": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hacker_news_totals__url_id__referenced ON public.url_hacker_news_totals USING btree (url_id) WHERE ((story_count > 0) OR (comment_count > 0))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((story_count > 0) OR (comment_count > 0))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "url_hacker_news_totals_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hacker_news_totals_pkey ON public.url_hacker_news_totals USING btree (url_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "url_hostname_blocks": {
       "checkConstraints": {
         "chk_url_hostname_blocks__domain_source": {
