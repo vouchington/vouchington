@@ -1,7 +1,19 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { DataRetentionLimits } from '@services/data-retention/config'
 import { psql } from '@queues/psql/queues'
-import type { VoteRetentionContinuationData } from '@queues/psql/types'
+import {
+  getTestPostVoteIds,
+  getTopicElectionVoteEventCount,
+  getTestVoteIntegrityFlagDetails,
+  hasTestUserAgentString,
+} from '@voucha/test-helpers'
+import {
+  createTestVoteRetentionBallots,
+  createTestVoteRetentionDetails,
+  createTestVoteRetentionPostBallots,
+  createTestVoteRetentionPost,
+} from '@voucha/test-helpers/vote-retention-processor-fixtures'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import processPsql from '../processors.mts'
 
 const dataRetentionCleanup = vi.fn<(limits: DataRetentionLimits) => Promise<unknown>>()
@@ -85,34 +97,36 @@ describe('processPsql vote retention continuations', () => {
   })
 
   it('keeps completed ballot families out of later continuation pages', async () => {
-    const allTables = ['post_votes', 'topic_votes']
-    const continuationPages = [
-      {
-        supersededVoteBallots: [
-          { voteTable: 'post_votes', hasMore: false },
-          { voteTable: 'topic_votes', hasMore: true },
-        ],
-        orphanedUserAgentStrings: { hasMore: false },
-        voteIntegrityDetails: { hasMore: false },
+    const owned = await createTestVoteRetentionBallots()
+    const neighbor = await createTestVoteRetentionBallots()
+    const options = {
+      batchSize: 1,
+      now: new Date('2026-11-04T12:00:00Z'),
+      voteIdsByTable: {
+        post_votes: [owned.postSupersederId],
+        topic_votes: [owned.topicSupersederId],
       },
-      {
-        supersededVoteBallots: [{ voteTable: 'topic_votes', hasMore: false }],
-        orphanedUserAgentStrings: { hasMore: false },
-        voteIntegrityDetails: { hasMore: false },
-      },
-    ]
-    const voteRetentionCleanupPage = vi
-      .fn<(limits: DataRetentionLimits, data: VoteRetentionContinuationData) => Promise<unknown>>()
-      .mockResolvedValueOnce(continuationPages[0])
-      .mockResolvedValueOnce(continuationPages[1])
+    }
     const addBulk = spyOnContinuationAdmission('vote-retention__a0db7a4f62b4a73e46ae2961f8a54bab')
-
-    await processPsql(
+    const first = await processPsql(
       'continueVoteRetentionCleanup',
-      { voteTables: allTables, userAgentStrings: false, voteIntegrityDetails: false },
-      { voteRetentionCleanupPage: voteRetentionCleanupPage as never },
+      {
+        voteTables: ['post_votes', 'topic_votes'],
+        userAgentStrings: false,
+        voteIntegrityDetails: false,
+      },
+      undefined,
       'first-page',
+      options,
     )
+    expect(first).toEqual({
+      supersededVoteBallots: [
+        { voteTable: 'post_votes', scanned: 2, deleted: 1, hasMore: false },
+        { voteTable: 'topic_votes', scanned: 2, deleted: 1, hasMore: true },
+      ],
+      orphanedUserAgentStrings: { scanned: 0, deleted: 0, hasMore: false },
+      voteIntegrityDetails: { scanned: 0, redacted: 0, hasMore: false },
+    })
     const next = {
       voteTables: ['topic_votes'],
       userAgentStrings: false,
@@ -130,15 +144,124 @@ describe('processPsql vote retention continuations', () => {
       userAgentStrings: false,
       voteIntegrityDetails: false,
     })
-
-    await processPsql(
+    const second = await processPsql(
       'continueVoteRetentionCleanup',
       next,
-      { voteRetentionCleanupPage: voteRetentionCleanupPage as never },
+      undefined,
       'second-page',
+      options,
     )
-
-    expect(voteRetentionCleanupPage).toHaveBeenNthCalledWith(2, expect.anything(), next)
+    expect(second).toEqual({
+      supersededVoteBallots: [{ voteTable: 'topic_votes', scanned: 2, deleted: 1, hasMore: false }],
+      orphanedUserAgentStrings: { scanned: 0, deleted: 0, hasMore: false },
+      voteIntegrityDetails: { scanned: 0, redacted: 0, hasMore: false },
+    })
     expect(addBulk).toHaveBeenCalledOnce()
+    expect(await getTestPostVoteIds(owned.postId, owned.userId)).toEqual([owned.postSupersederId])
+    expect(await getTopicElectionVoteEventCount(owned.userId, owned.topicId)).toBe(1)
+    expect(await getTestPostVoteIds(neighbor.postId, neighbor.userId)).toEqual([
+      neighbor.postOlderId,
+      neighbor.postSupersederId,
+    ])
+    expect(await getTopicElectionVoteEventCount(neighbor.userId, neighbor.topicId)).toBe(3)
+  })
+
+  it('runs selected detail pages and leaves disabled and excluded rows unchanged', async () => {
+    const ballots = await createTestVoteRetentionPostBallots()
+    const owned = await createTestVoteRetentionDetails(ballots.postId)
+    const neighborPost = await createTestVoteRetentionPost()
+    const neighbor = await createTestVoteRetentionDetails(neighborPost.postId)
+    const options = {
+      batchSize: 1,
+      now: new Date('2100-01-01T00:00:00Z'),
+      voteIdsByTable: { post_votes: [ballots.postSupersederId] },
+      userAgentStringIds: [owned.userAgentStringId],
+      voteIntegrityFlagIds: [owned.flagId],
+    }
+    const addBulk = spyOnContinuationAdmission()
+    expect(
+      await processPsql(
+        'continueVoteRetentionCleanup',
+        { voteTables: ['post_votes'], userAgentStrings: false, voteIntegrityDetails: false },
+        undefined,
+        'disabled-details',
+        options,
+      ),
+    ).toEqual({
+      supersededVoteBallots: [{ voteTable: 'post_votes', scanned: 2, deleted: 1, hasMore: false }],
+      orphanedUserAgentStrings: { scanned: 0, deleted: 0, hasMore: false },
+      voteIntegrityDetails: { scanned: 0, redacted: 0, hasMore: false },
+    })
+    expect(await hasTestUserAgentString(owned.userAgentStringId)).toBe(true)
+    expect(await getTestVoteIntegrityFlagDetails(owned.flagId)).toEqual({
+      ip_address: '203.0.113.99',
+      threshold: 3,
+    })
+    expect(
+      await processPsql(
+        'continueVoteRetentionCleanup',
+        { voteTables: [], userAgentStrings: true, voteIntegrityDetails: true },
+        undefined,
+        'selected-details',
+        options,
+      ),
+    ).toEqual({
+      supersededVoteBallots: [],
+      orphanedUserAgentStrings: { scanned: 1, deleted: 1, hasMore: false },
+      voteIntegrityDetails: { scanned: 1, redacted: 1, hasMore: false },
+    })
+    expect(await hasTestUserAgentString(owned.userAgentStringId)).toBe(false)
+    expect(await getTestVoteIntegrityFlagDetails(owned.flagId)).toEqual({ threshold: 3 })
+    expect(await hasTestUserAgentString(neighbor.userAgentStringId)).toBe(true)
+    expect(await getTestVoteIntegrityFlagDetails(neighbor.flagId)).toEqual({
+      ip_address: '203.0.113.99',
+      threshold: 3,
+    })
+    expect(
+      await processPsql(
+        'continueVoteRetentionCleanup',
+        { voteTables: [], userAgentStrings: true, voteIntegrityDetails: true },
+        undefined,
+        'empty-details',
+        options,
+      ),
+    ).toEqual({
+      supersededVoteBallots: [],
+      orphanedUserAgentStrings: { scanned: 0, deleted: 0, hasMore: false },
+      voteIntegrityDetails: { scanned: 0, redacted: 0, hasMore: false },
+    })
+    expect(addBulk).not.toHaveBeenCalled()
+  })
+
+  it('rolls back a ballot write failure without admitting a continuation', async () => {
+    const owned = await createTestVoteRetentionPostBallots()
+    const neighbor = await createTestVoteRetentionPostBallots()
+    const addBulk = spyOnContinuationAdmission()
+    const restore = runBeforePostgresStatementForTest('deleteSupersededVoteBallots', async () => {
+      throw new Error('retention page failed')
+    })
+    onTestFinished(restore)
+    await expect(
+      processPsql(
+        'continueVoteRetentionCleanup',
+        { voteTables: ['post_votes'], userAgentStrings: false, voteIntegrityDetails: false },
+        undefined,
+        'failed-page',
+        {
+          batchSize: 1,
+          now: new Date('2026-11-04T12:00:00Z'),
+          voteIdsByTable: { post_votes: [owned.postSupersederId] },
+        },
+      ),
+    ).rejects.toThrow('retention page failed')
+    expect(await getTestPostVoteIds(owned.postId, owned.userId)).toEqual([
+      owned.postOlderId,
+      owned.postSupersederId,
+    ])
+    expect(await getTestPostVoteIds(neighbor.postId, neighbor.userId)).toEqual([
+      neighbor.postOlderId,
+      neighbor.postSupersederId,
+    ])
+    expect(addBulk).not.toHaveBeenCalled()
   })
 })

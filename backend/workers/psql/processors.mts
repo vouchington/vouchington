@@ -17,6 +17,7 @@ import {
   runCopyrightOperationalRetentionCleanup,
   runDataRetentionCleanup,
   runVoteRetentionCleanupPage,
+  type VoteRetentionCleanupOptions,
 } from '@services/data-retention'
 import { admitDataRetentionContinuations } from './processors/data-retention-continuation.mts'
 import {
@@ -52,7 +53,6 @@ type ProcessPsqlDependencies = PartitionCleanupDependencies &
     dataRetentionCleanup: typeof runDataRetentionCleanup
     copyrightRetentionCleanup: typeof runCopyrightOperationalRetentionCleanup
     enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
-    voteRetentionCleanupPage: typeof runVoteRetentionCleanupPage
     refreshMaterializedView: typeof refreshMaterializedView
     runConfigDriven: typeof runConfigDriven
     runMigrations: typeof runMigrations
@@ -70,6 +70,7 @@ export default async function processPsql(
   >,
   dependencies?: Partial<ProcessPsqlDependencies>,
   jobId?: string,
+  voteRetentionOptions?: VoteRetentionCleanupOptions,
 ) {
   switch (jobName) {
     case 'runMigrations':
@@ -138,9 +139,10 @@ export default async function processPsql(
       const selection = requireVoteRetentionSelection(data)
       // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.
       await dataRetentionConfig.waitForInitialization()
-      const result = await (dependencies?.voteRetentionCleanupPage ?? runVoteRetentionCleanupPage)(
+      const result = await runVoteRetentionCleanupPage(
         getDataRetentionLimits(),
         selection,
+        voteRetentionOptions,
       )
       await enqueueVoteRetentionContinuationIfNeeded(result, jobId)
       return result
