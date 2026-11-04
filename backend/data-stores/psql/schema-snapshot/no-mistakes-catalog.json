@@ -32224,6 +32224,10 @@
     },
     "copyright_notice_delivery_work_items": {
       "checkConstraints": {
+        "chk_copyright_notice_delivery_work_items__target_kinds": {
+          "definition": "CHECK (((copyright_notice_target_id IS NOT NULL) = (delivery_kind = ANY (ARRAY['poster_restriction_notice'::copyright_notice_delivery_kinds, 'poster_review_notice'::copyright_notice_delivery_kinds, 'poster_restoration_notice'::copyright_notice_delivery_kinds, 'owner_information_notice'::copyright_notice_delivery_kinds]))))",
+          "validated": true
+        },
         "copyright_delivery_intents_email_correspondence": {
           "definition": "CHECK (((channel <> 'email'::copyright_notice_delivery_intent_channels) OR (copyright_notice_correspondence_message_id IS NOT NULL) OR (copyright_notice_email_intake_receipt_id IS NOT NULL)))",
           "validated": true
@@ -32342,7 +32346,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "attempt_count": {
           "comment": "Number of claimed transport attempts, capped to prevent an unhealthy obligation starving other delivery work.",
@@ -32352,7 +32356,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "available_at": {
           "comment": "Earliest retry time after a retryable transport failure; NULL for terminal states.",
@@ -32362,7 +32366,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "body_ciphertext": {
           "comment": "Immutable encrypted receipt or reply body sent for an email intake, so every retry sends the same legal text; NULL for case deliveries.",
@@ -32372,7 +32376,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "bounced_at": {
           "comment": "Time SES reported a bounce or complaint for an accepted email.",
@@ -32382,7 +32386,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "channel": {
           "comment": "Transport channel used for the delivery.",
@@ -32392,7 +32396,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "copyright_notice_correspondence_message_id": {
           "comment": "Optional private correspondence body delivered by this obligation.",
@@ -32402,7 +32406,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "copyright_notice_email_intake_receipt_id": {
           "comment": "Retained inbound email receipt identity this delivery answers; exactly one of this and copyright_notice_id is set, and at most one delivery of each kind exists per intake.",
@@ -32412,7 +32416,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "copyright_notice_id": {
           "comment": "Copyright case that owns the delivery obligation; NULL for a reply to a declined email intake, which never creates a case.",
@@ -32432,7 +32436,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
+        },
+        "copyright_notice_target_id": {
+          "comment": "Hosted use this delivery tells its recipient about; set for exactly the restriction, review, restoration and owner-information notices, which are sent per target, and NULL for every other kind.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
         },
         "created_at": {
           "comment": null,
@@ -32442,7 +32456,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "delivery_attempted_at": {
           "comment": "Time the terminal transport attempt began.",
@@ -32452,7 +32466,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "delivery_kind": {
           "comment": "Legal event communicated by this delivery. staff_information_request emails the notice claimant a staff request for more information and always references its immutable correspondence message.",
@@ -32462,7 +32476,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "failed_at": {
           "comment": "Time the most recent retryable transport attempt failed.",
@@ -32472,7 +32486,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "failure_ciphertext": {
           "comment": "Encrypted bounded transport failure visible to staff; retries retain the failure history through lifecycle events.",
@@ -32482,7 +32496,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "generation": {
           "comment": "Explicit replay cycle; clearing failed or blocked current-cycle outcomes increments it while execution history remains immutable.",
@@ -32492,7 +32506,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "id": {
           "comment": null,
@@ -32512,7 +32526,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "lease_expires_at": {
           "comment": "Current worker ownership deadline; every owner mutation checks it.",
@@ -32522,7 +32536,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "lease_token": {
           "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
@@ -32532,7 +32546,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "leased_at": {
           "comment": "Time a transport worker most recently claimed the obligation.",
@@ -32542,7 +32556,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "recipient_role": {
           "comment": "Legal role of the recipient: claimant, affected poster or setter, informed community owner, or external email correspondent.",
@@ -32552,7 +32566,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "recipient_user_erased_at": {
           "comment": "Time account erasure removed a poster recipient reference while retaining the legal delivery record.",
@@ -32562,7 +32576,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "recipient_user_id": {
           "comment": "Voucha user receiving the notice when the recipient has an account.",
@@ -32572,7 +32586,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "sent_at": {
           "comment": "Time the provider accepted the delivery.",
@@ -32582,7 +32596,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "state": {
           "comment": "Durable transport lifecycle state.",
@@ -32592,7 +32606,7 @@
           "generatedExpression": "\nCASE\n    WHEN (bounced_at IS NOT NULL) THEN 'bounced'::copyright_notice_delivery_intent_states\n    WHEN (sent_at IS NOT NULL) THEN 'sent'::copyright_notice_delivery_intent_states\n    WHEN (failed_at IS NOT NULL) THEN 'failed'::copyright_notice_delivery_intent_states\n    WHEN (leased_at IS NOT NULL) THEN 'claimed'::copyright_notice_delivery_intent_states\n    ELSE 'pending'::copyright_notice_delivery_intent_states\nEND",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "target_path": {
           "comment": "Immutable community URL selected when an informed-owner obligation is created; delivery does not derive a relationship from the idempotency key.",
@@ -32602,7 +32616,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "updated_at": {
           "comment": null,
@@ -32612,7 +32626,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         }
       },
       "comment": "Durable, idempotent legal-notice delivery obligations, including statements of reasons, decision notices, authenticated arrival receipts, and private replies to rejected email intakes. Transport workers claim and transition intents; they cannot alter case facts.",
@@ -32655,6 +32669,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id", "copyright_notice_id"],
           "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        },
+        "fk_copyright_notice_delivery_work_items__target__notice": {
+          "columns": ["copyright_notice_id", "copyright_notice_target_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["copyright_notice_id", "id"],
+          "referencedTable": "copyright_notice_targets",
           "validated": true
         }
       },
@@ -33002,6 +33024,56 @@
           ],
           "live": true,
           "predicate": "(copyright_notice_submission_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_delivery_work_items__target_recipient": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_delivery_work_items__target_recipient ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id, copyright_notice_target_id, recipient_user_id, id) WHERE (copyright_notice_target_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "copyright_notice_target_id",
+              "descending": false,
+              "expression": "copyright_notice_target_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "recipient_user_id",
+              "descending": false,
+              "expression": "recipient_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(copyright_notice_target_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

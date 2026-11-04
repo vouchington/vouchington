@@ -30750,6 +30750,7 @@
     },
     "copyright_notice_delivery_work_items": {
       "checkConstraints": {
+        "chk_copyright_notice_delivery_work_items__target_kinds": "CHECK (((copyright_notice_target_id IS NOT NULL) = (delivery_kind = ANY (ARRAY['poster_restriction_notice'::copyright_notice_delivery_kinds, 'poster_review_notice'::copyright_notice_delivery_kinds, 'poster_restoration_notice'::copyright_notice_delivery_kinds, 'owner_information_notice'::copyright_notice_delivery_kinds]))))",
         "copyright_delivery_intents_email_correspondence": "CHECK (((channel <> 'email'::copyright_notice_delivery_intent_channels) OR (copyright_notice_correspondence_message_id IS NOT NULL) OR (copyright_notice_email_intake_receipt_id IS NOT NULL)))",
         "copyright_notice_delivery_work_item_amazon_ses_message_id_check": "CHECK (((amazon_ses_message_id IS NULL) OR ((char_length(amazon_ses_message_id) >= 1) AND (char_length(amazon_ses_message_id) <= 1024))))",
         "copyright_notice_delivery_work_items_attempt_count_check": "CHECK (((attempt_count >= 0) AND (attempt_count <= 5)))",
@@ -30787,7 +30788,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "text"
         },
         "attempt_count": {
@@ -30798,7 +30799,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "integer"
         },
         "available_at": {
@@ -30809,7 +30810,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "body_ciphertext": {
@@ -30820,7 +30821,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "bounced_at": {
@@ -30831,7 +30832,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "channel": {
@@ -30842,7 +30843,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "copyright_notice_delivery_intent_channels"
         },
         "copyright_notice_correspondence_message_id": {
@@ -30853,7 +30854,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "copyright_notice_email_intake_receipt_id": {
@@ -30864,7 +30865,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "copyright_notice_id": {
@@ -30886,7 +30887,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "copyright_notice_target_id": {
+          "collation": null,
+          "comment": "Hosted use this delivery tells its recipient about; set for exactly the restriction, review, restoration and owner-information notices, which are sent per target, and NULL for every other kind.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "created_at": {
@@ -30897,7 +30909,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "timestamp with time zone"
         },
         "delivery_attempted_at": {
@@ -30908,7 +30920,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "delivery_kind": {
@@ -30919,7 +30931,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "copyright_notice_delivery_kinds"
         },
         "failed_at": {
@@ -30930,7 +30942,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "failure_ciphertext": {
@@ -30941,7 +30953,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "text"
         },
         "generation": {
@@ -30952,7 +30964,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "bigint"
         },
         "id": {
@@ -30974,7 +30986,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "lease_expires_at": {
@@ -30985,7 +30997,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -30996,7 +31008,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "uuid"
         },
         "leased_at": {
@@ -31007,7 +31019,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "recipient_role": {
@@ -31018,7 +31030,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "copyright_notice_delivery_intent_recipient_roles"
         },
         "recipient_user_erased_at": {
@@ -31029,7 +31041,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "recipient_user_id": {
@@ -31040,7 +31052,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "sent_at": {
@@ -31051,7 +31063,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "state": {
@@ -31062,7 +31074,7 @@
           "generatedExpression": "\nCASE\n    WHEN (bounced_at IS NOT NULL) THEN 'bounced'::copyright_notice_delivery_intent_states\n    WHEN (sent_at IS NOT NULL) THEN 'sent'::copyright_notice_delivery_intent_states\n    WHEN (failed_at IS NOT NULL) THEN 'failed'::copyright_notice_delivery_intent_states\n    WHEN (leased_at IS NOT NULL) THEN 'claimed'::copyright_notice_delivery_intent_states\n    ELSE 'pending'::copyright_notice_delivery_intent_states\nEND",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "copyright_notice_delivery_intent_states"
         },
         "target_path": {
@@ -31073,7 +31085,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "updated_at": {
@@ -31084,7 +31096,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
         }
       },
@@ -31133,6 +31145,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id", "copyright_notice_id"],
           "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        },
+        "fk_copyright_notice_delivery_work_items__target__notice": {
+          "columns": ["copyright_notice_id", "copyright_notice_target_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["copyright_notice_id", "id"],
+          "referencedTable": "copyright_notice_targets",
           "validated": true
         }
       },
@@ -31429,6 +31450,47 @@
             }
           ],
           "predicate": "(copyright_notice_submission_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_delivery_work_items__target_recipient": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_delivery_work_items__target_recipient ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id, copyright_notice_target_id, recipient_user_id, id) WHERE (copyright_notice_target_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_target_id",
+              "descending": false,
+              "expression": "copyright_notice_target_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "recipient_user_id",
+              "descending": false,
+              "expression": "recipient_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_target_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
