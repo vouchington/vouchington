@@ -140,7 +140,7 @@ describe('get-prioritized client limit and cursor', () => {
     expect(five.links).toHaveLength(5)
   })
 
-  it('clamps a limit above the maximum and below one', async () => {
+  it('clamps a limit above the maximum and rejects one below 1 or not an integer', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(prioritizedReferralLinksWorkConfig, {
         personalized_link_max_limit: 4,
@@ -149,10 +149,13 @@ describe('get-prioritized client limit and cursor', () => {
     await createAuthors(6)
 
     const above = await getPrioritizedReferralLinks(null, referralProgramId, { limit: 100 })
-    const below = await getPrioritizedReferralLinks(null, referralProgramId, { limit: 0 })
 
     expect(above.links).toHaveLength(4)
-    expect(below.links).toHaveLength(1)
+    for (const limit of [0, -1, 1.5, Number.NaN]) {
+      await expect(
+        getPrioritizedReferralLinks(null, referralProgramId, { limit }),
+      ).rejects.toMatchObject({ status: 400 })
+    }
   })
 
   it('applies a lowered maximum to an already cached list at once', async () => {

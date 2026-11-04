@@ -186,6 +186,23 @@ describe('get-referral-links', () => {
       expect(oversized.links).toHaveLength(3)
     })
 
+    it('rejects a limit below 1 or not an integer, with and without all', async () => {
+      const user = await createTestUser()
+      const { cardTopicId } = await createCardWithReferralProgram(user)
+      const execute = getReferralLinksTool.function(user)
+
+      for (const limit of [0, -3, 1.5]) {
+        expect(await execute({ topic_id: cardTopicId, limit })).toEqual({
+          success: false,
+          error: 'Invalid limit',
+        })
+        expect(await execute({ topic_id: cardTopicId, limit, all: true })).toEqual({
+          success: false,
+          error: 'Invalid limit',
+        })
+      }
+    })
+
     it('rejects a malformed cursor without all', async () => {
       const user = await createTestUser()
       const { cardTopicId } = await createCardWithReferralProgram(user)

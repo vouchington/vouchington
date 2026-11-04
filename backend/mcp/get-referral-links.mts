@@ -11,7 +11,6 @@ import { nullable, objectSchema, outcomeSchema } from '@vouchington/mcp-server/s
 import { componentPropertySchema } from './route-response-schema.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type SearchPageInfo } from './paged-search.mts'
-import { clampToolLimit } from './search-system.mts'
 
 // The REST twin documents its body inline and carries more per link, so the tool owns this schema.
 // `priority_group` comes from the documented link; `username` and `display_name` flatten its users.
@@ -102,6 +101,10 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      // Same rule as REST: below 1 or not an integer is rejected, above the maximum is clamped.
+      if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1)) {
+        return { success: false, error: 'Invalid limit' }
+      }
       const topic = await resolveTopic(args.topic_id)
 
       if (!topic) {
@@ -120,7 +123,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
       const page = await findPageOrNull(args.after, () =>
         args.all
           ? getAllReferralLinksPage(currentUser.id, referralProgramId, {
-              limit: clampToolLimit(args.limit, 25, 100),
+              limit: Math.min(args.limit ?? 25, 100),
               after: args.after,
             })
           : getPrioritizedReferralLinks(currentUser.id, referralProgramId, {

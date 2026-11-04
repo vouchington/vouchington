@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
@@ -64,10 +65,12 @@ export function getPersonalizedLinkLimit(): number {
 }
 
 /**
- * The limit one request uses: the requested value (at least 1, at most the maximum), or the
- * default. It caps the page and every in-network subquery, so the reads cannot disagree on it.
+ * The limit one request uses: the requested value (a positive integer, clamped to the maximum), or
+ * the default. A value below 1 or not an integer is a 400, the same on REST and MCP. It caps the
+ * page and every in-network subquery, so the reads cannot disagree on it.
  */
 export function resolvePersonalizedLinkLimit(requested?: number): number {
   if (requested === undefined) return getPersonalizedLinkLimit()
-  return Math.min(Math.max(1, Math.floor(requested)), getPersonalizedLinkMaxLimit())
+  if (!Number.isInteger(requested) || requested < 1) throw createHttpError(400, 'Invalid limit')
+  return Math.min(requested, getPersonalizedLinkMaxLimit())
 }
