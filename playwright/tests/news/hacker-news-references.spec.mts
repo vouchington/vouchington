@@ -107,8 +107,9 @@ test.describe('Hacker News references', () => {
 
 test('bounds the post time range when filtering Hacker News references', async ({ page }) => {
   await navigateTo(page, '/posts?time_range=all&after=old&q=example')
-  await page.getByTestId('hacker-news-filter').check()
+  await page.getByTestId('hacker-news-filter').click()
   await expect(page).toHaveURL(/hacker_news=1/)
+  await expect(page.getByTestId('hacker-news-filter')).toBeChecked()
   await expect(page).toHaveURL(/time_range=1y/)
   await expect(page).not.toHaveURL(/after=/)
   await expect(page).toHaveURL(/q=example/)
@@ -118,7 +119,9 @@ test('bounds the post time range when filtering Hacker News references', async (
   await page.getByTestId('post-time-range-option-1m').click()
   await expect(page).toHaveURL(/time_range=1m/)
 
-  await page.getByTestId('hacker-news-filter').uncheck()
+  await page.getByTestId('hacker-news-filter').click()
+  await expect(page).not.toHaveURL(/hacker_news=1/)
+  await expect(page.getByTestId('hacker-news-filter')).not.toBeChecked()
   await page.getByTestId('post-time-range-trigger').click()
   await expect(page.getByTestId('post-time-range-option-all')).toBeVisible()
 })
