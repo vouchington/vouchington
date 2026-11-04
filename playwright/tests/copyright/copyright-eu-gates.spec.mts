@@ -89,7 +89,7 @@ test.describe('EU copyright controls with an approved policy', () => {
     return item
   }
 
-  /** The recipients, complaints and settlements open from the summary card in a dialog. */
+  /** The posters, claimants, complaints and settlements open from the summary card in a dialog. */
   async function openCaseDetails(page: Page, item: Locator) {
     await item.getByTestId('copyright-staff-territorial-open-details').click()
     const dialog = page.getByTestId('copyright-staff-territorial-details-dialog')

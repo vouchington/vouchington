@@ -2,7 +2,10 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
 import { CopyrightStaffTerritorialDispute } from '@/components/copyright/copyright-staff-territorial-dispute'
 import type { CopyrightEuDisputeSettlementsPage } from '@/lib/api/client/copyright-territorial-redress'
-import type { CopyrightTerritorialRecipient } from '@/types/copyright-territorial'
+import type {
+  CopyrightTerritorialClaimant,
+  CopyrightTerritorialPoster,
+} from '@/types/copyright-territorial'
 import { makeCopyrightStaffQueueItem } from '@/test-helpers/api-responses/copyright'
 
 const item = makeCopyrightStaffQueueItem({
@@ -31,14 +34,15 @@ const item = makeCopyrightStaffQueueItem({
     dispute_settlement_count: 1,
   },
 })
-const recipients: CopyrightTerritorialRecipient[] = [
+const claimants: CopyrightTerritorialClaimant[] = [
   {
-    role: 'claimant',
+    receipt_id: '019f0000-0000-7000-8000-000000000197',
     user_id: '019f0000-0000-7000-8000-000000000195',
     informed_at: '2026-09-30T10:00:00Z',
     state: 'sent',
   },
 ]
+const posters: CopyrightTerritorialPoster[] = []
 const initialPage: CopyrightEuDisputeSettlementsPage = {
   copyright_eu_dispute_settlements: [
     {
@@ -59,7 +63,8 @@ const meta = {
   args: {
     item,
     initialPage,
-    recipients,
+    posters,
+    claimants,
     recipientsComplete: true,
     recipientsStatus: 'idle',
     onLoadRecipients: () => undefined,

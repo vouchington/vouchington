@@ -22,19 +22,19 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /** Answers the case's collection reads for one story and restores the client afterwards. */
-function answerCollections(failRecipients: boolean) {
+function answerCollections(failPosters: boolean) {
   const previousGet = ClientRequest.prototype.get
   ClientRequest.prototype.get = function storyCollectionsGet<T>(
     endpoint: string,
     options?: Parameters<ClientRequest['get']>[1],
   ): Promise<T> {
-    if (endpoint.endsWith('/territorial-recipients')) {
-      return failRecipients
+    if (endpoint.endsWith('/territorial-posters')) {
+      return failPosters
         ? Promise.reject(new Error('Request failed'))
         : Promise.resolve({
-            copyright_territorial_recipients: [
+            copyright_territorial_posters: [
               {
-                role: 'poster',
+                target_id: '019f0000-0000-7000-8000-000000000193',
                 user_id: '019f0000-0000-7000-8000-000000000192',
                 informed_at: '2026-09-30T10:00:00Z',
                 state: 'sent',
@@ -42,6 +42,12 @@ function answerCollections(failRecipients: boolean) {
             ],
             page_info: noMorePages,
           } as T)
+    }
+    if (endpoint.endsWith('/territorial-claimants')) {
+      return Promise.resolve({
+        copyright_territorial_claimants: [],
+        page_info: noMorePages,
+      } as T)
     }
     if (endpoint.endsWith('/territorial-complaints')) {
       return Promise.resolve({

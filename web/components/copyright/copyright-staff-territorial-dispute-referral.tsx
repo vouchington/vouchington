@@ -14,35 +14,41 @@ import {
 } from '@/components/ui/select'
 import { referCopyrightEuDisputeSettlement } from '@/lib/api/client/copyright-territorial-redress'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
-import type { CopyrightTerritorialRecipient } from '@/types/copyright-territorial'
+import type {
+  CopyrightTerritorialClaimant,
+  CopyrightTerritorialPoster,
+} from '@/types/copyright-territorial'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 import { dateForInput } from './copyright-staff-territorial-dispute-date'
 
 type PosterOption = { id: string; label: string }
 
-function getPosterOptions(recipients: readonly CopyrightTerritorialRecipient[]): PosterOption[] {
-  const posters = new Map<string, string>()
-  for (const recipient of recipients) {
-    if (recipient.role === 'poster' && recipient.user_id && !posters.has(recipient.user_id)) {
-      posters.set(recipient.user_id, `Poster ${posters.size + 1}`)
+/** A poster on several targets has a row per target but is one option. */
+function getPosterOptions(posters: readonly CopyrightTerritorialPoster[]): PosterOption[] {
+  const labels = new Map<string, string>()
+  for (const poster of posters) {
+    if (poster.user_id && !labels.has(poster.user_id)) {
+      labels.set(poster.user_id, `Poster ${labels.size + 1}`)
     }
   }
-  return [...posters].map(([id, label]) => ({ id, label }))
+  return [...labels].map(([id, label]) => ({ id, label }))
 }
 
 export function CopyrightStaffTerritorialReferralFields({
   item,
-  recipients,
+  posters,
+  claimants,
   onReview,
   pending,
 }: {
   item: CopyrightStaffQueueItem
-  recipients: readonly CopyrightTerritorialRecipient[]
+  posters: readonly CopyrightTerritorialPoster[]
+  claimants: readonly CopyrightTerritorialClaimant[]
   onReview: SubmitReview
   pending: boolean
 }) {
-  const posterOptions = getPosterOptions(recipients)
-  const notifierId = recipients.find(recipient => recipient.role === 'claimant')?.user_id
+  const posterOptions = getPosterOptions(posters)
+  const notifierId = claimants[0]?.user_id
   const [bodyName, setBodyName] = useState('')
   const [referredAt, setReferredAt] = useState(() => dateForInput())
   const [party, setParty] = useState<'' | 'poster' | 'notifier'>('')

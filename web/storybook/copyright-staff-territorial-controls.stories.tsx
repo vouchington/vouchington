@@ -32,7 +32,8 @@ export const Referral: StoryObj = {
     <CopyrightStaffTerritorialReferralFields
       item={item}
       pending={false}
-      recipients={[]}
+      posters={[]}
+      claimants={[]}
       onReview={() => undefined}
     />
   ),

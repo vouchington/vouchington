@@ -3,8 +3,9 @@
 import { clientApi } from './instance'
 import type {
   CopyrightStaffEuDisputeSettlement,
+  CopyrightTerritorialClaimant,
   CopyrightTerritorialComplaint,
-  CopyrightTerritorialRecipient,
+  CopyrightTerritorialPoster,
 } from '@/types/copyright-territorial'
 import type { CopyrightTerritorialJurisdiction } from './copyright-territorial-decisions'
 
@@ -17,8 +18,12 @@ export type CopyrightTerritorialComplaintsPage = {
   copyright_territorial_complaints: CopyrightTerritorialComplaint[]
   page_info: CopyrightTerritorialStaffPageInfo
 }
-export type CopyrightTerritorialRecipientsPage = {
-  copyright_territorial_recipients: CopyrightTerritorialRecipient[]
+export type CopyrightTerritorialPostersPage = {
+  copyright_territorial_posters: CopyrightTerritorialPoster[]
+  page_info: CopyrightTerritorialStaffPageInfo
+}
+export type CopyrightTerritorialClaimantsPage = {
+  copyright_territorial_claimants: CopyrightTerritorialClaimant[]
   page_info: CopyrightTerritorialStaffPageInfo
 }
 export type CopyrightEuDisputeSettlementsPage = {
@@ -45,11 +50,20 @@ export function listCopyrightTerritorialComplaints(
   })
 }
 
-export function listCopyrightTerritorialRecipients(
+export function listCopyrightTerritorialPosters(
   noticeId: string,
   options: { after?: string } = {},
-): Promise<CopyrightTerritorialRecipientsPage> {
-  return clientApi.get(`/api/v1/copyright-notices/${noticeId}/territorial-recipients`, {
+): Promise<CopyrightTerritorialPostersPage> {
+  return clientApi.get(`/api/v1/copyright-notices/${noticeId}/territorial-posters`, {
+    searchParams: { after: options.after },
+  })
+}
+
+export function listCopyrightTerritorialClaimants(
+  noticeId: string,
+  options: { after?: string } = {},
+): Promise<CopyrightTerritorialClaimantsPage> {
+  return clientApi.get(`/api/v1/copyright-notices/${noticeId}/territorial-claimants`, {
     searchParams: { after: options.after },
   })
 }

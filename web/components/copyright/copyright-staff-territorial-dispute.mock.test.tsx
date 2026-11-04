@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makeCopyrightStaffQueueItem } from '@/test-helpers/api-responses/copyright'
 import type {
   CopyrightStaffEuDisputeSettlement,
-  CopyrightTerritorialRecipient,
+  CopyrightTerritorialClaimant,
+  CopyrightTerritorialPoster,
 } from '@/types/copyright-territorial'
 import {
   recordCopyrightEuDisputeSettlementImplementation,
@@ -29,10 +30,26 @@ const mockImplementation = vi.mocked(recordCopyrightEuDisputeSettlementImplement
 const mockList = vi.mocked(listCopyrightEuStaffDisputeSettlements)
 
 type Settlements = CopyrightStaffEuDisputeSettlement[]
-const recipients: CopyrightTerritorialRecipient[] = [
-  { role: 'claimant', user_id: null, informed_at: null, state: null },
-  { role: 'poster', user_id: 'poster-1', informed_at: '2026-09-01T10:00:00Z', state: 'sent' },
+const claimants: CopyrightTerritorialClaimant[] = [
+  { receipt_id: 'receipt-1', user_id: null, informed_at: null, state: null },
 ]
+const posters: CopyrightTerritorialPoster[] = [
+  {
+    target_id: 'target-1',
+    user_id: 'poster-1',
+    informed_at: '2026-09-01T10:00:00Z',
+    state: 'sent',
+  },
+]
+
+const loadedRecipients = {
+  posters,
+  claimants,
+  recipientsComplete: true,
+  recipientsStatus: 'idle',
+  onLoadRecipients: () => undefined,
+  onRetryRecipients: () => undefined,
+} as const
 
 function makeItem() {
   return makeCopyrightStaffQueueItem({
@@ -86,14 +103,15 @@ const submit = (action: () => Promise<unknown>) => void action()
 describe('CopyrightStaffTerritorialDispute', () => {
   afterEach(() => vi.clearAllMocks())
 
-  it('holds the referral form back until every recipient page has loaded', () => {
+  it('holds the referral form back until every poster and claimant page has loaded', () => {
     render(
       <CopyrightStaffTerritorialDispute
         item={makeItem()}
         initialPage={makePage([])}
         onReview={submit}
         pending={false}
-        recipients={recipients}
+        posters={posters}
+        claimants={claimants}
         recipientsComplete={false}
         recipientsStatus='loading'
         onLoadRecipients={() => undefined}
@@ -111,11 +129,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         initialPage={makePage([])}
         onReview={submit}
         pending={false}
-        recipients={recipients}
-        recipientsComplete
-        recipientsStatus='idle'
-        onLoadRecipients={() => undefined}
-        onRetryRecipients={() => undefined}
+        {...loadedRecipients}
       />,
     )
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
@@ -142,11 +156,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         initialPage={makePage([])}
         onReview={submit}
         pending={false}
-        recipients={recipients}
-        recipientsComplete
-        recipientsStatus='idle'
-        onLoadRecipients={() => undefined}
-        onRetryRecipients={() => undefined}
+        {...loadedRecipients}
       />,
     )
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
@@ -177,11 +187,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         initialPage={makePage([referral])}
         onReview={submit}
         pending={false}
-        recipients={recipients}
-        recipientsComplete
-        recipientsStatus='idle'
-        onLoadRecipients={() => undefined}
-        onRetryRecipients={() => undefined}
+        {...loadedRecipients}
       />,
     )
     fireEvent.click(screen.getByRole('combobox', { name: 'Body outcome' }))
@@ -211,11 +217,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         ])}
         onReview={submit}
         pending={false}
-        recipients={recipients}
-        recipientsComplete
-        recipientsStatus='idle'
-        onLoadRecipients={() => undefined}
-        onRetryRecipients={() => undefined}
+        {...loadedRecipients}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Record implementation' }))
@@ -236,11 +238,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         initialPage={makePage([])}
         onReview={action => void action().catch(() => undefined)}
         pending={false}
-        recipients={recipients}
-        recipientsComplete
-        recipientsStatus='idle'
-        onLoadRecipients={() => undefined}
-        onRetryRecipients={() => undefined}
+        {...loadedRecipients}
       />,
     )
     const body = screen.getByLabelText('Dispute settlement body')
@@ -282,11 +280,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
         initialPage={initialPage}
         onReview={submit}
         pending={false}
-        recipients={recipients}
-        recipientsComplete
-        recipientsStatus='idle'
-        onLoadRecipients={() => undefined}
-        onRetryRecipients={() => undefined}
+        {...loadedRecipients}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))

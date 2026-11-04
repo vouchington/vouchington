@@ -13854,6 +13854,41 @@
       ],
       "type": "object"
     },
+    "CommunityApplicationsResponseBody": {
+      "additionalProperties": false,
+      "properties": {
+        "community_applications": {
+          "additionalProperties": {
+            "$ref": "#/components/schemas/CommunityApplication"
+          },
+          "type": "object"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
+        "results": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "__entity_type": {
+                "const": "community_application"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["__entity_type", "id"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "users": {
+          "$ref": "#/components/schemas/Record_string_PublicUser"
+        }
+      },
+      "required": ["results", "page_info", "community_applications", "users"],
+      "type": "object"
+    },
     "CommunityAutoTaggerAgent": {
       "additionalProperties": false,
       "properties": {
@@ -16767,6 +16802,58 @@
       "required": ["period_end", "period_start"],
       "type": "object"
     },
+    "CopyrightTerritorialStaffClaimant": {
+      "additionalProperties": false,
+      "properties": {
+        "informed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "receipt_id": {
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "const": "bounced"
+            },
+            {
+              "const": "claimed"
+            },
+            {
+              "const": "failed"
+            },
+            {
+              "const": "pending"
+            },
+            {
+              "const": "sent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["informed_at", "receipt_id", "state", "user_id"],
+      "type": "object"
+    },
     "CopyrightTerritorialStaffComplaint": {
       "additionalProperties": false,
       "properties": {
@@ -16853,7 +16940,7 @@
       ],
       "type": "object"
     },
-    "CopyrightTerritorialStaffRecipient": {
+    "CopyrightTerritorialStaffPoster": {
       "additionalProperties": false,
       "properties": {
         "informed_at": {
@@ -16866,8 +16953,7 @@
             }
           ]
         },
-        "role": {
-          "enum": ["claimant", "poster"],
+        "target_id": {
           "type": "string"
         },
         "state": {
@@ -16903,7 +16989,7 @@
           ]
         }
       },
-      "required": ["informed_at", "role", "state", "user_id"],
+      "required": ["informed_at", "state", "target_id", "user_id"],
       "type": "object"
     },
     "CopyrightTerritorialSupervisedComplaintRequest": {
@@ -43388,6 +43474,31 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/copyright-notices/:id/territorial-claimants": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/copyright-notices/:id/territorial-complaints": {
       "path": {
         "properties": {
@@ -43413,7 +43524,7 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/copyright-notices/:id/territorial-recipients": {
+    "GET:/api/v1/copyright-notices/:id/territorial-posters": {
       "path": {
         "properties": {
           "id": {

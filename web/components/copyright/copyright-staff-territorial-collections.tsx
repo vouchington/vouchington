@@ -9,19 +9,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Spinner } from '@/components/ui/spinner'
-import { PaginatedListFooter } from '@/components/shared/paginated-list-footer'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import {
   listCopyrightEuStaffDisputeSettlements,
+  listCopyrightTerritorialClaimants,
   listCopyrightTerritorialComplaints,
-  listCopyrightTerritorialRecipients,
+  listCopyrightTerritorialPosters,
   type CopyrightEuDisputeSettlementsPage,
+  type CopyrightTerritorialClaimantsPage,
   type CopyrightTerritorialComplaintsPage,
-  type CopyrightTerritorialRecipientsPage,
+  type CopyrightTerritorialPostersPage,
 } from '@/lib/api/client/copyright-territorial-redress'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffTerritorialComplaintList } from './copyright-staff-territorial-complaint-list'
 import { CopyrightStaffTerritorialDispute } from './copyright-staff-territorial-dispute'
+import { CopyrightStaffTerritorialPosters } from './copyright-staff-territorial-posters'
+import { useWalkToEnd } from './copyright-staff-territorial-walk'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 
 type Props = {
@@ -31,13 +34,14 @@ type Props = {
   onClose: () => void
 }
 type FirstPages = {
-  recipients: CopyrightTerritorialRecipientsPage
+  posters: CopyrightTerritorialPostersPage
+  claimants: CopyrightTerritorialClaimantsPage
   complaints: CopyrightTerritorialComplaintsPage
   settlements: CopyrightEuDisputeSettlementsPage | null
 }
 
 /**
- * The recipients, complaints and settlements of a territorial case, in a dialog. The queue card only
+ * The posters, claimants, complaints and settlements of a territorial case, in a dialog. The queue card only
  * counts them, so the parent mounts this while the dialog is open and the first pages load then.
  */
 export function CopyrightStaffTerritorialCollections(props: Props) {
@@ -47,12 +51,13 @@ export function CopyrightStaffTerritorialCollections(props: Props) {
   useEffect(() => {
     let current = true
     void Promise.all([
-      listCopyrightTerritorialRecipients(id),
+      listCopyrightTerritorialPosters(id),
+      listCopyrightTerritorialClaimants(id),
       listCopyrightTerritorialComplaints(id),
       jurisdiction === 'eu_dsa' ? listCopyrightEuStaffDisputeSettlements(id) : null,
     ])
-      .then(([recipients, complaints, settlements]) => {
-        if (current) setPages({ recipients, complaints, settlements })
+      .then(([posters, claimants, complaints, settlements]) => {
+        if (current) setPages({ posters, claimants, complaints, settlements })
       })
       .catch(() => {
         if (current) setFailed(true)
@@ -99,54 +104,41 @@ export function CopyrightStaffTerritorialCollections(props: Props) {
 }
 
 function LoadedCollections({ item, pending, onReview, pages }: Props & { pages: FirstPages }) {
-  const recipientList = usePaginatedList(
-    pages.recipients,
-    `/api/v1/copyright-notices/${item.id}/territorial-recipients`,
+  const posterList = usePaginatedList(
+    pages.posters,
+    `/api/v1/copyright-notices/${item.id}/territorial-posters`,
     {},
-    { loadPage: after => listCopyrightTerritorialRecipients(item.id, { after }) },
+    { loadPage: after => listCopyrightTerritorialPosters(item.id, { after }) },
   )
-  const { hasNextPage, loadingMore, fetchError, loadMore } = recipientList
-  // A referral names one poster from this list, so every page loads before the form appears. The
-  // walk starts only when staff ask to record a referral: each page computes parties for every
-  // target, so reading the whole list is not free. Retry only clears the error; this effect then
-  // continues, so a retry never starts a second load beside it.
+  const claimantList = usePaginatedList(
+    pages.claimants,
+    `/api/v1/copyright-notices/${item.id}/territorial-claimants`,
+    {},
+    { loadPage: after => listCopyrightTerritorialClaimants(item.id, { after }) },
+  )
+  // A referral names a poster and the notifier, so both lists load to their ends before the form
+  // appears. The walk starts only when staff ask to record a referral: each poster page computes
+  // parties for its batch of targets, so reading every page is not free. Retry only clears the
+  // errors; the walk then continues, so a retry never starts a second load beside it.
   const [walking, setWalking] = useState(false)
-  useEffect(() => {
-    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-event-handler -- each arriving page triggers the next, so the walk continues from loaded state, not from the click alone
-    if (walking && hasNextPage && !loadingMore && !fetchError) void loadMore()
-  }, [walking, hasNextPage, loadingMore, fetchError, loadMore])
-  const recipientsStatus = !walking ? 'idle' : fetchError ? 'failed' : 'loading'
-  const recipients = recipientList.pages.flatMap(page => page.copyright_territorial_recipients)
-  const posterRecipients = recipients.filter(recipient => recipient.role === 'poster')
+  useWalkToEnd(posterList, walking)
+  useWalkToEnd(claimantList, walking)
+  const failed = !!posterList.fetchError || !!claimantList.fetchError
+  const status = !walking ? 'idle' : failed ? 'failed' : 'loading'
+  const posters = posterList.pages.flatMap(page => page.copyright_territorial_posters)
+  const claimants = claimantList.pages.flatMap(page => page.copyright_territorial_claimants)
   return (
     <>
-      <section
-        aria-label='Poster delivery status'
-        className='space-y-1'
-      >
-        <h4 className='font-medium'>Poster notice delivery</h4>
-        {posterRecipients.length === 0 ? (
-          <p className='text-sm text-muted-foreground'>No poster delivery is recorded.</p>
-        ) : (
-          <ul className='space-y-1 text-sm'>
-            {posterRecipients.map((recipient, index) => (
-              <li key={`${recipient.role}:${recipient.user_id ?? 'guest'}`}>
-                Poster {index + 1}: {recipient.state ?? 'not sent'}; informed{' '}
-                {formatDate(recipient.informed_at)}.
-              </li>
-            ))}
-          </ul>
-        )}
-        <PaginatedListFooter
-          fetchError={recipientList.fetchError}
-          canLoadMore={recipientList.hasNextPage}
-          loadingMore={recipientList.loadingMore}
-          clearError={recipientList.clearError}
-          loadMore={() => {
-            void recipientList.loadMore()
-          }}
-        />
-      </section>
+      <CopyrightStaffTerritorialPosters
+        posters={posters}
+        fetchError={posterList.fetchError}
+        hasNextPage={posterList.hasNextPage}
+        loadingMore={posterList.loadingMore}
+        clearError={posterList.clearError}
+        loadMore={() => {
+          void posterList.loadMore()
+        }}
+      />
       <section
         aria-label='Territorial complaints'
         className='space-y-4'
@@ -166,17 +158,17 @@ function LoadedCollections({ item, pending, onReview, pages }: Props & { pages: 
           item={item}
           onReview={onReview}
           pending={pending}
-          recipients={recipients}
-          recipientsComplete={!hasNextPage}
-          recipientsStatus={recipientsStatus}
+          posters={posters}
+          claimants={claimants}
+          recipientsComplete={!posterList.hasNextPage && !claimantList.hasNextPage}
+          recipientsStatus={status}
           onLoadRecipients={() => setWalking(true)}
-          onRetryRecipients={() => recipientList.clearError()}
+          onRetryRecipients={() => {
+            posterList.clearError()
+            claimantList.clearError()
+          }}
         />
       ) : null}
     </>
   )
-}
-
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleString() : 'Not recorded'
 }

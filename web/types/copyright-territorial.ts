@@ -23,11 +23,22 @@ export type CopyrightStaffTerritorialCase = {
   } | null
 }
 
-export type CopyrightTerritorialRecipient = {
-  role: 'claimant' | 'poster'
+type CopyrightTerritorialDeliveryState = 'pending' | 'claimed' | 'sent' | 'failed' | 'bounced'
+
+/** A poster notified for one target; a poster on several targets has a row per target. */
+export type CopyrightTerritorialPoster = {
+  target_id: string
   user_id: string | null
   informed_at: string | null
-  state: 'pending' | 'claimed' | 'sent' | 'failed' | 'bounced' | null
+  state: CopyrightTerritorialDeliveryState | null
+}
+
+/** The notifier of a filing receipt; a guest notifier has no account. */
+export type CopyrightTerritorialClaimant = {
+  receipt_id: string
+  user_id: string | null
+  informed_at: string | null
+  state: CopyrightTerritorialDeliveryState | null
 }
 
 export type CopyrightTerritorialComplaint = {

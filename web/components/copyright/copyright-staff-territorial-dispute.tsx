@@ -2,7 +2,10 @@
 
 import { Button } from '@/components/ui/button'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
-import type { CopyrightTerritorialRecipient } from '@/types/copyright-territorial'
+import type {
+  CopyrightTerritorialClaimant,
+  CopyrightTerritorialPoster,
+} from '@/types/copyright-territorial'
 import type { CopyrightEuDisputeSettlementsPage } from '@/lib/api/client/copyright-territorial-redress'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 import { CopyrightStaffTerritorialReferralFields } from './copyright-staff-territorial-dispute-referral'
@@ -11,7 +14,8 @@ import { CopyrightStaffTerritorialDisputeList } from './copyright-staff-territor
 export function CopyrightStaffTerritorialDispute({
   item,
   initialPage,
-  recipients,
+  posters,
+  claimants,
   recipientsComplete,
   recipientsStatus,
   onLoadRecipients,
@@ -21,10 +25,11 @@ export function CopyrightStaffTerritorialDispute({
 }: {
   item: CopyrightStaffQueueItem
   initialPage: CopyrightEuDisputeSettlementsPage
-  recipients: readonly CopyrightTerritorialRecipient[]
-  /** False while recipient pages are still loading; a referral names a poster from this list. */
+  posters: readonly CopyrightTerritorialPoster[]
+  claimants: readonly CopyrightTerritorialClaimant[]
+  /** False until both lists reach their ends; a referral names a poster or the notifier. */
   recipientsComplete: boolean
-  /** Where the walk through the remaining recipient pages stands; it starts on request. */
+  /** Where the walk through the remaining poster and claimant pages stands; it starts on request. */
   recipientsStatus: 'idle' | 'loading' | 'failed'
   onLoadRecipients: () => void
   onRetryRecipients: () => void
@@ -61,7 +66,8 @@ export function CopyrightStaffTerritorialDispute({
           item={item}
           onReview={onReview}
           pending={pending}
-          recipients={recipients}
+          posters={posters}
+          claimants={claimants}
         />
       ) : null}
     </section>

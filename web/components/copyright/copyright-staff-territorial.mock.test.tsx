@@ -4,8 +4,9 @@ import { makeCopyrightStaffQueueItem } from '@/test-helpers/api-responses/copyri
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { recordCopyrightTerritorialAcknowledgmentFailure } from '@/lib/api/client/copyright-territorial-decisions'
 import {
+  listCopyrightTerritorialClaimants,
   listCopyrightTerritorialComplaints,
-  listCopyrightTerritorialRecipients,
+  listCopyrightTerritorialPosters,
 } from '@/lib/api/client/copyright-territorial-redress'
 import { CopyrightStaffTerritorial } from './copyright-staff-territorial'
 
@@ -15,14 +16,16 @@ vi.mock(import('@/lib/api/client/copyright-territorial-decisions'), () => ({
 }))
 vi.mock(import('@/lib/api/client/copyright-territorial-redress'), () => ({
   listCopyrightTerritorialComplaints: vi.fn<typeof listCopyrightTerritorialComplaints>(),
-  listCopyrightTerritorialRecipients: vi.fn<typeof listCopyrightTerritorialRecipients>(),
+  listCopyrightTerritorialClaimants: vi.fn<typeof listCopyrightTerritorialClaimants>(),
+  listCopyrightTerritorialPosters: vi.fn<typeof listCopyrightTerritorialPosters>(),
 }))
 vi.mock(import('./copyright-staff-territorial-decision'), () => ({
   CopyrightStaffTerritorialDecision: () => <div>Territorial decision form</div>,
 }))
 
 const mockRecordFailure = vi.mocked(recordCopyrightTerritorialAcknowledgmentFailure)
-const mockRecipients = vi.mocked(listCopyrightTerritorialRecipients)
+const mockPosters = vi.mocked(listCopyrightTerritorialPosters)
+const mockClaimants = vi.mocked(listCopyrightTerritorialClaimants)
 const mockComplaints = vi.mocked(listCopyrightTerritorialComplaints)
 const noMorePages = { has_next_page: false, start_cursor: null, end_cursor: null }
 
@@ -95,12 +98,18 @@ describe('CopyrightStaffTerritorial', () => {
   })
 
   it('counts the collections and loads them in a dialog only when staff open the details', async () => {
-    mockRecipients.mockResolvedValue({
-      copyright_territorial_recipients: [
-        { role: 'poster', user_id: 'poster-1', informed_at: '2026-09-01T10:00:00Z', state: 'sent' },
+    mockPosters.mockResolvedValue({
+      copyright_territorial_posters: [
+        {
+          target_id: 'target-1',
+          user_id: 'poster-1',
+          informed_at: '2026-09-01T10:00:00Z',
+          state: 'sent',
+        },
       ],
       page_info: noMorePages,
     })
+    mockClaimants.mockResolvedValue({ copyright_territorial_claimants: [], page_info: noMorePages })
     mockComplaints.mockResolvedValue({
       copyright_territorial_complaints: [],
       page_info: noMorePages,
@@ -113,17 +122,20 @@ describe('CopyrightStaffTerritorial', () => {
       />,
     )
     expect(screen.getByText('2 complaints.')).toBeVisible()
-    expect(mockRecipients).not.toHaveBeenCalled()
+    expect(mockPosters).not.toHaveBeenCalled()
+    expect(mockClaimants).not.toHaveBeenCalled()
     fireEvent.click(
       screen.getByRole('button', { name: 'View deliveries, complaints and settlements' }),
     )
     expect(await screen.findByText(/Poster 1: sent/)).toBeVisible()
-    expect(mockRecipients).toHaveBeenCalledWith('notice-1')
+    expect(mockPosters).toHaveBeenCalledWith('notice-1')
+    expect(mockClaimants).toHaveBeenCalledWith('notice-1')
     expect(mockComplaints).toHaveBeenCalledWith('notice-1')
   })
 
   it('reports a case whose details could not be loaded', async () => {
-    mockRecipients.mockRejectedValue(new Error('Request failed'))
+    mockPosters.mockRejectedValue(new Error('Request failed'))
+    mockClaimants.mockResolvedValue({ copyright_territorial_claimants: [], page_info: noMorePages })
     mockComplaints.mockResolvedValue({
       copyright_territorial_complaints: [],
       page_info: noMorePages,

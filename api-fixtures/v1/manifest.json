@@ -17008,6 +17008,154 @@
       "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices/:id/territorial-claimants": {
+      "bodyKind": "content",
+      "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/territorial-claimants",
+      "schema": {
+        "definitions": {
+          "CopyrightTerritorialStaffClaimant": {
+            "additionalProperties": false,
+            "properties": {
+              "informed_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "receipt_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "state": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "bounced"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "claimed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "failed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "sent"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_territorial_claimants": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "CopyrightTerritorialStaffClaimant",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/case-collection-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/:id/territorial-complaints": {
       "bodyKind": "content",
       "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544",
@@ -17222,16 +17370,16 @@
       "source": "backend/api/v1/copyright-notices/case-collection-routes.mts",
       "statusKnowledge": "default"
     },
-    "GET:/api/v1/copyright-notices/:id/territorial-recipients": {
+    "GET:/api/v1/copyright-notices/:id/territorial-posters": {
       "bodyKind": "content",
       "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
-      "routeTemplate": "/api/v1/copyright-notices/:id/territorial-recipients",
+      "routeTemplate": "/api/v1/copyright-notices/:id/territorial-posters",
       "schema": {
         "definitions": {
-          "CopyrightTerritorialStaffRecipient": {
+          "CopyrightTerritorialStaffPoster": {
             "additionalProperties": false,
             "properties": {
               "informed_at": {
@@ -17244,22 +17392,6 @@
                     },
                     {
                       "type": "string"
-                    }
-                  ]
-                }
-              },
-              "role": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": "claimant"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "poster"
                     }
                   ]
                 }
@@ -17293,6 +17425,12 @@
                       "type": "null"
                     }
                   ]
+                }
+              },
+              "target_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
                 }
               },
               "user_id": {
@@ -17356,11 +17494,11 @@
         "root": {
           "additionalProperties": false,
           "properties": {
-            "copyright_territorial_recipients": {
+            "copyright_territorial_posters": {
               "required": true,
               "schema": {
                 "items": {
-                  "name": "CopyrightTerritorialStaffRecipient",
+                  "name": "CopyrightTerritorialStaffPoster",
                   "type": "ref"
                 },
                 "type": "array"
@@ -96089,22 +96227,46 @@
     },
     {
       "auth": "fixture-admin",
-      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/territorial-recipients",
-      "bodyFile": "responses/web.copyright.eu.territorial-recipients.json",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/territorial-posters",
+      "bodyFile": "responses/web.copyright.eu.territorial-posters.json",
       "consumers": ["web"],
-      "id": "web.copyright.eu.territorial-recipients",
+      "id": "web.copyright.eu.territorial-posters",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/copyright-notices/case-collection-routes.mts"],
-      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000001218/territorial-recipients",
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000001218/territorial-posters",
       "responseSchema": {
-        "hash": "29deae540c91b0affa6b5a3562056623659c4038bbce3a8273d45ec3991b3ccd",
-        "key": "web.copyright.eu.territorial-recipients"
+        "hash": "daa27bccfa909a6921a14d17160809a9ee8b5d40e8c8d911c672e55868e896f1",
+        "key": "web.copyright.eu.territorial-posters"
       },
       "route": {
         "pathParams": {
           "id": "00000000-0000-7000-8000-000000001218"
         },
-        "routeTemplate": "/api/v1/copyright-notices/:id/territorial-recipients"
+        "routeTemplate": "/api/v1/copyright-notices/:id/territorial-posters"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/territorial-claimants",
+      "bodyFile": "responses/web.copyright.eu.territorial-claimants.json",
+      "consumers": ["web"],
+      "id": "web.copyright.eu.territorial-claimants",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/case-collection-routes.mts"],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000001218/territorial-claimants",
+      "responseSchema": {
+        "hash": "06547f4778f7c974790ac8c59433e40969a8f52047912fac3de9c8ff6279b364",
+        "key": "web.copyright.eu.territorial-claimants"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000001218"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/territorial-claimants"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts"
