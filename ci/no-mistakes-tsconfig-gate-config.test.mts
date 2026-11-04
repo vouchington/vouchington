@@ -1,7 +1,6 @@
-import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig } from 'no-mistakes'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -14,8 +13,8 @@ type Config = {
 }
 
 describe('TypeScript compiler gate configuration', () => {
-  it('declares required compiler projects as always-on commands and explicit exemptions', () => {
-    const config = parseYaml(readFileSync(`${repoRoot}/.no-mistakes.yml`, 'utf8')) as Config
+  it('declares required compiler projects as always-on commands and explicit exemptions', async () => {
+    const config = (await resolveConfig({ root: repoRoot, view: 'declared' })) as Config
     const commands = config.checks?.commands ?? []
     const projects: Array<[string, string[]]> = [
       [

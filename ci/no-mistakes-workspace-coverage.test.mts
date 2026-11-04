@@ -45,17 +45,17 @@ describe('finite configuration', () => {
         'rules:\n  - rule: package-json-workspace-coverage\n    options:\n      requireNamedPackage: true\n      packageRoots: [backend]\n',
       )
       expect(
-        checkWorkspaceRootCoverage(root, [
+        await checkWorkspaceRootCoverage(root, [
           '.no-mistakes.yml',
           'pnpm-workspace.yaml',
           'backend/package.json',
         ]),
       ).toEqual([])
-      expect(() =>
+      await expect(
         checkWorkspaceRootCoverage(root, ['.no-mistakes.yml', 'backend/package.json']),
-      ).toThrow('Workspace package configuration must be tracked')
+      ).rejects.toThrow('Workspace package configuration must be tracked')
       await writeFile(join(root, '.no-mistakes.yml'), 'rules: []\n')
-      expect(checkWorkspaceRootCoverage(root, ['.no-mistakes.yml'])).toEqual([
+      expect(await checkWorkspaceRootCoverage(root, ['.no-mistakes.yml'])).toEqual([
         'Workspace coverage requires packageRoots and requireNamedPackage',
       ])
     } finally {

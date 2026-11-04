@@ -1,15 +1,14 @@
-import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig } from 'no-mistakes'
 
 interface CheckConfig {
   options?: { permanentPackages?: Array<{ name?: unknown }> }
   rule?: string
 }
 
-export function permanentReleaseAgePackageNames(): Set<string> {
-  const configPath = fileURLToPath(new URL('../.no-mistakes.yml', import.meta.url))
-  const config = parseYaml(readFileSync(configPath, 'utf8')) as {
+export async function permanentReleaseAgePackageNames(): Promise<Set<string>> {
+  const root = fileURLToPath(new URL('..', import.meta.url))
+  const config = (await resolveConfig({ root, view: 'declared' })) as {
     rules?: CheckConfig[]
   }
   const policy = config.rules?.find(check => check.rule === 'pnpm-release-age-policy')

@@ -3,13 +3,26 @@ import { fileURLToPath } from 'node:url'
 
 import { parse as parseJsonc } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig } from 'no-mistakes'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
 type NoMistakesConfig = {
-  rules?: Array<{ exclude?: string[]; name?: string; options?: { policies?: unknown[] } }>
+  rules?: Array<{
+    exclude?: string[]
+    name?: string
+    rule?: string
+    projects?: string[]
+    options?: {
+      allowedContexts?: unknown
+      policies?: unknown[]
+      packages?: Array<{ root: string; requiredFiles: string[] }>
+      bannedPaths?: Array<{ glob: string; message?: string }>
+    }
+  }>
 }
+
+const config = (await resolveConfig({ root: repoRoot, view: 'declared' })) as NoMistakesConfig
 
 function readRepoFile(path: string): string {
   return readFileSync(`${repoRoot}/${path}`, 'utf8')
@@ -21,7 +34,6 @@ function expectNoMistakesCurrentRange(version: string | undefined): void {
 
 describe('no-mistakes config', () => {
   it('limits the Next route exception to the deployment-order Sentry bootstrap', () => {
-    const config = parseYaml(readRepoFile('.no-mistakes.yml')) as NoMistakesConfig
     const policy = config.rules?.find(rule => rule.name === 'web no Next.js API routes')
     expect(policy?.exclude).toEqual(['web/app/runtime-sentry-config.js/route.ts'])
   })
@@ -43,14 +55,13 @@ describe('no-mistakes config', () => {
   })
 
   it('configures the package-owned Git revision guard and the sparse-checkout guard', () => {
-    const noMistakes = readRepoFile('.no-mistakes.yml')
-    expect(noMistakes).toContain('rule: no-test-git-sha')
-    expect(noMistakes).not.toContain('allowedContexts:')
-    expect(noMistakes).toContain('rule: no-sparse-checkout')
+    const revisionGuard = config.rules?.find(rule => rule.rule === 'no-test-git-sha')
+    expect(revisionGuard).toBeDefined()
+    expect(revisionGuard).not.toHaveProperty('options.allowedContexts')
+    expect(config.rules).toContainEqual(expect.objectContaining({ rule: 'no-sparse-checkout' }))
   })
 
   it('requires nested Oxlint configs to preserve their ancestor overrides and plugins', () => {
-    const config = parseYaml(readRepoFile('.no-mistakes.yml')) as NoMistakesConfig
     const policy = config.rules?.find(
       rule => rule.name === 'root oxlintrc override globs and bind ban',
     )?.options?.policies
@@ -98,19 +109,16 @@ describe('no-mistakes config', () => {
   })
 
   it('requires package.json + barrel/entry files across backend package families', () => {
-    const noMistakes = readRepoFile('.no-mistakes.yml')
-
-    // Each regex binds the root to its expected requiredFiles value so a swap
-    // (e.g. giving backend/entrypoints index.mts instead of serve.mts) is caught.
-    const requiredPatterns = [
-      /- root: backend\/services\s+requiredFiles: \[package\.json, index\.mts\]/,
-      /- root: backend\/agents\s+requiredFiles: \[package\.json, index\.mts\]/,
-      /- root: backend\/data-stores\s+requiredFiles: \[package\.json, index\.mts\]/,
-      /- root: backend\/modules\s+requiredFiles: \[package\.json, index\.mts\]/,
-      /- root: backend\/entrypoints\s+requiredFiles: \[package\.json, serve\.mts\]/,
-    ]
-    for (const pattern of requiredPatterns) {
-      expect(noMistakes).toMatch(pattern)
+    const packages = config.rules?.find(rule => rule.name === 'backend package required files')
+      ?.options?.packages
+    for (const [root, requiredFiles] of [
+      ['backend/services', ['package.json', 'index.mts']],
+      ['backend/agents', ['package.json', 'index.mts']],
+      ['backend/data-stores', ['package.json', 'index.mts']],
+      ['backend/modules', ['package.json', 'index.mts']],
+      ['backend/entrypoints', ['package.json', 'serve.mts']],
+    ]) {
+      expect(packages).toContainEqual({ root, requiredFiles })
     }
   })
 
@@ -121,7 +129,8 @@ describe('no-mistakes config', () => {
   })
 
   it('keeps extracted native sources and native-only helpers out of Vouchington', () => {
-    const noMistakes = readRepoFile('.no-mistakes.yml')
+    const bannedPaths = config.rules?.find(rule => rule.name === 'banned repository paths')?.options
+      ?.bannedPaths
 
     for (const path of [
       'swift-clients/**',
@@ -133,25 +142,22 @@ describe('no-mistakes config', () => {
       'ci/swift-resolved-pin-delta.mts',
       'ci/swift-resolved-pin-delta.test.mts',
     ]) {
-      expect(noMistakes).toContain(`glob: ${path}`)
+      expect(bannedPaths).toContainEqual(expect.objectContaining({ glob: path }))
     }
-    expect(noMistakes).toContain('belongs in vouchington/vouchington-clients')
+    expect(bannedPaths).toContainEqual(
+      expect.objectContaining({
+        message: expect.stringContaining('belongs in vouchington/vouchington-clients'),
+      }),
+    )
   })
 
   it('scopes playwright uniqueness and prefer-test-id rules to the web project (regression lock: enforcement via config, not CLI flags)', () => {
-    const noMistakes = readRepoFile('.no-mistakes.yml')
-
-    // Use a negative lookahead on `- name:` so the regex cannot bleed into the next rule.
     for (const rule of [
       'playwright-unique-test-ids',
       'playwright-unique-html-ids',
       'playwright-prefer-test-id-locators',
     ]) {
-      expect(noMistakes).toMatch(
-        new RegExp(
-          `rule: ${rule}(?:(?!-\\s+name:)[\\s\\S])*?projects:(?:(?!-\\s+name:)[\\s\\S])*?- web(?![-\\w])`,
-        ),
-      )
+      expect(config.rules?.find(candidate => candidate.rule === rule)?.projects).toContain('web')
     }
   })
 })

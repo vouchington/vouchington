@@ -1,8 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig, type DeclaredConfig } from 'no-mistakes'
 
 const NO_MISTAKES_PATH = '.no-mistakes.yml'
 const PLACEHOLDER_PATH = 'backend/data-stores/psql/migrations/.no-mistakes-schema-placeholder.sql'
@@ -30,12 +27,13 @@ type NoMistakesConfig = { rules?: NoMistakesRule[] }
  * Checks that the generated-column allowlists still match the current schema and migration tree.
  * The caller supplies only tracked migration table names so this work stays in static CI.
  */
-export function checkExtraGeneratedColumnsFreshness(
+export async function checkExtraGeneratedColumnsFreshness(
   repoRoot: string,
   trackedFiles: readonly string[],
   schema: Pick<SchemaSnapshot, 'tables'>,
   migrationCreateTableNames: ReadonlySet<string>,
-): string[] {
+  declaredConfig?: DeclaredConfig,
+): Promise<string[]> {
   const errors: string[] = []
   if (!trackedFiles.includes(NO_MISTAKES_PATH)) {
     if (trackedFiles.includes(PLACEHOLDER_PATH)) {
@@ -44,9 +42,8 @@ export function checkExtraGeneratedColumnsFreshness(
     return errors
   }
 
-  const config = parseYaml(
-    readFileSync(join(repoRoot, NO_MISTAKES_PATH), 'utf8'),
-  ) as NoMistakesConfig
+  const config = (declaredConfig ??
+    (await resolveConfig({ root: repoRoot, view: 'declared' }))) as NoMistakesConfig
   const generatedColumnRule = config.rules?.find(
     rule => rule.rule === 'postgres-no-generated-column-writes',
   )

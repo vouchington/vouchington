@@ -113,7 +113,7 @@ if (import.meta.main) {
   const errors = await storybookBrowserOptimizeDepsErrors({
     root: repoRoot,
     include: storybookBrowserOptimizeDeps,
-    firstPartyNames: permanentReleaseAgePackageNames(),
+    firstPartyNames: await permanentReleaseAgePackageNames(),
     // Deadline-free so a concurrent `no-mistakes check` queues this call instead of failing it.
     readImports: (root, files) => importUsages({ root, files, timeout: 0, lockTimeout: 0 }),
   })

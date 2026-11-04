@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { resolveConfig, type DeclaredConfig } from 'no-mistakes'
 import { parse } from 'yaml'
 
 export function workspaceRootCoverageErrors(
@@ -24,13 +25,14 @@ export function workspaceRootCoverageErrors(
   ]
 }
 
-export function checkWorkspaceRootCoverage(
+export async function checkWorkspaceRootCoverage(
   root: string,
   trackedFiles: readonly string[],
-): string[] {
+  declaredConfig?: DeclaredConfig,
+): Promise<string[]> {
   if (!trackedFiles.includes('.no-mistakes.yml'))
     throw new Error('Workspace coverage configuration must be tracked')
-  const config = parse(readFileSync(join(root, '.no-mistakes.yml'), 'utf8')) as {
+  const config = (declaredConfig ?? (await resolveConfig({ root, view: 'declared' }))) as {
     rules?: Array<{
       rule?: string
       options?: { packageRoots?: string[]; requireNamedPackage?: boolean }

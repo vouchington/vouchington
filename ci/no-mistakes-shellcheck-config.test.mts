@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig } from 'no-mistakes'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
@@ -27,8 +27,8 @@ describe('tracked-only ShellCheck consumer', () => {
     expect(staticAnalysis.dependencies['no-mistakes']).toBe(root.devDependencies['no-mistakes'])
   })
 
-  it('limits ShellCheck to tracked scripts, including supported root shebang scripts', () => {
-    const config = parseYaml(readRepoFile('.no-mistakes.yml')) as {
+  it('limits ShellCheck to tracked scripts, including supported root shebang scripts', async () => {
+    const config = (await resolveConfig({ root: repoRoot, view: 'declared' })) as {
       rules?: Array<{
         rule?: string
         options?: {

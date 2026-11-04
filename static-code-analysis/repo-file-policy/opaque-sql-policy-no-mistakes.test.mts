@@ -1,7 +1,7 @@
-import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 
+import { resolveConfig } from 'no-mistakes'
 import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
 
 type Rule = {
   name: string
@@ -22,9 +22,10 @@ type Rule = {
 
 describe('opaque SQL policy configuration', () => {
   it('keeps lock and generated-column SQL rules enabled at error severity', async () => {
-    const config = parse(
-      await readFile(new URL('../../.no-mistakes.yml', import.meta.url), 'utf8'),
-    ) as {
+    const config = (await resolveConfig({
+      root: fileURLToPath(new URL('../../', import.meta.url)),
+      view: 'declared',
+    })) as unknown as {
       rules: Rule[]
     }
     const opaqueRules = config.rules.filter(rule =>

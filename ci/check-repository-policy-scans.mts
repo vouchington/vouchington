@@ -9,7 +9,7 @@ import { checkWorkerSecretExemptPaths } from './check-worker-secret-exempt-paths
 /** Run live repository policies once in the dedicated static CI job. */
 export async function checkRepositoryPolicyScans(root: string): Promise<void> {
   checkKnipDependencyPolicy(root)
-  checkPostgresOrderingPolicy(root)
+  await checkPostgresOrderingPolicy(root)
 
   const violations = [
     ...(await checkTransientRetryPolicy(root)),

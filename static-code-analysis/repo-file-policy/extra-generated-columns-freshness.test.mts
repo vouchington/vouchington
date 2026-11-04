@@ -101,7 +101,7 @@ describe('extraGeneratedColumns freshness policy', () => {
       'migrated_generated',
     ])
     expect(
-      checkExtraGeneratedColumnsFreshness(
+      await checkExtraGeneratedColumnsFreshness(
         root,
         ['.no-mistakes.yml', 'backend/data-stores/psql/migrations/001-example.sql'],
         schema,
@@ -113,10 +113,20 @@ describe('extraGeneratedColumns freshness policy', () => {
   it('reads the allowlist only when the config is in the tracked inventory', async () => {
     const root = await mkdtemp(join(tmpdir(), 'generated-column-partial-root-'))
     try {
-      expect(checkExtraGeneratedColumnsFreshness(root, [], schemaFixture(), new Set())).toEqual([])
-      expect(() =>
-        checkExtraGeneratedColumnsFreshness(root, ['.no-mistakes.yml'], schemaFixture(), new Set()),
-      ).toThrow(/\.no-mistakes\.yml/)
+      expect(
+        await checkExtraGeneratedColumnsFreshness(root, [], schemaFixture(), new Set()),
+      ).toEqual([])
+      expect(
+        await checkExtraGeneratedColumnsFreshness(
+          root,
+          ['.no-mistakes.yml'],
+          schemaFixture(),
+          new Set(),
+        ),
+      ).toEqual([
+        expect.stringContaining('generated-column write rule is missing'),
+        expect.stringContaining('expected two postgres-generated-column-predicates rules'),
+      ])
     } finally {
       await rm(root, { force: true, recursive: true })
     }
@@ -126,7 +136,7 @@ describe('extraGeneratedColumns freshness policy', () => {
     const root = await createConfigRoot(
       configFixture({ generatedTables: ['stale_table'], predicateTables: [] }),
     )
-    const errors = checkExtraGeneratedColumnsFreshness(
+    const errors = await checkExtraGeneratedColumnsFreshness(
       root,
       ['.no-mistakes.yml'],
       schemaFixture(),
@@ -149,7 +159,7 @@ describe('extraGeneratedColumns freshness policy', () => {
         predicateSourceColumn: 'wrong',
       }),
     )
-    const errors = checkExtraGeneratedColumnsFreshness(
+    const errors = await checkExtraGeneratedColumnsFreshness(
       root,
       ['.no-mistakes.yml', trackedPlaceholder],
       schemaFixture(),

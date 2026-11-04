@@ -1,7 +1,7 @@
-import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 
+import { resolveConfig } from 'no-mistakes'
 import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
 
 type Rule = {
   name: string
@@ -24,9 +24,10 @@ type Rule = {
 
 describe('column trigger configuration', () => {
   it('keeps both updated_at rules enabled at error severity with the posts exception', async () => {
-    const config = parse(
-      await readFile(new URL('../../.no-mistakes.yml', import.meta.url), 'utf8'),
-    ) as {
+    const config = (await resolveConfig({
+      root: fileURLToPath(new URL('../../', import.meta.url)),
+      view: 'declared',
+    })) as unknown as {
       rules: Rule[]
     }
     const rules = config.rules.filter(rule => rule.rule === 'postgres-column-requires-trigger')

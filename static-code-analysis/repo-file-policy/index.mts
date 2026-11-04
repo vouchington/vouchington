@@ -8,6 +8,8 @@ import {
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { resolveConfig } from 'no-mistakes'
+
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { checkGhaWorkspacePolicy } from 'vouchington-tooling/gha-workspace-policy'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
@@ -65,7 +67,8 @@ export async function checkRepoFilePolicy(
 
   const trackedFiles = ctx.trackedFiles.filter(file => existsSync(join(ctx.repoRoot, file)))
   const trackedFileSet = ctx.trackedFileSet
-  errors.push(...checkWorkspaceRootCoverage(ctx.repoRoot, ctx.trackedFiles))
+  const config = await resolveConfig({ root: ctx.repoRoot, view: 'declared' })
+  errors.push(...(await checkWorkspaceRootCoverage(ctx.repoRoot, ctx.trackedFiles, config)))
   errors.push(
     ...checkBoundedWorkTunables(
       ctx.repoRoot,
@@ -77,12 +80,13 @@ export async function checkRepoFilePolicy(
 
   const migrationCreateTableNames = await checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
   errors.push(
-    ...checkExtraGeneratedColumnsFreshness(
+    ...(await checkExtraGeneratedColumnsFreshness(
       ctx.repoRoot,
       ctx.trackedFiles,
       schema,
       migrationCreateTableNames,
-    ),
+      config,
+    )),
   )
   await checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   errors.push(...checkAgentBlackboardMcpConfig(ctx))
