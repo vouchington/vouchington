@@ -91,6 +91,7 @@ describe('mockCompletedRssFeedImport', () => {
       import: {
         completed_rows: 1,
         failed_rows: 1,
+        skipped_rows: 0,
         pending_rows: 0,
         total_rows: 2,
       },

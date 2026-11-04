@@ -79,5 +79,6 @@ export const FollowLimitReached: Story = {
         'Done. 1 imported, 0 failed, 2 skipped. 2 skipped because the follow limit was reached.',
       ),
     ).toBeVisible()
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100')
   },
 }
