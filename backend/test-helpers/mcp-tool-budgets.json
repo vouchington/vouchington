@@ -1413,7 +1413,7 @@
     "legal": {
       "list_copyright_review_queue": {
         "measured": {
-          "list": 13238,
+          "list": 13466,
           "core": 300
         },
         "max": {
@@ -1635,6 +1635,16 @@
         "measured": {
           "list": 1206,
           "core": 849
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_copyright_claimant_misuse_summary": {
+        "measured": {
+          "list": 1462,
+          "core": 367
         },
         "max": {
           "list": 2000,

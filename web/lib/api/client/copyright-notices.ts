@@ -84,7 +84,7 @@ export function listCopyrightReviewQueue(options?: {
 
 export function getClaimantMisuseSummary(
   claimantUserId: string,
-  after: string,
+  after?: string,
 ): Promise<{ claimant_misuse: CopyrightClaimantMisuse }> {
   return clientApi.get(`/api/v1/copyright-notices/claimants/${claimantUserId}/misuse-summary`, {
     searchParams: { after },

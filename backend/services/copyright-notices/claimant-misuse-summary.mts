@@ -50,7 +50,8 @@ export async function readClaimantMisuseSummaries(
         SELECT id FROM copyright_notices
         WHERE claimant_user_id = claimant.id
           `
-  if (afterId) statement.append(sql`AND id < ${afterId}`)
+  // Keep the seek on the claimant-prefixed index even for a generic cursor plan.
+  if (afterId) statement.append(sql`AND (claimant_user_id, id) < (claimant.id, ${afterId}::uuid)`)
   statement.append(sql`
         ORDER BY id DESC
         LIMIT ${limit + 1}

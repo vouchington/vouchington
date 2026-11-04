@@ -69,6 +69,7 @@ describe('copyright dynamic-config namespace', () => {
       automaticProvisionalWithholdingSince: '',
       mcpDecisionTools: false,
       emailThreadGraphMaxRows: 1000,
+      claimantMisuseWindowSize: 1000,
       reviewTargetMinutes: 0,
       evidenceRetentionDeletion: true,
       staydownMatching: false,

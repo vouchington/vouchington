@@ -75,7 +75,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly copyrightNotices: Pick<
     typeof import('@/lib/api/client/copyright-notices'),
-    'listCopyrightReviewQueue'
+    'listCopyrightReviewQueue' | 'getClaimantMisuseSummary'
   >
   readonly dynamicConfig: Pick<
     typeof import('@/lib/api/client/dynamic-config'),

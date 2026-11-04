@@ -1,3 +1,4 @@
+import webCopyrightClaimantMisuseSummary from '../../../../api-fixtures/v1/responses/web.copyright.claimant-misuse-summary.default.json'
 import webCopyrightNoticesDefault from '../../../../api-fixtures/v1/responses/web.copyright.notices.default.json'
 import webCopyrightNoticesNullClaimant from '../../../../api-fixtures/v1/responses/web.copyright.notices.null-claimant.json'
 import webCopyrightNoticeDetailPopulated from '../../../../api-fixtures/v1/responses/web.copyright.notice.detail.populated.json'
@@ -18,11 +19,20 @@ import type {
   CopyrightParticipantNoticeDetail,
   CopyrightStaffQueuePage,
 } from '@/types/copyright-notices'
+import type { CopyrightClaimantMisuse } from '@/types/copyright-claimant-misuse'
 import type { CopyrightGuestCapabilitiesPage } from '@/lib/api/client/copyright-guest'
 import type { CopyrightRepeatInfringerAccountRecord } from '@/lib/api/client/copyright-repeat-infringer'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const COPYRIGHT_DECLARATIONS = [
+  defineWebApiFixture<{ claimant_misuse: CopyrightClaimantMisuse }>()(
+    'web.copyright.claimant-misuse-summary.default',
+    webCopyrightClaimantMisuseSummary,
+    context =>
+      context.client.copyrightNotices.getClaimantMisuseSummary(
+        '00000000-0000-7000-8000-000000000807',
+      ),
+  ),
   defineWebApiFixture<{
     copyright_repeat_infringer_accounts: CopyrightRepeatInfringerAccountRecord[]
   }>()(

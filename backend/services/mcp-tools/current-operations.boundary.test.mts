@@ -31,6 +31,20 @@ import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 import { currentOperationCases, type OperationCase } from '@voucha/test-helpers/mcp-operation-cases'
 
 const CASES = currentOperationCases()
+describe('claimant window operation routing', () => {
+  it('routes the claimant window as one legal read operation', () => {
+    expect(CASES.filter(row => row.name === 'get_copyright_claimant_misuse_summary')).toMatchObject(
+      [
+        {
+          audience: 'legal',
+          option: null,
+          routes: ['GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary'],
+        },
+      ],
+    )
+  })
+})
+
 const ALL_SCOPES = withScopePrerequisites(Object.keys(SCOPE_DEFINITIONS) as ApiScope[])
 const SENTINEL_ROUTE = 'GET:/api/v1/posts'
 
