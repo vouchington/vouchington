@@ -32,10 +32,7 @@ export async function withRejectedPostgresQueryForTest<Result>(
   return await operation(rejectQuery(transaction, matches, message))
 }
 
-/**
- * Reject default-pool `read()` calls whose statement text contains `marker` (the leading SQL
- * comment label). Use only for reads outside any caller-owned transaction; returns the restore.
- */
+/** Reject matching pool reads outside caller-owned transactions; returns the restore. */
 export function rejectPostgresReadForTest(
   marker: string,
   error: unknown,
@@ -53,10 +50,7 @@ export function rejectPostgresReadForTest(
   return () => spy.mockRestore()
 }
 
-/**
- * Reject default-pool `write()` calls whose statement text contains `marker` (the leading SQL
- * comment label). Use only for writes outside any caller-owned transaction; returns the restore.
- */
+/** Reject matching pool writes outside caller-owned transactions; returns the restore. */
 export function rejectPostgresWriteForTest(
   marker: string,
   error: unknown,
@@ -83,11 +77,7 @@ export function rejectNextPostgresTransactionForTest(error: Error): () => void {
   return () => spy.mockRestore()
 }
 
-/**
- * Answer default-pool `read()` calls whose statement text contains `marker` from `answers`, in call
- * order: each entry replaces that call's rows, and calls past the end of the list run the real read.
- * Use to make a read observe state from before a concurrent write; returns the restore.
- */
+/** Answer matching pool reads in order; exhausted answers run for real. Returns the restore. */
 export function answerPostgresReadsForTest(
   marker: string,
   answers: ReadonlyArray<Record<string, unknown>[]>,
@@ -104,12 +94,7 @@ export function answerPostgresReadsForTest(
   return () => spy.mockRestore()
 }
 
-/**
- * Answer default-pool `write()` calls whose statement text contains `marker` from `answers`, in call
- * order: an array entry replaces that call's rows without running the statement, `undefined` and
- * calls past the end of the list run the real write. Use to make one call report a state the
- * database still disagrees with, such as a lease renewal that matched no row; returns the restore.
- */
+/** Answer matching pool writes in order; undefined/exhausted answers run for real. Returns the restore. */
 export function answerPostgresWritesForTest(
   marker: string,
   answers: ReadonlyArray<Record<string, unknown>[] | undefined>,
@@ -168,6 +153,20 @@ export function rejectNextBackgroundJobAddBulkForTest(jobName: string, error: Er
       return Promise.reject(error)
     }
     return Reflect.apply(realAddBulk, backgroundQueue, [jobs])
+  })
+  return () => spy.mockRestore()
+}
+
+/** Observe a named job's real acceptance, including reply loss injected by throwing from after. */
+export function runAfterBackgroundJobAddForTest(
+  jobName: string,
+  after: (data: unknown, job: unknown) => Promise<void>,
+): () => void {
+  const realAdd = backgroundQueue.add
+  const spy = vi.spyOn(backgroundQueue, 'add').mockImplementation(async (name, data, opts) => {
+    const job = await Reflect.apply(realAdd, backgroundQueue, [name, data, opts])
+    if (name === jobName) await after(data, job)
+    return job
   })
   return () => spy.mockRestore()
 }

@@ -1,12 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
-import { readTestAppliedMediaRegistryJobs } from '@voucha/test-helpers/media-delivery-recovery'
-import type {
-  listRecoverableMediaDeliveryRegistryIds,
-  stageImagePlacementDeliveryRecordPage,
-  reconcileMediaDeliveryRepairMarkers,
-} from '@services/media-delivery-safety'
+import { describe, expect, it } from 'vitest'
+import {
+  readTestAppliedMediaRegistryJobs,
+  readTestMediaRegistryReconcileJobs,
+  setTestMediaRecoveryState,
+  withTestMediaRecoveryBacklog,
+} from '@voucha/test-helpers/media-delivery-recovery'
+import { withTestMediaRecoveryBacklogWithOutsider } from '@voucha/test-helpers/media-delivery-recovery-scope'
 import {
   createTestUser,
   insertTestImage,
@@ -59,54 +58,55 @@ describe('media delivery registry processors', () => {
     })
   })
 
-  it.each([100, 1])(
-    'uses configured recovery page size %i for repairs and discovery',
-    async pageSize => {
-      const restore = overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
-        recovery_page_size: pageSize,
-      })
-      try {
-        const ownedRecordIds = [
-          `image-placement:${crypto.randomUUID()}:1:${crypto.randomUUID()}`,
-          `image-placement:${crypto.randomUUID()}:0:${crypto.randomUUID()}`,
-        ]
-        const list = vi.fn<typeof listRecoverableMediaDeliveryRegistryIds>().mockResolvedValue({
-          results: ownedRecordIds,
-          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-        })
-        const stage = vi
-          .fn<typeof stageImagePlacementDeliveryRecordPage>()
-          .mockResolvedValue({ staged: 2, hasMore: false, scanBefore: '2026-07-01T12:00:00.000Z' })
-        const repair = vi.fn<typeof reconcileMediaDeliveryRepairMarkers>().mockResolvedValue(0)
-        const now = new Date('2026-07-01T12:00:00.000Z')
-
-        await expect(
-          processReconcileMediaDeliveryRegistry(
+  it('enqueues one owned recovery page and persists its continuation', async () => {
+    const user = await createTestUser({ administrator: true })
+    await withTestMediaRecoveryBacklogWithOutsider(
+      user.id,
+      2,
+      async ({ recordIds, scanBefore }) => {
+        expect(
+          await processReconcileMediaDeliveryRegistry(
             {},
-            {
-              listRecoverableMediaDeliveryRegistryIds: list,
-              stageImagePlacementDeliveryRecordPage: stage,
-              reconcileMediaDeliveryRepairMarkers: repair,
-              getMediaDeliveryRegistryScanBefore: async () => now.toISOString(),
-              failExpiredExhaustedMediaDeliveryRegistryRecords: async () => 0,
-            },
+            { recordIds, imageIds: [], scanBefore },
+            1,
+            1,
           ),
-        ).resolves.toEqual({ enqueued: 2 })
-        expect(stage).toHaveBeenCalledOnce()
-        expect(repair).toHaveBeenCalledWith(pageSize)
-        expect(list).toHaveBeenCalledWith({
-          limit: pageSize,
-          scanBefore: now.toISOString(),
-          after: undefined,
-        })
-        const jobs = await readTestAppliedMediaRegistryJobs(ownedRecordIds)
-        expect(jobs.map(job => job.data)).toEqual([
-          { mediaDeliveryRegistryRecordId: ownedRecordIds[0] },
-          { mediaDeliveryRegistryRecordId: ownedRecordIds[1] },
+        ).toEqual({ enqueued: 1 })
+        expect((await readTestAppliedMediaRegistryJobs(recordIds)).map(job => job.data)).toEqual([
+          { mediaDeliveryRegistryRecordId: recordIds[0] },
         ])
-      } finally {
-        restore()
-      }
-    },
-  )
+        expect(
+          await readTestMediaRegistryReconcileJobs(data => data.scanBefore === scanBefore),
+        ).toHaveLength(1)
+      },
+    )
+  })
+
+  it('terminalizes one owned expired final claim per page without changing its eligible neighbor', async () => {
+    const user = await createTestUser({ administrator: true })
+    await withTestMediaRecoveryBacklog(user.id, 4, async ({ recordIds, scanBefore }) => {
+      const [outside, first, second, pending] = recordIds
+      await setTestMediaRecoveryState([outside!, first!, second!], {
+        state: 'claimed',
+        attempts: 5,
+        at: new Date(new Date(scanBefore).getTime() - 6 * 60_000).toISOString(),
+      })
+      const before = await getTestMediaDeliveryRecordSnapshot(outside!)
+      const options = { recordIds: [first!, second!, pending!], imageIds: [], scanBefore }
+
+      expect(await processReconcileMediaDeliveryRegistry({}, options, 1, 1)).toEqual({
+        enqueued: 1,
+      })
+      expect(await getTestMediaDeliveryRecordSnapshot(first!)).toMatchObject({ state: 'failed' })
+      expect(await getTestMediaDeliveryRecordSnapshot(second!)).toMatchObject({ state: 'claimed' })
+      expect(await processReconcileMediaDeliveryRegistry({}, options, 1, 1)).toEqual({
+        enqueued: 1,
+      })
+      expect(await getTestMediaDeliveryRecordSnapshot(second!)).toMatchObject({ state: 'failed' })
+      expect((await readTestAppliedMediaRegistryJobs(recordIds)).map(job => job.data)).toEqual([
+        { mediaDeliveryRegistryRecordId: pending },
+      ])
+      expect(await getTestMediaDeliveryRecordSnapshot(outside!)).toEqual(before)
+    })
+  })
 })

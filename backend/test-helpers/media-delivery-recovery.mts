@@ -8,9 +8,7 @@ import { readAllQueueJobs } from './queue-jobs.mts'
 import { notifications } from '../queues/notifications/queues.mts'
 import type { ReconcileMediaDeliveryRegistryData } from '../queues/notifications/enqueues.mts'
 import {
-  failExpiredExhaustedMediaDeliveryRegistryRecords,
   getMediaDeliveryRegistryScanBefore,
-  listRecoverableMediaDeliveryRegistryIds,
   stageImagePlacementDeliveryRecordPage,
   stageImagePlacementDeliveryRecord,
 } from '../services/media-delivery-safety/index.mts'
@@ -119,17 +117,6 @@ export async function withLockedTestMediaDeliveryRecord<T>(
     sql`/* fenceTestMediaDeliveryRegistry */ SELECT id FROM media_delivery_registry_records WHERE id = ${mediaDeliveryRegistryRecordId}::uuid FOR UPDATE`,
   )
   return await run()
-}
-
-/** Real production queries restricted to explicitly owned records; no substituted persistence. */
-export function scopedTestMediaRecoveryDependencies(recordIds: readonly string[]) {
-  return {
-    listRecoverableMediaDeliveryRegistryIds: (
-      input: Parameters<typeof listRecoverableMediaDeliveryRegistryIds>[0],
-    ) => listRecoverableMediaDeliveryRegistryIds({ ...input, recordIds }),
-    failExpiredExhaustedMediaDeliveryRegistryRecords: (now: string) =>
-      failExpiredExhaustedMediaDeliveryRegistryRecords(now, recordIds),
-  }
 }
 
 /** Call the real bounded page for fixtures owned by these image IDs. */

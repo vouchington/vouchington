@@ -22,8 +22,8 @@ export async function getMediaDeliveryRegistryScanBefore(): Promise<string> {
 export async function failExpiredExhaustedMediaDeliveryRegistryRecords(
   now: string,
   recordIds?: readonly string[],
+  batchSize = getMediaDeliverySafetyWorkLimit('recovery_page_size'),
 ): Promise<number> {
-  const MEDIA_DELIVERY_RECOVERY_PAGE_SIZE = getMediaDeliverySafetyWorkLimit('recovery_page_size')
   if (recordIds?.length === 0) return 0
   await using transaction = await beginTransaction()
   const { rows: candidates } = await transaction<{
@@ -34,7 +34,7 @@ export async function failExpiredExhaustedMediaDeliveryRegistryRecords(
     WHERE current.lease_token IS NOT NULL AND current.attempt_count >= ${MEDIA_DELIVERY_MAX_ATTEMPTS}
       AND (${recordIds ?? null}::uuid[] IS NULL OR record.id = ANY(${recordIds ?? null}::uuid[]))
       AND current.lease_expires_at <= ${now}::timestamptz
-    ORDER BY record.id LIMIT ${MEDIA_DELIVERY_RECOVERY_PAGE_SIZE} FOR UPDATE OF record SKIP LOCKED
+    ORDER BY record.id LIMIT ${batchSize} FOR UPDATE OF record SKIP LOCKED
   `)
   const { rowCount } = await transaction(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords */
     INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, delivery_attempt_count, claimed_at, completed_at, failure_message)

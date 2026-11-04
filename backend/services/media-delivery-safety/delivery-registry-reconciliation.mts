@@ -5,11 +5,14 @@ import sql from 'sql-template-strings'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 
-export async function replayFailedMediaDeliveryRegistryRecords(input?: {
-  actorUserId?: string
-  recordIds?: readonly string[]
-  after?: string
-}): Promise<{ replayed: number; after?: string; hasMore: boolean }> {
+export async function replayFailedMediaDeliveryRegistryRecords(
+  input?: {
+    actorUserId?: string
+    recordIds?: readonly string[]
+    after?: string
+  },
+  limit = getMediaDeliverySafetyWorkLimit('registry_reconciliation_page_size'),
+): Promise<{ replayed: number; after?: string; hasMore: boolean }> {
   const recordIds = input?.recordIds
     ? [...new Set(input.recordIds.map(id => id.toLowerCase()))].toSorted()
     : null
@@ -27,7 +30,6 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     'replayFailedMediaDeliveryRegistryRecords',
     sharedDbIdsScope(input?.recordIds),
   )
-  const limit = getMediaDeliverySafetyWorkLimit('registry_reconciliation_page_size')
   await using transaction = await beginTransaction()
   const candidates = sql`/* replayFailedMediaDeliveryRegistryRecords:lock */
     /* deadlock-safe: every replay chain locks authority rows in the same total record UUID order. */

@@ -18,8 +18,8 @@ export async function stageImagePlacementDeliveryRecordPage(
     scanBefore?: string
     after?: Tuple
   } = {},
+  limit = getMediaDeliverySafetyWorkLimit('registry_reconciliation_page_size'),
 ): Promise<{ staged: number; hasMore: boolean; scanBefore: string; after?: Tuple }> {
-  const limit = getMediaDeliverySafetyWorkLimit('registry_reconciliation_page_size')
   const scanBefore = input.scanBefore ?? (await getMediaDeliveryRegistryScanBefore())
   if (input.imageIds?.length === 0) return { staged: 0, hasMore: false, scanBefore }
   observeSharedDbScope(
