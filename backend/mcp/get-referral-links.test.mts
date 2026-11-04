@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import getReferralLinksTool from './get-referral-links.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { prioritizedReferralLinksWorkConfig } from '@services/prioritized-referral-links/work-limits'
 import {
   createRandomString,
   createReferralProgramFixture,
@@ -184,6 +186,21 @@ describe('get-referral-links', () => {
 
       const oversized = (await execute({ topic_id: cardTopicId, limit: 1000 })) as Success
       expect(oversized.links).toHaveLength(3)
+    })
+
+    it('uses the configured default page size when limit is omitted', async () => {
+      const user = await createTestUser()
+      const { cardTopicId, referralProgramId, hostname } = await createCardWithReferralProgram(user)
+      for (let i = 0; i < 5; i++) await createLinkForProgram({ referralProgramId, hostname })
+      onTestFinished(
+        overrideDynamicConfigFieldsForTest(prioritizedReferralLinksWorkConfig, {
+          personalized_link_limit: 3,
+        }),
+      )
+
+      const result = await getReferralLinksTool.function(user)({ topic_id: cardTopicId })
+
+      expect(result.success && result.links).toHaveLength(3)
     })
 
     it('rejects a limit below 1 or not an integer, with and without all', async () => {

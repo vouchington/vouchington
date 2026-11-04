@@ -128,7 +128,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
               after: args.after,
             })
           : getPrioritizedReferralLinks(currentUser.id, referralProgramId, {
-              limit: clampToolLimit(args.limit, 5, 25),
+              limit: args.limit === undefined ? undefined : clampToolLimit(args.limit, 5, 25),
               after: args.after,
             }),
       )
