@@ -9,6 +9,13 @@ Readers who find a link on Voucha often want to know whether it was discussed el
 reference is a fact about the web, so it is stored once per URL and reused by every post and feed
 item that points at it, instead of being fetched per user.
 
+Voucha later learns that two URLs are the same page (a redirect, a canonical link). References are
+kept on the canonical URL, so a post or feed item that still points at an alias shows and filters by
+the same references as the page it duplicates, and neither the post nor the alias needs its own
+lookup. The cost is one extra lookup of the URL row when reading, bounded to two hops; a longer
+chain, which only a race between two canonical updates can leave, reads as unreferenced until the
+next canonical update flattens it.
+
 ## Rules
 
 - Labels are neutral facts: "Seen on Hacker News" for a story and "Mentioned on Hacker News" for a
