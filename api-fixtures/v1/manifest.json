@@ -17640,18 +17640,38 @@
       "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
       "statusKnowledge": "default"
     },
-    "GET:/api/v1/copyright-notices/review-queue": {
+    "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary": {
       "bodyKind": "content",
-      "hash": "003a245a950976a8fac8a811714da90a520fb81ce4bea44e766b1504c34dcb26",
+      "hash": "6df00e69ea30956099c87c1069fc483c609cca261dd4a8f201c3f80fd4d114ee",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
-      "routeTemplate": "/api/v1/copyright-notices/review-queue",
+      "routeTemplate": "/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary",
       "schema": {
         "definitions": {
           "ClaimantMisuseSummary": {
             "additionalProperties": false,
             "properties": {
+              "newest_notice_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "notice_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
               "notice_rejected": {
                 "required": true,
                 "schema": {
@@ -17662,6 +17682,197 @@
                 "required": true,
                 "schema": {
                   "type": "number"
+                }
+              },
+              "oldest_notice_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "page_info": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "has_next_page": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "start_cursor": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "restriction_reversed_by_appeal": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "restriction_reversed_by_counter_notice": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "claimant_misuse": {
+              "required": true,
+              "schema": {
+                "name": "ClaimantMisuseSummary",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/claimant-misuse-summary-route.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/copyright-notices/review-queue": {
+      "bodyKind": "content",
+      "hash": "311046c51b92a5d3a665a0e63a594b330165c2777ac8b0d7ab7c5e0c0e647031",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/review-queue",
+      "schema": {
+        "definitions": {
+          "ClaimantMisuseSummary": {
+            "additionalProperties": false,
+            "properties": {
+              "newest_notice_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "notice_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "notice_rejected": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "notice_withdrawn": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "oldest_notice_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "page_info": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "has_next_page": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "start_cursor": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "type": "object"
                 }
               },
               "restriction_reversed_by_appeal": {
@@ -18609,6 +18820,20 @@
                                 },
                                 {
                                   "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "user_id": {
+                            "required": true,
+                            "schema": {
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
                                 }
                               ]
                             }
@@ -107260,6 +107485,30 @@
       "status": 200
     },
     {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary",
+      "bodyFile": "responses/web.copyright.claimant-misuse-summary.default.json",
+      "consumers": ["web"],
+      "id": "web.copyright.claimant-misuse-summary.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/claimant-misuse-summary-route.mts"],
+      "path": "/api/v1/copyright-notices/claimants/00000000-0000-7000-8000-000000000807/misuse-summary",
+      "responseSchema": {
+        "hash": "1fbe3014129bb34db6bc080af298f71db128329f339b91efa2e6572755eb8d63",
+        "key": "web.copyright.claimant-misuse-summary.default"
+      },
+      "route": {
+        "pathParams": {
+          "claimantUserId": "00000000-0000-7000-8000-000000000807"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/claimant-misuse-cases.mts"
+      },
+      "status": 200
+    },
+    {
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices",
       "bodyFile": "responses/web.copyright.notices.default.json",
@@ -107434,7 +107683,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "aa9ab03c48d8bfe77ab622238860a71745037a160d40997d59b6f596c6236c69",
+        "hash": "19e16cf8b33092f6491be9c41c10aef79f403cbfe436ea3e4231a115711a45dd",
         "key": "web.copyright.staff-queue.territorial"
       },
       "route": {
@@ -107486,7 +107735,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "192f0ce3575e2d0022667a2235af16e04ac7c7e2c8c48885359bc42bba9e0e8a",
+        "hash": "ad1038d33c6cc90d2e8597b7bfd105ba9aab42d243cc41f9ded6168335baf9ab",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

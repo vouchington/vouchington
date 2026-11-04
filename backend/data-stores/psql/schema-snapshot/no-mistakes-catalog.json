@@ -26331,6 +26331,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_copyright_claimant_misuse_events__notice_outcome": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_claimant_misuse_events__notice_outcome ON public.copyright_claimant_misuse_events USING btree (copyright_notice_id, outcome)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "outcome",
+              "descending": false,
+              "expression": "outcome",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "uq_copyri_claima_misuse_events__notice_submission_assessment_id": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -43878,7 +43910,7 @@
         "idx_copyright_notices__claimant_user": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notices__claimant_user ON public.copyright_notices USING btree (claimant_user_id) WHERE (claimant_user_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_copyright_notices__claimant_user ON public.copyright_notices USING btree (claimant_user_id, id DESC) WHERE (claimant_user_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -43887,6 +43919,15 @@
               "descending": false,
               "expression": "claimant_user_id",
               "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }

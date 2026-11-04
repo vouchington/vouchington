@@ -4,6 +4,7 @@ import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
 import { withoutCopyrightCaptcha } from './copyright-notice-idempotency'
 import type { CopyrightStaffQueuePage } from '@/types/copyright-notices'
+import type { CopyrightClaimantMisuse } from '@/types/copyright-claimant-misuse'
 
 import type { CopyrightNoticeTargetInput } from './copyright-notice-input'
 export { createCopyrightEuNotice, createCopyrightEuRedress } from './copyright-eu-notices'
@@ -78,6 +79,15 @@ export function listCopyrightReviewQueue(options?: {
 }): Promise<CopyrightStaffQueuePage> {
   return clientApi.get('/api/v1/copyright-notices/review-queue', {
     searchParams: { after: options?.after, limit: options?.limit },
+  })
+}
+
+export function getClaimantMisuseSummary(
+  claimantUserId: string,
+  after?: string,
+): Promise<{ claimant_misuse: CopyrightClaimantMisuse }> {
+  return clientApi.get(`/api/v1/copyright-notices/claimants/${claimantUserId}/misuse-summary`, {
+    searchParams: { after },
   })
 }
 

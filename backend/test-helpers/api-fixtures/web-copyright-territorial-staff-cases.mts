@@ -12,7 +12,12 @@ const acknowledgment = {
 }
 const sharedCase = {
   received_at: '2026-10-04T09:00:00.000Z',
-  claimant: { display_name: 'Rights representative', contact: 'rights@example.test', misuse: null },
+  claimant: {
+    user_id: null,
+    display_name: 'Rights representative',
+    contact: 'rights@example.test',
+    misuse: null,
+  },
   work_description: 'Original photograph of a garden.',
   targets: [],
   evidence: [],
@@ -62,7 +67,12 @@ export const webCopyrightTerritorialStaffApiFixtureCases: ApiFixtureCase[] = [
           ...sharedCase,
           id: ukNoticeId,
           jurisdiction: 'uk',
-          claimant: { display_name: 'Park Images', contact: 'park@example.test', misuse: null },
+          claimant: {
+            user_id: null,
+            display_name: 'Park Images',
+            contact: 'park@example.test',
+            misuse: null,
+          },
           waiting_since: '2026-10-04T11:00:00.000Z',
           targets: [
             {

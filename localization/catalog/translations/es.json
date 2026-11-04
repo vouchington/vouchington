@@ -7,6 +7,8 @@
 {"id":"copy.common.loading","value":"Cargando…"},
 {"id":"copy.common.save","value":"Guardar"},
 {"id":"copy.common.support","value":"Soporte"},
+{"id":"copy.copyright.claimantMisuse.newestNoticeReceived","value":"Aviso recibido más reciente"},
+{"id":"copy.copyright.claimantMisuse.oldestNoticeReceived","value":"Aviso recibido más antiguo"},
 {"id":"copy.email.api-key-expiry.action","value":"Renuévala y actualiza tus aplicaciones para mantenerlas conectadas."},
 {"id":"copy.email.api-key-expiry.body","value":"Tu clave de API «{label}» caduca el {date}."},
 {"id":"copy.email.api-key-expiry.button","value":"Gestionar claves de API"},

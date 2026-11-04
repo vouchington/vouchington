@@ -1,4 +1,5 @@
 import { DynamicConfig } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 import { parseCopyrightDsaSorDatabaseFrom } from './dsa-start-date.mts'
 
 /**
@@ -12,6 +13,7 @@ export const copyrightConfig = new DynamicConfig({
     automaticProvisionalWithholdingSince: 'string',
     reviewTargetMinutes: 'number',
     evidenceRetentionDeletion: 'boolean',
+    claimantMisuseWindowSize: 'number',
     emailThreadGraphMaxRows: 'number',
     staydownMatching: 'boolean',
     trustedFlaggerPriority: 'boolean',
@@ -30,6 +32,7 @@ export const copyrightConfig = new DynamicConfig({
     // 0 means unset: no review-target page until an operator records an approved target.
     reviewTargetMinutes: 0,
     evidenceRetentionDeletion: true,
+    claimantMisuseWindowSize: 1000,
     emailThreadGraphMaxRows: 1000,
     staydownMatching: false,
     trustedFlaggerPriority: false,
@@ -153,4 +156,15 @@ export async function getCopyrightDsaSorDatabaseFrom(): Promise<Date | null> {
 export async function isCopyrightMcpDecisionToolsEnabled(): Promise<boolean> {
   await copyrightConfig.waitForInitialization()
   return copyrightConfig.getFields().mcpDecisionTools === true
+}
+
+export const COPYRIGHT_CLAIMANT_MISUSE_WINDOW_MAX = 10_000
+
+/** Notices inspected independently for each claimant in a staff misuse summary. */
+export async function getCopyrightClaimantMisuseWindowSize(): Promise<number> {
+  await copyrightConfig.waitForInitialization()
+  return getBoundedPositiveIntegerField(copyrightConfig, 'claimantMisuseWindowSize', {
+    defaultValue: 1000,
+    maxValue: COPYRIGHT_CLAIMANT_MISUSE_WINDOW_MAX,
+  })
 }

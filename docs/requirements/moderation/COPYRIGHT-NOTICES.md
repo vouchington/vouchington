@@ -41,6 +41,14 @@ change. Claimant misuse (withdrawn, rejected, or reversed notices) is recorded a
 Article 23 and 17 U.S.C. 512(f), but nothing acts on it automatically; a suspension is a moderator
 decision. A suspended claimant's still-unreviewed automatic restrictions are reversed.
 
+Staff sees those outcomes as counts within a bounded latest-notice window for one claimant. The
+staff-only REST and legal MCP reads use the same claimant-scoped opaque cursor to open the next
+window; each window reports its own counts and notice count rather than cumulative totals. This
+keeps a claimant's full history inspectable without making each queue page scan that history.
+Original receipt times show the span of each count-based window, so staff can distinguish a burst
+of notices from activity spread over a longer period. These spans can overlap when a notice is
+ingested late; they do not imply fixed calendar periods or cumulative evidence.
+
 ## Immutable decision statements
 
 Restrictions record a statement when imposed, when a person first confirms or reverses an

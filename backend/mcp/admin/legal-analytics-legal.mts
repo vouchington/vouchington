@@ -1,3 +1,4 @@
+import { claimantMisuseSummary } from './claimant-misuse-summary.mts'
 import { getPaginationLimitsForContract } from '@services/pagination'
 import assert from 'http-assert'
 import { assertNotSuspended } from '@services/users'
@@ -103,4 +104,11 @@ const repeatAccounts = createAdminTool<{ id: string }>({
     })
   },
 })
-export const adminLegalTools = [reviewQueue, notice, associationSearch, repeatAccounts]
+
+export const adminLegalTools = [
+  reviewQueue,
+  notice,
+  associationSearch,
+  repeatAccounts,
+  claimantMisuseSummary,
+]

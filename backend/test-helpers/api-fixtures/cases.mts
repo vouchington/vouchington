@@ -4,6 +4,7 @@ import { dynamicConfigApiFixtureCases } from './dynamic-config-cases.mts'
 import { nativeDomainUrlApiFixtureCases } from './native-domain-url-cases.mts'
 import { nativePaidCrawlApiFixtureCases } from './native-paid-crawl-cases.mts'
 import { nativeCopyrightApiFixtureCases } from './native-copyright-cases.mts'
+import { claimantMisuseApiFixtureCases } from './claimant-misuse-cases.mts'
 import { webCopyrightGuestApiFixtureCases } from './web-copyright-guest-cases.mts'
 import { webCopyrightEuApiFixtureCases } from './web-copyright-eu-cases.mts'
 import { copyrightDsaApiFixtureCases } from './copyright-dsa-cases.mts'
@@ -175,6 +176,7 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     'backend/test-helpers/api-fixtures/native-paid-crawl-cases.mts',
     nativePaidCrawlApiFixtureCases,
   ),
+  ...fromCaseFile(`${caseRoot}claimant-misuse-cases.mts`, claimantMisuseApiFixtureCases),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-copyright-cases.mts',
     nativeCopyrightApiFixtureCases,

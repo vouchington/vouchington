@@ -10,11 +10,11 @@ import {
   AGENT_MODERATION_RETENTION_ROWS,
 } from './seed-data/agent-moderation-retention.mts'
 import { PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS } from './seed-data/copyright-case-purge-volume.mts'
+import * as claimantMisuse from './seed-data/claimant-misuse-windows.mts'
 
 /** Explicit seed.mts fixture counts plus conservative bounds for captured ancillary relations. */
 // Ancillary relations have no dedicated EXPLAIN seed count; refresh this bound if fixtures grow.
 const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
-
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   url_hostname_cache_invalidation_work_items: 20_000,
   users: 20_004,
@@ -117,10 +117,12 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   copyright_notice_form_screenings: ANCILLARY_SEED_ROW_UPPER_BOUND,
   copyright_notice_submission_assessments: ANCILLARY_SEED_ROW_UPPER_BOUND,
   copyright_notice_submission_guidance: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  copyright_notice_submissions: ANCILLARY_SEED_ROW_UPPER_BOUND,
+  copyright_notice_submissions:
+    claimantMisuse.CLAIMANT_MISUSE_EVENT_COUNT + ANCILLARY_SEED_ROW_UPPER_BOUND,
+  copyright_claimant_misuse_events: claimantMisuse.CLAIMANT_MISUSE_EVENT_COUNT,
   copyright_notice_deadlines: ANCILLARY_SEED_ROW_UPPER_BOUND,
   copyright_notice_targets: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  copyright_notices: ANCILLARY_SEED_ROW_UPPER_BOUND,
+  copyright_notices: claimantMisuse.CLAIMANT_MISUSE_NOTICE_COUNT + ANCILLARY_SEED_ROW_UPPER_BOUND,
   copyright_restrictions: ANCILLARY_SEED_ROW_UPPER_BOUND,
   copyright_territorial_decisions: ANCILLARY_SEED_ROW_UPPER_BOUND,
   fediverse_instance_topics: ANCILLARY_SEED_ROW_UPPER_BOUND,

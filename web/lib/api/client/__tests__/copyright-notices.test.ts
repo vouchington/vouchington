@@ -11,6 +11,7 @@ import {
   createCopyrightCounterNotice,
   createCopyrightNotice,
   listCopyrightReviewQueue,
+  getClaimantMisuseSummary,
   replayCopyrightActionIntent,
   replayCopyrightDeliveryIntent,
   resolveCopyrightLegalHold,
@@ -26,6 +27,8 @@ import {
   recordCopyrightRepeatInfringerReviewOutcome,
 } from '../copyright-repeat-infringer'
 import { reviewCopyrightStaydownMatch } from '../copyright-staydown'
+import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
+import { makeBusyUsStaffCase } from '@/test-helpers/api-responses/copyright-staff-case'
 import type { CopyrightStaffQueuePage } from '@/types/copyright-notices'
 
 let mockGet: MockInstance<typeof clientApi.get>
@@ -56,6 +59,19 @@ describe('copyright notices client', () => {
       expectedArgs: [
         '/api/v1/copyright-notices/review-queue',
         { searchParams: { after: 'next', limit: 50 } },
+      ],
+    })
+  })
+
+  it('forwards the claimant misuse cursor', async () => {
+    const response = { claimant_misuse: makeBusyUsStaffCase().claimant.misuse! }
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response,
+      call: () => getClaimantMisuseSummary('claimant-1', 'next'),
+      expectedArgs: [
+        '/api/v1/copyright-notices/claimants/claimant-1/misuse-summary',
+        { searchParams: { after: 'next' } },
       ],
     })
   })

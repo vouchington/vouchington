@@ -26,12 +26,14 @@ describe('claimant misuse on the staff case', () => {
       readTestStaffCaseClaimant(pending.notice.intake.copyright_notice_id),
     ).resolves.toEqual(
       expect.objectContaining({
-        misuse: {
+        misuse: expect.objectContaining({
           notice_withdrawn: 0,
           notice_rejected: 1,
+          oldest_notice_at: expect.any(String),
+          newest_notice_at: expect.any(String),
           restriction_reversed_by_counter_notice: 0,
           restriction_reversed_by_appeal: 0,
-        },
+        }),
       }),
     )
   })

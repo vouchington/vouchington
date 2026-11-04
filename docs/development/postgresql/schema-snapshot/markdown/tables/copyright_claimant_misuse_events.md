@@ -42,6 +42,7 @@ Not partitioned — growth: unbounded.
 - `copyright_claimant_misuse_events_copyright_restriction_id_key`: `CREATE UNIQUE INDEX copyright_claimant_misuse_events_copyright_restriction_id_key ON public.copyright_claimant_misuse_events USING btree (copyright_restriction_id)`
 - `copyright_claimant_misuse_events_pkey`: `CREATE UNIQUE INDEX copyright_claimant_misuse_events_pkey ON public.copyright_claimant_misuse_events USING btree (id)`
 - `idx_copyright_claimant_misuse_events__notice`: `CREATE INDEX idx_copyright_claimant_misuse_events__notice ON public.copyright_claimant_misuse_events USING btree (copyright_notice_id, id DESC)`
+- `idx_copyright_claimant_misuse_events__notice_outcome`: `CREATE INDEX idx_copyright_claimant_misuse_events__notice_outcome ON public.copyright_claimant_misuse_events USING btree (copyright_notice_id, outcome)`
 - `uq_copyri_claima_misuse_events__notice_submission_assessment_id`: `CREATE UNIQUE INDEX uq_copyri_claima_misuse_events__notice_submission_assessment_id ON public.copyright_claimant_misuse_events USING btree (copyright_notice_submission_assessment_identity_id)`
 - `uq_copyright_claimant_misuse_events__notice_submission_id`: `CREATE UNIQUE INDEX uq_copyright_claimant_misuse_events__notice_submission_id ON public.copyright_claimant_misuse_events USING btree (copyright_notice_submission_id)`
 

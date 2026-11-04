@@ -1513,7 +1513,8 @@
     "I201": [["destination_id_or_slug", "source_id_or_slug"]],
     "I202": [["operation_id", "source_id_or_slug"]],
     "I203": [["page_id"]],
-    "I204": [["after", "q"]]
+    "I204": [["after", "q"]],
+    "I205": [["after", "claimant_user_id"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -6683,6 +6684,22 @@
           },
           "decision": false,
           "inputFields": "I203",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary": {
+      "pullRequest": 5002,
+      "contracts": [
+        {
+          "audience": "legal",
+          "facts": "F11",
+          "operation": {
+            "tool": "get_copyright_claimant_misuse_summary",
+            "option": null
+          },
+          "decision": false,
+          "inputFields": "I205",
           "requestBodyFields": null
         }
       ]

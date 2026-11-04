@@ -1,3 +1,4 @@
+import { makeBusyUsStaffCase } from '@/test-helpers/api-responses/copyright-staff-case'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type {
@@ -64,14 +65,10 @@ describe('CopyrightStaffQueue', () => {
                 jurisdiction: 'us_dmca',
                 received_at: '2026-01-01T00:00:00.000Z',
                 claimant: {
+                  user_id: 'claimant-1',
                   display_name: 'Claimant',
                   contact: 'claimant@example.test',
-                  misuse: {
-                    notice_withdrawn: 1,
-                    notice_rejected: 2,
-                    restriction_reversed_by_counter_notice: 0,
-                    restriction_reversed_by_appeal: 0,
-                  },
+                  misuse: makeBusyUsStaffCase().claimant.misuse,
                 },
                 work_description: 'Original photograph.',
                 targets: [
@@ -243,6 +240,7 @@ describe('CopyrightStaffQueue', () => {
                 jurisdiction: 'us_dmca',
                 received_at: '2026-01-01T00:00:00.000Z',
                 claimant: {
+                  user_id: 'claimant-1',
                   display_name: 'Claimant',
                   contact: 'claimant@example.test',
                   misuse: null,

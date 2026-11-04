@@ -1,3 +1,4 @@
+import { claimantMisuseSummaryFixture } from './claimant-misuse-cases.mts'
 import { nativeCopyrightClaimantApiFixtureCases } from './native-copyright-claimant-cases.mts'
 import { formGuidance, reviewedStaffCase } from './native-copyright-staff-form-review.mts'
 import { webCopyrightTerritorialStaffApiFixtureCases } from './web-copyright-territorial-staff-cases.mts'
@@ -8,7 +9,7 @@ const imageId = '00000000-0000-7000-8000-000000000802'
 const placementId = '00000000-0000-7000-8000-000000000803'
 const noticeId = '00000000-0000-7000-8000-000000000804'
 const targetId = '00000000-0000-7000-8000-000000000805'
-
+const claimantUserId = '00000000-0000-7000-8000-000000000807'
 const postImage = {
   image_id: imageId,
   placement_id: placementId,
@@ -66,12 +67,8 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
           claimant: {
             display_name: 'Claimant',
             contact: 'claimant@example.test',
-            misuse: {
-              notice_withdrawn: 1,
-              notice_rejected: 2,
-              restriction_reversed_by_counter_notice: 0,
-              restriction_reversed_by_appeal: 1,
-            },
+            user_id: claimantUserId,
+            misuse: claimantMisuseSummaryFixture,
           },
           work_description: 'Original photograph.',
           targets: [],

@@ -1,4 +1,7 @@
-import { copyrightConfig } from '@services/copyright-notices/config'
+import {
+  COPYRIGHT_CLAIMANT_MISUSE_WINDOW_MAX,
+  copyrightConfig,
+} from '@services/copyright-notices/config'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { validateCopyrightDsaSorDatabaseFrom } from './registry-copyright-validators.mts'
 
@@ -28,6 +31,12 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
     evidenceRetentionDeletion: {
       description:
         'Pause or resume the approved copyright case purge after its legal clock and blocker checks. The worker needs evidence-bucket version deletion permission; read the copyright runbook before pausing or resuming.',
+    },
+    claimantMisuseWindowSize: {
+      description: 'Notices inspected per claimant in each separate staff misuse history window.',
+      minValue: 1,
+      maxValue: COPYRIGHT_CLAIMANT_MISUSE_WINDOW_MAX,
+      integer: true,
     },
     emailThreadGraphMaxRows: {
       description:

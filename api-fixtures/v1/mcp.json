@@ -43679,7 +43679,7 @@
                               "type": "string"
                             },
                             "target_ids": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S5"
                             }
                           },
                           "required": ["reason", "recommendation", "submission_id", "target_ids"],
@@ -43701,22 +43701,43 @@
                               {
                                 "additionalProperties": false,
                                 "properties": {
+                                  "newest_notice_at": {
+                                    "$ref": "#/$defs/S6"
+                                  },
+                                  "oldest_notice_at": {
+                                    "$ref": "#/$defs/S6"
+                                  },
+                                  "notice_count": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
                                   "notice_rejected": {
-                                    "type": "number"
+                                    "minimum": 0,
+                                    "type": "integer"
                                   },
                                   "notice_withdrawn": {
-                                    "type": "number"
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "page_info": {
+                                    "$ref": "#/$defs/S3"
                                   },
                                   "restriction_reversed_by_appeal": {
-                                    "type": "number"
+                                    "minimum": 0,
+                                    "type": "integer"
                                   },
                                   "restriction_reversed_by_counter_notice": {
-                                    "type": "number"
+                                    "minimum": 0,
+                                    "type": "integer"
                                   }
                                 },
                                 "required": [
+                                  "newest_notice_at",
+                                  "notice_count",
+                                  "oldest_notice_at",
                                   "notice_rejected",
                                   "notice_withdrawn",
+                                  "page_info",
                                   "restriction_reversed_by_appeal",
                                   "restriction_reversed_by_counter_notice"
                                 ],
@@ -43726,9 +43747,12 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "user_id": {
+                            "$ref": "#/$defs/S2"
                           }
                         },
-                        "required": ["contact", "display_name", "misuse"],
+                        "required": ["contact", "display_name", "misuse", "user_id"],
                         "type": "object"
                       },
                       "counter_notices": {
@@ -43757,7 +43781,7 @@
                                             "$ref": "#/$defs/S1"
                                           },
                                           "status": {
-                                            "$ref": "#/$defs/S3"
+                                            "$ref": "#/$defs/S4"
                                           }
                                         },
                                         "required": ["element", "gap", "status"],
@@ -43810,7 +43834,7 @@
                               "type": "string"
                             },
                             "target_ids": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S5"
                             }
                           },
                           "required": [
@@ -43966,7 +43990,7 @@
                                                       "$ref": "#/$defs/S1"
                                                     },
                                                     "status": {
-                                                      "$ref": "#/$defs/S3"
+                                                      "$ref": "#/$defs/S4"
                                                     }
                                                   },
                                                   "required": ["element", "gap", "status"],
@@ -44132,7 +44156,7 @@
                                       "type": "boolean"
                                     },
                                     "target_ids": {
-                                      "$ref": "#/$defs/S4"
+                                      "$ref": "#/$defs/S5"
                                     }
                                   },
                                   "required": [
@@ -44177,7 +44201,7 @@
                                             "$ref": "#/$defs/S1"
                                           },
                                           "status": {
-                                            "$ref": "#/$defs/S3"
+                                            "$ref": "#/$defs/S4"
                                           }
                                         },
                                         "required": ["criterion", "gap", "status"],
@@ -44608,20 +44632,7 @@
                   "type": "array"
                 },
                 "page_info": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end_cursor": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "has_next_page": {
-                      "type": "boolean"
-                    },
-                    "start_cursor": {
-                      "$ref": "#/$defs/S2"
-                    }
-                  },
-                  "required": ["end_cursor", "has_next_page", "start_cursor"],
-                  "type": "object"
+                  "$ref": "#/$defs/S3"
                 }
               },
               "required": ["copyright_notices", "page_info"],
@@ -44648,14 +44659,35 @@
                   ]
                 },
                 "S3": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "$ref": "#/$defs/S2"
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "$ref": "#/$defs/S2"
+                    }
+                  },
+                  "required": ["end_cursor", "has_next_page", "start_cursor"],
+                  "type": "object"
+                },
+                "S4": {
                   "enum": ["missing", "present", "unclear"],
                   "type": "string"
                 },
-                "S4": {
+                "S5": {
                   "items": {
                     "type": "string"
                   },
                   "type": "array"
+                },
+                "S6": {
+                  "format": "date-time",
+                  "pattern": "Z$",
+                  "type": ["string", "null"]
                 }
               }
             },
@@ -45050,6 +45082,128 @@
             {
               "method": "GET",
               "path": "/api/v1/copyright-notices/:id/repeat-infringer-accounts"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_copyright_claimant_misuse_summary",
+            "title": "Get copyright claimant misuse summary",
+            "description": "Read a bounded latest-notice window of one claimant's copyright misuse evidence with an opaque continuation cursor.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "claimant_user_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "after": {
+                  "type": "string"
+                }
+              },
+              "required": ["claimant_user_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "claimant_misuse": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "newest_notice_at": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "oldest_notice_at": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "notice_count": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "notice_rejected": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "notice_withdrawn": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "page_info": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
+                    },
+                    "restriction_reversed_by_appeal": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "restriction_reversed_by_counter_notice": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "newest_notice_at",
+                    "notice_count",
+                    "oldest_notice_at",
+                    "notice_rejected",
+                    "notice_withdrawn",
+                    "page_info",
+                    "restriction_reversed_by_appeal",
+                    "restriction_reversed_by_counter_notice"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["claimant_misuse"],
+              "type": "object",
+              "$defs": {
+                "S1": {
+                  "format": "date-time",
+                  "pattern": "Z$",
+                  "type": ["string", "null"]
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary"
             }
           ]
         },

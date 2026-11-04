@@ -878,7 +878,7 @@ CREATE INDEX idx_copyright_notice_action_work_items__pending ON copyright_notice
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_action_work_items__deadline ON copyright_notice_action_work_items(copyright_notice_deadline_id) WHERE copyright_notice_deadline_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notices__claimant_user ON copyright_notices(claimant_user_id) WHERE claimant_user_id IS NOT NULL;
+CREATE INDEX idx_copyright_notices__claimant_user ON copyright_notices(claimant_user_id, id DESC) WHERE claimant_user_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__imposed_by ON copyright_restrictions(imposed_by_id) WHERE imposed_by_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

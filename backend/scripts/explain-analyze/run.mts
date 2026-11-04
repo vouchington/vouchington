@@ -47,6 +47,7 @@ import { runReviewSuccessionScenarios } from './run-scenarios/review-successions
 import { runClassifierHumanVoteComparisonScenarios } from './run-scenarios/classifier-human-vote-comparison.mts'
 import { runCopyrightDeliveryBatchScenarios } from './run-scenarios/copyright-delivery-batches.mts'
 import { runCopyrightCasePurgeScenarios } from './run-scenarios/copyright-case-purge.mts'
+import { runClaimantMisuseWindowScenarios } from './run-scenarios/claimant-misuse-windows.mts'
 import { runCopyrightStatementFactsScenarios } from './run-scenarios/copyright-statement-facts.mts'
 import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
 import { runImportRequestRetentionScenarios } from './run-scenarios/import-request-retention.mts'
@@ -76,7 +77,6 @@ import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-c
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
 import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
-
 /** Defer the large retention corpus until its own plans, then refresh only its statistics. */
 async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
   await seedAgentModerationRetention()
@@ -94,7 +94,6 @@ async function runStep(scenario: string, result: Promise<unknown>): Promise<void
     recordScenarioFailure(scenario, err)
   }
 }
-
 async function main() {
   prepareOutputDir()
   try {
@@ -137,6 +136,7 @@ async function main() {
     await runStep(runCopyrightStatementFactsScenarios.name, runCopyrightStatementFactsScenarios())
     await runStep(runCopyrightDeliveryBatchScenarios.name, runCopyrightDeliveryBatchScenarios())
     await runStep(runCopyrightCasePurgeScenarios.name, runCopyrightCasePurgeScenarios())
+    await runStep(runClaimantMisuseWindowScenarios.name, runClaimantMisuseWindowScenarios())
     await runStep(seedMediaDeliveryReplay.name, seedMediaDeliveryReplay())
     await runStep(runMediaDeliveryReplayScenarios.name, runMediaDeliveryReplayScenarios())
     await runStep(runMediaDeliveryScopedPageScenarios.name, runMediaDeliveryScopedPageScenarios())

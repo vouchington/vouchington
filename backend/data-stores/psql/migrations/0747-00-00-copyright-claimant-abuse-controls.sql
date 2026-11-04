@@ -37,6 +37,8 @@ CREATE TABLE copyright_claimant_misuse_events (
 
 CREATE INDEX idx_copyright_claimant_misuse_events__notice
   ON copyright_claimant_misuse_events (copyright_notice_id, id DESC);
+CREATE INDEX idx_copyright_claimant_misuse_events__notice_outcome
+  ON copyright_claimant_misuse_events (copyright_notice_id, outcome);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_automatic_withholding_refusals (

@@ -113,6 +113,7 @@ export async function getPendingCopyrightStaffCases(
           received_at: notice.received_at,
           jurisdiction: notice.jurisdiction,
           claimant: {
+            user_id: notice.claimant_user_id,
             display_name: notice.claimant_display_name,
             contact: decryptSecret(notice.claimant_contact_ciphertext, contactPurpose),
             misuse: notice.claimant_user_id ? misuse.get(notice.claimant_user_id)! : null,
