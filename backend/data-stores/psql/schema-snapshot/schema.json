@@ -141972,7 +141972,7 @@
         "idx_user_import_requests__topic_recommendation": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_import_requests__topic_recommendation ON public.user_import_requests USING btree (topic_recommendation_post_id) WHERE ((topic_recommendation_post_id IS NOT NULL) AND (followed_at IS NULL))",
+          "definition": "CREATE INDEX idx_user_import_requests__topic_recommendation ON public.user_import_requests USING btree (topic_recommendation_post_id, id) WHERE (followed_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -141981,9 +141981,16 @@
               "expression": "topic_recommendation_post_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((topic_recommendation_post_id IS NOT NULL) AND (followed_at IS NULL))",
+          "predicate": "(followed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
