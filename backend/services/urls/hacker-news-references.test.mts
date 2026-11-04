@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUrlWithHostname, insertHackerNewsReferencesForTest } from '@voucha/test-helpers'
+import { setCanonicalUrl } from './set-canonical.mts'
 import {
   getHackerNewsItemsByUrlIds,
   getHackerNewsTotalsByUrlIds,
@@ -133,6 +134,29 @@ describe('Hacker News references', () => {
     })
     const details = await getHackerNewsDetailsByEntity(entity)
     expect(details.last!.stories.map(s => s.hacker_news_item_id).toSorted()).toEqual([12, 13])
+  })
+
+  it('counts a canonical row once when an entity has several URLs resolving to it', async () => {
+    const [canonical, aliasA, aliasB] = await Promise.all([
+      createTestUrlWithHostname(),
+      createTestUrlWithHostname(),
+      createTestUrlWithHostname(),
+    ])
+    await insertHackerNewsReferencesForTest({
+      url_id: canonical,
+      story_count: 3,
+      comment_count: 0,
+      stories: [story(21), story(22), story(23)],
+    })
+    await Promise.all([setCanonicalUrl(aliasA, canonical), setCanonicalUrl(aliasB, canonical)])
+
+    const entity = { post: [aliasA, aliasB, canonical] }
+    expect(await getHackerNewsSummariesByEntity(entity)).toEqual({
+      post: { story_count: 3, comment_count: 0 },
+    })
+    expect((await getHackerNewsTotalsByUrlIds([aliasA, aliasB])).get(aliasA)?.canonical_url_id).toBe(
+      canonical,
+    )
   })
 
   it('reads nothing for empty input', async () => {
