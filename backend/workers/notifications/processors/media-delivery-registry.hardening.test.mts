@@ -12,6 +12,7 @@ import {
   runAfterPostgresWriteForTest,
   rejectNextBackgroundJobAddBulkForTest,
   rejectNextBackgroundJobAddForTest,
+  rejectPostgresWriteForTest,
 } from '@voucha/test-helpers/injected-failures'
 import { listRecoverableMediaDeliveryRegistryIds } from '@services/media-delivery-safety'
 import {
@@ -53,19 +54,23 @@ describe('durable media registry recovery hardening', () => {
         3,
         async ({ recordIds, scanBefore }) => {
           const options = { recordIds, imageIds: [], scanBefore }
+          let loweredDuringRepair = false
           const restoreWrite = runAfterPostgresWriteForTest((statement, values) => {
             if (
               statement.includes('reconcileMediaDeliveryRepairMarkers:list') &&
               values.some(value => Array.isArray(value) && value.includes(recordIds[0]))
-            )
+            ) {
+              loweredDuringRepair = true
               overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
                 recovery_page_size: 1,
               })
+            }
           })
           try {
             expect(await processReconcileMediaDeliveryRegistry({}, options)).toEqual({
               enqueued: 2,
             })
+            expect(loweredDuringRepair).toBe(true)
             expect(await appliedRecordIds(recordIds)).toEqual(recordIds.slice(0, 2))
             const continuations = await continuationsFor(scanBefore)
             expect(continuations).toHaveLength(1)
@@ -115,21 +120,34 @@ describe('durable media registry recovery hardening', () => {
   })
 
   it('enqueues 101 owned deliveries through persisted distinct continuation jobs', async () => {
+    installTestMediaDeliveryEdge()
+    onTestFinished(() => {
+      vi.restoreAllMocks()
+      vi.unstubAllEnvs()
+    })
     const user = await createTestUserDirect()
     await withTestInterleavedMediaRecoveryBacklog(
       user.id,
       102,
-      async ({ recordIds, scanBefore }) => {
+      async ({ recordIds, scanBefore, placements }) => {
         const first = await listRecoverableMediaDeliveryRegistryIds({
           limit: 1,
           scanBefore,
           recordIds,
         })
         const data = { scanBefore, after: first.page_info.end_cursor! }
-        const options = { recordIds }
-        expect(await processReconcileMediaDeliveryRegistry(data, options)).toEqual({
-          enqueued: 100,
-        })
+        const options = { recordIds, imageIds: placements.map(placement => placement.imageId) }
+        const restoreStage = rejectPostgresWriteForTest(
+          'stageImagePlacementDeliveryRecordPage',
+          new Error('Continuation must not stage authority'),
+        )
+        try {
+          expect(await processReconcileMediaDeliveryRegistry(data, options)).toEqual({
+            enqueued: 100,
+          })
+        } finally {
+          restoreStage()
+        }
         const continuations = await continuationsFor(scanBefore)
         expect(continuations).toHaveLength(1)
         const job = continuations[0]!
@@ -139,12 +157,20 @@ describe('durable media registry recovery hardening', () => {
           opts: { attempts: 3, removeOnComplete: 100, removeOnFail: 100 },
         })
         expect(job.opts.deduplication?.id).not.toBe('media-delivery-registry-reconciliation')
-        expect(
-          await processReconcileMediaDeliveryRegistry(
-            job.data as ReconcileMediaDeliveryRegistryData,
-            options,
-          ),
-        ).toEqual({ enqueued: 1 })
+        const restoreRepair = rejectPostgresWriteForTest(
+          'reconcileMediaDeliveryRepairMarkers:list',
+          new Error('Continuation must not repair markers'),
+        )
+        try {
+          expect(
+            await processReconcileMediaDeliveryRegistry(
+              job.data as ReconcileMediaDeliveryRegistryData,
+              options,
+            ),
+          ).toEqual({ enqueued: 1 })
+        } finally {
+          restoreRepair()
+        }
         expect(await continuationsFor(scanBefore)).toHaveLength(1)
         expect(await appliedRecordIds(recordIds.slice(1))).toEqual(recordIds.slice(1))
         // The bulk add keeps each registry record's own dedup id and retry budget.
