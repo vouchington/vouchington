@@ -71,7 +71,11 @@ describe('Hacker News lookup worker', () => {
         agent.assertNoPendingInterceptors()
         const totals = await getHackerNewsTotalsByUrlIds([row.id])
         const items = await getHackerNewsItemsByUrlIds([row.id])
-        expect(totals.get(row.id)).toEqual({ story_count: 8, comment_count: 10 })
+        expect(totals.get(row.id)).toEqual({
+          canonical_url_id: row.id,
+          story_count: 8,
+          comment_count: 10,
+        })
         expect(items.get(row.id)?.stories.map(story => story.hacker_news_item_id)).toContain(
           9353080,
         )

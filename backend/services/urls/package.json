@@ -28,6 +28,7 @@
     "@modules/membership-helpers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
