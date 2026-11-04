@@ -437,3 +437,12 @@ under `community_application_summaries`: applicant, status, a message preview, `
 `read_application`) when a moderator opens a row. Swift and .NET consume the list fixture and must
 move to the summary type with the producer. Client work is dependent and does not gate this
 repository.
+
+## Post time range
+
+`GET /api/v1/posts` and `GET /api/v1/communities/:idOrSlug/posts` (MCP post search and
+`read_community` option `posts`) accept a `time_range` code. Omitted, both return the last 30 days instead of
+full history; `all` restores it, and draft listings default to `all`. Swift and .NET must send the
+code from a time dropdown, reusing the web options, and must page with the returned cursor under
+the same range. Client work is dependent (vouchington-clients#537) and does not gate this
+repository.

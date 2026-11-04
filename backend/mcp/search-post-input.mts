@@ -10,6 +10,14 @@ export const POST_SORTS = [
   'following_new',
 ] as const satisfies readonly PostSearchSort[]
 
+/** The `time_range` option of every post list tool; omitted means the 30-day default. */
+export const postTimeRangeSchema = {
+  type: 'string',
+  enum: ['1d', '1w', '1m', '1y', 'all'],
+  description:
+    'Only posts from this window. Defaults to 1m (30 days); pass all for the full history.',
+} as const
+
 /** Public REST post search filters, plus the existing singular post-type convenience. */
 export function postSearchFilterSchemaProperties() {
   return {
@@ -34,12 +42,7 @@ export function postSearchFilterSchemaProperties() {
     data_point_vertical: { type: 'string' },
     review_topic: topicReferenceSchema,
     story_id: { type: 'string', format: 'uuid' },
-    time_range: {
-      type: 'string',
-      enum: ['1d', '1w', '1m', '1y', 'all'],
-      description:
-        'Only posts from this window. Defaults to 1m (30 days); pass all for the full history.',
-    },
+    time_range: postTimeRangeSchema,
     topic: topicReferenceSchema,
     topics: { type: 'array', items: topicReferenceSchema },
     url: {

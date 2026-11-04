@@ -17,6 +17,16 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
       run: () => searchCommunityPosts(communityId, { sort: 'hot', limit: 25 }),
     },
     {
+      id: 'search-community-posts-1m',
+      description: 'Community search lists posts across the community history.',
+      run: () => searchCommunityPosts(communityId, { time_range: '1m', limit: 25 }),
+    },
+    {
+      id: 'search-community-posts-hot-1m',
+      description: 'Community hot ranking spans its retained post history.',
+      run: () => searchCommunityPosts(communityId, { sort: 'hot', time_range: '1m', limit: 25 }),
+    },
+    {
       id: 'search-pending-community-posts',
       description: 'Pending community search lists posts across the community history.',
       run: () => searchPendingPosts(communityId, { limit: 25 }),
@@ -37,7 +47,7 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
       ],
       crossPartition: { posts: scenario.description },
     })
-    // no-mistakes-disable-next-line query-reached-per-item: four fixed, separately named EXPLAIN scenarios need independent captures
+    // no-mistakes-disable-next-line query-reached-per-item: six fixed, separately named EXPLAIN scenarios need independent captures
     await runAndCapture(scenario.id, scenario.run)
   }
 }

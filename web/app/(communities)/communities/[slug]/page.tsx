@@ -13,6 +13,7 @@ import { createPageMetadata } from '@/lib/seo/metadata'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { createBreadcrumbSchema } from '@/lib/seo/structured-data-breadcrumbs'
 import { createCommunityPageSchema } from '@/lib/seo/structured-data'
+import { postTimeRangeParams } from '@/lib/posts/time-range'
 import { communityHref } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import type { Metadata } from 'next'
@@ -64,7 +65,12 @@ export default async function CommunityPage({ params, searchParams }: PageProps)
     return PENDING_APPLICATION_MESSAGE
   }
 
-  const nextPageParams = { limit: 25, sort, ...(q ? { q } : {}) }
+  const nextPageParams = {
+    limit: 25,
+    sort,
+    ...postTimeRangeParams(resolvedSearchParams.time_range),
+    ...(q ? { q } : {}),
+  }
   const postsDataResult = await getCommunityPosts(slug, { searchParams: nextPageParams }).catch(
     err => {
       const message = getListSearchErrorMessage(err)
@@ -105,6 +111,7 @@ export default async function CommunityPage({ params, searchParams }: PageProps)
         <PostFilters
           defaultSort='new'
           enableRelevanceSort={false}
+          showTimeRange
         />
         {postsData ? (
           <CommunityFeed

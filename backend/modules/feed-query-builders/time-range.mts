@@ -2,6 +2,9 @@ import type { TimeRange } from '@voucha/types/feed'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
+/** Window post lists read when the caller sends no time range, for every sort. */
+export const DEFAULT_POST_SEARCH_TIME_RANGE: TimeRange = '1m'
+
 /**
  * Generates SQL filter for time range using a UUIDv7 lower bound.
  * Returns null for 'all' which means no time filter.

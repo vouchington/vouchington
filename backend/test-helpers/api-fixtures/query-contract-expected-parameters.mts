@@ -47,7 +47,7 @@ export const newExpectedParameters = {
     'q',
     'time_range',
   ],
-  'GET:/api/v1/communities/:idOrSlug/posts': ['after', 'limit', 'q', 'sort'],
+  'GET:/api/v1/communities/:idOrSlug/posts': ['after', 'limit', 'q', 'sort', 'time_range'],
   'GET:/api/v1/communities/:idOrSlug/posts/pending': ['after', 'limit'],
   'GET:/api/v1/communities/:idOrSlug/restrictions': ['after', 'limit'],
   'GET:/api/v1/copyright-eu-reports': ['format', 'period_end', 'period_start'],

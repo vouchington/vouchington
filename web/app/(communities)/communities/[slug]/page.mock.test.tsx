@@ -95,6 +95,24 @@ describe('CommunityPage', () => {
     )
   })
 
+  it('forwards a selected time range and ignores an unsupported one', async () => {
+    await CommunityPage({
+      params: Promise.resolve({ slug: 'Rewards' }),
+      searchParams: Promise.resolve({ time_range: '1y' }),
+    })
+    expect(mockGetCommunityPosts).toHaveBeenLastCalledWith('Rewards', {
+      searchParams: { limit: 25, sort: 'new', time_range: '1y' },
+    })
+
+    await CommunityPage({
+      params: Promise.resolve({ slug: 'Rewards' }),
+      searchParams: Promise.resolve({ time_range: '1d' }),
+    })
+    expect(mockGetCommunityPosts).toHaveBeenLastCalledWith('Rewards', {
+      searchParams: { limit: 25, sort: 'new' },
+    })
+  })
+
   it('defaults unsupported sorts to new', async () => {
     await CommunityPage({
       params: Promise.resolve({ slug: 'Rewards' }),

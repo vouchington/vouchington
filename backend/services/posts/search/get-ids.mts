@@ -12,11 +12,9 @@ import {
 import { buildPostRankingScoreExpression } from './query-builder-utils.mts'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
+import { DEFAULT_POST_SEARCH_TIME_RANGE } from '@modules/feed-query-builders'
 import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
-
-/** Window searched when the caller sends no time range, for every sort. */
-const DEFAULT_POST_SEARCH_TIME_RANGE = '1m'
 
 type PostSearchResponse = {
   results: PostSearchResult[]

@@ -1,4 +1,6 @@
+import type { TimeRange } from '@voucha/types/feed'
 import type { PageInfo } from '@voucha/types/pagination'
+import { DEFAULT_POST_SEARCH_TIME_RANGE } from '@modules/feed-query-builders'
 import { resolveHashtagTopicSearch } from '@services/search-params'
 import type { BasicUser } from '@services/users/types'
 import { searchCommunityPosts } from './approved-posts.mts'
@@ -19,6 +21,7 @@ export type CommunityPostsPage = {
 /**
  * One page of a community's approved posts, as `GET /communities/:idOrSlug/posts` serves it.
  *
+ * Without `time_range` the page reads the same default window as post search, for every sort.
  * `q` may carry hashtags, which narrow the page to those topics or aliases. Pinned posts are
  * listed apart from the page: they are left out of every unfiltered page and named in
  * `pinned_post_ids` on its first page only. A filtered or later page names none.
@@ -29,6 +32,8 @@ export async function getCommunityPostsPage(
     currentUser: BasicUser | null
     q?: unknown
     sort?: CommunityPostSort
+    /** Defaults to the window post search uses; pass `all` for the full history. */
+    time_range?: TimeRange
     limit?: number
     after?: string
   },
@@ -49,6 +54,7 @@ export async function getCommunityPostsPage(
     limit,
     after,
     sort,
+    time_range: options.time_range ?? DEFAULT_POST_SEARCH_TIME_RANGE,
     excludePostIds: pinnedPostIds,
     text_search_query: hashtags.textSearchQuery,
     hashtag_topic_ids: hashtags.topicIds,

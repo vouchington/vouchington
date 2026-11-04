@@ -45,8 +45,8 @@
       },
       "read_community": {
         "measured": {
-          "list": 10619,
-          "core": 4012
+          "list": 10787,
+          "core": 4180
         },
         "max": {
           "list": 11000,

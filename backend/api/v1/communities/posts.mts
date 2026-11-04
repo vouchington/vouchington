@@ -20,6 +20,7 @@ import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
 import { isAdminUser } from '@services/users'
 import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import type { TimeRange } from '@voucha/types/feed'
 import {
   communityPageQuery,
   communityPageQueryInput,
@@ -63,6 +64,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
       ...communityPageQueryInput(ctx.query),
       ...(ctx.query.sort !== undefined ? { sort } : {}),
       ...(ctx.query.q !== undefined ? { q: ctx.query.q } : {}),
+      ...(ctx.query.time_range !== undefined ? { time_range: ctx.query.time_range } : {}),
     },
   })
 
@@ -70,6 +72,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
     currentUser: currentUser ?? null,
     q: ctx.query.q,
     sort,
+    time_range: ctx.query.time_range as TimeRange | undefined,
     limit,
     after,
   })

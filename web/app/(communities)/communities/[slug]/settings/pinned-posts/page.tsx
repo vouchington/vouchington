@@ -42,7 +42,8 @@ export default async function CommunityPinnedPostsPage({ params }: PageProps) {
   }
 
   const [postsData, pinnedData] = await Promise.all([
-    getCommunityPosts(slug),
+    // A picker, not a time-bound list: moderators can pin posts of any age.
+    getCommunityPosts(slug, { searchParams: { time_range: 'all' } }),
     getCommunityPinnedPosts(slug),
   ])
 
