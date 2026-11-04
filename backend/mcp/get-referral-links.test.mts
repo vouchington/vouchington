@@ -242,7 +242,7 @@ describe('get-referral-links', () => {
         after: 'not-a-cursor',
       })
 
-      expect(result.success).toBe(false)
+      expect(result).toEqual({ success: false, error: 'Invalid cursor' })
     })
   })
 })
