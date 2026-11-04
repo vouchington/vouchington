@@ -8,9 +8,9 @@ import {
   insertTestRssFeed,
   insertTestRssFeedItem,
   insertTestTopic,
+  linkTwoHopCanonicalUrlForTest,
 } from '@voucha/test-helpers'
 import { createEntityRelationWithElection } from '@voucha/test-helpers/entities/dispatch'
-import { write } from '@data-stores/psql'
 import { getPostIds } from '../posts/search/get-ids.mts'
 import { searchRssFeedItems } from '../rss-feed-items/search.mts'
 import {
@@ -117,9 +117,7 @@ describe('references stored on a canonical URL', () => {
       await setCanonicalUrl(source, canonical)
     } else {
       // setCanonicalUrl flattens; a concurrent call can leave this two-hop chain.
-      const link = '/* seedTwoHopCanonical */ UPDATE urls SET canonical_url_id = $1 WHERE id = $2'
-      await write(link, [middle, source])
-      await write(link, [canonical, middle])
+      await linkTwoHopCanonicalUrlForTest(source, middle, canonical)
     }
     return source
   }
