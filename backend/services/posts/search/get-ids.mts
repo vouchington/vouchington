@@ -49,8 +49,10 @@ export async function getPostIds(
     sort,
     hasRankingScore,
   )
-  // Post search is always time-bounded; callers needing the full history pass 'all'.
-  const effectiveTimeRange = options.time_range ?? DEFAULT_POST_SEARCH_TIME_RANGE
+  // Post search is always time-bounded; callers needing the full history pass 'all'. A user's own
+  // drafts are paged by limit and keep their full history.
+  const effectiveTimeRange =
+    options.time_range ?? (options.drafts ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
   // Build query - pass decoded cursor values and use limit + 1
   const queryOptions: PostSearchOptions = {
     ...options,

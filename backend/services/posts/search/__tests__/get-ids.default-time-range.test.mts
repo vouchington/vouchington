@@ -46,4 +46,33 @@ describe('getPostIds default time range', () => {
       await Promise.all([deleteTestPost(recentId), deleteTestPost(oldId)])
     }
   })
+
+  it('keeps the full history for a user listing their own drafts without time_range', async () => {
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('Failed to create time-range test user')
+    const suffix = createRandomString(10)
+    const oldId = await insertTestPost({
+      createdAt: new Date(Date.now() - 40 * DAY_MS),
+      title: `old draft ${suffix}`,
+      slug: `old-draft-${suffix}`,
+      createdById: user.id,
+      markdown: `old draft ${suffix}`,
+      postType: 'topic_recommendation',
+    })
+    try {
+      const base = {
+        user_id: user.id,
+        include_topic_recommendations: true,
+        post_types: ['topic_recommendation' as const],
+        limit: 10,
+      }
+      const ids = async (options: PostSearchOptions) =>
+        (await getPostIds(user, options)).results.map(result => result.id)
+
+      expect(await ids({ ...base, drafts: true })).toEqual([oldId])
+      expect(await ids(base)).toEqual([])
+    } finally {
+      await deleteTestPost(oldId)
+    }
+  })
 })

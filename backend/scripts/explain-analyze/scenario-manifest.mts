@@ -96,7 +96,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'post-search-review-topic',
   'post-search-text',
   'post-search-text-heavy-follows',
-  'post-search-universal-topic',
+  ...(['post-search-universal-topic', 'post-search-universal-topic-all'] as const),
   'post-votes-by-user',
   'posts-by-url-ids',
   'prioritized-referral-links',

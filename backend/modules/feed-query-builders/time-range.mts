@@ -42,11 +42,9 @@ function getTimeRangeLowerBoundTimestampMs(timeRange: TimeRange, now = new Date(
       return now.getTime() - 24 * 60 * 60 * 1000
     case '1w':
       return now.getTime() - 7 * 24 * 60 * 60 * 1000
-    case '1m': {
-      const cutoff = new Date(now)
-      cutoff.setUTCMonth(cutoff.getUTCMonth() - 1)
-      return cutoff.getTime()
-    }
+    case '1m':
+      // Exactly 30 days, so the "Last 30 days" label holds in every calendar month.
+      return now.getTime() - 30 * 24 * 60 * 60 * 1000
     case '1y': {
       const cutoff = new Date(now)
       cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 1)

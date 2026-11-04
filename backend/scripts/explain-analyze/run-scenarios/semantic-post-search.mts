@@ -20,6 +20,8 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
         semanticSearchEmbedding: embedding,
         ...(hybrid ? { text_search_query: 'seed' } : {}),
         sort,
+        // The default window post search applies when a caller sends no time_range.
+        time_range: '1m' as const,
         limit: 26,
       }
       const seed = await inspectSemanticPostSeed(seedOptions)
