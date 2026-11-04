@@ -22,7 +22,7 @@ import { PostsDiscoveryAside } from '@/components/asides/posts-discovery-aside'
 import { PostListTopSection } from './post-list-top-section'
 import { PostListEmptyState } from './post-list-empty-state'
 import { joinSearchParamValues } from '@/lib/search-param-values'
-import { postTimeRangeParams } from '@/lib/posts/time-range'
+import { hackerNewsPostTimeRange, postTimeRangeParams } from '@/lib/posts/time-range'
 import { HACKER_NEWS_FILTER_PARAM } from '@/components/hacker-news/hacker-news-filter-param'
 
 interface PostListPageProps {
@@ -39,12 +39,15 @@ export async function PostListPage({ config, searchParams }: PostListPageProps) 
   const topics = joinSearchParamValues(params.topics)
   const sort = typeof params.sort === 'string' ? params.sort : 'hot'
   const postTypes = config.postTypes?.join(',')
+  const hackerNews = params[HACKER_NEWS_FILTER_PARAM] === '1'
   const queryParams = {
     ...(q ? { q } : {}),
     ...(topics ? { topics } : {}),
     ...(postTypes ? { post_types: postTypes } : {}),
-    ...postTimeRangeParams(params.time_range),
-    ...(params[HACKER_NEWS_FILTER_PARAM] === '1' ? { has_hacker_news_references: true } : {}),
+    ...(hackerNews
+      ? { time_range: hackerNewsPostTimeRange(params.time_range) }
+      : postTimeRangeParams(params.time_range)),
+    ...(hackerNews ? { has_hacker_news_references: true } : {}),
     sort,
     limit: 25,
   }

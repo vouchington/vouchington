@@ -6,6 +6,9 @@
  */
 
 import { Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { HACKER_NEWS_FILTER_PARAM } from '@/components/hacker-news/hacker-news-filter-param'
+import { hackerNewsPostTimeRange, POST_TIME_RANGES } from '@/lib/posts/time-range'
 import { ListFilters } from '@/components/shared/list-filters'
 import { HackerNewsFilterToggle } from '@/components/hacker-news/hacker-news-filter-toggle'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -42,6 +45,8 @@ function PostFiltersContent({
   showHackerNewsFilter = false,
 }: PostFiltersProps) {
   const t = useTranslations()
+  const searchParams = useSearchParams()
+  const hackerNews = showHackerNewsFilter && searchParams.get(HACKER_NEWS_FILTER_PARAM) === '1'
   const resolvedSortOptions = sortOptions ?? [
     {
       label: t('extracted.posts.postFilters.hot_0ec53894'),
@@ -74,8 +79,13 @@ function PostFiltersContent({
       showSort={showSort}
       enableHashtagSearch={enableHashtagSearch}
     >
-      {showTimeRange && <PostTimeRangeSelect />}
-      {showHackerNewsFilter ? <HackerNewsFilterToggle /> : null}
+      {showTimeRange && (
+        <PostTimeRangeSelect
+          options={hackerNews ? POST_TIME_RANGES.filter(range => range !== 'all') : undefined}
+          value={hackerNews ? hackerNewsPostTimeRange(searchParams.get('time_range')) : undefined}
+        />
+      )}
+      {showHackerNewsFilter ? <HackerNewsFilterToggle boundPostTimeRange={showTimeRange} /> : null}
     </ListFilters>
   )
 }

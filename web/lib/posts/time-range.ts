@@ -18,3 +18,8 @@ export function postTimeRangeParams(value: string | string[] | undefined): {
 } {
   return isPostTimeRange(value) ? { time_range: value } : {}
 }
+
+/** Keep Hacker News post searches bounded, including shared or outdated URLs. */
+export function hackerNewsPostTimeRange(value: unknown): PostTimeRange {
+  return isPostTimeRange(value) && value !== 'all' ? value : '1y'
+}

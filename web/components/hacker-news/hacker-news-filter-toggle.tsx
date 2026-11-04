@@ -8,7 +8,11 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 import { HACKER_NEWS_FILTER_PARAM } from './hacker-news-filter-param'
 
 /** List filter for "seen or mentioned on Hacker News"; the page maps it to the API filter. */
-export function HackerNewsFilterToggle() {
+export function HackerNewsFilterToggle({
+  boundPostTimeRange = false,
+}: {
+  boundPostTimeRange?: boolean
+}) {
   const t = useTranslations()
   const id = useId()
   const { push } = useRouter()
@@ -21,8 +25,10 @@ export function HackerNewsFilterToggle() {
         checked={checked}
         onCheckedChange={next => {
           const params = new URLSearchParams(searchParams.toString())
-          if (next === true) params.set(HACKER_NEWS_FILTER_PARAM, '1')
-          else params.delete(HACKER_NEWS_FILTER_PARAM)
+          if (next === true) {
+            params.set(HACKER_NEWS_FILTER_PARAM, '1')
+            if (boundPostTimeRange) params.set('time_range', '1y')
+          } else params.delete(HACKER_NEWS_FILTER_PARAM)
           params.delete('after')
           push(`?${params.toString()}`, { scroll: false })
         }}

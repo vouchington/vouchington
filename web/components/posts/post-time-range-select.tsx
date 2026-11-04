@@ -58,7 +58,7 @@ function PostTimeRangeSelectContent({
 
   function select(range: PostTimeRange) {
     const params = new URLSearchParams(searchParams.toString())
-    if (range === DEFAULT_POST_TIME_RANGE) params.delete('time_range')
+    if (range === DEFAULT_POST_TIME_RANGE && options.includes('all')) params.delete('time_range')
     else params.set('time_range', range)
     params.delete('after')
     push(`?${params.toString()}`, { scroll: false })
