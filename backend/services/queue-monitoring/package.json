@@ -45,6 +45,7 @@
     "@queues/entity-listeners": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
     "@queues/follower-distributions": "workspace:^",
+    "@queues/hacker-news": "workspace:^",
     "@queues/heartbeat": "workspace:^",
     "@queues/image-uploads": "workspace:^",
     "@queues/memberships": "workspace:^",

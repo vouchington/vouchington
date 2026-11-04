@@ -9990,6 +9990,9 @@ importers:
       '@queues/follower-distributions':
         specifier: workspace:^
         version: link:../../queues/follower-distributions
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../../queues/heartbeat
