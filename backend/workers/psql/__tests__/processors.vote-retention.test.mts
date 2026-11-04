@@ -117,7 +117,7 @@ describe('processPsql vote retention continuations', () => {
       },
       undefined,
       'first-page',
-      options,
+      { vote: options },
     )
     expect(first).toEqual({
       supersededVoteBallots: [
@@ -149,7 +149,7 @@ describe('processPsql vote retention continuations', () => {
       next,
       undefined,
       'second-page',
-      options,
+      { vote: options },
     )
     expect(second).toEqual({
       supersededVoteBallots: [{ voteTable: 'topic_votes', scanned: 2, deleted: 1, hasMore: false }],
@@ -185,7 +185,7 @@ describe('processPsql vote retention continuations', () => {
         { voteTables: ['post_votes'], userAgentStrings: false, voteIntegrityDetails: false },
         undefined,
         'disabled-details',
-        options,
+        { vote: options },
       ),
     ).toEqual({
       supersededVoteBallots: [{ voteTable: 'post_votes', scanned: 2, deleted: 1, hasMore: false }],
@@ -203,7 +203,7 @@ describe('processPsql vote retention continuations', () => {
         { voteTables: [], userAgentStrings: true, voteIntegrityDetails: true },
         undefined,
         'selected-details',
-        options,
+        { vote: options },
       ),
     ).toEqual({
       supersededVoteBallots: [],
@@ -223,7 +223,7 @@ describe('processPsql vote retention continuations', () => {
         { voteTables: [], userAgentStrings: true, voteIntegrityDetails: true },
         undefined,
         'empty-details',
-        options,
+        { vote: options },
       ),
     ).toEqual({
       supersededVoteBallots: [],
@@ -248,9 +248,11 @@ describe('processPsql vote retention continuations', () => {
         undefined,
         'failed-page',
         {
-          batchSize: 1,
-          now: new Date('2026-11-04T12:00:00Z'),
-          voteIdsByTable: { post_votes: [owned.postSupersederId] },
+          vote: {
+            batchSize: 1,
+            now: new Date('2026-11-04T12:00:00Z'),
+            voteIdsByTable: { post_votes: [owned.postSupersederId] },
+          },
         },
       ),
     ).rejects.toThrow('retention page failed')

@@ -14,7 +14,6 @@ import {
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
 import {
-  runCopyrightOperationalRetentionCleanup,
   runDataRetentionCleanup,
   runVoteRetentionCleanupPage,
   type VoteRetentionCleanupOptions,
@@ -45,13 +44,15 @@ import {
   type RefreshMaterializedViewData,
   type VoteRetentionContinuationData,
 } from '@queues/psql/types'
-import { processCopyrightRetentionContinuation } from './processors/copyright-retention.mts'
+import {
+  processCopyrightRetentionContinuation,
+  type CopyrightRetentionScope,
+} from './processors/copyright-retention.mts'
 
 type ProcessPsqlDependencies = PartitionCleanupDependencies &
   AgentModerationRetentionDependencies & {
     createPartitions: typeof createMonthlyPartitions
     dataRetentionCleanup: typeof runDataRetentionCleanup
-    copyrightRetentionCleanup: typeof runCopyrightOperationalRetentionCleanup
     enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
     refreshMaterializedView: typeof refreshMaterializedView
     runConfigDriven: typeof runConfigDriven
@@ -70,7 +71,10 @@ export default async function processPsql(
   >,
   dependencies?: Partial<ProcessPsqlDependencies>,
   jobId?: string,
-  voteRetentionOptions?: VoteRetentionCleanupOptions,
+  options?: {
+    vote?: VoteRetentionCleanupOptions
+    copyright?: CopyrightRetentionScope
+  },
 ) {
   switch (jobName) {
     case 'runMigrations':
@@ -96,10 +100,7 @@ export default async function processPsql(
       await dataRetentionConfig.waitForInitialization()
       const copyrightFamilies = data?.continuation?.copyrightFamilies
       if (copyrightFamilies) {
-        return processCopyrightRetentionContinuation(
-          data!.continuation!,
-          dependencies?.copyrightRetentionCleanup,
-        )
+        return processCopyrightRetentionContinuation(data!.continuation!, options?.copyright)
       }
       const cleanup = dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup
       const result = data?.continuation
@@ -142,7 +143,7 @@ export default async function processPsql(
       const result = await runVoteRetentionCleanupPage(
         getDataRetentionLimits(),
         selection,
-        voteRetentionOptions,
+        options?.vote,
       )
       await enqueueVoteRetentionContinuationIfNeeded(result, jobId)
       return result

@@ -32,14 +32,20 @@ export async function admitCopyrightRetentionContinuation(
   })
 }
 
+export type CopyrightRetentionScope = Omit<
+  NonNullable<Parameters<typeof runCopyrightOperationalRetentionCleanup>[0]>,
+  'activeFamilies'
+>
+
 export async function processCopyrightRetentionContinuation(
   continuation: NonNullable<PsqlRetentionJobData['continuation']>,
-  cleanup: typeof runCopyrightOperationalRetentionCleanup = runCopyrightOperationalRetentionCleanup,
+  options: CopyrightRetentionScope = {},
 ) {
   const copyrightFamilies = continuation.copyrightFamilies ?? []
-  const result = await cleanup({
+  const result = await runCopyrightOperationalRetentionCleanup({
+    ...options,
     activeFamilies: copyrightFamilies,
-    limits: getDataRetentionLimits(),
+    limits: options.limits ?? getDataRetentionLimits(),
   })
   const pending = unfinishedCopyrightFamilies(result, copyrightFamilies)
   if (pending.length > 0) {
