@@ -80,6 +80,17 @@ const actionFiles = readdirSync('.github/actions').flatMap(dir => {
 
 const allFiles = [...workflowFiles, ...actionFiles]
 
+// Composite actions keep long steps in scripts beside action.yml, so scan those as run blocks too.
+const actionScripts = readdirSync('.github/actions').flatMap(dir => {
+  try {
+    return readdirSync(`.github/actions/${dir}`).flatMap(f =>
+      f.endsWith('.sh') ? [`.github/actions/${dir}/${f}`] : [],
+    )
+  } catch {
+    return []
+  }
+})
+
 function getStepGroups(yaml: unknown): Array<{ label: string; steps: Step[] }> {
   const result: Array<{ label: string; steps: Step[] }> = []
   const wf = yaml as Workflow
@@ -98,11 +109,22 @@ describe('workflow download integrity', () => {
   it('every direct or helper download either has sha256sum verification, comes from a trusted host, or carries an integrity-check skip annotation', () => {
     const violations: string[] = []
 
-    for (const filePath of allFiles) {
-      const content = readFileSync(filePath, 'utf8')
-      const yaml = load(content)
+    const stepSources: Array<{
+      filePath: string
+      groups: Array<{ label: string; steps: Step[] }>
+    }> = [
+      ...allFiles.map(filePath => ({
+        filePath,
+        groups: getStepGroups(load(readFileSync(filePath, 'utf8'))),
+      })),
+      ...actionScripts.map(filePath => ({
+        filePath,
+        groups: [{ label: 'script', steps: [{ run: readFileSync(filePath, 'utf8') }] }],
+      })),
+    ]
 
-      for (const { label, steps } of getStepGroups(yaml)) {
+    for (const { filePath, groups } of stepSources) {
+      for (const { label, steps } of groups) {
         for (const [stepIdx, step] of steps.entries()) {
           if (!step.run) continue
 

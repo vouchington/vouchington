@@ -25,21 +25,7 @@ runs:
     - name: Set backend image set
       id: images
       shell: bash
-      run: |
-        set -euo pipefail
-        worker_io_automation_enabled="$(sed -n 's/^WORKER_IO_AUTOMATION_ENABLED=//p' .github/worker-io-automation.env)"
-        case "$worker_io_automation_enabled" in
-          true|false) ;;
-          *) echo 'WORKER_IO_AUTOMATION_ENABLED must be true or false' >&2; exit 1 ;;
-        esac
-        active_worker_images='worker-cpu'
-        if [ "$worker_io_automation_enabled" = 'true' ]; then
-          active_worker_images="$active_worker_images worker-io"
-        fi
-        {
-          echo "worker_io_automation_enabled=$worker_io_automation_enabled"
-          echo "active_worker_images=$active_worker_images"
-        } >> "$GITHUB_OUTPUT"
+      run: '"$GITHUB_ACTION_PATH/set-image-set.sh"'
 
     - name: Lint Dockerfile
       uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
@@ -129,24 +115,7 @@ runs:
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
         ACTIVE_WORKER_IMAGES: ${{ steps.images.outputs.active_worker_images }}
-      run: |
-        set -euo pipefail
-        {
-          echo "## Docker Image Sizes"
-          echo ""
-        } >> "$GITHUB_STEP_SUMMARY"
-        for target in api $ACTIVE_WORKER_IMAGES; do
-          entry="$target:$IMAGE_TAG"
-          target="${entry%%:*}"
-          tag="${entry#*:}"
-          image="$IMAGE_REPOSITORY/$target:$tag"
-          bytes=$(docker image inspect "$image" --format '{{.Size}}')
-          size=$(numfmt --to=iec-i --suffix=B "$bytes")
-          echo "$target image size: $size ($bytes bytes)"
-          {
-            echo "- \`$image\` — \`$size\` ($bytes bytes)"
-          } >> "$GITHUB_STEP_SUMMARY"
-        done
+      run: '"$GITHUB_ACTION_PATH/report-image-sizes.sh"'
 
     - uses: actions/setup-node@363be39a57dfa5801e05c6e0c549d622a376cf15 # v7
       with:
@@ -169,213 +138,14 @@ runs:
       shell: bash
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
-      run: |
-        set -euo pipefail
-        IMAGE="$IMAGE_REPOSITORY/api:$IMAGE_TAG"
-        PORT=$(python3 "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py" 1)
-        SERVER_CONTAINER="voucha-api-server-$$"
-        POSTGRES_CONTAINER="voucha-api-postgres-$$"
-
-        cleanup() {
-          docker stop "$SERVER_CONTAINER" 2>/dev/null || true
-          docker rm "$SERVER_CONTAINER" 2>/dev/null || true
-          docker rm -f "$POSTGRES_CONTAINER" 2>/dev/null || true
-        }
-        trap cleanup EXIT
-
-        echo "Starting API container on port $PORT..."
-        docker run -d --name "$SERVER_CONTAINER" --network host \
-          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
-          -e NODE_ENV=test -e PORT="$PORT" -e VALKEY_URL \
-          -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION \
-          "$IMAGE"
-
-        echo "Waiting for API to be ready (max 30s)..."
-        for i in $(seq 1 60); do
-          if curl -sf "http://localhost:$PORT/infra/ping" >/dev/null 2>&1; then
-            echo "✓ API is ready"
-            break
-          fi
-          if [ "$i" -eq 60 ]; then
-            echo "✗ API did not become ready within 30s. Logs:"
-            docker logs "$SERVER_CONTAINER"
-            exit 1
-          fi
-          sleep 0.5
-        done
-
-        TMPFILE=$(mktemp)
-        HTTP_CODE=$(curl -s -o "$TMPFILE" -w "%{http_code}" "http://localhost:$PORT/infra/ping")
-        BODY=$(cat "$TMPFILE")
-        rm -f "$TMPFILE"
-
-        if [ "$HTTP_CODE" != "200" ]; then
-          echo "✗ /infra/ping returned HTTP $HTTP_CODE"
-          docker logs "$SERVER_CONTAINER"
-          exit 1
-        fi
-        if [ "$BODY" != "pong" ]; then
-          echo "✗ /infra/ping returned '$BODY', expected 'pong'"
-          exit 1
-        fi
-        echo "✓ /infra/ping returned 200 pong"
-        # The infrastructure health check runs the base image's Node, not the executable.
-        docker exec "$SERVER_CONTAINER" /nodejs/bin/node -e "fetch('http://127.0.0.1:$PORT/infra/ping').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-        echo "✓ ECS health check command passed"
-        # The executable runs embedded native addons from temporary copies in TMPDIR, so that
-        # directory must be writable by the nonroot user the image runs as.
-        docker exec "$SERVER_CONTAINER" /nodejs/bin/node -e 'const fs=require("node:fs");const dir=process.env.TMPDIR;if(process.getuid()!==65532)throw new Error("not uid 65532");fs.accessSync(dir,fs.constants.W_OK);const addons=fs.readdirSync(dir).filter(name=>name.startsWith(".bun-65532-")&&name.endsWith(".node"));if(addons.length===0)throw new Error("no embedded native addon extracted to "+dir);console.log("✓ "+addons.length+" native addons extracted to "+dir+" as uid 65532")'
-
-        echo "Running deployed Valkey diagnostic in a fresh container..."
-        DIAGNOSTIC_OUTPUT=$(docker run --rm --network host \
-          -e NODE_ENV=test -e ENVIRONMENT=test -e VALKEY_URL \
-          "$IMAGE" valkey-admin.mts diagnose)
-        printf '%s\n' "$DIAGNOSTIC_OUTPUT" | jq -s -e '
-          length == 1 and
-          (.[0] |
-          keys == ["environment", "memory", "observedFlushTargetKeyCounts", "operation", "schemaVersion", "timestamp"] and
-          .schemaVersion == 1 and .operation == "diagnose" and .environment == "test" and
-          (.timestamp | type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$")) and
-          (.memory | keys == ["lazyfreePendingObjects", "maxmemoryBytes", "maxmemoryPolicy", "memFragmentationRatio", "usedMemoryBytes", "usedMemoryDatasetBytes", "usedMemoryPeakBytes", "usedMemoryRssBytes"]) and
-          (.memory.usedMemoryBytes | type == "number") and
-          (.memory.usedMemoryRssBytes | type == "number") and
-          (.memory.usedMemoryPeakBytes | type == "number") and
-          (.memory.maxmemoryBytes | type == "number") and
-          (.memory.maxmemoryPolicy | type == "string" and length > 0) and
-          ([.memory.usedMemoryDatasetBytes, .memory.lazyfreePendingObjects, .memory.memFragmentationRatio] | all(. == null or type == "number")) and
-          (.observedFlushTargetKeyCounts | keys == ["blooms", "caches", "dynamic-config", "queues", "rate-limiter", "recently-viewed", "sessions", "unclassified"]) and
-          ([.observedFlushTargetKeyCounts[]] | all(type == "number" and . >= 0 and floor == .)))
-        ' >/dev/null
-        echo "✓ Deployed Valkey diagnostic returned schema-version 1 JSON"
-
-        # The infrastructure one-off tasks run these entrypoints from the compiled image, so run
-        # both against a disposable database that exists only for this step.
-        echo "Starting disposable PostgreSQL for the schema reset and migrate entrypoints..."
-        POSTGRES_PORT=$(python3 "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py" 1)
-        docker run -d --name "$POSTGRES_CONTAINER" -p "127.0.0.1:$POSTGRES_PORT:5432" \
-          -e POSTGRES_USER=postgres -e POSTGRES_DB=postgres -e POSTGRES_HOST_AUTH_METHOD=trust \
-          ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 >/dev/null
-        for i in $(seq 1 60); do
-          if docker exec "$POSTGRES_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
-            break
-          fi
-          if [ "$i" -eq 60 ]; then
-            echo "✗ Disposable PostgreSQL did not become ready within 30s. Logs:"
-            docker logs "$POSTGRES_CONTAINER"
-            exit 1
-          fi
-          sleep 0.5
-        done
-        RESET_DATABASE_URL="postgres://postgres@127.0.0.1:$POSTGRES_PORT/postgres"
-        # The second reset runs over the fully migrated schema at PostgreSQL's default lock
-        # settings, which is where an unbatched DROP SCHEMA CASCADE runs out of shared memory.
-        for ENTRYPOINT in schema-reset.mts schema-reset.mts migrate.mts; do
-          docker run --rm --network host \
-            -e NODE_ENV=staging -e ENVIRONMENT=staging -e ALLOW_STAGING_SCHEMA_RESET=true \
-            -e DATABASE_URL="$RESET_DATABASE_URL" -e VALKEY_URL \
-            "$IMAGE" "$ENTRYPOINT"
-          echo "✓ $ENTRYPOINT exited 0"
-        done
-        MIGRATED=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d postgres -Atc "SELECT to_regclass('public.users') IS NOT NULL")
-        if [ "$MIGRATED" != "t" ]; then
-          echo "✗ public.users is missing after schema-reset.mts and migrate.mts"
-          exit 1
-        fi
-        echo "✓ schema-reset.mts (twice) and migrate.mts ran on the compiled image and public.users exists"
-
-        # Every run above uses NODE_ENV=test, which skips the signal handlers and the deployed-only
-        # boot guards. Boot the way a deployed task does and require a clean exit on docker stop.
-        DEPLOYED_PORT=$(python3 "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py" 1)
-        "$GITHUB_ACTION_PATH/deployed-boot-smoke.sh" "$IMAGE" "API Server: serving" \
-          -e PORT="$DEPLOYED_PORT" -e DATABASE_URL="$RESET_DATABASE_URL"
-        echo "✓ API smoke test passed"
+      run: '"$GITHUB_ACTION_PATH/api-smoke.sh"'
 
     - name: Run worker-cpu smoke test
       if: ${{ !cancelled() && (steps.bake-core.outcome == 'success' || steps.bake-all.outcome == 'success') }}
       shell: bash
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
-      run: |
-        set -euo pipefail
-        IMAGE="$IMAGE_REPOSITORY/worker-cpu:$IMAGE_TAG"
-        WORKER_CONTAINER="voucha-worker-cpu-$$"
-
-        cleanup() {
-          docker stop "$WORKER_CONTAINER" 2>/dev/null || true
-          docker rm "$WORKER_CONTAINER" 2>/dev/null || true
-        }
-        trap cleanup EXIT
-
-        echo "Starting worker-cpu container..."
-        docker run -d --name "$WORKER_CONTAINER" --network host \
-          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
-          -e NODE_ENV=test \
-          -e VALKEY_URL \
-          -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION \
-          "$IMAGE"
-
-        WORKER_READY=false
-        for _ in $(seq 1 20); do
-          if ! docker inspect --format='{{.State.Running}}' "$WORKER_CONTAINER" 2>/dev/null | grep -q true; then
-            echo "✗ Worker-cpu container stopped unexpectedly. Logs:"
-            docker logs "$WORKER_CONTAINER"
-            exit 1
-          fi
-          LOGS=$(docker logs "$WORKER_CONTAINER" 2>&1)
-          if echo "$LOGS" | grep -qE "(^|[[:space:]])(Error:|Cannot find module|ENOENT|EACCES)"; then
-            echo "✗ Worker-cpu failed during initialization. Logs:"
-            echo "$LOGS"
-            exit 1
-          fi
-          if echo "$LOGS" | grep -q "Workers: workers loaded."; then
-            WORKER_READY=true
-            break
-          fi
-          sleep 0.5
-        done
-
-        if [ "$WORKER_READY" = false ]; then
-          echo "✗ Worker-cpu did not finish initializing within 10s. Logs:"
-          docker logs "$WORKER_CONTAINER"
-          exit 1
-        fi
-
-        echo "Enqueueing heartbeat job from a second container of the image..."
-        docker run --rm --network host \
-          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
-          -e NODE_ENV=test -e VALKEY_URL \
-          "$IMAGE" enqueue-heartbeat.mts
-
-        JOB_DONE=false
-        for _ in $(seq 1 30); do
-          WORKER_LOGS=$(docker logs "$WORKER_CONTAINER" 2>&1)
-          if echo "$WORKER_LOGS" | grep -q "job completed: heartbeat"; then
-            JOB_DONE=true
-            break
-          fi
-          sleep 0.5
-        done
-
-        if [ "$JOB_DONE" = false ]; then
-          echo "✗ Heartbeat job did not complete within 15s. Logs:"
-          docker logs "$WORKER_CONTAINER"
-          exit 1
-        fi
-        echo "✓ Heartbeat job completed"
-
-        echo "Checking native addons that load on first use..."
-        docker run --rm --network host --user 65532:65532 \
-          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
-          -e NODE_ENV=test -e VALKEY_URL \
-          "$IMAGE" check-native-addons.mts
-        # The executable runs embedded native addons from temporary copies in TMPDIR, so that
-        # directory must be writable by the nonroot user the image runs as.
-        docker exec "$WORKER_CONTAINER" /nodejs/bin/node -e 'const fs=require("node:fs");const dir=process.env.TMPDIR;if(process.getuid()!==65532)throw new Error("not uid 65532");fs.accessSync(dir,fs.constants.W_OK);const addons=fs.readdirSync(dir).filter(name=>name.startsWith(".bun-65532-")&&name.endsWith(".node"));if(addons.length===0)throw new Error("no embedded native addon extracted to "+dir);console.log("✓ "+addons.length+" native addons extracted to "+dir+" as uid 65532")'
-
-        # NODE_ENV=test skips the signal handlers; prove a deployed-mode boot and a clean stop.
-        "$GITHUB_ACTION_PATH/deployed-boot-smoke.sh" "$IMAGE" "Workers: workers loaded."
-
-        echo "✓ Worker-cpu smoke test passed"
+      run: '"$GITHUB_ACTION_PATH/worker-cpu-smoke.sh"'
 
     - name: Run worker-io smoke test
       if: ${{ !cancelled() && steps.images.outputs.worker_io_automation_enabled == 'true' && steps.bake-all.outcome == 'success' }}
@@ -383,99 +153,7 @@ runs:
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
         ACTIVE_WORKER_IMAGES: ${{ steps.images.outputs.active_worker_images }}
-      run: |
-        set -euo pipefail
-        IMAGE="$IMAGE_REPOSITORY/worker-io:$IMAGE_TAG"
-        WORKER_CONTAINER="voucha-worker-io-$$"
-
-        cleanup() {
-          docker stop "$WORKER_CONTAINER" 2>/dev/null || true
-          docker rm "$WORKER_CONTAINER" 2>/dev/null || true
-        }
-        trap cleanup EXIT
-
-        # Run only the universal heartbeat queue: exclude every IO-class queue the app expands
-        # from the worker queue policy (SQS consumers skip themselves without queue URLs).
-        WORKER_QUEUE_EXCLUDES=$(jq -er '(.ioCapableQueues - .sqsConsumerQueues) | if length == 0 then error("worker-io has no queues") else map("-" + .) | join(",") end' \
-          backend/modules/worker-queue-inventory/worker-queue-policy.json)
-
-        echo "Starting worker-io container..."
-        docker run -d --name "$WORKER_CONTAINER" --network host \
-          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
-          -e NODE_ENV=test \
-          -e QUEUES="$WORKER_QUEUE_EXCLUDES" \
-          -e VALKEY_URL \
-          -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION \
-          "$IMAGE"
-
-        WORKER_READY=false
-        for _ in $(seq 1 20); do
-          if ! docker inspect --format='{{.State.Running}}' "$WORKER_CONTAINER" 2>/dev/null | grep -q true; then
-            echo "✗ Worker-io container stopped unexpectedly. Logs:"
-            docker logs "$WORKER_CONTAINER"
-            exit 1
-          fi
-          LOGS=$(docker logs "$WORKER_CONTAINER" 2>&1)
-          if echo "$LOGS" | grep -qE "(^|[[:space:]])(Error:|Cannot find module|ENOENT|EACCES)"; then
-            echo "✗ Worker-io failed during initialization. Logs:"
-            echo "$LOGS"
-            exit 1
-          fi
-          if echo "$LOGS" | grep -q "Workers: workers loaded."; then
-            WORKER_READY=true
-            break
-          fi
-          sleep 0.5
-        done
-
-        if [ "$WORKER_READY" = false ]; then
-          echo "✗ Worker-io did not finish initializing within 10s. Logs:"
-          docker logs "$WORKER_CONTAINER"
-          exit 1
-        fi
-
-        echo "Enqueueing heartbeat job from a second container of the image..."
-        docker run --rm --network host \
-          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
-          -e NODE_ENV=test -e VALKEY_URL \
-          "$IMAGE" enqueue-heartbeat.mts
-
-        JOB_DONE=false
-        for _ in $(seq 1 30); do
-          WORKER_LOGS=$(docker logs "$WORKER_CONTAINER" 2>&1)
-          if echo "$WORKER_LOGS" | grep -q "job completed: heartbeat"; then
-            JOB_DONE=true
-            break
-          fi
-          sleep 0.5
-        done
-
-        if [ "$JOB_DONE" = false ]; then
-          echo "✗ Heartbeat job did not complete within 15s. Logs:"
-          docker logs "$WORKER_CONTAINER"
-          exit 1
-        fi
-        echo "✓ Heartbeat job completed"
-
-        # worker-io is the IO-only image: the compile script fails the image build when its
-        # executable bundles sharp or vurst-ai, and this checks that none of their shared
-        # libraries (libvips, onnxruntime) ship beside it. A separate container reads the
-        # directory with the base image's Node, so it does not compete with the running worker.
-        WORKER_IO_LIBRARIES=$(docker run --rm --entrypoint /nodejs/bin/node "$IMAGE" -e \
-          'process.stdout.write(require("node:fs").readdirSync("/app/backend/lib").sort().join(" "))')
-        if [ "$WORKER_IO_LIBRARIES" != "libduckdb.so" ]; then
-          echo "✗ Worker-io ships shared libraries beyond libduckdb.so (should be IO-only): $WORKER_IO_LIBRARIES"
-          exit 1
-        fi
-        echo "✓ Worker-io ships only libduckdb.so"
-        # The executable runs embedded native addons from temporary copies in TMPDIR, so that
-        # directory must be writable by the nonroot user the image runs as.
-        docker exec "$WORKER_CONTAINER" /nodejs/bin/node -e 'const fs=require("node:fs");const dir=process.env.TMPDIR;if(process.getuid()!==65532)throw new Error("not uid 65532");fs.accessSync(dir,fs.constants.W_OK);const addons=fs.readdirSync(dir).filter(name=>name.startsWith(".bun-65532-")&&name.endsWith(".node"));if(addons.length===0)throw new Error("no embedded native addon extracted to "+dir);console.log("✓ "+addons.length+" native addons extracted to "+dir+" as uid 65532")'
-        # NODE_ENV=test skips the signal handlers; prove a deployed-mode boot and a clean stop.
-        "$GITHUB_ACTION_PATH/deployed-boot-smoke.sh" "$IMAGE" "Workers: workers loaded." \
-          -e QUEUES="$WORKER_QUEUE_EXCLUDES"
-
-        echo "✓ Worker-io smoke test passed"
+      run: '"$GITHUB_ACTION_PATH/worker-io-smoke.sh"'
 
     - name: Install Trivy
       id: install-trivy
@@ -484,47 +162,12 @@ runs:
       env:
         # renovate: datasource=github-releases depName=aquasecurity/trivy extractVersion=^v(?<version>.*)$
         TRIVY_VERSION: 0.71.2
-      run: |
-        set -euo pipefail
-        if trivy --version 2>/dev/null | grep -q "$TRIVY_VERSION"; then
-          echo "trivy $TRIVY_VERSION already installed"
-          exit 0
-        fi
-        case "$(uname -s)-$(uname -m)" in
-          Darwin-arm64) os="macOS"; arch="ARM64" ;;
-          Darwin-x86_64) os="macOS"; arch="64bit" ;;
-          Linux-aarch64|Linux-arm64) os="Linux"; arch="ARM64" ;;
-          Linux-x86_64) os="Linux"; arch="64bit" ;;
-          *) echo "Unsupported platform: $(uname -s)-$(uname -m)" >&2; exit 1 ;;
-        esac
-        mkdir -p "$HOME/.local/bin"
-        BASE_URL="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}"
-        ARCHIVE="trivy_${TRIVY_VERSION}_${os}-${arch}.tar.gz"
-        TRIVY_ARCHIVE="${RUNNER_TEMP:-/tmp}/${ARCHIVE}"
-        source "$GITHUB_WORKSPACE/ci/curl-to.sh"
-        ci_download_to "${BASE_URL}/${ARCHIVE}" "$TRIVY_ARCHIVE" --retry 3 --retry-all-errors
-        CHECKSUMS="${RUNNER_TEMP:-/tmp}/trivy_${TRIVY_VERSION}_checksums.txt"
-        ci_download_to "${BASE_URL}/trivy_${TRIVY_VERSION}_checksums.txt" "$CHECKSUMS" --retry 3 --retry-all-errors
-        EXPECTED=$(grep "${ARCHIVE}" "$CHECKSUMS" | awk '{print $1}')
-        if command -v sha256sum >/dev/null 2>&1; then
-          echo "${EXPECTED}  $TRIVY_ARCHIVE" | sha256sum -c -
-        else
-          echo "${EXPECTED}  $TRIVY_ARCHIVE" | shasum -a 256 -c -
-        fi
-        tar -xzf "$TRIVY_ARCHIVE" -C "${RUNNER_TEMP:-/tmp}" trivy
-        mv "${RUNNER_TEMP:-/tmp}/trivy" "$HOME/.local/bin/trivy"
-        chmod +x "$HOME/.local/bin/trivy"
-        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-        rm -f "$TRIVY_ARCHIVE" "$CHECKSUMS"
+      run: '"$GITHUB_ACTION_PATH/install-trivy.sh"'
 
     - name: Trivy install guard
       if: ${{ !cancelled() && steps.install-trivy.outcome != 'skipped' }}
       shell: bash
-      run: |
-        if ! command -v trivy >/dev/null 2>&1; then
-          echo "✗ Trivy was not installed — container scans cannot run." >> "$GITHUB_STEP_SUMMARY"
-          exit 1
-        fi
+      run: '"$GITHUB_ACTION_PATH/trivy-install-guard.sh"'
 
     - name: Prepare Trivy database
       shell: bash

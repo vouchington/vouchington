@@ -45,9 +45,11 @@ page says which layer owns what.
   correction and its reason. Code that reads a new file at run time must be added to its staged
   files, which the image smoke tests exercise.
 - **The executable also runs the one-off commands that task overrides name.** ECS passes
-  `[...node flags, '<entrypoint>.mts', ...arguments]`, so the executable drops everything before a
-  known entrypoint name and runs it (`migrate.mts`, `schema-reset.mts`, `valkey-admin.mts`,
-  `verify-ipv6-egress.mts`). The runtime base stays distroless Node only because the ECS health
+  `[...node flags, '<entrypoint>.mts', ...arguments]`, so the executable drops the leading `-`
+  flags and runs the entrypoint named next (`migrate.mts`, `schema-reset.mts`,
+  `staging-aurora-wake.mts`, `valkey-admin.mts`, `verify-ipv6-egress.mts`). Any other command,
+  including a Node `--eval` script, fails instead of serving; the image's `CMD` supplies
+  `serve.mts`. The runtime base stays distroless Node only because the ECS health
   check command runs its `node`.
 
 Test project names for focused runs are in the [project name reference](../../../development/reference-project-name-reference.md).
