@@ -145588,7 +145588,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 9
         },
         "created_at": {
           "comment": null,
@@ -145598,7 +145598,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 11
         },
         "created_by_id": {
           "comment": null,
@@ -145608,7 +145608,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 10
         },
         "hostname_id": {
           "comment": "The hostname this URL belongs to.",
@@ -145630,6 +145630,26 @@
           "nullable": false,
           "ordinalPosition": 1
         },
+        "last_crawl_attempt_at": {
+          "comment": "Latest crawl reservation time, including pending and failed attempts; the refresh cooldown checks this unindexed fact.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "last_successful_crawl_at": {
+          "comment": "Latest completion time of a crawl without a network error and with a 2xx or 304 response; refresh candidates prioritize never-successful and oldest-successful URLs.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
         "media_type_id": {
           "comment": "Detected MIME content type of the URL.",
           "dataType": "bigint",
@@ -145638,7 +145658,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 8
         },
         "pathname": {
           "comment": "URL pathname component (e.g. /path/to/page). Max 2048 chars.",
@@ -145668,7 +145688,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 12
         },
         "url": {
           "comment": "Full HTTPS URL (max 2083 chars). Unique, trimmed.",
@@ -145735,6 +145755,47 @@
           ],
           "live": true,
           "predicate": "(canonical_url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_urls__hostname_crawl_recency": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_urls__hostname_crawl_recency ON public.urls USING btree (hostname_id, last_successful_crawl_at NULLS FIRST, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "last_successful_crawl_at",
+              "descending": false,
+              "expression": "last_successful_crawl_at",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,

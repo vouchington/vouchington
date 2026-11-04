@@ -137999,7 +137999,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "created_at": {
@@ -138010,7 +138010,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -138021,7 +138021,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "hostname_id": {
@@ -138046,6 +138046,28 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "last_crawl_attempt_at": {
+          "collation": null,
+          "comment": "Latest crawl reservation time, including pending and failed attempts; the refresh cooldown checks this unindexed fact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "last_successful_crawl_at": {
+          "collation": null,
+          "comment": "Latest completion time of a crawl without a network error and with a 2xx or 304 response; refresh candidates prioritize never-successful and oldest-successful URLs.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
         "media_type_id": {
           "collation": null,
           "comment": "Detected MIME content type of the URL.",
@@ -138054,7 +138076,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "bigint"
         },
         "pathname": {
@@ -138087,7 +138109,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "url": {
@@ -138158,6 +138180,40 @@
             }
           ],
           "predicate": "(canonical_url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_urls__hostname_crawl_recency": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_urls__hostname_crawl_recency ON public.urls USING btree (hostname_id, last_successful_crawl_at NULLS FIRST, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "last_successful_crawl_at",
+              "descending": false,
+              "expression": "last_successful_crawl_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
