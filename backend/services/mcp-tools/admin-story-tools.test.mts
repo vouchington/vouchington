@@ -12,6 +12,7 @@ import {
   readStaffActionHistory,
   withRejectedStaffActionHistory,
 } from '@voucha/test-helpers/staff-action-history'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import { getStoryItemIds } from '@services/stories'
 import {
@@ -54,17 +55,29 @@ describe('shared editorial story operations', () => {
       })
       if (operation !== 'add') await setTestItemStoryId(itemId, story.id)
       const before = await getStoryItemIds(story.id)
-      await withRejectedStaffActionHistory(async query => {
-        const mutation =
-          operation === 'add'
-            ? addEditorialStoryItem
-            : operation === 'remove'
-              ? removeEditorialStoryItem
-              : setEditorialStoryOfficialItem
-        await expect(mutation(admin, story.id, itemId, { query })).rejects.toThrow(
-          'staff history rejected for test',
-        )
-      })
+      const restore =
+        operation === 'official'
+          ? undefined
+          : rejectPostgresWriteForTest(
+              '/* recordModeratorAction',
+              new Error('staff history rejected for test'),
+              values => values.some(value => typeof value === 'string' && value.includes(admin.id)),
+            )
+      try {
+        await expect(
+          operation === 'official'
+            ? withRejectedStaffActionHistory(query =>
+                setEditorialStoryOfficialItem(admin, story.id, itemId, { query }),
+              )
+            : (operation === 'add' ? addEditorialStoryItem : removeEditorialStoryItem)(
+                admin,
+                story.id,
+                itemId,
+              ),
+        ).rejects.toThrow('staff history rejected for test')
+      } finally {
+        restore?.()
+      }
       expect(await getStoryItemIds(story.id)).toEqual(before)
       expect((await getStoryById(story.id))?.official_rss_feed_item_id).toBeNull()
       expect(await readStaffActionHistory(admin.id)).toEqual([])

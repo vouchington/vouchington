@@ -88,6 +88,27 @@ describe('adminAssignItemToStory', () => {
     expect(invalidateSpy).toHaveBeenCalledWith(story.id, null)
   })
 
+  it('wraps a non-Error post-commit relation delivery rejection before reporting it', async () => {
+    const story = await insertTestStory({ title: 'Assignment non-Error delivery failure' })
+    const storyItemIds = await Promise.all([makeItem(), makeItem()])
+    await Promise.all(storyItemIds.map(itemId => setTestItemStoryId(itemId, story.id)))
+    const prepared = await prepareStoryPost(story.id, storyPostUser)
+    await prepared.finalize()
+    const itemId = await makeItem()
+    const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
+    vi.spyOn(notificationReconcile, 'enqueueNotificationReconcileForRelations').mockRejectedValue(
+      'relation dispatch string rejection',
+    )
+
+    await expect(
+      adminAssignItemToStory((await createTestUserDirect()).id, story.id, itemId),
+    ).resolves.toBe(itemId)
+
+    expect(
+      sentryCaptureExceptionMock.mock.calls.slice(reportsBefore).map(([captured]) => captured),
+    ).toContainEqual(new Error('relation dispatch string rejection'))
+  })
+
   it('returns null when item does not exist', async () => {
     const story = await insertTestStory({ title: 'Non-existent Item Story' })
     const result = await adminAssignItemToStory(
