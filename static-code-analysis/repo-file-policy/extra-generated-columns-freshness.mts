@@ -1,3 +1,6 @@
+import { statSync } from 'node:fs'
+import { join } from 'node:path'
+
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 import { resolveConfig, type DeclaredConfig } from 'no-mistakes'
 
@@ -42,6 +45,8 @@ export async function checkExtraGeneratedColumnsFreshness(
     return errors
   }
 
+  // A missing tracked config must fail instead of resolving as an empty config.
+  statSync(join(repoRoot, NO_MISTAKES_PATH))
   const config = (declaredConfig ??
     (await resolveConfig({ root: repoRoot, view: 'declared' }))) as NoMistakesConfig
   const generatedColumnRule = config.rules?.find(

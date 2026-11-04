@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolveConfig, type DeclaredConfig } from 'no-mistakes'
 import { parse } from 'yaml'
@@ -32,6 +32,8 @@ export async function checkWorkspaceRootCoverage(
 ): Promise<string[]> {
   if (!trackedFiles.includes('.no-mistakes.yml'))
     throw new Error('Workspace coverage configuration must be tracked')
+  // A missing tracked config must fail instead of resolving as an empty config.
+  statSync(join(root, '.no-mistakes.yml'))
   const config = (declaredConfig ?? (await resolveConfig({ root, view: 'declared' }))) as {
     rules?: Array<{
       rule?: string

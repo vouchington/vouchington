@@ -116,17 +116,9 @@ describe('extraGeneratedColumns freshness policy', () => {
       expect(
         await checkExtraGeneratedColumnsFreshness(root, [], schemaFixture(), new Set()),
       ).toEqual([])
-      expect(
-        await checkExtraGeneratedColumnsFreshness(
-          root,
-          ['.no-mistakes.yml'],
-          schemaFixture(),
-          new Set(),
-        ),
-      ).toEqual([
-        expect.stringContaining('generated-column write rule is missing'),
-        expect.stringContaining('expected two postgres-generated-column-predicates rules'),
-      ])
+      await expect(
+        checkExtraGeneratedColumnsFreshness(root, ['.no-mistakes.yml'], schemaFixture(), new Set()),
+      ).rejects.toMatchObject({ code: 'ENOENT' })
     } finally {
       await rm(root, { force: true, recursive: true })
     }
