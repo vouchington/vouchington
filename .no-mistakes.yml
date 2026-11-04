@@ -3972,6 +3972,10 @@ rules:
         - { object: table:stories, reason: 'Core one-word entity.' }
         - { object: table:topics, reason: 'Core one-word entity.' }
         - { object: table:urls, reason: 'Core one-word entity.' }
+        - {
+            object: table:url_crawl_state,
+            reason: 'Uncountable current crawl state, one row per live URL.',
+          }
         - { object: table:users, reason: 'Core one-word entity.' }
         - { object: table:migrations, reason: 'Migration ledger.' }
         - {
