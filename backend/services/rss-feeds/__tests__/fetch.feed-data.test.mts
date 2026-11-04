@@ -72,79 +72,86 @@ describe('fetch.feed-data', () => {
     expect(itemsAfter.results.length).toBe(firstCount)
   })
 
-  it('fetchRssFeed backfills chapter metadata when a conditional fetch returns 304', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTestTopic({
-      name: `Topic chapters ${random}`,
-      slug: `topic-chapters-${random}`,
-      hostname: `fetch-chapters-${random}.example.com`,
-    })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/chapters-${random}.xml`,
-      topic_id: topic.id,
-      title: `Feed chapters ${random}`,
-    })
-    await updateRssFeedById(feed.id, { is_enabled: true, etag: '"chapter-etag"' })
-    const itemLink = `https://example.com/episode-${random}`
-    const chaptersUrl = `https://cdn.example.com/episode-${random}.chapters.json`
-    const chaptersXml = Buffer.from(
-      `<?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:podcast="https://podcastindex.org/namespace/1.0">
-  <channel>
-    <title>Mock</title>
-    <item>
-      <link>${itemLink}</link>
-      <guid>guid-${random}</guid>
-      <title>Episode ${random}</title>
-      <podcast:chapters url="${chaptersUrl}" type="application/json+chapters" />
-    </item>
-  </channel>
-</rss>`,
-      'utf8',
-    )
-    const parsedFeed = parseFeedDocument(chaptersXml).feed
-    const [parsedItem] = (parsedFeed.items as Record<string, unknown>[] | undefined) ?? []
-    const seedItemData = { ...(parsedItem as Record<string, unknown>) }
-    delete seedItemData.chapters_url
-    delete seedItemData.chapters_type
-    const { content_sha256: seedItemContentSha256 } = createRssFeedItemEmbeddingContent({
-      link: itemLink,
-      guid: `guid-${random}`,
-      title: `Episode ${random}`,
-    })
-    const itemUrl = await addUrl(null, itemLink, { content_type: 'text/html' })
-    const seededItemId = await insertTestRssFeedItem({
-      rssFeedId: feed.id,
-      urlId: itemUrl!.id,
-      guid: `guid-${random}`,
-      itemData: seedItemData,
-      contentSha256: seedItemContentSha256,
-    })
-    const fetchContentSha256 = createHash('sha256').update(chaptersXml).digest()
-    await insertTestRssFeedCrawl({
-      rssFeedId: feed.id,
-      responseCode: 200,
-      feedData: parsedFeed,
-      feedDataSha256: fetchContentSha256,
-    })
+  it.each([304, 200])(
+    'leaves missing chapters on an unchanged %i feed until its body changes',
+    async responseCode => {
+      const random = Math.random().toString(36).slice(2, 15)
+      const topic = await createTestTopic({
+        name: `Topic chapters ${random}`,
+        slug: `topic-chapters-${random}`,
+        hostname: `fetch-chapters-${random}.example.com`,
+      })
+      const feed = await createRssFeed({
+        provenance: WEB_PROVENANCE,
+        skipRemoteValidation: true,
+        rss_feed_url: `https://example.com/chapters-${random}.xml`,
+        topic_id: topic.id,
+        title: `Feed chapters ${random}`,
+      })
+      await updateRssFeedById(feed.id, { is_enabled: true, etag: '"chapter-etag"' })
+      const itemLink = `https://example.com/episode-${random}`
+      const chaptersUrl = `https://cdn.example.com/episode-${random}.chapters.json`
+      const chaptersXml = Buffer.from(
+        `<rss version="2.0" xmlns:podcast="https://podcastindex.org/namespace/1.0"><channel><title>Mock</title><item><link>${itemLink}</link><guid>guid-${random}</guid><title>Episode ${random}</title><podcast:chapters url="${chaptersUrl}" type="application/json+chapters" /></item></channel></rss>`,
+      )
+      const parsedFeed = parseFeedDocument(chaptersXml).feed
+      const [parsedItem] = (parsedFeed.items as Record<string, unknown>[] | undefined) ?? []
+      const seedItemData = { ...(parsedItem as Record<string, unknown>) }
+      delete seedItemData.chapters_url
+      delete seedItemData.chapters_type
+      const { content_sha256: seedItemContentSha256 } = createRssFeedItemEmbeddingContent({
+        link: itemLink,
+        guid: `guid-${random}`,
+        title: `Episode ${random}`,
+      })
+      const itemUrl = await addUrl(null, itemLink, { content_type: 'text/html' })
+      const seededItemId = await insertTestRssFeedItem({
+        rssFeedId: feed.id,
+        urlId: itemUrl!.id,
+        guid: `guid-${random}`,
+        itemData: seedItemData,
+        contentSha256: seedItemContentSha256,
+      })
+      const fetchContentSha256 = createHash('sha256').update(chaptersXml).digest()
+      await insertTestRssFeedCrawl({
+        rssFeedId: feed.id,
+        responseCode: 200,
+        feedData: parsedFeed,
+        feedDataSha256: fetchContentSha256,
+      })
 
-    mockCrawlerRss.mockResolvedValueOnce({
-      responseCode: 304,
-      feed: null,
-      contentSha256: null,
-      headers: { etag: null, lastModified: null },
-    })
+      mockCrawlerRss.mockResolvedValueOnce({
+        responseCode,
+        feed: responseCode === 200 ? parsedFeed : null,
+        contentSha256: responseCode === 200 ? fetchContentSha256 : null,
+        headers: { etag: null, lastModified: null },
+      })
 
-    const result = await fetchRssFeedForTest(feed.id)
-    expect(result).toEqual([])
+      const result = await fetchRssFeedForTest(feed.id, 0)
+      expect(result).toEqual([])
 
-    const updatedItem = await getRssFeedItemById(seededItemId)
-    expect(updatedItem).not.toBeNull()
-    expect(updatedItem!.data.chapters_url).toBe(chaptersUrl)
-    expect(updatedItem!.data.chapters_type).toBe('application/json+chapters')
-  })
+      const updatedItem = await getRssFeedItemById(seededItemId)
+      expect(updatedItem).not.toBeNull()
+      expect(updatedItem!.data.chapters_url).toBeUndefined()
+      expect(updatedItem!.data.chapters_type).toBeUndefined()
+
+      const changedChaptersUrl = `https://cdn.example.com/episode-${random}-updated.chapters.json`
+      const changedXml = Buffer.from(
+        chaptersXml.toString().replace(chaptersUrl, changedChaptersUrl),
+      )
+      mockCrawlerRss.mockResolvedValueOnce({
+        responseCode: 200,
+        feed: parseFeedDocument(changedXml).feed,
+        contentSha256: createHash('sha256').update(changedXml).digest(),
+        headers: { etag: null, lastModified: null },
+      })
+      await fetchRssFeedForTest(feed.id, 0)
+
+      const changedItem = await getRssFeedItemById(seededItemId)
+      expect(changedItem!.data.chapters_url).toBe(changedChaptersUrl)
+      expect(changedItem!.data.chapters_type).toBe('application/json+chapters')
+    },
+  )
 
   it('getLatestRssFeedCrawlForFeedWithOptions returns feed_data_sha256 after fetch', async () => {
     const random = Math.random().toString(36).slice(2, 15)

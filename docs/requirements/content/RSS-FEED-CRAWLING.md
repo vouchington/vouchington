@@ -29,6 +29,10 @@ read from the view SQL and the `rss-feed-crawl-config` DynamicConfig key.
 - **Conditional GET is withheld when no replayable crawl body remains**, because a 304 would
   otherwise starve item updates after the crawl history partition is dropped.
 
+- **Missing chapter metadata waits for a changed feed.** Existing items missing podcast chapters
+  stay that way while the feed is unchanged. Unchanged responses do not re-upsert items; chapter
+  metadata is refreshed when the feed changes.
+
 ## Related
 
 - [RSS feeds queue](../../overview/architecture/queues/README.md)
