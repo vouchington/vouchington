@@ -38,7 +38,11 @@ describe('replaceHackerNewsReferences', () => {
       { urlId: emptyId, storyCount: 0, commentCount: 0, stories: [], comments: [] },
     ])
     const totals = await getHackerNewsTotalsByUrlIds([urlId, emptyId])
-    expect(totals.get(urlId)).toEqual({ story_count: 51, comment_count: 51 })
+    expect(totals.get(urlId)).toEqual({
+      canonical_url_id: urlId,
+      story_count: 51,
+      comment_count: 51,
+    })
     expect(await hasHackerNewsLookupForTest(emptyId)).toBe(true)
     const capped = (await getHackerNewsItemsByUrlIds([urlId])).get(urlId)!
     expect(capped.stories).toHaveLength(25)
@@ -81,11 +85,19 @@ describe('replaceHackerNewsReferences', () => {
       createTestUrlWithHostname(),
       createTestUrlWithHostname(),
     ])
+    await replaceHackerNewsReferences([
+      { urlId: canonicalId, storyCount: 1, commentCount: 0, stories: [story(1)], comments: [] },
+    ])
     await setCanonicalUrl(urlId, canonicalId)
     await replaceHackerNewsReferences([
-      { urlId, storyCount: 1, commentCount: 0, stories: [story(1)], comments: [] },
+      { urlId, storyCount: 2, commentCount: 0, stories: [story(2), story(3)], comments: [] },
     ])
-    expect((await getHackerNewsTotalsByUrlIds([urlId])).has(urlId)).toBe(false)
+    expect(await hasHackerNewsLookupForTest(urlId)).toBe(false)
+    expect((await getHackerNewsTotalsByUrlIds([urlId])).get(urlId)).toEqual({
+      canonical_url_id: canonicalId,
+      story_count: 1,
+      comment_count: 0,
+    })
   })
 
   it('commits bounded chunks independently', async () => {
