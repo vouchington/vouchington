@@ -14,21 +14,16 @@ describe('Apple notification recovery with real GlideMQ', () => {
       await expect(memberships.getJob(owned.jobId)).resolves.toBeNull()
       await expect(recoverAppleNotifications([owned.evidenceId], 1)).resolves.toEqual({
         enqueued: 1,
-        hasMore: true,
       })
       await expect(recoverAppleNotifications([owned.evidenceId], 2)).resolves.toEqual({
         enqueued: 1,
-        hasMore: false,
       })
       await expect(
         Promise.all([
           recoverAppleNotifications([owned.evidenceId], 1),
           recoverAppleNotifications([owned.evidenceId], 1),
         ]),
-      ).resolves.toEqual([
-        { enqueued: 1, hasMore: true },
-        { enqueued: 1, hasMore: true },
-      ])
+      ).resolves.toEqual([{ enqueued: 1 }, { enqueued: 1 }])
 
       await expect(memberships.getJob(owned.jobId)).resolves.toMatchObject({
         id: owned.jobId,

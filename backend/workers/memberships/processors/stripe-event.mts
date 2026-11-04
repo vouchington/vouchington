@@ -1,4 +1,3 @@
-import { getStripeWorkLimit } from '@services/stripe/work-limits'
 import {
   getStripeEventById,
   markStripeEventCompleted,
@@ -41,14 +40,13 @@ export async function processStripeEvent(
   }
 }
 
-/** A full page reports possible work for a later scheduled pass. */
 export async function recoverStripeEvents(
   ids?: readonly string[],
-  batchSize = getStripeWorkLimit('recovery_batch_size'),
-): Promise<{ enqueued: number; hasMore: boolean }> {
+  batchSize?: number,
+): Promise<{ enqueued: number }> {
   const events = await claimRecoverableStripeEvents(ids, batchSize)
   if (events.length > 0) await enqueueOrReactivateBulkProcessStripeEvents(events)
-  return { enqueued: events.length, hasMore: events.length === batchSize }
+  return { enqueued: events.length }
 }
 
 function getErrorMessage(error: unknown): string {

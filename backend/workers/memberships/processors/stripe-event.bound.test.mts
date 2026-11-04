@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
 import { getStripeEventById } from '@services/stripe/events'
 import { claimRecoverableStripeEvents } from '@services/stripe/recovery'
@@ -15,7 +15,7 @@ describe('recoverStripeEvents', () => {
     const before = await getStripeEventById(neighbor.id)
     const ids = [first.id, second.id]
 
-    await expect(recoverStripeEvents(ids, 1)).resolves.toEqual({ enqueued: 1, hasMore: true })
+    await expect(recoverStripeEvents(ids, 1)).resolves.toEqual({ enqueued: 1 })
     const jobs = await readAllQueueJobs(memberships)
     expect(
       jobs
@@ -41,15 +41,18 @@ describe('recoverStripeEvents', () => {
     ).toEqual([])
     await expect(getStripeEventById(neighbor.id)).resolves.toEqual(before)
 
-    await expect(recoverStripeEvents(ids, 1)).resolves.toEqual({ enqueued: 1, hasMore: true })
-    await expect(recoverStripeEvents(ids, 1)).resolves.toEqual({ enqueued: 0, hasMore: false })
+    await expect(recoverStripeEvents(ids, 1)).resolves.toEqual({ enqueued: 1 })
+    await expect(recoverStripeEvents(ids, 1)).resolves.toEqual({ enqueued: 0 })
     await expect(getStripeEventById(neighbor.id)).resolves.toEqual(before)
   })
 
   it('does not enqueue an empty owned recovery batch', async () => {
     const neighbor = await createRecoverableStripeEvent()
     const before = await getStripeEventById(neighbor.id)
-    await expect(recoverStripeEvents([], 1)).resolves.toEqual({ enqueued: 0, hasMore: false })
+    const addBulk = vi.spyOn(memberships, 'addBulk')
+    onTestFinished(() => addBulk.mockRestore())
+    await expect(recoverStripeEvents([], 1)).resolves.toEqual({ enqueued: 0 })
+    expect(addBulk).not.toHaveBeenCalled()
     await expect(getStripeEventById(neighbor.id)).resolves.toEqual(before)
     const jobs = await readAllQueueJobs(memberships)
     expect(

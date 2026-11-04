@@ -31,7 +31,6 @@ describe('Stripe event recovery with a retained failed job under the lease token
 
       await expect(recoverStripeEvents([stored.id], 2)).resolves.toEqual({
         enqueued: 1,
-        hasMore: false,
       })
       await expect(getStripeEventById(neighbor.id)).resolves.toEqual(before)
       await expect(
