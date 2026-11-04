@@ -1,15 +1,18 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, deleteTestPost, insertTestPost } from '@voucha/test-helpers'
+import { createTestUser, deleteTestPost, followUser, insertTestPost } from '@voucha/test-helpers'
 
 import type { PrivateUser } from '@services/users/types'
 
 describe('post.placeholders', () => {
   let creator: PrivateUser
+  let follower: PrivateUser
 
   beforeAll(async () => {
     creator = await createTestUser()
+    follower = await createTestUser()
+    await followUser(follower, creator)
   })
 
   it('answers not found for a deleted comment with no valid reply below it', async () => {
@@ -73,5 +76,54 @@ describe('post.placeholders', () => {
     expect(response.body.html).toBe('')
     expect(JSON.stringify(response.body)).not.toContain('Secret comment text')
     await createRequest().head(`/api/v1/posts/${commentId}`).expect(200)
+  })
+  it('refuses a viewer who cannot read the root, even for a placeholder head with a valid reply', async () => {
+    const rootId = await insertTestPost({
+      title: 'Private placeholder root',
+      slug: `placeholder-private-1-${Date.now()}`,
+      createdById: creator.id,
+      markdown: 'Root',
+      broadcast: 'followers',
+      privacy: 'private',
+    })
+    const headId = await insertTestPost({
+      title: '',
+      slug: `placeholder-private-2-${Date.now()}`,
+      createdById: creator.id,
+      markdown: 'Secret head text',
+      postType: 'comment',
+      rootId,
+      parentId: rootId,
+    })
+    const replyId = await insertTestPost({
+      title: '',
+      slug: `placeholder-private-3-${Date.now()}`,
+      createdById: creator.id,
+      markdown: 'Secret reply text',
+      postType: 'comment',
+      rootId,
+      parentId: headId,
+    })
+    await deleteTestPost(headId)
+
+    const loggedOut = createRequest()
+    for (const path of [
+      `/api/v1/posts/${headId}/ancestors`,
+      `/api/v1/posts/${replyId}/ancestors`,
+      `/api/v1/posts/${headId}/descendants`,
+      `/api/v1/posts/${headId}`,
+    ]) {
+      await loggedOut.get(path).expect(404)
+    }
+
+    const followerRequest = createRequest()
+    await followerRequest.authenticateAs(follower)
+    const response = await followerRequest.get(`/api/v1/posts/${headId}/ancestors`).expect(200)
+    expect(response.body.posts[headId]).toMatchObject({
+      placeholder_state: 'deleted',
+      markdown: '',
+      created_by_id: null,
+    })
+    expect(JSON.stringify(response.body)).not.toContain('Secret head text')
   })
 })

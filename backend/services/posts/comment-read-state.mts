@@ -20,10 +20,19 @@ export async function getRequestedPostReadState(
   if (post.post_type !== 'comment') {
     return post.deleted_at || !(await canViewPost(viewer, post)) ? null : 'readable'
   }
-  const rootPost = root ?? null
-  if (!rootPost || !(await canViewPost(viewer, rootPost))) return null
-  if (!getCommentPlaceholderState(post, viewer)) return 'readable'
-  return (await commentPlaceholderHasValidReply(viewer, rootPost.id, post.id))
-    ? 'placeholder'
-    : null
+  if (!root || !(await canViewPost(viewer, root))) return null
+  return getCommentReadStateUnderReadableRoot(viewer, post, root.id)
+}
+
+/**
+ * How a comment reads once the caller has already passed `canViewPost` on its thread root, so a
+ * route that checks the root itself does not repeat that read.
+ */
+export async function getCommentReadStateUnderReadableRoot(
+  viewer: PrivateUser | null,
+  comment: Post,
+  rootId: string,
+): Promise<'readable' | 'placeholder' | null> {
+  if (!getCommentPlaceholderState(comment, viewer)) return 'readable'
+  return (await commentPlaceholderHasValidReply(viewer, rootId, comment.id)) ? 'placeholder' : null
 }

@@ -16,7 +16,11 @@ import {
   isPostContentEditable,
 } from '@services/posts/authorization'
 import { labelAndMaskPosts } from '@services/content-provenance'
-import { getPostsOrDeletedCommentStubs, getRequestedPostReadState } from '@services/posts'
+import {
+  canViewPost,
+  getPostsOrDeletedCommentStubs,
+  getCommentReadStateUnderReadableRoot,
+} from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import app from '../../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
@@ -66,6 +70,9 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   const rootPost = rootAncestor ? fetchedPostsById.get(rootAncestor.id) : undefined
   ctx.assert(rootPost, 404, 'Post not found')
   ctx.assert(await getRouteAccessPost(rootPost), 404, 'Post not found')
+  // Nothing below an unreadable root is served, not even a placeholder: every comment in the
+  // thread, placeholder or not, is only as readable as its root.
+  ctx.assert(await canViewPost(currentUser, rootPost), 404, 'Post not found')
   const posts = ancestorIds.flatMap(id => {
     const post = fetchedPostsById.get(id)
     return post ? [post] : []
@@ -80,8 +87,10 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   // back as a placeholder, and so does the target when a valid reply sits below it.
   const targetPost = fetchedPostsById.get(targetId)
   ctx.assert(targetPost, 404, 'Post not found')
+  // The root was checked above, so a comment is only classified by its own state.
   ctx.assert(
-    await getRequestedPostReadState(currentUser, targetPost, rootPost),
+    targetPost.post_type !== 'comment' ||
+      (await getCommentReadStateUnderReadableRoot(currentUser, targetPost, rootPost.id)),
     404,
     'Post not found',
   )
