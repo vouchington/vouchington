@@ -7,7 +7,7 @@ import { appendLinkUserJoin, toLinksWithUsers, type LinkRow } from './link-rows.
 import { networkGroupsSql } from './network-groups.mts'
 import { RANK_ORDER_SQL, RANKED_COLUMNS_SQL, rankingCtesSql } from './ranking-ctes.mts'
 import type { ReferralLinksWithUsers } from './types.mts'
-import { getPersonalizedLinkLimit, getVotedPostMaxAgeDays } from './work-limits.mts'
+import { getVotedPostMaxAgeDays } from './work-limits.mts'
 
 const MILLISECONDS_PER_DAY = 86_400_000
 
@@ -18,7 +18,7 @@ export type InNetworkResult = {
 }
 
 /**
- * One read for a signed-in viewer: up to five links from people in their network (mutual follow,
+ * One read for a signed-in viewer: up to `personalizedLinkLimit` links from people in their network (mutual follow,
  * follow, referred them, rated their posts positively), plus which of `candidateUserIds` they
  * muted or blocked so the shared out-of-network list can be filtered per viewer. Each group keeps
  * its newest links after its link filters, and the same limit caps each group and the total.
@@ -28,6 +28,7 @@ export async function getInNetworkLinks(
   referralProgramId: string,
   officialUserId: string | null,
   candidateUserIds: string[],
+  personalizedLinkLimit: number,
 ): Promise<InNetworkResult> {
   const votedPostEligibility = buildViewerPostDiscoveryEligibilityFilter('p', 'voted_root_post', {
     currentUserId: viewerId,
@@ -37,7 +38,6 @@ export async function getInNetworkLinks(
   const minVotedPostId = getMinUUIDv7ForDate(
     new Date(Date.now() - getVotedPostMaxAgeDays() * MILLISECONDS_PER_DAY),
   )
-  const personalizedLinkLimit = getPersonalizedLinkLimit()
   const query = sql`/* getInNetworkReferralLinks */
 WITH recent_votes AS (
   -- Newest votes first; an older vote on the same post is superseded below.

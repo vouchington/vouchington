@@ -17271,11 +17271,11 @@
                 "limit": {
                   "type": "integer",
                   "minimum": 1,
-                  "description": "With all: defaults to 25; clamped to 100."
+                  "description": "Default 5, max 25; with all, default 25, max 100. Larger values are clamped."
                 },
                 "after": {
                   "type": "string",
-                  "description": "With all: the page_info.end_cursor of the previous page."
+                  "description": "page_info.end_cursor of the previous page. Links from your own network are one page and ignore it."
                 }
               },
               "required": ["topic_id"],
@@ -17345,7 +17345,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": ["success", "referral_program_id", "links"],
+                  "required": ["success", "referral_program_id", "links", "page_info"],
                   "additionalProperties": false
                 },
                 {

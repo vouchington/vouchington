@@ -3,18 +3,24 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   personalized_link_limit: 5,
+  personalized_link_max_limit: 25,
   voted_post_max_age_days: 90,
 }
 
 /** Reading cost grows with the window, so the ceiling stays at one year. */
 export const prioritizedReferralLinksWorkMaxValues = {
   personalized_link_limit: 25,
+  personalized_link_max_limit: 25,
   voted_post_max_age_days: 365,
 }
 
 export const prioritizedReferralLinksWorkConfig = new DynamicConfig({
   key: 'prioritized-referral-links-work-config',
-  fieldTypes: { personalized_link_limit: 'number', voted_post_max_age_days: 'number' },
+  fieldTypes: {
+    personalized_link_limit: 'number',
+    personalized_link_max_limit: 'number',
+    voted_post_max_age_days: 'number',
+  },
   defaultFields,
 })
 
@@ -31,16 +37,37 @@ export function getVotedPostMaxAgeDays(): number {
 }
 
 /**
- * Total personalized links a viewer sees, and the limit of every subquery that feeds them
- * (in-network and out-of-network), so the reads cannot disagree on the number.
+ * The most personalized links one request may ask for. It also sizes the cached out-of-network
+ * list, so the cache can serve every page a request may ask for. A lower value applies at once
+ * (each request clamps to it); a higher one reaches the cached list when the cache next refreshes.
  */
-export function getPersonalizedLinkLimit(): number {
+export function getPersonalizedLinkMaxLimit(): number {
   return getBoundedPositiveIntegerField(
     prioritizedReferralLinksWorkConfig,
-    'personalized_link_limit',
+    'personalized_link_max_limit',
     {
-      defaultValue: defaultFields.personalized_link_limit,
-      maxValue: prioritizedReferralLinksWorkMaxValues.personalized_link_limit,
+      defaultValue: defaultFields.personalized_link_max_limit,
+      maxValue: prioritizedReferralLinksWorkMaxValues.personalized_link_max_limit,
     },
   )
+}
+
+/** The page size of a request that does not choose one, never above the maximum. */
+export function getPersonalizedLinkLimit(): number {
+  return Math.min(
+    getBoundedPositiveIntegerField(prioritizedReferralLinksWorkConfig, 'personalized_link_limit', {
+      defaultValue: defaultFields.personalized_link_limit,
+      maxValue: prioritizedReferralLinksWorkMaxValues.personalized_link_limit,
+    }),
+    getPersonalizedLinkMaxLimit(),
+  )
+}
+
+/**
+ * The limit one request uses: the requested value (at least 1, at most the maximum), or the
+ * default. It caps the page and every in-network subquery, so the reads cannot disagree on it.
+ */
+export function resolvePersonalizedLinkLimit(requested?: number): number {
+  if (requested === undefined) return getPersonalizedLinkLimit()
+  return Math.min(Math.max(1, Math.floor(requested)), getPersonalizedLinkMaxLimit())
 }

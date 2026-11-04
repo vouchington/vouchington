@@ -147,7 +147,7 @@ describe('get-referral-links', () => {
         { success: true }
       >
       expect(page1.links.map(l => l.id)).toEqual([second.link.id])
-      expect(page1.page_info?.has_next_page).toBe(true)
+      expect(page1.page_info.has_next_page).toBe(true)
 
       const page2 = (await execute({
         topic_id: cardTopicId,
@@ -156,16 +156,46 @@ describe('get-referral-links', () => {
         after: page1.page_info!.end_cursor!,
       })) as Extract<Awaited<ReturnType<typeof execute>>, { success: true }>
       expect(page2.links.map(l => l.id)).toEqual([first.link.id])
-      expect(page2.page_info?.has_next_page).toBe(false)
+      expect(page2.page_info.has_next_page).toBe(false)
     })
 
-    it('omits page_info without all', async () => {
+    it('pages the shared ranked list with limit and after, clamping an oversized limit', async () => {
+      const user = await createTestUser()
+      const { cardTopicId, referralProgramId, hostname } = await createCardWithReferralProgram(user)
+      const created = []
+      for (let i = 0; i < 3; i++)
+        created.push(await createLinkForProgram({ referralProgramId, hostname }))
+      const execute = getReferralLinksTool.function(user)
+      type Success = Extract<Awaited<ReturnType<typeof execute>>, { success: true }>
+
+      const page1 = (await execute({ topic_id: cardTopicId, limit: 2 })) as Success
+      expect(page1.links).toHaveLength(2)
+      expect(page1.page_info.has_next_page).toBe(true)
+      const page2 = (await execute({
+        topic_id: cardTopicId,
+        limit: 2,
+        after: page1.page_info.end_cursor!,
+      })) as Success
+      expect(page2.links).toHaveLength(1)
+      expect(page2.page_info.has_next_page).toBe(false)
+      expect(new Set([...page1.links, ...page2.links].map(l => l.id))).toEqual(
+        new Set(created.map(c => c.link.id)),
+      )
+
+      const oversized = (await execute({ topic_id: cardTopicId, limit: 1000 })) as Success
+      expect(oversized.links).toHaveLength(3)
+    })
+
+    it('rejects a malformed cursor without all', async () => {
       const user = await createTestUser()
       const { cardTopicId } = await createCardWithReferralProgram(user)
 
-      const result = await getReferralLinksTool.function(user)({ topic_id: cardTopicId })
+      const result = await getReferralLinksTool.function(user)({
+        topic_id: cardTopicId,
+        after: 'not-a-cursor',
+      })
 
-      expect(result).not.toHaveProperty('page_info')
+      expect(result).toEqual({ success: false, error: 'Invalid cursor' })
     })
 
     it('rejects a malformed cursor with all', async () => {

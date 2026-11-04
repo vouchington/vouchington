@@ -5,7 +5,7 @@ import { appendLinkUserJoin, filterLinks, toLinksWithUsers, type LinkRow } from 
 import { RANK_ORDER_SQL, RANKED_COLUMNS_SQL, rankingCtesSql } from './ranking-ctes.mts'
 import { getOfficialAccountId } from './official-account.mts'
 import type { ReferralLinksWithUsers } from './types.mts'
-import { getPersonalizedLinkLimit } from './work-limits.mts'
+import { getPersonalizedLinkMaxLimit } from './work-limits.mts'
 
 /** What every viewer shares for one program: official links plus the top ranked other links. */
 export type OutOfNetworkLinks = {
@@ -23,7 +23,8 @@ export async function getOutOfNetworkLinks(referralProgramId: string): Promise<O
 
 export async function loadOutOfNetworkLinks(referralProgramId: string): Promise<OutOfNetworkLinks> {
   const officialUserId = await getOfficialAccountId()
-  const personalizedLinkLimit = getPersonalizedLinkLimit()
+  // Ranked once per program and sized to the largest page a request may ask for.
+  const personalizedLinkLimit = getPersonalizedLinkMaxLimit()
   const query = sql`/* getOutOfNetworkReferralLinks */
 WITH official_links AS (
   -- Deduplicate by URL so each distinct official URL appears at most once,

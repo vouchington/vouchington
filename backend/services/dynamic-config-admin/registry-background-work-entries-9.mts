@@ -109,7 +109,9 @@ export const backgroundWorkRegistryEntries9 = {
     maxValues: prioritizedReferralLinksWorkMaxValues,
     descriptions: {
       personalized_link_limit:
-        'Personalized referral links shown in total; every ranking subquery uses the same limit. A raise reaches the cached out-of-network list within 5 minutes.',
+        'Personalized referral links returned when a request does not choose a limit; never above personalized_link_max_limit.',
+      personalized_link_max_limit:
+        'Most personalized referral links one request may ask for. It sizes the cached out-of-network list (one per program, ranked once): a lower value applies at once, a higher one when the cache next refreshes (within 5 minutes or at the next link write).',
       voted_post_max_age_days:
         'Maximum age in days of a post for a viewer vote on it to count toward ranking referral links (post age, not vote age); cost grows with the window.',
     },

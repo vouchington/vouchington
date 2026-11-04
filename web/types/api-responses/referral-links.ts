@@ -49,7 +49,7 @@ export type ReferralLinkFeedResponse = {
 export interface PrioritizedReferralLinksResponse {
   links: PrioritizedReferralLink[]
   users: Record<string, ReferralLinkUser>
-  /** Present only for the `all` listing, which pages newest first. */
+  /** `all` pages newest first; otherwise the shared ranked list pages by `after` and network links are one page. */
   page_info?: PageInfo
 }
 

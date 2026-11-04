@@ -15,26 +15,23 @@ import { clampToolLimit } from './search-system.mts'
 
 // The REST twin documents its body inline and carries more per link, so the tool owns this schema.
 // `priority_group` comes from the documented link; `username` and `display_name` flatten its users.
-const OUTPUT_SCHEMA = outcomeSchema(
-  'success',
-  {
-    referral_program_id: { type: 'string' },
-    links: {
-      type: 'array',
-      items: objectSchema({
-        id: { type: 'string' },
-        url: { type: 'string' },
-        label: nullable({ type: 'string' }),
-        priority_group: componentPropertySchema('PrioritizedReferralLink', 'priority_group'),
-        username: { type: 'string' },
-        display_name: nullable({ type: 'string' }),
-      }),
-    },
-    // Present only with `all`, where links page newest first.
-    page_info: pageInfoSchema(),
+const OUTPUT_SCHEMA = outcomeSchema('success', {
+  referral_program_id: { type: 'string' },
+  links: {
+    type: 'array',
+    items: objectSchema({
+      id: { type: 'string' },
+      url: { type: 'string' },
+      label: nullable({ type: 'string' }),
+      priority_group: componentPropertySchema('PrioritizedReferralLink', 'priority_group'),
+      username: { type: 'string' },
+      display_name: nullable({ type: 'string' }),
+    }),
   },
-  ['page_info'],
-)
+  // `all` pages newest first. Otherwise a next page exists only while the shared ranked list has
+  // more; a signed-in network list is one page.
+  page_info: pageInfoSchema(),
+})
 
 type ToolArgs = {
   topic_id: string
@@ -57,7 +54,7 @@ type ToolResult =
       success: true
       referral_program_id: string
       links: ReferralLinkEntry[]
-      page_info?: SearchPageInfo
+      page_info: SearchPageInfo
     }
   | {
       success: false
@@ -81,11 +78,13 @@ const tool: Tool<ToolArgs, ToolResult> = {
         limit: {
           type: 'integer',
           minimum: 1,
-          description: 'With all: defaults to 25; clamped to 100.',
+          description:
+            'Default 5, max 25; with all, default 25, max 100. Larger values are clamped.',
         },
         after: {
           type: 'string',
-          description: 'With all: the page_info.end_cursor of the previous page.',
+          description:
+            'page_info.end_cursor of the previous page. Links from your own network are one page and ignore it.',
         },
       },
       required: ['topic_id'],
@@ -118,22 +117,19 @@ const tool: Tool<ToolArgs, ToolResult> = {
         return { success: false, error: 'No referral program found for this topic' }
       }
 
-      let result: Awaited<ReturnType<typeof getPrioritizedReferralLinks>>
-      let pageInfo: SearchPageInfo | undefined
-      if (args.all) {
-        const page = await findPageOrNull(args.after, () =>
-          getAllReferralLinksPage(currentUser.id, referralProgramId, {
-            limit: clampToolLimit(args.limit, 25, 100),
-            after: args.after,
-          }),
-        )
-        if (!page) return INVALID_CURSOR_RESULT
-        result = page
-        pageInfo = page.page_info
-      } else {
-        result = await getPrioritizedReferralLinks(currentUser.id, referralProgramId)
-      }
-      const { links: allLinks, users } = result
+      const page = await findPageOrNull(args.after, () =>
+        args.all
+          ? getAllReferralLinksPage(currentUser.id, referralProgramId, {
+              limit: clampToolLimit(args.limit, 25, 100),
+              after: args.after,
+            })
+          : getPrioritizedReferralLinks(currentUser.id, referralProgramId, {
+              limit: args.limit,
+              after: args.after,
+            }),
+      )
+      if (!page) return INVALID_CURSOR_RESULT
+      const { links: allLinks, users, page_info: pageInfo } = page
 
       const links: ReferralLinkEntry[] = await Promise.all(
         allLinks.map(async link => {
@@ -156,7 +152,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         success: true,
         referral_program_id: referralProgramId,
         links,
-        ...(pageInfo ? { page_info: pageInfo } : {}),
+        page_info: pageInfo,
       }
     },
 }
