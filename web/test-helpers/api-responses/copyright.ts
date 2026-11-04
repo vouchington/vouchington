@@ -9,7 +9,7 @@ export function makeCopyrightStaffQueueItem(
     id: 'case-test',
     jurisdiction: 'us_dmca',
     received_at: '2026-01-01T00:00:00Z',
-    claimant: { display_name: null, contact: 'claimant@example.test', misuse: null },
+    claimant: { user_id: null, display_name: null, contact: 'claimant@example.test', misuse: null },
     work_description: 'Photograph',
     targets: [],
     evidence: [],

@@ -6,7 +6,8 @@
       "claimant": {
         "contact": "rights@example.test",
         "display_name": "Rights representative",
-        "misuse": null
+        "misuse": null,
+        "user_id": null
       },
       "counter_notices": [],
       "delivery_intents": [],
@@ -51,7 +52,8 @@
       "claimant": {
         "contact": "park@example.test",
         "display_name": "Park Images",
-        "misuse": null
+        "misuse": null,
+        "user_id": null
       },
       "counter_notices": [],
       "delivery_intents": [],

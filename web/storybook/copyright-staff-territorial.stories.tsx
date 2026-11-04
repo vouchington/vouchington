@@ -23,7 +23,12 @@ const territorial = {
 const item = makeCopyrightStaffQueueItem({
   id: '019f0000-0000-7000-8000-000000000190',
   jurisdiction: 'eu_dsa',
-  claimant: { display_name: 'Mara Example', contact: 'Mara, mara@example.test', misuse: null },
+  claimant: {
+    user_id: null,
+    display_name: 'Mara Example',
+    contact: 'Mara, mara@example.test',
+    misuse: null,
+  },
   work_description: 'A landscape photograph from a public post.',
   reasons: ['territorial_notice_review'],
   territorial,

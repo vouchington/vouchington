@@ -1,4 +1,7 @@
-import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { getClaimantMisuseSummary } from '@/lib/api/client/copyright-notices'
+import type { CopyrightClaimantMisuse } from '@/types/copyright-claimant-misuse'
 
 const outcomes = [
   ['notice_withdrawn', 'withdrawn by the notifier'],
@@ -7,32 +10,80 @@ const outcomes = [
   ['restriction_reversed_by_appeal', 'reversed on appeal'],
 ] as const
 
-/**
- * The notifier's misuse ledger. It is evidence for a moderator deciding on a warned suspension;
- * nothing here suspends anyone.
- */
 export function CopyrightStaffClaimantMisuse({
+  claimantUserId,
   misuse,
 }: {
-  misuse: CopyrightStaffQueueItem['claimant']['misuse']
+  claimantUserId: string | null
+  misuse: CopyrightClaimantMisuse | null
 }) {
-  if (!misuse) {
+  const [older, setOlder] = useState<CopyrightClaimantMisuse[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+  if (!misuse || !claimantUserId) {
     return <p className='text-sm text-muted-foreground'>No account is linked to this notifier.</p>
   }
-  const recorded = outcomes.filter(([outcome]) => misuse[outcome] > 0)
+  const windows = [misuse, ...older]
+  const last = windows[windows.length - 1]!
+  async function loadOlder() {
+    if (!claimantUserId || !last.page_info.end_cursor || loading) return
+    setLoading(true)
+    setError(false)
+    try {
+      const result = await getClaimantMisuseSummary(claimantUserId, last.page_info.end_cursor)
+      setOlder(previous => [...previous, result.claimant_misuse])
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
+  }
   return (
-    <section>
+    <section className='space-y-2'>
       <h3 className='font-medium'>Notifier history</h3>
-      {recorded.length === 0 ? (
-        <p className='text-sm'>No misuse recorded for this notifier.</p>
-      ) : (
-        <ul className='text-sm'>
-          {recorded.map(([outcome, label]) => (
-            <li key={outcome}>
-              {misuse[outcome]} {misuse[outcome] === 1 ? 'notice' : 'notices'} {label}
-            </li>
-          ))}
-        </ul>
+      <p className='text-xs text-muted-foreground'>
+        Each window shows separate counts; counts are not running totals.
+      </p>
+      {windows.map((window, index) => {
+        const recorded = outcomes.filter(([outcome]) => window[outcome] > 0)
+        return (
+          <div
+            className='space-y-1'
+            key={index === 0 ? 'latest' : window.page_info.start_cursor}
+          >
+            <h4 className='text-sm font-medium'>
+              {index === 0 ? 'Latest notices' : `Older notices, window ${index + 1}`}
+            </h4>
+            <p className='text-sm'>{window.notice_count} notices inspected</p>
+            {recorded.length === 0 ? (
+              <p className='text-sm'>No misuse recorded in this window.</p>
+            ) : (
+              <ul className='text-sm'>
+                {recorded.map(([outcome, label]) => (
+                  <li key={outcome}>
+                    {window[outcome]} {window[outcome] === 1 ? 'notice' : 'notices'} {label}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      })}
+      {error && <p role='alert'>Could not load older notices. Please try again.</p>}
+      {last.page_info.has_next_page && (
+        <Button
+          type='button'
+          variant='outline'
+          size='sm'
+          loading={loading}
+          onClick={loadOlder}
+        >
+          {loading
+            ? 'Loading older notices…'
+            : error
+              ? 'Retry loading older notices'
+              : 'Load older notices'}
+        </Button>
       )}
       <p className='text-xs text-muted-foreground'>
         Evidence only. Suspending a notifier is a moderator decision.

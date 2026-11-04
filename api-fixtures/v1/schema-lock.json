@@ -373,9 +373,13 @@
       "fixtureIds": ["web.copyright.email-notice-association-search"],
       "hash": "3657b68d95d98364fd3b4617681391d023cc6166efe9fa7980ab6d7a3023fa0d"
     },
+    "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary": {
+      "fixtureIds": ["web.copyright.claimant-misuse-summary.default"],
+      "hash": "6df00e69ea30956099c87c1069fc483c609cca261dd4a8f201c3f80fd4d114ee"
+    },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default", "web.copyright.staff-queue.territorial"],
-      "hash": "003a245a950976a8fac8a811714da90a520fb81ce4bea44e766b1504c34dcb26"
+      "hash": "311046c51b92a5d3a665a0e63a594b330165c2777ac8b0d7ab7c5e0c0e647031"
     },
     "GET:/api/v1/copyright-trusted-flaggers": {
       "fixtureIds": ["copyright.trusted-flaggers.list"],
@@ -3221,6 +3225,10 @@
       "fixtureIds": ["web.communities.warning.create.default"],
       "hash": "b038a2f206ce0215d4d59994436070776411fd7e26ec212e912a03af1ee89ef9"
     },
+    "web.copyright.claimant-misuse-summary.default": {
+      "fixtureIds": ["web.copyright.claimant-misuse-summary.default"],
+      "hash": "59a3f4c3df29692730bd05885743b3099553922e3c38dcbc75f7e8bd1283ee55"
+    },
     "web.copyright.email-intake-information-request.no-reply": {
       "fixtureIds": ["web.copyright.email-intake-information-request.no-reply"],
       "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
@@ -3331,11 +3339,11 @@
     },
     "web.copyright.staff-queue.default": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "192f0ce3575e2d0022667a2235af16e04ac7c7e2c8c48885359bc42bba9e0e8a"
+      "hash": "e6377d4b4336cfc8f9c4dadfb61f9cb2653a41677499b5d552585045af4404b8"
     },
     "web.copyright.staff-queue.territorial": {
       "fixtureIds": ["web.copyright.staff-queue.territorial"],
-      "hash": "aa9ab03c48d8bfe77ab622238860a71745037a160d40997d59b6f596c6236c69"
+      "hash": "19e16cf8b33092f6491be9c41c10aef79f403cbfe436ea3e4231a115711a45dd"
     },
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],

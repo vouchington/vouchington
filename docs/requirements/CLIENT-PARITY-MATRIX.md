@@ -136,6 +136,10 @@ and poster whose `state` and `informed_at` report the notice sent for that targe
 staff review remain tracked by the existing parity rows in
 `client-feature-parity.json`; this change does not claim new native UI evidence.
 
+Repeat-misuse evidence is a bounded latest-notice window, with a claimant-scoped opaque cursor for
+separate later windows. The staff-only claimant REST read and legal MCP tool share the same counts
+and window metadata; a window's counts are not cumulative.
+
 Staff associate email replies with an existing case by claimant, work, or received date. REST and
 legal MCP share a bounded candidate search with opaque continuation; an empty result page can
 still have a continuation because the cursor advances over scanned candidates. The selected case

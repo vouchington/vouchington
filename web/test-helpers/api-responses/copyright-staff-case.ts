@@ -31,6 +31,7 @@ export function makeBusyUsStaffCase(): CopyrightStaffQueueItem {
   return makeCopyrightStaffQueueItem({
     id: '019f0000-0000-7000-8000-000000000301',
     claimant: {
+      user_id: 'claimant-1',
       display_name: 'Mara Example',
       contact: 'mara@example.test',
       misuse: {
@@ -38,6 +39,8 @@ export function makeBusyUsStaffCase(): CopyrightStaffQueueItem {
         notice_rejected: 2,
         restriction_reversed_by_counter_notice: 0,
         restriction_reversed_by_appeal: 1,
+        notice_count: 4,
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
       },
     },
     work_description: 'A landscape photograph from a public post.',

@@ -37,5 +37,11 @@ export async function checkTestAutomaticWithholdingCaps(
 
 /** The misuse ledger summary of one claimant account, read as staff see it. */
 export async function readTestClaimantMisuseSummary(claimantUserId: string) {
-  return (await readClaimantMisuseSummaries([claimantUserId])).get(claimantUserId)!
+  const summary = (await readClaimantMisuseSummaries([claimantUserId])).get(claimantUserId)!
+  return {
+    notice_withdrawn: summary.notice_withdrawn,
+    notice_rejected: summary.notice_rejected,
+    restriction_reversed_by_counter_notice: summary.restriction_reversed_by_counter_notice,
+    restriction_reversed_by_appeal: summary.restriction_reversed_by_appeal,
+  }
 }

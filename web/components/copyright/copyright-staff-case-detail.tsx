@@ -77,7 +77,11 @@ export function CopyrightStaffComplaint({ notice }: { notice: CopyrightStaffQueu
           {notice.claimant.display_name ?? 'No display name'} · {notice.claimant.contact}
         </p>
       </section>
-      <CopyrightStaffClaimantMisuse misuse={notice.claimant.misuse} />
+      <CopyrightStaffClaimantMisuse
+        key={`${notice.id}:${notice.claimant.user_id}:${JSON.stringify(notice.claimant.misuse)}`}
+        claimantUserId={notice.claimant.user_id}
+        misuse={notice.claimant.misuse}
+      />
       <section>
         <h3 className='font-medium'>Targets</h3>
         <ul className='text-sm'>

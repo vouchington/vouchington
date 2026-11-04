@@ -8,7 +8,7 @@ const imageId = '00000000-0000-7000-8000-000000000802'
 const placementId = '00000000-0000-7000-8000-000000000803'
 const noticeId = '00000000-0000-7000-8000-000000000804'
 const targetId = '00000000-0000-7000-8000-000000000805'
-
+const claimantUserId = '00000000-0000-7000-8000-000000000807'
 const postImage = {
   image_id: imageId,
   placement_id: placementId,
@@ -66,11 +66,18 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
           claimant: {
             display_name: 'Claimant',
             contact: 'claimant@example.test',
+            user_id: claimantUserId,
             misuse: {
               notice_withdrawn: 1,
               notice_rejected: 2,
               restriction_reversed_by_counter_notice: 0,
               restriction_reversed_by_appeal: 1,
+              notice_count: 4,
+              page_info: {
+                has_next_page: false,
+                start_cursor: null,
+                end_cursor: null,
+              },
             },
           },
           work_description: 'Original photograph.',

@@ -71,7 +71,7 @@ describe('copyright MCP read redaction', () => {
       reasons: ['counter_notice_review'],
       waiting_since: new Date(),
       next_deadline: null,
-      claimant: { display_name: 'Claimant Name', contact: email, misuse: null },
+      claimant: { user_id: null, display_name: 'Claimant Name', contact: email, misuse: null },
       work_description: `Copied image; contact ${email}; lives at 12 Elm Street, Springfield, IL 62701; DOB 04/15/1980; card 4111 1111 1111 1111`,
       targets: [],
       evidence: [],

@@ -36,7 +36,12 @@ function makeItem(
   return makeCopyrightStaffQueueItem({
     id: 'notice-1',
     jurisdiction,
-    claimant: { display_name: 'Mara Example', contact: 'Mara, 1 Main Street', misuse: null },
+    claimant: {
+      user_id: null,
+      display_name: 'Mara Example',
+      contact: 'Mara, 1 Main Street',
+      misuse: null,
+    },
     work_description: 'An original photograph.',
     territorial: {
       notifier: { name: 'Mara Example', email: 'mara@example.test' },

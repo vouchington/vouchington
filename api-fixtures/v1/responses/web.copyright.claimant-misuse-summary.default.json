@@ -1,0 +1,14 @@
+{
+  "claimant_misuse": {
+    "notice_count": 4,
+    "notice_rejected": 2,
+    "notice_withdrawn": 1,
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "restriction_reversed_by_appeal": 1,
+    "restriction_reversed_by_counter_notice": 0
+  }
+}

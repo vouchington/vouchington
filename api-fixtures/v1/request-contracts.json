@@ -3195,6 +3195,16 @@
       "required": ["copyright_repeat_infringer_accounts"],
       "type": "object"
     },
+    "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary": {
+      "additionalProperties": false,
+      "properties": {
+        "claimant_misuse": {
+          "$ref": "#/components/schemas/ClaimantMisuseSummary"
+        }
+      },
+      "required": ["claimant_misuse"],
+      "type": "object"
+    },
     "GET:/api/v1/copyright-notices/review-queue": {
       "additionalProperties": false,
       "properties": {
@@ -3307,9 +3317,19 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "user_id": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
                   }
                 },
-                "required": ["contact", "display_name", "misuse"],
+                "required": ["contact", "display_name", "misuse", "user_id"],
                 "type": "object"
               },
               "counter_notices": {
@@ -12785,22 +12805,35 @@
     "ClaimantMisuseSummary": {
       "additionalProperties": false,
       "properties": {
+        "notice_count": {
+          "minimum": 0,
+          "type": "integer"
+        },
         "notice_rejected": {
-          "type": "number"
+          "minimum": 0,
+          "type": "integer"
         },
         "notice_withdrawn": {
-          "type": "number"
+          "minimum": 0,
+          "type": "integer"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
         },
         "restriction_reversed_by_appeal": {
-          "type": "number"
+          "minimum": 0,
+          "type": "integer"
         },
         "restriction_reversed_by_counter_notice": {
-          "type": "number"
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [
+        "notice_count",
         "notice_rejected",
         "notice_withdrawn",
+        "page_info",
         "restriction_reversed_by_appeal",
         "restriction_reversed_by_counter_notice"
       ],
@@ -43412,6 +43445,26 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary": {
+      "path": {
+        "properties": {
+          "claimantUserId": {
+            "type": "string"
+          }
+        },
+        "required": ["claimantUserId"],
+        "type": "object"
+      },
+      "query": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
