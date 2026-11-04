@@ -154865,6 +154865,10 @@
           "definition": "CHECK ((((completed_rows + failed_rows) <= total_rows) AND ((completed_at IS NOT NULL) = ((completed_rows + failed_rows) = total_rows))))",
           "validated": true
         },
+        "user_rss_feed_import_batches_check": {
+          "definition": "CHECK (((skipped_rows >= 0) AND (skipped_rows <= failed_rows)))",
+          "validated": true
+        },
         "user_rss_feed_import_batches_completed_rows_check": {
           "definition": "CHECK ((completed_rows >= 0))",
           "validated": true
@@ -154891,7 +154895,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "completed_rows": {
           "comment": "Number of rows that completed with a non-error outcome.",
@@ -154911,7 +154915,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "created_via": {
           "comment": "Immutable channel of the request that submitted the import; every feed the import creates carries it.",
@@ -154963,6 +154967,16 @@
           "nullable": false,
           "ordinalPosition": 5
         },
+        "skipped_rows": {
+          "comment": "Number of failed rows skipped because the follow relation limit was reached; included in failed_rows.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9
+        },
         "total_rows": {
           "comment": "Total number of URLs in this import batch.",
           "dataType": "integer",
@@ -154981,7 +154995,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "user_id": {
           "comment": "The user who submitted the RSS feed import.",
@@ -155759,7 +155773,7 @@
           "definition": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_result BEFORE INSERT OR UPDATE OF outcome, completed_at, rss_feed_id ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_user_rss_feed_import_result()"
         },
         "trigger_user_rss_feed_import_rows_guard_terminal_lifecycle": {
-          "definition": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')"
+          "definition": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW WHEN (((old.failed_at IS NULL) OR (old.error_message IS DISTINCT FROM 'RELATION_LIMIT_REACHED'::text) OR (new.completed_at IS NULL) OR (new.failed_at IS NOT NULL))) EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')"
         },
         "trigger_user_rss_feed_import_rows_updated_at": {
           "definition": "CREATE TRIGGER trigger_user_rss_feed_import_rows_updated_at BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"

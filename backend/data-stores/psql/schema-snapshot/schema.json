@@ -146796,6 +146796,7 @@
     "user_rss_feed_import_batches": {
       "checkConstraints": {
         "chk_user_rss_feed_import_batches__lifecycle": "CHECK ((((completed_rows + failed_rows) <= total_rows) AND ((completed_at IS NOT NULL) = ((completed_rows + failed_rows) = total_rows))))",
+        "user_rss_feed_import_batches_check": "CHECK (((skipped_rows >= 0) AND (skipped_rows <= failed_rows)))",
         "user_rss_feed_import_batches_completed_rows_check": "CHECK ((completed_rows >= 0))",
         "user_rss_feed_import_batches_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "user_rss_feed_import_batches_failed_rows_check": "CHECK ((failed_rows >= 0))",
@@ -146810,7 +146811,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "completed_rows": {
@@ -146832,7 +146833,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "created_via": {
@@ -146890,6 +146891,17 @@
           "ordinalPosition": 5,
           "type": "boolean"
         },
+        "skipped_rows": {
+          "collation": null,
+          "comment": "Number of failed rows skipped because the follow relation limit was reached; included in failed_rows.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "integer"
+        },
         "total_rows": {
           "collation": null,
           "comment": "Total number of URLs in this import batch.",
@@ -146909,7 +146921,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -147628,7 +147640,7 @@
         "trigger_user_rss_feed_import_rows_guard_completed_batch": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_completed_batch BEFORE INSERT OR UPDATE OF batch_id ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_completed_import_batch_child('user_rss_feed_import_batches')",
         "trigger_user_rss_feed_import_rows_guard_hard_delete": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')",
         "trigger_user_rss_feed_import_rows_guard_result": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_result BEFORE INSERT OR UPDATE OF outcome, completed_at, rss_feed_id ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_user_rss_feed_import_result()",
-        "trigger_user_rss_feed_import_rows_guard_terminal_lifecycle": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')",
+        "trigger_user_rss_feed_import_rows_guard_terminal_lifecycle": "CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW WHEN (((old.failed_at IS NULL) OR (old.error_message IS DISTINCT FROM 'RELATION_LIMIT_REACHED'::text) OR (new.completed_at IS NULL) OR (new.failed_at IS NOT NULL))) EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')",
         "trigger_user_rss_feed_import_rows_updated_at": "CREATE TRIGGER trigger_user_rss_feed_import_rows_updated_at BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
