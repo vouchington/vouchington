@@ -58,7 +58,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `copyright_notices_pkey`: `CREATE UNIQUE INDEX copyright_notices_pkey ON public.copyright_notices USING btree (id)`
-- `idx_copyright_notices__claimant_user`: `CREATE INDEX idx_copyright_notices__claimant_user ON public.copyright_notices USING btree (claimant_user_id) WHERE (claimant_user_id IS NOT NULL)`
+- `idx_copyright_notices__claimant_user`: `CREATE INDEX idx_copyright_notices__claimant_user ON public.copyright_notices USING btree (claimant_user_id, id DESC) WHERE (claimant_user_id IS NOT NULL)`
 - `idx_copyright_notices__legal_activity`: `CREATE INDEX idx_copyright_notices__legal_activity ON public.copyright_notices USING btree (jurisdiction, last_legal_activity_at, id)`
 - `idx_copyright_notices__received_id`: `CREATE INDEX idx_copyright_notices__received_id ON public.copyright_notices USING btree (received_at, id)`
 - `idx_copyright_notices__territorial_decided_by`: `CREATE INDEX idx_copyright_notices__territorial_decided_by ON public.copyright_notices USING btree (territorial_decided_by_id) WHERE (territorial_decided_by_id IS NOT NULL)`
