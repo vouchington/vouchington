@@ -26,10 +26,11 @@ function result(indexCondition: string, indexName = 'idx_copyright_notices__clai
 }
 
 describe('claimant misuse cursor plan gate', () => {
-  it('accepts a strict scalar id cursor seek on the claimant index', () => {
-    expect(() =>
-      assertClaimantMisuseCursorSeek(result('((claimant_user_id = $1) AND (id < $2))')),
-    ).not.toThrow()
+  it.each([
+    '((claimant_user_id = $1) AND (id < $2))',
+    '((claimant_user_id = ANY (ARRAY[$1])) AND (id < $2))',
+  ])('accepts a strict scalar id cursor seek: %s', condition => {
+    expect(() => assertClaimantMisuseCursorSeek(result(condition))).not.toThrow()
   })
 
   it('rejects a row comparison even when it names the expected index', () => {

@@ -39,6 +39,7 @@ export async function readClaimantMisuseSummaries(
   const afterId = after
     ? decodeScopedUuidCursor(after, cursorScope(claimantIds[0]!), 'Invalid cursor format').id
     : undefined
+  // Singleton ANY preserves the claimant sort key; scalar equality lets generic plans discard it.
   const statement = sql`/* readClaimantMisuseSummaries */
     SELECT claimant.id AS claimant_user_id,
       summary.ids[1] AS first_id,
@@ -51,7 +52,7 @@ export async function readClaimantMisuseSummaries(
     CROSS JOIN LATERAL (
       WITH candidates AS MATERIALIZED (
         SELECT id FROM copyright_notices
-        WHERE claimant_user_id = claimant.id
+        WHERE claimant_user_id = ANY(ARRAY[claimant.id])
           `
   // Keep the seek on the claimant-prefixed index even for a generic cursor plan.
   if (afterId) statement.append(sql`AND id < ${afterId}::uuid`)
