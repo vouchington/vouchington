@@ -23,6 +23,8 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { processBrowserCrawl } from './processors.mts'
 import { suppressedError } from '@voucha/test-helpers/suppressed-error'
+import { readTestCrawlRefreshState } from '@voucha/test-helpers/entities/crawl-refresh-state'
+import { getLatestCrawlCompletionForUrl } from '@voucha/test-helpers/entities/crawl-state'
 import {
   deleteTestRobotsTxtCache,
   setTestRobotsTxtCache,
@@ -149,13 +151,21 @@ describe('processBrowserCrawl', () => {
 
   it('persists extracted HTML crawl content and records the successful crawl on the referral link', async () => {
     const fixture = await createBrowserCrawlFixture()
-
-    await runBrowserCrawl(
-      fixture,
-      createBrowserResult({
+    const browser = stubBrowserCrawl(createBrowserResult({}))
+    browser.mockImplementation(async () => {
+      const pending = await readTestCrawlRefreshState(fixture.url.id)
+      expect(pending.last_crawl_attempt_at).toBeInstanceOf(Date)
+      expect(pending.last_successful_crawl_at).toBeNull()
+      return createBrowserResult({
         html: '<html><head><title>Browser Title</title></head><body><main><p>Hello browser crawl.</p><p class="remove-me">Noise</p></main></body></html>',
-      }),
-    )
+      })
+    })
+
+    await processBrowserCrawl(fixture.url, fixture.linkId, fixture.crawler)
+    expect(browser).toHaveBeenCalledOnce()
+    expect(
+      (await readTestCrawlRefreshState(fixture.url.id)).last_successful_crawl_at,
+    ).toBeInstanceOf(Date)
 
     const linkStatus = await getReferralLinkCrawlStatus(fixture.linkId)
     expect(linkStatus.consecutive_crawl_failures).toBe(0)
@@ -182,6 +192,25 @@ describe('processBrowserCrawl', () => {
     expect(linkStatus.activated_at).toBeNull()
     expect(linkStatus.deactivated_at).toBeTruthy()
     expect(linkStatus.last_crawl_failure_at).toBeNull()
+    expect(await getReferralLinkLastCrawlId(fixture.linkId)).toBeNull()
+    expect(await getLatestCrawlCompletionForUrl(fixture.url.id)).toEqual({
+      completed: true,
+      responseStatusCode: 404,
+    })
+    expect((await readTestCrawlRefreshState(fixture.url.id)).last_successful_crawl_at).toBeNull()
+  })
+
+  it('records successful bodyless browser responses without attaching a referral crawl', async () => {
+    const fixture = await createBrowserCrawlFixture()
+    await runBrowserCrawl(fixture, createBrowserResult({ statusCode: 304, hasContent: false }))
+    expect(await getLatestCrawlCompletionForUrl(fixture.url.id)).toEqual({
+      completed: true,
+      responseStatusCode: 304,
+    })
+    expect(
+      (await readTestCrawlRefreshState(fixture.url.id)).last_successful_crawl_at,
+    ).toBeInstanceOf(Date)
+    expect(await getReferralLinkLastCrawlId(fixture.linkId)).toBeNull()
   })
 
   it('records crawl-health browser failures without throwing', async () => {
@@ -237,6 +266,9 @@ describe('processBrowserCrawl', () => {
     const linkStatus = await getReferralLinkCrawlStatus(fixture.linkId)
     expect(linkStatus.consecutive_crawl_failures).toBe(1)
     expect(linkStatus.last_crawl_failure_at).toBeTruthy()
+    const refresh = await readTestCrawlRefreshState(fixture.url.id)
+    expect(refresh.last_crawl_attempt_at).toBeInstanceOf(Date)
+    expect(refresh.last_successful_crawl_at).toBeNull()
   })
 })
 

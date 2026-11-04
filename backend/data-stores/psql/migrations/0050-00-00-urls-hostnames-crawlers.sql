@@ -329,6 +329,9 @@ CREATE TABLE IF NOT EXISTS urls (
   CHECK (pathname = TRIM(pathname)),
   search_params JSONB NOT NULL,
 
+  last_successful_crawl_at TIMESTAMPTZ,
+  last_crawl_attempt_at TIMESTAMPTZ,
+
   media_type_id BIGINT REFERENCES media_types ON DELETE SET NULL,
   canonical_url_id UUID REFERENCES urls ON DELETE SET NULL,
   CHECK (canonical_url_id IS NULL OR canonical_url_id != id),
@@ -348,6 +351,13 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__hostname_id
 ON urls (hostname_id, id);
+
+COMMENT ON COLUMN urls.last_successful_crawl_at IS 'Latest completion time of a crawl without a network error and with a 2xx or 304 response; refresh candidates prioritize never-successful and oldest-successful URLs.';
+COMMENT ON COLUMN urls.last_crawl_attempt_at IS 'Latest crawl reservation time, including pending and failed attempts; the refresh cooldown checks this unindexed fact.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_urls__hostname_crawl_recency
+ON urls (hostname_id, last_successful_crawl_at ASC NULLS FIRST, id);
 
 -- search urls by url prefix
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

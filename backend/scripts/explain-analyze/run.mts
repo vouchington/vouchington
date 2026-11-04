@@ -58,6 +58,7 @@ import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-r
 import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
 import { runStoryByIdScenario } from './run-scenarios/story-by-id.mts'
 import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-sweeps.mts'
+import { runCrawlerRefreshScenario } from './run-scenarios/crawler-refresh.mts'
 import { runCrawlerBoilerplateScenario } from './run-scenarios/crawler-boilerplate.mts'
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
 import { runCommunityRoundTripScenarios } from './run-scenarios/community-round-trips.mts'
@@ -108,6 +109,7 @@ async function main() {
     await runStep(runHostnameBlocklistScenario.name, runHostnameBlocklistScenario())
     await runStep(runHostnameCrawlSweepScenarios.name, runHostnameCrawlSweepScenarios())
     await runStep(runCrawlerBoilerplateScenario.name, runCrawlerBoilerplateScenario())
+    await runStep(runCrawlerRefreshScenario.name, runCrawlerRefreshScenario())
     await runStep(runFeedAndMetricScenarios.name, runFeedAndMetricScenarios())
     await runStep(runHeavyFollowScenarios.name, runHeavyFollowScenarios())
     await runStep(runPostFeedShareScenarios.name, runPostFeedShareScenarios())
@@ -185,15 +187,9 @@ async function main() {
   }
 }
 
-async function run(): Promise<void> {
-  try {
-    await main()
-  } finally {
-    await gracefulShutdown()
-  }
-}
-
-run().catch(err => {
-  console.error(err)
-  process.exitCode = 1
-})
+main()
+  .finally(gracefulShutdown)
+  .catch(err => {
+    console.error(err)
+    process.exitCode = 1
+  })

@@ -42,9 +42,10 @@ export async function processBrowserCrawl(
   })
   if (!isCrawlable) return
 
+  const crawl = await createCrawl(url.id, crawler.id)
   try {
     const result = await crawlWithBrowser(url.url)
-    await handleBrowserCrawlResult(url.id, linkId, crawler, result)
+    await handleBrowserCrawlResult(url.id, linkId, crawler, crawl.id, result)
   } catch (err) {
     await handleBrowserCrawlError(linkId, err)
   }
@@ -54,17 +55,17 @@ async function handleBrowserCrawlResult(
   urlId: string,
   linkId: string,
   crawler: Crawler,
+  reservedCrawlId: string,
   result: BrowserCrawlResult,
 ): Promise<void> {
   const isNotFound = result.statusCode === 404 || result.statusCode === 410
 
   let crawlId: string | undefined
   if (result.html) {
-    const crawl = await createCrawl(urlId, crawler.id)
     const htmlBuffer = Buffer.from(result.html, 'utf8')
     const options = applyCrawlerRules(crawler)
     const content = await getContentFromHtml(htmlBuffer, options)
-    await updateCrawl(crawl.id, urlId, {
+    await updateCrawl(reservedCrawlId, urlId, {
       response_status_code: result.statusCode,
       completed_at: new Date(),
       markdown: content.content || '',
@@ -73,7 +74,12 @@ async function handleBrowserCrawlResult(
       meta_tags: (content.meta ?? {}) as CrawlerHtmlStructuredObject,
       language: content.lang ?? null,
     })
-    crawlId = crawl.id
+    crawlId = reservedCrawlId
+  } else {
+    await updateCrawl(reservedCrawlId, urlId, {
+      response_status_code: result.statusCode,
+      completed_at: new Date(),
+    })
   }
 
   await updateReferralLinkAfterCrawl(linkId, {

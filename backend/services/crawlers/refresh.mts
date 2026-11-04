@@ -1,10 +1,10 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { getMinUUIDv7ForParentHistory, getMaxUUIDv7ForDate } from '@modules/utils/ids'
+import { getMaxUUIDv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
 import { getOrCreateCrawlerForHostname } from './get-or-create.mts'
-import { getRetryCrawlUrlCount } from './refresh-limits.mts'
+import { getRetryCrawlUrlCount, getRecentCrawlCooldownMinutes } from './refresh-limits.mts'
 
 export type HostnameCrawlerRefreshCursor = { sweepStartedAt: string; afterId?: string }
 
@@ -58,24 +58,24 @@ export const searchCrawlerRefreshUrlCandidatesByHostnameId = async (
   queryOptions: QueryOptions = {},
   excludeUrlIds: string[] = [],
 ): Promise<CrawlerRefreshCandidateUrl[]> => {
-  const minCrawlId = getMinUUIDv7ForParentHistory(hostnameId)
+  const cooldownMinutes = getRecentCrawlCooldownMinutes()
   const query = sql`/* searchCrawlerRefreshUrlCandidatesByHostnameId */
     SELECT u.id, u.url
     FROM urls u
-    LEFT JOIN crawls c ON c.url_id = u.id AND c.id >= ${minCrawlId}::uuid
     JOIN url_hostnames h ON h.id = u.hostname_id
     WHERE u.hostname_id = ${hostnameId}
       AND NOT h.is_blocked
       AND h.is_crawlable
+      AND (u.last_crawl_attempt_at IS NULL OR u.last_crawl_attempt_at <=
+        CURRENT_TIMESTAMP - make_interval(mins => ${cooldownMinutes}::int))
   `
   if (excludeUrlIds.length > 0) {
     query.append(sql` AND NOT (u.id = ANY(${excludeUrlIds}::UUID[]))`)
   }
-  query.append(
-    sql` GROUP BY u.id, u.url ORDER BY MAX(uuid_extract_timestamp(c.id)) ASC NULLS FIRST LIMIT ${limit}`,
-  )
+  query.append(sql` ORDER BY u.last_successful_crawl_at ASC NULLS FIRST, u.id LIMIT ${limit}`)
 
-  const { rows } = await read<CrawlerRefreshCandidateUrl>(query, undefined, queryOptions)
+  // Immediate retry selection must observe a reservation just written on the primary.
+  const { rows } = await write<CrawlerRefreshCandidateUrl>(query, undefined, queryOptions)
 
   return rows
 }
