@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { primaryCacheValkeyClient } from '@data-stores/valkey/clients'
-import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
+import { beginTransaction, createTestUser, insertTestCommunity } from '@voucha/test-helpers'
 import { insertApprovedCommunityMember } from '../insert-approved.mts'
 import { getMyCommunityMemberships } from '../list-mine.mts'
 

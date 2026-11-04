@@ -34,9 +34,9 @@ describe('0140-00-01-seed-communities', () => {
       // grant a membership or overwrite a role after an owner transfer or removal.
       expect(statement).toMatch(/inserted AS \([\s\S]*INSERT INTO communities[\s\S]*RETURNING id/)
       expect(statement).toMatch(
-        /owner_membership AS \(\s*INSERT INTO community_members \(community_id, user_id, role\)\s*SELECT inserted\.id, users\.id, 'owner'\s*FROM inserted CROSS JOIN users\s*WHERE users\.username = 'system'\s*\)/,
+        /owner_membership AS \(\s*INSERT INTO community_members \(community_id, user_id, role\)\s*SELECT inserted\.id, users\.id, 'owner'\s*FROM inserted CROSS JOIN users\s*WHERE users\.username = 'system'\s*ON CONFLICT \(community_id, user_id\) WHERE removed_at IS NULL DO NOTHING\s*\)/,
       )
-      expect(statement).not.toContain('ON CONFLICT')
+      expect(statement).not.toContain('DO UPDATE')
       expect(statement).not.toMatch(/UPDATE community_members/)
     }
   })

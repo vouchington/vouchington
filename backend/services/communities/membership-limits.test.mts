@@ -1,6 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import {
+  beginTransaction,
   WEB_PROVENANCE,
   createTestUser,
   insertTestCommunity,

@@ -50,6 +50,7 @@ owner_membership AS (
   SELECT inserted.id, users.id, 'owner'
   FROM inserted CROSS JOIN users
   WHERE users.username = 'system'
+  ON CONFLICT (community_id, user_id) WHERE removed_at IS NULL DO NOTHING
 )
 SELECT id FROM updated UNION ALL SELECT id FROM inserted;`)
   }
