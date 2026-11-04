@@ -95,7 +95,7 @@ The `hot` sort uses the same three-day decay expression as post feeds and trendi
 
 ## Time bound
 
-Post search is always bounded by time, so a request reads a window of the newest-first id index rather than the whole table. REST and MCP send `time_range` as `1d`, `1w`, `1m`, `1y`, or `all`; with none, `getPostIds` searches `1m` (30 days) for every sort, `hot` included. The personal Feed is separate: it defaults to `1w` for every sort and the web Feed sends `1w` with no dropdown. Other web post lists offer 7 days, 30 days, 1 year, and all time through the `time_range` URL param. Callers that need exact rows pass `all`: RSS XML, pickers, and facet counts (`getPostFacets`, `getUserPostTypeFacets`, which skip the default). `getPostIdsByUrlIds` has no time filter. Community post lists use their own query and have no `time_range`.
+Post search is always bounded by time, so a request reads a recent window of the newest-first id index rather than the whole table, and callers opt into longer history explicitly. The personal Feed is a separate default. Exact lookups and counts (RSS XML, pickers, facets, URL-id lookups) must not lose rows, so they opt out of the default instead of inheriting it.
 
 ## Visibility & Moderation Filtering
 
