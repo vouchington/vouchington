@@ -9,10 +9,9 @@ export async function revokeTopicClaim(
   staffUserId: string,
   claimId: string,
   revocationReason: string,
-  options: { query?: TransactionQuery } = {},
 ): Promise<TopicClaim> {
   assert(revocationReason.trim().length > 0, 422, 'revocation_reason is required')
-  return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
+  return runWithTransaction(undefined, async (transaction: TransactionQuery) => {
     const { rows } = await transaction(sql`/* revokeTopicClaim */
     UPDATE topic_claims
     SET revoked_at = NOW(),

@@ -10,7 +10,6 @@ export async function releaseModerationQueueItem(
     communityId?: string | null
     reportId?: string | null
     postId?: string | null
-    query?: TransactionQuery
   },
 ): Promise<void> {
   const { communityId, reportId, postId } = options
@@ -22,7 +21,7 @@ export async function releaseModerationQueueItem(
   }
 
   if (hasReport) {
-    if (communityId) await assertItemInCommunity(communityId, { reportId, query: options.query })
+    if (communityId) await assertItemInCommunity(communityId, { reportId })
     const query = sql`/* releaseModerationQueueItem */
       UPDATE moderation_queue_claims
       SET released_at = now()
@@ -33,7 +32,7 @@ export async function releaseModerationQueueItem(
         AND released_at IS NULL
     `)
     query.append(sql` RETURNING community_id`)
-    await runWithTransaction(options.query, async (transaction: TransactionQuery) => {
+    await runWithTransaction(undefined, async (transaction: TransactionQuery) => {
       const { rows } = await transaction<{ community_id: string }>(query)
       await Promise.all(
         rows.map(row =>
@@ -48,7 +47,7 @@ export async function releaseModerationQueueItem(
     return
   }
 
-  if (communityId) await assertItemInCommunity(communityId, { postId, query: options.query })
+  if (communityId) await assertItemInCommunity(communityId, { postId })
   const query = sql`/* releaseModerationQueueItem */
     UPDATE moderation_queue_claims
     SET released_at = now()
@@ -58,5 +57,5 @@ export async function releaseModerationQueueItem(
   query.append(sql` AND claimed_by_id = ${currentUserId}
       AND released_at IS NULL
   `)
-  await write(query, { query: options.query })
+  await write(query)
 }

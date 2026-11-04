@@ -12,7 +12,6 @@ export async function claimModerationQueueItem(
     communityId: string
     reportId?: string | null
     postId?: string | null
-    query?: TransactionQuery
   },
 ): Promise<ClaimResult> {
   const { communityId, reportId, postId } = options
@@ -23,19 +22,18 @@ export async function claimModerationQueueItem(
     throw createError(422, 'Exactly one of reportId or postId must be set')
   }
 
-  await assertItemInCommunity(communityId, { reportId, postId, query: options.query })
+  await assertItemInCommunity(communityId, { reportId, postId })
 
-  if (hasReport) return claimByReport(currentUserId, communityId, reportId!, options.query)
-  return claimByPost(currentUserId, communityId, postId!, options.query)
+  if (hasReport) return claimByReport(currentUserId, communityId, reportId!)
+  return claimByPost(currentUserId, communityId, postId!)
 }
 
 async function claimByReport(
   currentUserId: string,
   communityId: string,
   reportId: string,
-  providedQuery?: TransactionQuery,
 ): Promise<ClaimResult> {
-  return runWithTransaction(providedQuery, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rows } = await query<ModerationQueueClaim>(sql`/* claimModerationQueueItem:report */
     INSERT INTO moderation_queue_claims (community_id, report_id, claimed_by_id, claimed_at)
     VALUES (${communityId}, ${reportId}, ${currentUserId}, now())
@@ -96,7 +94,6 @@ async function claimByPost(
   currentUserId: string,
   communityId: string,
   postId: string,
-  query?: TransactionQuery,
 ): Promise<ClaimResult> {
   const { rows } = await write<ModerationQueueClaim>(
     sql`/* claimModerationQueueItem:post */
@@ -110,18 +107,16 @@ async function claimByPost(
        OR moderation_queue_claims.claimed_at <= now() - (${CLAIM_EXPIRY_MINUTES} || ' minutes')::interval
     RETURNING id, community_id, report_id, post_id, claimed_by_id, claimed_at, released_at
   `,
-    { query },
   )
 
   if (rows.length > 0) return { claim: rows[0]!, claimed_by_other: false }
-  return fetchHolderForPost(currentUserId, communityId, postId, query)
+  return fetchHolderForPost(currentUserId, communityId, postId)
 }
 
 async function fetchHolderForPost(
   currentUserId: string,
   communityId: string,
   postId: string,
-  query?: TransactionQuery,
 ): Promise<ClaimResult> {
   const { rows } = await read<ModerationQueueClaim>(
     sql`/* claimModerationQueueItem:fetch_holder */
@@ -132,7 +127,6 @@ async function fetchHolderForPost(
       AND claimed_at > now() - (${CLAIM_EXPIRY_MINUTES} || ' minutes')::interval
     LIMIT 1
   `,
-    { query },
   )
 
   if (rows.length > 0) return { claim: rows[0]!, claimed_by_other: true }
@@ -144,7 +138,6 @@ async function fetchHolderForPost(
     ON CONFLICT DO NOTHING
     RETURNING id, community_id, report_id, post_id, claimed_by_id, claimed_at, released_at
   `,
-    { query },
   )
   if (freshRows.length === 0) throw createError(409, 'Claim was taken concurrently — please retry')
   return { claim: freshRows[0]!, claimed_by_other: false }

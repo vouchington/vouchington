@@ -22,9 +22,8 @@ export type RevokeReportAbusePenaltyResult = {
 export async function revokeReportAbusePenalty(
   currentUserId: string,
   penaltyId: string,
-  options: { query?: TransactionQuery } = {},
 ): Promise<RevokeReportAbusePenaltyResult> {
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rows } = await query(sql`/* revokeReportAbusePenalty */
       UPDATE report_abuse_penalties
       SET

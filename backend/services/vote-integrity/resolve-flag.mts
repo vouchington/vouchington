@@ -11,7 +11,6 @@ export async function resolveVoteIntegrityFlag(
   flagId: string,
   resolvedById: string,
   resolution: VoteIntegrityResolution,
-  options: { query?: TransactionQuery } = {},
 ): Promise<
   VoteIntegrityFlag & {
     hostname: string | null
@@ -20,7 +19,7 @@ export async function resolveVoteIntegrityFlag(
     resolver_display_name: string | null
   }
 > {
-  return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
+  return runWithTransaction(undefined, async (transaction: TransactionQuery) => {
     const query = sql`/* resolveVoteIntegrityFlag */
     UPDATE vote_integrity_flags
     SET

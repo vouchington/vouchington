@@ -8,7 +8,6 @@ export async function adminSetVoteWeight(
   currentUserId: string,
   userId: string,
   weight: number,
-  options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assert(
     typeof weight === 'number' && Number.isFinite(weight) && weight >= 0 && weight <= 1_000_000,
@@ -16,7 +15,7 @@ export async function adminSetVoteWeight(
     'Invalid weight value',
   )
   assert(isUUID(userId), 422, 'Invalid user ID')
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rows } = await query<{
       vote_weight: number
       vote_weight_admin_set_at: Date | null
@@ -41,13 +40,9 @@ export async function adminSetVoteWeight(
   })
 }
 
-export async function adminClearVoteWeight(
-  currentUserId: string,
-  userId: string,
-  options: { query?: TransactionQuery } = {},
-): Promise<void> {
+export async function adminClearVoteWeight(currentUserId: string, userId: string): Promise<void> {
   assert(isUUID(userId), 422, 'Invalid user ID')
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rows } = await query<{
       vote_weight: number
       vote_weight_admin_set_at: Date | null

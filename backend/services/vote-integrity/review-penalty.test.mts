@@ -17,7 +17,7 @@ import {
 } from '@voucha/test-helpers/entities/vote-integrity'
 import { getVoteWeightPenaltyReviewsDue, reviewVoteWeightPenalty } from './review-penalty.mts'
 import { getVoteWeightPenaltyByIdFromPrimary } from './get-penalties.mts'
-import { withRejectedStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 
 describe('vote weight penalty annual review', () => {
   it('uses the configured default and maximum for direct due-review reads', async () => {
@@ -154,11 +154,18 @@ describe('vote weight penalty annual review', () => {
     await setTestVoteWeightPenaltyReviewDueAt(penaltyId, new Date('2001-01-01T00:00:00.000Z'))
     const before = await getVoteWeightPenaltyByIdFromPrimary(penaltyId)
 
-    await expect(
-      withRejectedStaffActionHistory(query =>
-        reviewVoteWeightPenalty(penaltyId, reviewer.id, { query }),
-      ),
-    ).rejects.toThrow('staff history rejected for test')
+    const restore = rejectPostgresWriteForTest(
+      '/* recordModeratorAction',
+      new Error('staff history rejected for test'),
+      values => values.some(value => typeof value === 'string' && value.includes(reviewer.id)),
+    )
+    try {
+      await expect(reviewVoteWeightPenalty(penaltyId, reviewer.id)).rejects.toThrow(
+        'staff history rejected for test',
+      )
+    } finally {
+      restore()
+    }
 
     const after = await getVoteWeightPenaltyByIdFromPrimary(penaltyId)
     expect(after).toMatchObject({

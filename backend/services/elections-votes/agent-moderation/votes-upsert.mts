@@ -45,7 +45,6 @@ export async function upsertAgentModerationElectionVotes(
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
   context: VoteEventContext = NULL_VOTE_CONTEXT,
   onVote?: (vote: ElectionVoteMutationResult, query: TransactionQuery) => Promise<void>,
-  options: { query?: TransactionQuery } = {},
 ): Promise<ElectionVoteMutationResult[]> {
   if (votes.length === 0) return []
 
@@ -64,7 +63,7 @@ export async function upsertAgentModerationElectionVotes(
   // Sort by agentModerationId for deterministic index-lock acquisition order (prevents ABBA deadlocks).
   values.sort((a, b) => a.agentModerationId.localeCompare(b.agentModerationId))
 
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     await lockAgentModerationVoteMutation(
       query,
       userId,

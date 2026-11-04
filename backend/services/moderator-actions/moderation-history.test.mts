@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import type { TransactionQuery } from '@data-stores/psql'
 import {
   createTestUser,
   createTestUserDirect,
@@ -22,8 +21,8 @@ import {
   readReportStaffClaims,
   readStaffActionHistory,
   readStaffActionTarget,
-  withRejectedStaffActionHistory,
 } from '@voucha/test-helpers/staff-action-history'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { createTopicClaim } from '../topic-claims/create.mts'
 import { adminVerifyTopicClaim, rejectTopicClaim } from '../topic-claims/admin-verify.mts'
 import { revokeTopicClaim } from '../topic-claims/revoke.mts'
@@ -53,14 +52,17 @@ import {
 async function provesAtomicHistory(
   actorId: string,
   action: string,
-  mutate: (query?: TransactionQuery) => Promise<unknown>,
+  mutate: () => Promise<unknown>,
   readState: () => Promise<unknown>,
 ) {
   const before = await readState()
   const historyBefore = await readStaffActionHistory(actorId)
-  await withRejectedStaffActionHistory(async query => {
-    await expect(mutate(query)).rejects.toThrow('staff history rejected for test')
-  })
+  const restore = rejectPostgresWriteForTest(
+    '/* recordModeratorAction',
+    new Error('staff history rejected for test'),
+    values => values.some(value => typeof value === 'string' && value.includes(actorId)),
+  )
+  await expect(mutate().finally(restore)).rejects.toThrow('staff history rejected for test')
   expect(await readState()).toEqual(before)
   expect(await readStaffActionHistory(actorId)).toEqual(historyBefore)
   await mutate()
@@ -98,12 +100,12 @@ describe('moderation staff history transactions', () => {
       await provesAtomicHistory(
         actor.id,
         `topic_claim_${action}`,
-        query =>
+        () =>
           action === 'verify'
-            ? adminVerifyTopicClaim(actor.id, claim.id, { query })
+            ? adminVerifyTopicClaim(actor.id, claim.id)
             : action === 'reject'
-              ? rejectTopicClaim(actor.id, claim.id, 'Synthetic rejection', { query })
-              : revokeTopicClaim(actor.id, claim.id, 'Synthetic revocation', { query }),
+              ? rejectTopicClaim(actor.id, claim.id, 'Synthetic rejection')
+              : revokeTopicClaim(actor.id, claim.id, 'Synthetic revocation'),
         () => readStaffActionTarget('topic_claim', claim.id),
       )
     },
@@ -133,14 +135,14 @@ describe('moderation staff history transactions', () => {
       await provesAtomicHistory(
         actor.id,
         `report_${action}`,
-        query =>
+        () =>
           action === 'claim'
-            ? claimModerationQueueItem(actor.id, { ...options, query })
+            ? claimModerationQueueItem(actor.id, options)
             : action === 'unclaim'
-              ? releaseModerationQueueItem(actor.id, { ...options, query })
+              ? releaseModerationQueueItem(actor.id, options)
               : action === 'escalate'
-                ? escalateModerationQueueItem(actor.id, { ...options, query })
-                : deEscalateModerationQueueItem(actor.id, { ...options, query }),
+                ? escalateModerationQueueItem(actor.id, options)
+                : deEscalateModerationQueueItem(actor.id, options),
         async () => ({
           report: await readStaffActionTarget('report', reportId),
           claims: await readReportStaffClaims(reportId),
@@ -166,12 +168,12 @@ describe('moderation staff history transactions', () => {
       await provesAtomicHistory(
         actor.id,
         action === 'review' ? 'report_integrity_flag_review' : `report_integrity_penalty_${action}`,
-        query =>
+        () =>
           action === 'review'
-            ? resolveReportIntegrityFlag(flagId, actor.id, 'dismissed', { query })
+            ? resolveReportIntegrityFlag(flagId, actor.id, 'dismissed')
             : action === 'apply'
-              ? applyReportAbusePenalty(actor.id, flagId, { query })
-              : revokeReportAbusePenalty(actor.id, penaltyId!, { query }),
+              ? applyReportAbusePenalty(actor.id, flagId)
+              : revokeReportAbusePenalty(actor.id, penaltyId!),
         async () => ({
           flag: await readStaffActionTarget('report_flag', flagId),
           penalties: await getTestReportAbusePenaltiesByFlagId(flagId),
@@ -197,12 +199,12 @@ describe('moderation staff history transactions', () => {
       await provesAtomicHistory(
         actor.id,
         action === 'review' ? 'vote_integrity_flag_review' : `vote_integrity_penalty_${action}`,
-        query =>
+        () =>
           action === 'review'
-            ? resolveVoteIntegrityFlag(flag!.id, actor.id, 'dismissed', { query })
+            ? resolveVoteIntegrityFlag(flag!.id, actor.id, 'dismissed')
             : action === 'apply'
-              ? applyVoteRingPenalty(flag!.id, actor.id, { query })
-              : revokeVoteWeightPenalty(penaltyId!, actor.id, { query }),
+              ? applyVoteRingPenalty(flag!.id, actor.id)
+              : revokeVoteWeightPenalty(penaltyId!, actor.id),
         async () => ({
           flag: await readStaffActionTarget('vote_flag', flag!.id),
           penalties: await getTestPenaltiesByFlagId(flag!.id),
@@ -221,10 +223,10 @@ describe('moderation staff history transactions', () => {
       await provesAtomicHistory(
         actor.id,
         `vote_weight_${action}`,
-        query =>
+        () =>
           action === 'set'
-            ? adminSetVoteWeight(actor.id, user.id, 7, { query })
-            : adminClearVoteWeight(actor.id, user.id, { query }),
+            ? adminSetVoteWeight(actor.id, user.id, 7)
+            : adminClearVoteWeight(actor.id, user.id),
         () => gatherVoteWeightFactors(user.id),
       )
       expect((await readStaffActionHistory(actor.id))[0]!.metadata).toMatchObject({
@@ -245,7 +247,7 @@ describe('moderation staff history transactions', () => {
     await provesAtomicHistory(
       actor.id,
       'mod_note_delete',
-      query => deleteUserModNote(actor, noteId, user.id, { query }),
+      () => deleteUserModNote(actor, noteId, user.id),
       () => readStaffActionTarget('note', noteId),
     )
     expect((await readStaffActionHistory(actor.id))[0]!.metadata).toEqual({
@@ -280,14 +282,10 @@ describe('moderation staff history transactions', () => {
       await provesAtomicHistory(
         actor.id,
         `agent_moderation_vote_${action}`,
-        query =>
-          upsertAgentModerationElectionVotes(
-            actor.id,
-            [{ entityId: moderationId, score: action === 'delete' ? null : 1 }],
-            undefined,
-            undefined,
-            { query },
-          ),
+        () =>
+          upsertAgentModerationElectionVotes(actor.id, [
+            { entityId: moderationId, score: action === 'delete' ? null : 1 },
+          ]),
         () => getAgentModerationElectionVote(actor.id, moderationId),
       )
       expect((await readStaffActionHistory(actor.id)).at(-1)).toMatchObject({

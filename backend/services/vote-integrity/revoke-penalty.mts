@@ -27,9 +27,8 @@ export type VoteWeightPenalty = {
 export async function revokeVoteWeightPenalty(
   penaltyId: string,
   revokedById: string,
-  options: { query?: TransactionQuery } = {},
 ): Promise<VoteWeightPenalty & IntegrityPenaltyLabels> {
-  return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
+  return runWithTransaction(undefined, async (transaction: TransactionQuery) => {
     const { rows } = await transaction(sql`/* revokeVoteWeightPenalty */
     UPDATE vote_weight_penalties
     SET

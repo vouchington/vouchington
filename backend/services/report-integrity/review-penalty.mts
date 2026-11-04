@@ -1,4 +1,4 @@
-import { runWithTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { runWithTransaction, write } from '@data-stores/psql'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { getPaginationLimits } from '@services/pagination'
 import {
@@ -64,9 +64,8 @@ export async function getReportAbusePenaltyReviewsDue(
 export async function reviewReportAbusePenalty(
   penaltyId: string,
   reviewedById: string,
-  options: { query?: TransactionQuery } = {},
 ): Promise<ReportAbusePenalty & IntegrityPenaltyLabels> {
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(undefined, async query => {
     const { rows: dueRows } = await query<{ user_id: string; review_due_at: Date }>(sql`
       /* reviewReportAbusePenalty_lockDue */
       SELECT user_id, review_due_at FROM report_abuse_penalties
