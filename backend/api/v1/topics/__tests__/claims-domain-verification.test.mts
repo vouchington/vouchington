@@ -70,9 +70,7 @@ describe('topic claim domain-verification API', () => {
     expect(verifyResponse.body.claim.verified_at).not.toBeNull()
     expect(verifyResponse.body.claim.verification_method).toBe('dns_txt')
     expect(verifyResponse.body.claim.state).toBe('verified')
-    expect(resolveTxtRecords).toHaveBeenCalledWith(
-      tokenResponse.body.dnsInstructions.hostname,
-    )
+    expect(resolveTxtRecords).toHaveBeenCalledWith(tokenResponse.body.dnsInstructions.hostname)
   })
 
   it('returns 409 when verifying a rejected claim', async () => {
