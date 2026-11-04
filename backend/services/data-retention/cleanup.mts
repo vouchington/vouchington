@@ -501,7 +501,9 @@ export async function runDataRetentionCleanup(
     ...limits,
     batchSize: Math.min(limits.batchSize, getTopicImportAttemptDeletionBatchSize()),
   }
-  const hackerNewsReferences = await cleanupHackerNewsReferences()
+  const hackerNewsReferences = active('hackerNewsReferences')
+    ? await cleanupHackerNewsReferences()
+    : { deleted: 0, hasMore: false }
   const retainedPageSize = Math.min(limits.batchSize, 1_000)
   // Ephemeral broker rows reference users and provider accounts. Remove expired rows first so a
   // long-interrupted cleanup run cannot retain avoidable references ahead of parent cleanup.

@@ -3,6 +3,7 @@ import { overrideDynamicConfigFieldsForTest } from '../../test-helpers/dynamic-c
 import { createHackerNewsRetentionFixtureForTest } from '../../test-helpers/hacker-news-retention.mts'
 import { hackerNewsVisibilityConfig } from '../urls/hacker-news-visibility-config.mts'
 import { hackerNewsQueueConfig } from '../../queues/hacker-news/config.mts'
+import { runDataRetentionCleanup } from './cleanup.mts'
 import { hackerNewsWorkConfig } from '../urls/hacker-news-work-limits.mts'
 
 describe('Hacker News reference retention', () => {
@@ -35,6 +36,10 @@ describe('Hacker News reference retention', () => {
       stories: [fixture.expired],
       comments: [fixture.expired],
     })
+
+    const skipped = await runDataRetentionCleanup({ batchSize: 1, maxBatches: 1 }, { families: [] })
+    expect(skipped.hackerNewsReferences).toEqual({ deleted: 0, hasMore: false })
+    expect((await fixture.read()).totals).toHaveProperty(fixture.expired)
 
     expect(await fixture.cleanup()).toEqual({ deleted: 1, hasMore: true })
     expect(await fixture.read()).toEqual({
