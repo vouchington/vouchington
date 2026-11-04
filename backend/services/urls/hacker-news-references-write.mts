@@ -15,7 +15,9 @@ export type HackerNewsReferenceRefresh = {
   comments: HackerNewsCommentReference[]
 }
 
-/** Replace the cached facts for canonical URLs. Totals include hits beyond the stored caps. */
+/**
+ * Replace the cached facts for canonical URLs. Totals include hits beyond the stored caps.
+ */
 export async function replaceHackerNewsReferences(
   batch: HackerNewsReferenceRefresh[],
 ): Promise<void> {
@@ -60,6 +62,7 @@ async function replaceHackerNewsReferenceChunk(
   )
 
   // This is the first write and its row locks serialize competing refreshes for each URL.
+  // ast-grep-ignore: no-three-sequential-awaits -- one transaction must lock totals before child replacement; statements share its connection.
   await query(
     `/* upsertHackerNewsTotals */
     INSERT INTO url_hacker_news_totals (url_id, story_count, comment_count, looked_up_at)

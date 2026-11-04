@@ -90,6 +90,7 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
     // The URL row lock also fences refreshes: the writer locks that row before writing totals
     // and skips URLs that gained a canonical. Each source holds at most 25 rows per item table.
     // Take the totals lock before item locks, matching refreshes and retention.
+    // ast-grep-ignore: no-three-sequential-awaits -- totals must lock before child deletion on the same transaction connection.
     await query(
       `/* removeCanonicalSourceHackerNewsTotals */
       DELETE FROM url_hacker_news_totals WHERE url_id = $1`,

@@ -16,7 +16,7 @@ export type SeedHackerNewsReferences = {
   comments?: readonly SeedComment[]
 }
 
-/** Seeds the totals row and item rows of one URL. The lookup job that writes them is not built. */
+/** Seeds the totals row and item rows of one URL. */
 export async function insertHackerNewsReferencesForTest(
   seed: SeedHackerNewsReferences,
 ): Promise<void> {
@@ -78,4 +78,19 @@ export async function getHackerNewsRowVersionsForTest(urlId: string): Promise<st
     [urlId],
   )
   return result.rows.map(row => row.version as string)
+}
+
+/** Reproduce the two-hop URL chain that concurrent canonical updates can leave behind. */
+export async function seedTwoHopCanonicalForTest(
+  sourceUrlId: string,
+  middleUrlId: string,
+  canonicalUrlId: string,
+): Promise<void> {
+  await write(
+    `/* seedTwoHopCanonicalForTest */
+    UPDATE urls AS source SET canonical_url_id = links.canonical_url_id
+    FROM (VALUES ($1::uuid, $2::uuid), ($2::uuid, $3::uuid)) AS links(url_id, canonical_url_id)
+    WHERE source.id = links.url_id`,
+    [sourceUrlId, middleUrlId, canonicalUrlId],
+  )
 }
