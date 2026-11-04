@@ -2,9 +2,10 @@ import { enqueueBulkProcessAppleNotifications } from '@queues/memberships/enqueu
 import { findRecoverableAppleNotificationJobs } from '@services/memberships/apple/notification-recovery'
 
 export async function recoverAppleNotifications(
-  findJobs: typeof findRecoverableAppleNotificationJobs = findRecoverableAppleNotificationJobs,
+  evidenceIds?: readonly string[],
+  batchSize?: number,
 ): Promise<{ enqueued: number }> {
-  const notifications = await findJobs()
+  const notifications = await findRecoverableAppleNotificationJobs(evidenceIds, batchSize)
   if (notifications.length === 0) return { enqueued: 0 }
   await enqueueBulkProcessAppleNotifications(notifications)
   return { enqueued: notifications.length }

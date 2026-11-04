@@ -9,15 +9,11 @@ export type RecoverableAppleNotification = {
   environment: AppleMembershipProviderEnvironment
 }
 
-export async function findRecoverableAppleNotificationJobs(): Promise<
-  RecoverableAppleNotification[]
-> {
-  const WORK_PAGE_SIZE = getMembershipWorkLimit('notification_recovery_batch_size')
-  const { rows } = await read<{
-    id: string
-    provider_lineage_id: string
-    environment: AppleMembershipProviderEnvironment
-  }>(sql`/* findRecoverableAppleNotificationJobs */
+export async function findRecoverableAppleNotificationJobs(
+  evidenceIds?: readonly string[],
+  batchSize = getMembershipWorkLimit('notification_recovery_batch_size'),
+): Promise<RecoverableAppleNotification[]> {
+  const candidateQuery = sql`/* findRecoverableAppleNotificationJobs */
     WITH candidate_page AS MATERIALIZED (
       SELECT evidence.id, evidence.membership_provider_context_id,
         evidence.membership_provider_lineage_id, evidence.received_at
@@ -27,9 +23,18 @@ export async function findRecoverableAppleNotificationJobs(): Promise<
       ))
         AND evidence.membership_provider_lineage_id IS NOT NULL
         AND evidence.provider_event_id IS NOT NULL
-        AND evidence.verified_at IS NULL AND evidence.rejected_at IS NULL
-      ORDER BY evidence.received_at, evidence.id LIMIT ${WORK_PAGE_SIZE}
-    )
+        AND evidence.verified_at IS NULL AND evidence.rejected_at IS NULL`
+  if (evidenceIds !== undefined)
+    candidateQuery.append(sql` AND evidence.id = ANY(${evidenceIds}::uuid[])`)
+  candidateQuery.append(sql`
+      ORDER BY evidence.received_at, evidence.id LIMIT ${batchSize}
+    )`)
+  const { rows } = await read<{
+    id: string
+    provider_lineage_id: string
+    environment: AppleMembershipProviderEnvironment
+  }>(
+    candidateQuery.append(sql`
     SELECT candidate.id, lineage.provider_lineage_id, context.environment
     FROM candidate_page candidate
     INNER JOIN LATERAL (
@@ -40,7 +45,8 @@ export async function findRecoverableAppleNotificationJobs(): Promise<
       SELECT provider_lineage_id FROM membership_provider_lineages
       WHERE id = candidate.membership_provider_lineage_id LIMIT 1
     ) lineage ON TRUE
-    ORDER BY candidate.received_at, candidate.id`)
+    ORDER BY candidate.received_at, candidate.id`),
+  )
   return rows.map(row => ({
     evidenceId: row.id,
     providerLineageId: row.provider_lineage_id,

@@ -13,10 +13,6 @@ import {
 } from '@services/memberships/create-types'
 import type { ProcessStripeEventData } from '@queues/memberships/types'
 
-type RecoverStripeEventsDependencies = {
-  claimRecoverableStripeEvents: typeof claimRecoverableStripeEvents
-}
-
 export async function processStripeEvent(
   data: ProcessStripeEventData,
   isFinalAttempt = true,
@@ -45,10 +41,10 @@ export async function processStripeEvent(
 }
 
 export async function recoverStripeEvents(
-  dependencies?: Partial<RecoverStripeEventsDependencies>,
+  ids?: readonly string[],
+  batchSize?: number,
 ): Promise<{ enqueued: number }> {
-  const claimEvents = dependencies?.claimRecoverableStripeEvents ?? claimRecoverableStripeEvents
-  const events = await claimEvents()
+  const events = await claimRecoverableStripeEvents(ids, batchSize)
   if (events.length > 0) await enqueueOrReactivateBulkProcessStripeEvents(events)
   return { enqueued: events.length }
 }
