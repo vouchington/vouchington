@@ -61,8 +61,9 @@ export async function assertCommunityMembershipCapacity(
     /* assertCommunityMembershipCapacity */
     SELECT (
       SELECT count(*)::int FROM (
-        SELECT 1 FROM community_members
-        WHERE user_id = ${currentUserId} AND removed_at IS NULL
+        SELECT 1 FROM community_members cm
+        JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
+        WHERE cm.user_id = ${currentUserId} AND cm.removed_at IS NULL
         LIMIT ${limit}
       ) capped
     ) AS count,

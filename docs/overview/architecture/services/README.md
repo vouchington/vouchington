@@ -53,7 +53,8 @@ community's moderators, with owners included. Staff follow the same limits. User
 serialized across communities; moderator promotions use the community role fence. Lowering a limit
 blocks further admissions without hiding existing memberships or dropping notification recipients.
 Ownership transfers exchange existing moderator seats, and bootstrap replay preserves later
-membership and ownership choices.
+membership and ownership choices. Deleted communities release admission capacity while retained
+membership history remains available; cache overflow falls back to paginated reads.
 
 Membership caches support display and moderator notification discovery. Membership writes clear
 both views after the owning transaction commits; a short expiry backs up invalidation. Authorization,

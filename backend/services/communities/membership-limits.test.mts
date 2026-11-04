@@ -17,6 +17,8 @@ import { getCommunityMember } from './members/get.mts'
 import { redeemInviteCode } from './invites/redeem.mts'
 import { createCommunity } from './create.mts'
 import { getCommunity } from './get.mts'
+import { deleteCommunity } from './delete.mts'
+import { getCachedUserMemberships } from '@services/entity-cache/community-memberships'
 import { initiateOwnershipTransfer } from './ownership-transfer.mts'
 
 describe('community membership admission limits', () => {
@@ -52,6 +54,40 @@ describe('community membership admission limits', () => {
     ).rejects.toMatchObject(failure)
     expect(await getCommunity(slug)).toBeNull()
     expect(await getCommunityMember(target.id, user.id)).toBeNull()
+  })
+
+  it('releases admission capacity when a community is deleted while retaining membership history', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(communityMembershipLimitsConfig, {
+        communities_per_user: 1,
+      }),
+    )
+    const owner = await createTestUser()
+    const member = await createTestUser()
+    const first = await createCommunity(owner.id, WEB_PROVENANCE, {
+      name: 'Deleted test community',
+      slug: `deleted-cap-${crypto.randomUUID()}`,
+    })
+    await joinCommunity(member.id, first)
+    expect(await getCachedUserMemberships(member.id)).toHaveLength(1)
+    const ownership = await getCommunityMember(first.id, owner.id)
+    await deleteCommunity(owner, first.id, ownership)
+    expect(await getCommunityMember(first.id, member.id)).toMatchObject({ removed_at: null })
+
+    const replacement = await createCommunity(owner.id, WEB_PROVENANCE, {
+      name: 'Replacement test community',
+      slug: `replacement-cap-${crypto.randomUUID()}`,
+    })
+    await expect(joinCommunity(member.id, replacement)).resolves.toMatchObject({
+      community_id: replacement.id,
+    })
+    // Historical rows can exceed the runtime admission setting; display caching keeps its
+    // independent hard-ceiling sentinel and paginated fallback rather than truncating them.
+    expect(await getCachedUserMemberships(member.id)).toHaveLength(2)
+    const third = await insertTestCommunity({ createdById: owner.id, visibility: 'public' })
+    await expect(joinCommunity(member.id, third)).rejects.toMatchObject({
+      code: 'COMMUNITY_MEMBERSHIP_LIMIT_REACHED',
+    })
   })
 
   it('serializes simultaneous joins across communities at the user limit', async () => {
