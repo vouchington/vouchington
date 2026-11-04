@@ -1,7 +1,7 @@
 import {
   createUserDeletionSweepNeighbor,
   readUserDeletionSweepNeighbor,
-} from '../../../user-deletion-sweep-neighbor.mts'
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 import { describe, expect, it, vi } from 'vitest'
 import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-deletions'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'

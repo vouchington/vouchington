@@ -1,7 +1,7 @@
 import {
   createUserDeletionSweepNeighbor,
   readUserDeletionSweepNeighbor,
-} from '../../user-deletion-sweep-neighbor.mts'
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'

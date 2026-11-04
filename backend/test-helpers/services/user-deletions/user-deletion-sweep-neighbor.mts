@@ -1,5 +1,5 @@
 import { createTestUser } from '@voucha/test-helpers'
-import { createUserDeletionRequest } from './services/user-deletions/create.mts'
+import { createUserDeletionRequest } from '../../../services/user-deletions/create.mts'
 import {
   getUserDeletionDispatchedAtForTest,
   getUserDeletionRequestForTest,

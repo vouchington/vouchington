@@ -1,7 +1,7 @@
 import {
   createUserDeletionSweepNeighbor,
   readUserDeletionSweepNeighbor,
-} from '../../../user-deletion-sweep-neighbor.mts'
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import type { Job } from 'glide-mq'
 import { createUserDeletionRequest } from '@services/user-deletions'

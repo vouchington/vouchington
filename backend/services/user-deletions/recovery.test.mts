@@ -10,7 +10,7 @@ import {
 import {
   createUserDeletionSweepNeighbor,
   readUserDeletionSweepNeighbor,
-} from '../../user-deletion-sweep-neighbor.mts'
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 
 describe('user deletion recovery eligibility', () => {
   it('leaves a renewed attempt running while recovering its due sibling', async () => {
