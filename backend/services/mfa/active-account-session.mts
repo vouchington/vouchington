@@ -47,9 +47,8 @@ export async function withActiveAccountSession<T>(
   currentUserId: string,
   session: AccountChangeSession,
   work: (query: TransactionQuery) => Promise<T>,
-  options: { query?: TransactionQuery } = {},
 ): Promise<T> {
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(undefined, async query => {
     await lockActiveAccountSession(currentUserId, session, query)
     return work(query)
   })

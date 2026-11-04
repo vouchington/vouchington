@@ -13,9 +13,6 @@ import {
   createTestAccountChangeProof,
   consumeTestAccountChangeProof,
 } from '@voucha/test-helpers/account-change'
-import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
-import { withActiveAccountSession } from './active-account-session.mts'
-import { assertFreshReAuth } from './re-auth.mts'
 
 describe('session-scoped account-change proofs', () => {
   it('replaces only the issuing session proof and consumes it exactly once', async () => {
@@ -35,25 +32,6 @@ describe('session-scoped account-change proofs', () => {
     await expect(consumeTestAccountChangeProof(user.id, other.session, otherToken)).resolves.toBe(
       true,
     )
-  })
-
-  it('restores the proof when its caller transaction rolls back', async () => {
-    const user = await createTestUser()
-    const actor = await createTestAccountChangeActor(user.id)
-    const token = await createTestAccountChangeProof(user.id, actor.session)
-    await withPostgresTransactionForTest(query =>
-      withActiveAccountSession(
-        user.id,
-        actor.session,
-        async owned => {
-          await expect(
-            assertFreshReAuth(user.id, actor.session, token, owned),
-          ).resolves.toBeUndefined()
-        },
-        { query },
-      ),
-    )
-    await expect(consumeTestAccountChangeProof(user.id, actor.session, token)).resolves.toBe(true)
   })
 
   it('rejects malformed proof without consuming the valid proof', async () => {
