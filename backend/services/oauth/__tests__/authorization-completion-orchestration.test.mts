@@ -1,286 +1,213 @@
-import type { VerifiedLoginFirstFactor } from '@services/oauth-accounts/login-admission'
-import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { randomBytes, randomUUID } from 'node:crypto'
+import { describe, expect, it } from 'vitest'
+import { peekLoginAttempt } from '@services/mfa/login-attempt'
+import { upsertUser } from '@services/users/create'
+import { createTestUser, insertTestTotpAuthenticator } from '@voucha/test-helpers'
+import {
+  failOwnedAccountSecurityEmailEnqueue,
+  failOwnedGithubFriendSyncEnqueue,
+  readAccountSecurityEmailJobs,
+  readGithubFriendSyncJobs,
+} from '@voucha/test-helpers/oauth-completion-effects'
+import { createTestAccountChangeActor } from '@voucha/test-helpers/account-change'
+import { connectTestOAuthAccount } from '@voucha/test-helpers/entities/oauth-accounts'
 import { completeOAuthAuthorization } from '../authorization-completion.mts'
-import { createTestUser } from '@voucha/test-helpers/entities/users'
+import { completeOAuthAuthorizationTransaction } from '../authorization-completion-transaction.mts'
 import {
   failOwnedVoteWeightEnqueue,
   readOwnedVoteWeightRecalculationJobs,
 } from '../../../test-helpers/vote-weight-dirty-marker.mts'
-import { drainOwnedTestAction } from '../../../test-helpers/post-commit-completion.mts'
 import {
-  authenticatedFlowResult,
-  completionDependencies,
-  completionOptions,
-} from '../../../test-helpers/oauth-completion-fixtures.mts'
+  createOAuthAccount,
+  insertCompletionReadyAuthorization,
+  registerCleanup,
+} from '../../../test-helpers/services/oauth/authorization-completion.mts'
+
+const postCommitFailure = () =>
+  Object.assign(new Error('Valkey unavailable'), { tags: { suppressLogging: true } })
+
+/** A GitHub account not yet linked to the user, ready for a connect completion. */
+async function insertNewGithubConnection() {
+  const cleanup = registerCleanup()
+  const user = await createTestUser()
+  cleanup.userIds.push(user.id)
+  const actor = await createTestAccountChangeActor(user.id)
+  const account = await createOAuthAccount('github', cleanup)
+  const completionToken = randomBytes(32).toString('base64url')
+  const flowId = await insertCompletionReadyAuthorization(
+    {
+      accountId: account.provider_user_id,
+      provider: 'github',
+      deviceId: actor.session.did,
+      sessionId: actor.session.sid,
+      completionToken,
+      purpose: 'connect',
+      callbackMode: 'web',
+      initiatingUserId: user.id,
+    },
+    cleanup,
+  )
+  return {
+    user,
+    account,
+    options: {
+      flowId,
+      completionToken,
+      completionTokenSource: 'cookie' as const,
+      currentUserId: user.id,
+      deviceId: actor.session.did,
+      sessionId: actor.session.sid,
+    },
+  }
+}
 
 describe('OAuth authorization completion orchestration', () => {
-  it('uses the durable authenticated session for first issuance and replay', async () => {
-    const user = await createTestUser()
-    const userId = user.id
-    const deviceId = randomUUID()
-    const sessionId = randomUUID()
-    const options = completionOptions()
-    const firstDependencies = completionDependencies(
-      {
-        kind: 'authenticated',
-        firstFactor: { type: 'email', emailAddress: user.email_address! },
-        userId,
-        deviceId,
-        sessionId,
-        newlyCompleted: true,
-        authOrigin: 'web',
-      },
-      user,
-    )
-    const replayDependencies = completionDependencies(
-      {
-        kind: 'authenticated',
-        firstFactor: { type: 'email', emailAddress: user.email_address! },
-        userId,
-        deviceId,
-        sessionId,
-        newlyCompleted: false,
-        authOrigin: 'web',
-      },
-      user,
-    )
-    const authenticatedResult = authenticatedFlowResult(user, deviceId, sessionId)
-    vi.mocked(firstDependencies.createFlowResult).mockResolvedValue(authenticatedResult)
-    vi.mocked(replayDependencies.createFlowResult).mockResolvedValue(authenticatedResult)
-
-    await completeOAuthAuthorization(options, firstDependencies)
-    await completeOAuthAuthorization(options, replayDependencies)
-
-    expect(firstDependencies.createFlowResult).toHaveBeenCalledWith(
-      expect.objectContaining({
-        authenticatedSessionId: sessionId,
-        deviceId,
-        refreshAuthenticatedSession: false,
-      }),
-    )
-    expect(replayDependencies.createFlowResult).toHaveBeenCalledWith(
-      expect.objectContaining({
-        authenticatedSessionId: sessionId,
-        deviceId,
-        refreshAuthenticatedSession: true,
-      }),
-    )
-  })
-
-  it('issues an authenticated session only after durable completion resolves', async () => {
-    const user = await createTestUser()
-    const userId = user.id
-    const deviceId = randomUUID()
-    const sessionId = randomUUID()
-    const transaction = Promise.withResolvers<{
-      kind: 'authenticated'
-      firstFactor: VerifiedLoginFirstFactor
-      userId: string
-      deviceId: string
-      sessionId: string
-      newlyCompleted: boolean
-      authOrigin: 'web' | 'native'
-    }>()
-    const dependencies = completionDependencies(
-      {
-        kind: 'authenticated',
-        firstFactor: { type: 'email', emailAddress: user.email_address! },
-        userId,
-        deviceId,
-        sessionId,
-        newlyCompleted: true,
-        authOrigin: 'web',
-      },
-      user,
-    )
-    vi.mocked(dependencies.completeTransaction).mockReturnValue(transaction.promise)
-    vi.mocked(dependencies.createFlowResult).mockResolvedValue(
-      authenticatedFlowResult(user, deviceId, sessionId),
-    )
-
-    const completion = () => completeOAuthAuthorization(completionOptions(), dependencies)
-    await drainOwnedTestAction(
-      completion,
-      () =>
-        transaction.resolve({
-          kind: 'authenticated',
-          firstFactor: { type: 'email', emailAddress: user.email_address! },
-          userId,
-          deviceId,
-          sessionId,
-          newlyCompleted: true,
-          authOrigin: 'web',
-        }),
-      async () => {
-        expect(dependencies.completeTransaction).toHaveBeenCalledOnce()
-        expect(dependencies.createFlowResult).not.toHaveBeenCalled()
-      },
-    )
-
-    expect(dependencies.createFlowResult).toHaveBeenCalledOnce()
-  })
-
   it('replays the durable MFA challenge without refreshing its login attempt', async () => {
-    const userId = randomUUID()
-    const loginAttemptId = randomUUID()
-    const dependencies = completionDependencies({
-      kind: 'mfa_required',
-      userId,
-      loginAttemptId,
+    const cleanup = registerCleanup()
+    const account = await createOAuthAccount('github', cleanup)
+    const deviceId = randomUUID()
+    const sessionId = randomUUID()
+    const user = await upsertUser({
+      emailAddress: account.provider_user_email_address!,
+      deviceId,
+      sessionId,
     })
-    await expect(completeOAuthAuthorization(completionOptions(), dependencies)).resolves.toEqual({
-      status: 'mfa_required',
-      loginAttemptId,
-    })
-    await expect(completeOAuthAuthorization(completionOptions(), dependencies)).resolves.toEqual({
-      status: 'mfa_required',
-      loginAttemptId,
-    })
+    cleanup.userIds.push(user.id)
+    await connectTestOAuthAccount('github', user.id, account.provider_user_id)
+    await insertTestTotpAuthenticator(user.id, `completion-mfa-${randomUUID()}`)
+    const completionToken = randomBytes(32).toString('base64url')
+    const flowId = await insertCompletionReadyAuthorization(
+      {
+        accountId: account.provider_user_id,
+        provider: 'github',
+        deviceId,
+        sessionId,
+        completionToken,
+        purpose: 'authenticate',
+        callbackMode: 'web',
+      },
+      cleanup,
+    )
+    const options = {
+      flowId,
+      completionToken,
+      completionTokenSource: 'cookie' as const,
+      deviceId,
+      sessionId,
+    }
 
-    expect(dependencies.requireUser).not.toHaveBeenCalled()
-    expect(dependencies.createFlowResult).not.toHaveBeenCalled()
+    const first = await completeOAuthAuthorization(options)
+    expect(first).toMatchObject({ status: 'mfa_required' })
+    if (first.status !== 'mfa_required') throw new Error('Expected MFA result')
+    await expect(completeOAuthAuthorization(options)).resolves.toEqual(first)
+    await expect(peekLoginAttempt(first.loginAttemptId)).resolves.toMatchObject({
+      userId: user.id,
+      authOrigin: 'web',
+    })
   })
 
-  it('fails closed when a durable authentication replay unexpectedly requires MFA', async () => {
-    const user = await createTestUser()
-    const dependencies = completionDependencies(
+  it('fails closed when a durable authentication unexpectedly requires MFA at first issuance', async () => {
+    const cleanup = registerCleanup()
+    const account = await createOAuthAccount('github', cleanup)
+    const deviceId = randomUUID()
+    const sessionId = randomUUID()
+    const completionToken = randomBytes(32).toString('base64url')
+    const flowId = await insertCompletionReadyAuthorization(
       {
-        kind: 'authenticated',
-        firstFactor: { type: 'email', emailAddress: user.email_address! },
-        userId: user.id,
-        deviceId: randomUUID(),
-        sessionId: randomUUID(),
-        newlyCompleted: false,
-        authOrigin: 'web',
+        accountId: account.provider_user_id,
+        provider: 'github',
+        deviceId,
+        sessionId,
+        completionToken,
+        purpose: 'authenticate',
+        callbackMode: 'web',
       },
-      user,
+      cleanup,
     )
-    vi.mocked(dependencies.createFlowResult).mockResolvedValue({
-      mfaRequired: true,
-      loginAttemptId: randomUUID(),
-    })
+    const options = {
+      flowId,
+      completionToken,
+      completionTokenSource: 'cookie' as const,
+      deviceId,
+      sessionId,
+    }
+    const durable = await completeOAuthAuthorizationTransaction(options)
+    expect(durable).toMatchObject({ kind: 'authenticated' })
+    if (durable.kind !== 'authenticated') throw new Error('Expected authentication')
+    cleanup.userIds.push(durable.userId)
+    await insertTestTotpAuthenticator(durable.userId, `completion-late-${randomUUID()}`)
 
-    await expect(completeOAuthAuthorization(completionOptions(), dependencies)).rejects.toThrow(
+    await expect(completeOAuthAuthorization(options)).rejects.toThrow(
       'Stored OAuth authentication result unexpectedly requires MFA',
     )
   })
 
   it('runs connection effects exactly once for a newly completed connection', async () => {
-    const userId = randomUUID()
-    const accountId = randomUUID()
-    const dependencies = completionDependencies({
-      kind: 'connected',
-      userId,
-      provider: 'github',
-      newlyCompleted: true,
-      account: {
-        account_id: accountId,
-        user_id: userId,
-        provider_user_id: 'github-user',
-        provider_user_email_address: null,
-        provider_user_data: { name: 'GitHub Friend' },
-      },
-    })
+    const { user, account, options } = await insertNewGithubConnection()
 
-    await expect(
-      completeOAuthAuthorization(completionOptions(), dependencies),
-    ).resolves.toMatchObject({
+    await expect(completeOAuthAuthorization(options)).resolves.toMatchObject({
       status: 'connected',
-      name: 'GitHub Friend',
+      name: 'Broker Completion',
+    })
+    await expect(completeOAuthAuthorization(options)).resolves.toMatchObject({
+      status: 'connected',
     })
 
-    expect((await readOwnedVoteWeightRecalculationJobs(userId)).map(job => job.data)).toEqual([
-      { userId },
+    expect((await readOwnedVoteWeightRecalculationJobs(user.id)).map(job => job.data)).toEqual([
+      { userId: user.id },
     ])
-    expect(dependencies.enqueueFriendSync).toHaveBeenCalledWith(
-      'github',
-      expect.objectContaining({
-        account_id: accountId,
-        provider_user_id: 'github-user',
-        user_id: userId,
-      }),
-    )
+    expect(await readGithubFriendSyncJobs(account.account_id)).toHaveLength(1)
+    expect(await readAccountSecurityEmailJobs(user.email_address!)).toHaveLength(1)
   })
 
-  it.each(['notifyAccountSecurityChange', 'enqueueFriendSync'] as const)(
-    'returns a durable connection when postcommit %s fails',
-    async effect => {
-      const userId = randomUUID()
-      const accountId = randomUUID()
-      const dependencies = completionDependencies({
-        kind: 'connected',
-        userId,
-        provider: 'github',
-        newlyCompleted: true,
-        account: {
-          account_id: accountId,
-          user_id: userId,
-          provider_user_id: 'github-user',
-          provider_user_email_address: null,
-          provider_user_data: {},
-        },
-      })
-      vi.mocked(dependencies[effect]).mockRejectedValue(
-        Object.assign(new Error('Valkey unavailable'), {
-          tags: { suppressLogging: true },
-        }),
-      )
-
-      await expect(
-        completeOAuthAuthorization(completionOptions(), dependencies),
-      ).resolves.toMatchObject({
-        status: 'connected',
-        account: { provider_user_id: 'github-user' },
-      })
-      expect(dependencies.notifyAccountSecurityChange).toHaveBeenCalledOnce()
-      expect((await readOwnedVoteWeightRecalculationJobs(userId)).map(job => job.data)).toEqual([
-        { userId },
-      ])
-      expect(dependencies.enqueueFriendSync).toHaveBeenCalledOnce()
-    },
-  )
-
-  it('returns a durable connection and continues friend sync when the vote-weight enqueue fails', async () => {
-    const userId = randomUUID()
-    const accountId = randomUUID()
-    const dependencies = completionDependencies({
-      kind: 'connected',
-      userId,
-      provider: 'github',
-      newlyCompleted: true,
-      account: {
-        account_id: accountId,
-        user_id: userId,
-        provider_user_id: 'github-user',
-        provider_user_email_address: null,
-        provider_user_data: {},
-      },
-    })
-    const failure = failOwnedVoteWeightEnqueue(
-      userId,
-      Object.assign(new Error('Post-commit effect unavailable'), {
-        tags: { suppressLogging: true },
-      }),
-    )
+  it('returns a durable connection when the account security email enqueue fails', async () => {
+    const { user, account, options } = await insertNewGithubConnection()
+    const failure = failOwnedAccountSecurityEmailEnqueue(user.email_address!, postCommitFailure())
     try {
-      await expect(
-        completeOAuthAuthorization(completionOptions(), dependencies),
-      ).resolves.toMatchObject({
+      await expect(completeOAuthAuthorization(options)).resolves.toMatchObject({
         status: 'connected',
-        account: { provider_user_id: 'github-user' },
+        account: { provider_user_id: account.provider_user_id },
       })
     } finally {
       failure.mockRestore()
     }
-    expect(await readOwnedVoteWeightRecalculationJobs(userId)).toEqual([])
-    expect(dependencies.enqueueFriendSync).toHaveBeenCalledWith(
-      'github',
-      expect.objectContaining({
-        account_id: accountId,
-        provider_user_id: 'github-user',
-        user_id: userId,
-      }),
-    )
+    expect(await readAccountSecurityEmailJobs(user.email_address!)).toEqual([])
+    expect((await readOwnedVoteWeightRecalculationJobs(user.id)).map(job => job.data)).toEqual([
+      { userId: user.id },
+    ])
+    expect(await readGithubFriendSyncJobs(account.account_id)).toHaveLength(1)
+  })
+
+  it('returns a durable connection when the friend sync enqueue fails', async () => {
+    const { user, account, options } = await insertNewGithubConnection()
+    const failure = failOwnedGithubFriendSyncEnqueue(account.account_id, postCommitFailure())
+    try {
+      await expect(completeOAuthAuthorization(options)).resolves.toMatchObject({
+        status: 'connected',
+        account: { provider_user_id: account.provider_user_id },
+      })
+    } finally {
+      failure.mockRestore()
+    }
+    expect(await readGithubFriendSyncJobs(account.account_id)).toEqual([])
+    expect(await readAccountSecurityEmailJobs(user.email_address!)).toHaveLength(1)
+    expect((await readOwnedVoteWeightRecalculationJobs(user.id)).map(job => job.data)).toEqual([
+      { userId: user.id },
+    ])
+  })
+
+  it('returns a durable connection and continues friend sync when the vote-weight enqueue fails', async () => {
+    const { user, account, options } = await insertNewGithubConnection()
+    const failure = failOwnedVoteWeightEnqueue(user.id, postCommitFailure())
+    try {
+      await expect(completeOAuthAuthorization(options)).resolves.toMatchObject({
+        status: 'connected',
+        account: { provider_user_id: account.provider_user_id },
+      })
+    } finally {
+      failure.mockRestore()
+    }
+    expect(await readOwnedVoteWeightRecalculationJobs(user.id)).toEqual([])
+    expect(await readGithubFriendSyncJobs(account.account_id)).toHaveLength(1)
   })
 })

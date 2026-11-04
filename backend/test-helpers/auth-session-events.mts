@@ -22,6 +22,13 @@ export async function readAuthSessionRows(testDir: string): Promise<Record<strin
     )
   ).flat()
 }
+/** Event types recorded for one session id, after flushing pending analytics writes. */
+export async function readAuthSessionEventTypes(testDir: string, sid: string) {
+  await flush()
+  return (await readAuthSessionRows(testDir)).flatMap(row =>
+    row.session_id === sid ? [row.event_type] : [],
+  )
+}
 export async function expectAuthSessionEvent(
   testDir: string,
   did: string,
