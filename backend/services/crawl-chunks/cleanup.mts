@@ -31,6 +31,7 @@ export const finalizeChunksIfCompleteForMany = async (crawlIds: string[]): Promi
     ),
     superseded_crawls AS (
       -- Older crawls lose their chunks below, so their pending marker has no work left.
+      -- no-mistakes-disable-next-line postgres-bounded-statements: each URL's part covers only its older crawls, usually one; a call covers about 1,000 URLs at most (bedrock-embeddings-batch result-processing group size).
       UPDATE crawls
       SET has_pending_embeddings = false
       FROM updated_crawls
@@ -39,6 +40,7 @@ export const finalizeChunksIfCompleteForMany = async (crawlIds: string[]): Promi
         AND crawls.has_pending_embeddings
         AND NOT EXISTS (SELECT 1 FROM updated_crawls newer WHERE newer.crawl_id = crawls.id)
     )
+    -- no-mistakes-disable-next-line postgres-bounded-statements: each URL's part covers only its older crawls, usually one; a call covers about 1,000 URLs at most (bedrock-embeddings-batch result-processing group size).
     DELETE FROM crawl_chunks
     USING updated_crawls, crawls old_crawl
     WHERE old_crawl.url_id = updated_crawls.url_id

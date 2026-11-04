@@ -43,6 +43,7 @@ export async function liftCommunityBan(
   // untouched and are not mislabeled as manually lifted.
   await write(
     sql`/* liftCommunityBan */
+    -- no-mistakes-disable-next-line postgres-bounded-statements: one user may hold several active bans in a community by design; rows are added only by staff actions.
     UPDATE community_bans
     SET lifted_at = CURRENT_TIMESTAMP, lifted_by_id = ${currentUser.id}
     WHERE community_id = ${communityId}

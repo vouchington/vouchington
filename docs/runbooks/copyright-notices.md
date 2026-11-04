@@ -362,6 +362,18 @@ projection fail-closed, replay the idempotent edge-registry publication, invalid
 path, and verify both a cached and uncached request before acknowledging delivery. Never change the
 PostgreSQL revision merely to make the edge registry match.
 
+## Copyright notice locks
+
+Before an image is proven deliverable and published to the edge, delivery locks (`FOR NO KEY UPDATE`)
+every `copyright_notices` row that targets that one placement. Filing a notice takes the same lock, so
+a notice cannot be admitted between the authority proof and provider publication, and a withheld
+image is never republished by a racing delivery.
+
+The lock set is the notices targeting a single placement: normally none, and one or two once an image
+has been reported. A placement with many notices is an edge case (repeated reports of one image), so
+the statement is allowed in `postgres-bounded-statements` with a reason instead of a row cap; a cap
+would let an unlocked notice slip past the proof.
+
 ## Review-target page
 
 The `copyright-review-target-page` job runs every five minutes and sends one Sentry warning,
