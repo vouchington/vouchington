@@ -111,9 +111,8 @@ export async function verifyOAuthClient(
   currentUserId: string,
   id: string,
   reviewed: OAuthClientVerificationReview,
-  options: { query?: TransactionQuery } = {},
 ): Promise<OAuthClientVerificationResult> {
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rows: previous } = await query<{ verified_at: Date | null }>(
       '/* verifyOAuthClient:previous */ SELECT verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
       [id],
@@ -160,12 +159,8 @@ export async function verifyOAuthClient(
 }
 
 /** Clears verification. Returns false when no such client exists. */
-export async function unverifyOAuthClient(
-  currentUserId: string,
-  id: string,
-  options: { query?: TransactionQuery } = {},
-): Promise<boolean> {
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+export async function unverifyOAuthClient(currentUserId: string, id: string): Promise<boolean> {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rows } = await query<OAuthClientVerificationReview & { verified_at: Date | null }>(
       '/* unverifyOAuthClient:previous */ SELECT client_name, redirect_uris, verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
       [id],

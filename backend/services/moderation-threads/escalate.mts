@@ -11,20 +11,17 @@ export async function escalateModerationQueueItem(
     communityId: string
     reportId?: string | null
     postId?: string | null
-    query?: TransactionQuery
   },
 ): Promise<void> {
   const { communityId, reportId, postId } = options
 
   if (reportId) {
-    const context = await getReportResolutionContext(reportId, communityId, {
-      query: options.query,
-    })
+    const context = await getReportResolutionContext(reportId, communityId)
     if (!context) throw createError(404, 'Report not found')
     if (!context.is_in_community_scope) throw createError(403, 'Forbidden')
   }
 
-  await runWithTransaction(options.query, async (query: TransactionQuery) => {
+  await runWithTransaction(undefined, async (query: TransactionQuery) => {
     if (reportId) {
       const { rowCount } = await query(sql`/* escalateModerationQueueItem */
         UPDATE moderation_reports
@@ -92,20 +89,17 @@ export async function deEscalateModerationQueueItem(
     communityId?: string | null
     reportId?: string | null
     postId?: string | null
-    query?: TransactionQuery
   },
 ): Promise<void> {
   const { communityId, reportId, postId } = options
 
   if (reportId) {
     if (communityId) {
-      const context = await getReportResolutionContext(reportId, communityId, {
-        query: options.query,
-      })
+      const context = await getReportResolutionContext(reportId, communityId)
       if (!context) throw createError(404, 'Report not found')
       if (!context.is_in_community_scope) throw createError(403, 'Forbidden')
     }
-    await runWithTransaction(options.query, async (query: TransactionQuery) => {
+    await runWithTransaction(undefined, async (query: TransactionQuery) => {
       const { rowCount } = await query(sql`/* deEscalateModerationQueueItem */
       UPDATE moderation_reports
       SET escalated_at = NULL, escalated_by_id = NULL
@@ -129,7 +123,7 @@ export async function deEscalateModerationQueueItem(
   }
 
   if (postId) {
-    await runWithTransaction(options.query, async (query: TransactionQuery) => {
+    await runWithTransaction(undefined, async (query: TransactionQuery) => {
       const { rowCount } = await query(sql`/* deEscalateModerationQueueItem */
       UPDATE community_post_reviews
       SET escalated_at = NULL, escalated_by_id = NULL
