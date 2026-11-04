@@ -6,6 +6,7 @@ import createError from 'http-errors'
 import { enqueueLanguageDetection } from '@queues/content-analysis/enqueues'
 import onError from '@modules/on-error'
 import { appendEmbedMetadataUpdate } from './update-embed-metadata.mts'
+import { crawlBasicColumns } from './columns.mts'
 
 export const updateCrawl = async (
   crawlId: string,
@@ -84,11 +85,23 @@ export const updateCrawl = async (
 
   const { rows } = await write<Omit<CrawlBasic, '__entity_type'>>(
     `/* updateCrawl */
+    WITH updated AS (
     UPDATE crawls
     SET ${setClauses.join(', ')}
     WHERE url_id = $${values.length - 1}
       AND id = $${values.length}
-    RETURNING *
+    RETURNING ${crawlBasicColumns}
+    ), recorded_success AS (
+      UPDATE url_crawl_states
+      SET last_successful_crawl_at = GREATEST(url_crawl_states.last_successful_crawl_at, updated.completed_at)
+      FROM updated
+      WHERE url_crawl_states.url_id = updated.url_id
+        AND updated.completed_at IS NOT NULL
+        AND updated.network_error IS NULL
+        AND (updated.response_status_code BETWEEN 200 AND 299 OR updated.response_status_code = 304)
+        AND (url_crawl_states.last_successful_crawl_at IS NULL OR url_crawl_states.last_successful_crawl_at < updated.completed_at)
+    )
+    SELECT ${crawlBasicColumns} FROM updated
   `,
     values,
     queryOptions,

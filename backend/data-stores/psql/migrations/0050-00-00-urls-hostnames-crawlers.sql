@@ -344,10 +344,41 @@ BEFORE UPDATE ON urls
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- Filter URLs by hostname and support bounded UUIDv7 walks within a hostname.
+-- Filter URLs by hostname, support bounded UUIDv7 walks, and enforce crawl-state hostname ownership.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_urls__hostname_id
+CREATE UNIQUE INDEX IF NOT EXISTS idx_urls__hostname_id
 ON urls (hostname_id, id);
+
+-- Current crawl state is separate from URL content revisions used by entity reconciliation.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS url_crawl_states (
+  url_id UUID PRIMARY KEY,
+  hostname_id UUID NOT NULL,
+  last_successful_crawl_at TIMESTAMPTZ,
+  last_crawl_attempt_at TIMESTAMPTZ,
+  CONSTRAINT fk_url_crawl_states__url
+    FOREIGN KEY (hostname_id, url_id) REFERENCES urls(hostname_id, id)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) WITH (fillfactor = 90);
+COMMENT ON TABLE url_crawl_states IS 'Current refresh facts for every live URL, isolated from URL content revisions and deleted with its URL.';
+COMMENT ON COLUMN url_crawl_states.url_id IS 'URL owning this state; also the stable tie breaker for refresh selection.';
+COMMENT ON COLUMN url_crawl_states.hostname_id IS 'Owning URL hostname, enforced and propagated by the composite URL foreign key.';
+COMMENT ON COLUMN url_crawl_states.last_successful_crawl_at IS 'Latest completion without a network error and with a 2xx or 304 response; null prioritizes URLs with no successful crawl.';
+COMMENT ON COLUMN url_crawl_states.last_crawl_attempt_at IS 'Latest crawl reservation time, including pending and failed attempts; deliberately unindexed so attempt-only writes can remain HOT updates.';
+
+CREATE INDEX IF NOT EXISTS idx_url_crawl_states__hostname_recency
+ON url_crawl_states (hostname_id, last_successful_crawl_at ASC NULLS FIRST, url_id);
+
+CREATE OR REPLACE FUNCTION fn_create_url_crawl_states()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO url_crawl_states (url_id, hostname_id) VALUES (NEW.id, NEW.hostname_id);
+  RETURN NEW;
+END;
+$$;
+COMMENT ON FUNCTION fn_create_url_crawl_states() IS 'Creates null recency state for every inserted URL, including bulk and fixture writers, in the insertion transaction.';
+CREATE OR REPLACE TRIGGER trigger_create_url_crawl_states
+AFTER INSERT ON urls FOR EACH ROW EXECUTE FUNCTION fn_create_url_crawl_states();
 
 -- search urls by url prefix
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

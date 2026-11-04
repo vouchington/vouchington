@@ -3,7 +3,7 @@ import { referralCrawlDispatchConfig } from '@services/crawler-referral-links/wo
 import { referralUnfurlDispatchConfig } from '@services/referral-link-unfurl/work-limits'
 import { friendsDispatchConfig } from '@services/friend-recommendations/work-limits'
 import { crawlDispatchConfig, crawlCleanupMaxValues } from '@services/crawls/work-limits'
-import { crawlerRefreshWorkConfig } from '@services/crawlers/refresh-limits'
+import { crawlerRefreshRegistryEntry } from './registry-crawler-refresh.mts'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 export const streamDynamicConfigRegistryEntries = [
@@ -72,22 +72,7 @@ export const streamDynamicConfigRegistryEntries = [
       },
     },
   }),
-  defineDynamicConfigNamespace({
-    namespace: 'crawler-refresh-work-config',
-    label: 'Crawler refresh work',
-    description:
-      'Bounded URL candidate selection during crawler retries and weekly hostname refresh.',
-    config: crawlerRefreshWorkConfig,
-    access: { update_roles: ['developer'] },
-    fields: {
-      retry_crawl_url_count: {
-        description: 'Maximum alternative URL candidates considered for one hostname.',
-        minValue: 1,
-        maxValue: 20,
-        integer: true,
-      },
-    },
-  }),
+  crawlerRefreshRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'referral-crawl-dispatch-work-config',
     label: 'Referral crawl dispatch',

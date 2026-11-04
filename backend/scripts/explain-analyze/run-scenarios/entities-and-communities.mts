@@ -1,3 +1,4 @@
+import { runCrawlerRefreshScenario } from './crawler-refresh.mts'
 import { runRelationVoteReadScenarios } from './relation-vote-reads.mts'
 import { runCommunitySearchScenarios } from './community-search.mts'
 import { SEED_PREFIX, runAndCapture, seedPostId, seedTopicId, seedUser } from '../run-support.mts'
@@ -36,6 +37,8 @@ export async function runEntityAndCommunityScenarios() {
 
   await runPartitionPruningScenarios()
   await runRelationVoteReadScenarios()
+
+  await runCrawlerRefreshScenario()
 
   // Crawl lookup by URL ID
   const seedCrawlUrlId = `${SEED_PREFIX}-0300-7000-8000-000000000000`

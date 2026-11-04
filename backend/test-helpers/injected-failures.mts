@@ -69,7 +69,8 @@ export function rejectPostgresWriteForTest(
   const realWrite = psql.write
   const spy = vi.spyOn(psql, 'write').mockImplementation((query, ...rest) => {
     const text = typeof query === 'string' ? query : query.text
-    const values = typeof query === 'string' ? [] : (query.values ?? [])
+    const values =
+      typeof query === 'string' ? (Array.isArray(rest[0]) ? rest[0] : []) : (query.values ?? [])
     // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Callers inject non-Error rejection values on purpose.
     if (text.includes(marker) && matchesValues(values)) return Promise.reject(error)
     return realWrite(query, ...rest)

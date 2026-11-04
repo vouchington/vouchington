@@ -1509,6 +1509,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_post_moderation_retention_post_work_item(p_post_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO post_moderation_retention_post_work_items (post_id) VALUES (p_post_id)\n  ON CONFLICT (post_id) DO UPDATE\n  SET cursor_version_record_id = '00000000-0000-0000-0000-000000000000',\n      cursor_processing_version_record_id = NULL,\n      cursor_disposition_record_id = '00000000-0000-0000-0000-000000000000',\n      changed_at = CURRENT_TIMESTAMP;\nEND $function$\n",
       "returnsSet": false
     },
+    "fn_create_url_crawl_states()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_url_crawl_states()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO url_crawl_states (url_id, hostname_id) VALUES (NEW.id, NEW.hostname_id);\n  RETURN NEW;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
     "fn_create_user_individual_household()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id)\n  VALUES (NEW.id)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id)\n  VALUES (new_household_id, new_individual_id);\n\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
@@ -143716,6 +143720,135 @@
       },
       "uniqueConstraints": {}
     },
+    "url_crawl_states": {
+      "checkConstraints": {},
+      "columns": {
+        "hostname_id": {
+          "comment": "Owning URL hostname, enforced and propagated by the composite URL foreign key.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "last_crawl_attempt_at": {
+          "comment": "Latest crawl reservation time, including pending and failed attempts; deliberately unindexed so attempt-only writes can remain HOT updates.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "last_successful_crawl_at": {
+          "comment": "Latest completion without a network error and with a 2xx or 304 response; null prioritizes URLs with no successful crawl.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "url_id": {
+          "comment": "URL owning this state; also the stable tie breaker for refresh selection.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Current refresh facts for every live URL, isolated from URL content revisions and deleted with its URL.",
+      "foreignKeys": {
+        "fk_url_crawl_states__url": {
+          "columns": ["hostname_id", "url_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "CASCADE",
+          "referencedColumns": ["hostname_id", "id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_url_crawl_states__hostname_recency": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_crawl_states__hostname_recency ON public.url_crawl_states USING btree (hostname_id, last_successful_crawl_at NULLS FIRST, url_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "last_successful_crawl_at",
+              "descending": false,
+              "expression": "last_successful_crawl_at",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "url_crawl_states_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_crawl_states_pkey ON public.url_crawl_states USING btree (url_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "url_hostname_blocks": {
       "checkConstraints": {
         "chk_url_hostname_blocks__domain_source": {
@@ -145743,7 +145876,7 @@
         "idx_urls__hostname_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__hostname_id ON public.urls USING btree (hostname_id, id)",
+          "definition": "CREATE UNIQUE INDEX idx_urls__hostname_id ON public.urls USING btree (hostname_id, id)",
           "immediate": true,
           "keys": [
             {
@@ -145769,7 +145902,7 @@
           "predicate": null,
           "primary": false,
           "ready": true,
-          "unique": false,
+          "unique": true,
           "valid": true
         },
         "idx_urls__media_type_id": {
@@ -145926,6 +146059,9 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_create_url_crawl_states": {
+          "definition": "CREATE TRIGGER trigger_create_url_crawl_states AFTER INSERT ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_create_url_crawl_states()"
+        },
         "trigger_urls_updated_at": {
           "definition": "CREATE TRIGGER trigger_urls_updated_at BEFORE UPDATE ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }

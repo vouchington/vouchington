@@ -19,6 +19,21 @@ const VALID_RSS_FEED_CRAWL_FIELDS = {
 }
 
 describe('dynamic-config-admin registry validators', () => {
+  it('registers an integer crawl-attempt cooldown with bounded operator input', () => {
+    const entry = dynamicConfigRegistry.get('crawler-refresh-work-config')
+    expect(entry?.fields.recent_crawl_cooldown_minutes).toMatchObject({
+      minValue: 1,
+      maxValue: 10080,
+      integer: true,
+    })
+    expect(() =>
+      validateRegistryChange(entry, {
+        retry_crawl_url_count: 3,
+        recent_crawl_cooldown_minutes: 10081,
+      }),
+    ).toThrow('Field recent_crawl_cooldown_minutes must be less than or equal to 10080')
+  })
+
   it('rejects non-positive rate limit numbers', () => {
     const entry = dynamicConfigRegistry.get('rate-limit-thresholds')
 
