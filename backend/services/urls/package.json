@@ -27,6 +27,7 @@
     "@modules/membership-helpers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
@@ -40,14 +41,15 @@
     "@services/users": "workspace:^",
     "@services/web-risk": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/utils": "^0.11.1",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
+    "undici": "^8.12.3",
     "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
-    "@voucha/test-helpers": "workspace:^",
-    "undici": "^8.12.3"
+    "@voucha/test-helpers": "workspace:^"
   }
 }
