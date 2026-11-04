@@ -11580,9 +11580,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/queue-errors':
-        specifier: workspace:^
-        version: link:../../modules/queue-errors
       '@modules/search-utils':
         specifier: workspace:^
         version: link:../../modules/search-utils
@@ -11622,9 +11619,6 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      '@vouchington/utils':
-        specifier: ^0.11.1
-        version: 0.11.1
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
