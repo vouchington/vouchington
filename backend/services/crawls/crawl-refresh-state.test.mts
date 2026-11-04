@@ -1,9 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import { createCrawler } from '@services/crawlers'
 import { addUrl } from '@services/urls'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, beginTransaction } from '@voucha/test-helpers'
 import {
   readTestCrawlRefreshState,
   setTestCrawlRefreshState,
