@@ -45608,6 +45608,235 @@
       "source": "backend/api/v1/report-integrity/flags.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/report-integrity/flags/:id": {
+      "bodyKind": "content",
+      "hash": "ceb7cbd54afa70595f923135dfaf4f10e91f9726551acb1683b6f488e1ce2c6d",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/report-integrity/flags/:id",
+      "schema": {
+        "definitions": {
+          "Record<string,unknown>": {
+            "additionalProperties": {
+              "type": "unknown"
+            },
+            "properties": {},
+            "type": "object"
+          },
+          "ReportIntegrityFlag": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "details": {
+                "required": true,
+                "schema": {
+                  "name": "Record<string,unknown>",
+                  "type": "ref"
+                }
+              },
+              "entity_label": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "flag_type": {
+                "required": true,
+                "schema": {
+                  "type": "literal",
+                  "value": "mass_report_suspected"
+                }
+              },
+              "hostname_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "new_account_reporter_percent": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "post_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "reported_user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "reported_username": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "reporter_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "resolution": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "dismissed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "penalized"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "resolved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "resolved_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "resolver_display_name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "resolver_username": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "rss_feed_item_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "flag": {
+              "required": true,
+              "schema": {
+                "name": "ReportIntegrityFlag",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/report-integrity/flags.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/report-integrity/penalties": {
       "bodyKind": "content",
       "hash": "f5e1e0467a69bb0bc1f3c26a1cbdf9465c9fd7ef508d41eb042ef0d4e823e7f1",
@@ -106126,7 +106355,7 @@
       "migratedFrom": ["backend/api/v1/report-integrity/flags.mts"],
       "path": "/api/v1/report-integrity/flags",
       "responseSchema": {
-        "hash": "45c07609f91baedd2b421c63d07ef887493d6089da290bd3404ee07595352056",
+        "hash": "0c8a55205a6c7d8b749059adea267d1f62482caf476112b6b89bc3b70e0a64df",
         "key": "native.moderation.report-integrity.default"
       },
       "route": {
@@ -106150,7 +106379,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "19d14b5d12b0ba5e4de532879e3cedb2e5cd814a2c17f65f331ab8cacef808a5",
+        "hash": "7d3c9aa48341a0024b74d22db7e54899163450f40baa30a4b728a6a40e6030ca",
         "key": "native.moderation.report-integrity.pending"
       },
       "route": {
@@ -106174,11 +106403,35 @@
         "status": "resolved"
       },
       "responseSchema": {
-        "hash": "d665c8f050299c8976f03d1aef253d378e015e2467769ec7a951c12533cb061e",
+        "hash": "de30a4c0680c14571963e0772330445cbca9b08d88d320ad371ea428c05f5659",
         "key": "native.moderation.report-integrity.resolved"
       },
       "route": {
         "routeTemplate": "/api/v1/report-integrity/flags"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/report-integrity/flags/:id",
+      "bodyFile": "responses/native.moderation.report-integrity.flag.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.report-integrity.flag",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/report-integrity/flags.mts"],
+      "path": "/api/v1/report-integrity/flags/report-flag-1",
+      "responseSchema": {
+        "hash": "12bfa6efa7d3d932b51182ad4bf869eeefd0d0931afc048c2a826a5783d3636d",
+        "key": "native.moderation.report-integrity.flag"
+      },
+      "route": {
+        "pathParams": {
+          "id": "report-flag-1"
+        },
+        "routeTemplate": "/api/v1/report-integrity/flags/:id"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"

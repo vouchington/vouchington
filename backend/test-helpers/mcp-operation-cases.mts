@@ -177,8 +177,8 @@ export function currentOperationCases(): OperationCase[] {
     ...audiences.flatMap(audience => singleCases(audience, mergedNames)),
   ]
   if (
-    cases.length !== 346 ||
-    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 341
+    cases.length !== 347 ||
+    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 342
   )
     throw new Error('current operation inventory drift')
   for (const audience of audiences) {

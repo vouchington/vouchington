@@ -51,6 +51,7 @@ const groups = [
   group(
     'read_report_integrity',
     ['flags', 'list_report_integrity_flags'],
+    ['flag', 'get_report_integrity_flag'],
     ['penalties', 'list_report_abuse_penalties'],
   ),
   group(
@@ -184,12 +185,11 @@ export const adminMergedGroups = groups.map(entry => ({
   options: entry.options.map(([option, source]) => ({ option, source: sourceTool(source) })),
 }))
 
-function title(name: string): string {
-  return name
+const title = (name: string): string =>
+  name
     .split('_')
     .map(word => word[0]!.toUpperCase() + word.slice(1))
     .join(' ')
-}
 
 export const adminMergedTools = adminMergedGroups.map(entry =>
   createMergedTool(

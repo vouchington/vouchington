@@ -2067,6 +2067,19 @@
         "decision": false
       }
     ],
+    "GET:/api/v1/report-integrity/flags/:id": [
+      {
+        "audience": "admin",
+        "facts": "F14",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_report_integrity",
+          "option": "flag"
+        },
+        "decision": false
+      }
+    ],
     "GET:/api/v1/report-integrity/penalties": [
       {
         "audience": "admin",

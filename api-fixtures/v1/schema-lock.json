@@ -784,6 +784,10 @@
       ],
       "hash": "261a5636d06e9f619a06cecd55fc442e43b4c484b60c9f8e5c9f3d47b5c557be"
     },
+    "GET:/api/v1/report-integrity/flags/:id": {
+      "fixtureIds": ["native.moderation.report-integrity.flag"],
+      "hash": "ceb7cbd54afa70595f923135dfaf4f10e91f9726551acb1683b6f488e1ce2c6d"
+    },
     "GET:/api/v1/report-integrity/penalties": {
       "fixtureIds": [
         "native.moderation.report-integrity.penalties.active",
@@ -2367,7 +2371,11 @@
     },
     "native.moderation.report-integrity.default": {
       "fixtureIds": ["native.moderation.report-integrity.default"],
-      "hash": "45c07609f91baedd2b421c63d07ef887493d6089da290bd3404ee07595352056"
+      "hash": "0c8a55205a6c7d8b749059adea267d1f62482caf476112b6b89bc3b70e0a64df"
+    },
+    "native.moderation.report-integrity.flag": {
+      "fixtureIds": ["native.moderation.report-integrity.flag"],
+      "hash": "12bfa6efa7d3d932b51182ad4bf869eeefd0d0931afc048c2a826a5783d3636d"
     },
     "native.moderation.report-integrity.penalties.active": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.active"],
@@ -2419,7 +2427,7 @@
     },
     "native.moderation.report-integrity.pending": {
       "fixtureIds": ["native.moderation.report-integrity.pending"],
-      "hash": "19d14b5d12b0ba5e4de532879e3cedb2e5cd814a2c17f65f331ab8cacef808a5"
+      "hash": "7d3c9aa48341a0024b74d22db7e54899163450f40baa30a4b728a6a40e6030ca"
     },
     "native.moderation.report-integrity.resolution.dismissed": {
       "fixtureIds": ["native.moderation.report-integrity.resolution.dismissed"],
@@ -2427,7 +2435,7 @@
     },
     "native.moderation.report-integrity.resolved": {
       "fixtureIds": ["native.moderation.report-integrity.resolved"],
-      "hash": "d665c8f050299c8976f03d1aef253d378e015e2467769ec7a951c12533cb061e"
+      "hash": "de30a4c0680c14571963e0772330445cbca9b08d88d320ad371ea428c05f5659"
     },
     "native.moderation.report-judgement-run.pending": {
       "fixtureIds": ["native.moderation.report-judgement-run.pending"],
