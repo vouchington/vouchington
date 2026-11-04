@@ -4,7 +4,6 @@ import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 export type InvalidateCommunityMemberUserMetricsData = {
   communityId: string
   generation: string
-  minimumReplayLsn: string
   upperBoundMembershipId: string
   afterMembershipId?: string
 }

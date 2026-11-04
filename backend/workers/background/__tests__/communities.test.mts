@@ -42,7 +42,6 @@ describe('community member metric invalidation background handler', () => {
       const rootData = {
         communityId: community.id,
         generation: randomUUID(),
-        minimumReplayLsn: '0/0',
         upperBoundMembershipId: memberMembership.id,
       }
       const idPrefix = `communities.invalidateMemberUserMetrics__${community.id}__${rootData.generation}__`

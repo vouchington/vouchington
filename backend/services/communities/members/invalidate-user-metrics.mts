@@ -1,5 +1,4 @@
-import { beginTransaction, read, readPool } from '@data-stores/psql'
-import type { QueryExecutor } from '@data-stores/psql/types'
+import { read } from '@data-stores/psql'
 import { createHash } from 'node:crypto'
 import { enqueueInvalidateCommunityMemberUserMetrics } from '@queues/background/enqueues/communities'
 import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
@@ -13,7 +12,6 @@ type CommunityMemberMetricPageRow = { id: string; user_id: string }
 export type CommunityMemberMetricInvalidationMetadata = {
   xmin: string
   updatedAt: string
-  minimumReplayLsn: string
   upperBoundMembershipId: string | null
 }
 
@@ -29,9 +27,7 @@ export async function invalidateCommunityMemberUserMetricsPage(
   nextPageData: InvalidateCommunityMemberUserMetricsData | null
 }> {
   const pageSize = getCommunitiesWorkLimit('member_metric_invalidation_page_size')
-  const rows =
-    (await readReplicaCommunityMemberMetricPage(data, pageSize)) ??
-    (await readPrimaryCommunityMemberMetricPage(data, pageSize))
+  const rows = await readPrimaryCommunityMemberMetricPage(data, pageSize)
   await invalidateCommunityMemberUserMetrics(...rows.map(row => row.user_id))
   const last = rows.at(-1)
   return {
@@ -49,7 +45,6 @@ export function communityMemberMetricInvalidationData(
     generation: createHash('sha256')
       .update(`${communityId}\0${metadata.xmin}\0${metadata.updatedAt}`)
       .digest('hex'),
-    minimumReplayLsn: metadata.minimumReplayLsn,
     upperBoundMembershipId: metadata.upperBoundMembershipId,
   }
 }
@@ -79,36 +74,6 @@ export async function enqueueCommunityMemberMetricInvalidationBestEffort(
   )
 }
 
-async function readReplicaCommunityMemberMetricPage(
-  data: InvalidateCommunityMemberUserMetricsData,
-  pageSize: number,
-): Promise<CommunityMemberMetricPageRow[] | null> {
-  const client = await readPool.connect()
-  try {
-    await using transaction = await beginTransaction({ client })
-    const { rows } = await transaction<{
-      is_in_recovery: boolean
-      transaction_read_only: 'on' | 'off'
-      replay_caught_up: boolean
-    }>(
-      `/* communityMemberMetricReplicaBarrier */
-      SELECT pg_is_in_recovery() AS is_in_recovery,
-        current_setting('transaction_read_only') AS transaction_read_only,
-        COALESCE(pg_last_wal_replay_lsn() >= $1::pg_lsn, false) AS replay_caught_up`,
-      [data.minimumReplayLsn],
-    )
-    const state = rows[0]
-    const safeReader =
-      state?.transaction_read_only === 'off' || (state?.is_in_recovery && state.replay_caught_up)
-    if (!safeReader) return null
-    const page = await queryCommunityMemberMetricPage(transaction, data, pageSize)
-    await transaction.commit()
-    return page
-  } finally {
-    client.release()
-  }
-}
-
 async function readPrimaryCommunityMemberMetricPage(
   data: InvalidateCommunityMemberUserMetricsData,
   pageSize: number,
@@ -119,15 +84,6 @@ async function readPrimaryCommunityMemberMetricPage(
       readOnly: false,
     })
   ).rows
-}
-
-async function queryCommunityMemberMetricPage(
-  query: QueryExecutor,
-  data: InvalidateCommunityMemberUserMetricsData,
-  pageSize: number,
-): Promise<CommunityMemberMetricPageRow[]> {
-  const statement = communityMemberMetricPageStatement(data, pageSize)
-  return (await query<CommunityMemberMetricPageRow>(statement.text, statement.values)).rows
 }
 
 function communityMemberMetricPageStatement(
@@ -151,13 +107,11 @@ async function captureCommunityMemberMetricInvalidationMetadata(
   const { rows } = await read<{
     xmin: string
     updated_at: string
-    minimum_replay_lsn: string
     upper_bound_membership_id: string | null
   }>(
     sql`/* captureCommunityMemberMetricInvalidationMetadata */
       SELECT community.xmin::text AS xmin,
         community.updated_at::text AS updated_at,
-        pg_current_wal_insert_lsn()::text AS minimum_replay_lsn,
         (
           SELECT member.id
           FROM community_members member
@@ -175,7 +129,6 @@ async function captureCommunityMemberMetricInvalidationMetadata(
     ? {
         xmin: row.xmin,
         updatedAt: row.updated_at,
-        minimumReplayLsn: row.minimum_replay_lsn,
         upperBoundMembershipId: row.upper_bound_membership_id,
       }
     : null

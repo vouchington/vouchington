@@ -131,15 +131,9 @@ export function parseReconcileEntity(data: unknown): Record<string, unknown> {
   optionalBoolean(record, 'createdInWindow')
   if (record.communityInvalidation !== undefined) {
     const invalidation = asRecord(record.communityInvalidation, 'communityInvalidation')
-    assertExactKeys(invalidation, [
-      'xmin',
-      'updatedAt',
-      'minimumReplayLsn',
-      'upperBoundMembershipId',
-    ])
+    assertExactKeys(invalidation, ['xmin', 'updatedAt', 'upperBoundMembershipId'])
     requiredString(invalidation, 'xmin')
     requiredString(invalidation, 'updatedAt')
-    requiredString(invalidation, 'minimumReplayLsn')
     requiredNullableString(invalidation, 'upperBoundMembershipId')
   }
   return record

@@ -195,9 +195,8 @@ deletion from cascading into communities or requiring a worker to hold the whole
 - **Community member cache invalidation is paged.** Visibility, roster-visibility, archive and
   deletion mutations admit a post-commit dispatcher instead of loading every member on the request
   path. Each job invalidates one fixed-bound membership page and admits its cursor continuation.
-  The post-commit admission fixes the membership upper bound and records a writer WAL position.
-  Each job uses the replica only after it has replayed that position, otherwise that bounded page
-  reads the writer, so lag cannot create a skipped keyset gap. The entity-listener reconciliation
+  The post-commit admission fixes the membership upper bound. Each bounded page reads the primary,
+  so replica lag cannot create a skipped keyset gap. The entity-listener reconciliation
   window re-admits missed roots from the community's durable row generation, including deleted
   communities.
 - **A paged import survives a lost dispatcher.** User RSS and admin topic imports share the

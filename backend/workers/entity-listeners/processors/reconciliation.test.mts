@@ -104,7 +104,6 @@ describe('reconcileEntity', () => {
     const metadata = {
       xmin: '42',
       updatedAt: '2026-07-01 00:00:00.000001+00',
-      minimumReplayLsn: '0/16B6C50',
       upperBoundMembershipId: '00000000-0000-7000-8000-000000000001',
     }
 
@@ -131,7 +130,6 @@ describe('reconcileEntity', () => {
     expect(enqueueInvalidateCommunityMemberUserMetrics).toHaveBeenCalledWith({
       communityId: '00000000-0000-7000-8000-000000000001',
       generation: expect.any(String),
-      minimumReplayLsn: metadata.minimumReplayLsn,
       upperBoundMembershipId: metadata.upperBoundMembershipId,
     })
   })
