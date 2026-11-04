@@ -1773,6 +1773,15 @@ importers:
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../../data-stores/valkey-core
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@queues/crawl-embeds':
+        specifier: workspace:^
+        version: link:../../queues/crawl-embeds
+      '@queues/emails':
+        specifier: workspace:^
+        version: link:../../queues/emails
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -1902,13 +1911,6 @@ importers:
       '@workers/stripe-events-sqs':
         specifier: workspace:^
         version: link:../../workers/stripe-events-sqs
-    devDependencies:
-      '@data-stores/valkey-core':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-core
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
 
   backend/mcp:
     dependencies:

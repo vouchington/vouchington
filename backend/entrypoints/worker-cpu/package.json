@@ -49,6 +49,9 @@
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@queues/crawl-embeds": "workspace:^",
+    "@queues/emails": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "glide-mq": "^0.20.0"
   }

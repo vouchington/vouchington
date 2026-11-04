@@ -61,9 +61,5 @@
     "@workers/ses-bounce-sqs": "workspace:^",
     "@workers/ses-inbound-sqs": "workspace:^",
     "@workers/stripe-events-sqs": "workspace:^"
-  },
-  "devDependencies": {
-    "@data-stores/valkey-core": "workspace:^",
-    "@data-stores/valkey-glide-mq": "workspace:^"
   }
 }
