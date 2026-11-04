@@ -29,6 +29,10 @@ import { scheduledJobManifest as userRssFeedImports } from '@queues/user-rss-fee
 import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enqueues/schedules'
 import { scheduledJobManifest as hostnameBlocking } from '@queues/background/enqueues/hostname-blocking-schedules'
 import { scheduledJobManifest as topicMerge } from '@queues/background/enqueues/topic-merge-schedules'
+import { scheduledJobManifest as emails } from '@queues/emails/enqueues/schedules'
+import { scheduledJobManifest as crawlBrowser } from '@queues/crawl-browser/enqueues/schedules'
+import { scheduledJobManifest as crawlEmbeds } from '@queues/crawl-embeds/enqueues/schedules'
+import { scheduledJobManifest as imageUploads } from '@queues/image-uploads/enqueues/schedules'
 
 // Background domains register through one combined manifest, so the catalog lists that manifest.
 const background = combineBackgroundManifests([
@@ -63,8 +67,12 @@ export const SCHEDULED_JOB_MANIFESTS = [
   background,
   backgroundCpu,
   bloomFilters,
+  crawlBrowser,
+  crawlEmbeds,
+  emails,
   findYourFriends,
   heartbeat,
+  imageUploads,
   memberships,
   psql,
   rssFeedMaintenance,

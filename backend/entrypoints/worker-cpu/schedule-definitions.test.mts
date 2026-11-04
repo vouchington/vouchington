@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { upsertSchedules as upsertAiAgentsSchedules } from '@queues/ai-agents/enqueues/schedules'
 import { upsertSchedules as upsertQueueMetricsSchedules } from '@queues/heartbeat/enqueues/schedules'
+import { upsertSchedules as upsertCrawlBrowserSchedules } from '@queues/crawl-browser/enqueues/schedules'
+import { upsertSchedules as upsertImageUploadsSchedules } from '@queues/image-uploads/enqueues/schedules'
 import { upsertBackgroundCpuSchedules } from './background-cpu-schedules.mts'
 import { SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
 import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
@@ -17,5 +19,7 @@ describe('worker-cpu schedule definitions', () => {
     await expect(byQueue('background-cpu').load()).resolves.toBe(upsertBackgroundCpuSchedules)
     await expect(byQueue('ai_agents').load()).resolves.toBe(upsertAiAgentsSchedules)
     await expect(byQueue('heartbeat').load()).resolves.toBe(upsertQueueMetricsSchedules)
+    await expect(byQueue('crawl_browser').load()).resolves.toBe(upsertCrawlBrowserSchedules)
+    await expect(byQueue('image-uploads').load()).resolves.toBe(upsertImageUploadsSchedules)
   })
 })

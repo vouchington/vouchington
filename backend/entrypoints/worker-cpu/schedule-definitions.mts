@@ -22,5 +22,15 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     load: () =>
       import('@queues/ai-agents/enqueues/schedules').then(module => module.upsertSchedules),
   },
+  {
+    queueName: 'crawl_browser',
+    load: () =>
+      import('@queues/crawl-browser/enqueues/schedules').then(module => module.upsertSchedules),
+  },
+  {
+    queueName: 'image-uploads',
+    load: () =>
+      import('@queues/image-uploads/enqueues/schedules').then(module => module.upsertSchedules),
+  },
   ...IO_SCHEDULE_DEFINITIONS,
 ]

@@ -55,6 +55,15 @@ describe('worker queue policy', () => {
     expect(alwaysRunQueueNames(IO_SCHEDULE_DEFINITIONS)).toEqual([])
   })
 
+  it('reconciles schedules for every live GlideMQ worker queue, including empty manifests', () => {
+    const sqsQueues = new Set(sqsConsumerQueueNames())
+    expect(queueNames(CPU_SCHEDULE_DEFINITIONS).toSorted()).toEqual(
+      allLiveWorkerQueueNames()
+        .filter(queueName => !sqsQueues.has(queueName))
+        .toSorted(),
+    )
+  })
+
   it('backs every non-universal worker-cpu schedule queue with a live worker', () => {
     for (const queueName of queueNames(
       CPU_SCHEDULE_DEFINITIONS.filter(({ alwaysRun }) => !alwaysRun),
