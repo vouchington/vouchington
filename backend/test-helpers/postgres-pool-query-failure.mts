@@ -5,6 +5,10 @@ import { readPool, writePool } from '@data-stores/psql'
 import { getOptionalRequestClientInfo } from '../modules/request-client-info/index.mts'
 import { getActivityPubInboxTestRequestId } from './api/request-query-profile.mts'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
+import {
+  matchesPostgresQueryFailure,
+  type PostgresQueryFailureOptions,
+} from './postgres-query-failure-match.mts'
 
 type PoolLease = { pool: pg.Pool; client: pg.PoolClient; active: boolean; handedOff: boolean }
 const leaseContext = new AsyncLocalStorage<PoolLease>()
@@ -14,7 +18,7 @@ const failureContext = new AsyncLocalStorage<{ active: boolean }>()
 export async function withPostgresPoolQueryFailureForTest<Result>(
   queryMarker: string,
   operation: () => Promise<Result>,
-  options: { command?: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE'; requestId?: string } = {},
+  options: PostgresQueryFailureOptions = {},
 ): Promise<{ result: Result; error: Error }> {
   if (!/^\/\* [^*]+ \*\/$/.test(queryMarker))
     throw new Error('PostgreSQL fault injection requires an exact leading query annotation')
@@ -105,16 +109,6 @@ export async function withPostgresPoolQueryFailureForTest<Result>(
     ): pg.Pool['query'] {
       return ((...args: unknown[]) => {
         const input = args[0]
-        const text =
-          typeof input === 'string'
-            ? input
-            : typeof input === 'object' && input !== null && 'text' in input
-              ? String(input.text)
-              : ''
-        const target = text.trimStart()
-        const matchesCommand =
-          !options.command ||
-          target.slice(queryMarker.length).trimStart().startsWith(options.command)
         const ownsContext =
           failureContext.getStore() === context ||
           (options.requestId !== undefined &&
@@ -124,8 +118,7 @@ export async function withPostgresPoolQueryFailureForTest<Result>(
           !ownsContext ||
           !context.active ||
           fired ||
-          !target.startsWith(queryMarker) ||
-          !matchesCommand
+          !matchesPostgresQueryFailure(input, queryMarker, options)
         )
           return Reflect.apply(query, pool, args)
         if (
