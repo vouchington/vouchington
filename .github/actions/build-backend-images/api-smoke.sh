@@ -128,11 +128,22 @@ echo "✓ an unknown command exited $STATUS without serving"
 
 # The staging Aurora wake keeps a connection open for the duration it is given; one second
 # ends within about a second. Outside staging it must refuse before connecting.
-docker run --rm --network host \
+timeout 30 docker run --rm --network host \
   -e NODE_ENV=staging -e ENVIRONMENT=staging \
   -e DATABASE_URL="$RESET_DATABASE_URL" -e VALKEY_URL \
   "$IMAGE" staging-aurora-wake.mts 1
 echo "✓ staging-aurora-wake.mts 1 exited 0"
+# A wake that never reaches the database must fail, not report that Aurora stayed awake.
+STATUS=0
+timeout 30 docker run --rm --network host \
+  -e NODE_ENV=staging -e ENVIRONMENT=staging \
+  -e DATABASE_URL="postgres://postgres@127.0.0.1:1/postgres" -e VALKEY_URL \
+  "$IMAGE" staging-aurora-wake.mts 1 >/dev/null 2>&1 || STATUS=$?
+if [ "$STATUS" = 0 ] || [ "$STATUS" = 124 ]; then
+  echo "✗ staging-aurora-wake.mts did not fail without a database (exit $STATUS)"
+  exit 1
+fi
+echo "✓ staging-aurora-wake.mts failed without a database (exit $STATUS)"
 STATUS=0
 timeout 30 docker run --rm --network host \
   -e NODE_ENV=staging -e ENVIRONMENT=production \

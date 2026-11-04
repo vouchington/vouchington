@@ -22,10 +22,12 @@ process.once('SIGTERM', () => stop.abort())
 process.once('SIGINT', () => stop.abort())
 const { write, onGracefulShutdown } = await import('@data-stores/psql')
 const deadline = Date.now() + seconds * 1000
+let queried = false
 while (!stop.signal.aborted && Date.now() < deadline) {
   try {
     // oxlint-disable-next-line no-await-in-loop -- one connection attempt per interval until the deadline
     await write('/* stagingAuroraWake */ SELECT 1')
+    queried = true
   } catch (err) {
     // The first attempts can land while Aurora is still resuming.
     console.error('staging wake query failed', err)
@@ -36,4 +38,9 @@ while (!stop.signal.aborted && Date.now() < deadline) {
   }).catch(ignoreStopSignal)
 }
 await onGracefulShutdown()
+// A task that never reached the database did not keep Aurora awake, so it must not report success.
+if (!queried) {
+  console.error('staging wake never completed a query')
+  process.exitCode = 1
+}
 /* c8 ignore stop */
