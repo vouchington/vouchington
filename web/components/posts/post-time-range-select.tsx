@@ -25,6 +25,7 @@ import {
 
 interface PostTimeRangeSelectProps {
   /** Ranges offered, in display order. Defaults to every range. */
+  preserveDefault?: boolean
   options?: readonly PostTimeRange[]
   /** Overrides the range read from the URL. */
   value?: PostTimeRange
@@ -40,6 +41,7 @@ export function PostTimeRangeSelect(props: PostTimeRangeSelectProps) {
 
 function PostTimeRangeSelectContent({
   options = POST_TIME_RANGES,
+  preserveDefault = false,
   value,
 }: PostTimeRangeSelectProps) {
   const t = useTranslations()
@@ -58,7 +60,7 @@ function PostTimeRangeSelectContent({
 
   function select(range: PostTimeRange) {
     const params = new URLSearchParams(searchParams.toString())
-    if (range === DEFAULT_POST_TIME_RANGE && options.includes('all')) params.delete('time_range')
+    if (range === DEFAULT_POST_TIME_RANGE && !preserveDefault) params.delete('time_range')
     else params.set('time_range', range)
     params.delete('after')
     push(`?${params.toString()}`, { scroll: false })

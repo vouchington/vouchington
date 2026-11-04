@@ -1,3 +1,4 @@
+import { getHackerNewsConfig } from '@/lib/api/server/hacker-news-config'
 export const dynamic = 'force-dynamic'
 
 import type { Metadata, Viewport } from 'next'
@@ -68,13 +69,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // uiLocale comes only from getResolvedUiLocale() so this file cannot drift.
   const t = await getTranslations()
-  const [user, headersList, uiLocale, globalFeatureFlags] = await Promise.all([
+  const [user, headersList, uiLocale, globalFeatureFlags, hackerNewsConfig] = await Promise.all([
     getCurrentUser(),
     headers(),
     getResolvedUiLocale(),
     getGlobalServerFeatureFlags(),
+    getHackerNewsConfig(),
   ])
   const nonce = headersList.get('x-nonce') ?? undefined
   const runtimePublicConfig = getServerRuntimePublicConfig(process.env, {
@@ -89,7 +90,6 @@ export default async function RootLayout({
   // Docker image can deploy to staging and production with different values.
   const imageOrigin = getServerImageOrigin()
   const imageOriginScript = serializeImageOriginBootstrapScript(imageOrigin)
-  // Catalog leaves are strings or data-only plural descriptors, so a route batch can seed the client cache.
   const uiMessages = await loadServerMessages(uiLocale)
   const uiMessagesScript = serializeUiMessagesBootstrapScript({
     locale: uiLocale,
@@ -183,10 +183,10 @@ export default async function RootLayout({
         </UiMessagesHydrator>
         <ServiceWorkerRegistrar currentUserId={user?.id} />
         <ScrollToTop />
-        {/* Siblings above render outside RuntimePublicConfigProvider; config consumers belong in RootAppShell. */}
         <RootAppShell
           currentUser={user}
           globalFeatureFlags={globalFeatureFlags}
+          hackerNewsConfig={hackerNewsConfig}
           isStandaloneLandingPage={isStandaloneLandingPage}
           initialPathname={pathname ?? '/'}
           mainContent={mainContent}

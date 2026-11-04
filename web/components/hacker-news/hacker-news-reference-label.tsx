@@ -1,5 +1,7 @@
 'use client'
 
+import { useHackerNewsConfig } from './hacker-news-config-context'
+
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatNumber } from '@ts-shared/utils/format'
@@ -11,9 +13,11 @@ import { useHackerNewsReferenceCounts } from './use-hacker-news-reference-counts
  */
 export function HackerNewsReferenceLabel({ entityId }: { entityId: string }) {
   const counts = useHackerNewsReferenceCounts(entityId)
+  const { references_visible } = useHackerNewsConfig()
   const t = useTranslations()
   const uiLocale = useUiLocale()
-  if (!counts || (counts.story_count === 0 && counts.comment_count === 0)) return null
+  if (!references_visible || !counts || (counts.story_count === 0 && counts.comment_count === 0))
+    return null
   const stories = counts.story_count > 0
   const comments = counts.comment_count > 0
   return (

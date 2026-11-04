@@ -1,5 +1,7 @@
 'use client'
 
+import { useHackerNewsConfig } from './hacker-news-config-context'
+
 import { Card } from '@/components/ui/card'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
@@ -31,9 +33,14 @@ export function HackerNewsReferencesAside({
 }: {
   references: HackerNewsReferenceDetail | undefined
 }) {
+  const { references_visible } = useHackerNewsConfig()
   const t = useTranslations()
   const uiLocale = useUiLocale()
-  if (!references || (references.stories.length === 0 && references.comments.length === 0)) {
+  if (
+    !references_visible ||
+    !references ||
+    (references.stories.length === 0 && references.comments.length === 0)
+  ) {
     return null
   }
   return (

@@ -1,5 +1,7 @@
 'use client'
 
+import { useHackerNewsConfig } from '@/components/hacker-news/hacker-news-config-context'
+
 /**
  * Post filters component
  * Horizontal scrollable filter chips for mobile-friendly filtering
@@ -46,7 +48,11 @@ function PostFiltersContent({
 }: PostFiltersProps) {
   const t = useTranslations()
   const searchParams = useSearchParams()
-  const hackerNews = showHackerNewsFilter && searchParams.get(HACKER_NEWS_FILTER_PARAM) === '1'
+  const hnConfig = useHackerNewsConfig()
+  const hackerNews =
+    hnConfig.references_visible &&
+    showHackerNewsFilter &&
+    searchParams.get(HACKER_NEWS_FILTER_PARAM) === '1'
   const resolvedSortOptions = sortOptions ?? [
     {
       label: t('extracted.posts.postFilters.hot_0ec53894'),
@@ -81,8 +87,24 @@ function PostFiltersContent({
     >
       {showTimeRange && (
         <PostTimeRangeSelect
-          options={hackerNews ? POST_TIME_RANGES.filter(range => range !== 'all') : undefined}
-          value={hackerNews ? hackerNewsPostTimeRange(searchParams.get('time_range')) : undefined}
+          preserveDefault={hackerNews}
+          options={
+            hackerNews
+              ? POST_TIME_RANGES.filter(
+                  range =>
+                    POST_TIME_RANGES.indexOf(range) <=
+                    POST_TIME_RANGES.indexOf(hnConfig.post_time_range_cap),
+                )
+              : undefined
+          }
+          value={
+            hackerNews
+              ? hackerNewsPostTimeRange(
+                  searchParams.get('time_range'),
+                  hnConfig.post_time_range_cap,
+                )
+              : undefined
+          }
         />
       )}
       {showHackerNewsFilter ? <HackerNewsFilterToggle boundPostTimeRange={showTimeRange} /> : null}

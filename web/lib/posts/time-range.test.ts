@@ -24,3 +24,12 @@ describe('hackerNewsPostTimeRange', () => {
     }
   })
 })
+
+describe('operator cap', () => {
+  it('clamps wider Hacker News ranges', () => {
+    expect(hackerNewsPostTimeRange('1w', '1m')).toBe('1w')
+    expect(hackerNewsPostTimeRange('1y', '1m')).toBe('1m')
+    expect(hackerNewsPostTimeRange('all', 'all')).toBe('all')
+    expect(hackerNewsPostTimeRange(undefined, 'all')).toBe('all')
+  })
+})

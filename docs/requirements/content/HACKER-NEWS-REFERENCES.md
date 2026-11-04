@@ -26,3 +26,20 @@ next canonical update flattens it.
 - Each reference is a link out to the Hacker News item. Voucha does not copy comment text, post on
   Hacker News, or run an agent there.
 - Lists can be filtered to items that have references.
+
+## Operational controls
+
+Operators can independently hide references and pause external lookups. Hiding references also
+ignores the list filter; it leaves stored references, lookups, and retention intact. The post list's
+maximum time range is separately configurable to limit filter cost.
+
+Pausing lookups leaves stored references visible and retention active. Jobs that reach a worker
+while paused finish without fetching and are not replayed automatically. Re-enabling does not run
+a catch-up sweep: later detail views admit missing or sufficiently old references, and subsequent qualifying URL
+or canonical changes can admit work again. A previously fresh URL whose refresh was dropped waits
+until it is old enough or another qualifying event occurs; an unattended URL can remain stale. A request already in
+flight may finish; incomplete results are discarded when pulling has been disabled.
+
+Backend configuration propagates through Valkey notifications with a periodic refresh fallback.
+Open web pages poll the public configuration and refresh their data after changes; background timer
+throttling, connectivity failures, and service outages can delay convergence.

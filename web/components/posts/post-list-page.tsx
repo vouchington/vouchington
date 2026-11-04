@@ -1,3 +1,4 @@
+import { getHackerNewsConfig } from '@/lib/api/server/hacker-news-config'
 /**
  * Post list page component (Server Component)
  * Fetches posts data and renders filters, sort, and list
@@ -39,13 +40,14 @@ export async function PostListPage({ config, searchParams }: PostListPageProps) 
   const topics = joinSearchParamValues(params.topics)
   const sort = typeof params.sort === 'string' ? params.sort : 'hot'
   const postTypes = config.postTypes?.join(',')
-  const hackerNews = params[HACKER_NEWS_FILTER_PARAM] === '1'
+  const hnConfig = await getHackerNewsConfig()
+  const hackerNews = hnConfig.references_visible && params[HACKER_NEWS_FILTER_PARAM] === '1'
   const queryParams = {
     ...(q ? { q } : {}),
     ...(topics ? { topics } : {}),
     ...(postTypes ? { post_types: postTypes } : {}),
     ...(hackerNews
-      ? { time_range: hackerNewsPostTimeRange(params.time_range) }
+      ? { time_range: hackerNewsPostTimeRange(params.time_range, hnConfig.post_time_range_cap) }
       : postTimeRangeParams(params.time_range)),
     ...(hackerNews ? { has_hacker_news_references: true } : {}),
     sort,
