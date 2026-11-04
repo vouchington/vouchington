@@ -29,7 +29,7 @@ type PostSearchFilterOptions = {
   story_id?: string // Filter posts linked to a specific story
   include_topic_recommendations?: boolean // Internal opt-in for dedicated recommendation flows
   drafts?: boolean // Show unpublished posts
-  time_range?: TimeRange // Time range filter (default: '1w' for feeds, 'all' for search)
+  time_range?: TimeRange // Time range filter (post search defaults to '1m'; 'all' is explicit)
   exclude_for_user_id?: string // Exclude muted/blocked hostnames, topics, and users for this user
   // Judge every candidate as a signed-out reader would, whoever `currentUser` is, so private data
   // stays out of the results even for its owner or an administrator. Only MCP `read_posts(search)` sets it:

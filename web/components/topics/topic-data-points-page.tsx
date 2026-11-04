@@ -6,6 +6,7 @@ import { canCurrentUserSeeDownvotes } from '@/lib/permissions/can-see-downvotes'
 import { ListSearchError } from '@/components/shared/list-search-error'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { postTimeRangeParams } from '@/lib/posts/time-range'
 import { getStandardPostSort } from './topic-post-sort'
 
 export async function TopicDataPointsPage({
@@ -22,6 +23,7 @@ export async function TopicDataPointsPage({
     data_point_topic: id,
     post_types: 'data_point',
     ...(q ? { q } : {}),
+    ...postTimeRangeParams(searchParams?.time_range),
     sort,
     limit: 25,
   }
@@ -36,7 +38,10 @@ export async function TopicDataPointsPage({
   const hasSearchError = isListSearchErrorResult(dataResult)
   return (
     <div className='space-y-4'>
-      <PostFilters defaultSort={sort} />
+      <PostFilters
+        defaultSort={sort}
+        showTimeRange
+      />
       {hasSearchError ? (
         <ListSearchError
           t={t}

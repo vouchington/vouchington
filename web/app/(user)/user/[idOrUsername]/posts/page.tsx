@@ -6,9 +6,16 @@ export const metadata = createNoIndexMetadata()
 
 interface PageProps {
   params: Promise<{ idOrUsername: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function UserPostsAllRoute({ params }: PageProps) {
+export default async function UserPostsAllRoute({ params, searchParams }: PageProps) {
   const { idOrUsername } = await params
-  return <UserPostsPage idOrUsername={idOrUsername} />
+  const { time_range } = await searchParams
+  return (
+    <UserPostsPage
+      idOrUsername={idOrUsername}
+      timeRange={time_range}
+    />
+  )
 }

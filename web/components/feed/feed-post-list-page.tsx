@@ -42,6 +42,8 @@ export async function FeedPostListPage({ config, searchParams }: FeedPostListPag
   const currentUser = await getCurrentUser()
   const queryParams = {
     limit: FEED_PAGE_LIMIT,
+    // The Feed always shows the last 7 days, for every sort, and has no time dropdown.
+    time_range: '1w',
     sort,
     ...(query ? { q: query } : {}),
   }

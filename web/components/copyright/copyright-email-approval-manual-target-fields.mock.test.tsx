@@ -167,6 +167,7 @@ describe('CopyrightEmailApprovalManualTargetFields', () => {
     expect(fetchPosts).toHaveBeenCalledWith({
       q: 'Harbour',
       limit: 10,
+      time_range: 'all',
       signal: expect.any(AbortSignal),
     })
     expect(screen.queryByText('post-2')).not.toBeInTheDocument()

@@ -44,14 +44,12 @@ describe('buildTimeRangeFilter', () => {
   })
 
   it.each([
-    ['2024-01-31T23:59:59.999Z', '1m', '2023-12-31T23:59:59.999Z'],
-    ['2024-02-01T00:00:00.000Z', '1m', '2024-01-01T00:00:00.000Z'],
-    ['2024-02-29T23:59:59.999Z', '1m', '2024-01-29T23:59:59.999Z'],
-    ['2024-03-01T00:00:00.000Z', '1m', '2024-02-01T00:00:00.000Z'],
-    ['2024-03-31T23:59:59.999Z', '1m', '2024-03-02T23:59:59.999Z'],
-    ['2024-04-01T00:00:00.000Z', '1m', '2024-03-01T00:00:00.000Z'],
+    ['2024-01-31T23:59:59.999Z', '1m', '2024-01-01T23:59:59.999Z'],
+    ['2024-03-01T00:00:00.000Z', '1m', '2024-01-31T00:00:00.000Z'],
+    ['2024-03-31T23:59:59.999Z', '1m', '2024-03-01T23:59:59.999Z'],
+    ['2024-04-01T00:00:00.000Z', '1m', '2024-03-02T00:00:00.000Z'],
     ['2024-02-29T12:00:00.000Z', '1y', '2023-03-01T12:00:00.000Z'],
-    ['2025-01-01T00:00:00.000Z', '1m', '2024-12-01T00:00:00.000Z'],
+    ['2025-01-01T00:00:00.000Z', '1m', '2024-12-02T00:00:00.000Z'],
   ] as const)('uses the supplied %s decision instant for %s', (instant, range, cutoff) => {
     const filter = buildTimeRangeFilter(range, 'posts.id', new Date(instant))
     expect(filter?.values).toEqual([timestampToUuidv7LowerBound(Date.parse(cutoff))])
@@ -82,14 +80,12 @@ describe('getTimeRangeLowerBoundDate', () => {
     }
   })
 
-  it('returns a date 1 UTC month before the pinned clock for "1m"', () => {
+  it('returns a date exactly 30 days before the pinned clock for "1m"', () => {
     for (const now of proofInstants()) {
-      const expected = new Date(now)
-      expected.setUTCMonth(expected.getUTCMonth() - 1)
       const bound = getTimeRangeLowerBoundDate('1m', now)
 
       expect(bound).not.toBeNull()
-      expect(bound!.getTime()).toBe(expected.getTime())
+      expect(bound!.getTime()).toBe(now.getTime() - 30 * ONE_DAY_MS)
     }
   })
 

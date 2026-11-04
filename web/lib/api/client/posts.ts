@@ -55,6 +55,8 @@ interface FetchPostsOptions {
   after?: string // Cursor for pagination
   /** Embedding-ranked semantic search query; blended with q when both present. */
   semantic_search_query?: string
+  /** Search window; the API searches 30 days when omitted. Pickers pass 'all'. */
+  time_range?: '1w' | '1m' | '1y' | 'all'
   signal?: AbortSignal // Request cancellation signal
 }
 
@@ -75,6 +77,7 @@ export async function fetchPosts(options: FetchPostsOptions = {}): Promise<Posts
       limit: options.limit,
       after: options.after,
       semantic_search_query: options.semantic_search_query,
+      time_range: options.time_range,
     },
     signal: options.signal,
   })

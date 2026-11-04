@@ -2,6 +2,9 @@ import type { ExplainResult } from '@data-stores/psql'
 import { collectPlanNodes } from '../plan-nodes.mts'
 import { SEMANTIC_POST_CANDIDATE_LIMIT } from '@services/posts/search/query-builder/semantic-candidates'
 
+// Literal bound under custom plans, parameter under generic plans.
+const SEMANTIC_TIME_BOUND = /\bid >= (?:'[0-9a-f-]{36}'::uuid|\$\d+)/
+
 export function assertSemanticPostCandidatePlan(result: ExplainResult): void {
   if (
     !result.scenario_id?.startsWith('post-search-semantic-') &&
@@ -26,6 +29,24 @@ export function assertSemanticPostCandidatePlan(result: ExplainResult): void {
   )
   if (unboundedOuterPostScan) {
     throw new Error(`${result.name} must look up outer posts from the bounded candidates`)
+  }
+  if (result.scenario_id?.endsWith('-1m')) {
+    const bounded = collectPlanNodes(candidate).some(
+      node =>
+        /^posts(?:_|$)/.test(String(node['Relation Name'])) &&
+        [node.Filter, node['Index Cond'], node['Recheck Cond']].some(
+          condition => typeof condition === 'string' && SEMANTIC_TIME_BOUND.test(condition),
+        ),
+    )
+    if (!bounded) {
+      throw new Error(`${result.name} must bound the candidate posts scan by the time range`)
+    }
+    // A narrow window may correctly use an exact sort, so only record which path the planner took.
+    const types = [...new Set(collectPlanNodes(candidate).map(node => String(node['Node Type'])))]
+    console.log(
+      `${result.name}: ${result.plan_cache_mode ?? 'default'} candidate plan nodes ${types.join(', ')}`,
+    )
+    return
   }
   // Runtime forces custom plans; generic plans remain measured to expose prepared-plan regressions.
   if (result.plan_cache_mode === 'force_generic_plan') return

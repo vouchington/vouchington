@@ -1,4 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { buildTimeRangeFilter } from '@modules/feed-query-builders'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions } from '../types.mts'
 import { buildPostSearchAuthorFilter } from './base-filters.mts'
@@ -49,6 +50,13 @@ export function buildSemanticPostCandidates(
       .append(sql` AND `)
       .append(buildPostSearchAuthorFilter(options.user_id, 'semantic_vector_post'))
   }
+  // Bound the vector scan itself; the LATERAL's time filter alone leaves old rows to be walked
+  // and rejected up to hnsw.max_scan_tuples.
+  const timeRangeFilter = buildTimeRangeFilter(
+    options.time_range ?? 'all',
+    'semantic_vector_post.id',
+  )
+  if (timeRangeFilter) query.append(sql` AND `).append(timeRangeFilter)
   query.append(sql`
     ORDER BY semantic_vector_post.bedrock_nova_multimodal_v1_embedding <=>
       semantic_search_embedding.embedding

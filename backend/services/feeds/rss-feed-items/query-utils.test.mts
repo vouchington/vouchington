@@ -14,7 +14,7 @@ describe('RSS feed cutoff', () => {
 
   it('derives the timestamp and exact UUID minimum from one supplied instant', () => {
     const now = new Date('2024-04-01T00:00:00.000Z')
-    const cutoff = new Date('2024-03-01T00:00:00.000Z')
+    const cutoff = new Date('2024-03-02T00:00:00.000Z')
     expect(getCutoffDateForTimeRange('1m', now)).toEqual({
       cutoffDate: cutoff,
       itemCutoffId: getMinUUIDv7ForDate(cutoff),

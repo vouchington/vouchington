@@ -22,10 +22,7 @@ const MIN_QUERY_LENGTH = 3
 /** Number of similar results to request per panel. */
 const SIMILAR_LIMIT = 5
 
-/**
- * Maximum characters sent as the similarity query. Keeps GET URLs short and
- * avoids 414/network errors when markdown is several KB long.
- */
+/** Maximum characters sent as the similarity query; keeps GET URLs short (avoids 414s). */
 const MAX_QUERY_CHARS = 300
 
 interface SimilarityPanelsProps {
@@ -143,12 +140,13 @@ export function SimilarityPanels({
 
   // Request one extra post when excluding the reviewed recommendation post so
   // filtering it out client-side doesn't leave an empty slot in the panel.
+  const postsSearch = { sort: 'relevance', time_range: 'all' } as const // admin lookup: full history
   const postsLimit = excludePostId ? SIMILAR_LIMIT + 1 : SIMILAR_LIMIT
   const { data: postsData, isLoading: postsLoading } = useSimilarEntities<PostsResponseBody>({
     query: effectiveQuery,
     enabled,
     fetcher: (q, signal) =>
-      fetchPosts({ semantic_search_query: q, sort: 'relevance', limit: postsLimit, signal }),
+      fetchPosts({ semantic_search_query: q, limit: postsLimit, signal, ...postsSearch }),
   })
 
   const { data: newsData, isLoading: newsLoading } =

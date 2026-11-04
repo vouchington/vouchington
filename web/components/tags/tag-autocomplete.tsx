@@ -39,7 +39,7 @@ export function TagAutocomplete({
     }
 
     if (objectType === 'post') {
-      const res = await fetchPosts({ q, limit: 10, signal })
+      const res = await fetchPosts({ q, limit: 10, time_range: 'all', signal })
       return Object.values(res.posts ?? {}).filter(p => !resolvedExcludeIds.includes(p.id))
     }
 

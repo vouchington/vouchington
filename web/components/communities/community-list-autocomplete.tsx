@@ -50,7 +50,7 @@ async function searchByItemType(
       return feeds.map(f => ({ id: f.id, displayName: f.title, kind: 'ui-text' as const }))
     }
     case 'post': {
-      const res = await fetchPosts({ q, limit: 10, signal })
+      const res = await fetchPosts({ q, limit: 10, time_range: 'all', signal })
       return res.results.flatMap<SearchResult>(r => {
         const post = res.posts?.[r.id]
         if (!post) return []

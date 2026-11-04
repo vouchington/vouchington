@@ -34,7 +34,12 @@ export function postSearchFilterSchemaProperties() {
     data_point_vertical: { type: 'string' },
     review_topic: topicReferenceSchema,
     story_id: { type: 'string', format: 'uuid' },
-    time_range: { type: 'string', enum: ['1d', '1w', '1m', '1y', 'all'] },
+    time_range: {
+      type: 'string',
+      enum: ['1d', '1w', '1m', '1y', 'all'],
+      description:
+        'Only posts from this window. Defaults to 1m (30 days); pass all for the full history.',
+    },
     topic: topicReferenceSchema,
     topics: { type: 'array', items: topicReferenceSchema },
     url: {

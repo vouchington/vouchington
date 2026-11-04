@@ -9,6 +9,7 @@ describe('semantic candidate window', () => {
       text_search_query: 'hybrid',
       semanticSearchEmbedding: [1, ...Array<number>(1023).fill(0)],
       user_id: '019e0000-0000-7000-8000-000000000001',
+      time_range: '1w',
       sort: 'relevance',
       ranking_lt: 0.6,
       id_lt: '019e0000-0000-7000-8000-000000000002',
@@ -29,6 +30,9 @@ describe('semantic candidate window', () => {
     expect(candidateSql).toContain('AND posts.id = semantic_vector_post.id')
     expect(candidateSql).toContain('AND semantic_vector_post.created_by_id =')
     expect(candidateSql).toContain('LIMIT 1\n    ) semantic_eligible_post')
+    expect(candidateSql.slice(candidateSql.indexOf('semantic_eligible_post\n'))).toContain(
+      'semantic_vector_post.id >=',
+    )
     expect(candidateSql.indexOf('posts.search_vector @@')).toBeLessThan(
       candidateSql.indexOf('LIMIT 1'),
     )

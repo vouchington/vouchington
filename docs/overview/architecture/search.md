@@ -93,6 +93,10 @@ When both `text_search_query` and `semantic_search_query` are provided, their sc
 
 The `hot` sort uses the same three-day decay expression as post feeds and trending posts. Its clock-skew and future-UUID behavior is canonical in the shared hot-score builder.
 
+## Time bound
+
+Post search is always bounded by time, so a request reads a recent window of the newest-first id index rather than the whole table, and callers opt into longer history explicitly. The personal Feed is a separate default. Exact lookups and counts (RSS XML, pickers, facets, URL-id lookups) must not lose rows, so they opt out of the default instead of inheriting it.
+
 ## Visibility & Moderation Filtering
 
 - **Privacy/broadcast**: `buildPrivacyFilter()` applies audience rules (anonymous, logged-in, followers, mutual followers)
