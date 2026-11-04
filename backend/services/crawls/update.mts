@@ -92,14 +92,14 @@ export const updateCrawl = async (
       AND id = $${values.length}
     RETURNING ${crawlBasicColumns}
     ), recorded_success AS (
-      UPDATE urls
-      SET last_successful_crawl_at = GREATEST(urls.last_successful_crawl_at, updated.completed_at)
+      UPDATE url_crawl_state
+      SET last_successful_crawl_at = GREATEST(url_crawl_state.last_successful_crawl_at, updated.completed_at)
       FROM updated
-      WHERE urls.id = updated.url_id
+      WHERE url_crawl_state.url_id = updated.url_id
         AND updated.completed_at IS NOT NULL
         AND updated.network_error IS NULL
         AND (updated.response_status_code BETWEEN 200 AND 299 OR updated.response_status_code = 304)
-        AND (urls.last_successful_crawl_at IS NULL OR urls.last_successful_crawl_at < updated.completed_at)
+        AND (url_crawl_state.last_successful_crawl_at IS NULL OR url_crawl_state.last_successful_crawl_at < updated.completed_at)
     )
     SELECT ${crawlBasicColumns} FROM updated
   `,

@@ -59,20 +59,28 @@ export const searchCrawlerRefreshUrlCandidatesByHostnameId = async (
   excludeUrlIds: string[] = [],
 ): Promise<CrawlerRefreshCandidateUrl[]> => {
   const cooldownMinutes = getRecentCrawlCooldownMinutes()
+  // Keep payload lookups parameterized when a generic plan estimates a larger candidate page.
   const query = sql`/* searchCrawlerRefreshUrlCandidatesByHostnameId */
     SELECT u.id, u.url
-    FROM urls u
-    JOIN url_hostnames h ON h.id = u.hostname_id
-    WHERE u.hostname_id = ${hostnameId}
+    FROM url_crawl_state state
+    JOIN url_hostnames h ON h.id = state.hostname_id
+    JOIN LATERAL (
+      SELECT id, url FROM urls
+      WHERE id = state.url_id AND hostname_id = state.hostname_id
+      LIMIT 1
+    ) u ON TRUE
+    WHERE state.hostname_id = ${hostnameId}
       AND NOT h.is_blocked
       AND h.is_crawlable
-      AND (u.last_crawl_attempt_at IS NULL OR u.last_crawl_attempt_at <=
+      AND (state.last_crawl_attempt_at IS NULL OR state.last_crawl_attempt_at <=
         CURRENT_TIMESTAMP - make_interval(mins => ${cooldownMinutes}::int))
   `
   if (excludeUrlIds.length > 0) {
-    query.append(sql` AND NOT (u.id = ANY(${excludeUrlIds}::UUID[]))`)
+    query.append(sql` AND NOT (state.url_id = ANY(${excludeUrlIds}::UUID[]))`)
   }
-  query.append(sql` ORDER BY u.last_successful_crawl_at ASC NULLS FIRST, u.id LIMIT ${limit}`)
+  query.append(
+    sql` ORDER BY state.last_successful_crawl_at ASC NULLS FIRST, state.url_id LIMIT ${limit}`,
+  )
 
   // Immediate retry selection must observe a reservation just written on the primary.
   const { rows } = await write<CrawlerRefreshCandidateUrl>(query, undefined, queryOptions)

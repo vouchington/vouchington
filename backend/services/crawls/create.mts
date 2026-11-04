@@ -34,11 +34,11 @@ export const createCrawl = async (
     VALUES ($1, $2, $3, $4, '{}'::jsonb, '{}'::jsonb, 200, '')
     RETURNING ${crawlBasicColumns}
     ), recorded_attempt AS (
-      UPDATE urls
-      SET last_crawl_attempt_at = GREATEST(urls.last_crawl_attempt_at, inserted.created_at)
+      UPDATE url_crawl_state
+      SET last_crawl_attempt_at = GREATEST(url_crawl_state.last_crawl_attempt_at, inserted.created_at)
       FROM inserted
-      WHERE urls.id = inserted.url_id
-        AND (urls.last_crawl_attempt_at IS NULL OR urls.last_crawl_attempt_at < inserted.created_at)
+      WHERE url_crawl_state.url_id = inserted.url_id
+        AND (url_crawl_state.last_crawl_attempt_at IS NULL OR url_crawl_state.last_crawl_attempt_at < inserted.created_at)
     )
     SELECT ${crawlBasicColumns} FROM inserted
   `,

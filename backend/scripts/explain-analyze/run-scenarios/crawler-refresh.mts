@@ -5,6 +5,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 import { resolveSeedAnchor } from '../seed-data/seed-anchor.mts'
+import { runCrawlerRefreshWriteScenarios } from './crawler-refresh-writes.mts'
 
 const HOSTNAME_ID = seedUuid(0, '9d')
 const BACKGROUND_HOSTNAME_ID = seedUuid(1, '9d')
@@ -88,14 +89,16 @@ export async function seedCrawlerRefreshScenario(): Promise<void> {
     [URL_PREFIX, crawlPrefixes, CRAWLED_COUNT],
   )
   await write(
-    `/* seedExplainCrawlerRefreshRecency */ UPDATE urls
+    `/* seedExplainCrawlerRefreshRecency */ UPDATE url_crawl_state
      SET last_crawl_attempt_at = CURRENT_TIMESTAMP - INTERVAL '1 minute',
-       last_successful_crawl_at = CASE WHEN id >= $2::uuid
+       last_successful_crawl_at = CASE WHEN url_id >= $2::uuid
          THEN CURRENT_TIMESTAMP - INTERVAL '1 minute' ELSE NULL END
-     WHERE hostname_id = $1::uuid AND id < $3::uuid`,
+     WHERE hostname_id = $1::uuid AND url_id < $3::uuid`,
     [HOSTNAME_ID, seedUuid(1000, '9e'), seedUuid(CRAWLED_COUNT, '9e')],
   )
-  await write(`/* seedExplainCrawlerRefreshAnalyze */ ANALYZE url_hostnames, urls, crawls`)
+  await write(
+    `/* seedExplainCrawlerRefreshAnalyze */ ANALYZE url_hostnames, urls, url_crawl_state, crawls`,
+  )
 }
 
 export async function cleanupCrawlerRefreshScenario(): Promise<void> {
@@ -136,10 +139,11 @@ export async function runCrawlerRefreshScenario(): Promise<void> {
   try {
     registerScenarioContract('crawler-refresh-candidates', {
       expectations: [
-        { kind: 'usesIndexes', indexes: ['idx_urls__hostname_crawl_recency'], noSort: true },
-        { kind: 'maxProcessedRows', relation: 'urls', max: 1003 },
+        { kind: 'usesIndexes', indexes: ['idx_url_crawl_state__hostname_recency'], noSort: true },
+        { kind: 'maxProcessedRows', relation: 'url_crawl_state', max: 1003 },
+        { kind: 'maxProcessedRows', relation: 'urls', max: 3 },
       ],
-      seededRows: { urls: 25_100, crawls: 20_470 },
+      seededRows: { urls: 25_100, url_crawl_state: 25_100, crawls: 20_470 },
     })
     await runAndCapture(
       'crawler-refresh-candidates',
@@ -149,18 +153,19 @@ export async function runCrawlerRefreshScenario(): Promise<void> {
     )
     // The same graph with expired attempts isolates index-ordered backlog selection.
     await write(
-      `/* seedExplainCrawlerRefreshExpiredAttempts */ UPDATE urls
+      `/* seedExplainCrawlerRefreshExpiredAttempts */ UPDATE url_crawl_state
        SET last_crawl_attempt_at = CURRENT_TIMESTAMP - INTERVAL '8 days'
        WHERE hostname_id = $1::uuid AND last_crawl_attempt_at IS NOT NULL`,
       [HOSTNAME_ID],
     )
-    await write(`/* seedExplainCrawlerRefreshBacklogAnalyze */ ANALYZE urls`)
+    await write(`/* seedExplainCrawlerRefreshBacklogAnalyze */ ANALYZE urls, url_crawl_state`)
     registerScenarioContract('crawler-refresh-backlog', {
       expectations: [
-        { kind: 'usesIndexes', indexes: ['idx_urls__hostname_crawl_recency'], noSort: true },
+        { kind: 'usesIndexes', indexes: ['idx_url_crawl_state__hostname_recency'], noSort: true },
         { kind: 'maxProcessedRows', relation: 'urls', max: 3 },
+        { kind: 'maxProcessedRows', relation: 'url_crawl_state', max: 3 },
       ],
-      seededRows: { urls: 25_100, crawls: 20_470 },
+      seededRows: { urls: 25_100, url_crawl_state: 25_100, crawls: 20_470 },
     })
     await runAndCapture(
       'crawler-refresh-backlog',
@@ -168,6 +173,7 @@ export async function runCrawlerRefreshScenario(): Promise<void> {
       undefined,
       'searchCrawlerRefreshUrlCandidatesByHostnameId',
     )
+    await runCrawlerRefreshWriteScenarios(HOSTNAME_ID, seedUuid(0, '9e'))
   } finally {
     await cleanupCrawlerRefreshScenario()
   }

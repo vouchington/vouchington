@@ -5,6 +5,7 @@ import { addUrl } from '@services/urls'
 import { createTestUser, beginTransaction } from '@voucha/test-helpers'
 import {
   readTestCrawlRefreshState,
+  readTestUrlReconciliationRevision,
   setTestCrawlRefreshState,
 } from '@voucha/test-helpers/entities/crawl-refresh-state'
 import { createCrawl } from './create.mts'
@@ -23,6 +24,16 @@ async function createFixture() {
 }
 
 describe('crawl refresh state', () => {
+  it('keeps URL reconciliation revisions unchanged when crawl markers advance', async () => {
+    const { urlId, crawlerId } = await createFixture()
+    const originalRevision = await readTestUrlReconciliationRevision(urlId)
+    const crawl = await createCrawl(urlId, crawlerId)
+    expect(await readTestUrlReconciliationRevision(urlId)).toBe(originalRevision)
+    await updateCrawl(crawl.id, urlId, { completed_at: new Date() })
+    expect((await readTestCrawlRefreshState(urlId)).last_successful_crawl_at).toBeInstanceOf(Date)
+    expect(await readTestUrlReconciliationRevision(urlId)).toBe(originalRevision)
+  })
+
   it('records a pending attempt without recording success', async () => {
     const { urlId, crawlerId } = await createFixture()
     const crawl = await createCrawl(urlId, crawlerId)

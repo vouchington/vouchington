@@ -9,6 +9,8 @@ import type { Crawler } from '@services/crawlers'
 import { applyCrawlerRules } from '@services/crawlers/apply-rules'
 import { createCrawl } from '@services/crawls/create'
 import { updateCrawl } from '@services/crawls/update'
+import { getCrawlById } from '@services/crawls/get'
+import { getCrawlErrorState } from '@services/crawls/error-state'
 import type { CrawlerHtmlStructuredObject } from '@services/crawls/types'
 import { HttpNoBodyError } from '@vouchington/sentry'
 import {
@@ -47,6 +49,10 @@ export async function processBrowserCrawl(
     const result = await crawlWithBrowser(url.url)
     await handleBrowserCrawlResult(url.id, linkId, crawler, crawl.id, result)
   } catch (err) {
+    const current = await getCrawlById(crawl.id, url.id, { readOnly: false })
+    if (current && !current.completed_at) {
+      await updateCrawl(crawl.id, url.id, { completed_at: new Date(), ...getCrawlErrorState(err) })
+    }
     await handleBrowserCrawlError(linkId, err)
   }
 }

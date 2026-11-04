@@ -22,6 +22,8 @@ export const BOUNDED_WORK_SCENARIOS = [
   'crawler-boilerplate-candidates',
   'crawler-refresh-candidates',
   'crawler-refresh-backlog',
+  'crawler-refresh-attempt-write',
+  'crawler-refresh-success-write',
   'copyright-review-target-breaches',
   'membership-grant-expiry-candidates',
   'membership-pause-collection-due',

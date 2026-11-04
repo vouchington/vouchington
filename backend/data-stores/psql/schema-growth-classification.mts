@@ -15,6 +15,7 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'topics',
   'url_hostnames',
   'urls',
+  'url_crawl_state',
   'users',
 ] as const
 const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [

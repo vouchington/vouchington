@@ -1,12 +1,6 @@
-import { HttpNoBodyError } from '@vouchington/sentry'
 import {
-  CrawlerHttpClientError,
   CrawlerNetworkError,
   CrawlerRateLimitError,
-  CrawlerResponseSizeExceededError,
-  CrawlerServerError,
-  CrawlerSsrfError,
-  CrawlerTimeoutError,
   isCrawlerNetworkDnsError,
 } from '@modules/on-error/errors'
 import onError from '@modules/on-error'
@@ -19,6 +13,7 @@ import {
   resetHostnameFailures,
 } from '@services/urls-hostnames/network-backoff'
 import { updateCrawl } from '../update.mts'
+import { getCrawlErrorState } from '../error-state.mts'
 import { getCrawlById } from '../get.mts'
 import { safeHostname } from '../crawl-url-utils.mts'
 import { setDomainRateLimited } from '../domain-rate-limit.mts'
@@ -48,13 +43,12 @@ export async function recordCrawlError(params: {
   await trackNetworkReachability(error, hostname, requestUrl)
 
   if (!crawlStatusRecorded) {
-    const crawl = await getCrawlById(crawlId, urlId)
+    const crawl = await getCrawlById(crawlId, urlId, { readOnly: false })
     if (crawl?.completed_at) return
 
     await updateCrawl(crawlId, urlId, {
       completed_at: new Date(),
-      response_status_code: isCrawlerError(error) ? error.status : 500,
-      network_error: getNetworkError(error),
+      ...getCrawlErrorState(error),
     })
   }
 }
@@ -109,24 +103,4 @@ async function trackNetworkReachability(
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
   }
-}
-
-function isCrawlerError(error: unknown) {
-  return (
-    error instanceof CrawlerRateLimitError ||
-    error instanceof CrawlerTimeoutError ||
-    error instanceof CrawlerNetworkError ||
-    error instanceof CrawlerServerError ||
-    error instanceof CrawlerResponseSizeExceededError ||
-    error instanceof CrawlerHttpClientError ||
-    error instanceof CrawlerSsrfError ||
-    error instanceof HttpNoBodyError
-  )
-}
-
-function getNetworkError(error: unknown) {
-  if (error instanceof CrawlerTimeoutError) return 'timeout'
-  if (error instanceof CrawlerNetworkError && isCrawlerNetworkDnsError(error)) return 'dns'
-  if (error instanceof CrawlerSsrfError) return 'ssrf'
-  return null
 }

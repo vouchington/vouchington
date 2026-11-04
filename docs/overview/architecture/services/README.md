@@ -53,8 +53,10 @@ scheduled reads bounded when most feeds are not due, social accounts were recent
 Bedrock batches are still fresh. Workers retain the raw position through queue continuations so
 ineligible rows cannot hide later work.
 
-Crawler refresh selection uses recency facts on the URL rather than aggregating retained crawl
-history. Success and attempt timestamps are separate so failures cannot make a URL appear fresh,
+Crawler refresh selection uses current facts in `url_crawl_state` rather than aggregating retained
+crawl history. State rows are created with every URL and cascade with its hostname and deletion,
+while crawl progress leaves URL revisions untouched so reconciliation does not replay URL creation.
+Success and attempt timestamps are separate so failures cannot make a URL appear fresh,
 while pending work still observes a retry cooldown. Both timestamps settle atomically with the
 crawl write; selection reads the writer so replica lag cannot immediately select the same attempt.
 Browser crawls reserve their attempt before fetching, including direct automation jobs.
