@@ -15,6 +15,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import {
   importTopics,
+  claimTopicImportAttempt,
   TopicImportInProgressError,
   type ImportTopicResult,
 } from '@services/user-import-export/import-topics'
@@ -77,10 +78,33 @@ export async function setBookmarkTargets(
           : [],
       )
     : []
-  return withRelationLimitAdmission(currentUser.id, groups, async () => {
-    const imported = new Map<number, BookmarkTargetResult>()
-    if (topicIndexes.length > 0) {
-      const names = topicIndexes.map(index => args.targets[index]!.entity)
+  // Check the import's stored response before current capacity can reject an exact replay.
+  const names = topicIndexes.map(index => args.targets[index]!.entity)
+  const replay =
+    names.length > 0
+      ? (await claimTopicImportAttempt(currentUser.id, args.idempotency_key!, names)).response
+      : undefined
+  const imported = new Map<number, BookmarkTargetResult>()
+  if (replay)
+    topicIndexes.forEach((index, position) =>
+      imported.set(index, importResult(args.targets[index]!, replay[position]!)),
+    )
+  const admittedGroups = replay
+    ? groups
+        .map(group => ({
+          ...group,
+          objectIds: accepted
+            .filter(
+              item =>
+                !imported.has(item.index) &&
+                item.value.relation.table_name === group.relation.table_name,
+            )
+            .map(item => item.value.targetId),
+        }))
+        .filter(group => group.objectIds.length > 0)
+    : groups
+  return withRelationLimitAdmission(currentUser.id, admittedGroups, async () => {
+    if (topicIndexes.length > 0 && !replay) {
       let results: ImportTopicResult[]
       try {
         results = await importTopics(currentUser, getRequestContentProvenance(), names, {

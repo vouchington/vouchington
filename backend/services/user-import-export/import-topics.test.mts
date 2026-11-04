@@ -1,3 +1,4 @@
+import { softDeleteTopic } from '@voucha/test-helpers/entities/topics/deletion'
 import { relationLimitsConfig } from '@services/entity-relations/relation-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { randomUUID } from 'node:crypto'
@@ -55,6 +56,26 @@ describe('topic import follow audits', () => {
 })
 
 describe('topic import follow errors', () => {
+  it('follows valid topics when another target cannot be bookmarked', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { follow_topic: 1 }))
+    const caller = await createTestUser()
+    const [invalid, valid] = await Promise.all([createTestTopic(), createTestTopic()])
+    const unknown = `Missing topic ${randomUUID()}`
+    const names = [invalid.name, valid.name, unknown]
+    const options = {
+      assertCanCreateTopicRecommendations: async () => {
+        await softDeleteTopic(invalid.id, caller.id)
+        throw new Error('Recommendation disabled for this test')
+      },
+      importAttemptId: randomUUID(),
+    }
+    const results = await importTopics(caller, WEB_PROVENANCE, names, options)
+    expect(await importTopics(caller, WEB_PROVENANCE, names, options)).toEqual(results)
+    expect(results[0]).toMatchObject({ status: 'error' })
+    expect(results[1]).toMatchObject({ status: 'followed', entity_id: valid.id })
+    expect(await getTopicFollowExistsForTest(caller.id, valid.id)).toBe(true)
+  })
   it('returns a per-item error when the follow is rejected', async () => {
     const caller = await createTestUser()
     const topic = await createTestTopic({ user: caller })

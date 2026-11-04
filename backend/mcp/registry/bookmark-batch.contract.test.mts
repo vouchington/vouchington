@@ -1,3 +1,4 @@
+import { deleteBookmarkAction, upsertBookmarkAction } from '@services/entity-relation-actions'
 import { relationLimitsConfig } from '@services/entity-relations/relation-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -87,6 +88,44 @@ describe('set_bookmark batch — real DB', () => {
 })
 
 describe('MCP bookmark follow capacity', () => {
+  it('replays a completed topic import after capacity changes', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { follow_topic: 1 }))
+    const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    const [original, replacement] = await Promise.all([createTestTopic(), createTestTopic()])
+    const args = {
+      predicate: 'follow',
+      recommend_unknown_topics: true,
+      idempotency_key: crypto.randomUUID(),
+      targets: [{ entity_type: 'topic', entity: original.name }],
+    }
+    const first = await callStructuredMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', args),
+      SCOPES,
+    )
+    expect(first.results).toMatchObject([{ status: 'followed', entity_id: original.id }])
+    await deleteBookmarkAction(caller, {
+      entityType: 'topic',
+      entityId: original.id,
+      predicate: 'follow',
+    })
+    await upsertBookmarkAction(
+      caller,
+      { kind: 'first_party' },
+      { entityType: 'topic', entityId: replacement.id, predicate: 'follow' },
+    )
+    const replay = await callStructuredMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', args),
+      SCOPES,
+    )
+    expect(replay).toEqual(first)
+    expect(await getTopicFollowExistsForTest(caller.id, original.id)).toBe(false)
+    expect(await getTopicFollowExistsForTest(caller.id, replacement.id)).toBe(true)
+  })
   it('refuses an overflowing batch with the REST code before following any target', async () => {
     await relationLimitsConfig.waitForInitialization()
     onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { follow_topic: 1 }))

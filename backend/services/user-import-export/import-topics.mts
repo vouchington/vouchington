@@ -1,15 +1,10 @@
-import { clientErrorMessage, TopicImportInProgressError } from './topic-import-errors.mts'
+import { followImportedTopics } from './import-topics-follow.mts'
+import { TopicImportInProgressError } from './topic-import-errors.mts'
 export { TopicImportInProgressError } from './topic-import-errors.mts'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
-import { upsertBookmarkActions } from '@services/entity-relation-actions'
 import onError from '@modules/on-error'
-import {
-  withAvailableRelationCapacity,
-  isRelationLimitError,
-} from '@services/entity-relations/relation-limits'
-import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import {
   findTopicsBySlugOrName,
   prepareTopicInput,
@@ -21,6 +16,7 @@ import type { ContributionLimitMembershipPlan } from '@services/contribution-gat
 import { claimTopicImportAttempt, finalizeTopicImportAttempt } from './topic-import-attempts.mts'
 import type { ImportTopicResult } from './import-topics-types.mts'
 export type { ImportTopicResult } from './import-topics-types.mts'
+export { claimTopicImportAttempt } from './topic-import-attempts.mts'
 
 const MAX_IMPORT_ITEMS = 500
 export async function importTopics(
@@ -102,99 +98,15 @@ export async function importTopics(
     throw inProgressError
   }
 
-  return finalizeTopicImportAttempt(attempt.id, async query => {
-    return withAvailableRelationCapacity(
-      currentUser.id,
-      {
-        relation: getEntityRelationMetadataOrThrow({
-          subjectType: 'user',
-          objectType: 'topic',
-          predicate: 'follow',
-        }),
-        objectIds: existingTopicIds,
-      },
-      async (limitState, allowedIds) => {
-        const followedTopicIds = new Set(limitState?.existingObjectIds ?? [])
-        const skippedTopicIds = new Set<string>()
-        const followedDuringImport = new Set<string>()
-        const topicIdsToFollow: string[] = []
-        for (const input of existingInputs) {
-          const topicId = existingTopics.get(input.index)!
-          const alreadyFollowing =
-            followedTopicIds.has(topicId) || followedDuringImport.has(topicId)
-          if (!alreadyFollowing && (skippedTopicIds.has(topicId) || !allowedIds.has(topicId))) {
-            skippedTopicIds.add(topicId)
-            results[input.index] = {
-              input: input.rawName,
-              status: 'skipped',
-              error_code: 'RELATION_LIMIT_REACHED',
-              entity_id: topicId,
-            }
-            continue
-          }
-          results[input.index] = {
-            input: input.rawName,
-            status: alreadyFollowing ? 'already_following' : 'followed',
-            entity_id: topicId,
-          }
-          if (!alreadyFollowing) {
-            followedDuringImport.add(topicId)
-            topicIdsToFollow.push(topicId)
-          }
-        }
-
-        const auditsBeforeFollows = audits.length
-        await (options.recordImportRequests ?? recordTopicImportRequests)(
-          currentUser.id,
-          audits,
-          query,
-        )
-
-        try {
-          await upsertBookmarkActions(
-            currentUser,
-            { kind: 'first_party' },
-            topicIdsToFollow.map(topicId => ({
-              entityType: 'topic',
-              entityId: topicId,
-              predicate: 'follow',
-            })),
-          )
-          for (const input of existingInputs) {
-            const topicId = existingTopics.get(input.index)!
-            if (results[input.index]?.status === 'followed') {
-              audits.push({ index: input.index, inputValue: input.name, topicId })
-            }
-          }
-        } catch (err) {
-          const message = clientErrorMessage(err)
-          if (message === undefined) throw err
-          for (const input of existingInputs) {
-            if (!topicIdsToFollow.includes(existingTopics.get(input.index)!)) continue
-            results[input.index] = isRelationLimitError(err)
-              ? { input: input.rawName, status: 'skipped', error_code: 'RELATION_LIMIT_REACHED' }
-              : { input: input.rawName, status: 'error', error: message }
-          }
-        }
-
-        const followAudits = audits.slice(auditsBeforeFollows)
-        if (followAudits.length > 0) {
-          await (options.recordImportRequests ?? recordTopicImportRequests)(
-            currentUser.id,
-            followAudits,
-            query,
-          )
-        }
-
-        return results.map(
-          (result, index) =>
-            result ?? {
-              input: inputs[index]!.rawName,
-              status: 'error' as const,
-              error: 'Import did not complete',
-            },
-        )
-      },
-    )
-  })
+  return finalizeTopicImportAttempt(attempt.id, query =>
+    followImportedTopics(currentUser, query, {
+      inputs,
+      existingInputs,
+      existingTopics,
+      existingTopicIds,
+      audits,
+      results,
+      recordImportRequests: options.recordImportRequests ?? recordTopicImportRequests,
+    }),
+  )
 }
