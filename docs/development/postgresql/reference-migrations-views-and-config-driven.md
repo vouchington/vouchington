@@ -13,7 +13,8 @@
   `ON CONFLICT DO UPDATE` must not accumulate (`col = col + 1`) or assign a bare volatile value.
 - `views/` holds managed views, replayed on every bootstrap. A forced rebuild drops only managed
   views with `RESTRICT`, never `CASCADE`, so an unmanaged dependent blocks the rebuild instead of
-  being silently removed.
+  being silently removed. Removing a view file leaves the view on existing databases, because the
+  runner only knows views that still have a file, so a removal needs a reset or a manual drop.
 
 Canonical config-driven generators are explicit lazy dependencies of the runner so static analysis
 can verify their runtime use without export exceptions. Lazy loading preserves bootstrap ordering
