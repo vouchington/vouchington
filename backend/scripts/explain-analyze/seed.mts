@@ -5,7 +5,7 @@ import { cleanupPublicationScopePages } from './seed-data/publication-scope-clea
 import { cleanupNotificationVisibility } from './seed-data/notification-visibility-cleanup.mts'
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
 import { seedCommunitySearchFixtures } from './seed-data/community-search-fixtures.mts'
-import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
+import { seedViewPostsAndUserImportApproval } from './seed-data/user-import-approval.mts'
 import { seedPostCreationModerationBypass } from './seed-data/post-creation-moderation-bypass.mts'
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
 import {
@@ -176,7 +176,7 @@ async function main() {
   await seedPostDataPointTopics(1000)
   await seedPostReviewTopicRatings(1000)
   await seedAnchorPostReviewTopicRating()
-  await seedViewPostsHydration()
+  await seedViewPostsAndUserImportApproval()
   await seedPrioritizedReferralLink()
   await seedFriendRecommendation()
   await seedIngestionRawPages()

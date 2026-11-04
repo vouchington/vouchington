@@ -4,11 +4,54 @@ import { cleanupExpiredUserDataRequestAttempts } from '@services/data-retention/
 import { runAccountDataExportScenarios } from './account-data-export.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
-import { postSeedTimestampMs, seedUuidAtTimestamp } from '../seed-data/common.mts'
+import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 import { seedImportRequestRetention } from '../seed-data/import-request-retention.mts'
 
 export async function runImportRequestRetentionScenarios(): Promise<void> {
   await runAccountDataExportScenarios()
+
+  registerScenarioContract('user-import-approval-first-page', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_user_import_requests__topic_recommendation'],
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'user_import_requests', max: 102 },
+    ],
+    seededRows: { user_import_requests: 20_000 },
+  })
+  await runAndCapture('user-import-approval-first-page', () =>
+    write(
+      `/* autoFollowOnRecommendationApproval:findPending */
+       SELECT id, user_id FROM user_import_requests
+       WHERE topic_recommendation_post_id = $1::uuid AND followed_at IS NULL
+       ORDER BY id LIMIT $2`,
+      [seedUuid(3, '05'), 100],
+    ),
+  )
+
+  registerScenarioContract('user-import-approval-continuation', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_user_import_requests__topic_recommendation'],
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'user_import_requests', max: 102 },
+    ],
+    seededRows: { user_import_requests: 20_000 },
+  })
+  await runAndCapture('user-import-approval-continuation', () =>
+    write(
+      `/* autoFollowOnRecommendationApproval:findPending */
+       SELECT id, user_id FROM user_import_requests
+       WHERE topic_recommendation_post_id = $1::uuid AND followed_at IS NULL
+         AND id > $2::uuid
+       ORDER BY id LIMIT $3`,
+      [seedUuid(3, '05'), '019e0000-7e00-7000-8000-000000001388', 100],
+    ),
+  )
 
   const oldRequestTimestamp = postSeedTimestampMs(0) - 40 * 86_400_000
   const requestId = seedUuidAtTimestamp(oldRequestTimestamp, 0)

@@ -26,16 +26,16 @@ export async function autoFollowOnRecommendationApproval(
   // Approval must process the full set in this call; each read and write is bounded.
   /* oxlint-disable no-await-in-loop -- ordered page operations depend on the preceding page */
   for (;;) {
-    // no-mistakes-disable-next-line query-reached-per-item: each read selects one validated ID-keyset page; invalid users are passed by the cursor and all pages must be attempted
-    const { rows } = await read(sql`/* autoFollowOnRecommendationApproval:findPending */
+    const pageQuery = sql`/* autoFollowOnRecommendationApproval:findPending */
       SELECT id, user_id
       FROM user_import_requests
       WHERE topic_recommendation_post_id = ${recommendationPostId}
         AND followed_at IS NULL
-        AND (${cursor}::uuid IS NULL OR id > ${cursor}::uuid)
-      ORDER BY id
-      LIMIT ${batchSize}
-    `)
+    `
+    if (cursor) pageQuery.append(sql` AND id > ${cursor}::uuid`)
+    pageQuery.append(sql` ORDER BY id LIMIT ${batchSize}`)
+    // no-mistakes-disable-next-line query-reached-per-item: each read selects one validated ID-keyset page; invalid users are passed by the cursor and all pages must be attempted
+    const { rows } = await read(pageQuery)
     const requests = rows as PendingImportRequest[]
     if (requests.length === 0) return
     cursor = requests[requests.length - 1]!.id
