@@ -6,7 +6,7 @@ import {
   getUrlByAnyCached,
   getUrlHostnameByAnyCached,
 } from '@services/entity-fetch'
-import { canViewPost } from '@services/posts'
+import { canViewPost, getRequestedPostReadState } from '@services/posts'
 import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import { getRoutePostByAnyCached } from '@services/posts/route-access'
 import { getRssFeedItemById } from '@services/rss-feed-items'
@@ -14,21 +14,29 @@ import { loadCommunityForViewerOrApplicant } from '@services/communities'
 import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames'
 import type { EntityRelationEntityType } from '@services/entity-relations/config'
 
-/** Match the target visibility used by each entity detail route before creating a bookmark. */
+/**
+ * Match the target visibility used by each entity detail route before creating a bookmark. The one
+ * exception is `hide` on a comment, which only collapses it in the thread: a deleted or unmoderated
+ * comment is shown as a placeholder, so it can be collapsed and expanded like any other.
+ */
 export async function currentUserCanBookmarkTarget(
   currentUser: PrivateUser,
   entityType: EntityRelationEntityType,
   entityId: string,
+  predicate: string,
 ): Promise<boolean> {
   switch (entityType) {
     case 'post': {
-      const { post, root } = await getRoutePostByAnyCached(entityId)
-      if (!post || post.deleted_at || BLOCKED_POST_TYPES.has(post.post_type)) return false
+      const { post, root } = await getRoutePostByAnyCached(entityId, { includeDeleted: true })
+      if (!post || BLOCKED_POST_TYPES.has(post.post_type)) return false
       const rootPost = post.root_post_id ? root : post
       if (!rootPost || rootPost.deleted_at || BLOCKED_POST_TYPES.has(rootPost.post_type)) {
         return false
       }
-      return canViewPost(currentUser, post)
+      if (post.post_type === 'comment' && predicate === 'hide') {
+        return (await getRequestedPostReadState(currentUser, post, root)) !== null
+      }
+      return !post.deleted_at && (await canViewPost(currentUser, post))
     }
     case 'topic':
       return !!(await getTopicByAnyWithRedirectCached(entityId))

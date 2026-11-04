@@ -80,6 +80,35 @@ describe('read_posts.search agrees with read_posts.details — real DB', () => {
     }
   })
 
+  it('opens a comment awaiting review as a placeholder because a valid reply sits below it', async () => {
+    for (const caller of callers) {
+      for (const post of fixtures.placeholders) {
+        const answer = await call(caller, 'read_posts', optionArgs('details', { post_id: post.id }))
+
+        expect(answer).toMatchObject({
+          success: true,
+          post: { id: post.id, title: '', markdown: '', created_by_id: null },
+        })
+        expect((answer['post'] as Record<string, unknown>)['placeholder_state']).toBe('unmoderated')
+      }
+    }
+  })
+
+  it('never returns a placeholder or a comment under a blocked-type root from a search', async () => {
+    const excluded = new Set(
+      [...fixtures.hidden, ...fixtures.placeholders]
+        .filter(post => post.post_type === 'comment')
+        .map(post => post.id),
+    )
+    for (const caller of callers) {
+      for (const args of searches) {
+        const ids = await searchIds(caller, args)
+
+        expect(ids.filter(id => excluded.has(id))).toEqual([])
+      }
+    }
+  })
+
   it('returns only posts that read_posts.details opens, in every search mode', async () => {
     for (const caller of callers) {
       for (const args of searches) {

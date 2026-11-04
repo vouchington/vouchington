@@ -86,13 +86,16 @@ export function CommentAncestorTrail({
 
 function AncestorComment({ ancestor, html, href }: { ancestor: Post; html: string; href: string }) {
   const t = useTranslations()
-  const author = ancestor.deleted_at
-    ? t('extracted.comments.commentPermalink.deleted_dd5f43ed')
-    : ancestor.created_by?.username
-      ? ancestor.created_by.username
-      : ancestor.is_anonymous
-        ? t('extracted.comments.commentPermalink.anonymous_e7a8aa2d')
-        : t('extracted.comments.commentPermalink.deleted_dd5f43ed')
+  const author =
+    ancestor.placeholder_state === 'unmoderated'
+      ? t('extracted.comments.commentPermalink.pendingReview_f1c45f3f')
+      : ancestor.deleted_at
+        ? t('extracted.comments.commentPermalink.deleted_dd5f43ed')
+        : ancestor.created_by?.username
+          ? ancestor.created_by.username
+          : ancestor.is_anonymous
+            ? t('extracted.comments.commentPermalink.anonymous_e7a8aa2d')
+            : t('extracted.comments.commentPermalink.deleted_dd5f43ed')
 
   return (
     <div className='border-l-2 border-muted pl-4'>
@@ -106,10 +109,8 @@ function AncestorComment({ ancestor, html, href }: { ancestor: Post; html: strin
             {author}
           </Link>
         </div>
-        {ancestor.deleted_at ? (
-          <p className='italic text-muted-foreground'>
-            {t('extracted.comments.commentPermalink.deleted_dd5f43ed')}
-          </p>
+        {ancestor.deleted_at || ancestor.placeholder_state ? (
+          <p className='italic text-muted-foreground'>{author}</p>
         ) : (
           <MarkdownContent
             html={html}

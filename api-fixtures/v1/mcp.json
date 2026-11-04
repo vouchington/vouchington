@@ -2400,6 +2400,10 @@
                         },
                         "required": ["app", "via"],
                         "type": "object"
+                      },
+                      "placeholder_state": {
+                        "enum": ["deleted", "unmoderated"],
+                        "type": "string"
                       }
                     },
                     "required": [
@@ -6213,7 +6217,7 @@
           "tool": {
             "name": "read_posts",
             "title": "Read Posts",
-            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. Deleted ancestors are omitted, so parent_post_id may name an unlisted comment. A deleted, missing or not fully public comment returns Post not found.\ndescendants: Get a post's replies in id order. An unreadable reply hides its subtree; a deleted reply is omitted but its descendants remain, so parent_post_id may name an unlisted reply. A deleted, missing or not fully public post returns Post not found.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; comments require a fully public thread. Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\ntrending: Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.\nsearch: Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.",
+            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.\ndescendants: Get a post's replies in id order. A deleted or unmoderated reply is a placeholder with placeholder_state and no text or author, listed only when a valid reply sits below it. A missing or not fully public post returns Post not found.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\ntrending: Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.\nsearch: Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -6778,6 +6782,10 @@
                       },
                       "required": ["app", "via"],
                       "type": "object"
+                    },
+                    "placeholder_state": {
+                      "enum": ["deleted", "unmoderated"],
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -11402,6 +11410,10 @@
                       },
                       "required": ["app", "via"],
                       "type": "object"
+                    },
+                    "placeholder_state": {
+                      "enum": ["deleted", "unmoderated"],
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -11872,6 +11884,10 @@
                           },
                           "required": ["app", "via"],
                           "type": "object"
+                        },
+                        "placeholder_state": {
+                          "enum": ["deleted", "unmoderated"],
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -14331,6 +14347,10 @@
                       },
                       "required": ["app", "via"],
                       "type": "object"
+                    },
+                    "placeholder_state": {
+                      "enum": ["deleted", "unmoderated"],
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -21312,6 +21332,10 @@
                           },
                           "parent_post_id": {
                             "$ref": "#/$defs/S2"
+                          },
+                          "placeholder_state": {
+                            "enum": ["deleted", "unmoderated"],
+                            "type": "string"
                           },
                           "post_explicit_categories": {
                             "items": {

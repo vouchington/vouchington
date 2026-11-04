@@ -153,7 +153,7 @@ describe('post.ancestors', () => {
       expect(response.body.results.at(-1)?.id).toBe(childCommentId)
     })
 
-    it('preserves a deleted ancestor as a structural tombstone', async () => {
+    it('returns a deleted ancestor as a placeholder with no text or author', async () => {
       const rootId = await insertTestPost({
         title: 'Ancestor Root Published',
         slug: `ancestor-root-published-${Date.now()}`,
@@ -187,7 +187,14 @@ describe('post.ancestors', () => {
         parentId,
         childId,
       ])
-      expect(response.body.posts[parentId]).toBeUndefined()
+      expect(response.body.posts[parentId]).toMatchObject({
+        id: parentId,
+        placeholder_state: 'deleted',
+        title: '',
+        markdown: '',
+        created_by: null,
+        created_by_id: null,
+      })
     })
 
     it('hides ancestors for a deleted comment leaf', async () => {

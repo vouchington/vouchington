@@ -14,6 +14,7 @@ export const PUBLIC_POST_FIELDS = [
   'created_at',
   'updated_at',
   'provenance',
+  'placeholder_state',
 ] as const
 
 export type PublicPost = {
@@ -29,6 +30,7 @@ export type PublicPost = {
   created_at: string
   updated_at: string
   provenance?: Post['provenance']
+  placeholder_state?: Post['placeholder_state']
 }
 
 /** Project an already labelled post without retaining other database or moderation fields. */
@@ -46,5 +48,6 @@ export function projectPublicPost(post: Post): PublicPost {
     created_at: new Date(post.created_at).toISOString(),
     updated_at: new Date(post.updated_at).toISOString(),
     ...(post.provenance && { provenance: post.provenance }),
+    ...(post.placeholder_state && { placeholder_state: post.placeholder_state }),
   }
 }

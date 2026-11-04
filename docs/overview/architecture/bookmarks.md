@@ -30,7 +30,7 @@ user's relation.
 | -------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `follow`                   | post, topic, user, rss_feed         | Follow for feed inclusion; following a `user` also auto-casts a Like (+1) trust signal (#7257) |
 | `save`                     | post, rss_feed_item, url, community | Save for later                                                                                 |
-| `hide`                     | post, rss_feed_item                 | Hide from feeds                                                                                |
+| `hide`                     | post, rss_feed_item                 | Hide from feeds; on a comment it only collapses it in its thread                               |
 | `mute`                     | topic, user, rss_feed, url_hostname | Mute from feeds (soft)                                                                         |
 | `block`                    | topic, user, url_hostname           | Block bidirectionally (`user`) / block all content from a domain (`url_hostname`)              |
 | `subscribe`                | post, user, rss_feed                | Subscribe for notifications                                                                    |
@@ -38,7 +38,22 @@ user's relation.
 | `subscribe_posts`          | topic                               | Notify when new posts are added to this topic (backend active; UI removed #6223)               |
 | `subscribe_rss_feed_items` | topic                               | Notify when new RSS items are published for this topic (backend active; UI removed #6223)      |
 | `proxy_follow`             | community                           | Apply `follow` to every entity in the community list                                           |
-| `proxy_mute`               | community                           | Apply `mute` to every entity in the community list                                             |
+
+### Hide on a comment
+
+`hide` means two things. On a post or RSS item it removes the entity from the viewer's lists. On a
+comment it is the signed-in viewer's collapsed state in a thread, stored on the server so it follows
+them across devices, and nothing else: a hidden comment is not in `/my/posts/hidden`, the feed hidden
+exclusion skips comments, and web lists do not filter on it.
+
+- The descendants walk returns a hidden comment but does not descend through it. The base of the walk
+  ignores hide, so `GET /posts/<hidden comment>/descendants` works and is how opening the comment
+  loads its replies.
+- A comment that is a placeholder (deleted or unmoderated) can still be hidden, as long as a valid
+  reply sits below it. The `PUT` authorizes it on the same read state the thread uses.
+- Suspended users cannot write it, like every bookmark.
+- Signed-out readers keep the old browser-only collapse; there is no server state for them.
+  | `proxy_mute` | community | Apply `mute` to every entity in the community list |
 
 ## Implicit Unfollow
 

@@ -70,9 +70,9 @@ export function appendEligiblePostsSelect(
       WHERE 1 = 1`)
   if (targetPostId) query.append(sql` AND posts.id = `).append(targetPostId)
   query.append(sql`
-      AND NOT EXISTS (
+      AND (posts.post_type = 'comment' OR NOT EXISTS (
         SELECT 1 FROM hidden_posts WHERE hidden_posts.post_id = posts.id
-      )
+      ))
       AND NOT EXISTS (
         SELECT 1 FROM excluded_users WHERE excluded_users.user_id = posts.created_by_id
       )

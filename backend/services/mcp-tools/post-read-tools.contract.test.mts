@@ -189,7 +189,7 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
       })
     })
 
-    it('leaves a deleted ancestor out of the chain', async () => {
+    it('returns a deleted ancestor as a placeholder with no text, author or slug', async () => {
       const root = await createTestPost({ user: author })
       const removed = await createTestPost({
         user: author,
@@ -205,15 +205,23 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
 
       const { body, text } = await call(author, 'ancestors', reply.id)
 
-      expect(body.ancestors?.map(ancestor => ancestor['id'])).toEqual([root.id])
+      expect(body.ancestors?.map(ancestor => ancestor['id'])).toEqual([root.id, removed.id])
+      expect(body.ancestors?.[1]).toMatchObject({
+        placeholder_state: 'deleted',
+        title: '',
+      })
       expect(text).not.toContain(removed.slug)
-      expect((await call(author, 'ancestors', removed.id)).body).toEqual(NOT_FOUND)
+      // The deleted comment opens as a placeholder because a valid reply sits below it.
+      expect((await call(author, 'details', removed.id)).body.post).toMatchObject({
+        id: removed.id,
+        placeholder_state: 'deleted',
+      })
       expect((await call(author, 'details', reply.id)).body.post).toMatchObject({
         parent_post_id: removed.id,
       })
     })
 
-    it('answers a comment under a hidden ancestor as not found, without naming the ancestor', async () => {
+    it('reads a comment under an unmoderated ancestor, which shows as a placeholder', async () => {
       const root = await createTestPost({ user: author })
       const hiddenParent = await pendingPost(author, {
         post_type: 'comment',
@@ -225,11 +233,14 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
         parent_post_id: hiddenParent.id,
       })
 
-      for (const option of ['details', 'ancestors'] as const) {
-        const { body, text } = await call(admin, option, reply.id)
-        expect(body).toEqual(NOT_FOUND)
-        expect(text).not.toContain(hiddenParent.id)
-      }
+      const details = await call(admin, 'details', reply.id)
+      expect(details.body.post).toMatchObject({ id: reply.id })
+      const ancestors = await call(admin, 'ancestors', reply.id)
+      expect(ancestors.body.ancestors?.[1]).toMatchObject({
+        id: hiddenParent.id,
+        placeholder_state: 'unmoderated',
+        title: '',
+      })
     })
 
     it('answers a comment under a private root as not found', async () => {

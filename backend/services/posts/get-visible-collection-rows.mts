@@ -52,6 +52,12 @@ export async function getVisiblePostCollectionRows(
       AND candidate_post.post_type::text != ALL(${[...BLOCKED_POST_TYPES]}::text[])
       AND access_post.post_type::text != ALL(${[...BLOCKED_POST_TYPES]}::text[])
       AND `)
+    // `hide` on a comment only collapses it in its thread, so the hidden list never shows one.
+    .append(
+      validatedTableName === POST_LIST_TABLES.hidden
+        ? sql`candidate_post.post_type <> 'comment' AND `
+        : sql``,
+    )
     .append(buildDirectPostAccessFilter(currentUser?.id ?? null, isModerationStaff(currentUser)))
 
   if (filters.after) {

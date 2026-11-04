@@ -13,6 +13,8 @@ import type { CommentNodeProps } from './comment-node-types'
 import type { Post } from '@/types/posts'
 import { previewMarkdown } from '@/lib/api/client/markdown'
 import { useAuth } from '@/lib/auth/context'
+import { Button } from '@/components/ui/button'
+import { useTranslations } from '@/lib/i18n/use-translations'
 
 const MAX_DEPTH = 5
 
@@ -31,7 +33,10 @@ export function CommentNode({
   isAdmin,
   isThreadLocked,
   hideDownCount = false,
+  moreRepliesIds,
+  onLoadMoreReplies,
 }: CommentNodeProps) {
+  const t = useTranslations()
   const { currentUser, isAuthenticated } = useAuth()
   const currentUserId = currentUser?.id ?? null
   const [localPost, setLocalPost] = useState<Post>(node.post)
@@ -42,12 +47,14 @@ export function CommentNode({
   const html = localHtml
   const { children } = node
   const isCollapsed = collapsedIds.has(post.id)
-  const isDeleted = !!post.deleted_at
+  const isDeleted = !!post.deleted_at || post.placeholder_state === 'deleted'
+  const isUnmoderated = post.placeholder_state === 'unmoderated'
+  const isPlaceholder = isDeleted || isUnmoderated
   const isReplyLocked = isThreadLocked || post.locked_at != null
   const permalink = `/${rootPostType}/${rootPostId}/comment/${post.id}`
   const reportEntityId =
     isAuthenticated &&
-    !isDeleted &&
+    !isPlaceholder &&
     currentUserId &&
     post.created_by &&
     currentUserId !== post.created_by.id
@@ -77,11 +84,12 @@ export function CommentNode({
     >
       <div className='py-1'>
         <CommentNodeHeader
-          childrenCount={children.length}
+          childrenCount={node.childrenCount ?? children.length}
           hideDownCount={hideDownCount}
           isAnonymous={isAnonymous}
           isCollapsed={isCollapsed}
           isDeleted={isDeleted}
+          isUnmoderated={isUnmoderated}
           node={{ ...node, post }}
           onToggleCollapse={onToggleCollapse}
           permalink={permalink}
@@ -101,11 +109,12 @@ export function CommentNode({
               <CommentNodeContent
                 html={html}
                 isDeleted={isDeleted}
+                isUnmoderated={isUnmoderated}
                 post={post}
               />
             )}
 
-            {!isDeleted && !isEditing && (
+            {!isPlaceholder && !isEditing && (
               <CommentNodeActions
                 hideDownCount={hideDownCount}
                 isAdmin={isAdmin}
@@ -158,10 +167,23 @@ export function CommentNode({
                       isAdmin={isAdmin}
                       isThreadLocked={isThreadLocked}
                       hideDownCount={hideDownCount}
+                      moreRepliesIds={moreRepliesIds}
+                      onLoadMoreReplies={onLoadMoreReplies}
                     />
                   ))
                 )}
               </div>
+            )}
+
+            {moreRepliesIds?.has(post.id) && (
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                onClick={() => onLoadMoreReplies?.(post.id)}
+              >
+                {t('extracted.comments.commentNode.loadMore_ac8991ef')}
+              </Button>
             )}
           </>
         )}

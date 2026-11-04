@@ -1,7 +1,11 @@
 import { isSlug, isUUID } from '@modules/utils'
-import { getCommentAncestorsBatch, getCommentAncestorsByAny } from '@services/comments'
 import { getPostByAnyCached, getPostByAnyCachedBatch } from '@services/entity-fetch'
-import type { Post } from '@services/posts'
+import {
+  getCommentPlaceholderState,
+  getPostsOrDeletedCommentStubs,
+  getRequestedPostReadState,
+  type Post,
+} from '@services/posts'
 import { canViewPostsBatch } from '@services/posts/check-privacy-access'
 import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import type { BasicUser } from '@services/users/types'
@@ -10,28 +14,30 @@ import { requirePrivateToolUser } from './private-user.mts'
 type ReadableThread = {
   /** The requested post. */
   post: Post
-  /** Its live parent chain, root first and without `post`. */
-  ancestors: Post[]
+  /** Its thread root, which is `post` itself for a root post. */
+  root: Post
+  /** `placeholder` when `post` is a deleted or unmoderated comment with a valid reply below it. */
+  state: 'readable' | 'placeholder'
 }
 
 /**
  * Resolves the post an MCP caller may read, or null when it answers as not found.
  *
- * MCP is "parity minus private data". A post is readable only when the shared direct-read policy
- * (`canViewPostsBatch`, the policy behind the REST routes) accepts every comment from the thread
- * root down to it, both as the credential owner and as a signed-out reader. Every rule in that
- * policy only ever adds access for a signed-in viewer (the author, audience members, community
- * members, staff), so the signed-out answer is exactly the owner's answer minus what is visible
- * through private visibility: a private post, a private share or community membership, and the
- * author's own not-yet-cleared posts all answer as not found, even to their author.
+ * MCP is "parity minus private data". A reply is readable when it and its thread root pass the
+ * shared direct-read policy (`canViewPostsBatch`, the policy behind the REST routes) as a
+ * signed-out reader. Every rule in that policy only ever adds access for a signed-in viewer (the
+ * author, audience members, community members, staff), so the signed-out answer is exactly the
+ * owner's answer minus what is visible through private visibility: a private post, a private share
+ * or community membership, and the author's own not-yet-cleared posts all answer as not found, even
+ * to their author. A comment between the root and the post does not matter: a deleted or
+ * unmoderated one is a placeholder in the thread, never a reason to hide a valid reply.
  *
- * Demanding the whole chain, not only the post and its root, keeps a hidden ancestor from
- * reaching the caller through `parent_post_id`. A deleted post cannot be loaded, so a deleted target
- * is not found and a deleted ancestor is left out of the chain, as in the REST twin.
+ * A deleted or unmoderated requested comment is a `placeholder` when a valid reply sits below it
+ * within the look-down limits, and not found otherwise, as in the REST twin.
  *
- * `read_posts (option search)` applies this same rule to its results in SQL (`public_eligibility_only` in
- * backend/services/posts/search/query-builder/base-filters.mts, plus `thread-readability.mts` for
- * comment chains), because a chain predicate cannot run per row. Discovery is stricter (public
+ * `read_posts (option search)` applies the same rule to its results in SQL (`public_eligibility_only` in
+ * backend/services/posts/search/query-builder/base-filters.mts: the root passes, and the comment is
+ * not a placeholder), because a per-row check cannot run per result. Discovery is stricter (public
  * audience, unarchived, unsuspended, no community), so a search result is always readable here but
  * not the reverse. Change the rule in both places; the search agreement test compares them.
  */
@@ -40,79 +46,54 @@ export async function resolveReadableThread(
   idOrSlug: string,
 ): Promise<ReadableThread | null> {
   if (!isUUID(idOrSlug) && !isSlug(idOrSlug)) return null
-  const post = await getPostByAnyCached(idOrSlug)
-  if (!post) return null
-
-  const chain = post.post_type === 'comment' ? await loadCommentChain(post) : [post]
-  if (!chain || chain.some(node => BLOCKED_POST_TYPES.has(node.post_type))) return null
+  const [post] = await getPostsOrDeletedCommentStubs([idOrSlug])
+  if (!post || BLOCKED_POST_TYPES.has(post.post_type)) return null
+  const root = post.root_post_id ? await getPostByAnyCached(post.root_post_id) : post
+  if (!root || BLOCKED_POST_TYPES.has(root.post_type)) return null
 
   // Anonymous access is a subset of authenticated access; still verify the credential owner exists.
   await requirePrivateToolUser(currentUser)
-  const asSignedOut = await canViewPostsBatch(null, chain)
-  if (!chain.every(node => asSignedOut.get(node.id))) return null
-  return { post, ancestors: chain.slice(0, -1) }
+  const state = await getRequestedPostReadState(null, post, post.root_post_id ? root : null)
+  return state ? { post, root, state } : null
 }
-
-/** The live thread root down to `post`, inclusive, or null when a member cannot be loaded. */
-async function loadCommentChain(post: Post): Promise<Post[] | null> {
-  const nodes = (await getCommentAncestorsByAny(post.id)).filter(node => !node.deleted_at)
-  const posts = await getPostByAnyCachedBatch(
-    nodes.filter(node => node.id !== post.id).map(node => node.id),
-  )
-  const loaded = new Map(posts.flatMap(node => (node ? [[node.id, node]] : [])))
-  loaded.set(post.id, post)
-  const chain = nodes.flatMap(node => loaded.get(node.id) ?? [])
-  if (chain.length !== nodes.length || chain.at(-1)?.id !== post.id) return null
-  return chain
-}
-
-const live = (node: { deleted_at: Date | null }) => !node.deleted_at
 
 /**
  * Resolves many posts at once with exactly the visibility `resolveReadableThread` gives each one,
- * in the order of `postIds`: the thread, or null where it answers as not found. A page runs one
- * ancestors statement, one cached post read, one `requirePrivateToolUser` and one
- * `canViewPostsBatch` over the union of the thread chains, however many posts it holds. Rows are
- * not bounded the same way: the ancestors statement returns one row per ancestor per requested id,
- * and every live ancestor is loaded and checked, so cost grows with chain depth. Takes post ids
- * only; an entry that is not a UUID is not found.
+ * in the order of `postIds`, except that a placeholder answers null: the post itself, not a
+ * stand-in. A page runs one cached post read, one cached root read, one `requirePrivateToolUser`
+ * and one `canViewPostsBatch`, however many posts it holds. Takes post ids only; an entry that is
+ * not a UUID is not found.
  */
 export async function resolveReadableThreads(
   currentUser: BasicUser,
   postIds: string[],
 ): Promise<(ReadableThread | null)[]> {
   const ids = [...new Set(postIds.filter(isUUID))]
-  const nodesById = await getCommentAncestorsBatch(ids)
-  const chainIds = [
-    ...new Set(
-      [...nodesById.values()]
-        .flat()
-        .filter(live)
-        .map(node => node.id),
-    ),
+  const posts = (await getPostByAnyCachedBatch(ids)).filter((post): post is Post => Boolean(post))
+  const rootIds = [
+    ...new Set(posts.flatMap(post => (post.root_post_id ? [post.root_post_id] : []))),
   ]
-  const loaded = new Map(
-    (await getPostByAnyCachedBatch(chainIds)).flatMap(post => (post ? [[post.id, post]] : [])),
+  const roots = new Map(
+    (await getPostByAnyCachedBatch(rootIds)).flatMap(root => (root ? [[root.id, root]] : [])),
   )
-
-  const chains = new Map<string, Post[]>()
-  for (const id of ids) {
-    const nodes = (nodesById.get(id) ?? []).filter(live)
-    const chain = nodes.flatMap(node => loaded.get(node.id) ?? [])
-    const intact = chain.length === nodes.length && chain.at(-1)?.id === id
-    if (intact && !chain.some(node => BLOCKED_POST_TYPES.has(node.post_type))) chains.set(id, chain)
-  }
-  const readable = new Set<string>()
-  if (chains.size > 0) {
+  const candidates = posts.flatMap(post => {
+    const root = post.root_post_id ? roots.get(post.root_post_id) : post
+    if (!root || BLOCKED_POST_TYPES.has(post.post_type) || BLOCKED_POST_TYPES.has(root.post_type)) {
+      return []
+    }
+    if (post.post_type === 'comment' && getCommentPlaceholderState(post, null)) return []
+    return [{ post, root }]
+  })
+  const readable = new Map<string, ReadableThread>()
+  if (candidates.length > 0) {
     await requirePrivateToolUser(currentUser)
-    const union = [...new Map([...chains.values()].flat().map(node => [node.id, node])).values()]
-    const asSignedOut = await canViewPostsBatch(null, union)
-    for (const [id, chain] of chains) {
-      if (chain.every(node => asSignedOut.get(node.id))) readable.add(id)
+    const access = [...new Map(candidates.map(({ root }) => [root.id, root])).values()]
+    const asSignedOut = await canViewPostsBatch(null, access)
+    for (const { post, root } of candidates) {
+      if (asSignedOut.get(root.id)) {
+        readable.set(post.id, { post, root, state: 'readable' })
+      }
     }
   }
-  return postIds.map(id => {
-    const chain = readable.has(id) ? chains.get(id) : undefined
-    return chain ? { post: chain.at(-1) as Post, ancestors: chain.slice(0, -1) } : null
-  })
+  return postIds.map(id => readable.get(id) ?? null)
 }

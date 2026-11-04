@@ -45,7 +45,7 @@ export async function prepareBookmarkActions(
       assert(targetId, 404, 'Entity not found')
       assert(
         // no-mistakes-disable-next-line query-reached-per-item: preserve individual target visibility errors before grouped mutation
-        await currentUserCanBookmarkTarget(currentUser, type, targetId),
+        await currentUserCanBookmarkTarget(currentUser, type, targetId, predicate),
         404,
         'Entity not found',
       )

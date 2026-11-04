@@ -28,7 +28,7 @@ describe('post.descendants', () => {
   })
 
   describe('GET /api/v1/posts/:idOrSlug/descendants', () => {
-    it('returns a comment tree and scrubs deleted comments', async () => {
+    it('returns a comment tree and leaves out deleted comments with no valid reply', async () => {
       const postId = await insertTestPost({
         title: 'Post With Comments',
         slug: `post-comments-${Date.now()}`,
@@ -92,9 +92,9 @@ describe('post.descendants', () => {
 
       const resultIds = response.body.results.map((r: { id: string }) => r.id)
 
-      // All comments should be included (deleted comments are preserved)
-      expect(resultIds).toContain(deletedCommentId)
-      expect(resultIds).toContain(anotherDeletedCommentId)
+      // A deleted comment with no valid reply below it is not returned.
+      expect(resultIds).not.toContain(deletedCommentId)
+      expect(resultIds).not.toContain(anotherDeletedCommentId)
       expect(resultIds).toContain(parentCommentId)
       expect(resultIds).toContain(childCommentId)
 
@@ -142,6 +142,18 @@ describe('post.descendants', () => {
       // Deleted parent and child should both be included
       expect(resultIds).toContain(deletedParentId)
       expect(resultIds).toContain(childId)
+      expect(response.body.posts[deletedParentId]).toMatchObject({
+        placeholder_state: 'deleted',
+        markdown: '',
+        created_by_id: null,
+      })
+      expect(response.body.posts[childId].markdown).toBe('Child comment')
+
+      // A walk may start at the placeholder, so a collapsed one can be expanded.
+      const fromPlaceholder = await request
+        .get(`/api/v1/posts/${deletedParentId}/descendants`)
+        .expect(200)
+      expect(fromPlaceholder.body.results.map((r: { id: string }) => r.id)).toEqual([childId])
     })
 
     it('returns descendants when called on a mid-level comment', async () => {

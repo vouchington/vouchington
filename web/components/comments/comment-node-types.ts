@@ -16,4 +16,7 @@ export interface CommentNodeProps {
   isAdmin: boolean
   isThreadLocked: boolean
   hideDownCount?: boolean
+  /** Comments whose reply list continues past the loaded page. */
+  moreRepliesIds?: Set<string> | undefined
+  onLoadMoreReplies?: ((id: string) => void) | undefined
 }

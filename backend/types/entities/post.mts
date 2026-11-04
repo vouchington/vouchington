@@ -17,6 +17,11 @@ export type PostType =
   | 'blog_post'
 /** Post types excluded from generic/public post surfaces and delegated relation writes. */
 export const BLOCKED_POST_TYPES: ReadonlySet<PostType> = new Set(['topic_recommendation'])
+/**
+ * Why a comment comes back without text or author: it was deleted, or it has not been cleared and
+ * the viewer is neither its author nor moderation staff. A code, never display text.
+ */
+export type CommentPlaceholderState = 'deleted' | 'unmoderated'
 export type PostBroadcast = 'everyone' | 'users' | 'followers' | 'mutual_followers'
 export type PostPrivacy = 'public' | 'private'
 
@@ -126,6 +131,8 @@ export type Post = {
   lingua_rs_detected_language?: string | null
   url_id?: string | null
   can_edit_content?: boolean
+  // Set only on a comment the viewer cannot read; the post then carries no text, author or outcome.
+  placeholder_state?: CommentPlaceholderState
   // Attached per request after the cache read, never stored on the cached post or in view_posts.
   provenance?: PublicContentProvenance
   staff_provenance?: StaffContentProvenance

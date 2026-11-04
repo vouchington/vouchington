@@ -1,6 +1,7 @@
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { StaffContentProvenance } from '@voucha/types/entities/content-provenance'
 import { isModerationStaff } from '@services/users/authorization'
+import { maskCommentPlaceholders } from '@services/posts/comment-placeholder'
 import { canViewAnonymousAuthor, maskAnonymousPosts } from '@services/posts/mask-anonymous'
 import type { Post } from '@services/posts/types'
 import type { PrivateUser } from '@services/users/types'
@@ -64,10 +65,14 @@ export async function attachWrittenPostProvenance<T extends ProvenancePost>(
   return (await attachPostProvenance([post], viewer, { readOnly: false }))[0] ?? post
 }
 
-/** Labels posts, then hides anonymous authors. The order matters: see `attachPostProvenance`. */
+/**
+ * Labels posts, hides anonymous authors, then reduces a comment the viewer cannot read to its
+ * placeholder. The order matters: see `attachPostProvenance`.
+ */
 export async function labelAndMaskPosts<T extends Post>(
   posts: Array<T | null | undefined>,
   currentUser?: PrivateUser | null,
 ): Promise<Array<T | null | undefined>> {
-  return maskAnonymousPosts(await attachPostProvenance(posts, currentUser), currentUser)
+  const masked = maskAnonymousPosts(await attachPostProvenance(posts, currentUser), currentUser)
+  return maskCommentPlaceholders(masked, currentUser)
 }

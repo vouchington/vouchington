@@ -115,6 +115,8 @@ export function CommentTree({
             isAdmin={isAdmin}
             isThreadLocked={isThreadLocked}
             hideDownCount={hideDownCount}
+            moreRepliesIds={comments.moreRepliesIds}
+            onLoadMoreReplies={comments.handleLoadMoreReplies}
           />
         ))}
       </div>

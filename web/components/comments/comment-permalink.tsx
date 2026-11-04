@@ -10,6 +10,8 @@ import { getEffectiveContentLanguage } from '@ts-shared/languages/content-langua
 import type { getTranslations } from '@/lib/i18n/get-translations'
 
 function getCommentAuthor(post: Post, t: Awaited<ReturnType<typeof getTranslations>>) {
+  if (post.placeholder_state === 'unmoderated')
+    return t('extracted.comments.commentPermalink.pendingReview_f1c45f3f')
   if (post.deleted_at) return t('extracted.comments.commentPermalink.deleted_dd5f43ed')
   if (post.created_by?.username) return post.created_by.username
   if (post.is_anonymous) return t('extracted.comments.commentPermalink.anonymous_e7a8aa2d')
@@ -93,10 +95,8 @@ export function CommentPermalink({
           <div className='mb-2 text-xs text-muted-foreground'>
             <span className='font-medium text-foreground'>{getCommentAuthor(targetPost, t)}</span>
           </div>
-          {targetPost.deleted_at ? (
-            <p className='italic text-muted-foreground'>
-              {t('extracted.comments.commentPermalink.deleted_dd5f43ed')}
-            </p>
+          {targetPost.deleted_at || targetPost.placeholder_state ? (
+            <p className='italic text-muted-foreground'>{getCommentAuthor(targetPost, t)}</p>
           ) : (
             <MarkdownContent
               html={targetHtml}

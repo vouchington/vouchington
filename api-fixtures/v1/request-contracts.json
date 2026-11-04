@@ -29185,6 +29185,10 @@
             }
           ]
         },
+        "placeholder_state": {
+          "enum": ["deleted", "unmoderated"],
+          "type": "string"
+        },
         "post_explicit_categories": {
           "items": {
             "anyOf": [

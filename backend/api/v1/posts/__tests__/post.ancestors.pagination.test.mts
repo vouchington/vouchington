@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, deleteTestPost, insertTestPost } from '@voucha/test-helpers'
+import { caches } from '@services/entity-cache/caches'
 import type { PrivateUser } from '@services/users/types'
 
 describe('post.ancestors pagination', () => {
@@ -77,7 +78,7 @@ describe('post.ancestors pagination', () => {
     ]).toEqual([rootId, ...ids])
   })
 
-  it('preserves deleted structural ancestors across bounded pages', async () => {
+  it('returns deleted ancestors as placeholders across bounded pages', async () => {
     const { ids, rootId } = await createCommentChain(8)
     await Promise.all([deleteTestPost(ids[1]!), deleteTestPost(ids[4]!)])
 
@@ -92,8 +93,8 @@ describe('post.ancestors pagination', () => {
 
     expect(first.body.results.map((result: { id: string }) => result.id)).toContain(ids[4])
     expect(second.body.results.map((result: { id: string }) => result.id)).toContain(ids[1])
-    expect(first.body.posts[ids[4]!]).toBeUndefined()
-    expect(second.body.posts[ids[1]!]).toBeUndefined()
+    expect(first.body.posts[ids[4]!]).toMatchObject({ placeholder_state: 'deleted', markdown: '' })
+    expect(second.body.posts[ids[1]!]).toMatchObject({ placeholder_state: 'deleted', markdown: '' })
     expect(second.body.results[0].id).toBe(rootId)
   })
 
@@ -183,6 +184,8 @@ describe('post.ancestors pagination', () => {
       .get(`/api/v1/posts/${targetId}/ancestors?limit=5`)
       .expect(200)
     await deleteTestPost(targetId)
+    // The delete flow drops the cached post; the SQL helper does not.
+    await caches.posts.delete(targetId)
 
     await createRequest()
       .get(

@@ -136,7 +136,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         const { similar_post_id } = searchOptions
         if (
           similar_post_id &&
-          !(currentUser && (await resolveReadableThread(currentUser, similar_post_id)))
+          !(
+            currentUser &&
+            (await resolveReadableThread(currentUser, similar_post_id))?.state === 'readable'
+          )
         ) {
           return { results: [], page_info: EMPTY_PAGE_INFO }
         }

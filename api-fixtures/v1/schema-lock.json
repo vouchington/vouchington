@@ -1851,7 +1851,7 @@
     },
     "native.comments.descendants.default": {
       "fixtureIds": ["native.comments.descendants.default"],
-      "hash": "952901d47b4bad477541f333b7868c0cb7a143af43f2766f0f04d0edf7f0b695"
+      "hash": "8dde802dbfb62965df15a201b5cd92d02ddf59e3b199f6bd1dc2a487e0af6a6e"
     },
     "native.comments.post-detail.default": {
       "fixtureIds": ["native.comments.post-detail.default"],

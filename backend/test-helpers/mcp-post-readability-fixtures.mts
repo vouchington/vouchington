@@ -15,6 +15,11 @@ export type McpPostReadabilityFixtures = {
   readable: McpPostFixture[]
   /** Posts `read_posts(details)` answers as not found, even to their author and to administrators. */
   hidden: McpPostFixture[]
+  /**
+   * Comments `read_posts(details)` opens as placeholders, without text or author, because a valid
+   * reply sits below them. A search never returns them.
+   */
+  placeholders: McpPostFixture[]
 }
 
 /**
@@ -72,6 +77,11 @@ export async function seedMcpPostReadabilityFixtures(
     post_type: 'comment',
     parent_post_id: pendingComment.id,
   })
+  const pendingCommentWithoutReply = await seed(
+    'comment awaiting review with no reply',
+    { post_type: 'comment', parent_post_id: publicRoot.id },
+    true,
+  )
   const recommendation = await seed('topic recommendation', { post_type: 'topic_recommendation' })
   const commentUnderRecommendation = await seed('comment under a topic recommendation', {
     post_type: 'comment',
@@ -79,15 +89,15 @@ export async function seedMcpPostReadabilityFixtures(
   })
 
   return {
-    readable: [publicRoot, publicComment],
+    readable: [publicRoot, publicComment, replyUnderPending],
+    placeholders: [pendingComment],
     hidden: [
       usersOnly,
       followersOnly,
       mutualOnly,
       pendingPost,
       commentUnderPrivate,
-      pendingComment,
-      replyUnderPending,
+      pendingCommentWithoutReply,
       recommendation,
       commentUnderRecommendation,
     ],

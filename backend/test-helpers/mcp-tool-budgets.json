@@ -295,7 +295,7 @@
       },
       "create_post": {
         "measured": {
-          "list": 3689,
+          "list": 3760,
           "core": 1978
         },
         "max": {
@@ -305,7 +305,7 @@
       },
       "act_on_post": {
         "measured": {
-          "list": 6561,
+          "list": 6632,
           "core": 4330
         },
         "max": {
@@ -445,7 +445,7 @@
       },
       "start_discussion": {
         "measured": {
-          "list": 2810,
+          "list": 2881,
           "core": 1041
         },
         "max": {
