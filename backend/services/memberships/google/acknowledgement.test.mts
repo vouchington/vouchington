@@ -23,7 +23,10 @@ import {
   findDueGooglePlayAcknowledgementIds,
   advanceGooglePlayAcknowledgementRecoveryCursor,
 } from './acknowledgement-recovery.mts'
-import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
+import {
+  processWithGooglePlay,
+  withGooglePlay,
+} from '@voucha/test-helpers/google-play-provider-stub'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'
 
@@ -52,7 +55,9 @@ describe('Google Play acknowledgement recovery', () => {
       },
     }
     await expect(
-      acknowledgeGooglePlayPurchase({ acknowledgementId: randomUUID(), client }),
+      withGooglePlay(client, () =>
+        acknowledgeGooglePlayPurchase({ acknowledgementId: randomUUID() }),
+      ),
     ).resolves.toBe('deferred')
   })
 
@@ -114,7 +119,9 @@ describe('Google Play acknowledgement recovery', () => {
     expect(dueBatch.completesSweep).toBe(true)
     expect(await getTestGooglePlayAcknowledgementRecoveryCursor()).toBeNull()
     subscriptionState = 'SUBSCRIPTION_STATE_ON_HOLD'
-    expect(await acknowledgeGooglePlayPurchase({ acknowledgementId, client })).toBe('skipped')
+    expect(
+      await withGooglePlay(client, () => acknowledgeGooglePlayPurchase({ acknowledgementId })),
+    ).toBe('skipped')
     expect(acknowledgementCalls).toBe(0)
     subscriptionState = 'SUBSCRIPTION_STATE_ACTIVE'
     const restored = await createMembershipVerification({
@@ -125,9 +132,13 @@ describe('Google Play acknowledgement recovery', () => {
       evidence: { purchase_token: purchaseToken },
     })
     await processWithGooglePlay(restored.id, client)
-    expect(await acknowledgeGooglePlayPurchase({ acknowledgementId, client })).toBe('deferred')
+    expect(
+      await withGooglePlay(client, () => acknowledgeGooglePlayPurchase({ acknowledgementId })),
+    ).toBe('deferred')
     await makeTestGooglePlayAcknowledgementDue(acknowledgementId)
-    expect(await acknowledgeGooglePlayPurchase({ acknowledgementId, client })).toBe('acknowledged')
+    expect(
+      await withGooglePlay(client, () => acknowledgeGooglePlayPurchase({ acknowledgementId })),
+    ).toBe('acknowledged')
     expect(acknowledgementCalls).toBe(1)
     const terminalAt = new Date(Date.now() - 150 * 86_400_000)
     await resetMembershipOperationalRetentionCursor('google_acknowledgments')
@@ -190,11 +201,15 @@ describe('Google Play acknowledgement recovery', () => {
         throw new Error('Invalid Play purchase must not be acknowledged')
       },
     }
-    expect(await acknowledgeGooglePlayPurchase({ acknowledgementId, client: invalidClient })).toBe(
-      'skipped',
-    )
-    expect(await acknowledgeGooglePlayPurchase({ acknowledgementId, client: invalidClient })).toBe(
-      'deferred',
-    )
+    expect(
+      await withGooglePlay(invalidClient, () =>
+        acknowledgeGooglePlayPurchase({ acknowledgementId }),
+      ),
+    ).toBe('skipped')
+    expect(
+      await withGooglePlay(invalidClient, () =>
+        acknowledgeGooglePlayPurchase({ acknowledgementId }),
+      ),
+    ).toBe('deferred')
   })
 })

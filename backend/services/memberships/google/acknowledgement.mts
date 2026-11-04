@@ -3,12 +3,12 @@ import { createHash } from 'node:crypto'
 import { type QueryExecutor, write } from '@data-stores/psql'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
-import type {
-  GooglePlayMembershipProviderEnvironment,
-  GooglePlaySubscriptionsV2Client,
-} from './types.mts'
+import type { GooglePlayMembershipProviderEnvironment } from './types.mts'
 import { GooglePlayLineageConflictError } from './lineage.mts'
-import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
+import {
+  createConfiguredGooglePlaySubscriptionsV2Client,
+  GooglePlaySubscriptionLookupError,
+} from './configured-client.mts'
 
 type GoogleAcknowledgementClaim = {
   id: string
@@ -86,13 +86,13 @@ export async function ensureGooglePlayAcknowledgement(options: {
 /** Acknowledgement reply loss is deliberately retried by refetching subscriptionsv2 first. */
 export async function acknowledgeGooglePlayPurchase(options: {
   acknowledgementId: string
-  client: GooglePlaySubscriptionsV2Client
 }): Promise<'acknowledged' | 'skipped' | 'deferred'> {
+  const client = createConfiguredGooglePlaySubscriptionsV2Client()
   const claim = await claimGoogleAcknowledgement(options.acknowledgementId)
   if (!claim) return 'deferred'
   try {
     /* no-mistakes: integration=google-play */
-    const current = await options.client.getSubscription({
+    const current = await client.getSubscription({
       packageName: claim.applicationId,
       purchaseToken: decryptPurchaseToken(claim),
     })
@@ -112,7 +112,7 @@ export async function acknowledgeGooglePlayPurchase(options: {
     }
     if (current.acknowledgementState !== 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED') {
       /* no-mistakes: integration=google-play */
-      await options.client.acknowledgeSubscription({
+      await client.acknowledgeSubscription({
         packageName: claim.applicationId,
         subscriptionId: claim.subscriptionId,
         purchaseToken: decryptPurchaseToken(claim),

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { withGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
 import {
   deleteTestGooglePlayTokenAlias,
   getTestGooglePlayTokenAlias,
@@ -16,9 +17,7 @@ import {
   tokenDigest,
 } from './lineage.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
-import type { GooglePlaySubscriptionsV2Client } from './types.mts'
-
-type GooglePlayResolvedLineage = Awaited<ReturnType<typeof resolveGooglePlayTokenLineage>>
+import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'
 
 describe('Google Play token lineage', () => {
   it('keeps a fetched token alias identity and first fetch immutable', async () => {
@@ -104,12 +103,12 @@ describe('Google Play token lineage', () => {
       },
     })
     const before = await getTestGooglePlayTokenAlias({ applicationId, digest: tokenDigest(token) })
-    const resolved = await resolveGooglePlayTokenLineage({
+    const resolved = await resolveWithClient({
       applicationId,
       environment: 'test',
       purchaseToken: token,
       currentSubscription: {},
-      client: clientFor(() => ({})),
+      answers: () => ({}),
     })
     expect(resolved.rootDigest).toBe(rootDigest)
     expect(resolved.tokens).toEqual([{ token, linkedToken: null, fetched: true }])
@@ -176,15 +175,14 @@ describe('Google Play token lineage', () => {
     await persistTestGooglePlayTokenLineage({ applicationId, rootDigest, token: expiredToken })
     const currentToken = `current-${randomUUID()}`
     const calls: string[] = []
-
-    const resolved = await resolveGooglePlayTokenLineage({
+    const resolved = await resolveWithClient({
       applicationId,
       environment: 'test',
       purchaseToken: currentToken,
-      client: clientFor(token => {
+      answers: token => {
         calls.push(token)
         return { outOfAppPurchaseContext: { expiredPurchaseToken: expiredToken } }
-      }),
+      },
     })
 
     expect(calls).toEqual([currentToken])
@@ -202,15 +200,14 @@ describe('Google Play token lineage', () => {
     await persistTestGooglePlayTokenLineage({ applicationId, rootDigest, token: knownToken })
     const currentToken = `current-${randomUUID()}`
     const calls: string[] = []
-
-    const resolved = await resolveGooglePlayTokenLineage({
+    const resolved = await resolveWithClient({
       applicationId,
       environment: 'test',
       purchaseToken: currentToken,
-      client: clientFor(token => {
+      answers: token => {
         calls.push(token)
         return { linkedPurchaseToken: knownToken }
-      }),
+      },
     })
 
     expect(calls).toEqual([currentToken])
@@ -228,17 +225,16 @@ describe('Google Play token lineage', () => {
       const currentToken = `current-${randomUUID()}`
       const unavailableToken = `expired-${randomUUID()}`
       const calls: string[] = []
-
-      const resolved = await resolveGooglePlayTokenLineage({
+      const resolved = await resolveWithClient({
         applicationId,
         environment: 'test',
         purchaseToken: currentToken,
-        client: clientFor(token => {
+        answers: token => {
           calls.push(token)
           if (token === unavailableToken)
             throw new GooglePlaySubscriptionLookupError(status, token, reason)
           return { linkedPurchaseToken: unavailableToken }
-        }),
+        },
       })
 
       expect(calls).toEqual([currentToken, unavailableToken])
@@ -275,14 +271,14 @@ describe('Google Play token lineage', () => {
     let calls = 0
 
     await expect(
-      resolveGooglePlayTokenLineage({
+      resolveWithClient({
         applicationId,
         environment: 'test',
         purchaseToken: `token-${randomUUID()}`,
-        client: clientFor(token => {
+        answers: token => {
           calls += 1
           return { linkedPurchaseToken: `${token}-next` }
-        }),
+        },
       }),
     ).rejects.toThrow('Google Play linked purchase-token chain exceeded 100')
 
@@ -290,11 +286,15 @@ describe('Google Play token lineage', () => {
   })
 })
 
-function clientFor(
-  getSubscription: (token: string) => GooglePlayResolvedLineage['currentSubscription'],
-): GooglePlaySubscriptionsV2Client {
-  return {
-    getSubscription: async ({ purchaseToken }) => getSubscription(purchaseToken),
+function resolveWithClient(
+  options: Parameters<typeof resolveGooglePlayTokenLineage>[0] & {
+    answers: (token: string) => GooglePlaySubscriptionV2
+  },
+) {
+  const { answers, ...rest } = options
+  const client: GooglePlaySubscriptionsV2Client = {
+    getSubscription: async ({ purchaseToken }) => answers(purchaseToken),
     acknowledgeSubscription: async () => undefined,
   }
+  return withGooglePlay(client, () => resolveGooglePlayTokenLineage(rest))
 }

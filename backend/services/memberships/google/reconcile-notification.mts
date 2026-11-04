@@ -5,10 +5,7 @@ import { enqueueProcessMembershipVerification } from '@queues/memberships/enqueu
 import sql from 'sql-template-strings'
 import { createMembershipVerification } from '../verifications.mts'
 import { loadVerification } from '../verification-read.mts'
-import {
-  createConfiguredGooglePlaySubscriptionsV2Client,
-  GooglePlaySubscriptionLookupError,
-} from './configured-client.mts'
+import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import {
   getLatestKnownGooglePlayPurchaseToken,
   persistGooglePlayTokenLineage,
@@ -17,12 +14,10 @@ import {
 import { getKnownGooglePlayTokenLineage } from './known-lineage.mts'
 import { parseGooglePlayRtdn } from './rtdn.mts'
 import { getKnownGooglePlayCurrentSource } from './permanent-lookup-loss.mts'
-import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 /** Replays a durable RTDN trigger into the same authoritative worker verifier used by purchases. */
 export async function reconcileGooglePlayRtdnNotification(options: {
   evidenceId: string
-  client?: GooglePlaySubscriptionsV2Client
 }): Promise<void> {
   const context = await loadNotification(options.evidenceId)
   if (!context) return
@@ -64,7 +59,6 @@ export async function reconcileGooglePlayRtdnNotification(options: {
   let resolved: Awaited<ReturnType<typeof resolveGooglePlayTokenLineage>>
   try {
     resolved = await resolveGooglePlayTokenLineage({
-      client: options.client ?? createConfiguredGooglePlaySubscriptionsV2Client(),
       environment: context.environment,
       applicationId: context.applicationId,
       purchaseToken,

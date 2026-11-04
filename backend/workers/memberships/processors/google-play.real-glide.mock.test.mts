@@ -26,7 +26,10 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { getTestGooglePlayAcknowledgementId } from '@voucha/test-helpers/google-play-memberships'
-import { processWithGooglePlay } from '@voucha/test-helpers/google-play-provider-stub'
+import {
+  processWithGooglePlay,
+  withGooglePlay,
+} from '@voucha/test-helpers/google-play-provider-stub'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -125,6 +128,31 @@ describe('Google Play RTDN recovery with real PostgreSQL and GlideMQ', () => {
     }
   })
 
+  it('acknowledges the owned Google Play purchase named by the job', async () => {
+    const fixture = await createRecoveryFixture()
+    const acknowledged: Array<{
+      packageName: string
+      subscriptionId: string
+      purchaseToken: string
+    }> = []
+    const client: GooglePlaySubscriptionsV2Client = {
+      ...fixture.client,
+      acknowledgeSubscription: async options => {
+        acknowledged.push(options)
+      },
+    }
+    await withGooglePlay(client, () =>
+      processGooglePlayAcknowledgement({ acknowledgementId: fixture.acknowledgementId }),
+    )
+    expect(acknowledged).toEqual([
+      {
+        packageName: fixture.applicationId,
+        subscriptionId: fixture.productId,
+        purchaseToken: fixture.purchaseToken,
+      },
+    ])
+  })
+
   it('treats missing durable work as a no-op through each configured-client adapter', async () => {
     const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', `tests+google-worker-${randomUUID()}@voucha.ai`)
@@ -143,7 +171,14 @@ describe('Google Play RTDN recovery with real PostgreSQL and GlideMQ', () => {
   })
 })
 
-async function createRecoveryFixture(): Promise<{ acknowledgementId: string; sourceId: string }> {
+async function createRecoveryFixture(): Promise<{
+  acknowledgementId: string
+  sourceId: string
+  applicationId: string
+  productId: string
+  purchaseToken: string
+  client: GooglePlaySubscriptionsV2Client
+}> {
   const user = await createTestUser()
   const applicationId = `ai.voucha.google-${randomUUID()}`
   const productId = `plus.monthly.${randomUUID()}`
@@ -164,10 +199,8 @@ async function createRecoveryFixture(): Promise<{ acknowledgementId: string; sou
     trustedProviderContext: { environment: 'test', applicationId },
     evidence: { purchase_token: purchaseToken },
   })
-  await processWithGooglePlay(
-    verification.id,
-    recoveryClient({ applicationId, productId, purchaseToken, userId: user.id }),
-  )
+  const client = recoveryClient({ applicationId, productId, purchaseToken, userId: user.id })
+  await processWithGooglePlay(verification.id, client)
   const membership = await getMembershipByUserId(user.id)
   if (!membership) throw new Error('Expected verified Google Play membership')
   const [sourceId, acknowledgementId] = await Promise.all([
@@ -175,7 +208,7 @@ async function createRecoveryFixture(): Promise<{ acknowledgementId: string; sou
     getTestGooglePlayAcknowledgementId(verification.id),
   ])
   if (!sourceId || !acknowledgementId) throw new Error('Expected durable Google Play recovery rows')
-  return { sourceId, acknowledgementId }
+  return { sourceId, acknowledgementId, applicationId, productId, purchaseToken, client }
 }
 
 function recoveryClient(options: {

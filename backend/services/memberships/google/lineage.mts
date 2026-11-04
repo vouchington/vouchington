@@ -7,8 +7,11 @@ export { tokenDigest } from './token-digest.mts'
 export { GooglePlayLineageConflictError } from './token-alias.mts'
 export { getLatestKnownGooglePlayPurchaseToken } from './known-lineage.mts'
 import { fetchGooglePlaySubscription } from './subscription-fetch.mts'
-import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
-import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'
+import {
+  createConfiguredGooglePlaySubscriptionsV2Client,
+  GooglePlaySubscriptionLookupError,
+} from './configured-client.mts'
+import type { GooglePlaySubscriptionV2 } from './types.mts'
 import { getOrCreateProviderContextId } from '../provider-context.mts'
 
 const MAX_LINKED_TOKEN_DEPTH = 100
@@ -21,13 +24,13 @@ type GooglePlayResolvedLineage = {
 
 /** Bounded worker-only traversal; repeated or cyclic linked tokens are rejected. */
 export async function resolveGooglePlayTokenLineage(options: {
-  client: GooglePlaySubscriptionsV2Client
   environment: 'test' | 'production'
   applicationId: string
   purchaseToken: string
   currentSubscription?: GooglePlaySubscriptionV2
 }): Promise<GooglePlayResolvedLineage> {
   const { environment, applicationId } = options
+  const client = createConfiguredGooglePlaySubscriptionsV2Client()
   const seen = new Set<string>()
   const tokens: GooglePlayResolvedLineage['tokens'] = []
   let token = options.purchaseToken
@@ -54,7 +57,7 @@ export async function resolveGooglePlayTokenLineage(options: {
       else {
         // eslint-disable-next-line no-await-in-loop -- each ancestor depends on the prior response
         subscription = await fetchGooglePlaySubscription({
-          client: options.client,
+          client,
           applicationId,
           purchaseToken: token,
         })
