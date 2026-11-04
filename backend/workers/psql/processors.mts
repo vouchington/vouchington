@@ -18,6 +18,7 @@ import {
   runVoteRetentionCleanupPage,
   type VoteRetentionCleanupOptions,
   type AgentModerationRetentionOptions,
+  type DataRetentionCleanupOptions,
 } from '@services/data-retention'
 import { admitDataRetentionContinuations } from './processors/data-retention-continuation.mts'
 import {
@@ -74,6 +75,7 @@ export default async function processPsql(
     vote?: VoteRetentionCleanupOptions
     agentModeration?: AgentModerationRetentionOptions
     copyright?: CopyrightRetentionScope
+    retention?: DataRetentionCleanupOptions
   },
 ) {
   switch (jobName) {
@@ -105,17 +107,32 @@ export default async function processPsql(
       const cleanup = dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup
       const result = data?.continuation
         ? await cleanup(getDataRetentionLimits(), {
+            ...options?.retention,
             activeCopyrightFamilies: [],
-            classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
+            classifierRecords: {
+              ...options?.retention?.classifierRecords,
+              activeSweeps: data.continuation.activeClassifierSweeps,
+            },
             activeMembershipFamilies: data.continuation.activeMembershipFamilies,
-            postModerationLedger: { kinds: data.continuation.activePostModerationKinds },
+            postModerationLedger: {
+              ...options?.retention?.postModerationLedger,
+              kinds: data.continuation.activePostModerationKinds,
+            },
             includeAgentModerations: false,
             ...(data.continuation.userPurge
-              ? { softDeletedUsers: { userPurge: data.continuation.userPurge } }
+              ? {
+                  softDeletedUsers: {
+                    ...options?.retention?.softDeletedUsers,
+                    userPurge: data.continuation.userPurge,
+                  },
+                }
               : {}),
-            aiUsageRecords: { active: data.continuation.activeAiUsage ?? false },
+            aiUsageRecords: {
+              ...options?.retention?.aiUsageRecords,
+              active: data.continuation.activeAiUsage ?? false,
+            },
           })
-        : await cleanup(getDataRetentionLimits())
+        : await cleanup(getDataRetentionLimits(), options?.retention)
       const aiFamilies = AI_RETENTION_FAMILIES.filter(family => result[family].hasMore)
       if (aiFamilies.length > 0) {
         await (dependencies?.enqueueAIRetentionContinuations ?? enqueueAIRetentionContinuations)(

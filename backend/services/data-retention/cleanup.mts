@@ -179,9 +179,13 @@ type ExpiryCleanupOptions = Pick<
 
 type OperationalCleanupOptions = Parameters<typeof cleanupOperationalTombstones>[1]
 
+export type DataRetentionCleanupFamily = keyof DataRetentionCleanupResult | 'analyticsLocalFiles'
+
 // Each cleanup in a run takes its batch size and per-run cap from the required run limits; a
 // per-cleanup option can override either one (tests use this to scope windows and shrink limits).
-type DataRetentionCleanupOptions = {
+export type DataRetentionCleanupOptions = {
+  /** Omitted runs every family; selected families keep their normal ordering and page limits. */
+  families?: readonly DataRetentionCleanupFamily[]
   /** Continuations name the membership families that exceeded the previous run's cap. */
   activeMembershipFamilies?: readonly string[]
   includeAgentModerations?: boolean
@@ -470,6 +474,8 @@ export async function runDataRetentionCleanup(
   limits: DataRetentionLimits,
   options: DataRetentionCleanupOptions = {},
 ): Promise<DataRetentionCleanupResult> {
+  const active = (family: DataRetentionCleanupFamily) =>
+    options.families === undefined || options.families.includes(family)
   const withLimits = <T extends { batchSize?: number; maxBatches?: number }>(
     overrides: T | undefined,
   ) => applyRetentionLimits(limits, overrides)
@@ -482,47 +488,72 @@ export async function runDataRetentionCleanup(
   const retainedPageSize = Math.min(limits.batchSize, 1_000)
   // Ephemeral broker rows reference users and provider accounts. Remove expired rows first so a
   // long-interrupted cleanup run cannot retain avoidable references ahead of parent cleanup.
-  const expiredOAuthAuthorizations = await cleanupExpiredOAuthAuthorizations(
-    withLimits(options.expiredOAuthAuthorizations),
-  )
-  const expiredOAuthServerArtifacts = await cleanupExpiredOAuthAuthorizationServerArtifacts(
-    withLimits(options.expiredOAuthServerArtifacts),
-  )
+  const expiredOAuthAuthorizations = active('expiredOAuthAuthorizations')
+    ? await cleanupExpiredOAuthAuthorizations(withLimits(options.expiredOAuthAuthorizations))
+    : { deleted: 0, hasMore: false }
+  const expiredOAuthServerArtifacts = active('expiredOAuthServerArtifacts')
+    ? await cleanupExpiredOAuthAuthorizationServerArtifacts(
+        withLimits(options.expiredOAuthServerArtifacts),
+      )
+    : { deleted: 0, hasMore: false }
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
-  const softDeletedUsers = await cleanupSoftDeletedUsers(withLimits(options.softDeletedUsers))
-  const oldReferralAttributions = await cleanupOldReferralAttributions(
-    withLimits(options.oldReferralAttributions),
-  )
-  const histories = await cleanupHistories(withLimits(options.histories))
-  const oauthFriendEdges = await cleanupOAuthFriendEdgeWork(
-    withLimits(options.oauthFriendEdges),
-    options.oauthFriendEdges?.now,
-  )
-  const orphanedOAuthAccounts = await cleanupOrphanedOAuthAccounts(
-    withLimits(options.orphanedOAuthAccounts),
-  )
-  const securityRecords = await cleanupSecurityRecords(
-    withLimits(options.securityRecords),
-    options.securityRecords?.now,
-  )
-  const expiredBlueskyLinkCompletions = await cleanupExpiredBlueskyLinkCompletions(
-    withLimits(options.expiredBlueskyLinkCompletions),
-  )
-  const abandonedBlueskyLinkSessions = await cleanupAbandonedBlueskyLinkSessions(
-    withLimits(options.abandonedBlueskyLinkSessions),
-  )
-  const expiredContributionAdmissions = await cleanupExpiredContributionAdmissions(
-    withLimits(options.expiredContributionAdmissions),
-  )
-  const expiredContributionQuotaConsumptions = await cleanupExpiredContributionQuotaConsumptions(
-    withLimits(options.expiredContributionQuotaConsumptions),
-  )
-  const expiredTopicImportAttempts = await cleanupExpiredTopicImportAttempts(
-    applyRetentionLimits(topicImportLimits, options.expiredTopicImportAttempts),
-  )
-  const terminalNotificationPushIntents = await cleanupTerminalNotificationPushIntents(
-    withLimits(options.terminalNotificationPushIntents),
-  )
+  const softDeletedUsers = active('softDeletedUsers')
+    ? await cleanupSoftDeletedUsers(withLimits(options.softDeletedUsers))
+    : { deleted: 0, hasMore: false }
+  const oldReferralAttributions = active('oldReferralAttributions')
+    ? await cleanupOldReferralAttributions(withLimits(options.oldReferralAttributions))
+    : { deleted: 0, hasMore: false }
+  const histories = active('histories')
+    ? await cleanupHistories(withLimits(options.histories))
+    : {
+        dynamic_configuration_revisions: { scanned: 0, changed: 0, hasMore: false },
+        rss_feed_setting_changes: { scanned: 0, changed: 0, hasMore: false },
+        fediverse_instance_integration_changes: { scanned: 0, changed: 0, hasMore: false },
+        community_agent_prompt_revisions: { scanned: 0, changed: 0, hasMore: false },
+        followed_user_import_requests: { scanned: 0, changed: 0, hasMore: false },
+        pending_user_import_requests: { scanned: 0, changed: 0, hasMore: false },
+        referral_attribution_scrub: { scanned: 0, changed: 0, hasMore: false },
+        referral_attribution_expiry: { scanned: 0, changed: 0, hasMore: false },
+      }
+  const oauthFriendEdges = active('oauthFriendEdges')
+    ? await cleanupOAuthFriendEdgeWork(
+        withLimits(options.oauthFriendEdges),
+        options.oauthFriendEdges?.now,
+      )
+    : { deleted: 0, resolved: 0, hasMore: false }
+  const orphanedOAuthAccounts = active('orphanedOAuthAccounts')
+    ? await cleanupOrphanedOAuthAccounts(withLimits(options.orphanedOAuthAccounts))
+    : { deleted: 0, hasMore: false }
+  const securityRecords = active('securityRecords')
+    ? await cleanupSecurityRecords(
+        withLimits(options.securityRecords),
+        options.securityRecords?.now,
+      )
+    : { deleted: 0, hasMore: false }
+  const expiredBlueskyLinkCompletions = active('expiredBlueskyLinkCompletions')
+    ? await cleanupExpiredBlueskyLinkCompletions(withLimits(options.expiredBlueskyLinkCompletions))
+    : { deleted: 0, hasMore: false }
+  const abandonedBlueskyLinkSessions = active('abandonedBlueskyLinkSessions')
+    ? await cleanupAbandonedBlueskyLinkSessions(withLimits(options.abandonedBlueskyLinkSessions))
+    : { deleted: 0, hasMore: false }
+  const expiredContributionAdmissions = active('expiredContributionAdmissions')
+    ? await cleanupExpiredContributionAdmissions(withLimits(options.expiredContributionAdmissions))
+    : { deleted: 0, hasMore: false }
+  const expiredContributionQuotaConsumptions = active('expiredContributionQuotaConsumptions')
+    ? await cleanupExpiredContributionQuotaConsumptions(
+        withLimits(options.expiredContributionQuotaConsumptions),
+      )
+    : { deleted: 0, hasMore: false }
+  const expiredTopicImportAttempts = active('expiredTopicImportAttempts')
+    ? await cleanupExpiredTopicImportAttempts(
+        applyRetentionLimits(topicImportLimits, options.expiredTopicImportAttempts),
+      )
+    : { deleted: 0, hasMore: false }
+  const terminalNotificationPushIntents = active('terminalNotificationPushIntents')
+    ? await cleanupTerminalNotificationPushIntents(
+        withLimits(options.terminalNotificationPushIntents),
+      )
+    : { deleted: 0, hasMore: false }
   const {
     deliveredMembershipEntitlementEffects,
     endedMembershipRenewalNotices,
@@ -535,36 +566,46 @@ export async function runDataRetentionCleanup(
       endedMembershipRenewalNotices: withLimits(options.endedMembershipRenewalNotices),
       terminalGooglePlayAcknowledgments: withLimits(options.terminalGooglePlayAcknowledgments),
     },
-    options.activeMembershipFamilies,
+    options.families?.filter(
+      family =>
+        options.activeMembershipFamilies === undefined ||
+        options.activeMembershipFamilies.includes(family),
+    ) ?? options.activeMembershipFamilies,
   )
-  const terminalStripeEventWork = await cleanupTerminalStripeEventWork(
-    withLimits(options.terminalStripeEventWork),
-  )
-  const abandonedMembershipPurchaseIntents = await cleanupAbandonedMembershipPurchaseIntents(
-    withLimits(options.abandonedMembershipPurchaseIntents),
-  )
-  const paymentLedgers = await cleanupPaymentLedgers(
-    withLimits(options.paymentLedgers),
-    options.paymentLedgers?.recordIds,
-  )
-  const emailAddressLoginTokens = await cleanupEmailAddressLoginTokens(
-    withLimits(options.emailAddressLoginTokens),
-  )
-  const phoneNumberLoginTokens = await cleanupPhoneNumberLoginTokens(
-    withLimits(options.phoneNumberLoginTokens),
-  )
-  const expiredUserSessions = await cleanupExpiredUserSessions(
-    withLimits(options.expiredUserSessions),
-  )
-  const oldPendingNotificationPushIntents = await cleanupOldPendingNotificationPushIntents(
-    withLimits(options.oldPendingNotificationPushIntents),
-  )
+  const terminalStripeEventWork = active('terminalStripeEventWork')
+    ? await cleanupTerminalStripeEventWork(withLimits(options.terminalStripeEventWork))
+    : { deleted: 0, hasMore: false, cursorId: null }
+  const abandonedMembershipPurchaseIntents = active('abandonedMembershipPurchaseIntents')
+    ? await cleanupAbandonedMembershipPurchaseIntents(
+        withLimits(options.abandonedMembershipPurchaseIntents),
+      )
+    : { deleted: 0, hasMore: false, cursorId: null }
+  const paymentLedgers = active('paymentLedgers')
+    ? await cleanupPaymentLedgers(
+        withLimits(options.paymentLedgers),
+        options.paymentLedgers?.recordIds,
+      )
+    : []
+  const emailAddressLoginTokens = active('emailAddressLoginTokens')
+    ? await cleanupEmailAddressLoginTokens(withLimits(options.emailAddressLoginTokens))
+    : { deleted: 0, hasMore: false, continuation: null }
+  const phoneNumberLoginTokens = active('phoneNumberLoginTokens')
+    ? await cleanupPhoneNumberLoginTokens(withLimits(options.phoneNumberLoginTokens))
+    : { deleted: 0, hasMore: false, continuation: null }
+  const expiredUserSessions = active('expiredUserSessions')
+    ? await cleanupExpiredUserSessions(withLimits(options.expiredUserSessions))
+    : { deleted: 0, hasMore: false, continuation: null }
+  const oldPendingNotificationPushIntents = active('oldPendingNotificationPushIntents')
+    ? await cleanupOldPendingNotificationPushIntents(
+        withLimits(options.oldPendingNotificationPushIntents),
+      )
+    : { deleted: 0, hasMore: false, continuation: null }
   // Receipts for surviving intents retain their subscription generation. Each page checks them
   // again under the subscription row lock, even after the push-intent cleanup above has run.
   // ast-grep-ignore: no-three-sequential-awaits -- tombstone deletion follows push-intent cleanup before later retention phases
-  const webPushSubscriptionTombstones = await cleanupWebPushSubscriptionTombstones(
-    withLimits(options.webPushSubscriptionTombstones),
-  )
+  const webPushSubscriptionTombstones = active('webPushSubscriptionTombstones')
+    ? await cleanupWebPushSubscriptionTombstones(withLimits(options.webPushSubscriptionTombstones))
+    : { deleted: 0, hasMore: false, continuation: null }
   // These four cleanups touch different tables and share no data, so they run together.
   const [
     oldModerationQueueClaims,
@@ -572,13 +613,19 @@ export async function runDataRetentionCleanup(
     postModerationLedger,
     agentModerations,
   ] = await Promise.all([
-    cleanupOldModerationQueueClaims(withLimits(options.oldModerationQueueClaims)),
-    cleanupOldModerationMediaReveals(withLimits(options.oldModerationMediaReveals)),
-    cleanupPostModerationLedger({
-      ...withLimits(options.postModerationLedger),
-      retentionDays: getPostModerationRetentionDays(),
-    }),
-    options.includeAgentModerations === false
+    active('oldModerationQueueClaims')
+      ? cleanupOldModerationQueueClaims(withLimits(options.oldModerationQueueClaims))
+      : { deleted: 0, hasMore: false, cursorId: null },
+    active('oldModerationMediaReveals')
+      ? cleanupOldModerationMediaReveals(withLimits(options.oldModerationMediaReveals))
+      : { deleted: 0, hasMore: false, cursorId: null },
+    active('postModerationLedger')
+      ? cleanupPostModerationLedger({
+          ...withLimits(options.postModerationLedger),
+          retentionDays: getPostModerationRetentionDays(),
+        })
+      : { deletedVersions: 0, clearedPassEvidence: 0, hasMore: false, remainingKinds: [] },
+    !active('agentModerations') || options.includeAgentModerations === false
       ? { scanned: 0, deleted: 0, hasMore: false, continuation: null }
       : cleanupObsoleteAgentModerations(withLimits(options.agentModerations)),
   ])
@@ -589,10 +636,18 @@ export async function runDataRetentionCleanup(
     completedAdminImportBatches,
     completedRssImportBatches,
   ] = await Promise.all([
-    cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache)),
-    cleanupTerminalEmbeddingBatches(withLimits(options.terminalEmbeddingBatches)),
-    cleanupCompletedImportBatches('admin', withLimits(options.completedAdminImportBatches)),
-    cleanupCompletedImportBatches('rss', withLimits(options.completedRssImportBatches)),
+    active('textEmbeddingCache')
+      ? cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache))
+      : { deleted: 0, hasMore: false, continuation: null },
+    active('terminalEmbeddingBatches')
+      ? cleanupTerminalEmbeddingBatches(withLimits(options.terminalEmbeddingBatches))
+      : { deleted: 0, hasMore: false, continuation: null },
+    active('completedAdminImportBatches')
+      ? cleanupCompletedImportBatches('admin', withLimits(options.completedAdminImportBatches))
+      : { deleted: 0, hasMore: false, continuation: null },
+    active('completedRssImportBatches')
+      ? cleanupCompletedImportBatches('rss', withLimits(options.completedRssImportBatches))
+      : { deleted: 0, hasMore: false, continuation: null },
   ])
   // Request-attempt, media-change, classifier and SES-bounce cleanups read and delete separate tables.
   const [
@@ -601,97 +656,139 @@ export async function runDataRetentionCleanup(
     classifierRecords,
     sesBounceEvents,
   ] = await Promise.all([
-    cleanupExpiredUserDataRequestAttempts(withLimits(options.expiredUserDataRequestAttempts)),
-    cleanupOldMediaDeliveryChanges(withLimits(options.oldMediaDeliveryChanges)),
-    cleanupClassifierRecords({
-      ...withLimits(options.classifierRecords),
-      retentionDays: getClassifierRetentionDays(),
-    }),
-    cleanupSesBounceEvents(withLimits(options.sesBounceEvents)),
+    active('expiredUserDataRequestAttempts')
+      ? cleanupExpiredUserDataRequestAttempts(withLimits(options.expiredUserDataRequestAttempts))
+      : { deleted: 0, hasMore: false, continuation: null },
+    active('oldMediaDeliveryChanges')
+      ? cleanupOldMediaDeliveryChanges(withLimits(options.oldMediaDeliveryChanges))
+      : { deleted: 0, hasMore: false, continuation: null },
+    active('classifierRecords')
+      ? cleanupClassifierRecords({
+          ...withLimits(options.classifierRecords),
+          retentionDays: getClassifierRetentionDays(),
+        })
+      : {
+          runCandidates: { scanned: 0, deleted: 0, hasMore: false },
+          agentTopics: { scanned: 0, deleted: 0, hasMore: false },
+          localOutcomes: { scanned: 0, deleted: 0, hasMore: false },
+          runs: { scanned: 0, deleted: 0, hasMore: false },
+          topicResults: { scanned: 0, deleted: 0, hasMore: false },
+          storyResults: { scanned: 0, deleted: 0, hasMore: false },
+          communityPromptResults: { scanned: 0, deleted: 0, hasMore: false },
+          decisionCandidates: { scanned: 0, deleted: 0, hasMore: false },
+          calls: { scanned: 0, deleted: 0, hasMore: false },
+          batches: { scanned: 0, deleted: 0, hasMore: false },
+          requests: { scanned: 0, deleted: 0, hasMore: false },
+          deletedSubjectIdentities: { scanned: 0, deleted: 0, hasMore: false },
+          versionedIdentities: { scanned: 0, deleted: 0, hasMore: false },
+          identities: { scanned: 0, deleted: 0, hasMore: false },
+        },
+    active('sesBounceEvents')
+      ? cleanupSesBounceEvents(withLimits(options.sesBounceEvents))
+      : { deleted: 0, hasMore: false, continuation: null },
   ])
   // Tombstone deletion checks for surviving intents, so interrupted intent cleanup cannot
   // discard delivery state; running it first only makes already-terminal rows eligible sooner.
   const [systemPrunedNotifications, userDeletedNotifications, moderationEmailSends] =
     await Promise.all([
-      cleanupSystemPrunedNotifications(withLimits(options.systemPrunedNotifications)),
-      cleanupUserDeletedNotifications(withLimits(options.userDeletedNotifications)),
-      cleanupModerationEmailSends(withLimits(options.moderationEmailSends)),
+      active('systemPrunedNotifications')
+        ? cleanupSystemPrunedNotifications(withLimits(options.systemPrunedNotifications))
+        : { deleted: 0, hasMore: false, continuation: null },
+      active('userDeletedNotifications')
+        ? cleanupUserDeletedNotifications(withLimits(options.userDeletedNotifications))
+        : { deleted: 0, hasMore: false, continuation: null },
+      active('moderationEmailSends')
+        ? cleanupModerationEmailSends(withLimits(options.moderationEmailSends))
+        : { deleted: 0, hasMore: false, continuation: null },
     ])
   // ast-grep-ignore: no-three-sequential-awaits -- retention families run serially to cap concurrent database work
-  const federationRetention = await cleanupFederationRetention({
-    ...limits,
-    ...options.federationRetention,
-  })
-  const supersededVoteBallots = await cleanupSupersededVoteBallots(
-    limits.batchSize,
-    new Date(),
-    options.voteBallotIdsByTable,
-  )
-  const orphanedUserAgentStrings = await cleanupOrphanedUserAgentStrings(
-    limits.batchSize,
-    options.userAgentStringIds,
-  )
-  const voteIntegrityDetails = await cleanupVoteIntegrityDetails(
-    limits.batchSize,
-    new Date(),
-    options.voteIntegrityFlagIds,
-  )
+  const federationRetention = active('federationRetention')
+    ? await cleanupFederationRetention({
+        ...limits,
+        ...options.federationRetention,
+      })
+    : {
+        followerDistributions: { deleted: 0, hasMore: false, continuationPosition: null },
+        inboxReplay: { deleted: 0, hasMore: false, continuationPosition: null },
+        terminalFollowIdentities: { deleted: 0, hasMore: false },
+        terminalLikeIdentities: { deleted: 0, hasMore: false },
+      }
+  const supersededVoteBallots = active('supersededVoteBallots')
+    ? await cleanupSupersededVoteBallots(limits.batchSize, new Date(), options.voteBallotIdsByTable)
+    : []
+  const orphanedUserAgentStrings = active('orphanedUserAgentStrings')
+    ? await cleanupOrphanedUserAgentStrings(limits.batchSize, options.userAgentStringIds)
+    : { scanned: 0, deleted: 0, hasMore: false }
+  const voteIntegrityDetails = active('voteIntegrityDetails')
+    ? await cleanupVoteIntegrityDetails(limits.batchSize, new Date(), options.voteIntegrityFlagIds)
+    : { scanned: 0, redacted: 0, hasMore: false }
   // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const copyright = await runCopyrightOperationalRetentionCleanup({
     limits,
-    activeFamilies: options.activeCopyrightFamilies,
+    activeFamilies:
+      options.activeCopyrightFamilies?.filter(active) ??
+      options.families?.filter((family): family is CopyrightRetentionFamily =>
+        family.startsWith('copyright'),
+      ),
   })
-  const undoneActivityPubLikes = await cleanupOperationalTombstones(
-    'activitypub_post_likes',
-    withLimits(options.undoneActivityPubLikes),
-  )
-  const staleRemoteActors = await cleanupOperationalTombstones(
-    'remote_actors',
-    withLimits(options.staleRemoteActors),
-  )
-  const feedHostnameBlocks = await cleanupOperationalTombstones(
-    'feed_hostname_blocks',
-    withLimits(options.feedHostnameBlocks),
-  )
-  const otherHostnameBlocks = await cleanupOperationalTombstones(
-    'other_hostname_blocks',
-    withLimits(options.otherHostnameBlocks),
-  )
-  const deletedConversations = await cleanupOperationalTombstones(
-    'deleted_conversations',
-    withLimits(options.deletedConversations),
-  )
-  const appAttestationKeys = await cleanupOperationalTombstones(
-    'app_attestation_keys',
-    withLimits(options.appAttestationKeys),
-  )
+  const undoneActivityPubLikes = active('undoneActivityPubLikes')
+    ? await cleanupOperationalTombstones(
+        'activitypub_post_likes',
+        withLimits(options.undoneActivityPubLikes),
+      )
+    : { deleted: 0, hasMore: false, continuation: null }
+  const staleRemoteActors = active('staleRemoteActors')
+    ? await cleanupOperationalTombstones('remote_actors', withLimits(options.staleRemoteActors))
+    : { deleted: 0, hasMore: false, continuation: null }
+  const feedHostnameBlocks = active('feedHostnameBlocks')
+    ? await cleanupOperationalTombstones(
+        'feed_hostname_blocks',
+        withLimits(options.feedHostnameBlocks),
+      )
+    : { deleted: 0, hasMore: false, continuation: null }
+  const otherHostnameBlocks = active('otherHostnameBlocks')
+    ? await cleanupOperationalTombstones(
+        'other_hostname_blocks',
+        withLimits(options.otherHostnameBlocks),
+      )
+    : { deleted: 0, hasMore: false, continuation: null }
+  const deletedConversations = active('deletedConversations')
+    ? await cleanupOperationalTombstones(
+        'deleted_conversations',
+        withLimits(options.deletedConversations),
+      )
+    : { deleted: 0, hasMore: false, continuation: null }
+  const appAttestationKeys = active('appAttestationKeys')
+    ? await cleanupOperationalTombstones(
+        'app_attestation_keys',
+        withLimits(options.appAttestationKeys),
+      )
+    : { deleted: 0, hasMore: false, continuation: null }
   const aiUsageRecords =
-    options.aiUsageRecords?.active === false
+    !active('aiUsageRecords') || options.aiUsageRecords?.active === false
       ? { deleted: 0, hasMore: false, cursorId: null }
       : await cleanupAiUsageRecords({
           ...withLimits(options.aiUsageRecords),
           retentionDays: getAiUsageRawRetentionDays(),
         })
-  const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
-    retainedPageSize,
-    options.retainedRelationIdentityKeys,
-  )
-  const retainedMediaBindings = await cleanupRetainedMediaBindings(
-    retainedPageSize,
-    options.retainedMediaBindingIds,
-  )
+  const retainedRelationIdentities = active('retainedRelationIdentities')
+    ? await cleanupRetainedRelationIdentities(
+        retainedPageSize,
+        options.retainedRelationIdentityKeys,
+      )
+    : []
+  const retainedMediaBindings = active('retainedMediaBindings')
+    ? await cleanupRetainedMediaBindings(retainedPageSize, options.retainedMediaBindingIds)
+    : { scanned: 0, deleted: 0, hasMore: false }
   // Expired legal proof no longer keeps a retained user identity alive.
-  const legalRecords = await cleanupLegalRecords(
-    limits,
-    options.legalRecords?.now,
-    options.legalRecords?.recordIds,
-  )
+  const legalRecords = active('legalRecords')
+    ? await cleanupLegalRecords(limits, options.legalRecords?.now, options.legalRecords?.recordIds)
+    : []
   // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
-  const retainedIdentityRoots = await cleanupRetainedIdentityRoots(
-    retainedPageSize,
-    options.retainedIdentityRootIds,
-  )
-  await cleanupAnalyticsLocalFiles()
+  const retainedIdentityRoots = active('retainedIdentityRoots')
+    ? await cleanupRetainedIdentityRoots(retainedPageSize, options.retainedIdentityRootIds)
+    : []
+  if (active('analyticsLocalFiles')) await cleanupAnalyticsLocalFiles()
 
   return {
     ...copyright,
