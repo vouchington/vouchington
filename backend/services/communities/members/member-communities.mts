@@ -6,7 +6,6 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import type { CommunityMember } from '../types.mts'
 import { appendUserMembershipPrivacyFilter } from './get.mts'
-import { getCachedUserMemberships } from '@services/entity-cache/community-memberships'
 
 type MemberCommunityPagination = { limit?: number; after?: string }
 type MemberCommunityPage = { results: CommunityMember[]; page_info: PageInfo }
@@ -33,10 +32,6 @@ export async function listUserMemberCommunities(
       AND cm.removed_at IS NULL
       AND `
   appendMemberCommunityVisibilityFilters(query, targetUserId, currentUser)
-  const memberships =
-    options.query || options.client ? null : await getCachedUserMemberships(targetUserId)
-  if (memberships)
-    query.append(sql` AND cm.id = ANY(${memberships.map(member => member.id)}::uuid[])`)
   if (cursorId) query.append(sql` AND cm.id > ${cursorId}`)
   // user_id is redundant for result order, but matches the composite index prefix.
   query.append(sql` ORDER BY cm.user_id ASC, cm.id ASC LIMIT ${limit + 1}`)

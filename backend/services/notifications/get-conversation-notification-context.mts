@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getCachedCommunityModerators } from '@services/entity-cache/community-memberships'
 
@@ -13,7 +13,7 @@ export async function getConversationNotificationContext(
   conversationId: string,
   excludeSenderId: string | null,
 ): Promise<ConversationNotificationContext | null> {
-  const { rows: convRows } = await write(sql`/* getConversationNotificationContext:conversation */
+  const { rows: convRows } = await read(sql`/* getConversationNotificationContext:conversation */
     SELECT c.channel_type, comm.slug AS community_slug, c.community_id, c.subject_user_id
     FROM conversations c
     LEFT JOIN communities comm ON comm.id = c.community_id
@@ -103,7 +103,7 @@ export async function getConversationNotificationContext(
     if (excludeSenderId) {
       participantQuery.append(sql` AND cp.user_id != ${excludeSenderId}`)
     }
-    const { rows } = await write(participantQuery)
+    const { rows } = await read(participantQuery)
     participantRows = rows as Array<{ user_id: string }>
   }
 

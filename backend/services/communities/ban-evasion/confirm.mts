@@ -67,6 +67,7 @@ export async function confirmBanEvasion(
           suspected_ban_evader_dismissed_by_id = NULL
       WHERE community_id = ${communityId}
         AND user_id = ${userId}
+        AND removed_at IS NULL
         AND suspected_ban_evader_dismissed_by_id = ${currentUser.id}
     `,
       { userIds: [userId], communityIds: [communityId] },

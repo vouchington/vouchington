@@ -62,15 +62,20 @@ export async function assertCommunityMembershipCapacity(
     SELECT (
       SELECT count(*)::int FROM (
         SELECT 1 FROM community_members cm
-        JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
+        -- One keyed community probe per membership avoids hashing unrelated communities.
+        JOIN LATERAL (
+          SELECT 1 FROM communities c
+          WHERE c.id = cm.community_id AND c.deleted_at IS NULL LIMIT 1
+        ) live_community ON TRUE
         WHERE cm.user_id = ${currentUserId} AND cm.removed_at IS NULL
         LIMIT ${limit}
       ) capped
     ) AS count,
-    EXISTS (
-      SELECT 1 FROM community_members
+    COALESCE((
+      SELECT true FROM community_members
       WHERE community_id = ${communityId} AND user_id = ${currentUserId} AND removed_at IS NULL
-    ) AS existing
+      LIMIT 1
+    ), false) AS existing
   `,
     options,
   )
@@ -97,6 +102,7 @@ export async function assertCommunityModeratorCapacity(
       SELECT 1 FROM community_members
       WHERE community_id = ${communityId} AND removed_at IS NULL
         AND role IN ('owner', 'moderator')
+      ORDER BY user_id
       LIMIT ${limit}
     ) capped
   `,

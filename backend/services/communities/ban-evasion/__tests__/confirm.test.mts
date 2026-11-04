@@ -6,6 +6,7 @@ import {
   insertTestCommunityBan,
   setTestBanEvasionFlag,
   getTestBanEvasionFlagState,
+  getTestMembershipBanEvasionFlagState,
   getTestActiveCommunityBan,
   insertTestSystemModerationReport,
   getTestSystemModerationReportStatus,
@@ -14,6 +15,9 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 import { confirmBanEvasion } from '../confirm.mts'
+import { dismissBanEvasionFlag } from '../dismiss.mts'
+import { leaveCommunity } from '../../members/leave.mts'
+import { loadCommunityWithViewer } from '../../load-with-viewer.mts'
 
 describe('confirmBanEvasion', () => {
   let staff: PrivateUser
@@ -147,5 +151,46 @@ describe('confirmBanEvasion', () => {
     // The flag should be restored (dismissed_at reset to NULL)
     const flagState = await getTestBanEvasionFlagState(community.id, suspectOwner.id)
     expect(flagState?.suspected_ban_evader_dismissed_at).toBeNull()
+  })
+
+  it('preserves a same-staff historical dismissal when a rejoined member ban fails', async () => {
+    const sourceUser = await createTestUser()
+    const suspect = await createTestUser()
+    const historical = await insertTestCommunityMember({
+      communityId: community.id,
+      userId: suspect.id,
+    })
+    await setTestBanEvasionFlag({
+      communityId: community.id,
+      userId: suspect.id,
+      sourceUserId: sourceUser.id,
+    })
+    await dismissBanEvasionFlag(staff, community.id, suspect.id)
+    await leaveCommunity(suspect.id, await loadCommunityWithViewer(community.id, suspect.id))
+    // A new membership generation now owns the active flag. Its owner role makes the real ban fail.
+    const rejoined = await insertTestCommunityMember({
+      communityId: community.id,
+      userId: suspect.id,
+      role: 'owner',
+    })
+    await setTestBanEvasionFlag({
+      communityId: community.id,
+      userId: suspect.id,
+      sourceUserId: sourceUser.id,
+    })
+    const previous = await getTestMembershipBanEvasionFlagState(historical.id)
+    expect(previous?.suspected_ban_evader_dismissed_by_id).toBe(staff.id)
+    expect(previous?.suspected_ban_evader_dismissed_at).toBeInstanceOf(Date)
+
+    await expect(confirmBanEvasion(staff, community.id, suspect.id)).rejects.toMatchObject({
+      status: 403,
+    })
+
+    expect(await getTestMembershipBanEvasionFlagState(historical.id)).toEqual(previous)
+    expect(await getTestMembershipBanEvasionFlagState(rejoined.id)).toMatchObject({
+      suspected_ban_evader_dismissed_at: null,
+      suspected_ban_evader_dismissed_by_id: null,
+    })
+    expect(await getTestActiveCommunityBan(community.id, suspect.id)).toBeNull()
   })
 })

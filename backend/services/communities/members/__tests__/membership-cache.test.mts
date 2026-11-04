@@ -4,6 +4,7 @@ import { primaryCacheValkeyClient } from '@data-stores/valkey/clients'
 import { beginTransaction, createTestUser, insertTestCommunity } from '@voucha/test-helpers'
 import { insertApprovedCommunityMember } from '../insert-approved.mts'
 import { getMyCommunityMemberships } from '../list-mine.mts'
+import { listUserMemberCommunities } from '../member-communities.mts'
 
 // Seed an owned cache key to make the invalidation assertion deterministic: read-through fills
 // are intentionally asynchronous and cannot be assumed to finish when the reader returns.
@@ -48,5 +49,21 @@ describe('membership cache transaction settlement', () => {
       [committed.id],
     )
     await cache.delete(user.id)
+  })
+
+  it('keeps profile memberships live when a cached self list misses a new join', async () => {
+    const user = await createTestUser()
+    const owner = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id })
+    await insertApprovedCommunityMember(community.id, user.id, owner.id, {})
+    // Preserve an owned stale entry, as a failed post-commit invalidation would.
+    await cache.set(user.id, [])
+    try {
+      expect((await getMyCommunityMemberships(user.id)).results).toEqual([])
+      const profile = await listUserMemberCommunities(user.id, user)
+      expect(profile.results.map(member => member.community_id)).toEqual([community.id])
+    } finally {
+      await cache.delete(user.id)
+    }
   })
 })
