@@ -2,7 +2,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '../../test-helpers/dynamic-config.mts'
 import { createHackerNewsRetentionFixtureForTest } from '../../test-helpers/hacker-news-retention.mts'
 import { hackerNewsVisibilityConfig } from '../urls/hacker-news-visibility-config.mts'
-import { hackerNewsQueueConfig } from '@queues/hacker-news/config'
+import { hackerNewsQueueConfig } from '../../queues/hacker-news/config.mts'
 import { hackerNewsWorkConfig } from '../urls/hacker-news-work-limits.mts'
 
 describe('Hacker News reference retention', () => {
