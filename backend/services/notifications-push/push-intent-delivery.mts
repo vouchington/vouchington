@@ -11,10 +11,7 @@ import {
   notificationPushDeliveryPolicy,
   type NotificationPushDeliveryPolicy,
 } from './push-intent-delivery-policy.mts'
-import {
-  runNotificationPushDelivery,
-  type PushDeliveryDependencies,
-} from './push-intent-delivery-runner.mts'
+import { runNotificationPushDelivery } from './push-intent-delivery-runner.mts'
 import { listPendingActivePushSubscriptions } from './push-intent-results.mts'
 import {
   markNotificationPushIntentDelivered,
@@ -42,10 +39,6 @@ function ensureWebPushConfig() {
 export async function deliverClaimedNotificationPushIntent(
   intent: NotificationPushIntent,
   policy: NotificationPushDeliveryPolicy = notificationPushDeliveryPolicy,
-  dependencies: PushDeliveryDependencies & {
-    release?: typeof releaseNotificationPushIntent
-    markDelivered?: typeof markNotificationPushIntentDelivered
-  } = {},
 ): Promise<{
   delivered: number
   suppressed: boolean
@@ -69,15 +62,14 @@ export async function deliverClaimedNotificationPushIntent(
     pending,
     notification,
     policy,
-    dependencies,
   })
   if (run.fatalError) throw run.fatalError
   if (run.ownershipLost) return { delivered: 0, suppressed: false }
   const retryable =
     run.subscriptionStale || run.outcomes.some(result => result.kind === 'retryable_failure')
   const finalTransition = retryable
-    ? (dependencies.release ?? releaseNotificationPushIntent)
-    : (dependencies.markDelivered ?? markNotificationPushIntentDelivered)
+    ? releaseNotificationPushIntent
+    : markNotificationPushIntentDelivered
   if (!(await finalTransition(intent))) return { delivered: 0, suppressed: false }
   if (retryable) {
     if (run.subscriptionStale) {

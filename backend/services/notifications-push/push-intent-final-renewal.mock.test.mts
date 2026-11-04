@@ -1,6 +1,11 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import webpush, { type SendResult } from 'web-push'
 import { createTestUserDirect } from '@voucha/test-helpers'
+import {
+  answerPostgresWritesForTest,
+  rejectPostgresWriteForTest,
+} from '@voucha/test-helpers/injected-failures'
+import { getIntentState } from '@voucha/test-helpers/notification-push-fixtures'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
 import { deliverClaimedNotificationPushIntent, claimNotificationPushIntent } from './index.mts'
@@ -35,80 +40,71 @@ describe('notification push final lease renewal', () => {
     vi.mocked(webpush.sendNotification).mockResolvedValue(successfulSendResult())
   })
 
-  it.each([false, new Error('preflight renewal failed')])(
-    'does not start delivery when preflight renewal is %s',
-    async renewalResult => {
-      const intent = await createDelivery()
-      const renew = vi.fn<() => Promise<boolean>>(async () => {
-        if (renewalResult instanceof Error) throw renewalResult
-        return renewalResult
-      })
-      const release = vi.fn<() => Promise<boolean>>(async () => true)
-      const markDelivered = vi.fn<() => Promise<boolean>>(async () => true)
-      const persist = vi.fn<() => Promise<'persisted'>>(async () => 'persisted')
-      const delivery = deliverClaimedNotificationPushIntent(intent, policy, {
-        renew,
-        release,
-        markDelivered,
-        persist,
-      })
+  it('does not start delivery when preflight renewal matches no lease', async () => {
+    const intent = await createDelivery()
+    const before = await getIntentState(intent)
+    onTestFinished(answerPostgresWritesForTest('renewNotificationPushIntentLease', [[]]))
 
-      const result = await delivery.then(
-        value => ({ value, error: undefined }),
-        err => ({ value: undefined, error: err }),
-      )
-      expect({
-        value: result.value,
-        errorMessage: result.error instanceof Error ? result.error.message : undefined,
-      }).toEqual(
-        renewalResult instanceof Error
-          ? { value: undefined, errorMessage: 'preflight renewal failed' }
-          : { value: { delivered: 0, suppressed: false }, errorMessage: undefined },
-      )
-      expect(renew).toHaveBeenCalledOnce()
-      expect(webpush.sendNotification).not.toHaveBeenCalled()
-      expect(persist).not.toHaveBeenCalled()
-      expect(release).not.toHaveBeenCalled()
-      expect(markDelivered).not.toHaveBeenCalled()
-    },
-  )
+    await expect(deliverClaimedNotificationPushIntent(intent, policy)).resolves.toEqual({
+      delivered: 0,
+      suppressed: false,
+    })
 
-  it.each([false, new Error('final renewal failed')])(
-    'does not finalize when final renewal is %s',
-    async renewalResult => {
-      const intent = await createDelivery()
-      let renewals = 0
-      const renew = vi.fn<() => Promise<boolean>>(async () => {
-        renewals++
-        if (renewals === 1) return true
-        if (renewalResult instanceof Error) throw renewalResult
-        return renewalResult
-      })
-      const release = vi.fn<() => Promise<boolean>>(async () => true)
-      const markDelivered = vi.fn<() => Promise<boolean>>(async () => true)
-      const delivery = deliverClaimedNotificationPushIntent(intent, policy, {
-        renew,
-        release,
-        markDelivered,
-      })
-      const result = await delivery.then(
-        value => ({ value, error: undefined }),
-        err => ({ value: undefined, error: err }),
-      )
-      expect({
-        value: result.value,
-        errorMessage: result.error instanceof Error ? result.error.message : undefined,
-      }).toEqual(
-        renewalResult instanceof Error
-          ? { value: undefined, errorMessage: 'final renewal failed' }
-          : { value: { delivered: 0, suppressed: false }, errorMessage: undefined },
-      )
-      expect(renew).toHaveBeenCalledTimes(2)
-      expect(webpush.sendNotification).toHaveBeenCalledOnce()
-      expect(release).not.toHaveBeenCalled()
-      expect(markDelivered).not.toHaveBeenCalled()
-    },
-  )
+    expect(webpush.sendNotification).not.toHaveBeenCalled()
+    await expect(getIntentState(intent)).resolves.toEqual(before)
+  })
+
+  it('does not start delivery when preflight renewal fails', async () => {
+    const intent = await createDelivery()
+    const before = await getIntentState(intent)
+    onTestFinished(
+      rejectPostgresWriteForTest(
+        'renewNotificationPushIntentLease',
+        new Error('preflight renewal failed'),
+      ),
+    )
+
+    await expect(deliverClaimedNotificationPushIntent(intent, policy)).rejects.toThrow(
+      'preflight renewal failed',
+    )
+
+    expect(webpush.sendNotification).not.toHaveBeenCalled()
+    await expect(getIntentState(intent)).resolves.toEqual(before)
+  })
+
+  it('does not finalize when final renewal matches no lease', async () => {
+    const intent = await createDelivery()
+    const before = await getIntentState(intent)
+    onTestFinished(answerPostgresWritesForTest('renewNotificationPushIntentLease', [undefined, []]))
+
+    await expect(deliverClaimedNotificationPushIntent(intent, policy)).resolves.toEqual({
+      delivered: 0,
+      suppressed: false,
+    })
+
+    expect(webpush.sendNotification).toHaveBeenCalledOnce()
+    await expect(getIntentState(intent)).resolves.toEqual(before)
+  })
+
+  it('does not finalize when final renewal fails', async () => {
+    const intent = await createDelivery()
+    const before = await getIntentState(intent)
+    let renewals = 0
+    onTestFinished(
+      rejectPostgresWriteForTest(
+        'renewNotificationPushIntentLease',
+        new Error('final renewal failed'),
+        () => ++renewals === 2,
+      ),
+    )
+
+    await expect(deliverClaimedNotificationPushIntent(intent, policy)).rejects.toThrow(
+      'final renewal failed',
+    )
+
+    expect(webpush.sendNotification).toHaveBeenCalledOnce()
+    await expect(getIntentState(intent)).resolves.toEqual(before)
+  })
 })
 
 async function createDelivery() {

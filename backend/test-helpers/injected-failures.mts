@@ -105,6 +105,51 @@ export function answerPostgresReadsForTest(
 }
 
 /**
+ * Answer default-pool `write()` calls whose statement text contains `marker` from `answers`, in call
+ * order: an array entry replaces that call's rows without running the statement, `undefined` and
+ * calls past the end of the list run the real write. Use to make one call report a state the
+ * database still disagrees with, such as a lease renewal that matched no row; returns the restore.
+ */
+export function answerPostgresWritesForTest(
+  marker: string,
+  answers: ReadonlyArray<Record<string, unknown>[] | undefined>,
+): () => void {
+  const realWrite = psql.write
+  let calls = 0
+  const spy = vi.spyOn(psql, 'write').mockImplementation((query, ...rest) => {
+    const text = typeof query === 'string' ? query : query.text
+    if (!text.includes(marker)) return realWrite(query, ...rest)
+    const rows = answers[calls++]
+    if (!rows) return realWrite(query, ...rest)
+    return Promise.resolve({ command: 'UPDATE', rowCount: rows.length, oid: 0, fields: [], rows })
+  })
+  return () => spy.mockRestore()
+}
+
+/**
+ * Run every default-pool `write()` for real, then call `after` with its statement text, bound
+ * values and result once it settles. Use to act exactly when a write has committed instead of
+ * waiting on timing. Install at most one write hook per test, because they replace each other;
+ * returns the restore.
+ */
+export function runAfterPostgresWriteForTest(
+  after: (
+    statement: string,
+    values: readonly unknown[],
+    result: { rowCount: number | null; rows: readonly Record<string, unknown>[] },
+  ) => void,
+): () => void {
+  const realWrite = psql.write
+  const spy = vi.spyOn(psql, 'write').mockImplementation(async (query, ...rest) => {
+    const result = await realWrite(query, ...rest)
+    if (typeof query === 'string') after(query, [], result)
+    else after(query.text, query.values ?? [], result)
+    return result
+  })
+  return () => spy.mockRestore()
+}
+
+/**
  * Reject the next `add` of one job name on the real shared background queue, then behave
  * normally. Other jobs added meanwhile (entity listeners, for example) pass through untouched;
  * returns the restore.
