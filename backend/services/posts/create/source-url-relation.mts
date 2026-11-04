@@ -33,6 +33,7 @@ export async function getPostRelatedUrlIds(
   const { rows } = await runQuery<{ object_id: string }>(
     sql`/* getPostRelatedUrlIds */
       SELECT object_id
+      -- no-mistakes-disable-next-line postgres-bounded-statements: post-created recovery needs every active positive related URL or it skips recovery effects, so a LIMIT would be wrong; no per-post URL cap exists, so rows are bounded only by what the post was created with
       FROM relation__post__related__url
       WHERE subject_id = ${postId}
         AND deleted_at IS NULL

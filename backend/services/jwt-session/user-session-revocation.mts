@@ -36,8 +36,9 @@ export async function revokeAllAuthenticatedSessions(currentUserId: string): Pro
   await query(
     sql`/* revokeAllAuthenticatedSessions */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`,
   )
+  // no-mistakes-disable-next-line postgres-required-predicates: user-wide revocation must update sessions across all session-ID partitions
   const result = await query(sql`/* revokeAllAuthenticatedSessions */
-      -- no-mistakes-disable-next-line postgres-required-predicates: user-wide revocation must update sessions across all session-ID partitions
+      -- no-mistakes-disable-next-line postgres-bounded-statements: revocation must reach every unexpired session and return every ID for key revocation, so a LIMIT would be wrong; no per-user session cap exists, so rows are bounded only by login rate times session lifetime
       UPDATE user_sessions
       SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP),
           last_seen_at = CURRENT_TIMESTAMP
