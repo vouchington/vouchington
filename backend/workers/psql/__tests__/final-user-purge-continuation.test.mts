@@ -110,6 +110,7 @@ const settled = {
   otherHostnameBlocks: continuationDone,
   deletedConversations: continuationDone,
   appAttestationKeys: continuationDone,
+  hackerNewsReferences: done,
 } satisfies CleanupResult
 
 describe('final user purge continuation', () => {
