@@ -2,7 +2,12 @@ import {
   awaitReportedEnqueueAdmission,
   createBulkEnqueueFunction,
 } from '@data-stores/valkey-glide-mq'
-import { getHackerNewsEnqueueBatchSize, HACKER_NEWS_JOB, QUEUE_NAME } from './config.mts'
+import {
+  getHackerNewsEnqueueBatchSize,
+  hackerNewsQueueConfig,
+  HACKER_NEWS_JOB,
+  QUEUE_NAME,
+} from './config.mts'
 import { hackerNewsQueue } from './queues.mts'
 
 const enqueueBulk = createBulkEnqueueFunction({
@@ -22,6 +27,7 @@ const enqueueBulk = createBulkEnqueueFunction({
 export function enqueueHackerNewsLookups(urlIds: string[]): Promise<void> {
   return awaitReportedEnqueueAdmission(async () => {
     const ids = [...new Set(urlIds)]
+    await hackerNewsQueueConfig.waitForInitialization()
     const size = getHackerNewsEnqueueBatchSize()
     for (let index = 0; index < ids.length; index += size) {
       // oxlint-disable-next-line no-await-in-loop -- bound admission backpressure
@@ -54,6 +60,7 @@ const enqueueRefreshBulk = createBulkEnqueueFunction({
 export async function enqueueHackerNewsLookupRefreshes(
   refreshes: HackerNewsLookupRefresh[],
 ): Promise<void> {
+  await hackerNewsQueueConfig.waitForInitialization()
   const size = getHackerNewsEnqueueBatchSize()
   for (let index = 0; index < refreshes.length; index += size) {
     // oxlint-disable-next-line no-await-in-loop -- bound admission backpressure

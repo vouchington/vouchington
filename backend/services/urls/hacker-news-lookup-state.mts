@@ -1,7 +1,7 @@
 import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { canonicalizeUrl, isBareDomainUrl } from '@vouchington/utils/urls'
-import { getHackerNewsWorkLimit } from './hacker-news-work-limits.mts'
+import { getHackerNewsWorkLimit, hackerNewsWorkConfig } from './hacker-news-work-limits.mts'
 
 export type HackerNewsLookupTarget = {
   id: string
@@ -18,6 +18,7 @@ export async function getHackerNewsLookupTargets(
   const ids = [...new Set(urlIds)]
   if (!ids.length) return []
   const targets = new Map<string, HackerNewsLookupTarget>()
+  await hackerNewsWorkConfig.waitForInitialization()
   const batchSize = getHackerNewsWorkLimit('lookup_batch_size')
   for (let start = 0; start < ids.length; start += batchSize) {
     // no-mistakes-disable-next-line query-reached-per-item: each statement resolves one bounded batch of URL identities, not one URL

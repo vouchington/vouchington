@@ -3,7 +3,7 @@ import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { Parser } from 'htmlparser2'
 import { canonicalizeUrl, isBareDomainUrl } from '@vouchington/utils/urls'
 import { cancelResponseBody, fetchWithTimeout, handleHttpErrors } from '@modules/utils/http'
-import { getHackerNewsWorkLimit } from './hacker-news-work-limits.mts'
+import { getHackerNewsWorkLimit, hackerNewsWorkConfig } from './hacker-news-work-limits.mts'
 import type {
   HackerNewsStoryReference,
   HackerNewsCommentReference,
@@ -84,6 +84,7 @@ async function searchAlgolia(query: string, kind: 'story' | 'comment'): Promise<
   url.searchParams.set('query', query)
   url.searchParams.set('tags', kind)
   url.searchParams.set('restrictSearchableAttributes', kind === 'story' ? 'url' : 'comment_text')
+  await hackerNewsWorkConfig.waitForInitialization()
   const limit = getHackerNewsWorkLimit('hits_per_page')
   url.searchParams.set('hitsPerPage', String(limit))
   const timeout = getHackerNewsWorkLimit('request_timeout_ms')
