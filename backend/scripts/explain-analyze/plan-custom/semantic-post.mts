@@ -27,6 +27,14 @@ export function assertSemanticPostCandidatePlan(result: ExplainResult): void {
   if (unboundedOuterPostScan) {
     throw new Error(`${result.name} must look up outer posts from the bounded candidates`)
   }
+  if (result.scenario_id?.endsWith('-1m')) {
+    // A narrow window may correctly use an exact sort, so only record which path the planner took.
+    const types = [...new Set(collectPlanNodes(candidate).map(node => String(node['Node Type'])))]
+    console.log(
+      `${result.name}: ${result.plan_cache_mode ?? 'default'} candidate plan nodes ${types.join(', ')}`,
+    )
+    return
+  }
   // Runtime forces custom plans; generic plans remain measured to expose prepared-plan regressions.
   if (result.plan_cache_mode === 'force_generic_plan') return
   const orderedVectorScan = collectPlanNodes(candidate).some(

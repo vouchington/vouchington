@@ -30,6 +30,9 @@ describe('semantic candidate window', () => {
     expect(candidateSql).toContain('AND posts.id = semantic_vector_post.id')
     expect(candidateSql).toContain('AND semantic_vector_post.created_by_id =')
     expect(candidateSql).toContain('LIMIT 1\n    ) semantic_eligible_post')
+    expect(candidateSql.slice(candidateSql.indexOf('semantic_eligible_post\n'))).toContain(
+      'semantic_vector_post.id >=',
+    )
     expect(candidateSql.indexOf('posts.search_vector @@')).toBeLessThan(
       candidateSql.indexOf('LIMIT 1'),
     )
