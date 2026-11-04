@@ -13,7 +13,7 @@ import {
   createTestVoteRetentionPostBallots,
   createTestVoteRetentionPost,
 } from '@voucha/test-helpers/vote-retention-processor-fixtures'
-import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injected-failures'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import processPsql from '../processors.mts'
 
 const dataRetentionCleanup = vi.fn<(limits: DataRetentionLimits) => Promise<unknown>>()
@@ -233,10 +233,13 @@ describe('processPsql vote retention continuations', () => {
     expect(addBulk).not.toHaveBeenCalled()
   })
 
-  it('propagates real page failures without admitting a continuation', async () => {
+  it('rolls back a ballot write failure without admitting a continuation', async () => {
+    const owned = await createTestVoteRetentionPostBallots()
     const neighbor = await createTestVoteRetentionPostBallots()
     const addBulk = spyOnContinuationAdmission()
-    const restore = rejectNextPostgresTransactionForTest(new Error('retention page failed'))
+    const restore = runBeforePostgresStatementForTest('deleteSupersededVoteBallots', async () => {
+      throw new Error('retention page failed')
+    })
     onTestFinished(restore)
     await expect(
       processPsql(
@@ -244,9 +247,17 @@ describe('processPsql vote retention continuations', () => {
         { voteTables: ['post_votes'], userAgentStrings: false, voteIntegrityDetails: false },
         undefined,
         'failed-page',
-        { batchSize: 1, voteIdsByTable: { post_votes: [] } },
+        {
+          batchSize: 1,
+          now: new Date('2026-11-04T12:00:00Z'),
+          voteIdsByTable: { post_votes: [owned.postSupersederId] },
+        },
       ),
     ).rejects.toThrow('retention page failed')
+    expect(await getTestPostVoteIds(owned.postId, owned.userId)).toEqual([
+      owned.postOlderId,
+      owned.postSupersederId,
+    ])
     expect(await getTestPostVoteIds(neighbor.postId, neighbor.userId)).toEqual([
       neighbor.postOlderId,
       neighbor.postSupersederId,
