@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { getHackerNewsWorkLimit } from './hacker-news-work-limits.mts'
+import { getHackerNewsWorkLimit, hackerNewsWorkConfig } from './hacker-news-work-limits.mts'
 import {
   HACKER_NEWS_COMMENT_CAP_PER_URL,
   HACKER_NEWS_STORY_CAP_PER_URL,
@@ -25,6 +25,7 @@ export async function replaceHackerNewsReferences(
   }
 
   const sorted = batch.toSorted((a, b) => a.urlId.localeCompare(b.urlId))
+  await hackerNewsWorkConfig.waitForInitialization()
   const batchSize = getHackerNewsWorkLimit('write_batch_size')
   for (let offset = 0; offset < sorted.length; offset += batchSize) {
     // no-mistakes-disable-next-line query-reached-per-item: each call writes a bounded chunk of URL IDs, not an individual URL.

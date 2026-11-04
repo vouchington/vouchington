@@ -13,7 +13,12 @@ import { runAndCapture } from '../run-support.mts'
 export async function runHackerNewsRetentionScenario(): Promise<void> {
   await hackerNewsWorkConfig.waitForInitialization()
   const batchSize = getHackerNewsWorkLimit('retention_batch_size')
-  await seedHackerNewsRetention(batchSize)
+  const maxBatches = getHackerNewsWorkLimit('retention_max_batches')
+  const expiredRows = Math.min(19_999, Math.max(5_000, batchSize * 3 + 1))
+  const expectedDeleted = Math.min(expiredRows, batchSize * maxBatches)
+  const childRows = Math.min(expectedDeleted, 25)
+  const restoreFixture = () => seedHackerNewsRetention(expiredRows, childRows)
+  await restoreFixture()
   registerScenarioContract('hacker-news-retention-page', {
     expectations: [
       {
@@ -31,8 +36,8 @@ export async function runHackerNewsRetentionScenario(): Promise<void> {
       const result = await cleanupHackerNewsReferences()
       assert.equal(
         result.deleted,
-        batchSize,
-        'The expired Hacker News page must delete one configured batch of totals rows',
+        expectedDeleted,
+        'The Hacker News retention sweep must delete only its configured bounded backlog',
       )
       const { rows } = await write<{ totals: string; stories: string; comments: string }>(
         `/* assertExplainHackerNewsRetention */
@@ -45,12 +50,12 @@ export async function runHackerNewsRetentionScenario(): Promise<void> {
             WHERE url_id >= $1::uuid AND url_id < $3::uuid)::text AS comments`,
         [seedUuid(100_000, '03'), seedUuid(120_000, '03'), seedUuid(100_025, '03')],
       )
-      assert.equal(Number(rows[0]?.totals), 20_000 - batchSize)
+      assert.equal(Number(rows[0]?.totals), 20_000 - expectedDeleted)
       assert.equal(Number(rows[0]?.stories), 0)
       assert.equal(Number(rows[0]?.comments), 0)
     },
     undefined,
     'selectExpiredHackerNewsReferences',
-    { afterCapture: seedHackerNewsRetention },
+    { afterCapture: restoreFixture },
   )
 }
