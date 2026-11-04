@@ -1,6 +1,6 @@
 import type { Queue } from 'glide-mq'
 import { vi } from 'vitest'
-import type { backgroundQueue } from './shared-background-queue.mts'
+import { backgroundQueue } from './shared-background-queue.mts'
 
 /** Reject one admission on the supplied real queue; unrelated jobs pass through. */
 export function rejectNextQueueJobAddForTest(
@@ -34,16 +34,30 @@ export function rejectQueueJobAddForTest<Data>(
   return () => spy.mockRestore()
 }
 
-/** Reject matching bulk admissions while all other queue operations remain real. */
-export function rejectQueueBulkAddForTest<Data>(
-  queue: Queue<Data>,
-  matches: (name: string, data: Data) => boolean,
-  error: Error,
-): () => void {
-  const realAddBulk = queue.addBulk
-  const spy = vi.spyOn(queue, 'addBulk').mockImplementation((jobs, ...rest) => {
-    if (jobs.some(job => matches(job.name, job.data))) return Promise.reject(error)
-    return realAddBulk.call(queue, jobs, ...rest)
+/** Reject the next add of one named job on the real shared queue; unrelated jobs pass through. */
+export function rejectNextBackgroundJobAddForTest(jobName: string, error: Error): () => void {
+  const realAdd = backgroundQueue.add
+  let rejected = false
+  const spy = vi.spyOn(backgroundQueue, 'add').mockImplementation((name, data, opts) => {
+    if (!rejected && name === jobName) {
+      rejected = true
+      return Promise.reject(error)
+    }
+    return Reflect.apply(realAdd, backgroundQueue, [name, data, opts])
+  })
+  return () => spy.mockRestore()
+}
+
+/** Reject the next bulk admission containing one named job; unrelated admissions run for real. */
+export function rejectNextBackgroundJobAddBulkForTest(jobName: string, error: Error): () => void {
+  const realAddBulk = backgroundQueue.addBulk
+  let rejected = false
+  const spy = vi.spyOn(backgroundQueue, 'addBulk').mockImplementation(jobs => {
+    if (!rejected && jobs.some(job => job.name === jobName)) {
+      rejected = true
+      return Promise.reject(error)
+    }
+    return Reflect.apply(realAddBulk, backgroundQueue, [jobs])
   })
   return () => spy.mockRestore()
 }

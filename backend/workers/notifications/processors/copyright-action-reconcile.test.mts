@@ -14,7 +14,7 @@ import { notifications } from '@queues/notifications/queues'
 import {
   rejectPostgresWriteForTest,
   rejectNextPostgresTransactionForTest,
-  rejectQueueBulkAddForTest,
+  rejectNextBackgroundJobAddBulkForTest,
 } from '@voucha/test-helpers/injected-failures'
 import { searchRecoverableCopyrightFormReviewIntakeIds } from '@services/copyright-notices'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -253,17 +253,14 @@ describe('processReconcileCopyrightActionIntents', () => {
     )
     onTestFinished(rejectNextPostgresTransactionForTest(decisionFailure))
     onTestFinished(
-      rejectQueueBulkAddForTest(
-        notifications,
-        (name, data) =>
-          name === 'notifications.processApplyCopyrightAction' &&
-          (data as { intentId?: string }).intentId === action.intent.id,
+      rejectNextBackgroundJobAddBulkForTest(
+        'notifications.processApplyCopyrightAction',
         enqueueFailure,
       ),
     )
 
     const result = await processReconcileCopyrightActionIntents(
-      {},
+      { pending: ['forms', 'decisions', 'actions', 'enforcement'] },
       [decision.copyright_notice_submission_id, enforcement.assessment.id, action.intent.id],
       1,
     ).catch((err: unknown) => err)
