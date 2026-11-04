@@ -1,6 +1,6 @@
 import { isModerationStaff } from '@services/users/authorization'
 import type { PrivateUser } from '@services/users/types'
-import type { CommentPlaceholderState, Post } from './types.mts'
+import type { CommentPlaceholderState, Post, PostMetrics } from './types.mts'
 
 type StateSubject = Pick<Post, 'deleted_at' | 'approved_at' | 'created_by_id'>
 
@@ -71,4 +71,25 @@ export function maskCommentPlaceholders<T extends Post>(
     const state = getCommentPlaceholderState(post, viewer)
     return state ? toCommentPlaceholder(post, state) : post
   })
+}
+
+/**
+ * Reduces the metrics of each placeholder to its reply counts. A placeholder keeps its place in the
+ * thread, so what people saved or followed on it is not part of the answer.
+ */
+export function maskPlaceholderMetrics(
+  posts: Array<Pick<Post, 'id' | 'placeholder_state'> | null | undefined>,
+  metrics: Array<PostMetrics | null>,
+): Array<PostMetrics | null> {
+  const placeholderIds = new Set(posts.flatMap(post => (post?.placeholder_state ? [post.id] : [])))
+  if (placeholderIds.size === 0) return metrics
+  return metrics.map(metric =>
+    metric && placeholderIds.has(metric.id)
+      ? {
+          ...metric,
+          count: { ...metric.count, ancestors: 0 },
+          bookmarks: { follow: 0, save: 0 },
+        }
+      : metric,
+  )
 }

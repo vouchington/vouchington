@@ -69,10 +69,19 @@ export function appendEligiblePostsSelect(
       JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       WHERE 1 = 1`)
   if (targetPostId) query.append(sql` AND posts.id = `).append(targetPostId)
-  query.append(sql`
-      AND (posts.post_type = 'comment' OR NOT EXISTS (
+  // `hide` on a comment only collapses it in its thread. Feeds exclude comments unless a caller asks
+  // for them, so the comment exemption is added only then and the usual anti-join stays plain.
+  const hiddenPostCheck = sql`NOT EXISTS (
         SELECT 1 FROM hidden_posts WHERE hidden_posts.post_id = posts.id
-      ))
+      )`
+  query.append(sql`
+      AND `)
+  query.append(
+    postTypes?.includes('comment')
+      ? sql`(posts.post_type = 'comment' OR `.append(hiddenPostCheck).append(sql`)`)
+      : hiddenPostCheck,
+  )
+  query.append(sql`
       AND NOT EXISTS (
         SELECT 1 FROM excluded_users WHERE excluded_users.user_id = posts.created_by_id
       )

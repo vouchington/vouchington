@@ -23,16 +23,18 @@ export function buildCommentIsValidSql(
 
 /**
  * A LATERAL subquery exposing `keep`: whether the placeholder `parentIdSql` should be returned.
- * It walks only through placeholders and stops at the first valid reply. The outer LIMIT bounds the
- * rows the recursion produces. A placeholder is kept when a valid reply is found, or when a limit
- * ends the search without an answer, so a valid reply is never lost to a limit. It ignores hide.
+ * It walks only through placeholders, one level at a time, and stops at the first row that
+ * decides: a valid reply, a level at the depth limit, or the row at the row limit. A placeholder is
+ * kept when a valid reply is found, or when a limit ends the search without an answer, so a valid
+ * reply is never lost to a limit. It ignores hide. `k.id > parent` follows from the id CHECK and
+ * keeps each level's index range to newer ids.
  */
 export function buildLookDownKeepLateral(
   parentIdSql: string,
   rootId: string,
   options: DirectPostEligibilityOptions,
   limits: CommentLookDownLimits,
-  /** Extra condition on the first level; the walk passes "the outer row is a placeholder". */
+  /** Extra condition on the first level; the walk passes "the outer row is a hidden placeholder". */
   guard: SQLStatement = sql`true`,
 ): SQLStatement {
   return sql`LEFT JOIN LATERAL (
@@ -46,6 +48,9 @@ export function buildLookDownKeepLateral(
           AND k.parent_post_id = `,
     )
     .append(parentIdSql)
+    .append(`
+          AND k.id > `)
+    .append(parentIdSql)
     .append(sql`
           AND k.post_type = 'comment'
           AND `)
@@ -58,15 +63,15 @@ export function buildLookDownKeepLateral(
         JOIN posts k ON k.parent_post_id = look_down.id
         WHERE NOT look_down.is_valid
           AND look_down.depth < ${limits.maxDepth}
+          AND k.id > look_down.id
           AND k.root_post_id = ${rootId}
           AND k.post_type = 'comment'
-      ),
-      bounded AS (SELECT id, depth, is_valid FROM look_down LIMIT ${limits.maxRows})
-      SELECT (
-        bool_or(is_valid)
-        OR count(*) >= ${limits.maxRows}
-        OR bool_or(depth >= ${limits.maxDepth})
-      ) AS keep
-      FROM bounded
+      )
+      SELECT true AS keep
+      FROM (
+        SELECT is_valid, depth, row_number() OVER () AS row_count FROM look_down
+      ) levels
+      WHERE is_valid OR depth >= ${limits.maxDepth} OR row_count >= ${limits.maxRows}
+      LIMIT 1
     ) look_down_result ON true`)
 }

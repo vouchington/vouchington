@@ -12,6 +12,7 @@ import { getCommunityPostReview } from '@services/communities/publications/get'
 import type { CommunityMemberRole } from '@services/communities/types'
 import {
   getRequestedPostReadState,
+  maskPlaceholderMetrics,
   currentUserCanDeletePost,
   currentUserCanLockPost,
   currentUserCanUnpublishFromCommunity,
@@ -62,7 +63,9 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
         post: maskedPlaceholder,
         html: '',
         author_aside: null,
-        post_metrics: getPostMetricsByAnyCached(post.id),
+        post_metrics: getPostMetricsByAnyCached(post.id).then(
+          metrics => maskPlaceholderMetrics([maskedPlaceholder], [metrics])[0] ?? null,
+        ),
       }),
     )
     return

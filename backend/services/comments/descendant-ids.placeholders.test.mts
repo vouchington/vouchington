@@ -76,14 +76,34 @@ describe('comment placeholders in the descendant walk', () => {
     expect(await walk(staff)).toEqual([pending.id])
   })
 
-  it('keeps a placeholder when the look-down limits end the search without an answer', async () => {
+  it('returns nothing for a long chain of placeholders with no valid reply', async () => {
     const { root, reply, walk } = await thread()
+    const chain = [await reply(root)]
+    for (let i = 0; i < 7; i += 1) chain.push(await reply(chain.at(-1)!))
+    for (const post of chain) await deleteTestPost(post.id)
+
+    expect(await walk(null)).toEqual([])
+  })
+
+  it('keeps every placeholder above a valid reply deeper than the look-down depth', async () => {
+    const { root, reply, walk } = await thread()
+    const chain = [await reply(root)]
+    for (let i = 0; i < 7; i += 1) chain.push(await reply(chain.at(-1)!))
+    const valid = await reply(chain.at(-1)!)
+    for (const post of chain) await deleteTestPost(post.id)
+
+    expect(await walk(null)).toEqual([...chain, valid].map(post => post.id))
+  })
+
+  it('keeps a hidden placeholder when the look-down limits end the search without an answer', async () => {
+    const { root, user, reply, walk } = await thread()
     const chain = [await reply(root)]
     for (let i = 0; i < 6; i += 1) chain.push(await reply(chain.at(-1)!))
     for (const post of chain) await deleteTestPost(post.id)
+    await hidePost(user, chain[0]!)
 
-    // Only the first two reach the depth cap; the third's search ends with no reply and drops it.
-    expect(await walk(null)).toEqual(chain.slice(0, 2).map(post => post.id))
+    // The hidden head's lookup stops at the depth cap and keeps it, since a limit never loses a reply.
+    expect(await walk(user)).toEqual([chain[0]!.id])
   })
 
   it('does not descend through a comment the viewer hid but returns it', async () => {

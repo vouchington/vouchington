@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, deleteTestPost, followUser, insertTestPost } from '@voucha/test-helpers'
+import {
+  createTestPost,
+  createTestUser,
+  deleteTestPost,
+  followUser,
+  insertTestPost,
+  setTestPostClearanceStatus,
+} from '@voucha/test-helpers'
 
 import type { PrivateUser } from '@services/users/types'
 
@@ -125,5 +132,44 @@ describe('post.placeholders', () => {
       created_by_id: null,
     })
     expect(JSON.stringify(response.body)).not.toContain('Secret head text')
+  })
+  it('serves a valid target under a deleted and an unmoderated ancestor without their text or author', async () => {
+    const root = await createTestPost({ user: creator })
+    const comment = (parent: { id: string }, markdown: string) =>
+      createTestPost({
+        user: creator,
+        post_type: 'comment',
+        parent_post_id: parent.id,
+        root_post_id: root.id,
+        markdown,
+      })
+    const deleted = await comment(root, 'Deleted ancestor text')
+    const unmoderated = await comment(deleted, 'Unmoderated ancestor text')
+    const target = await comment(unmoderated, 'Readable target text')
+    await setTestPostClearanceStatus(unmoderated.id, 'pending', follower.id)
+    await deleteTestPost(deleted.id)
+
+    const response = await createRequest().get(`/api/v1/posts/${target.id}/ancestors`).expect(200)
+
+    expect(response.body.results.map((result: { id: string }) => result.id)).toEqual([
+      root.id,
+      deleted.id,
+      unmoderated.id,
+      target.id,
+    ])
+    expect(response.body.posts[deleted.id]).toMatchObject({
+      placeholder_state: 'deleted',
+      markdown: '',
+      created_by_id: null,
+    })
+    expect(response.body.posts[unmoderated.id]).toMatchObject({
+      placeholder_state: 'unmoderated',
+      markdown: '',
+      created_by_id: null,
+    })
+    expect(response.body.markdown_to_html[deleted.id]).toBeUndefined()
+    expect(response.body.markdown_to_html[unmoderated.id]).toBeUndefined()
+    expect(response.body.markdown_to_html[target.id]).toBeDefined()
+    expect(JSON.stringify(response.body)).not.toContain('ancestor text')
   })
 })

@@ -15,7 +15,11 @@ import {
   isPostContentEditable,
 } from '@services/posts/authorization'
 import { labelAndMaskPosts } from '@services/content-provenance'
-import { getPostsOrDeletedCommentStubs, getRequestedPostReadState } from '@services/posts'
+import {
+  getPostsOrDeletedCommentStubs,
+  getRequestedPostReadState,
+  maskPlaceholderMetrics,
+} from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { isAdminUser } from '@services/users'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -124,7 +128,9 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
         }),
       )
     }),
-    posts_metrics: getPostMetricsByAnyCachedBatch(commentIds).then(indexById),
+    posts_metrics: Promise.all([postsPromise, getPostMetricsByAnyCachedBatch(commentIds)]).then(
+      ([posts, metrics]) => indexById(maskPlaceholderMetrics(posts, metrics)),
+    ),
     post_elections: electionsPromise
       .then(groups => groups.post)
       .then(indexById)

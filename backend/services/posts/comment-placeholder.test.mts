@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { getCommentPlaceholderState, maskCommentPlaceholders } from './comment-placeholder.mts'
-import type { Post } from './types.mts'
+import {
+  getCommentPlaceholderState,
+  maskCommentPlaceholders,
+  maskPlaceholderMetrics,
+} from './comment-placeholder.mts'
+import type { Post, PostMetrics } from './types.mts'
 
 const approved = new Date('2026-01-01T00:00:00Z')
 
@@ -60,6 +64,29 @@ describe('comment placeholders', () => {
     expect(JSON.stringify(masked)).not.toContain('secret')
     expect(kept).toBe(live)
     expect(other).toBe(discussion)
+    expect(missing).toBeNull()
+  })
+
+  it('reduces placeholder metrics to its reply counts and leaves others untouched', () => {
+    const metrics = (id: string) =>
+      ({
+        id,
+        count: { descendants: 4, children: 2, ancestors: 3 },
+        bookmarks: { follow: 5, save: 6 },
+      }) as PostMetrics
+    const placeholder = { id: 'p', placeholder_state: 'deleted' as const }
+    const readable = { id: 'r' }
+
+    const [masked, untouched, missing] = maskPlaceholderMetrics(
+      [placeholder, readable],
+      [metrics('p'), metrics('r'), null],
+    )
+
+    expect(masked).toMatchObject({
+      count: { descendants: 4, children: 2, ancestors: 0 },
+      bookmarks: { follow: 0, save: 0 },
+    })
+    expect(untouched).toEqual(metrics('r'))
     expect(missing).toBeNull()
   })
 })

@@ -20,6 +20,7 @@ import {
   canViewPost,
   getPostsOrDeletedCommentStubs,
   getCommentReadStateUnderReadableRoot,
+  maskPlaceholderMetrics,
 } from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import app from '../../../app.mts'
@@ -137,7 +138,9 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
         }),
       )
     }),
-    posts_metrics: getPostMetricsByAnyCachedBatch(ancestorIds).then(indexById),
+    posts_metrics: Promise.all([postsPromise, getPostMetricsByAnyCachedBatch(ancestorIds)]).then(
+      ([posts, metrics]) => indexById(maskPlaceholderMetrics(posts, metrics)),
+    ),
     markdown_to_html: postsPromise.then(async posts => {
       const postsMap = indexById(posts)
       const entities = ancestorIds.flatMap(id => {

@@ -9,9 +9,9 @@ export const COMMENT_DESCENDANTS_LIMIT = { min: 1, max: 200, default: 100 } as c
 export type CommentDescendantsPage = { ids: string[]; pageInfo: PageInfo }
 
 /**
- * One cursor page of the comments a viewer can see below `post`, in id order. A comment the viewer
- * cannot see hides its whole subtree, so neither a hidden id nor a hidden count reaches the page.
- * Cursors are scoped to the thread and post, never to a viewer, and a cursor from another post
+ * One cursor page of the comments a viewer can see below `post`, in id order. A deleted or
+ * unmoderated comment is returned as a placeholder only when a valid reply sits below it, so
+ * neither its content nor an empty chain of placeholders reaches the page. Cursors are scoped to the thread and post, never to a viewer, and a cursor from another post
  * fails with the 400 "Invalid cursor format".
  */
 export async function getCommentDescendantsPage(
