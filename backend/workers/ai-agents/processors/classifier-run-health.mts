@@ -6,13 +6,9 @@ import {
   CLASSIFIER_TERMINAL_WINDOW_MS,
   CLASSIFIER_UNREQUESTED_GRACE_MS,
   type ClassifierRunHealth,
+  type ClassifierRunHealthScope,
 } from '@services/classifier-runs'
 import type { ClassifierRunHandler } from './classifier-run-handler.mts'
-
-export type ReadClassifierRunHealth = (
-  handler: ClassifierRunHandler,
-  now: Date,
-) => Promise<ClassifierRunHealth>
 
 /** Raises an alarm for each threshold one classifier's receipt health has crossed. */
 function alarmClassifierRunHealth(health: ClassifierRunHealth): void {
@@ -66,9 +62,9 @@ function alarmClassifierRunHealth(health: ClassifierRunHealth): void {
 export async function checkClassifierRunHealth(
   handlers: readonly ClassifierRunHandler[],
   now: Date,
-  readHealth: ReadClassifierRunHealth = (handler, at) => handler.health(at),
+  scope: ClassifierRunHealthScope = {},
 ): Promise<void> {
-  const outcomes = await Promise.allSettled(handlers.map(handler => readHealth(handler, now)))
+  const outcomes = await Promise.allSettled(handlers.map(handler => handler.health(now, scope)))
   for (const outcome of outcomes) {
     if (outcome.status === 'fulfilled') alarmClassifierRunHealth(outcome.value)
     else

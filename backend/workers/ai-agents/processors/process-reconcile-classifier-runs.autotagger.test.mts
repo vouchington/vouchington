@@ -30,8 +30,8 @@ import { processClassifierRunDispatcher } from './process-classifier-run.mts'
 import { processReconcileClassifierRuns } from './process-reconcile-classifier-runs.mts'
 
 const scope = createClassifierRunSweepScope(getClassifierRunHandler(TAGGING_CLASSIFIER_SLUG))
-const sweep = (data = {}, overrides = {}, pageSize = 500) =>
-  processReconcileClassifierRuns(data, scope.dependencies(overrides, pageSize))
+const sweep = (data = {}, pageSize = 2) =>
+  processReconcileClassifierRuns(data, scope.ids(), pageSize)
 const requests = { phase: 'requests', classifier: TAGGING_CLASSIFIER_SLUG } as const
 const dispatched = (count: number) => ({ kind: 'requests', dispatched: count, hasNext: false })
 
@@ -69,9 +69,13 @@ describe('C6 recovery sweep: request discovery', () => {
 
   it('dispatches an approved post that never got a run, once, however many sweeps overlap', async () => {
     const fixture = await requested(await createAutotaggerPostFixture())
+    const { postIds, runIds, classifierSlugs } = scope.ids()
+    const subjectScope = { postIds, runIds, classifierSlugs }
 
-    await expect(sweep(requests)).resolves.toEqual(dispatched(1))
-    await sweep(requests)
+    await expect(processReconcileClassifierRuns(requests, subjectScope, 2)).resolves.toEqual(
+      dispatched(1),
+    )
+    await processReconcileClassifierRuns(requests, subjectScope, 2)
 
     expect(await readClassifierRunDispatcherJobsForTest(subjectIdOf(fixture)!)).toHaveLength(1)
     expect(await getSubjectClassifierRunFacts(fixture.subject)).toEqual([])
@@ -103,12 +107,18 @@ describe('C6 recovery sweep: request discovery', () => {
 
   it('holds an unembedded RSS feed item back and dispatches it once, with no approval involved', async () => {
     const fixture = await requested(await createAutotaggerFeedItemFixture({ embedded: false }))
+    const { rssFeedItemIds, runIds, classifierSlugs } = scope.ids()
+    const subjectScope = { rssFeedItemIds, runIds, classifierSlugs }
 
-    await expect(sweep(requests)).resolves.toEqual(dispatched(0))
+    await expect(processReconcileClassifierRuns(requests, subjectScope, 2)).resolves.toEqual(
+      dispatched(0),
+    )
     await embedAutotaggerFeedItem(fixture.itemId, fixture.embedding)
 
-    await expect(sweep(requests)).resolves.toEqual(dispatched(1))
-    await sweep(requests)
+    await expect(processReconcileClassifierRuns(requests, subjectScope, 2)).resolves.toEqual(
+      dispatched(1),
+    )
+    await processReconcileClassifierRuns(requests, subjectScope, 2)
     expect(await readClassifierRunDispatcherJobsForTest(fixture.itemId)).toHaveLength(1)
   })
 

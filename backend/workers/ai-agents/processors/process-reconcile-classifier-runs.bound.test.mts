@@ -19,7 +19,7 @@ import { getClassifierRunHandler } from './classifier-run-registry.mts'
 import { processReconcileClassifierRuns } from './process-reconcile-classifier-runs.mts'
 
 const scope = createClassifierRunSweepScope(getClassifierRunHandler(POST_CLASSIFIER_SLUG))
-const sweep = (data = {}) => processReconcileClassifierRuns(data, scope.dependencies())
+const sweep = (data = {}) => processReconcileClassifierRuns(data, scope.ids(), 2)
 
 async function dispatchTracked(remote: boolean) {
   const dispatched = await dispatchApprovedClassifierPost(remote)

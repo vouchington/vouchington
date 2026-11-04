@@ -13,31 +13,21 @@ import {
   listIncompleteClassifierRuns,
   recordClassifierRunSweepEnqueues,
   type IncompleteClassifierRun,
+  type ClassifierRunHealthScope,
 } from '@services/classifier-runs'
 import type { ClassifierRunHandler } from './classifier-run-handler.mts'
-import { checkClassifierRunHealth, type ReadClassifierRunHealth } from './classifier-run-health.mts'
+import { checkClassifierRunHealth } from './classifier-run-health.mts'
 import { getClassifierRunHandler, listClassifierRunHandlers } from './classifier-run-registry.mts'
 
-interface ReconcileClassifierRunsDependencies {
-  /** Lets a test scope the sweep to its own runs in a database shared with parallel tests. */
-  listIncomplete: typeof listIncompleteClassifierRuns
-  handlers: () => readonly ClassifierRunHandler[]
-  handlerFor: (classifier: string) => ClassifierRunHandler
-  /** Lets a test scope each classifier's health read to its own rows. */
-  readHealth: ReadClassifierRunHealth
+export type ClassifierRunReconcileScope = ClassifierRunHealthScope & {
+  classifierSlugs?: readonly string[]
+  now?: Date
 }
 
 export type ReconcileClassifierRunsResult =
   | { kind: 'spend-cap-breach' }
   | { kind: 'incomplete'; enqueued: number; abandoned: number; hasNext: boolean }
   | { kind: 'requests'; dispatched: number; hasNext: boolean }
-
-const defaultDependencies: ReconcileClassifierRunsDependencies = {
-  listIncomplete: listIncompleteClassifierRuns,
-  handlers: listClassifierRunHandlers,
-  handlerFor: getClassifierRunHandler,
-  readHealth: (handler, now) => handler.health(now),
-}
 
 /**
  * One page of the recovery sweep, from durable state alone. A scheduled tick first reads every
@@ -49,20 +39,28 @@ const defaultDependencies: ReconcileClassifierRunsDependencies = {
  */
 export async function processReconcileClassifierRuns(
   data: ReconcileClassifierRunsJobData,
-  overrides: Partial<ReconcileClassifierRunsDependencies> = {},
+  scope: ClassifierRunReconcileScope = {},
+  batchSize?: number,
 ): Promise<ReconcileClassifierRunsResult> {
-  const dependencies = { ...defaultDependencies, ...overrides }
+  const handlers = listClassifierRunHandlers().filter(
+    handler => scope.classifierSlugs === undefined || scope.classifierSlugs.includes(handler.slug),
+  )
   if (!data.phase) {
-    await checkClassifierRunHealth(dependencies.handlers(), new Date(), dependencies.readHealth)
+    await checkClassifierRunHealth(handlers, scope.now ?? new Date(), scope)
   }
   if (await evaluateSpendCapBreach()) return { kind: 'spend-cap-breach' }
   if (data.phase === 'requests') {
     if (!data.classifier) throw new Error('A request sweep page needs its classifier')
-    return sweepRequests(dependencies.handlerFor(data.classifier), data.after ?? null)
+    return sweepRequests(
+      getClassifierRunHandler(data.classifier),
+      data.after ?? null,
+      scope,
+      batchSize,
+    )
   }
   if (!data.phase) {
     await Promise.all(
-      dependencies.handlers().map(handler =>
+      handlers.map(handler =>
         enqueueReconcileClassifierRunsPage({
           phase: 'requests',
           classifier: handler.slug,
@@ -71,14 +69,16 @@ export async function processReconcileClassifierRuns(
       ),
     )
   }
-  return sweepIncomplete(dependencies, data.after ?? null)
+  return sweepIncomplete(data.after ?? null, scope.runIds, batchSize)
 }
 
 async function sweepRequests(
   handler: ClassifierRunHandler,
   after: string | null,
+  scope: ClassifierRunHealthScope,
+  batchSize: number | undefined,
 ): Promise<ReconcileClassifierRunsResult> {
-  const page = await handler.pendingRequests(after)
+  const page = await handler.pendingRequests(after, scope, batchSize)
   await enqueueBulkClassifierRunDispatchers(
     page.items.map(item => ({
       classifier: handler.slug,
@@ -102,10 +102,11 @@ async function sweepRequests(
  * retried forever. Run and request age alarms come from the health check, not from these pages.
  */
 async function sweepIncomplete(
-  dependencies: ReconcileClassifierRunsDependencies,
   after: string | null,
+  runIds: readonly string[] | undefined,
+  batchSize: number | undefined,
 ): Promise<ReconcileClassifierRunsResult> {
-  const page = await dependencies.listIncomplete(after)
+  const page = await listIncompleteClassifierRuns(after, batchSize, runIds)
   const exhausted = page.items.filter(
     run => run.sweepEnqueueCount >= CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND,
   )

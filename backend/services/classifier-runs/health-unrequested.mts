@@ -11,7 +11,11 @@ import type { ClassifierRunAdapter } from './types.mts'
 export type UnrequestedClassifierSubjects = { total: number; oldestAgeMs: number }
 
 /** Narrows the scan; a test uses it to count only its own items in a database shared with others. */
-export type ClassifierRunHealthScope = { rssFeedItemIds?: readonly string[] }
+export type ClassifierRunHealthScope = {
+  runIds?: readonly string[]
+  postIds?: readonly string[]
+  rssFeedItemIds?: readonly string[]
+}
 
 type UnrequestedRow = { total: number; oldest_since: Date | null }
 

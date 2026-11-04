@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import type { ClassifierRunHealthScope } from './health-unrequested.mts'
 
 /** The oldest unfinished item of one classifier and how many there are in all. */
 export type OldestOpenClassifierItem = { id: string; ageMs: number; total: number }
@@ -19,18 +20,28 @@ function toOldest(row: OldestRow | undefined, now: Date): OldestOpenClassifierIt
 export async function readOldestIncompleteClassifierRun(
   classifier: string,
   now: Date,
+  scope: ClassifierRunHealthScope = {},
 ): Promise<OldestOpenClassifierItem | null> {
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
   // already terminal on the writer.
-  const { rows } = await read<OldestRow>(sql`/* readOldestIncompleteClassifierRun */
+  const statement = sql`/* readOldestIncompleteClassifierRun */
     SELECT run.id, run.created_at, count(*) OVER ()::int AS total
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
-    WHERE classifier.slug = ${classifier}
+    WHERE classifier.slug = ${classifier}`
+  if (scope.runIds !== undefined)
+    statement.append(sql`
+      AND run.id = ANY(${scope.runIds}::uuid[])`)
+  if (scope.postIds !== undefined || scope.rssFeedItemIds !== undefined)
+    statement.append(sql`
+      AND (run.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR run.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))`)
+  statement.append(sql`
       AND run.completed_at IS NULL AND run.superseded_at IS NULL AND run.terminal_failed_at IS NULL
     ORDER BY run.id
     LIMIT 1
   `)
+  const { rows } = await read<OldestRow>(statement)
   return toOldest(rows[0], now)
 }
 
@@ -42,17 +53,24 @@ export async function readOldestIncompleteClassifierRun(
 export async function readOldestPendingClassifierRequest(
   classifier: string,
   now: Date,
+  scope: ClassifierRunHealthScope = {},
 ): Promise<OldestOpenClassifierItem | null> {
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
   // already terminal on the writer.
-  const { rows } = await read<OldestRow>(sql`/* readOldestPendingClassifierRequest */
+  const statement = sql`/* readOldestPendingClassifierRequest */
     SELECT request.id, request.created_at, count(*) OVER ()::int AS total
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
-    WHERE classifier.slug = ${classifier}
+    WHERE classifier.slug = ${classifier}`
+  if (scope.postIds !== undefined || scope.rssFeedItemIds !== undefined)
+    statement.append(sql`
+      AND (request.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR request.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))`)
+  statement.append(sql`
       AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
     ORDER BY request.id
     LIMIT 1
   `)
+  const { rows } = await read<OldestRow>(statement)
   return toOldest(rows[0], now)
 }

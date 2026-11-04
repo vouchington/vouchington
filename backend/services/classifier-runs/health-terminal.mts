@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import sql from 'sql-template-strings'
+import type { ClassifierRunHealthScope } from './health-unrequested.mts'
 import { CLASSIFIER_TERMINAL_WINDOW_MS } from './health-thresholds.mts'
 
 /**
@@ -23,11 +24,12 @@ const FAILED_PREFIX = 'failed:'
 export async function readClassifierTerminalCounts(
   classifier: string,
   now: Date,
+  scope: ClassifierRunHealthScope = {},
 ): Promise<ClassifierTerminalCounts> {
   const since = timestampToUuidv7LowerBound(now.getTime() - CLASSIFIER_TERMINAL_WINDOW_MS)
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
   // already terminal on the writer.
-  const { rows } = await read<OutcomeRow>(sql`/* readClassifierTerminalCounts */
+  const statement = sql`/* readClassifierTerminalCounts */
     SELECT CASE
         WHEN run.completed_at IS NOT NULL THEN 'completed'
         WHEN run.terminal_failure_kind IS NOT NULL THEN ${FAILED_PREFIX}::text || run.terminal_failure_kind
@@ -37,9 +39,18 @@ export async function readClassifierTerminalCounts(
       count(*)::int AS total
     FROM classifier_runs run
     WHERE run.classifier_id = (SELECT id FROM classifiers WHERE slug = ${classifier})
-      AND run.id >= ${since}
+      AND run.id >= ${since}`
+  if (scope.runIds !== undefined)
+    statement.append(sql`
+      AND run.id = ANY(${scope.runIds}::uuid[])`)
+  if (scope.postIds !== undefined || scope.rssFeedItemIds !== undefined)
+    statement.append(sql`
+      AND (run.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR run.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))`)
+  statement.append(sql`
     GROUP BY 1
   `)
+  const { rows } = await read<OutcomeRow>(statement)
   const counts: ClassifierTerminalCounts = {
     completed: 0,
     superseded: 0,

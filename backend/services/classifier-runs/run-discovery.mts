@@ -6,6 +6,7 @@ import {
   type IneligibleClassifierRunRequest,
 } from './run-retirement.mts'
 import { CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND } from './run-sweep.mts'
+import type { ClassifierRunHealthScope } from './health-unrequested.mts'
 import type { ClassifierRunAdapter, ClassifierRunSubject } from './types.mts'
 
 const FIRST_UUID = '00000000-0000-0000-0000-000000000000'
@@ -47,18 +48,24 @@ type IncompleteRow = {
 export async function listIncompleteClassifierRuns(
   after: string | null,
   limit = getClassifierRunsWorkLimit('discovery_page_size'),
+  runIds?: readonly string[],
 ): Promise<DiscoveryPage<IncompleteClassifierRun>> {
-  const { rows } = await write<IncompleteRow>(sql`/* listIncompleteClassifierRuns */
+  const statement = sql`/* listIncompleteClassifierRuns */
     SELECT run.id, classifier.slug AS classifier_slug, run.post_id, run.rss_feed_item_id,
       run.input_sha256, run.configuration_sha256, run.sweep_enqueue_count
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
-    WHERE run.id > COALESCE(${after}::uuid, ${FIRST_UUID}::uuid)
+    WHERE run.id > COALESCE(${after}::uuid, ${FIRST_UUID}::uuid)`
+  if (runIds !== undefined)
+    statement.append(sql`
+      AND run.id = ANY(${runIds}::uuid[])`)
+  statement.append(sql`
       AND run.completed_at IS NULL AND run.superseded_at IS NULL AND run.terminal_failed_at IS NULL
       AND run.sweep_enqueue_count <= ${CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND}
     ORDER BY run.id
     LIMIT ${limit}
   `)
+  const { rows } = await write<IncompleteRow>(statement)
   return {
     items: rows.map(row => ({
       runId: row.id,
@@ -102,20 +109,25 @@ export async function listPendingClassifierRunRequests<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
   after: string | null,
   limit = getClassifierRunsWorkLimit('discovery_page_size'),
+  scope: ClassifierRunHealthScope = {},
 ): Promise<DiscoveryPage<PendingClassifierRunRequest>> {
-  const { rows } = await write<RequestRow>(
-    sql`/* listPendingClassifierRunRequests */
+  const statement = sql`/* listPendingClassifierRunRequests */
     SELECT request.id, request.post_id, request.rss_feed_item_id, request.input_sha256,
       (`.append(adapter.requestEligibility()).append(sql`) AS eligible
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE classifier.slug = ${adapter.slug}
-      AND request.id > COALESCE(${after}::uuid, ${FIRST_UUID}::uuid)
+      AND request.id > COALESCE(${after}::uuid, ${FIRST_UUID}::uuid)`)
+  if (scope.postIds !== undefined || scope.rssFeedItemIds !== undefined)
+    statement.append(sql`
+      AND (request.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR request.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))`)
+  statement.append(sql`
       AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
     ORDER BY request.id
     LIMIT ${limit}
-  `),
-  )
+  `)
+  const { rows } = await write<RequestRow>(statement)
   const items: PendingClassifierRunRequest[] = []
   const ineligible: IneligibleClassifierRunRequest[] = []
   for (const row of rows) {

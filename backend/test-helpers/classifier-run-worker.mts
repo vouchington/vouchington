@@ -1,21 +1,31 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach } from 'vitest'
+import { afterEach, beforeEach, expect } from 'vitest'
+import { write } from '@data-stores/psql'
+import { rejectNextClassifierRunDispatcherAddForTest } from './injected-failures.mts'
+import { followTopicAsReader } from './data-stores/psql/classifier-runs/autotagger-agent-fixture.mts'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import type { ClassifierRunJobData } from '../queues/ai-agents/types.mts'
 import { spendCapConfig } from '../services/ai-usage/index.mts'
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
-import {
-  listIncompleteClassifierRuns,
-  type ClassifierRunHealth,
-  type IncompleteClassifierRun,
-} from '../services/classifier-runs/index.mts'
+import { requestClassifierRuns } from '../services/classifier-runs/index.mts'
 import {
   processClassifierRun,
   processClassifierRunDispatcher,
 } from '../workers/ai-agents/processors/process-classifier-run.mts'
 import type { ClassifierRunHandler } from '../workers/ai-agents/processors/classifier-run-handler.mts'
-import type { processReconcileClassifierRuns } from '../workers/ai-agents/processors/process-reconcile-classifier-runs.mts'
-import { getClassifierRunFacts } from './data-stores/psql/classifier-runs/run-facts.mts'
+import {
+  getClassifierRunFacts,
+  getSubjectClassifierRunFacts,
+  getSubjectClassifierRunRequestFacts,
+} from './data-stores/psql/classifier-runs/run-facts.mts'
+import {
+  createAutotaggerPostFixture,
+  TAGGING_CLASSIFIER_SLUG,
+} from './data-stores/psql/classifier-runs/autotagger-fixture.mts'
+import {
+  readClassifierRunJobsForTest,
+  readClassifierRunDispatcherJobsForTest,
+} from './classifier-run-queue-jobs.mts'
 import {
   createApprovedClassifierPost,
   requestPostClassifierRun,
@@ -25,10 +35,6 @@ export { POST_CLASSIFIER_SLUG, requestPostClassifierRun }
 
 type DispatcherJob = Parameters<typeof processClassifierRunDispatcher>[0]
 type RunJob = Parameters<typeof processClassifierRun>[0]
-type ReconcileClassifierRunsDependencies = Required<
-  NonNullable<Parameters<typeof processReconcileClassifierRuns>[1]>
->
-
 export function classifierRunDispatcherJobFor(postId: string, classifier = POST_CLASSIFIER_SLUG) {
   return {
     id: randomUUID(),
@@ -67,72 +73,68 @@ export async function dispatchApprovedClassifierPost(remote: boolean) {
   return { ...setup, runId: run.id, data }
 }
 
-/** A classifier with nothing unfinished, nothing recently failed and nothing unrequested. */
-export function createHealthyClassifierRunHealth(classifier: string): ClassifierRunHealth {
+/** Eligible neighbors that expose a sweep escaping its owned subject/run ids. */
+export async function createTestClassifierSweepNeighbor(handler: ClassifierRunHandler) {
+  async function requestedSubject() {
+    const fixture =
+      handler.slug === POST_CLASSIFIER_SLUG
+        ? await createApprovedClassifierPost(true, true)
+        : await createAutotaggerPostFixture()
+    const subject = { postId: fixture.post.id, rssFeedItemId: null } as const
+    await requestClassifierRuns(write, {
+      subject,
+      inputSha256: fixture.inputSha256,
+      classifierSlugs: [handler.slug],
+    })
+    return subject
+  }
+  const runSubject = await requestedSubject()
+  const reserved = await handler.reserve(runSubject)
+  if (reserved.kind !== 'reserved')
+    throw new Error(`Unexpected neighbor reservation: ${reserved.kind}`)
+  const pendingSubject = await requestedSubject()
+  const beforeRun = await getSubjectClassifierRunFacts(runSubject, handler.slug)
+  const beforeRequest = await getSubjectClassifierRunRequestFacts(pendingSubject, handler.slug)
+  expect(beforeRun).toMatchObject([{ sweep_enqueue_count: 0, terminal_failure_kind: null }])
+  expect(beforeRequest).toMatchObject([{ run_identity_id: null, stale_at: null, no_work_at: null }])
   return {
-    classifier,
-    oldestIncompleteRun: null,
-    oldestPendingRequest: null,
-    terminal: { completed: 0, superseded: 0, incomplete: 0, failed: {}, failedTotal: 0 },
-    unrequestedFeedItems: null,
+    runId: reserved.run.runId,
+    runSubject,
+    pendingSubject,
+    async assertUnchanged() {
+      expect(await getSubjectClassifierRunFacts(runSubject, handler.slug)).toEqual(beforeRun)
+      expect(await getSubjectClassifierRunRequestFacts(pendingSubject, handler.slug)).toEqual(
+        beforeRequest,
+      )
+      expect(await readClassifierRunJobsForTest(reserved.run.runId)).toEqual([])
+      expect(await readClassifierRunDispatcherJobsForTest(pendingSubject.postId)).toEqual([])
+    },
   }
 }
 
-/**
- * The sweep is global by design, and it counts and gives up on every incomplete run it lists.
- * Parallel test files share one database, so this scopes both discovery queries to the posts and
- * runs a test made: their counters, terminal state and alarms never depend on (or disturb) others.
- * Receipt health is global per classifier too, so it reads as healthy unless a test supplies its
- * own `readHealth`. The daily spend cap is disabled around each test, so ambient usage on the shared
- * database cannot park a sweep; a test that needs a breach enables it with `withReservedAiUsageDay`.
- */
+/** Plain ownership parameters; every discovery and health read uses the real service. */
 export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler) {
   let restoreSpendCap: (() => void) | undefined
+  let neighbor: Awaited<ReturnType<typeof createTestClassifierSweepNeighbor>> | undefined
   beforeEach(async () => {
     await spendCapConfig.waitForInitialization()
     restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
+    if ([POST_CLASSIFIER_SLUG, TAGGING_CLASSIFIER_SLUG].includes(realHandler.slug))
+      neighbor = await createTestClassifierSweepNeighbor(realHandler)
   })
-  afterEach(() => {
-    restoreSpendCap?.()
-    restoreSpendCap = undefined
+  afterEach(async () => {
+    try {
+      await neighbor?.assertUnchanged()
+    } finally {
+      neighbor = undefined
+      restoreSpendCap?.()
+      restoreSpendCap = undefined
+    }
   })
   const postIds = new Set<string>()
   const rssFeedItemIds = new Set<string>()
   const runIds = new Set<string>()
-  const handler: ClassifierRunHandler = {
-    ...realHandler,
-    // Pending requests are paged by random request id, so a test's own request can sit on any page
-    // of the shared database's global pool: keep reading until a page holds one of this scope's.
-    pendingRequests: async function scopedPendingRequests(
-      after: string | null,
-    ): ReturnType<ClassifierRunHandler['pendingRequests']> {
-      const page = await realHandler.pendingRequests(after)
-      const items = page.items.filter(item =>
-        item.postId !== null
-          ? postIds.has(item.postId)
-          : item.rssFeedItemId !== null && rssFeedItemIds.has(item.rssFeedItemId),
-      )
-      return items.length > 0 || !page.next ? { ...page, items } : scopedPendingRequests(page.next)
-    },
-  }
-
-  /** Pages of at most `pageSize` of this scope's runs, whatever else the database holds. */
-  function incomplete(pageSize: number): ReconcileClassifierRunsDependencies['listIncomplete'] {
-    return async after => {
-      const found: IncompleteClassifierRun[] = []
-      let cursor = after
-      do {
-        const page = await listIncompleteClassifierRuns(cursor, 100)
-        found.push(...page.items.filter(run => runIds.has(run.runId)))
-        cursor = page.next
-      } while (cursor && found.length <= pageSize)
-      const items = found.slice(0, pageSize)
-      return { items, next: found.length > pageSize ? (items.at(-1)?.runId ?? null) : null }
-    }
-  }
-
   return {
-    handler,
     postIds,
     rssFeedItemIds,
     runIds,
@@ -140,7 +142,6 @@ export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler)
       postIds.add(post.id)
       runIds.add(runId)
     },
-    /** Scopes the sweep to a run of an RSS feed item, whose subject has no post. */
     trackFeedItem(rssFeedItemId: string, runId: string) {
       rssFeedItemIds.add(rssFeedItemId)
       runIds.add(runId)
@@ -150,17 +151,42 @@ export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler)
       rssFeedItemIds.clear()
       runIds.clear()
     },
-    dependencies(
-      overrides: Partial<ReconcileClassifierRunsDependencies> = {},
-      pageSize = 500,
-    ): ReconcileClassifierRunsDependencies {
+    ids() {
       return {
-        listIncomplete: incomplete(pageSize),
-        handlers: () => [handler],
-        handlerFor: () => handler,
-        readHealth: async healthHandler => createHealthyClassifierRunHealth(healthHandler.slug),
-        ...overrides,
+        runIds: [...runIds],
+        postIds: [...postIds],
+        rssFeedItemIds: [...rssFeedItemIds],
+        classifierSlugs: [realHandler.slug],
       }
     },
   }
+}
+
+/** Complete a classifier run while its first dispatcher admission fails, restoring the queue afterward. */
+export async function expectClassifierRunDispatcherAddFailure(operation: () => Promise<unknown>) {
+  const restore = rejectNextClassifierRunDispatcherAddForTest(new Error('queue unavailable'))
+  try {
+    await expect(operation()).rejects.toThrow('queue unavailable')
+  } finally {
+    restore()
+  }
+}
+
+/** Snapshot the unsettled request left behind by failed dispatcher admission. */
+export async function readTestUnsettledClassifierRequest(
+  subject: { postId: string; rssFeedItemId: null } | { postId: null; rssFeedItemId: string },
+  classifier: string,
+) {
+  const requests = await getSubjectClassifierRunRequestFacts(subject, classifier)
+  expect(requests).toMatchObject([{ run_identity_id: null, stale_at: null, no_work_at: null }])
+  return requests
+}
+
+/** A classifier subject whose topic universe is followed by a paying reader. */
+export async function createFollowedClassifierSubjectFixture<
+  T extends { topics: Array<{ id: string }> },
+>(create: () => Promise<T>): Promise<T> {
+  const fixture = await create()
+  await Promise.all(fixture.topics.map(topic => followTopicAsReader(topic.id)))
+  return fixture
 }
