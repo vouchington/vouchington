@@ -30,6 +30,8 @@ describe('post moderation retention continuation', () => {
     })
     const lock = await acquirePostModerationLedgerRetentionTestLock()
     onTestFinished(() => lock.release())
+    const restoreCursor = await reservePostModerationRetentionPolicyCursor()
+    onTestFinished(restoreCursor)
     const fixture = await createPostModerationRetentionContinuationFixture()
     const neighborBefore = await getTestPostModerationRetentionState(fixture.neighbor)
     const neighborMarkers = await getTestPostModerationVersionMarkers(
@@ -49,7 +51,12 @@ describe('post moderation retention continuation', () => {
     }
     const initial = await processPsql('dataRetentionCleanup', {}, undefined, initialJobId, options)
     expect(initial).toMatchObject({
-      postModerationLedger: { deletedVersions: 1, clearedPassEvidence: 1 },
+      postModerationLedger: {
+        deletedVersions: 1,
+        clearedPassEvidence: 1,
+        hasMore: true,
+        remainingKinds: ['superseded_versions', 'pass_evidence'],
+      },
     })
     const first = await psql.getJob(ids[0]!)
     expect((first!.data as PsqlRetentionJobData).continuation?.activePostModerationKinds).toEqual([
@@ -64,7 +71,12 @@ describe('post moderation retention continuation', () => {
       options,
     )
     expect(secondResult).toMatchObject({
-      postModerationLedger: { deletedVersions: 1, clearedPassEvidence: 1 },
+      postModerationLedger: {
+        deletedVersions: 1,
+        clearedPassEvidence: 1,
+        hasMore: true,
+        remainingKinds: ['pass_evidence'],
+      },
     })
     const second = await psql.getJob(ids[1]!)
     expect((second!.data as PsqlRetentionJobData).continuation?.activePostModerationKinds).toEqual([
@@ -80,7 +92,12 @@ describe('post moderation retention continuation', () => {
       options,
     )
     expect(thirdResult).toMatchObject({
-      postModerationLedger: { deletedVersions: 0, clearedPassEvidence: 1, remainingKinds: [] },
+      postModerationLedger: {
+        deletedVersions: 0,
+        clearedPassEvidence: 1,
+        hasMore: false,
+        remainingKinds: [],
+      },
     })
     expect(await getTestPostModerationVersionMarkers(fixture.sentinelId)).toEqual(sentinelBefore)
     expect(await getTestPostModerationRetentionState(fixture.neighbor)).toEqual(neighborBefore)
@@ -93,11 +110,9 @@ describe('post moderation retention continuation', () => {
   })
   it('scopes policy rechecks and hash work to owned posts', async () => {
     const lock = await acquirePostModerationLedgerRetentionTestLock()
+    onTestFinished(() => lock.release())
     const restoreCursor = await reservePostModerationRetentionPolicyCursor()
-    onTestFinished(async () => {
-      await restoreCursor()
-      await lock.release()
-    })
+    onTestFinished(restoreCursor)
     const fixture = await createPostModerationRetentionContinuationFixture()
     const oldIds = fixture.owned.versionIds.slice(0, 2)
     await blockPostModerationRetentionFixtureVersions([...oldIds, fixture.neighbor.versionIds[0]!])
