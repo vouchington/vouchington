@@ -80,6 +80,7 @@ export function buildCopyrightPosterNoticeDeliveries(
   const recipients = parties.filter(party => party.purpose === posterPurpose)
   const deliveries: CopyrightStatementDeliveryInput[] = recipients.map(poster => ({
     noticeId: input.noticeId,
+    targetId: input.targetId,
     recipientUserId: poster.user_id,
     recipientRole: poster.recipient_role,
     deliveryKind,
@@ -97,6 +98,7 @@ export function buildCopyrightPosterNoticeDeliveries(
     for (const owner of parties.filter(party => party.purpose === 'inform')) {
       deliveries.push({
         noticeId: input.noticeId,
+        targetId: input.targetId,
         recipientUserId: owner.user_id,
         recipientRole: 'informed_owner',
         deliveryKind: 'owner_information_notice',

@@ -10,6 +10,14 @@ export type CopyrightNoticeDeliveryKind = Exclude<
 >
 export type CopyrightDeliveryKind = FiniteValue<'copyright_notice_delivery_kinds'>
 
+/** The kinds a restriction event sends per target; their rows carry the target they describe. */
+export const copyrightTargetDeliveryKinds = [
+  'poster_restriction_notice',
+  'poster_review_notice',
+  'poster_restoration_notice',
+  'owner_information_notice',
+] as const satisfies readonly CopyrightNoticeDeliveryKind[]
+
 export const copyrightDecisionDeliveryKinds = [
   'poster_restriction_notice',
   'claimant_decision_notice',

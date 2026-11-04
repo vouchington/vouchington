@@ -39,9 +39,19 @@ const POST_COLUMNS = {
  */
 export async function createHostedImagePost(
   audience: HostedPostAudience,
-  { claimantHasAccess = false } = {},
+  {
+    claimantHasAccess = false,
+    poster: existingPoster,
+  }: {
+    claimantHasAccess?: boolean
+    /** Posts as this account instead of a new one, to put one poster on several targets. */
+    poster?: Awaited<ReturnType<typeof createTestUser>>
+  } = {},
 ) {
-  const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
+  const [claimant, poster] = await Promise.all([
+    createTestUser(),
+    existingPoster ?? createTestUser(),
+  ])
   const inCommunity = audience === 'private-community' || audience === 'awaiting-community-review'
   const community = inCommunity
     ? await insertTestCommunity({ createdById: poster.id, visibility: 'private' })

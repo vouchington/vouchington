@@ -134,7 +134,7 @@ async function runDeliveryRecipients(noticeId: string): Promise<void> {
             noticeId,
             recipientUserId: seedUser.id,
             recipientRole: 'poster',
-            deliveryKind: 'poster_restriction_notice',
+            deliveryKind: 'status_update',
             correspondenceKind: 'restriction_notice',
             key: 'explain-copyright-statement:poster',
             text: 'Seeded EXPLAIN statement',

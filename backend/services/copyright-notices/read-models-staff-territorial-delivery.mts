@@ -19,33 +19,45 @@ function aggregateSql(
         AND (intent.created_at >= ${decidedAt}::timestamptz OR intent.sent_at >= ${decidedAt}::timestamptz)`
 }
 
+type TerritorialDelivery = { informed_at: Date | null; state: TerritorialDeliveryState | null }
+
 /**
- * Delivery for the given posters, read once per distinct poster: the first send since the decision
- * and the latest state of the intents that reached that poster. A poster on many targets of one
- * page is read once, not once per target. Posters without an intent are absent from the result.
+ * Delivery for each given (target, poster) pair: the first send since the decision and the latest
+ * state of the restriction notices sent to that poster for that target. A poster on several
+ * targets gets a separate answer per target, so a notice that failed for one target is not hidden
+ * by one that was sent for another. A pair with no intent returns nulls, so every pair is present.
  */
 export async function selectTerritorialPosterDelivery(
   noticeId: string,
   decidedAt: Date,
-  userIds: readonly string[],
+  pairs: readonly { targetId: string; userId: string }[],
   query: TransactionQuery,
-): Promise<Map<string, { informed_at: Date | null; state: TerritorialDeliveryState | null }>> {
-  if (userIds.length === 0) return new Map()
+): Promise<Map<string, Map<string, TerritorialDelivery>>> {
+  const distinct = new Map(pairs.map(pair => [`${pair.targetId}:${pair.userId}`, pair]))
+  if (distinct.size === 0) return new Map()
   const statement = sql`/* selectTerritorialPosterDelivery */
-    SELECT person.user_id, aggregate.informed_at, aggregate.state
-    FROM unnest(${[...new Set(userIds)]}::uuid[]) person(user_id)
+    SELECT pair.target_id, pair.user_id, aggregate.informed_at, aggregate.state
+    FROM unnest(
+      ${[...distinct.values()].map(pair => pair.targetId)}::uuid[],
+      ${[...distinct.values()].map(pair => pair.userId)}::uuid[]
+    ) pair(target_id, user_id)
     CROSS JOIN LATERAL (
       `
   statement.append(aggregateSql('poster', noticeId, decidedAt))
   statement.append(sql`
-        AND intent.recipient_user_id = person.user_id
+        AND intent.copyright_notice_target_id = pair.target_id
+        AND intent.recipient_user_id = pair.user_id
     ) aggregate`)
-  const { rows } = await query<{
-    user_id: string
-    informed_at: Date | null
-    state: TerritorialDeliveryState | null
-  }>(statement)
-  return new Map(rows.map(({ user_id: userId, ...delivery }) => [userId, delivery]))
+  const { rows } = await query<TerritorialDelivery & { target_id: string; user_id: string }>(
+    statement,
+  )
+  const byTarget = new Map<string, Map<string, TerritorialDelivery>>()
+  for (const { target_id: targetId, user_id: userId, ...delivery } of rows) {
+    const users = byTarget.get(targetId) ?? new Map<string, TerritorialDelivery>()
+    users.set(userId, delivery)
+    byTarget.set(targetId, users)
+  }
+  return byTarget
 }
 
 /**

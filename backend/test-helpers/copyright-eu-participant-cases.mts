@@ -13,14 +13,14 @@ import {
 
 export async function createTestEuParticipantCase(
   outcome: 'pending' | 'no_action' | 'restrict' = 'restrict',
-  options: { extraPosts?: number } = {},
+  options: { extraPosts?: number; samePoster?: boolean } = {},
 ) {
-  const [post, extraPosts] = await Promise.all([
-    createHostedImagePost('public'),
-    Promise.all(
-      Array.from({ length: options.extraPosts ?? 0 }, () => createHostedImagePost('public')),
+  const post = await createHostedImagePost('public')
+  const extraPosts = await Promise.all(
+    Array.from({ length: options.extraPosts ?? 0 }, () =>
+      createHostedImagePost('public', { poster: options.samePoster ? post.poster : undefined }),
     ),
-  ])
+  )
   const [notifier, staff, administrator, stranger] = await Promise.all([
     createTestUser(),
     createTestUser({ extraRoles: ['moderator'] }),

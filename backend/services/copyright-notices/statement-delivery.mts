@@ -12,6 +12,8 @@ import type { CopyrightCorrespondenceKind } from './types.mts'
 
 export type CopyrightStatementDeliveryInput = {
   noticeId: string
+  /** The hosted use the notice describes; required for restriction and owner notices. */
+  targetId?: string
   recipientUserId: string | null
   recipientRole: 'poster' | 'claimant' | 'informed_owner'
   recipientEmail?: string | null
@@ -84,6 +86,7 @@ export async function createCopyrightStatementDeliveriesInTransaction(
   for (const [index, { input, activeUserId }] of deliveries.entries()) {
     const base = {
       noticeId: input.noticeId,
+      targetId: input.targetId,
       submissionId: null,
       correspondenceId: correspondences[index]!.id,
       recipientUserId: activeUserId,

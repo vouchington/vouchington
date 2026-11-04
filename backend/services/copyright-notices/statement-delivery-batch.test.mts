@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
+import { insertTestBareCopyrightTarget } from '@voucha/test-helpers/copyright-bare-target'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import {
   createCopyrightStatementDeliveriesInTransaction,
@@ -20,8 +21,12 @@ describe('statement delivery batches', () => {
   it('delivers every recipient together and treats a repeated key as one delivery', async () => {
     const [first, second] = await Promise.all([createTestUser(), createTestUser()])
     const noticeId = (await createSignedInCopyrightForm(1)).intake.copyright_notice_id
+    await using setup = await beginTransaction()
+    const targetId = await insertTestBareCopyrightTarget(noticeId, first.id, setup)
+    await setup.commit()
     const deliveryFor = (userId: string, text: string): CopyrightStatementDeliveryInput => ({
       noticeId,
+      targetId,
       recipientUserId: userId,
       recipientRole: 'poster',
       deliveryKind: 'poster_review_notice',

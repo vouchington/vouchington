@@ -17,7 +17,7 @@ describe('delivery intent batches', () => {
       correspondenceId: null,
       recipientUserId: userId,
       recipientRole: 'poster',
-      deliveryKind: 'poster_review_notice',
+      deliveryKind: 'status_update',
       channel: 'in_app',
       idempotencyKey: key,
     } satisfies CopyrightDeliveryIntentInput
@@ -44,7 +44,7 @@ describe('delivery intent batches', () => {
       createCopyrightDeliveryIntents(
         [
           posterIntent(noticeId, user.id, key),
-          { ...posterIntent(noticeId, user.id, key), deliveryKind: 'poster_restriction_notice' },
+          { ...posterIntent(noticeId, user.id, key), deliveryKind: 'redress_decision_notice' },
         ],
         transaction,
       ),

@@ -3,6 +3,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
+import { insertTestBareCopyrightTarget } from './copyright-bare-target.mts'
 import { lockCopyrightJurisdictionPolicy } from './copyright-jurisdiction-policy-lock.mts'
 import { territorialLabels } from '../services/copyright-notices/territorial-labels.mts'
 import { getTerritorialInformedWindow } from '../services/copyright-notices/territorial-informed-at.mts'
@@ -146,6 +147,10 @@ async function insertTestTerritorialDecisionIntentInTransaction(
   const failedAt = state === 'failed' ? input.at : null
   const bouncedAt = state === 'bounced' ? new Date(input.at.getTime() + 1_000) : null
   const kind = input.role === 'claimant' ? 'claimant_decision_notice' : 'poster_restriction_notice'
+  const targetId =
+    input.role === 'poster' && input.userId
+      ? await insertTestBareCopyrightTarget(input.noticeId, input.userId, transaction)
+      : null
   const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
     {
       noticeId: input.noticeId,
@@ -157,12 +162,12 @@ async function insertTestTerritorialDecisionIntentInTransaction(
   )
   await transaction(sql`/* insertTestTerritorialDecisionIntent */
     INSERT INTO copyright_notice_delivery_work_items (
-      copyright_notice_id, copyright_notice_correspondence_message_id,
+      copyright_notice_id, copyright_notice_target_id, copyright_notice_correspondence_message_id,
       recipient_user_id, recipient_role, delivery_kind, channel,
       attempt_count, idempotency_key, delivery_attempted_at, sent_at,
       failed_at, bounced_at
     ) VALUES (
-      ${input.noticeId}, ${correspondence.id}, ${input.userId}, ${input.role}, ${kind}, 'email',
+      ${input.noticeId}, ${targetId}, ${correspondence.id}, ${input.userId}, ${input.role}, ${kind}, 'email',
       ${state === 'pending' ? 0 : 1}, ${`historical-eu:${crypto.randomUUID()}`},
       ${attemptedAt}, ${sentAt}, ${failedAt}, ${bouncedAt}
     )

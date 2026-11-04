@@ -131,7 +131,7 @@ header. Staff copyright queues expose a bounded first page of possible staydown 
 refresh. A territorial (EU or UK) case card on the staff queue carries `complaint_count` and
 `dispute_settlement_count`, not the posters, claimants, complaints or settlements themselves; those
 load on demand from the paged `territorial-posters` (one page per batch of targets, a row per target
-and poster), `territorial-claimants` (one row per filing receipt), `territorial-complaints` and
+and poster whose `state` and `informed_at` report the notice sent for that target), `territorial-claimants` (one row per filing receipt), `territorial-complaints` and
 `eu-dispute-settlements/staff` collections of `/api/v1/copyright-notices/:id`. Native copyright filing and
 staff review remain tracked by the existing parity rows in
 `client-feature-parity.json`; this change does not claim new native UI evidence.
