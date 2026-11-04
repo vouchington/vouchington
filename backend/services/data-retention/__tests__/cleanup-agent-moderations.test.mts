@@ -61,7 +61,7 @@ describe('agent moderation retention', () => {
       occurredAt: at(1),
     })
     await setTestPostCurrentModerationInputHashFromResult(fixture.postId, oldCurrent)
-    const options = { now, lowerBoundDate, batchSize: 10, maxBatches: 1 }
+    const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 10, maxBatches: 1 }
 
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({
       scanned: 2,
@@ -87,6 +87,7 @@ describe('agent moderation retention', () => {
       title: 'Visible fallback',
       markdown: 'Synthetic moderation input',
     })
+    options.postIds.push(fallbackPost)
     const liveFallback = await insertTestAgentModeration({
       postId: fallbackPost,
       promptId: fixture.promptId,
@@ -122,7 +123,7 @@ describe('agent moderation retention', () => {
       ids[3]!,
       (await createTestUserDirect()).id,
     )
-    const options = { now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
     let continuation: AgentModerationCleanupContinuation | null = null
     const deletedByPage = []
     const hasMoreByPage = []
@@ -143,7 +144,7 @@ describe('agent moderation retention', () => {
       }
     }
     expect(deletedByPage).toEqual([0, 0, 0, 0, 1, 1])
-    expect(hasMoreByPage.slice(0, -1)).toEqual(Array.from({ length: ids.length - 1 }, () => true))
+    expect(hasMoreByPage.slice(0, -1)).toEqual([true, true, true, true, true])
     expect(await Promise.all(ids.map(id => testAgentModerationExists(fixture.postId, id)))).toEqual(
       [true, true, true, true, false, false],
     )
@@ -153,6 +154,7 @@ describe('agent moderation retention', () => {
     await deleteTestAgentModerationVoteReference(fixture.postId, ids[3]!)
     expect(
       await cleanupObsoleteAgentModerations({
+        postIds: [fixture.postId],
         now,
         lowerBoundDate,
         batchSize: 10,
@@ -190,7 +192,13 @@ describe('agent moderation retention', () => {
       insertTestAgentModeration({ ...fixture, postId: secondPostId, occurredAt: at(1) }),
     ])
 
-    const options = { now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    const options = {
+      postIds: [fixture.postId, secondPostId],
+      now,
+      lowerBoundDate,
+      batchSize: 1,
+      maxBatches: 1,
+    }
     const first = await cleanupObsoleteAgentModerations(options)
     expect(first).toMatchObject({ scanned: 1, deleted: 1, hasMore: true })
     expect(first.continuation).toMatchObject({
@@ -226,6 +234,7 @@ describe('agent moderation retention', () => {
       },
       async waitForLock => {
         const cleanup = cleanupObsoleteAgentModerations({
+          postIds: [fixture.postId],
           now,
           lowerBoundDate,
           batchSize: 1,
@@ -254,7 +263,7 @@ describe('agent moderation retention', () => {
       category: 'agent_moderation',
       communityId: null,
     })
-    const options = { now, lowerBoundDate, batchSize: 25, maxBatches: 1 }
+    const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 25, maxBatches: 1 }
     expect(
       await getTestModerationTransparencyRollupCount({
         occurredAt: oldDay,

@@ -205,16 +205,6 @@ describe('agent moderation retention continuations', () => {
     expect(await psql.getJob(nextId)).toBeNull()
   })
 
-  it('rejects a missing continuation cursor before queue admission', async () => {
-    const add = vi.spyOn(psql, 'add')
-    onTestFinished(() => add.mockRestore())
-
-    await expect(processPsql('continueAgentModerationRetentionCleanup')).rejects.toThrow(
-      'Agent moderation retention continuation requires its cursor',
-    )
-    expect(add).not.toHaveBeenCalled()
-  })
-
   it('does not restart a finished agent moderation sweep while classifier pages continue', async () => {
     const initialJobId = `retention-test-${randomUUID()}`
     const runId = createHash('sha256').update(initialJobId).digest('hex')

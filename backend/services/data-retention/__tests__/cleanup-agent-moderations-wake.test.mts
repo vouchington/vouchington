@@ -26,12 +26,30 @@ describe('agent moderation retention wake-ups', () => {
     const fixture = await createTestAgentModerationRetentionFixture()
     const oldKeeper = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) })
     expect(
-      await cleanupObsoleteAgentModerations({ now, lowerBoundDate, batchSize: 1, maxBatches: 1 }),
+      await cleanupObsoleteAgentModerations({
+        postIds: [fixture.postId],
+        now,
+        lowerBoundDate,
+        batchSize: 1,
+        maxBatches: 1,
+      }),
     ).toMatchObject({ scanned: 0, deleted: 0 })
     expect(
-      await cleanupObsoleteAgentModerations({ now, lowerBoundDate, batchSize: 1, maxBatches: 1 }),
+      await cleanupObsoleteAgentModerations({
+        postIds: [fixture.postId],
+        now,
+        lowerBoundDate,
+        batchSize: 1,
+        maxBatches: 1,
+      }),
     ).toMatchObject({ scanned: 0, deleted: 0 })
     expect(await testAgentModerationExists(fixture.postId, oldKeeper)).toBe(true)
+    await using transaction = await beginTransaction()
+    expect(await reconsiderChangedPostById(transaction, fixture.postId, 1)).toEqual({
+      processed: false,
+      hasMore: true,
+    })
+    await transaction.commit()
   })
 
   it('waits until the source reaches the retention age after supersession', async () => {
@@ -39,7 +57,7 @@ describe('agent moderation retention wake-ups', () => {
     const fixture = await createTestAgentModerationRetentionFixture()
     const recent = await insertTestAgentModeration({ ...fixture, occurredAt: at(89) })
     await insertTestAgentModeration({ ...fixture, occurredAt: at(1) })
-    const options = { lowerBoundDate, batchSize: 2, maxBatches: 1 }
+    const options = { postIds: [fixture.postId], lowerBoundDate, batchSize: 2, maxBatches: 1 }
     expect(await cleanupObsoleteAgentModerations({ ...options, now })).toMatchObject({
       scanned: 0,
       deleted: 0,
@@ -59,7 +77,7 @@ describe('agent moderation retention wake-ups', () => {
     const held = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) })
     await insertTestAgentModeration({ ...fixture, occurredAt: at(1) })
     await attachTestAgentModerationAuditReference(fixture.postId, held)
-    const options = { now, lowerBoundDate, batchSize: 2, maxBatches: 1 }
+    const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 2, maxBatches: 1 }
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 0 })
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 0, deleted: 0 })
     await deleteTestAgentModerationAuditReference(fixture.postId, held)
@@ -72,7 +90,7 @@ describe('agent moderation retention wake-ups', () => {
     const fixture = await createTestAgentModerationRetentionFixture()
     const old = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) })
     const newest = await insertTestAgentModeration({ ...fixture, occurredAt: at(1) })
-    const options = { now, lowerBoundDate, batchSize: 2, maxBatches: 1 }
+    const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 2, maxBatches: 1 }
     await setTestPostCurrentModerationInputHashFromResult(fixture.postId, old)
     expect(await testAgentModerationRetentionPostHasWork(fixture.postId)).toBe(false)
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ deleted: 0 })
@@ -155,6 +173,7 @@ describe('agent moderation retention wake-ups', () => {
       await transaction.commit()
     }
     await cleanupObsoleteAgentModerations({
+      postIds: [fixture.postId],
       now: new Date(now.getTime() + 3 * 86_400_000),
       lowerBoundDate,
       batchSize: 1,
@@ -171,7 +190,7 @@ describe('agent moderation retention wake-ups', () => {
     await insertTestAgentModeration({ ...fixture, occurredAt: oldDay, occurredAtSequence: 1 })
     await insertTestAgentModeration({ ...fixture, occurredAt: oldDay, occurredAtSequence: 2 })
     await insertTestAgentModeration({ ...fixture, occurredAt: at(1) })
-    const options = { now, lowerBoundDate, batchSize: 3, maxBatches: 1 }
+    const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 3, maxBatches: 1 }
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ deleted: 2 })
     expect(
       await getTestModerationTransparencyRollupCount({
