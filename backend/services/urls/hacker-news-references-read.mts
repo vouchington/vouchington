@@ -43,16 +43,19 @@ export async function getHackerNewsTotalsByUrlIds(
 async function readTotals(ids: string[], options: QueryOptions) {
   const { rows } = await read(
     `/* getHackerNewsTotalsByUrlIds */
-    SELECT source.id AS url_id,
+    SELECT resolved.url_id,
            totals.url_id AS canonical_url_id,
            totals.story_count,
            totals.comment_count
-    FROM urls source
-    LEFT JOIN urls hop ON hop.id = source.canonical_url_id
-    JOIN url_hacker_news_totals totals
-      ON totals.url_id = COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id)
-    WHERE source.id = ANY($1::uuid[])
-      AND (totals.story_count > 0 OR totals.comment_count > 0)
+    FROM (
+      SELECT source.id AS url_id,
+             COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id) AS canonical_id
+      FROM urls source
+      LEFT JOIN urls hop ON hop.id = source.canonical_url_id
+      WHERE source.id = ANY($1::uuid[])
+    ) resolved
+    JOIN url_hacker_news_totals totals ON totals.url_id = resolved.canonical_id
+    WHERE (totals.story_count > 0 OR totals.comment_count > 0)
   `,
     [ids],
     options,

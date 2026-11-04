@@ -16,11 +16,13 @@ const URL_HAS_REFERENCES = sql`(totals.story_count > 0 OR totals.comment_count >
  * unreferenced until the next `setCanonicalUrl` flattens it.
  */
 function canonicalTotalsJoin(urlIdColumn: string): SQLStatement {
-  return sql`urls source
-      LEFT JOIN urls hop ON hop.id = source.canonical_url_id
-      JOIN url_hacker_news_totals totals
-        ON totals.url_id = COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id)
-      WHERE source.id = `.append(urlIdColumn)
+  return sql`(
+        SELECT COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id) AS canonical_id
+        FROM urls source
+        LEFT JOIN urls hop ON hop.id = source.canonical_url_id
+        WHERE source.id = `.append(urlIdColumn).append(sql`
+      ) resolved
+      JOIN url_hacker_news_totals totals ON totals.url_id = resolved.canonical_id`)
 }
 
 /**
@@ -40,7 +42,7 @@ export function buildPostHasHackerNewsReferences(): SQLStatement {
       FROM `
     .append(canonicalTotalsJoin('posts.url_id'))
     .append(sql`
-        AND `)
+      WHERE `)
     .append(URL_HAS_REFERENCES)
     .append(
       sql`
@@ -50,11 +52,14 @@ export function buildPostHasHackerNewsReferences(): SQLStatement {
       JOIN `,
     )
     .append(
-      // The relation row replaces the single-URL source: resolve its object through `urls`.
-      sql`urls source ON source.id = rel.object_id
-      LEFT JOIN urls hop ON hop.id = source.canonical_url_id
-      JOIN url_hacker_news_totals totals
-        ON totals.url_id = COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id)
+      // Same resolution for the related URL's object, correlated to the relation row.
+      sql`LATERAL (
+        SELECT COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id) AS canonical_id
+        FROM urls source
+        LEFT JOIN urls hop ON hop.id = source.canonical_url_id
+        WHERE source.id = rel.object_id
+      ) resolved ON true
+      JOIN url_hacker_news_totals totals ON totals.url_id = resolved.canonical_id
       WHERE rel.subject_id = posts.id
         AND rel.deleted_at IS NULL
         AND rel.votes_score_net > 0
@@ -72,7 +77,7 @@ export function buildRssFeedItemHasHackerNewsReferences(): SQLStatement {
     FROM `
     .append(canonicalTotalsJoin('rss_feed_items.url_id'))
     .append(sql`
-      AND `)
+      WHERE `)
     .append(URL_HAS_REFERENCES).append(sql`
   )`)
 }
