@@ -10,6 +10,7 @@ import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import { nullable, objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentPropertySchema } from './route-response-schema.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
+import { clampToolLimit } from './search-system.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type SearchPageInfo } from './paged-search.mts'
 
 // The REST twin documents its body inline and carries more per link, so the tool owns this schema.
@@ -123,11 +124,11 @@ const tool: Tool<ToolArgs, ToolResult> = {
       const page = await findPageOrNull(args.after, () =>
         args.all
           ? getAllReferralLinksPage(currentUser.id, referralProgramId, {
-              limit: Math.min(args.limit ?? 25, 100),
+              limit: clampToolLimit(args.limit, 25, 100),
               after: args.after,
             })
           : getPrioritizedReferralLinks(currentUser.id, referralProgramId, {
-              limit: args.limit,
+              limit: clampToolLimit(args.limit, 5, 25),
               after: args.after,
             }),
       )
