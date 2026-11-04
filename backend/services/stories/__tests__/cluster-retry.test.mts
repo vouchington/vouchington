@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { replayClusteredStory } from '../cluster-retry.mts'
 import { completeStoryClusteringRun } from '../clustering/completion.mts'
 import { prepareStoryPost } from '../story-posts.mts'
-import type { StoryPostRefreshResult } from '../refresh-story-post.mts'
+import * as cacheInvalidation from '../cache-invalidation.mts'
 import {
   addCategoryToRssFeedItem,
   createTestTopic,
@@ -53,29 +53,19 @@ describe('story clustering retry', () => {
   it('replays post-commit completion when a story refresh is retried', async () => {
     const story = await insertTestStory()
     await makeAssignedItem(story.id)
-    let refreshAttempts = 0
-    let completionAttempts = 0
-    const refreshStoryPostForStory = async () => {
-      refreshAttempts += 1
-      return null
+    const invalidate = vi
+      .spyOn(cacheInvalidation, 'invalidateStories')
+      .mockRejectedValueOnce(new Error('post-commit effect failed'))
+    try {
+      await expect(replayClusteredStory(story.id)).rejects.toThrow('post-commit effect failed')
+      await expect(replayClusteredStory(story.id)).resolves.toBeUndefined()
+      expect(invalidate.mock.calls.filter(([id]) => id === story.id)).toEqual([
+        [story.id],
+        [story.id],
+      ])
+    } finally {
+      invalidate.mockRestore()
     }
-    const completeClusteredStory = async (
-      _storyId: string,
-      refreshResult: StoryPostRefreshResult | null,
-    ) => {
-      expect(refreshResult).toBeNull()
-      completionAttempts += 1
-      if (completionAttempts === 1) throw new Error('post-commit effect failed')
-    }
-
-    await expect(
-      replayClusteredStory(story.id, refreshStoryPostForStory, completeClusteredStory),
-    ).rejects.toThrow('post-commit effect failed')
-    await expect(
-      replayClusteredStory(story.id, refreshStoryPostForStory, completeClusteredStory),
-    ).resolves.toBeUndefined()
-    expect(refreshAttempts).toBe(2)
-    expect(completionAttempts).toBe(2)
   })
 
   it('captures prior and current topics when a completed run is replayed after commit', async () => {

@@ -61,7 +61,7 @@ async function assignItemsToStory(
  * membership change, so a story post can never show membership that did not commit.
  */
 async function refreshClusteredStory(query: OwnedTransaction, storyId: string): Promise<void> {
-  const result = await refreshStoryPostForStory(storyId, { query }, { enqueueAgent: false })
+  const result = await refreshStoryPostForStory(storyId, { query })
   await recordStoryPostPublicationChanges(query, storyId, result?.impactedTopicIds)
 }
 
