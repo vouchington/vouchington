@@ -29,6 +29,7 @@ _none_
 
 **Indexes:**
 
+- `idx_url_hacker_news_totals__looked_up_at__url_id`: `CREATE INDEX idx_url_hacker_news_totals__looked_up_at__url_id ON public.url_hacker_news_totals USING btree (looked_up_at, url_id)`
 - `idx_url_hacker_news_totals__url_id__referenced`: `CREATE INDEX idx_url_hacker_news_totals__url_id__referenced ON public.url_hacker_news_totals USING btree (url_id) WHERE ((story_count > 0) OR (comment_count > 0))`
 - `url_hacker_news_totals_pkey`: `CREATE UNIQUE INDEX url_hacker_news_totals_pkey ON public.url_hacker_news_totals USING btree (url_id)`
 
