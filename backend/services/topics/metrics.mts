@@ -9,10 +9,13 @@ import {
   buildTopicPostCandidateSelect,
 } from '@modules/feed-query-builders'
 
-export const getTopicMetricsByAny = async (
+export async function getTopicMetricsByAny(
   idOrSlug: string,
   options: QueryOptions = {},
-): Promise<TopicMetrics | null> => (await getTopicMetricsByAnyBatch([idOrSlug], options))[0]
+): Promise<TopicMetrics | null> {
+  const [metrics] = await getTopicMetricsByAnyBatch([idOrSlug], options)
+  return metrics
+}
 
 export async function getTopicViewerCounts(
   currentUser: PrivateUser,
