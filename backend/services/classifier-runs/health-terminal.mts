@@ -29,7 +29,7 @@ export async function readClassifierTerminalCounts(
   const since = timestampToUuidv7LowerBound(now.getTime() - CLASSIFIER_TERMINAL_WINDOW_MS)
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
   // already terminal on the writer.
-  const { rows } = await read<OutcomeRow>(sql`/* readClassifierTerminalCounts */
+  const statement = sql`/* readClassifierTerminalCounts */
     SELECT CASE
         WHEN run.completed_at IS NOT NULL THEN 'completed'
         WHEN run.terminal_failure_kind IS NOT NULL THEN ${FAILED_PREFIX}::text || run.terminal_failure_kind
@@ -39,13 +39,18 @@ export async function readClassifierTerminalCounts(
       count(*)::int AS total
     FROM classifier_runs run
     WHERE run.classifier_id = (SELECT id FROM classifiers WHERE slug = ${classifier})
-      AND run.id >= ${since}
-      AND (${scope.runIds ?? null}::uuid[] IS NULL OR run.id = ANY(${scope.runIds ?? null}::uuid[]))
-      AND ((${scope.postIds ?? null}::uuid[] IS NULL AND ${scope.rssFeedItemIds ?? null}::uuid[] IS NULL)
-        OR run.post_id = ANY(${scope.postIds ?? []}::uuid[])
-        OR run.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))
+      AND run.id >= ${since}`
+  if (scope.runIds !== undefined)
+    statement.append(sql`
+      AND run.id = ANY(${scope.runIds}::uuid[])`)
+  if (scope.postIds !== undefined || scope.rssFeedItemIds !== undefined)
+    statement.append(sql`
+      AND (run.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR run.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))`)
+  statement.append(sql`
     GROUP BY 1
   `)
+  const { rows } = await read<OutcomeRow>(statement)
   const counts: ClassifierTerminalCounts = {
     completed: 0,
     superseded: 0,

@@ -24,19 +24,24 @@ export async function readOldestIncompleteClassifierRun(
 ): Promise<OldestOpenClassifierItem | null> {
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
   // already terminal on the writer.
-  const { rows } = await read<OldestRow>(sql`/* readOldestIncompleteClassifierRun */
+  const statement = sql`/* readOldestIncompleteClassifierRun */
     SELECT run.id, run.created_at, count(*) OVER ()::int AS total
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
-    WHERE classifier.slug = ${classifier}
-      AND (${scope.runIds ?? null}::uuid[] IS NULL OR run.id = ANY(${scope.runIds ?? null}::uuid[]))
-      AND ((${scope.postIds ?? null}::uuid[] IS NULL AND ${scope.rssFeedItemIds ?? null}::uuid[] IS NULL)
-        OR run.post_id = ANY(${scope.postIds ?? []}::uuid[])
-        OR run.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))
+    WHERE classifier.slug = ${classifier}`
+  if (scope.runIds !== undefined)
+    statement.append(sql`
+      AND run.id = ANY(${scope.runIds}::uuid[])`)
+  if (scope.postIds !== undefined || scope.rssFeedItemIds !== undefined)
+    statement.append(sql`
+      AND (run.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR run.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))`)
+  statement.append(sql`
       AND run.completed_at IS NULL AND run.superseded_at IS NULL AND run.terminal_failed_at IS NULL
     ORDER BY run.id
     LIMIT 1
   `)
+  const { rows } = await read<OldestRow>(statement)
   return toOldest(rows[0], now)
 }
 
@@ -52,17 +57,20 @@ export async function readOldestPendingClassifierRequest(
 ): Promise<OldestOpenClassifierItem | null> {
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
   // already terminal on the writer.
-  const { rows } = await read<OldestRow>(sql`/* readOldestPendingClassifierRequest */
+  const statement = sql`/* readOldestPendingClassifierRequest */
     SELECT request.id, request.created_at, count(*) OVER ()::int AS total
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
-    WHERE classifier.slug = ${classifier}
-      AND ((${scope.postIds ?? null}::uuid[] IS NULL AND ${scope.rssFeedItemIds ?? null}::uuid[] IS NULL)
-        OR request.post_id = ANY(${scope.postIds ?? []}::uuid[])
-        OR request.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))
+    WHERE classifier.slug = ${classifier}`
+  if (scope.postIds !== undefined || scope.rssFeedItemIds !== undefined)
+    statement.append(sql`
+      AND (request.post_id = ANY(${scope.postIds ?? []}::uuid[])
+        OR request.rss_feed_item_id = ANY(${scope.rssFeedItemIds ?? []}::uuid[]))`)
+  statement.append(sql`
       AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
     ORDER BY request.id
     LIMIT 1
   `)
+  const { rows } = await read<OldestRow>(statement)
   return toOldest(rows[0], now)
 }
