@@ -25,7 +25,7 @@ export async function readTestCrawlRefreshState(
   const { rows } = await write<TestCrawlRefreshState>(
     sql`/* readTestCrawlRefreshState */
     SELECT last_crawl_attempt_at, last_successful_crawl_at
-    FROM url_crawl_state WHERE url_id = ${urlId} LIMIT 1
+    FROM url_crawl_states WHERE url_id = ${urlId} LIMIT 1
   `,
     undefined,
     options,
@@ -42,7 +42,7 @@ export async function setTestCrawlRefreshState(
 ): Promise<void> {
   await write(
     sql`/* setTestCrawlRefreshState */
-    UPDATE url_crawl_state
+    UPDATE url_crawl_states
     SET last_crawl_attempt_at = ${state.last_crawl_attempt_at},
         last_successful_crawl_at = ${state.last_successful_crawl_at}
     WHERE url_id = ${urlId}
@@ -57,7 +57,7 @@ export async function readTestCrawlStateOwner(
   options: QueryOptions = {},
 ): Promise<{ url_id: string; hostname_id: string } | null> {
   const { rows } = await write<{ url_id: string; hostname_id: string }>(
-    sql`/* readTestCrawlStateOwner */ SELECT url_id, hostname_id FROM url_crawl_state
+    sql`/* readTestCrawlStateOwner */ SELECT url_id, hostname_id FROM url_crawl_states
       WHERE url_id = ${urlId} LIMIT 1`,
     undefined,
     options,
@@ -66,7 +66,7 @@ export async function readTestCrawlStateOwner(
 }
 
 export async function setTestCrawlStateHostname(urlId: string, hostnameId: string): Promise<void> {
-  await write(sql`/* setTestCrawlStateHostname */ UPDATE url_crawl_state
+  await write(sql`/* setTestCrawlStateHostname */ UPDATE url_crawl_states
     SET hostname_id = ${hostnameId} WHERE url_id = ${urlId}`)
 }
 

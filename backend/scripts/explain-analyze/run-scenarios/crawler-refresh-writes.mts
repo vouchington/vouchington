@@ -22,11 +22,11 @@ export async function runCrawlerRefreshWriteScenarios(
   for (const id of ['crawler-refresh-attempt-write', 'crawler-refresh-success-write'] as const) {
     registerScenarioContract(id, {
       expectations: [
-        { kind: 'usesIndexes', indexes: ['url_crawl_state_pkey'] },
-        { kind: 'maxProcessedRows', relation: 'url_crawl_state', max: 2 },
+        { kind: 'usesIndexes', indexes: ['url_crawl_states_pkey'] },
+        { kind: 'maxProcessedRows', relation: 'url_crawl_states', max: 2 },
         { kind: 'maxProcessedRows', relation: 'urls', max: 0 },
       ],
-      seededRows: { url_crawl_state: 25_100 },
+      seededRows: { url_crawl_states: 25_100 },
     })
   }
   const revision = await readRevision(urlId)

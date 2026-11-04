@@ -89,7 +89,7 @@ export async function seedCrawlerRefreshScenario(): Promise<void> {
     [URL_PREFIX, crawlPrefixes, CRAWLED_COUNT],
   )
   await write(
-    `/* seedExplainCrawlerRefreshRecency */ UPDATE url_crawl_state
+    `/* seedExplainCrawlerRefreshRecency */ UPDATE url_crawl_states
      SET last_crawl_attempt_at = CURRENT_TIMESTAMP - INTERVAL '1 minute',
        last_successful_crawl_at = CASE WHEN url_id >= $2::uuid
          THEN CURRENT_TIMESTAMP - INTERVAL '1 minute' ELSE NULL END
@@ -97,7 +97,7 @@ export async function seedCrawlerRefreshScenario(): Promise<void> {
     [HOSTNAME_ID, seedUuid(1000, '9e'), seedUuid(CRAWLED_COUNT, '9e')],
   )
   await write(
-    `/* seedExplainCrawlerRefreshAnalyze */ ANALYZE url_hostnames, urls, url_crawl_state, crawls`,
+    `/* seedExplainCrawlerRefreshAnalyze */ ANALYZE url_hostnames, urls, url_crawl_states, crawls`,
   )
 }
 
@@ -139,11 +139,11 @@ export async function runCrawlerRefreshScenario(): Promise<void> {
   try {
     registerScenarioContract('crawler-refresh-candidates', {
       expectations: [
-        { kind: 'usesIndexes', indexes: ['idx_url_crawl_state__hostname_recency'], noSort: true },
-        { kind: 'maxProcessedRows', relation: 'url_crawl_state', max: 1003 },
+        { kind: 'usesIndexes', indexes: ['idx_url_crawl_states__hostname_recency'], noSort: true },
+        { kind: 'maxProcessedRows', relation: 'url_crawl_states', max: 1003 },
         { kind: 'maxProcessedRows', relation: 'urls', max: 3 },
       ],
-      seededRows: { urls: 25_100, url_crawl_state: 25_100, crawls: 20_470 },
+      seededRows: { urls: 25_100, url_crawl_states: 25_100, crawls: 20_470 },
     })
     await runAndCapture(
       'crawler-refresh-candidates',
@@ -153,19 +153,19 @@ export async function runCrawlerRefreshScenario(): Promise<void> {
     )
     // The same graph with expired attempts isolates index-ordered backlog selection.
     await write(
-      `/* seedExplainCrawlerRefreshExpiredAttempts */ UPDATE url_crawl_state
+      `/* seedExplainCrawlerRefreshExpiredAttempts */ UPDATE url_crawl_states
        SET last_crawl_attempt_at = CURRENT_TIMESTAMP - INTERVAL '8 days'
        WHERE hostname_id = $1::uuid AND last_crawl_attempt_at IS NOT NULL`,
       [HOSTNAME_ID],
     )
-    await write(`/* seedExplainCrawlerRefreshBacklogAnalyze */ ANALYZE urls, url_crawl_state`)
+    await write(`/* seedExplainCrawlerRefreshBacklogAnalyze */ ANALYZE urls, url_crawl_states`)
     registerScenarioContract('crawler-refresh-backlog', {
       expectations: [
-        { kind: 'usesIndexes', indexes: ['idx_url_crawl_state__hostname_recency'], noSort: true },
+        { kind: 'usesIndexes', indexes: ['idx_url_crawl_states__hostname_recency'], noSort: true },
         { kind: 'maxProcessedRows', relation: 'urls', max: 3 },
-        { kind: 'maxProcessedRows', relation: 'url_crawl_state', max: 3 },
+        { kind: 'maxProcessedRows', relation: 'url_crawl_states', max: 3 },
       ],
-      seededRows: { urls: 25_100, url_crawl_state: 25_100, crawls: 20_470 },
+      seededRows: { urls: 25_100, url_crawl_states: 25_100, crawls: 20_470 },
     })
     await runAndCapture(
       'crawler-refresh-backlog',

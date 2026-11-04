@@ -53,7 +53,7 @@ scheduled reads bounded when most feeds are not due, social accounts were recent
 Bedrock batches are still fresh. Workers retain the raw position through queue continuations so
 ineligible rows cannot hide later work.
 
-Crawler refresh selection uses current facts in `url_crawl_state` rather than aggregating retained
+Crawler refresh selection uses current facts in `url_crawl_states` rather than aggregating retained
 crawl history. State rows are created with every URL and cascade with its hostname and deletion,
 while crawl progress leaves URL revisions untouched so reconciliation does not replay URL creation.
 Success and attempt timestamps are separate so failures cannot make a URL appear fresh,

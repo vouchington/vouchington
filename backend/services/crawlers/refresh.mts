@@ -62,7 +62,7 @@ export const searchCrawlerRefreshUrlCandidatesByHostnameId = async (
   // Keep payload lookups parameterized when a generic plan estimates a larger candidate page.
   const query = sql`/* searchCrawlerRefreshUrlCandidatesByHostnameId */
     SELECT u.id, u.url
-    FROM url_crawl_state state
+    FROM url_crawl_states state
     JOIN url_hostnames h ON h.id = state.hostname_id
     JOIN LATERAL (
       SELECT id, url FROM urls
