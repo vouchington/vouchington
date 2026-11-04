@@ -402,6 +402,9 @@ export async function runCopyrightOperationalRetentionCleanup(
   options: {
     activeFamilies?: readonly CopyrightRetentionFamily[]
     limits?: DataRetentionLimits
+    formScreeningAttemptIds?: readonly string[]
+    actionAttemptIds?: readonly string[]
+    now?: Date
   } = {},
 ): Promise<CopyrightRetentionCleanupResult> {
   const limits = options.limits ?? getDataRetentionLimits()
@@ -414,12 +417,16 @@ export async function runCopyrightOperationalRetentionCleanup(
       {
         ...limits,
         retentionDays: readDataRetentionField('copyright_form_screening_attempt_days'),
+        recordIds: options.formScreeningAttemptIds,
+        now: options.now,
       },
     )
   if (active('copyrightActionAttempts'))
     result.copyrightActionAttempts = await sweepCopyrightOperationalRetention('action_attempts', {
       ...limits,
       retentionDays: readDataRetentionField('copyright_action_attempt_days'),
+      recordIds: options.actionAttemptIds,
+      now: options.now,
     })
   if (active('copyrightDeliveryAttempts'))
     result.copyrightDeliveryAttempts = await sweepCopyrightOperationalRetention(

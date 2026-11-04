@@ -115,6 +115,7 @@ async function sweepPage(
   batchSize: number,
   cutoffId: string,
   cutoff: Date,
+  recordIds?: readonly string[],
 ): Promise<SweepResult> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* seedCopyrightOperationalRetentionCursor */
@@ -132,7 +133,9 @@ async function sweepPage(
   const statement: SQLStatement =
     sql`/* scanCopyrightOperationalRetentionPage */ SELECT id FROM `.append(TABLES[kind])
       .append(sql` WHERE id > COALESCE(${cursor.cursor_record_id}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-      AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)
+      AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)`)
+  if (recordIds !== undefined) statement.append(sql` AND id = ANY(${recordIds}::uuid[])`)
+  statement.append(sql`
       ORDER BY id LIMIT ${batchSize}`)
   const { rows: rawRows } = await transaction<{ id: string }>(statement)
   const rawIds = rawRows.map(row => row.id)
@@ -170,7 +173,13 @@ async function sweepPage(
 /** Each pass scans bounded UUIDv7 pages, including retained/latest rows, and resumes next tick. */
 export async function sweepCopyrightOperationalRetention(
   kind: CopyrightOperationalSweepKind,
-  options: { now?: Date; retentionDays: number; batchSize: number; maxBatches: number },
+  options: {
+    now?: Date
+    retentionDays: number
+    batchSize: number
+    maxBatches: number
+    recordIds?: readonly string[]
+  },
 ): Promise<SweepResult> {
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.retentionDays * DAY_MS)
@@ -180,7 +189,7 @@ export async function sweepCopyrightOperationalRetention(
   let hasMore = false
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
     // oxlint-disable-next-line no-await-in-loop -- the committed cursor determines the next page.
-    const page = await sweepPage(kind, options.batchSize, cutoffId, cutoff) // no-mistakes-disable-line query-reached-per-item: each capped transaction commits its durable keyset cursor before the next page.
+    const page = await sweepPage(kind, options.batchSize, cutoffId, cutoff, options.recordIds) // no-mistakes-disable-line query-reached-per-item: each capped transaction commits its durable keyset cursor before the next page.
     scanned += page.scanned
     deleted += page.deleted
     hasMore = page.hasMore
