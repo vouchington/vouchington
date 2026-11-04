@@ -22,7 +22,6 @@ import { persistFeedMetadataAndReconcileLanguage } from './reconcile-item-langua
 import * as rssRateLimit from './domain-rate-limit.mts'
 import { buildRssFetchOptions } from './fetch-options.mts'
 import { buildTrackedRssFeedItemsFromFeed } from './fetch-items.mts'
-import { rssFeedNeedsChapterMetadataBackfill } from './chapters-backfill.mts'
 const MAX_REDIRECT_HOPS = 5
 type FetchRssFeedDependencies = {
   checkRssFeedCrawlable: typeof checkRssFeedCrawlable
@@ -148,13 +147,6 @@ export async function fetchRssFeed(
     rssFeed.feed_type,
   )
   if (feedUnchanged) {
-    const validItems = buildTrackedRssFeedItemsFromFeed(rssFeedId, parsedFeed, feedUrl)
-    if (
-      validItems.length > 0 &&
-      (await rssFeedNeedsChapterMetadataBackfill(rssFeedId, validItems))
-    ) {
-      await upsertRssFeedItems(rssFeedId, validItems)
-    }
     await persistFetchResult({
       responseCode: data.responseCode,
       headers: data.headers,
