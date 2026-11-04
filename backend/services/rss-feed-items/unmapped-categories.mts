@@ -104,12 +104,11 @@ export async function getUnmappedRssFeedItemCategories(
 export async function rejectRssFeedItemCategory(
   currentUser: PrivateUser,
   categoryText: string,
-  options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assert(currentUserCanManageRssFeedCategories(currentUser), 403, 'Forbidden')
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     // ast-grep-ignore: no-three-sequential-awaits -- FK target precedes rejection; audit needs its rowCount
     await registerRssCategoryIdentities([normalized], query)
     const { rowCount } = await query(sql`/* rejectRssFeedItemCategory */
@@ -133,12 +132,11 @@ export async function rejectRssFeedItemCategory(
 export async function unrejectRssFeedItemCategory(
   currentUser: PrivateUser,
   categoryText: string,
-  options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assert(currentUserCanManageRssFeedCategories(currentUser), 403, 'Forbidden')
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
-  return runWithTransaction(options.query, async (query: TransactionQuery) => {
+  return runWithTransaction(undefined, async (query: TransactionQuery) => {
     const { rowCount } = await query(sql`/* unrejectRssFeedItemCategory */
     DELETE FROM rss_feed_item_category_rejections rejection
     USING rss_category_identities identity
@@ -160,14 +158,13 @@ export async function unrejectRssFeedItemCategory(
 export async function assignRssFeedItemCategoryToTopic(
   currentUser: PrivateUser,
   { categoryText, topicId }: { categoryText: string; topicId: string },
-  options: { query?: TransactionQuery } = {},
 ): Promise<{ updated: number }> {
   assert(currentUserCanManageRssFeedCategories(currentUser), 403, 'Forbidden')
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
   assert(topicId, 422, 'topic_id is required')
 
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(undefined, async query => {
     const { updated } = await assignCategoryInTransaction(
       currentUser.id,
       topicId,

@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { TransactionQuery } from '@data-stores/psql'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
-import {
-  readStaffActionHistory,
-  withRejectedStaffActionHistory,
-} from '@voucha/test-helpers/staff-action-history'
+import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { readStaffCategoryState } from '@voucha/test-helpers/staff-editorial-history'
 import {
   rejectRssFeedItemCategory,
@@ -20,23 +17,26 @@ describe('rss-feed-items staff history', () => {
       const topic = await createTestTopic({ user: actor })
       const category = `staff-audit-${crypto.randomUUID()}`
       if (action === 'unreject') await rejectRssFeedItemCategory(actor, category)
-      const execute = async (query?: TransactionQuery) => {
-        if (action === 'reject') return rejectRssFeedItemCategory(actor, category, { query })
-        if (action === 'unreject') return unrejectRssFeedItemCategory(actor, category, { query })
-        return assignRssFeedItemCategoryToTopic(
-          actor,
-          {
-            categoryText: category,
-            topicId: topic.id,
-          },
-          { query },
-        )
+      const execute = async () => {
+        if (action === 'reject') return rejectRssFeedItemCategory(actor, category)
+        if (action === 'unreject') return unrejectRssFeedItemCategory(actor, category)
+        return assignRssFeedItemCategoryToTopic(actor, {
+          categoryText: category,
+          topicId: topic.id,
+        })
       }
       const before = await readStaffCategoryState(category)
       const history = await readStaffActionHistory(actor.id)
-      await expect(withRejectedStaffActionHistory(execute)).rejects.toThrow(
-        'staff history rejected',
+      const restore = rejectPostgresWriteForTest(
+        '/* recordModeratorAction',
+        new Error('staff history rejected for test'),
+        values => values.some(value => typeof value === 'string' && value.includes(actor.id)),
       )
+      try {
+        await expect(execute()).rejects.toThrow('staff history rejected')
+      } finally {
+        restore()
+      }
       expect(await readStaffCategoryState(category)).toEqual(before)
       expect(await readStaffActionHistory(actor.id)).toEqual(history)
       await execute()
