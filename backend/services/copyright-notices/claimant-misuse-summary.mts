@@ -85,8 +85,11 @@ export async function readClaimantMisuseSummaries(
             AND event.outcome = 'restriction_reversed_by_appeal'
         ))::int AS restriction_reversed_by_appeal
       FROM page notice
-      JOIN copyright_notices receipt
-        ON receipt.claimant_user_id = claimant.id AND receipt.id = notice.id
+      CROSS JOIN LATERAL (
+        SELECT receipt.received_at FROM copyright_notices receipt
+        WHERE receipt.claimant_user_id = claimant.id AND receipt.id = notice.id
+        LIMIT 1
+      ) receipt
     ) summary
   `)
   const { rows } = await query<{
