@@ -88,7 +88,6 @@ describe('view lookup predicate configuration', () => {
       { table: 'view_rss_feed_current_states', requireColumns: ['rss_feed_id'] },
       { table: 'view_rss_feed_items', requireColumns: ['id'] },
       { table: 'view_rss_feeds', requireColumns: ['id'] },
-      { table: 'view_topic_metrics', requireColumns: ['id'] },
       { table: 'view_topics', requireColumns: ['id'] },
       { table: 'view_url_hostnames', requireColumns: ['id'] },
       { table: 'view_urls', requireColumns: ['id'] },

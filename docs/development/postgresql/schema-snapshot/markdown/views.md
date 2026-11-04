@@ -1121,67 +1121,6 @@ RSS feed response projection with current discoverability and topic references.
      LEFT JOIN podcast_shows podcast_show ON ((podcast_show.rss_feed_id = rss_feeds.id)));
 ```
 
-## `view_topic_metrics`
-
-Topic activity metrics for current topic reads.
-
-```sql
- SELECT 'topic_metrics'::text AS __entity_type,
-    topic_id AS id,
-    ( SELECT count(DISTINCT posts.id) AS count
-           FROM ((( SELECT rel.subject_id AS post_id
-                   FROM relation__post__category__topic rel
-                  WHERE ((
-                        CASE
-                            WHEN ((rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision)) THEN rel.object_id
-                            ELSE NULL::uuid
-                        END = topic_metrics.topic_id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))
-                UNION ALL
-                 SELECT alias_relation.subject_id AS post_id
-                   FROM (topic_aliases alias
-                     JOIN relation__post__category__topic_alias alias_relation ON (((
-                        CASE
-                            WHEN ((alias_relation.deleted_at IS NULL) AND (alias_relation.votes_score_net > (0)::double precision)) THEN alias_relation.object_id
-                            ELSE NULL::uuid
-                        END = alias.id) AND (alias_relation.deleted_at IS NULL) AND (alias_relation.votes_score_net > (0)::double precision))))
-                  WHERE (alias.topic_id = topic_metrics.topic_id)) candidate
-             JOIN posts ON ((posts.id = candidate.post_id)))
-             JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = posts.id)))
-          WHERE (posts.post_type = 'discussion'::post_types)) AS count__discussions,
-    ( SELECT count(DISTINCT posts.id) AS count
-           FROM ((posts
-             JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = posts.id)))
-             JOIN post_review_topic_ratings prtr ON (((prtr.post_id = posts.id) AND (prtr.topic_id = topic_metrics.topic_id))))
-          WHERE (posts.post_type = 'review'::post_types)) AS count__reviews,
-    ( SELECT count(DISTINCT posts.id) AS count
-           FROM ((posts
-             JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = posts.id)))
-             JOIN post_data_point_topics pdpt ON (((pdpt.post_id = posts.id) AND (pdpt.topic_id = topic_metrics.topic_id))))
-          WHERE (posts.post_type = 'data_point'::post_types)) AS count__data_points,
-    ( SELECT count(DISTINCT rfic.rss_feed_item_id) AS count
-           FROM ((((rss_feed_item_categories rfic
-             JOIN rss_feed_items rfi ON ((rfi.id = rfic.rss_feed_item_id)))
-             JOIN rss_feed_item_sources rfis ON ((rfis.rss_feed_item_id = rfi.id)))
-             JOIN rss_feeds rf ON ((rf.id = rfis.rss_feed_id)))
-             JOIN view_rss_feed_current_states current_state ON ((current_state.rss_feed_id = rf.id)))
-          WHERE ((rfic.topic_id = topic_metrics.topic_id) AND (rfi.deleted_at IS NULL) AND (rf.deleted_at IS NULL) AND (current_state.is_enabled = true) AND (current_state.is_discoverable = true))) AS count__news,
-    ( SELECT count(DISTINCT rss_feed_items.id) AS count
-           FROM (((rss_feed_items
-             JOIN rss_feed_item_sources rfis ON ((rfis.rss_feed_item_id = rss_feed_items.id)))
-             JOIN rss_feeds ON ((rss_feeds.id = rfis.rss_feed_id)))
-             JOIN view_rss_feed_current_states current_state ON ((current_state.rss_feed_id = rss_feeds.id)))
-          WHERE ((rss_feeds.topic_id = topic_metrics.topic_id) AND (rss_feeds.deleted_at IS NULL) AND (current_state.is_enabled = true) AND (current_state.is_discoverable = true) AND (rss_feed_items.deleted_at IS NULL))) AS count__latest,
-    ratings__count__1,
-    ratings__count__2,
-    ratings__count__3,
-    ratings__count__4,
-    ratings__count__5,
-    ratings__updated_at,
-    bookmarks__follow_count,
-    bookmarks__updated_at
-   FROM topic_metrics;
-```
-
 ## `view_topics`
 
 Current topic response projection; callers enforce topic lifecycle and visibility.

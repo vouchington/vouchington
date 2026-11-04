@@ -50,9 +50,7 @@ therefore read a `view_*` only by its key, after picking ids from indexed base t
   an indexed relation in a subselect, `UNION ALL` the sources, then join the candidates to the base
   table and the eligibility view in one join scope. Use the shared builders in
   [`@modules/feed-query-builders`](../../overview/architecture/backend/README.md)
-  rather than hand-writing the shape; `count__discussions` in
-  [`2025-01-19-topic-metrics.sql`](../../../backend/data-stores/psql/views/2025-01-19-topic-metrics.sql)
-  is the worked example.
+  rather than hand-writing the shape.
 - An `EXISTS` over an eligibility view inside an `OR` can be planned as an uncorrelated hashed
   SubPlan that derives the view for every row. A scalar subquery with `LIMIT 1` is never hashed, so
   the outer id drives the lookup.
