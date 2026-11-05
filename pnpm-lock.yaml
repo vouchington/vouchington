@@ -80,8 +80,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0
       '@vouchington/session-jwt':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.0.3
+        version: 0.0.3
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
         version: 0.3.1(@aws-sdk/client-sqs@3.1161.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
@@ -95,8 +95,8 @@ importers:
         specifier: ^18.7.0
         version: 18.7.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.108.1
-        version: 0.108.1(@typescript-eslint/parser@8.72.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.109.0
+        version: 0.109.0(@typescript-eslint/parser@8.72.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.1
         version: 2.12.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -1312,8 +1312,8 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0(@sentry/browser@11.10.0)(@sentry/core@11.10.0)(@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
       '@vouchington/session-jwt':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.0.3
+        version: 0.0.3
       '@vouchington/utils':
         specifier: ^0.11.1
         version: 0.11.1
@@ -2565,8 +2565,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/session-jwt':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.0.3
+        version: 0.0.3
       '@vouchington/utils':
         specifier: ^0.11.1
         version: 0.11.1
@@ -7639,8 +7639,8 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0(@sentry/browser@11.10.0)(@sentry/core@11.10.0)(@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
       '@vouchington/session-jwt':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.0.3
+        version: 0.0.3
       jose:
         specifier: ^6.2.15
         version: 6.2.15
@@ -14909,8 +14909,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0(@jongleberry/api-server@3.1.0)(valkyries@0.15.0)
       '@vouchington/session-jwt':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.0.3
+        version: 0.0.3
       '@vouchington/utils':
         specifier: ^0.11.1
         version: 0.11.1
@@ -15066,8 +15066,8 @@ importers:
   playwright:
     dependencies:
       '@vouchington/session-jwt':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.0.3
+        version: 0.0.3
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.14.0
@@ -15189,8 +15189,8 @@ importers:
   ts-shared/session-jwt:
     dependencies:
       '@vouchington/session-jwt':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.0.3
+        version: 0.0.3
       '@vouchington/utils':
         specifier: ^0.11.1
         version: 0.11.1
@@ -15231,8 +15231,8 @@ importers:
   ts-shared/utils:
     dependencies:
       '@vouchington/html-utils':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.1.2
+        version: 0.1.2
       '@vouchington/memberships':
         specifier: ^0.2.0
         version: 0.2.0
@@ -20422,8 +20422,8 @@ packages:
     resolution: {integrity: sha512-+lerq/RvQITLdFgPr8C7O/xg9uyBDmhoM+s1hNiySr9PDSTLERzAmH17IibrUufLOvwltSUYbXGbiYPoM3Nqvg==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/html-utils@0.1.1':
-    resolution: {integrity: sha512-RhygIaNrcoWefvl9aMiYFZZipNNSkH+UYUgpOIzy3kJoWBt8tBRlZg75DYtR8cEhTDjICSkzTGn34NoH2q7d2Q==}
+  '@vouchington/html-utils@0.1.2':
+    resolution: {integrity: sha512-A+gfEY7FU5VyIxrYt/6iqEbyL/u/MFa/ueKxaCvKJF7QEqlbdCejM3xaQuMHRezo3bflFq4bOmPH/gmE4XXIvA==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/http-transport@0.1.1':
@@ -20532,8 +20532,8 @@ packages:
       '@sentry/node':
         optional: true
 
-  '@vouchington/session-jwt@0.0.2':
-    resolution: {integrity: sha512-YWvIqV50Mt1T1Ytkr8v+imuw2Qm1Ssu7JD9+If0FJ/nvORUggT7oOO+esWQynujVx7ss8+PKz+u+XvYcOKMd6w==}
+  '@vouchington/session-jwt@0.0.3':
+    resolution: {integrity: sha512-prTvYc0ihJ6UutaGIx52ZdZSy+Oi/tAVCkOpPkGHDK26UN3BgZT6d6TjQ7n60pFZ91zz/mBxklBPVxqeaiRabg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/stripe@0.2.0':
@@ -21384,6 +21384,10 @@ packages:
     resolution: {integrity: sha512-zwfzJecQ/Uej6tusMqwAqU/6KL2XaB2VZ2Jg54Je6ahNBGNH6Ek6g3jjNCF0fG9EWQKGZNddNjU5F1ZQn/sBnA==}
     engines: {node: '>=20.19.0'}
 
+  entities@9.0.0:
+    resolution: {integrity: sha512-oJFNDJg3kTPwAD1cNn2+WmUq4wFoo09npc3Ydf1D7ED4smRiWrsKnaLxykrTWgyGEcusc87P5dxlAleol9kpkg==}
+    engines: {node: '>=20.19.0'}
+
   env-paths@2.2.1:
     resolution: {integrity: sha512-+h1lkLKhZMTYjog1VEpJNG7NZJWcuc2DDk/qsqSTRRCOXiLjeQ1d1/udrUGhqMxUgAlwKNZ0cf2uqan5GLuS2A==}
     engines: {node: '>=6'}
@@ -21443,8 +21447,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.108.1:
-    resolution: {integrity: sha512-Sh8T8G/OM24rpFHmH6gaCITGYEAnRWQzt2uP6Pr52UpgAq0iQzKpaJasDIFEzCFTlTGunNvgrEvLK1+8SXkSmA==}
+  eslint-plugin-no-mistakes@0.109.0:
+    resolution: {integrity: sha512-xuyP4PJcmS9IH5qNn4yDw1VkK2N1ciBy+kZ4QCS4MKjKK/rrEYsXlt8J4X+TbKH6A2jFiDq83KE0rjqerXcZtQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       '@typescript-eslint/parser': '>=8'
@@ -29322,9 +29326,9 @@ snapshots:
     dependencies:
       parse5: 8.0.1
 
-  '@vouchington/html-utils@0.1.1':
+  '@vouchington/html-utils@0.1.2':
     dependencies:
-      entities: 8.0.0
+      entities: 9.0.0
 
   '@vouchington/http-transport@0.1.1':
     dependencies:
@@ -29433,7 +29437,7 @@ snapshots:
       '@sentry/browser': 11.10.0
       '@sentry/node': 11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
 
-  '@vouchington/session-jwt@0.0.2':
+  '@vouchington/session-jwt@0.0.3':
     dependencies:
       '@vouchington/uuid-v7': 0.0.0
       jose: 6.2.15
@@ -30265,6 +30269,8 @@ snapshots:
 
   entities@8.0.0: {}
 
+  entities@9.0.0: {}
+
   env-paths@2.2.1: {}
 
   env-paths@3.0.0: {}
@@ -30333,7 +30339,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.108.1(@typescript-eslint/parser@8.72.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.109.0(@typescript-eslint/parser@8.72.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
     optionalDependencies:
