@@ -28,10 +28,10 @@ vi.mock(
 
 function getImageCalls(mock: Mock) {
   return mock.mock.calls.map((args: unknown[]) => {
-    const props = args[0] as { src: string; priority?: boolean; loading?: string }
+    const props = args[0] as { src: string; preload?: boolean; loading?: string }
     return {
       src: props.src,
-      priority: props.priority ?? false,
+      preload: props.preload ?? false,
       loading: props.loading ?? null,
     }
   })
@@ -164,9 +164,9 @@ describe('MarkdownContentEnhancer', () => {
       expect(mockImage).toHaveBeenCalled()
 
       const calls = getImageCalls(mockImage)
-      expect(calls[0]?.priority).toBe(true)
+      expect(calls[0]?.preload).toBe(true)
       expect(calls[0]?.loading).toBeNull()
-      expect(calls[1]?.priority).toBe(false)
+      expect(calls[1]?.preload).toBe(false)
       expect(calls[1]?.loading).toBe('lazy')
     })
 
@@ -240,7 +240,7 @@ describe('MarkdownContentEnhancer', () => {
       expect(mockImage).toHaveBeenCalled()
 
       const calls = getImageCalls(mockImage)
-      expect(calls[0]?.priority).toBe(false)
+      expect(calls[0]?.preload).toBe(false)
       expect(calls[0]?.loading).toBe('lazy')
       expect(calls[1]?.loading).toBe('lazy')
     })
