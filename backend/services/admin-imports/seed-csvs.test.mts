@@ -7,9 +7,24 @@ import { getPrivateUserByAny } from '@services/users/get'
 import { describe, it, expect } from 'vitest'
 import { getTopicBySlug } from '@services/topics/get'
 import { getTopicParents } from '@services/topics/hierarchy'
-import { seedTopicsFromRows } from './seed-csvs.mts'
+import { seedTopicsFromCsvs } from './seed-csvs.mts'
 
 describe('seedTopicsFromRows', () => {
+  it('uses the bootstrap system actor for a supplied fixture batch', async () => {
+    const suffix = crypto.randomUUID()
+    const slug = `seed-default-actor-${suffix}`
+    const name = `Seed default actor ${suffix}`
+
+    await expect(seedTopicsFromCsvs({ rows: [{ slug, name }] })).resolves.toEqual({
+      processed: 1,
+      errors: [],
+    })
+    const topic = await getTopicBySlug(slug)
+    expect(topic).toMatchObject({ slug, name })
+    const actor = await getPrivateUserByAny(topic!.created_by!.id, { readOnly: false })
+    expect(actor).toMatchObject({ account_type: 'system', roles: [] })
+  })
+
   it('rejects a nonstaff administrative import and unscoped system writes', async () => {
     const suffix = crypto.randomUUID()
     const ordinary = await createTestUser()
@@ -49,7 +64,7 @@ describe('seedTopicsFromRows', () => {
       { slug: standaloneSlug, name: standaloneName, parent_slugs: '' },
     ]
 
-    const result = await seedTopicsFromRows(actor, rows)
+    const result = await seedTopicsFromCsvs({ actor, rows })
 
     expect(result).toEqual({ processed: rows.length, errors: [] })
 
@@ -79,17 +94,20 @@ describe('seedTopicsFromRows', () => {
     const invalidSlug = `seed-csvs-invalid-${suffix}`
     const validSlug = `seed-csvs-valid-${suffix}`
 
-    const result = await seedTopicsFromRows(actor, [
-      {
-        slug: invalidSlug,
-        name: `Invalid seed topic ${suffix}`,
-        topic_type: 'not-a-topic-type',
-      },
-      {
-        slug: validSlug,
-        name: `Valid seed topic ${suffix}`,
-      },
-    ])
+    const result = await seedTopicsFromCsvs({
+      actor,
+      rows: [
+        {
+          slug: invalidSlug,
+          name: `Invalid seed topic ${suffix}`,
+          topic_type: 'not-a-topic-type',
+        },
+        {
+          slug: validSlug,
+          name: `Valid seed topic ${suffix}`,
+        },
+      ],
+    })
 
     expect(result.processed).toBe(1)
     expect(result.errors).toHaveLength(1)

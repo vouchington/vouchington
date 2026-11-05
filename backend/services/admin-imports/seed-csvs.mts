@@ -49,11 +49,9 @@ export function readSeedCsvRows(): Record<string, string>[] {
  *
  * Two passes are made so cross-batch parent relations are always established:
  * pass 1 creates/updates all topics; pass 2 re-processes to link any parents
- * that were not yet present during pass 1. Exported separately from
- * `seedTopicsFromCsvs` so tests can drive it with a small fixture batch
- * instead of the full shipped catalog.
+ * that were not yet present during pass 1.
  */
-export async function seedTopicsFromRows(
+async function seedTopicsFromRows(
   actor: PrivateUser,
   allRows: Record<string, string>[],
 ): Promise<SeedCsvsResult> {
@@ -107,22 +105,15 @@ async function importSeedRows(
   return { processed: allRows.length - errors.length, errors }
 }
 
-/**
- * Reads every seed/*-topics.csv file and upserts all of it via {@link seedTopicsFromRows}. Real
- * `backend/scripts/seed/index.mts` entrypoint — not exercised by an automated test. #8972 found
- * that running this full ~739-row import inside the ordinary sharded `backend-data-stores` project
- * causes `Connection terminated due to connection timeout` from PostgreSQL connection-pool
- * contention with the rest of that project's concurrent DB workload; the isolated project that
- * avoided it required `maxWorkers: 1`, which this repo no longer permits (see #9121). Its two
- * `seedTopicsFromRows` is covered by `seed-csvs.test.mts`'s fixture. `readSeedCsvRows` stays the
- * importer's reader; the static backend gate checks the same `seed/*-topics.csv` files, and no
- * Vitest root calls this reader. The bootstrap actor lookup and composition are not covered.
- */
-/* c8 ignore start -- see comment above; full-catalog DB import, exercised by the real seed script, not by tests (#8972) */
-export async function seedTopicsFromCsvs(): Promise<SeedCsvsResult> {
-  const systemUser = await upsertSystemUser('system')
-  const actor = await getPrivateUserByAny(systemUser.id, { readOnly: false })
-  if (!actor) throw new Error('BUG: system seed actor not found after upsert')
-  return seedTopicsFromRows(actor, readSeedCsvRows())
+/** The seed script imports the shipped catalog; callers may supply an actor and a bounded batch. */
+export async function seedTopicsFromCsvs(
+  options: { actor?: PrivateUser; rows?: Record<string, string>[] } = {},
+): Promise<SeedCsvsResult> {
+  let actor: PrivateUser | null | undefined = options.actor
+  if (!actor) {
+    const systemUser = await upsertSystemUser('system')
+    actor = await getPrivateUserByAny(systemUser.id, { readOnly: false })
+    if (!actor) throw new Error('BUG: system seed actor not found after upsert')
+  }
+  return seedTopicsFromRows(actor, options.rows ?? readSeedCsvRows())
 }
-/* c8 ignore stop */
