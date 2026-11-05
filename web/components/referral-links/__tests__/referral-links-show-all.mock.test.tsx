@@ -49,7 +49,7 @@ function page(id: string, userId: string, endCursor: string | null) {
         referral_program_id: 'rp-1',
         url: `https://example.com/${id}`,
         label: `Link ${id}`,
-        priority_group: 5,
+        priority_group: 6,
         contribution_rank: 0,
         tier_rank: 0,
         best_score: 0,

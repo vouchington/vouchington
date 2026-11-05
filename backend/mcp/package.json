@@ -60,6 +60,7 @@
     "@services/modmail": "workspace:^",
     "@services/my": "workspace:^",
     "@services/notifications": "workspace:^",
+    "@services/official-referral-program-links": "workspace:^",
     "@services/openai-agents": "workspace:^",
     "@services/pagination": "workspace:^",
     "@services/post-clearance": "workspace:^",

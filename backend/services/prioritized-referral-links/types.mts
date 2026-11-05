@@ -6,6 +6,7 @@ export type PrioritizedReferralLink = {
   referral_program_id: string
   url: string
   label: string | null
+  /** 1-4 are the viewer's network groups, 5 is official links, 6 is everyone else. */
   priority_group: number
   contribution_rank: number
   tier_rank: number

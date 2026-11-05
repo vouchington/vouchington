@@ -3,7 +3,12 @@ import sql from 'sql-template-strings'
 import { decodeUuidCursor, encodeCursor, isSimpleCursor } from '@modules/pagination'
 import { childVisibilitySql } from '@services/user-referral-program-links'
 import type { PageInfo } from '@voucha/types/pagination'
-import { DEFAULT_ALL_LINKS_PAGE_LIMIT, MAX_ALL_LINKS_PAGE_LIMIT } from './config.mts'
+import {
+  DEFAULT_ALL_LINKS_PAGE_LIMIT,
+  EVERYONE_ELSE_PRIORITY_GROUP,
+  MAX_ALL_LINKS_PAGE_LIMIT,
+  OFFICIAL_PRIORITY_GROUP,
+} from './config.mts'
 import { getOfficialAccountId } from './official-account.mts'
 import { toLinksWithUsers, type LinkRow } from './link-rows.mts'
 import type { ReferralLinksWithUsers } from './types.mts'
@@ -11,7 +16,8 @@ import type { ReferralLinksWithUsers } from './types.mts'
 export type AllReferralLinksPage = ReferralLinksWithUsers & { page_info: PageInfo }
 
 /**
- * Every visible link in the program, newest first, one keyset page at a time. Link ids are
+ * Every visible link in the program, newest first, one keyset page at a time. Rank fields are
+ * neutral: official links carry the official group and everything else the everyone-else group. Link ids are
  * UUIDv7, so id order is creation order. The viewer's own link is included; muted and blocked
  * users are not.
  */
@@ -30,7 +36,7 @@ export async function getAllReferralLinksPage(
   const officialUserId = await getOfficialAccountId()
   const query = sql`/* getAllReferralLinksPage */
 SELECT al.id, al.user_id, al.referral_program_topic_id AS referral_program_id, u.url, al.label,
-  CASE WHEN al.user_id = ${officialUserId}::uuid THEN 0 ELSE 5 END AS priority_group,
+  CASE WHEN al.user_id = ${officialUserId}::uuid THEN ${OFFICIAL_PRIORITY_GROUP}::int ELSE ${EVERYONE_ELSE_PRIORITY_GROUP}::int END AS priority_group,
   0 AS contribution_rank, 0 AS tier_rank, 0 AS best_score,
   NULL::uuid AS review_post_id, NULL::text AS review_post_slug, NULL::numeric AS review_avg_rating,
   COALESCE(al.user_id = ${officialUserId}::uuid, FALSE) AS is_official,

@@ -6,6 +6,7 @@ import { RANK_ORDER_SQL, RANKED_COLUMNS_SQL, rankingCtesSql } from './ranking-ct
 import { getOfficialAccountId } from './official-account.mts'
 import type { ReferralLinksWithUsers } from './types.mts'
 import { getPersonalizedLinkMaxLimit } from './work-limits.mts'
+import { EVERYONE_ELSE_PRIORITY_GROUP, OFFICIAL_PRIORITY_GROUP } from './config.mts'
 
 /** What every viewer shares for one program: official links plus the top ranked other links. */
 export type OutOfNetworkLinks = {
@@ -71,12 +72,12 @@ top_ranked AS (
 ),
 combined AS (
   SELECT id, user_id, referral_program_id, url, label,
-    5 AS priority_group, contribution_rank, tier_rank, best_score,
+    ${EVERYONE_ELSE_PRIORITY_GROUP} AS priority_group, contribution_rank, tier_rank, best_score,
     review_post_id, review_post_slug, review_avg_rating, is_official
   FROM top_ranked
   UNION ALL
   SELECT id, user_id, referral_program_topic_id, url, label,
-    0, 0, 0, 0, NULL::uuid, NULL::text, NULL::numeric, TRUE
+    ${OFFICIAL_PRIORITY_GROUP}, 0, 0, 0, NULL::uuid, NULL::text, NULL::numeric, TRUE
   FROM official_links
 )`,
     )

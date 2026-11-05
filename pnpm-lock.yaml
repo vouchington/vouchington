@@ -2052,6 +2052,9 @@ importers:
       '@services/notifications':
         specifier: workspace:^
         version: link:../services/notifications
+      '@services/official-referral-program-links':
+        specifier: workspace:^
+        version: link:../services/official-referral-program-links
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents

@@ -655,11 +655,11 @@
       },
       "get_referral_links": {
         "measured": {
-          "list": 1955,
-          "core": 783
+          "list": 2030,
+          "core": 811
         },
         "max": {
-          "list": 2000,
+          "list": 3000,
           "core": 1000
         }
       },

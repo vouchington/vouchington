@@ -26,7 +26,7 @@ function makeLink(overrides?: Partial<PrioritizedReferralLink>): PrioritizedRefe
     referral_program_id: 'rp-1',
     url: 'https://example.com/ref/abc',
     label: 'My Referral Link',
-    priority_group: 5,
+    priority_group: 6,
     contribution_rank: 3,
     tier_rank: 3,
     best_score: 0,
