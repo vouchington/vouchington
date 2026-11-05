@@ -140,7 +140,7 @@ export function useMembershipRefundSubmission(options: {
 
   useEffect(() => {
     const attempt = attemptRef.current
-    if (reconciliationRetryAt === null || !attempt) return
+    if (reconciliationRetryAt === null || !attempt) return undefined
     const timer = window.setTimeout(
       () => {
         setReconciliationRetryAt(null)

@@ -145,16 +145,13 @@ function communityRosterAllowsRegularMembers(
   currentUser: PrivateUser | null,
   viewerMembership: CommunityMember | null | undefined,
 ): boolean {
-  switch (rosterVisibility) {
-    case 'public':
-      return true
-    case 'users':
-      return !!currentUser
-    case 'members':
-      return !!viewerMembership && !viewerMembership.removed_at
-    case 'moderators':
-      return false
-  }
+  return {
+    __proto__: null,
+    public: true,
+    users: !!currentUser,
+    members: !!viewerMembership && !viewerMembership.removed_at,
+    moderators: false,
+  }[rosterVisibility]
 }
 
 export function appendUserMembershipPrivacyFilter(

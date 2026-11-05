@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { randomUUID } from 'node:crypto'
 import { rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -67,6 +68,7 @@ export async function createLockedEntityId(
     case 'images':
       return insertTestImage(userId)
   }
+  return assertNever(jobType)
 }
 
 /** Each owned file is removed even when submission rejects before its normal cleanup. */

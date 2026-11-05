@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { getEmbeddingReconciliationPageSize } from '@services/bedrock-embeddings/batch/config'
 import { beginTransaction, write } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
@@ -133,4 +134,5 @@ function copyExistingLockClause(tableName: ReconciliationTable): string {
     case 'rss_feed_items':
       return `AND NOT ${lockExistsClause('rss_feed_items', 'rss_feed_items.id')}`
   }
+  return assertNever(tableName)
 }

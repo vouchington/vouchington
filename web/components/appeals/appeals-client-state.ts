@@ -56,6 +56,7 @@ export function appealsClientReducer(state: State, action: Action): State {
       return { ...state, draftEdits: { ...state.draftEdits, [action.id]: action.text } }
     }
   }
+  throw new Error('Unexpected value in appealsClientReducer')
 }
 
 /** A row stands for the full appeal once staff opened or changed it. */

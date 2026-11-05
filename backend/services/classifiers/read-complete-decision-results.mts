@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { QueryExecutor } from '@data-stores/psql'
 import type { ClassifierCandidateKind } from '@voucha/types'
 import sql from 'sql-template-strings'
@@ -37,6 +38,7 @@ export async function readResults(
     case 'community_prompt':
       return readCommunityPromptResults(query, batchId)
   }
+  return assertNever(candidateKind)
 }
 
 async function readTopicResults(
@@ -142,6 +144,7 @@ function toPersistedResult(
         thresholdId: null,
       }
   }
+  return assertNever(candidateKind)
 }
 
 export function toScope(

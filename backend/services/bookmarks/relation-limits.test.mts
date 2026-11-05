@@ -38,6 +38,7 @@ describe('follow and subscription limits', () => {
           case 'rss_feed':
             return insertTestRssFeedDirect({})
         }
+        throw new Error('Unexpected value')
       }
       const [first, second] = await Promise.all([createObject(), createObject()])
       const relation = getEntityRelationMetadataOrThrow({

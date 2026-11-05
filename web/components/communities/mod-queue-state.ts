@@ -68,4 +68,5 @@ export function modQueueReducer(state: ModQueueState, action: ModQueueAction): M
       return { ...state, loading: null }
     }
   }
+  throw new Error('Unexpected value in modQueueReducer')
 }

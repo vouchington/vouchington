@@ -55,7 +55,7 @@ export function useSimilarEntities<T>({
   const canFetch = enabled && trimmed.length >= minLength
 
   useEffect(() => {
-    if (!canFetch) return
+    if (!canFetch) return undefined
     const controller = new AbortController()
 
     const timeoutId = setTimeout(() => {

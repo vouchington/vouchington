@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { isValidPrivacyAudience } from './privacy.mts'
 import type { UpdateUserOptions } from './types.mts'
 import assert from 'http-assert'
@@ -78,6 +79,7 @@ function visibilityAssignment(column: (typeof visibilityFieldNames)[number], val
     case 'topic_follows_visibility':
       return sql`topic_follows_visibility = ${value}`
   }
+  return assertNever(column)
 }
 
 const visibilityFieldNames = [

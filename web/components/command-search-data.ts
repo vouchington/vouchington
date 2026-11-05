@@ -84,6 +84,7 @@ export async function searchByTab(
     case 'all':
       return EMPTY_RESULTS
   }
+  throw new Error('Unexpected value in searchByTab')
 }
 
 export function getPostRoute(postType: string): string {

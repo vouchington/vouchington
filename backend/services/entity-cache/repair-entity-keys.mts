@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { normalizeKey } from '@ts-shared/utils/strings'
@@ -39,6 +40,7 @@ function entityKeysQuery(entityType: EntityBloomFilterType, id: string) {
     case 'rss_feed_items':
       return sql`/* repairEntityBloomKeys */ SELECT id, NULL::text AS lookup_key FROM rss_feed_items WHERE id = ${id} AND deleted_at IS NULL`
   }
+  return assertNever(entityType)
 }
 
 export async function repairPostSlugBloomKey(postId: string, slug: string): Promise<void> {

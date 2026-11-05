@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { DirectPostEligibilityOptions } from '@modules/feed-query-builders'
 
 /**
@@ -23,6 +24,7 @@ export function postEligibilityFor(viewer: EntityRelationViewer): DirectPostElig
     case 'user':
       return { currentUserId: viewer.userId, isModerationStaff: viewer.staffRole !== null }
   }
+  return assertNever(viewer)
 }
 
 /**
@@ -39,4 +41,5 @@ export function anonymousAuthorMaskFor(
     case 'user':
       return viewer.staffRole === 'administrator' ? undefined : { viewerUserId: viewer.userId }
   }
+  return undefined
 }

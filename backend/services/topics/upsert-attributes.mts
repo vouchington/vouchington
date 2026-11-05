@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { write, type QueryOptions } from '@data-stores/psql'
 import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 import { isUUID } from '@modules/utils'
@@ -92,4 +93,5 @@ function topicAttributeUpsertQuery(
     case 'spending_category_topics':
       return `/* upsertTopicAttributes:spendingCategories */ INSERT INTO spending_category_topics ${suffix}`
   }
+  return assertNever(tableName)
 }

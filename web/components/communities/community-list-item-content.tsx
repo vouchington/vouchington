@@ -139,4 +139,5 @@ export function CommunityListItemContent({ item, itemType, data }: CommunityList
       )
     }
   }
+  throw new Error('Unexpected value in CommunityListItemContent')
 }

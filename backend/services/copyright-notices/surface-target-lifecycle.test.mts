@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import * as cachePurgeEnqueues from '../../queues/cache-purge/enqueues.mts'
@@ -40,6 +41,7 @@ function ownerCache(fixture: SurfaceFixture) {
     case 'community':
       return null // Community pages use edge Cache-Tag purges, not a Valkey entity cache.
   }
+  return assertNever(fixture.ownerKind)
 }
 
 async function warmOwnerCache(fixture: SurfaceFixture): Promise<void> {
@@ -169,6 +171,7 @@ async function publicImageIsProjected(fixture: SurfaceFixture): Promise<boolean>
         (await getCommunity(fixture.ownerId))?.banner_image_placement?.image_id === fixture.imageId
       )
   }
+  return assertNever(fixture.selector)
 }
 
 async function communityPurgeWasQueued(id: string): Promise<boolean> {

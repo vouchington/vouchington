@@ -11,7 +11,7 @@ export function useReAuthMethods(open: boolean) {
     error?: Error
   }>({ attempt: 0 })
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
     let current = true
     void getReAuthMethods().then(
       methods => {

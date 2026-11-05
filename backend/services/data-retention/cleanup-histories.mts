@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { beginTransaction } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
@@ -82,14 +83,14 @@ function cutoffFor(kind: HistoryKind, now: Date): Date {
     case 'referral_attribution_scrub':
       return getRetentionCutoffDate(90, now)
     case 'followed_user_import_requests':
+    case 'community_agent_prompt_revisions':
       return now
     case 'pending_user_import_requests':
       return getRetentionCutoffDate(180, now)
     case 'referral_attribution_expiry':
       return subtractUtcMonths(now, 24)
-    case 'community_agent_prompt_revisions':
-      return now
   }
+  return assertNever(kind)
 }
 
 function subtractUtcMonths(now: Date, months: number): Date {

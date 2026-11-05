@@ -19,4 +19,5 @@ async function processEmailJob(job: Job): Promise<unknown> {
     case 'template':
       return processEmail(templates, parsed.name, parsed.input, parsed.variables)
   }
+  throw new Error('Unexpected value')
 }

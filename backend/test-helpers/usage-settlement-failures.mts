@@ -24,6 +24,6 @@ export function registerFailingUsageResolverRoute(base: string, failure: Error):
         throw failure
       },
     )
-    ctx.json({ ok: true })
+    return ctx.json({ ok: true })
   })
 }

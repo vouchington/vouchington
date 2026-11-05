@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { parseEmailDigestJob } from '@queues/email-digests/payload/job-payload'
 import { dispatchCommunityModerationSummaryEmails } from '@services/communities/moderation-summary-emails'
 import { dispatchEngagementEmails } from '@services/engagement-emails/dispatch-engagement-emails'
@@ -49,6 +50,7 @@ export async function processEmailDigestJob(
     case 'template':
       return templates[parsed.name](parsed.input, parsed.variables as never)
   }
+  return assertNever(parsed)
 }
 
 function runDispatcher(
@@ -64,4 +66,5 @@ function runDispatcher(
     case 'dispatchCommunityModerationSummaryEmails':
       return dispatchers.dispatchCommunityModerationSummaryEmails()
   }
+  return assertNever(name)
 }

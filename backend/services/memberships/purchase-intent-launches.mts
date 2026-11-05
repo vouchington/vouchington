@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { createHash } from 'node:crypto'
 import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT, IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
@@ -111,6 +112,7 @@ function getNativeMembershipLaunch(
     case 'stripe':
       throw new Error('Stripe purchase intents do not use a native launch payload')
   }
+  return assertNever(row.provider)
 }
 
 export function getMembershipManagementDestination(provider: MembershipPurchaseProvider) {

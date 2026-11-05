@@ -50,6 +50,7 @@ function reducer(state: State, action: Action): State {
       return { ...state, copied: action.value }
     }
   }
+  throw new Error('Unexpected value in reducer')
 }
 
 interface DomainVerificationPanelProps {

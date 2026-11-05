@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
@@ -111,4 +112,5 @@ export async function mutatePage(
       return result.rowCount ?? 0
     }
   }
+  return assertNever(kind)
 }

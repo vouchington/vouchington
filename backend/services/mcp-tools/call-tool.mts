@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { McpError, ErrorCode, type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import onError from '@modules/on-error'
 import { runWithRequestContext } from '@modules/utils/request-context'
@@ -176,4 +177,5 @@ function toMcpToolCallError(
         `Tool requires scopes ${resolution.requiredScopes.join(', ')}: ${toolName}`,
       )
   }
+  return assertNever(resolution)
 }

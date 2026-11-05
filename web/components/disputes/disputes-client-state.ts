@@ -54,6 +54,7 @@ export function disputesClientReducer(
       return { ...state, draftEdits: { ...state.draftEdits, [action.id]: action.text } }
     }
   }
+  throw new Error('Unexpected value in disputesClientReducer')
 }
 
 export function uniqueDisputes(disputes: ReviewDisputeSummary[]): ReviewDisputeSummary[] {

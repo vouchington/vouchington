@@ -49,6 +49,7 @@ function buildSitemapFamilyQuery(family: SitemapFamilyType, options: FamilyPageO
     case 'landing-pages':
       return buildLandingPagesQuery(options)
   }
+  throw new Error('Unexpected value')
 }
 
 function buildUsersQuery(options: FamilyPageOptions) {

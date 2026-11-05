@@ -20,6 +20,7 @@ export function postPublicationScopeIdentifier(scope: PostPublicationScope): str
     case 'topic':
       return scope.topicId
   }
+  throw new Error('Unexpected value')
 }
 
 export function postPublicationScopeLockKey(scope: PostPublicationScope): string {

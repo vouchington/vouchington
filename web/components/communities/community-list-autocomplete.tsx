@@ -92,6 +92,7 @@ async function searchByItemType(
       })
     }
   }
+  throw new Error('Unexpected value in searchByItemType')
 }
 
 export function CommunityListAutocomplete({ itemType, onSelect, disabled }: Props) {

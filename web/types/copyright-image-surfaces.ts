@@ -8,20 +8,14 @@ export type CopyrightImageSurface =
   | 'community-banner-image'
 
 export function copyrightImageSurfaceLabel(surface: CopyrightImageSurface): string {
-  switch (surface) {
-    case 'post-image':
-      return 'Post image'
-    case 'user-profile-image':
-      return 'Profile image'
-    case 'user-profile-link-image':
-      return 'Profile link image'
-    case 'topic-logo-image':
-      return 'Topic logo'
-    case 'topic-hero-image':
-      return 'Topic hero image'
-    case 'community-profile-image':
-      return 'Community profile image'
-    case 'community-banner-image':
-      return 'Community banner image'
-  }
+  return {
+    __proto__: null,
+    'post-image': 'Post image',
+    'user-profile-image': 'Profile image',
+    'user-profile-link-image': 'Profile link image',
+    'topic-logo-image': 'Topic logo',
+    'topic-hero-image': 'Topic hero image',
+    'community-profile-image': 'Community profile image',
+    'community-banner-image': 'Community banner image',
+  }[surface]
 }

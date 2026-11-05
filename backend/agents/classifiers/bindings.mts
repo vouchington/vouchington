@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type {
   ChoiceQuestion,
   NoulQuestion,
@@ -51,6 +52,7 @@ export function classifierCandidateEntityId(
     case 'community_prompt':
       return candidate.communityPromptId
   }
+  return assertNever(candidate)
 }
 
 /** The persisted classifier candidate kind a concrete candidate belongs to. */

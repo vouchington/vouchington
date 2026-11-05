@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { CopyrightDeliveryKind } from './delivery-types.mts'
 import { copyrightUsIntakeRoutesText } from './statement-of-reasons-redress-wording.mts'
 
@@ -31,6 +32,7 @@ export function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
     case 'status_update':
       return 'Update to your copyright case'
   }
+  return assertNever(kind)
 }
 
 /** Unpromoted intake has neither a copyright case nor an established legal ground. */

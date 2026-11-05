@@ -54,6 +54,7 @@ export function resultKey(
     case 'community_prompt':
       return `community_prompt:${result.communityPromptId}`
   }
+  throw new Error('Unexpected value')
 }
 
 export function matchesExpectedThresholds(

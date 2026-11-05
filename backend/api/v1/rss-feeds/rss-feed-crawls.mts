@@ -44,7 +44,7 @@ app.route('/api/v1/rss-feeds/:id/crawls').get(async (ctx: Context) => {
   if (ctx.query.limit !== undefined) query.limit = options.limit
   validateRequestContract(ctx, 'GET:/api/v1/rss-feeds/:id/crawls', { query })
   const crawls = await searchRssFeedCrawls(rssFeed.id, options)
-  ctx.json(apiResponse('GET:/api/v1/rss-feeds/:id/crawls', crawls))
+  return ctx.json(apiResponse('GET:/api/v1/rss-feeds/:id/crawls', crawls))
 })
 
 app.route('/api/v1/rss-feeds/:id/crawls/:crawlId').get(async (ctx: Context) => {
@@ -64,13 +64,12 @@ app.route('/api/v1/rss-feeds/:id/crawls/:crawlId').get(async (ctx: Context) => {
   if (currentUserCanRefreshRssFeed(currentUser)) {
     const crawl = await getRssFeedCrawlById(rssFeed.id, ctx.params.crawlId!)
     ctx.assert(crawl, 404, 'Crawl not found')
-    ctx.json(apiResponse('GET:/api/v1/rss-feeds/:id/crawls/:crawlId#privileged', { crawl }))
-    return
+    return ctx.json(apiResponse('GET:/api/v1/rss-feeds/:id/crawls/:crawlId#privileged', { crawl }))
   }
   const crawl = await getRssFeedCrawlSummaryById(rssFeed.id, ctx.params.crawlId!)
   ctx.assert(crawl, 404, 'Crawl not found')
 
-  ctx.json(
+  return ctx.json(
     apiResponse('GET:/api/v1/rss-feeds/:id/crawls/:crawlId#paid', {
       crawl: toPaidSafeRssFeedCrawl(crawl),
     }),

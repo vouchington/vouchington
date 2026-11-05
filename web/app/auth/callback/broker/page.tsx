@@ -48,7 +48,7 @@ function OAuthBrokerCallbackContent() {
   const missingFlowId = !flowId
 
   useEffect(() => {
-    if (!flowId) return
+    if (!flowId) return undefined
     const activeFlowId = flowId
     let cancelled = false
     let cancelPoll: (() => void) | undefined

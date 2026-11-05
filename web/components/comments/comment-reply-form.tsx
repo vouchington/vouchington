@@ -55,7 +55,7 @@ export function CommentReplyForm({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const textareaId = useId()
   useEffect(() => {
-    if (!showPreview) return
+    if (!showPreview) return undefined
     const controller = new AbortController()
     const timer = setTimeout(() => {
       setPreviewLoading(true)

@@ -40,12 +40,10 @@ function isHigherPriorityMembershipSource(
 function getMembershipSourceKindPriority(
   sourceKind: MembershipSourcePriority['source_kind'],
 ): number {
-  switch (sourceKind) {
-    case 'direct':
-      return 3
-    case 'admin_grant':
-      return 2
-    case 'family':
-      return 1
-  }
+  return {
+    __proto__: null,
+    direct: 3,
+    admin_grant: 2,
+    family: 1,
+  }[sourceKind]
 }

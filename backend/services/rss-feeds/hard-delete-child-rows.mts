@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { RssFeedHardDeleteChildPhase } from '@queues/rss-feed-maintenance/types'
 
@@ -97,4 +98,5 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
   }
+  return assertNever(phase)
 }

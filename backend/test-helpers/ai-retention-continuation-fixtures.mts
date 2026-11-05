@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
 import type { AIRetentionFamily } from '@queues/psql/types'
@@ -109,4 +110,5 @@ export async function createAIRetentionContinuationFixture(
       }
     }
   }
+  return assertNever(family)
 }

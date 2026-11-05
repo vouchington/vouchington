@@ -147,7 +147,7 @@ async function resolveCopyrightEmailRecipient(
     assert(email, 422, 'Affected poster has no verified email address')
     return email
   }
-  assert(false, 422, 'Copyright email delivery has no private recipient')
+  return assert(false, 422, 'Copyright email delivery has no private recipient') as never
 }
 
 function errorMessage(error: unknown): string {

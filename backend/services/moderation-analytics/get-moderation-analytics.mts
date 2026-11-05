@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { getModerationAnalyticsWorkLimit } from './work-limits.mts'
 /* oxlint-disable max-lines -- Moderation analytics keeps related SQL aggregates together for one dashboard contract. */
 import { read } from '@data-stores/psql'
@@ -90,6 +91,7 @@ function getRangeStart(range: ModerationAnalyticsRange, now: Date): Date {
       return d
     }
   }
+  return assertNever(range)
 }
 
 async function getQueueVolume(

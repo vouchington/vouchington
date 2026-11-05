@@ -54,14 +54,11 @@ export function ProviderBucket({ bucket }: { bucket: FediverseSearchBucket }) {
 }
 
 function formatProvider(provider: FediverseProvider): string {
-  switch (provider) {
-    case 'peertube':
-      return 'PeerTube'
-    case 'mastodon':
-      return 'Mastodon'
-    case 'lemmy':
-      return 'Lemmy'
-    case 'bluesky':
-      return 'Bluesky'
-  }
+  return {
+    __proto__: null,
+    peertube: 'PeerTube',
+    mastodon: 'Mastodon',
+    lemmy: 'Lemmy',
+    bluesky: 'Bluesky',
+  }[provider]
 }

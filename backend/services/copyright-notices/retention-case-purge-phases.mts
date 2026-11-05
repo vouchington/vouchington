@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql from 'sql-template-strings'
@@ -179,4 +180,5 @@ export async function runLockedPage(
     case 'residual_parties':
       throw new Error('Residual case parties are handled after the live notice is gone')
   }
+  return assertNever(data.phase)
 }

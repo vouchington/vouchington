@@ -18,12 +18,10 @@ export async function isEntityLockedForBatch(
 }
 
 function lockColumnForSingleType(entityType: SingleBatchLockType): string {
-  switch (entityType) {
-    case 'post':
-      return 'post_id'
-    case 'topic':
-      return 'topic_id'
-    case 'rss_feed_item':
-      return 'rss_feed_item_id'
-  }
+  return {
+    __proto__: null,
+    post: 'post_id',
+    topic: 'topic_id',
+    rss_feed_item: 'rss_feed_item_id',
+  }[entityType]
 }

@@ -70,4 +70,5 @@ function apiKeyScopeValidationError(
     case 'unsupported-surface':
       return `scope is not supported for API keys: ${result.scope}`
   }
+  throw new Error('Unexpected value')
 }

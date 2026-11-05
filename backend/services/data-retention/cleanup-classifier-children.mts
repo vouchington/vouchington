@@ -1,4 +1,5 @@
 /* oxlint-disable no-await-in-loop -- each bounded page checkpoints its own dependent transaction. */
+import { assertNever } from '@modules/utils/assert-never'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { assertPositiveInteger } from './normalize-positive-integer.mts'
@@ -133,6 +134,7 @@ function childPageStatement(
       return statement.append(sql` ORDER BY run_id LIMIT ${batchSize + 1}`)
     }
   }
+  return assertNever(sweep)
 }
 
 async function deleteTerminalChildren(
@@ -176,4 +178,5 @@ async function deleteTerminalChildren(
       return rowCount ?? 0
     }
   }
+  return assertNever(sweep)
 }

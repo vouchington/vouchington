@@ -13,7 +13,7 @@ export function useViewerHasCommunity(enabled: boolean): boolean {
     if (!enabled) {
       // Clear cache so the next enabled=true run fetches fresh data for the new session.
       resetViewerHasCommunityCache()
-      return
+      return undefined
     }
     if (!cachedPromise) {
       cachedPromise = loadMyCommunities()

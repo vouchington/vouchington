@@ -51,6 +51,7 @@ function reducer(state: State, action: Action): State {
       return { reason: '', claimText: '', loading: false, error: null, submitted: false }
     }
   }
+  throw new Error('Unexpected value in reducer')
 }
 
 interface DisputeReviewDialogProps {
@@ -77,7 +78,7 @@ export function DisputeReviewDialog({
   const turnstile = useTurnstileToken('disputes.create')
 
   useEffect(() => {
-    if (open) return
+    if (open) return undefined
 
     const resetTimeout = setTimeout(() => dispatch({ type: 'reset' }), 300)
     return () => clearTimeout(resetTimeout)

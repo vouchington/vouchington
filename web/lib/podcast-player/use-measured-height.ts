@@ -9,7 +9,7 @@ export function useMeasuredHeight<T extends HTMLElement>(
 
   useLayoutEffect(() => {
     const element = elementRef.current
-    if (!element) return
+    if (!element) return undefined
 
     const updateHeight = () => onHeightChange?.(Math.ceil(element.getBoundingClientRect().height))
     updateHeight()

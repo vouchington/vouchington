@@ -34,6 +34,7 @@ export function redirectUriValidationMessage(
     case 'duplicate':
       return t('settings.oauthApps.redirectUriErrors.duplicate')
   }
+  throw new Error('Unexpected value in redirectUriValidationMessage')
 }
 
 export function hasValidOAuthAppDetails(name: string, redirectUris: readonly string[]): boolean {

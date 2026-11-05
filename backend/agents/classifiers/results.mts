@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type {
   NoulAnswer,
   StructuredDecisionAnswer,
@@ -128,4 +129,5 @@ function resultForCandidate(
         ...shared,
       }
   }
+  return assertNever(candidate)
 }

@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { read, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
@@ -85,6 +86,7 @@ function sqlTableForLanguageDetection(table: LanguageDetectionEntityTable): SQLS
     case 'rss_feed_items':
       return sql`rss_feed_items`
   }
+  return assertNever(table)
 }
 
 export type LanguageDetectionResultForTest = LanguageDetectionStateForTest & {

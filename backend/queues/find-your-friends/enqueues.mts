@@ -40,6 +40,7 @@ function buildSyncData(field: SyncConfig['idField'], id: string) {
     case 'githubAccountId':
       return { githubAccountId: id }
   }
+  throw new Error('Unexpected value')
 }
 
 function buildJobOptions(

@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import {
   COPYRIGHT_COURT_REDRESS_TEXT,
   copyrightUsIntakeRoutesText,
@@ -32,6 +33,7 @@ export function copyrightStatementSummary(input: CopyrightStatementInput): strin
       return `The image restriction for copyright case ${input.noticeId} ended (${copyrightRestorationCauseText(input.restorationCause)}). ${outcome}`
     }
   }
+  return assertNever(input.event)
 }
 
 function copyrightNotAcceptedSummary(input: CopyrightStatementInput): string {

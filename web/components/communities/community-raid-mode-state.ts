@@ -76,6 +76,7 @@ export function raidModeReducer(state: RaidModeState, action: RaidModeAction): R
       return { ...state, isSaving: false, liftingId: null }
     }
   }
+  throw new Error('Unexpected value in raidModeReducer')
 }
 
 export function getActiveRestrictions(
@@ -98,20 +99,13 @@ export function getExpiresAt(duration: DurationValue): string | null {
 }
 
 export function formatRestrictionType(type: CommunityRestrictionType): string {
-  switch (type) {
-    case 'require_post_approval': {
-      return 'Require post approval'
-    }
-    case 'no_new_member_posts': {
-      return 'Block new member posts'
-    }
-    case 'no_links': {
-      return 'Block links'
-    }
-    case 'approved_members_only': {
-      return 'Approved members only'
-    }
-  }
+  return {
+    __proto__: null,
+    require_post_approval: 'Require post approval',
+    no_new_member_posts: 'Block new member posts',
+    no_links: 'Block links',
+    approved_members_only: 'Approved members only',
+  }[type]
 }
 
 export function formatRestrictionExpiry(expiresAt: string | null): string {

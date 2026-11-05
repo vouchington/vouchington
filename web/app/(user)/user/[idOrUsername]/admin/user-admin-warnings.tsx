@@ -22,6 +22,7 @@ function reducer(_state: State, action: Action): State {
       return { status: 'error' }
     }
   }
+  throw new Error('Unexpected value in reducer')
 }
 
 interface UserAdminWarningsProps {

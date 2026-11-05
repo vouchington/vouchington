@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { QueryExecutor } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -76,6 +77,7 @@ export async function readEuCopyrightReportCoveragePage(
           cursor,
         )
     }
+    return assertNever(family)
   })()
   const page = sql`/* readEuCopyrightReportCoveragePage.facts */
     SELECT fact.id, EXISTS (

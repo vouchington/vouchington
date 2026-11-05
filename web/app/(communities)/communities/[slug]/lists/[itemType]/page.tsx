@@ -62,7 +62,7 @@ async function fetchListData(slug: string, itemType: string): Promise<CommunityL
       return getCommunityListUrls(slug)
     }
     default: {
-      notFound()
+      return notFound()
     }
   }
 }

@@ -117,6 +117,7 @@ function blocklistReplicaLagDelay(filter: RebuildBloomFilterData['filter']): num
     case 'api-keys':
       return undefined
   }
+  return undefined
 }
 
 function rebuildBloomFilterOrdering(data: RebuildBloomFilterData): JobOptions['ordering'] {
@@ -130,6 +131,7 @@ function rebuildBloomFilterOrdering(data: RebuildBloomFilterData): JobOptions['o
     case 'api-keys':
       return BLOOM_FILTER_ORDERING.rebuild_api_keys
   }
+  throw new Error('Unexpected value')
 }
 
 export function rebuildEmbeddingBloomFilterJobOptions(priority?: number): Partial<JobOptions> {

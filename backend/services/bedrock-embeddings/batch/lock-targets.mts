@@ -10,27 +10,23 @@ export function lockExistsClause(jobType: BatchJobType, entitySql: string): stri
 }
 
 export function singleLockJobType(entityType: SingleBatchLockType): BatchJobType {
-  switch (entityType) {
-    case 'post':
-      return 'posts'
-    case 'topic':
-      return 'topics'
-    case 'rss_feed_item':
-      return 'rss_feed_items'
-  }
+  return (
+    {
+      __proto__: null,
+      post: 'posts',
+      topic: 'topics',
+      rss_feed_item: 'rss_feed_items',
+    } as const
+  )[entityType]
 }
 
 function lockColumn(jobType: BatchJobType): string {
-  switch (jobType) {
-    case 'topics':
-      return 'e.topic_id'
-    case 'posts':
-      return 'e.post_id'
-    case 'rss_feed_items':
-      return 'e.rss_feed_item_id'
-    case 'crawl_chunks':
-      return '(e.crawl_id, e.crawl_order_index)'
-    case 'images':
-      return 'e.image_id'
-  }
+  return {
+    __proto__: null,
+    topics: 'e.topic_id',
+    posts: 'e.post_id',
+    rss_feed_items: 'e.rss_feed_item_id',
+    crawl_chunks: '(e.crawl_id, e.crawl_order_index)',
+    images: 'e.image_id',
+  }[jobType]
 }

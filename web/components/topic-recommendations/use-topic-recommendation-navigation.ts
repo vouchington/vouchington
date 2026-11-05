@@ -29,7 +29,7 @@ export function useTopicRecommendationNavigation({
 
   useEffect(() => {
     const dir = pendingFocusDirectionRef.current
-    if (!dir || !selectedId) return
+    if (!dir || !selectedId) return undefined
     pendingFocusDirectionRef.current = null
     const id = requestAnimationFrame(() => focusNavigationButton(dir, previousRef, nextRef))
     return () => cancelAnimationFrame(id)

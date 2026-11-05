@@ -33,18 +33,19 @@ export function ScrollToTop() {
   useEffect(() => {
     const prev = prevPathnameRef.current
     prevPathnameRef.current = pathname
-    if (prev === null) return
-    if (prev === pathname) return
+    if (prev === null) return undefined
+    if (prev === pathname) return undefined
     const wasPopstate = popstateDestinationRef.current === pathname
     popstateDestinationRef.current = null
-    if (wasPopstate) return
+    if (wasPopstate) return undefined
     const preservedScrollY = consumePreservedScrollPosition(pathname)
     if (preservedScrollY !== null) {
       return restorePreservedScrollWhenReachable(preservedScrollY)
     }
-    if (window.location.hash !== '') return
+    if (window.location.hash !== '') return undefined
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     focusPrimaryRouteTarget()
+    return undefined
   }, [pathname])
 
   return null

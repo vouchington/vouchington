@@ -127,7 +127,7 @@ const CommandInput = React.forwardRef<
 
   React.useEffect(() => {
     const input = inputRef.current
-    if (!input) return
+    if (!input) return undefined
 
     const removeStaleAriaReferences = () => {
       const activeDescendant = input.getAttribute('aria-activedescendant')

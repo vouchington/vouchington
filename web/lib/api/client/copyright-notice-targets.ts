@@ -194,4 +194,5 @@ export function copyrightNoticeTargetInput(
     case 'community-banner-image':
       return { ...common, surface: target.surface, community_id: target.community_id }
   }
+  throw new Error('Unexpected value in copyrightNoticeTargetInput')
 }

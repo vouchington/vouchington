@@ -30,6 +30,7 @@ export function getCrawlOutcomeMessage(outcome: CrawlOutcome) {
     case 'error':
       return { key: 'extracted.manageSource.crawlHistorySection.error_19448d29' } as const
   }
+  throw new Error('Unexpected value in getCrawlOutcomeMessage')
 }
 
 export function getCrawlOutcomeBackgroundClass(tone: CrawlOutcome['tone']): string {

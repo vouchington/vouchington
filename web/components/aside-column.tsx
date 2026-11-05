@@ -24,7 +24,7 @@ export function AsideColumn({
   // On mobile, desktopAsideOpen=false does not visually collapse the aside (it still flows
   // below content), so inert must not be set at narrow viewports.
   useEffect(() => {
-    if (!asideRef.current) return
+    if (!asideRef.current) return undefined
     const mq = window.matchMedia('(min-width: 1024px)')
     function update() {
       if (!asideRef.current) return

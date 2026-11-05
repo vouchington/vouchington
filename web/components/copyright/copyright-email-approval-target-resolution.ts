@@ -20,7 +20,7 @@ export function useCopyrightEmailApprovalTargetResolution(
     const pending = draft.targets.filter(
       target => target.resolution_status === 'pending' && target.target_url.trim(),
     )
-    if (pending.length === 0) return
+    if (pending.length === 0) return undefined
     let current = true
     void Promise.all(pending.map(resolveTarget)).then(results => {
       if (!current) return

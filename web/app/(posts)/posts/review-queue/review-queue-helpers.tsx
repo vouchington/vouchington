@@ -49,6 +49,7 @@ export function ModerationSummary({
       case null:
         return t('extracted.reviewQueue.reviewQueueHelpers.pending_62a2fed3')
     }
+    throw new Error('Unexpected value in switch')
   })()
   const reasonCodes = [...new Set(summary.reason_codes)]
 

@@ -117,4 +117,5 @@ function identityDimensions(
     case 'anonymous':
       return { credential: 'anonymous' }
   }
+  throw new Error('Unexpected value')
 }

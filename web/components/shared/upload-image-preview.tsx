@@ -17,7 +17,7 @@ export function UploadImagePreview({
   const [failedFile, setFailedFile] = useState<File | null>(null)
   const attachPreview = useCallback(
     (image: HTMLImageElement | null) => {
-      if (!image) return
+      if (!image) return undefined
       const url = URL.createObjectURL(file)
       image.src = url
       return () => URL.revokeObjectURL(url)

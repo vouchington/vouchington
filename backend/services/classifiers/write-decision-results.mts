@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { ClassifierCandidateKind } from '@voucha/types'
 import type { OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -42,6 +43,7 @@ export async function insertClassifierDecisionResults(
     case 'community_prompt':
       return insertCommunityPromptResults(query, input, rows)
   }
+  return assertNever(candidateKind)
 }
 
 function toPersistedInputRow(

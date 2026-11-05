@@ -61,7 +61,7 @@ export function useEntityBookmarkState({
     setBookmarkState(makeBookmarkState(bookmarkKey, initialActive))
   }, [bookmarkKey, initialActive])
   useEffect(() => {
-    if (didLoadInitial) return
+    if (didLoadInitial) return undefined
     let cancelled = false
     getEntityBookmarks(entityType, entityId)
       .then(response => {

@@ -24,4 +24,5 @@ export function tokenToBody(token: OAuthLoginToken): Record<string, unknown> {
       return { code: token.code, redirectUri: token.redirectUri }
     }
   }
+  throw new Error('Unexpected value in tokenToBody')
 }

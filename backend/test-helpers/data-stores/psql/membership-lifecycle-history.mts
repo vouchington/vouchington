@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -54,6 +55,7 @@ export function attemptTestProviderLineageTransition(
         sql`/* rewriteTestProviderLineageId */ UPDATE membership_provider_lineages SET provider_lineage_id = ${`rewritten-${randomUUID()}`} WHERE id = ${lineageId}`,
       )
   }
+  return assertNever(transition)
 }
 
 export async function createTestImmutableLifecycleLineageBinding(
@@ -112,6 +114,7 @@ export function attemptTestLifecycleLineageBindingTransition(
         sql`/* rewriteTestLifecycleBindingReleasedAt */ UPDATE membership_lineage_bindings SET released_at = released_at + INTERVAL '1 second' WHERE id = ${bindingId}`,
       )
   }
+  return assertNever(transition)
 }
 
 export function deleteTestLifecycleUser(userId: string): Promise<QueryResult> {
@@ -182,4 +185,5 @@ export function attemptTestGrantActivationTransition(
         sql`/* rewriteTestGrantActivationEndedAt */ UPDATE membership_grant_activation_periods SET ended_at = ended_at + INTERVAL '1 second' WHERE id = ${activationId}`,
       )
   }
+  return assertNever(transition)
 }

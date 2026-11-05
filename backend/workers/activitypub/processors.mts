@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { boundRateLimitDeferral } from '@vouchington/queue-errors'
 import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { background } from '@queues/background/queues'
@@ -89,6 +90,7 @@ function nextDistributionPage(
         originalActivityId: data.originalActivityId,
       }
   }
+  return assertNever(data)
 }
 
 export async function processDeliverActivityJob(

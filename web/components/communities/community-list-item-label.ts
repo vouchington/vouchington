@@ -26,4 +26,5 @@ export function getCommunityListItemLabel(
       return data.urls?.[item.entity_id]?.url ?? 'URL'
     }
   }
+  throw new Error('Unexpected value in getCommunityListItemLabel')
 }

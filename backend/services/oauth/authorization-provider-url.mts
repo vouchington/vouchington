@@ -82,6 +82,7 @@ export function buildProviderAuthorizationUrl(options: {
         code_challenge_method: 'S256',
       })
   }
+  throw new Error('Unexpected value')
 }
 
 function withQuery(url: string, params: Record<string, string>): string {

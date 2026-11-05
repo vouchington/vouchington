@@ -129,7 +129,7 @@ describe('periodic sweep coalescing', () => {
       async (job: Job) => {
         if (job.data.hostname_id === otherHostname) {
           otherStarted.resolve()
-          return
+          return undefined
         }
         primaryRuns++
         return processRetainedSweep(job, async save => {

@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 
 export const HISTORY_KINDS = [
@@ -133,6 +134,7 @@ export async function listRawCandidates(
       return rows
     }
   }
+  return assertNever(kind)
 }
 
 /** One unresolved row behind the checkpoint catches late commits without rereading cleared rows. */

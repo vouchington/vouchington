@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { GrowthMetrics, GrowthRange } from './types.mts'
 import { getUserGrowth } from './get-user-growth.mts'
 import { getContentProduction } from './get-content-production.mts'
@@ -75,4 +76,5 @@ function getRangeStart(range: GrowthRange, now: Date): Date {
       return new Date(0)
     }
   }
+  return assertNever(range)
 }

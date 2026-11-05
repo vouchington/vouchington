@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 import { processTopicMergeReviewMetricsPage } from './merge-metrics-reviews.mts'
 import {
@@ -116,6 +117,7 @@ export async function processTopicMergeMetricsPage(
       return pageResult(phase, cursor, rows, limit, nextStats, row => row.subject_id)
     }
   }
+  return assertNever(phase)
 }
 
 function pageResult<Row>(

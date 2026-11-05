@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { DistributionRow, ProcessTargetRowsResult } from './process-types.mts'
 import { insertPostFeedShares, insertPostManualSendNotifications } from './post-target-rows.mts'
@@ -23,6 +24,7 @@ export async function processTargetRows(
     case 'rss_feed_item_send':
       return insertRssFeedItemManualSendNotifications(distribution, recipientIds, query)
   }
+  return assertNever(distribution.action)
 }
 
 function emptyTargetRowsResult(succeeded: boolean): ProcessTargetRowsResult {

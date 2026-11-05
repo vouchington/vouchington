@@ -26,7 +26,7 @@ export function MessagesSidebarGroup() {
   const replaceFirstPage = messagesSidebar?.replaceFirstPage
 
   useEffect(() => {
-    if (isLoaded || !replaceFirstPage) return
+    if (isLoaded || !replaceFirstPage) return undefined
     const replaceLoadedFirstPage = replaceFirstPage
     let cancelled = false
     let retryTimer: ReturnType<typeof setTimeout> | null = null

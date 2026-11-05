@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -245,6 +246,7 @@ async function createVisibleTarget(
       return { entityType, entityId: community.id, predicate: 'save' }
     }
   }
+  return assertNever(entityType)
 }
 
 async function createFeedItem(user: PrivateUser): Promise<string> {

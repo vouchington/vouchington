@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { describe, expect, it, beforeAll } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import {
@@ -100,6 +101,7 @@ function membershipWrites(
     case 'none':
       return []
   }
+  return assertNever(membership)
 }
 
 function listItemEntityId(itemType: MineFeedListItem, fixtures: MineFeedFixtures): string {
@@ -119,6 +121,7 @@ function listItemEntityId(itemType: MineFeedListItem, fixtures: MineFeedFixtures
       return fixtures.postId
     }
   }
+  return assertNever(itemType)
 }
 
 async function insertScenarioCommunities(

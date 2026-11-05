@@ -48,26 +48,18 @@ function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
       )
     }
   }
+  throw new Error('Unexpected value in ConflictLink')
 }
 
 function labelForKind(kind: AvailabilityKind): string {
-  switch (kind) {
-    case 'topic-slug': {
-      return 'topic slug'
-    }
-    case 'topic-name': {
-      return 'topic name'
-    }
-    case 'community-slug': {
-      return 'community slug'
-    }
-    case 'post-slug': {
-      return 'post slug'
-    }
-    case 'username': {
-      return 'username'
-    }
-  }
+  return {
+    __proto__: null,
+    'topic-slug': 'topic slug',
+    'topic-name': 'topic name',
+    'community-slug': 'community slug',
+    'post-slug': 'post slug',
+    username: 'username',
+  }[kind]
 }
 
 interface Props {

@@ -15,6 +15,6 @@ export async function mapIndividualCardConstraintError<T>(operation: () => Promi
       pgError.code && pgError.constraint ? `${pgError.code}:${pgError.constraint}` : undefined
     const message = key ? individualCardConstraintErrors[key] : undefined
     if (!message) throw err
-    assert(false, 422, message)
+    return assert(false, 422, message) as never
   }
 }

@@ -26,7 +26,7 @@ export async function processCommunityActivityDigestDispatch(
   const { windowStart, windowEnd } = job.data
   const start = new Date(windowStart)
   const end = new Date(windowEnd)
-  if (await isCommunityActivityDigestWindowComplete(end, options)) return
+  if (await isCommunityActivityDigestWindowComplete(end, options)) return undefined
 
   const counts = await background.getJobCounts()
   const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)

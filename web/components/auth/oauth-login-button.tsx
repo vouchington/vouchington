@@ -66,4 +66,5 @@ export function OAuthLoginButton({
       return <GithubLoginButton {...buttonProps} />
     }
   }
+  throw new Error('Unexpected value in OAuthLoginButton')
 }

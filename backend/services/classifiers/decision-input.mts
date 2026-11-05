@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { ClassifierCandidateKind } from '@voucha/types'
 import { createHash } from 'node:crypto'
 import type {
@@ -104,6 +105,7 @@ export function classifierDecisionEntityId(result: ClassifierDecisionInputResult
     case 'community_prompt':
       return result.communityPromptId
   }
+  return assertNever(result)
 }
 
 export function classifierDecisionResultKey(result: ClassifierDecisionInputResult): string {

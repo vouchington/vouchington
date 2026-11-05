@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { write } from '@data-stores/psql'
 import { decodeScopedTimestampUuidCursor, encodeCursor } from '@modules/pagination'
@@ -94,6 +95,7 @@ function getTransparencyRangeStart(range: ModerationAnalyticsRange, cutoff: Date
     case 'all':
       return new Date(0)
   }
+  return assertNever(range)
 }
 
 function getAllTimePeriodEnd(after: string, scope: string): Date {

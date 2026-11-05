@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { calendarYearsAgo } from './security-retention-cutoff.mts'
 
 export type Source =
@@ -173,4 +174,5 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         deletePredicateUsesCutoff: true,
       }
   }
+  return assertNever(source)
 }

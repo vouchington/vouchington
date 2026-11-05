@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -61,6 +62,7 @@ function suiteRegistrar(
     case 'topics':
       return registerTopicRoutes
   }
+  return assertNever(segment)
 }
 
 /** Shared community list-item mutation cases. Extra reads register through `registerAdditional`. */

@@ -1,9 +1,9 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { createTestRetainedMembershipIdentity } from '../../entities/retained-identities.mts'
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createLocalTestUser } from './users.mts'
-
 type QueryResult = { rowCount: number | null }
 type MembershipOperationTransition =
   | 'changeBinding'
@@ -18,7 +18,6 @@ type MembershipRefundOperationTransition =
   | 'fail'
   | 'providerRefund'
   | 'remainingRefundable'
-
 export async function createTestImmutableMembershipGrant(): Promise<string> {
   const { rows: products } = await read<{ id: string }>(
     sql`/* getImmutableTestGrantProduct */ SELECT id FROM membership_products WHERE plan = 'plus' AND billing_interval = 'monthly'`,
@@ -55,6 +54,7 @@ export function attemptTestMembershipGrantMutation(
         sql`/* rewriteTestMembershipGrantRevoker */ WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id) UPDATE membership_grants SET revoked_by_id = (SELECT id FROM actor) WHERE id = ${grantId}`,
       )
   }
+  return assertNever(transition)
 }
 export async function createTestImmutableMembershipOperation(
   idempotencyKey: string,
@@ -90,7 +90,6 @@ async function createTestMembershipOperation(
     FROM source INNER JOIN binding ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id RETURNING id`)
   return rows[0]!.id
 }
-
 export function claimTestMembershipOperation(
   operationId: string,
   claimToken = randomUUID(),
@@ -134,6 +133,7 @@ export function attemptTestMembershipOperationTransition(
         sql`/* failTestMembershipOperationWithMessage */ UPDATE membership_operations SET failed_at = CURRENT_TIMESTAMP, failure_message = 'provider request failed' WHERE id = ${operationId}`,
       )
   }
+  return assertNever(transition)
 }
 
 export function attemptTestRefundMembershipOperationTransition(
@@ -159,6 +159,7 @@ export function attemptTestRefundMembershipOperationTransition(
         sql`/* setTestRemainingRefundable */ UPDATE membership_operations SET remaining_refundable_minor_units = 50 WHERE id = ${operationId}`,
       )
   }
+  return assertNever(transition)
 }
 
 export async function createTestImmutableMembershipChange(): Promise<string> {

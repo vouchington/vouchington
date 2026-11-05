@@ -56,7 +56,7 @@ export function HashtagSearchInput({
 
   useEffect(() => {
     if (!activeToken?.query.trim()) {
-      return
+      return undefined
     }
     const controller = new AbortController()
     const timeoutId = window.setTimeout(() => {

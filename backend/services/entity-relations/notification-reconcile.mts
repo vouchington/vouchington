@@ -35,7 +35,7 @@ function getNotificationReconcileEnqueue(
   relations: EntityRelation[],
 ): (() => EnqueueReturnType) | undefined {
   const plan = getNotificationReconcilePlan(relation, relations)
-  if (!plan) return
+  if (!plan) return undefined
   const changeId = randomUUID()
   if (plan.type === 'post')
     return () => enqueueBulkReconcilePostNotifications(plan.subjectIds, changeId)

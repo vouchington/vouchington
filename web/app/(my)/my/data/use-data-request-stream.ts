@@ -37,7 +37,7 @@ export function useDataRequestStream({
   )
 
   useEffect(() => {
-    if (!isStreamActive) return
+    if (!isStreamActive) return undefined
 
     let active = true
     const isCurrent = () => active && matchesCurrentIdentity(userId, requestId!)

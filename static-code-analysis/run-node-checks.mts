@@ -37,6 +37,7 @@ async function runOne(check: CheckName, ctx: SharedContext): Promise<CheckResult
       return { name: check, errors: report.errors }
     }
   }
+  throw new Error('Unexpected value in runOne')
 }
 
 function runOneOrWorker(

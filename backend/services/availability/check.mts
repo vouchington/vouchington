@@ -142,7 +142,7 @@ export async function checkAvailability(
       return { available: false, conflict: null }
     }
     default:
-      assert(false, 422, `Unknown kind: ${kind as string}`)
+      return assert(false, 422, `Unknown kind: ${kind as string}`) as never
   }
 }
 
