@@ -174,7 +174,7 @@ describe('recordClassifierRunAlarm', () => {
     }
   })
 
-  it('logs to console in development and CI but not in production without CI', async () => {
+  it('logs in development and deployed environments when Sentry is disabled', async () => {
     const { recordClassifierRunAlarm } = await import('./classifier-run-alarm.mts')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
@@ -189,11 +189,31 @@ describe('recordClassifierRunAlarm', () => {
       vi.stubEnv('NODE_ENV', 'production')
       vi.stubEnv('CI', '')
       recordClassifierRunAlarm(clientUnavailable)
-      expect(consoleWarn).not.toHaveBeenCalled()
+      expect(consoleWarn).toHaveBeenCalledOnce()
+      consoleWarn.mockClear()
 
       vi.stubEnv('CI', 'true')
       recordClassifierRunAlarm(clientUnavailable)
       expect(consoleWarn).toHaveBeenCalledOnce()
+    } finally {
+      consoleWarn.mockRestore()
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('drops unexpected console context fields just as the Sentry projection does', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('CI', '')
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { recordClassifierRunAlarm } = await import('./classifier-run-alarm.mts')
+      const context = { ...clientUnavailable, prompt: 'private-prompt' }
+      recordClassifierRunAlarm(context)
+      expect(consoleWarn).toHaveBeenCalledExactlyOnceWith(
+        '[classifier-runs] run alarm',
+        clientUnavailable,
+      )
+      expect(JSON.stringify(consoleWarn.mock.calls)).not.toContain('private-prompt')
     } finally {
       consoleWarn.mockRestore()
       vi.unstubAllEnvs()

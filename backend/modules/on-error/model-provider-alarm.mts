@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { consoleContext } from './console-format.mts'
 
 const throttleMs = 60 * 60 * 1000
 const lastReportedAt = new Map<string, number>()
@@ -28,10 +29,13 @@ export type ModelProviderAlarmContext = {
  * message.
  */
 export function recordModelProviderAlarm(context: ModelProviderAlarmContext): void {
-  if (shouldLogToConsole()) {
-    console.warn('[model-providers] provider alarm', context)
-  }
   const { kind, provider, service, status } = context
+  if (shouldLogToConsole()) {
+    console.warn(
+      '[model-providers] provider alarm',
+      consoleContext({ kind, provider, service, status }, context),
+    )
+  }
   if (!shouldCapture(`${kind}:${provider}`)) return
   Sentry.captureMessage('model_provider_alarm', {
     level: 'error',

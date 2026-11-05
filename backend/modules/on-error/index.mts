@@ -1,6 +1,7 @@
 import Sentry from './sentry.mts'
 import { isExpectedCrawlerOperationalError } from './expected-crawler-operational-error.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { formatConsoleError, useFullConsoleOutput } from './console-format.mts'
 import {
   getOptionalRequestClientInfo,
   getOptionalRequestOrigin,
@@ -46,6 +47,16 @@ export async function flushSentry(timeoutMs = 2000): Promise<void> {
 }
 
 export default function onError(err: Error) {
+  reportError(err, shouldLogToConsole())
+}
+
+/** Fatal failures always have one console record, even when ordinary reporting filters them. */
+export function onFatalError(err: Error): void {
+  console.error(useFullConsoleOutput() ? err : formatConsoleError(err))
+  reportError(err, false)
+}
+
+function reportError(err: Error, logToConsole: boolean): void {
   if (!err) return
   if (!(err instanceof Error)) {
     throw new Error(`onError expects an Error instance, received: ${typeof err} with value: ${err}`)
@@ -66,8 +77,11 @@ export default function onError(err: Error) {
   const clientExtra = clientInfo
     ? { client_device_id: clientInfo.deviceId, client_ip_address: clientInfo.ipAddress }
     : undefined
-  if (shouldLogToConsole()) {
-    console.error(err, ...(requestTags ? [{ ...requestTags, ...clientExtra }] : []))
+  if (logToConsole) {
+    console.error(
+      useFullConsoleOutput() ? err : formatConsoleError(err),
+      ...(requestTags ? [requestTags] : []),
+    )
   }
 
   Sentry.captureException(err, {

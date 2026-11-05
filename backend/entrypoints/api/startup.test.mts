@@ -10,9 +10,8 @@ function makeStartupDeps(overrides: Partial<StartupDeps> = {}): StartupDeps {
   return {
     exitWithFailure: vi.fn<() => void>(),
     flushErrorReporting: vi.fn<() => Promise<void>>(() => Promise.resolve()),
-    logError: vi.fn<(error: Error) => void>(),
     logListening: vi.fn<(port: number) => void>(),
-    reportError: vi.fn<(error: Error) => void>(),
+    reportFatalError: vi.fn<(error: Error) => void>(),
     ...overrides,
   }
 }
@@ -67,10 +66,10 @@ describe('startApiServer', () => {
 
       await startApiServer(server, 4321, deps)
 
-      expect(deps.logError).toHaveBeenCalledWith(
+      expect(deps.reportFatalError).toHaveBeenCalledWith(
         expect.objectContaining({ message: expect.stringContaining('must be configured') }),
       )
-      expect(deps.reportError).toHaveBeenCalledOnce()
+      expect(deps.reportFatalError).toHaveBeenCalledOnce()
       expect(server.listen).not.toHaveBeenCalled()
       await Promise.resolve()
       expect(deps.exitWithFailure).toHaveBeenCalledOnce()
@@ -87,7 +86,7 @@ describe('startApiServer', () => {
 
       await startApiServer(server, 4321, deps)
 
-      expect(deps.logError).toHaveBeenCalledWith(
+      expect(deps.reportFatalError).toHaveBeenCalledWith(
         expect.objectContaining({ message: expect.stringContaining('PLAYWRIGHT_TEST') }),
       )
       expect(server.listen).not.toHaveBeenCalled()
@@ -119,21 +118,18 @@ describe('startApiServer', () => {
     const exited = Promise.withResolvers<void>()
     const exitWithFailure = vi.fn<() => void>(() => exited.resolve())
     const flushErrorReporting = vi.fn<() => Promise<void>>(() => flush.promise)
-    const logError = vi.fn<(error: Error) => void>()
-    const reportError = vi.fn<(error: Error) => void>()
+    const reportFatalError = vi.fn<(error: Error) => void>()
     const error = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' })
     const deps = makeStartupDeps({
       exitWithFailure,
       flushErrorReporting,
-      logError,
-      reportError,
+      reportFatalError,
     })
 
     await startApiServer(server, 4321, deps)
     emitStartupError(error)
 
-    expect(logError).toHaveBeenCalledWith(error)
-    expect(reportError).toHaveBeenCalledWith(error)
+    expect(reportFatalError).toHaveBeenCalledWith(error)
     expect(flushErrorReporting).toHaveBeenCalledOnce()
     expect(exitWithFailure).not.toHaveBeenCalled()
 

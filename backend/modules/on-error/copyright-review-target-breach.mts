@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { consoleContext } from './console-format.mts'
 
 type CopyrightReviewTargetBreachBucket = {
   count: number
@@ -46,7 +47,7 @@ export function recordCopyrightReviewTargetBreach(
     emailIntakesWaitingPastTargetIds: [...emails.emailIntakeIds],
   }
   if (shouldLogToConsole()) {
-    console.warn('[copyright] review target breached', extra)
+    console.warn('[copyright] review target breached', consoleContext(extra))
   }
   Sentry.captureMessage('copyright_review_target_breach', {
     level: 'warning',

@@ -184,12 +184,12 @@ describe('recordCopyrightReviewTargetBreach', () => {
     expect(consoleWarn).toHaveBeenCalledWith('[copyright] review target breached', expectedExtra)
   })
 
-  it('does not log to console in production without CI', () => {
+  it('logs in production without CI when Sentry is disabled', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('CI', '')
     recordCopyrightReviewTargetBreach(breach)
 
-    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(consoleWarn).toHaveBeenCalledOnce()
     expect(captureMessage).toHaveBeenCalledOnce()
   })
 })

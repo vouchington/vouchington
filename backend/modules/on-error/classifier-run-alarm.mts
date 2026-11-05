@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { consoleContext } from './console-format.mts'
 
 const periodicThrottleMs = 60 * 60 * 1000
 const lastPeriodicReportedAt = new Map<string, number>()
@@ -120,15 +121,15 @@ const PERIODIC_KINDS: ReadonlySet<AlarmKind> = new Set([
  * another's. Thresholds are in `@services/classifier-runs`.
  */
 export function recordClassifierRunAlarm(context: ClassifierRunAlarmContext): void {
-  if (shouldLogToConsole()) {
-    console.warn('[classifier-runs] run alarm', context)
-  }
   const { kind, classifier } = context
-  if (PERIODIC_KINDS.has(kind) && !shouldCapturePeriodic(`${kind}:${classifier}`)) return
   const fields: readonly string[] = ALARM_FIELDS[kind]
   const extra = Object.fromEntries(
     Object.entries(context).filter(([field]) => fields.includes(field)),
   )
+  if (shouldLogToConsole()) {
+    console.warn('[classifier-runs] run alarm', consoleContext({ kind, ...extra }, context))
+  }
+  if (PERIODIC_KINDS.has(kind) && !shouldCapturePeriodic(`${kind}:${classifier}`)) return
   Sentry.captureMessage('classifier_run_alarm', {
     level: 'error',
     fingerprint: ['classifier_run_alarm', kind, classifier],
