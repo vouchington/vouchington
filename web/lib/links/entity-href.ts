@@ -139,22 +139,14 @@ export function podcastCategoryHref(category: string | SlugInput): string {
 }
 
 export function userTabForPostType(postType: string | undefined): UserTab | undefined {
-  if (postType === undefined) return undefined
-  switch (postType) {
-    case 'review': {
-      return 'reviews'
-    }
-    case 'discussion':
-    case 'story':
-    case 'article':
-    case 'blog_post': {
-      return 'discussions'
-    }
-    case 'comment': {
-      return 'comments'
-    }
-    default: {
-      return undefined
-    }
-  }
+  if (postType === 'review') return 'reviews'
+  if (
+    postType === 'discussion' ||
+    postType === 'story' ||
+    postType === 'article' ||
+    postType === 'blog_post'
+  )
+    return 'discussions'
+  if (postType === 'comment') return 'comments'
+  return undefined
 }

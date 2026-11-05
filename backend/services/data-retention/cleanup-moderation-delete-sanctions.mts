@@ -1,17 +1,17 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import type { ModerationCleanupKind } from './cleanup-moderation-kinds.mts'
+import type { ModerationSanctionCleanupKind } from './cleanup-moderation-kinds.mts'
 
 /** Active suspensions, bans, and penalties remain until their lifecycle ends; warnings have their own retention window. */
 export async function deleteExpiredModerationSanctions(
-  kind: ModerationCleanupKind,
+  kind: ModerationSanctionCleanupKind,
   query: QueryExecutor,
   ids: string[],
   now: Date,
 ): Promise<number> {
   if (ids.length === 0) return 0
   const thirtyDaysAgo = daysBefore(now, 30)
-  let rowCount: number | null
+  let rowCount: number | null = null
   if (kind === 'integrity_flags') {
     ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:integrityFlags */
         DELETE FROM report_integrity_flags flag
@@ -70,7 +70,7 @@ export async function deleteExpiredModerationSanctions(
         WHERE application.id = ANY(${ids}::uuid[])
           AND COALESCE(application.approved_at, application.rejected_at) < ${now}::timestamptz - interval '12 months'
       `))
-  } else throw new Error(`Not a moderation sanction cleanup kind: ${kind}`)
+  }
   return rowCount ?? 0
 }
 

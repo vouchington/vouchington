@@ -26,7 +26,11 @@ async function findViolation(
   if (depth >= MAX_NESTING) return sql.trim()
   const parsed = await parsePostgresSql({ sql })
   if (parsed.diagnostics.length > 0) return sql.trim()
-  return findStatementsViolation(parsed.statements, depth, schemaFacts)
+  for (const statement of parsed.statements) {
+    const violation = await findStatementViolation(statement, depth, schemaFacts)
+    if (violation !== null) return violation
+  }
+  return null
 }
 
 async function findStatementViolation(
@@ -49,23 +53,23 @@ async function findStatementViolation(
     if (!statement.wrapper.complete || statement.wrapper.diagnostics.length > 0) {
       return statement.sql.trim()
     }
-    return findStatementsViolation(statement.wrapper.statements, depth + 1, schemaFacts)
+    return findStatementsViolation(statement.wrapper.statements, depth, schemaFacts)
   }
-  if (statement.kind === 'doBlock') {
-    if (!statement.block.complete || statement.block.diagnostics.length > 0) {
+  const nested =
+    statement.kind === 'doBlock'
+      ? statement.block
+      : statement.kind === 'literalExecute'
+        ? statement.execute
+        : null
+  if (nested) {
+    if (!nested.complete || nested.diagnostics.length > 0) {
       return statement.sql.trim()
     }
-    return findStatementsViolation(statement.block.statements, depth + 1, schemaFacts)
-  }
-  if (statement.kind === 'literalExecute') {
-    if (!statement.execute.complete || statement.execute.diagnostics.length > 0) {
-      return statement.sql.trim()
-    }
-    return findStatementsViolation(statement.execute.statements, depth + 1, schemaFacts)
+    return findStatementsViolation(nested.statements, depth, schemaFacts)
   }
   if (statement.kind === 'conditional') {
     for (const branch of statement.branches) {
-      const violation = await findStatementsViolation(branch.statements, depth + 1, schemaFacts)
+      const violation = await findStatementsViolation(branch.statements, depth, schemaFacts)
       if (violation !== null) return violation
     }
     return null
@@ -79,7 +83,7 @@ async function findStatementsViolation(
   schemaFacts: InsertSchemaFacts,
 ): Promise<string | null> {
   for (const statement of statements) {
-    const violation = await findStatementViolation(statement, depth, schemaFacts)
+    const violation = await findStatementViolation(statement, depth + 1, schemaFacts)
     if (violation !== null) return violation
   }
   return null

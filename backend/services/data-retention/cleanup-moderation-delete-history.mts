@@ -2,17 +2,17 @@ import type { QueryExecutor } from '@data-stores/psql/types'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { MODERATION_APPEAL_HISTORY_RETENTION_MONTHS } from '@services/moderation-appeals/config'
-import type { ModerationCleanupKind } from './cleanup-moderation-kinds.mts'
+import type { ModerationHistoryCleanupKind } from './cleanup-moderation-kinds.mts'
 
 /** Delete only terminal records after their window; the candidate ids are one locked keyset page. */
 export async function deleteExpiredModerationHistory(
-  kind: ModerationCleanupKind,
+  kind: ModerationHistoryCleanupKind,
   query: QueryExecutor,
   ids: string[],
   now: Date,
 ): Promise<number> {
   if (ids.length === 0) return 0
-  let rowCount: number | null
+  let rowCount: number | null = null
   if (kind === 'reports') {
     ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:reports */
         DELETE FROM moderation_reports report
@@ -131,7 +131,7 @@ export async function deleteExpiredModerationHistory(
             ))
           )
       `))
-  } else throw new Error(`Not a moderation history cleanup kind: ${kind}`)
+  }
   return rowCount ?? 0
 }
 
