@@ -102826,33 +102826,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_relation__post__related__url__positive_reverse": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__post__related__url__positive_reverse ON ONLY public.relation__post__related__url USING btree (object_id, subject_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "object_id",
-              "descending": false,
-              "expression": "object_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "subject_id",
-              "descending": false,
-              "expression": "subject_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_relation__post__related__url__positive_score__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -131674,33 +131647,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_rss_feed_items__url_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_items__url_id__id ON ONLY public.rss_feed_items USING btree (url_id, id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "url_id",
-              "descending": false,
-              "expression": "url_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_rss_feed_items__votes_score_sort__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -148672,33 +148618,6 @@
               "column": "canonical_url_id",
               "descending": false,
               "expression": "canonical_url_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(canonical_url_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_urls__canonical_url_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__canonical_url_id__id ON public.urls USING btree (canonical_url_id, id) WHERE (canonical_url_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "canonical_url_id",
-              "descending": false,
-              "expression": "canonical_url_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
