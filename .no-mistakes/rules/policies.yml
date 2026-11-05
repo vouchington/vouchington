@@ -4689,9 +4689,6 @@
       'components/sequential-suspense.tsx#SequentialSuspense': >-
         Behavior-only Suspense nesting for async server components, which Storybook cannot render
         client-side; it has no UI of its own.
-      'components/shared/data-pw.tsx#DataPw': >-
-        Selector host with no visual design. It renders the caller's element so a literal default
-        can satisfy playwright-literals without adding a DOM node.
       'components/service-worker-registrar.tsx#ServiceWorkerRegistrar': >-
         Renders null; it only registers the service worker and push binding in an effect.
       'components/sources/browse-feed-page.tsx#BrowseFeedPage': >-
