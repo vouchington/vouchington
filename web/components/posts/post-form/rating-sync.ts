@@ -28,7 +28,7 @@ export async function syncReviewRatings(
   const [preservedDeleteFn, ...initialDeleteFns] = allOriginalRatingsRemoved ? deleteFns : []
   const [firstAddFn, ...remainingAddFns] = addFns
   if (allOriginalRatingsRemoved && preservedDeleteFn && firstAddFn) {
-    // ast-grep-ignore: no-three-sequential-awaits -- the replacement rating must exist before deleting the preserved last rating; subsequent mutations consume that valid review state
+    // ast-grep-ignore: no-three-sequential-awaits -- initial deletions free rows counted by the add limit; the replacement row satisfies the last-rating delete guard; later mutations validate the resulting rating set
     await initialDeleteFns.reduce((chain, fn) => chain.then(fn), noop)
     await firstAddFn()
     await preservedDeleteFn()
