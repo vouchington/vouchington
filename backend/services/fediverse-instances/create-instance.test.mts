@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createInstanceFromHostname } from './create-instance.mts'
-import { createFediverseInstance, createInstanceWithRetry } from './create-instance-helpers.mts'
+import { createInstanceWithRetry } from './create-instance-helpers.mts'
 import { findExistingInstanceByHostnameId } from './find-existing-instance.mts'
 import { getFediverseInstanceAttributes } from './get-attributes.mts'
 import { getTopicByAny } from '@services/topics/get'
@@ -282,12 +282,13 @@ describe('createInstanceInTransaction', () => {
     const hostname = `fedi-fk-violation-${randomSuffix()}.example.com`
 
     await expect(
-      createFediverseInstance({
+      createInstanceWithRetry({
         provenance: WEB_PROVENANCE,
-        createdById: user.id,
+        currentUser: user,
         hostnameId: nonexistentHostnameId,
-        name: hostname,
-        slug: `fedi-fk-slug-${randomSuffix()}`,
+        hostname,
+        attempt: 0,
+        details: { name: hostname, slug: `fedi-fk-slug-${randomSuffix()}` },
         metadata: null,
       }),
     ).rejects.toMatchObject({ code: '23503' })
