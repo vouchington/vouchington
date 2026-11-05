@@ -13,7 +13,7 @@ describe('rewriteModuleSource', () => {
 
   beforeAll(() => {
     fixtureRoot = mkdtempSync(
-      path.join(process.env.RUNNER_TEMP ?? tmpdir(), 'source-rewrite-test-'),
+      path.join(process.env.RUNNER_TEMP || tmpdir(), 'source-rewrite-test-'),
     )
     const nodeModules = path.join(fixtureRoot, 'node_modules')
     mkdirSync(nodeModules)
