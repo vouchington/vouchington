@@ -13,10 +13,7 @@ import {
   withCommittedPostgresTransactionForTest,
   withPostgresTransactionForTest,
 } from '@voucha/test-helpers/postgres-transaction'
-import {
-  recordAndDispatchInboundActivity,
-  recordAndDispatchInboundActivityInTransaction,
-} from './record-and-dispatch.mts'
+import { recordAndDispatchInboundActivity } from './record-and-dispatch.mts'
 import { recordInboxActivity } from './record-activity.mts'
 import {
   createRemoteActorFixture,
@@ -53,13 +50,17 @@ describe('recordAndDispatchInboundActivity', () => {
     await withPostgresTransactionForTest(async query => {
       await advanceFederationReplayFloorForTest(query, signedAt)
       await expect(
-        recordAndDispatchInboundActivityInTransaction(query, remoteActor, {
-          id: `https://remote.example/activities/${randomSuffix()}`,
-          type: 'Announce',
-          actor: remoteActor.actor_uri,
-          object: 'https://voucha.test/ap/posts/some-post',
-          signedAt,
-        }),
+        recordAndDispatchInboundActivity(
+          remoteActor,
+          {
+            id: `https://remote.example/activities/${randomSuffix()}`,
+            type: 'Announce',
+            actor: remoteActor.actor_uri,
+            object: 'https://voucha.test/ap/posts/some-post',
+            signedAt,
+          },
+          { query, now: signedAt },
+        ),
       ).rejects.toMatchObject({ status: 401, message: 'Activity signature date is retired' })
     })
   })
