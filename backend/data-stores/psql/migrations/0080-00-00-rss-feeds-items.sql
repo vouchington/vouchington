@@ -757,3 +757,7 @@ ALTER INDEX idx_rss_feed_items__story_id__id__url_id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_rss_feed_items__enclosure_media_type_id ON rss_feed_items (enclosure_media_type_id);
+
+-- URL reference changes fan out through bounded keyset pages.
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__url_id__id
+  ON rss_feed_items (url_id, id);

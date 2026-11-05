@@ -791,3 +791,7 @@ CREATE INDEX IF NOT EXISTS idx_urls__media_type_id
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__age_threshold_days_id_crawlable
 ON url_hostnames (age_threshold_days, id) INCLUDE (crawl_swept_at)
 WHERE is_crawlable AND NOT is_blocked;
+
+-- Ordered alias traversal bounds Hacker News flag propagation, including large canonical groups.
+CREATE INDEX IF NOT EXISTS idx_urls__canonical_url_id__id
+  ON urls (canonical_url_id, id) WHERE canonical_url_id IS NOT NULL;
