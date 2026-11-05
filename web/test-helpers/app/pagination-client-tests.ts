@@ -1,6 +1,5 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { fireEvent, screen, waitFor, type RenderResult } from '@testing-library/react'
-import { beforeEach, expect, test, vi, type Mock } from 'vitest'
+import { beforeEach, expect, it, vi, type Mock } from 'vitest'
 
 type ListedMessage = { id: string }
 
@@ -79,7 +78,7 @@ export function registerPaginationClientTests(options: PaginationClientTests): v
     vi.resetAllMocks()
   })
 
-  test('allows only one continuation request for rapid clicks', async () => {
+  it('allows only one continuation request for rapid clicks', async () => {
     const pending = pendingPage()
     fetchPage.mockReturnValueOnce(pending.promise)
     const { container } = renderInitial()
@@ -90,7 +89,7 @@ export function registerPaginationClientTests(options: PaginationClientTests): v
     await waitFor(() => expect(loadMoreButton(container)).toBeNull())
   })
 
-  test('deduplicates stable IDs across and within an older page', async () => {
+  it('deduplicates stable IDs across and within an older page', async () => {
     fetchPage.mockResolvedValueOnce(terminalPage(duplicatedOlderMessages()))
     const { container } = renderInitial()
     clickLoadMore(container)
@@ -98,7 +97,7 @@ export function registerPaginationClientTests(options: PaginationClientTests): v
     expect(screen.getAllByText('Message newest')).toHaveLength(1)
   })
 
-  test(`rejects a continuation response from a stale ${staleContextName} context`, async () => {
+  it(`rejects a continuation response from a stale ${staleContextName} context`, async () => {
     const pending = pendingPage()
     fetchPage.mockReturnValueOnce(pending.promise)
     const { container, rerender } = renderInitial()
@@ -109,7 +108,7 @@ export function registerPaginationClientTests(options: PaginationClientTests): v
     expect(screen.queryByText('Message stale')).toBeNull()
   })
 
-  test('preserves messages and shows a working retry after continuation failure', async () => {
+  it('preserves messages and shows a working retry after continuation failure', async () => {
     const error = new Error('network failure')
     fetchPage.mockRejectedValueOnce(error).mockResolvedValueOnce(terminalPage([olderMessage()]))
     const { container } = renderInitial()

@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside *.test.* because jest/no-export forbids exporting them from test files, and oxfmt rewrites it() to test() there */
-import { afterAll, afterEach, beforeAll, expect, test, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -81,7 +80,7 @@ export function registerLandingPageAnalyticsTests(options: {
 
   const routePath = () => `/api/v1/landing-pages/${landingPageId}/${options.route}`
 
-  test('returns 200 ok', async () => {
+  it('returns 200 ok', async () => {
     const request = createRequest()
     const session = await openSession()
     authenticate(request, session.deviceToken, session.sessionToken)
@@ -90,7 +89,7 @@ export function registerLandingPageAnalyticsTests(options: {
     expect(res.body.ok).toBe(true)
   })
 
-  test('does not challenge a low-score session analytics ping', async () => {
+  it('does not challenge a low-score session analytics ping', async () => {
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
     const session = await openSession()
     await withTrustedLowScoreRequest(async request => {
@@ -100,7 +99,7 @@ export function registerLandingPageAnalyticsTests(options: {
     })
   })
 
-  test('returns 200 when recording is route-rate limited', async () => {
+  it('returns 200 when recording is route-rate limited', async () => {
     const request = createRequest()
     const session = await openSession()
     authenticate(request, session.deviceToken, session.sessionToken)
@@ -113,7 +112,7 @@ export function registerLandingPageAnalyticsTests(options: {
     expect(res!.body.ok).toBe(true)
   })
 
-  test('returns 200 without recording analytics when Global Privacy Control is active', async () => {
+  it('returns 200 without recording analytics when Global Privacy Control is active', async () => {
     const request = createRequest()
     const session = await openSession()
     authenticate(request, session.deviceToken, session.sessionToken)

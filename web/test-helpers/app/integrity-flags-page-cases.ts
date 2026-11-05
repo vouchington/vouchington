@@ -1,7 +1,6 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside *.test.* because jest/no-export forbids exporting them from test files, and oxfmt rewrites it() to test() there */
 import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { expect, test, type Mock } from 'vitest'
+import { expect, it, type Mock } from 'vitest'
 
 export const integrityFlagsEmptyPage = {
   results: [],
@@ -32,27 +31,27 @@ function registerSharedIntegrityFlagsPageCases(options: {
     render(await Page({ searchParams: Promise.resolve(status === undefined ? {} : { status }) }))
   }
 
-  test('renders the flags client with default pending status', async () => {
+  it('renders the flags client with default pending status', async () => {
     await renderStatus()
     expect(flagsClient()).toHaveTextContent('pending')
   })
 
-  test('passes resolved status from searchParams', async () => {
+  it('passes resolved status from searchParams', async () => {
     await renderStatus('resolved')
     expect(flagsClient()).toHaveTextContent('resolved')
   })
 
-  test('passes all status from searchParams', async () => {
+  it('passes all status from searchParams', async () => {
     await renderStatus('all')
     expect(flagsClient()).toHaveTextContent('all')
   })
 
-  test('defaults to pending for unknown status values', async () => {
+  it('defaults to pending for unknown status values', async () => {
     await renderStatus('unknown')
     expect(flagsClient()).toHaveTextContent('pending')
   })
 
-  test('renders breadcrumbs', async () => {
+  it('renders breadcrumbs', async () => {
     await renderStatus()
     expect(screen.getByRole('navigation')).toBe(document.querySelector(breadcrumbsSelector))
   })
@@ -74,14 +73,14 @@ export function registerReportIntegrityFlagsPageCases(options: {
   const { Page, getFlags } = options
   registerSharedIntegrityFlagsPageCases(options)
 
-  test('calls getReportIntegrityFlags with pending status (no status param)', async () => {
+  it('calls getReportIntegrityFlags with pending status (no status param)', async () => {
     await loadFlagsPage(Page, getFlags)
     expect(getFlags).toHaveBeenCalledWith({
       searchParams: { status: 'pending' },
     })
   })
 
-  test('calls getReportIntegrityFlags without status param for "all"', async () => {
+  it('calls getReportIntegrityFlags without status param for "all"', async () => {
     await loadFlagsPage(Page, getFlags, 'all')
     expect(getFlags).toHaveBeenCalledWith({
       searchParams: { status: undefined },
@@ -96,14 +95,14 @@ export function registerVoteIntegrityFlagsPageCases(options: {
   const { Page, getFlags } = options
   registerSharedIntegrityFlagsPageCases(options)
 
-  test('calls getVoteIntegrityFlags with pending status by default', async () => {
+  it('calls getVoteIntegrityFlags with pending status by default', async () => {
     await loadFlagsPage(Page, getFlags)
     expect(getFlags).toHaveBeenCalledWith({
       searchParams: { status: 'pending' },
     })
   })
 
-  test('calls getVoteIntegrityFlags without status param for "all"', async () => {
+  it('calls getVoteIntegrityFlags without status param for "all"', async () => {
     await loadFlagsPage(Page, getFlags, 'all')
     expect(getFlags).toHaveBeenCalledWith({
       searchParams: { status: undefined },

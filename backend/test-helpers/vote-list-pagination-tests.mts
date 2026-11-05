@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside *.test.* because jest/no-export forbids exporting them from test files, and oxfmt rewrites it() to test() there */
-import { describe, expect, test } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -9,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { encodeScopedUuidCursor } from '@modules/pagination'
 
-/** Shared admin and owner vote-list cases. Call from a literal `describe` in the route test. */
+/** Shared admin and owner vote-list cases. Call from a literal `describe` in the route it. */
 export function registerVoteListPaginationTests(options: {
   segment: string
   createId: (adminId: string) => Promise<string>
@@ -20,7 +19,7 @@ export function registerVoteListPaginationTests(options: {
   const votePath = (id: string) => `/api/v1/${options.segment}/${id}/vote`
 
   describe('admin branch (all voters)', () => {
-    test('returns empty results with null cursors when the resource has no votes', async () => {
+    it('returns empty results with null cursors when the resource has no votes', async () => {
       const admin = await createTestUser({ administrator: true })
       const id = await options.createId(admin.id)
       const req = createRequest()
@@ -35,7 +34,7 @@ export function registerVoteListPaginationTests(options: {
       })
     })
 
-    test('paginates across multiple voters without duplicates or gaps', async () => {
+    it('paginates across multiple voters without duplicates or gaps', async () => {
       const admin = await createTestUser({ administrator: true })
       const id = await options.createId(admin.id)
       const voterA = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -66,7 +65,7 @@ export function registerVoteListPaginationTests(options: {
       expect(seenUserIds).toEqual(new Set([voterA.id, voterB.id, voterC.id]))
     })
 
-    test('rejects a malformed cursor with 400', async () => {
+    it('rejects a malformed cursor with 400', async () => {
       const admin = await createTestUser({ administrator: true })
       const id = await options.createId(admin.id)
       const req = createRequest()
@@ -75,7 +74,7 @@ export function registerVoteListPaginationTests(options: {
       await req.get(`${votesPath(id)}?after=not-a-real-cursor`).expect(400)
     })
 
-    test('rejects a cursor minted for another resource with 400 (cross-resource replay)', async () => {
+    it('rejects a cursor minted for another resource with 400 (cross-resource replay)', async () => {
       const admin = await createTestUser({ administrator: true })
       const idA = await options.createId(admin.id)
       const idB = await options.createId(admin.id)
@@ -93,7 +92,7 @@ export function registerVoteListPaginationTests(options: {
       await req.get(`${votesPath(idB)}?after=${encodeURIComponent(cursor)}`).expect(400)
     })
 
-    test('rejects a cursor minted for a different endpoint with 400 (cross-endpoint replay)', async () => {
+    it('rejects a cursor minted for a different endpoint with 400 (cross-endpoint replay)', async () => {
       const admin = await createTestUser({ administrator: true })
       const id = await options.createId(admin.id)
       const wrongScope = encodeScopedUuidCursor(v7(), `passkeys:${admin.id}:created-at-asc-id-asc`)
@@ -105,7 +104,7 @@ export function registerVoteListPaginationTests(options: {
   })
 
   describe('user branch (own vote only)', () => {
-    test('returns empty results with null cursors when the user has not voted', async () => {
+    it('returns empty results with null cursors when the user has not voted', async () => {
       const admin = await createTestUser({ administrator: true })
       const id = await options.createId(admin.id)
       const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -121,7 +120,7 @@ export function registerVoteListPaginationTests(options: {
       })
     })
 
-    test('returns only the authenticated user vote, not other voters', async () => {
+    it('returns only the authenticated user vote, not other voters', async () => {
       const admin = await createTestUser({ administrator: true })
       const id = await options.createId(admin.id)
       const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -140,7 +139,7 @@ export function registerVoteListPaginationTests(options: {
       expect(res.body.page_info.has_next_page).toBe(false)
     })
 
-    test('rejects a cursor minted for the admin branch with 400 (cross-branch replay)', async () => {
+    it('rejects a cursor minted for the admin branch with 400 (cross-branch replay)', async () => {
       const admin = await createTestUser({ administrator: true })
       const id = await options.createId(admin.id)
       const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)

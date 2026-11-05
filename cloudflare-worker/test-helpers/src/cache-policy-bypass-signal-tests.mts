@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import type { BotTier } from '../../src/bot-tier.mts'
 import { getCachePolicy } from '../../src/cache-policy.mts'
 
@@ -38,7 +37,7 @@ export function registerCachePolicyBypassSignalTests(options: {
   const { bypassTitle, firstBypass, secondBypass } = options
 
   // oxlint-disable-next-line vitest/valid-title, jest/valid-title -- each suite passes its own literal title
-  test(bypassTitle, () => {
+  it(bypassTitle, () => {
     expect(getCachePolicy(policyInput(firstBypass))).toMatchObject({
       mode: 'bypass',
       audience: null,

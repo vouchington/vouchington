@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside test files because jest/no-export forbids exporting them there, and oxfmt rewrites it() to test() here */
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { afterAll, afterEach, beforeAll, expect, it } from 'vitest'
 import { createRequest, nextTestRequestIp } from './api/server.mts'
 import { createTestUser, overrideDynamicConfigFieldsForTest } from './index.mts'
 import { closeScopedDynamicConfigContext } from './dynamic-config.mts'
@@ -43,7 +42,7 @@ export function registerMcpRateLimitTests({
     await closeScopedDynamicConfigContext([routeRateLimitConfig, rateLimitConfig])
   })
 
-  test('returns 429 with Retry-After and audits the rate-limited call', async () => {
+  it('returns 429 with Retry-After and audits the rate-limited call', async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: true })
     overrideDynamicConfigFieldsForTest(rateLimitConfig, {
       write_tier0: 1,

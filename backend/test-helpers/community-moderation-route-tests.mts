@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside *.test.* because jest/no-export forbids exporting them from test files, and oxfmt rewrites it() to test() there */
-import { beforeAll, expect, test } from 'vitest'
+import { beforeAll, expect, it } from 'vitest'
 import {
   createTestUser,
   insertTestCommunity,
@@ -68,29 +67,29 @@ export function registerCommunityModerationRouteTests(
 }
 
 function registerSharedModerationTests(context: () => CommunityModerationRouteContext): void {
-  test('returns 401 when not authenticated', async () => {
+  it('returns 401 when not authenticated', async () => {
     const { response } = await sendAcquire(context(), undefined, 401)
     expect(response.status).toBe(401)
   })
 
-  test('returns 403 for a non-moderator member', async () => {
+  it('returns 403 for a non-moderator member', async () => {
     const ctx = context()
     const { response } = await sendAcquire(ctx, ctx.member, 403)
     expect(response.status).toBe(403)
   })
 
-  test('returns 401 when release is not authenticated', async () => {
+  it('returns 401 when release is not authenticated', async () => {
     const response = await sendRelease(context(), undefined, 401)
     expect(response.status).toBe(401)
   })
 
-  test('returns 403 when a non-moderator member releases', async () => {
+  it('returns 403 when a non-moderator member releases', async () => {
     const ctx = context()
     const response = await sendRelease(ctx, ctx.member, 403)
     expect(response.status).toBe(403)
   })
 
-  test('allows a community moderator to release and returns 204', async () => {
+  it('allows a community moderator to release and returns 204', async () => {
     const ctx = context()
     const acquired = await sendAcquire(ctx, ctx.moderator, statusFor(ctx.options.action))
     expect(acquired.response.status).toBe(statusFor(ctx.options.action))
@@ -98,7 +97,7 @@ function registerSharedModerationTests(context: () => CommunityModerationRouteCo
     expect(released.status).toBe(204)
   })
 
-  test('rejects release through a different community URL', async () => {
+  it('rejects release through a different community URL', async () => {
     const ctx = context()
     const status = await releaseThroughOtherCommunity(ctx)
     const expected = ctx.options.crossCommunity === 'moderator-404' ? 404 : 403
@@ -107,7 +106,7 @@ function registerSharedModerationTests(context: () => CommunityModerationRouteCo
 }
 
 function registerClaimTests(context: () => CommunityModerationRouteContext): void {
-  test('allows a community moderator to claim the subject and returns claim data', async () => {
+  it('allows a community moderator to claim the subject and returns claim data', async () => {
     const ctx = context()
     const { response, subjectId } = await sendAcquire(ctx, ctx.moderator, 200)
     expect(response.status).toBe(200)
@@ -118,7 +117,7 @@ function registerClaimTests(context: () => CommunityModerationRouteContext): voi
     expect(response.body.claimed_by_other).toBe(false)
   })
 
-  test('allows a site staff user to claim the subject', async () => {
+  it('allows a site staff user to claim the subject', async () => {
     const ctx = context()
     const staff = await createTestUser({ extraRoles: ['moderator'] })
     const { response, subjectId } = await sendAcquire(ctx, staff, 200)
@@ -128,13 +127,13 @@ function registerClaimTests(context: () => CommunityModerationRouteContext): voi
 }
 
 function registerEscalationTests(context: () => CommunityModerationRouteContext): void {
-  test('allows a community moderator to escalate the subject and returns 204', async () => {
+  it('allows a community moderator to escalate the subject and returns 204', async () => {
     const ctx = context()
     const { response } = await sendAcquire(ctx, ctx.moderator, 204)
     expect(response.status).toBe(204)
   })
 
-  test('allows a site staff user to escalate the subject and returns 204', async () => {
+  it('allows a site staff user to escalate the subject and returns 204', async () => {
     const ctx = context()
     const staff = await createTestUser({ extraRoles: ['moderator'] })
     const { response } = await sendAcquire(ctx, staff, 204)

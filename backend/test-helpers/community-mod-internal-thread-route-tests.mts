@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
-import { beforeAll, describe, expect, test } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
@@ -75,7 +74,7 @@ export function registerCommunityModInternalThreadRouteTests(
   const subjectParam = options.resource === 'posts' ? 'postId' : 'reportId'
 
   describe(`POST /api/v1/communities/:idOrSlug/${options.resource}/:${subjectParam}/mod-internal-thread`, () => {
-    test('returns 401 when not authenticated', async () => {
+    it('returns 401 when not authenticated', async () => {
       const current = actors()
       const subjectId = await options.createSubject(current)
       const response = await postModInternalThread(
@@ -88,7 +87,7 @@ export function registerCommunityModInternalThreadRouteTests(
       expect(response.status).toBe(401)
     })
 
-    test('returns 403 for a non-moderator member', async () => {
+    it('returns 403 for a non-moderator member', async () => {
       const current = actors()
       const subjectId = await options.createSubject(current)
       const response = await postModInternalThread(
@@ -101,7 +100,7 @@ export function registerCommunityModInternalThreadRouteTests(
       expect(response.status).toBe(403)
     })
 
-    test('allows a community moderator to open a mod internal thread and returns the conversation', async () => {
+    it('allows a community moderator to open a mod internal thread and returns the conversation', async () => {
       const current = actors()
       const subjectId = await options.createSubject(current)
       const response = await postModInternalThread(
@@ -119,7 +118,7 @@ export function registerCommunityModInternalThreadRouteTests(
       })
     })
 
-    test('is idempotent — returns the same conversation on repeated calls', async () => {
+    it('is idempotent — returns the same conversation on repeated calls', async () => {
       const current = actors()
       const subjectId = await options.createSubject(current)
       const request = createRequest()
@@ -130,7 +129,7 @@ export function registerCommunityModInternalThreadRouteTests(
       expect(second.body.conversation.id).toBe(first.body.conversation.id)
     })
 
-    test('allows a site staff user to open a mod internal thread', async () => {
+    it('allows a site staff user to open a mod internal thread', async () => {
       const current = actors()
       const staff = await createTestUser({ extraRoles: ['moderator'] })
       const subjectId = await options.createSubject(current)

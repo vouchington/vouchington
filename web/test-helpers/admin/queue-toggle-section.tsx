@@ -1,6 +1,5 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, expect, test, vi, type Mock } from 'vitest'
+import { beforeEach, expect, it, vi, type Mock } from 'vitest'
 
 type QueueToggleSectionOptions = {
   queueName: string
@@ -53,14 +52,14 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     })
   })
 
-  test('shows loading state and disabled button while queue state loads', () => {
+  it('shows loading state and disabled button while queue state loads', () => {
     fetchQueues.mockReturnValue(new Promise(() => undefined))
     renderSection()
     expect(screen.getByText('Loading…')).toBeInTheDocument()
     expect(screen.getByRole('button')).toBeDisabled()
   })
 
-  test('shows Enabled status and Disable button when queue is running', async () => {
+  it('shows Enabled status and Disable button when queue is running', async () => {
     renderSection()
     expect(await screen.findByText('Enabled')).toBeInTheDocument()
     const button = screen.getByRole('button', { name: disableLabel })
@@ -68,7 +67,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     expect(button).not.toBeDisabled()
   })
 
-  test('shows Disabled status and Enable button when queue is paused', async () => {
+  it('shows Disabled status and Enable button when queue is paused', async () => {
     fetchQueues.mockResolvedValue(queueResponse(true))
     renderSection()
     expect(await screen.findByText('Disabled')).toBeInTheDocument()
@@ -77,7 +76,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     expect(button).not.toBeDisabled()
   })
 
-  test('stays in loading state when the queue is absent from the list', async () => {
+  it('stays in loading state when the queue is absent from the list', async () => {
     fetchQueues.mockResolvedValue(domain === undefined ? { queues: [], total: 0 } : { domains: [] })
     renderSection()
     await act(async () => {
@@ -87,7 +86,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     expect(screen.getByRole('button')).toBeDisabled()
   })
 
-  test('retries fetchQueues when retry button is clicked', async () => {
+  it('retries fetchQueues when retry button is clicked', async () => {
     fetchQueues.mockRejectedValueOnce(new Error('API unavailable'))
     renderSection()
     await screen.findByRole('button', { name: 'Retry loading status' })
@@ -96,7 +95,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     expect(fetchQueues).toHaveBeenCalledTimes(2)
   })
 
-  test('clicking Disable calls pauseQueue and shows success toast', async () => {
+  it('clicking Disable calls pauseQueue and shows success toast', async () => {
     renderSection()
     await waitFor(() => expect(screen.getByText('Enabled')).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: disableLabel }))
@@ -108,7 +107,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     expect(screen.getByRole('button', { name: enableLabel })).toBeInTheDocument()
   })
 
-  test('clicking Enable calls resumeQueue and shows success toast', async () => {
+  it('clicking Enable calls resumeQueue and shows success toast', async () => {
     fetchQueues.mockResolvedValue(queueResponse(true))
     renderSection()
     await waitFor(() => expect(screen.getByText('Disabled')).toBeInTheDocument())
@@ -121,7 +120,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     expect(screen.getByRole('button', { name: disableLabel })).toBeInTheDocument()
   })
 
-  test('shows error toast and preserves state when pauseQueue fails', async () => {
+  it('shows error toast and preserves state when pauseQueue fails', async () => {
     pauseQueue.mockRejectedValueOnce(new Error('Network error'))
     renderSection()
     await waitFor(() => expect(screen.getByText('Enabled')).toBeInTheDocument())
@@ -132,7 +131,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     expect(screen.getByText('Enabled')).toBeInTheDocument()
   })
 
-  test('shows error toast and preserves state when resumeQueue fails', async () => {
+  it('shows error toast and preserves state when resumeQueue fails', async () => {
     fetchQueues.mockResolvedValue(queueResponse(true))
     resumeQueue.mockRejectedValueOnce(new Error('Network error'))
     renderSection()
@@ -144,7 +143,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     expect(screen.getByText('Disabled')).toBeInTheDocument()
   })
 
-  test('disables button while toggle action is in progress', async () => {
+  it('disables button while toggle action is in progress', async () => {
     let resolvePause!: () => void
     pauseQueue.mockReturnValueOnce(
       new Promise<{ success: boolean }>(resolve => {

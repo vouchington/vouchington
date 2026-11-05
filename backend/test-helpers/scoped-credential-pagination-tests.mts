@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside *.test.* because jest/no-export forbids exporting them from test files, and oxfmt rewrites it() to test() there */
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -7,7 +6,7 @@ import { encodeScopedUuidCursor } from '@modules/pagination'
 
 type InsertedCredential = { id: string }
 
-/** Shared passkey and TOTP list pagination. Call from a literal `describe` in the route test. */
+/** Shared passkey and TOTP list pagination. Call from a literal `describe` in the route it. */
 export function registerScopedCredentialPaginationTests(options: {
   path: string
   configureRuntimeLimits: () => void
@@ -17,7 +16,7 @@ export function registerScopedCredentialPaginationTests(options: {
 }): void {
   const { path, insert, foreignScopePrefix, tieSuffix } = options
 
-  test('uses runtime default and maximum through the shared MFA list helper', async () => {
+  it('uses runtime default and maximum through the shared MFA list helper', async () => {
     const user = await createTestUser()
     await insert(user.id, `runtime-${user.id}-a`)
     await insert(user.id, `runtime-${user.id}-b`)
@@ -31,7 +30,7 @@ export function registerScopedCredentialPaginationTests(options: {
     }
   })
 
-  test('returns empty results with null cursors when the user has no credentials', async () => {
+  it('returns empty results with null cursors when the user has no credentials', async () => {
     const user = await createTestUser()
     const req = createRequest()
     await req.authenticateAs(user)
@@ -45,7 +44,7 @@ export function registerScopedCredentialPaginationTests(options: {
     })
   })
 
-  test('returns a partial page with has_next_page false and a null end_cursor', async () => {
+  it('returns a partial page with has_next_page false and a null end_cursor', async () => {
     const user = await createTestUser()
     await insert(user.id, `partial-${Date.now()}`)
 
@@ -59,7 +58,7 @@ export function registerScopedCredentialPaginationTests(options: {
     expect(res.body.page_info.start_cursor).not.toBeNull()
   })
 
-  test('returns has_next_page false when results exactly fill the limit', async () => {
+  it('returns has_next_page false when results exactly fill the limit', async () => {
     const user = await createTestUser()
     const suffix = `exact-${Date.now()}`
     await insert(user.id, `${suffix}-a`)
@@ -73,7 +72,7 @@ export function registerScopedCredentialPaginationTests(options: {
     expect(res.body.page_info.has_next_page).toBe(false)
   })
 
-  test('paginates across multiple pages without duplicates or gaps', async () => {
+  it('paginates across multiple pages without duplicates or gaps', async () => {
     const user = await createTestUser()
     const suffix = `multi-${Date.now()}`
     const first = await insert(user.id, `${suffix}-a`)
@@ -94,7 +93,7 @@ export function registerScopedCredentialPaginationTests(options: {
     expect(page2.body.page_info.has_next_page).toBe(false)
   })
 
-  test('resolves equal-timestamp ties by id ascending', async () => {
+  it('resolves equal-timestamp ties by id ascending', async () => {
     const user = await createTestUser()
     // Date.now() keeps these UUIDs unique across repeated runs against a persistent dev DB.
     const msecs = Date.now()
@@ -116,7 +115,7 @@ export function registerScopedCredentialPaginationTests(options: {
     expect(page2.body.page_info.has_next_page).toBe(false)
   })
 
-  test('rejects a malformed cursor with 400', async () => {
+  it('rejects a malformed cursor with 400', async () => {
     const user = await createTestUser()
     const req = createRequest()
     await req.authenticateAs(user)
@@ -124,7 +123,7 @@ export function registerScopedCredentialPaginationTests(options: {
     await req.get(`${path}?after=not-a-real-cursor`).expect(400)
   })
 
-  test('clamps an oversized limit to the maximum instead of failing the request contract', async () => {
+  it('clamps an oversized limit to the maximum instead of failing the request contract', async () => {
     const user = await createTestUser()
     await insert(user.id, `clamp-${Date.now()}`)
     const req = createRequest()
@@ -134,7 +133,7 @@ export function registerScopedCredentialPaginationTests(options: {
     expect(res.body.results).toHaveLength(1)
   })
 
-  test.each(['abc', '0', '-1', '1.5'])('rejects limit=%s with the parser 400', async limit => {
+  it.each(['abc', '0', '-1', '1.5'])('rejects limit=%s with the parser 400', async limit => {
     const user = await createTestUser()
     const req = createRequest()
     await req.authenticateAs(user)
@@ -142,12 +141,12 @@ export function registerScopedCredentialPaginationTests(options: {
     await req.get(`${path}?limit=${limit}`).expect(400)
   })
 
-  test('returns a bare 401 without a schema diagnostic for an anonymous malformed query', async () => {
+  it('returns a bare 401 without a schema diagnostic for an anonymous malformed query', async () => {
     const res = await createRequest().get(`${path}?limit=abc&after=x&after=y`).expect(401)
     expect(res.body.message).toBe('Unauthorized')
   })
 
-  test('rejects a cursor minted for another user with 400', async () => {
+  it('rejects a cursor minted for another user with 400', async () => {
     const userA = await createTestUser()
     const userB = await createTestUser()
     await insert(userA.id, `cross-user-${Date.now()}`)
@@ -163,7 +162,7 @@ export function registerScopedCredentialPaginationTests(options: {
     await reqB.get(`${path}?after=${encodeURIComponent(cursor)}`).expect(400)
   })
 
-  test('rejects a cursor minted for the other credential endpoint with 400', async () => {
+  it('rejects a cursor minted for the other credential endpoint with 400', async () => {
     const user = await createTestUser()
     const wrongScope = encodeScopedUuidCursor(
       v7(),

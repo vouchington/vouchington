@@ -1,6 +1,5 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 type RejectableAction = {
   mockImplementationOnce: (implementation: () => Promise<never>) => unknown
@@ -41,7 +40,7 @@ export function registerModQueueActionErrorTests<Item>(
     vi.restoreAllMocks()
   })
 
-  test.each(cases)(
+  it.each(cases)(
     'reports a rejected action and restores $action',
     async ({ action, apiMock, buttonName, item, fallback }) => {
       let rejectRequest: (reason?: unknown) => void = () => {}

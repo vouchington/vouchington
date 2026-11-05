@@ -1,6 +1,5 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { render, screen } from '@testing-library/react'
-import { beforeAll, expect, test, type Mock } from 'vitest'
+import { beforeAll, expect, it, type Mock } from 'vitest'
 import { createTranslator, type Translator } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import type { ReactNode } from 'react'
@@ -72,23 +71,23 @@ export function registerTopicTagAsideContentTests(options: {
     return props?.manageHref
   }
 
-  test(`renders ${heading} heading`, () => {
+  it(`renders ${heading} heading`, () => {
     renderAside({ showManageButton: false })
     expect(screen.getByText(heading)).toBeDefined()
   })
 
-  test('does not render the manage dialog when showManageButton is false', () => {
+  it('does not render the manage dialog when showManageButton is false', () => {
     renderAside({ showManageButton: false })
     expect(screen.queryByTestId('manage-tags-dialog')).toBeNull()
   })
 
-  test('wires the manage dialog using topic slug for card topic type', () => {
+  it('wires the manage dialog using topic slug for card topic type', () => {
     renderAside({ topic: { topic_type: 'card' }, showManageButton: true })
     expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
     expect(manageHref()).toBe(cardManageHref)
   })
 
-  test('uses topic slug and maps enum to hyphenated type slug for rewards_program', () => {
+  it('uses topic slug and maps enum to hyphenated type slug for rewards_program', () => {
     renderAside({
       topic: { id: 'rp-1', topic_type: 'rewards_program' },
       showManageButton: true,
@@ -96,7 +95,7 @@ export function registerTopicTagAsideContentTests(options: {
     expect(manageHref()).toBe(rewardsProgramManageHref)
   })
 
-  test('uses topic slug and maps enum to hyphenated type slug for referral_program', () => {
+  it('uses topic slug and maps enum to hyphenated type slug for referral_program', () => {
     renderAside({
       topic: { id: 'ref-1', topic_type: 'referral_program' },
       showManageButton: true,
