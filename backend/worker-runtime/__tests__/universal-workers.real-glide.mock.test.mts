@@ -1,13 +1,15 @@
 import { randomUUID } from 'node:crypto'
-import { Queue, Worker, type Job } from 'glide-mq'
+import { QueueEvents, Worker } from 'glide-mq'
 import { afterAll, describe, expect, it, vi } from 'vitest'
+import { closeAndUnregisterGlideMQInstance } from '../../data-stores/valkey-glide-mq/index.mts'
+import { getGlideMQInstances } from '../../data-stores/valkey-core/glide-mq-registry.mts'
 import {
   workerQueueConnection,
   workerQueuePrefix,
 } from '../../data-stores/valkey-core/glide-mq-client.mts'
-import { closeAndUnregisterGlideMQInstance } from '../../data-stores/valkey-glide-mq/index.mts'
-import { getGlideMQInstances } from '../../data-stores/valkey-core/glide-mq-registry.mts'
 import { UNIVERSAL_WORKER_QUEUE_NAMES } from '@modules/worker-queue-inventory'
+import { HEARTBEAT_JOB_NAME } from '@queues/heartbeat/config'
+import { heartbeat as queue } from '@queues/heartbeat/queues'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { loadUniversalWorkers } from '../universal-workers.mts'
 
@@ -20,11 +22,12 @@ vi.hoisted(() => {
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('universal workers', () => {
-  const queue = new Queue('heartbeat', {
+  let workers: Worker[] = []
+  const events = new QueueEvents('heartbeat', {
     connection: workerQueueConnection,
     prefix: workerQueuePrefix,
+    lastEventId: '0-0',
   })
-  let workers: Worker[] = []
 
   afterAll(async () => {
     try {
@@ -39,9 +42,13 @@ describe('universal workers', () => {
       )
     } finally {
       try {
-        await queue.obliterate({ force: true })
+        await events.close()
       } finally {
-        await queue.close()
+        try {
+          await queue.obliterate({ force: true })
+        } finally {
+          await closeAndUnregisterGlideMQInstance(queue)
+        }
       }
     }
   })
@@ -52,39 +59,45 @@ describe('universal workers', () => {
         instance => instance instanceof Worker && instance.name === 'heartbeat',
       ),
     ).toEqual([])
-    workers = await loadUniversalWorkers()
-    expect(
-      getGlideMQInstances().filter(
-        instance => instance instanceof Worker && instance.name === 'heartbeat',
-      ),
-    ).toEqual(workers)
-    expect(workers.map(worker => worker.name)).toEqual(UNIVERSAL_WORKER_QUEUE_NAMES)
-    expect(workers.map(worker => worker.name)).toEqual(['heartbeat'])
-    const [worker] = workers
-    expect(worker).toBeDefined()
-    const { heartbeat } = await import('@workers/heartbeat/workers')
-    expect(worker).toBe(heartbeat)
-    await worker!.waitUntilReady()
-
     const jobId = randomUUID()
-    const settled = Promise.withResolvers<unknown>()
-    const onCompleted = (job: Job, result: unknown) => {
-      if (job.id === jobId) settled.resolve(result)
+    const settled = Promise.withResolvers<'completed' | 'failed'>()
+    const onCompleted = (event: { jobId: string }) => {
+      if (event.jobId === jobId) settled.resolve('completed')
     }
-    const onFailed = (job: Job | undefined, error: Error) => {
-      if (job?.id === jobId) settled.reject(error)
+    const onFailed = (event: { jobId: string }) => {
+      if (event.jobId === jobId) settled.resolve('failed')
     }
-    worker!.on('completed', onCompleted)
-    worker!.on('failed', onFailed)
+    events.on('completed', onCompleted)
+    events.on('failed', onFailed)
     try {
-      const [, result] = await Promise.all([
-        queue.add('heartbeat', { enqueuedAt: 42 }, { jobId, attempts: 1 }),
-        waitForRealGlideEvent(settled.promise, `universal heartbeat ${jobId}`),
-      ])
-      expect(result).toEqual({ enqueuedAt: 42, processedAt: expect.any(Number) })
+      await events.waitUntilReady()
+      const enqueued = await queue.add(
+        HEARTBEAT_JOB_NAME,
+        { enqueuedAt: 42 },
+        { jobId, attempts: 1 },
+      )
+      expect(enqueued?.id).toBe(jobId)
+      workers = await loadUniversalWorkers()
+      expect(
+        getGlideMQInstances().filter(
+          instance => instance instanceof Worker && instance.name === 'heartbeat',
+        ),
+      ).toEqual(workers)
+      expect(workers.map(worker => worker.name)).toEqual(UNIVERSAL_WORKER_QUEUE_NAMES)
+      expect(workers.map(worker => worker.name)).toEqual(['heartbeat'])
+      const [worker] = workers
+      expect(worker).toBeDefined()
+      const { heartbeat } = await import('@workers/heartbeat/workers')
+      expect(worker).toBe(heartbeat)
+      await worker!.waitUntilReady()
+      await expect(waitForRealGlideEvent(settled.promise, 'universal heartbeat')).resolves.toBe(
+        'completed',
+      )
+      const completed = await queue.getJob(jobId)
+      expect(completed?.returnvalue).toEqual({ enqueuedAt: 42, processedAt: expect.any(Number) })
     } finally {
-      worker!.off('completed', onCompleted)
-      worker!.off('failed', onFailed)
+      events.off('completed', onCompleted)
+      events.off('failed', onFailed)
     }
   })
 })
