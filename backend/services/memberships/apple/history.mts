@@ -10,7 +10,7 @@ import {
 } from '@apple/app-store-server-library'
 import type { AppleMembershipProviderEnvironment } from './types.mts'
 
-export type AppleTransactionHistoryClient = Pick<AppStoreServerAPIClient, 'getTransactionHistory'>
+type AppleTransactionHistoryClient = Pick<AppStoreServerAPIClient, 'getTransactionHistory'>
 export type AppleSubscriptionStatusClient = Pick<
   AppStoreServerAPIClient,
   'getAllSubscriptionStatuses'
