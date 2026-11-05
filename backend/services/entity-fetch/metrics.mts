@@ -107,6 +107,7 @@ async function buildUserMetrics(
     __entity_type: 'user_metrics',
     id: row.id,
     count: publicCounts,
+    ...(postTypeFacets.capped ? { post_counts_capped: true } : {}),
     ...(viewerCount ? { viewer_count: viewerCount } : {}),
     ...(privateCount ? { private_count: privateCount } : {}),
     bookmarks: {

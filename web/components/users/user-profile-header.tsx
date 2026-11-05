@@ -37,7 +37,7 @@ interface UserProfileHeaderProps {
     | 'verified_display_name'
     | 'lingua_rs_detected_language'
   > & { roles?: readonly string[] }
-  metrics?: Pick<UserMetrics, 'count'>
+  metrics?: Pick<UserMetrics, 'count' | 'post_counts_capped'>
   profileLinks?: Array<Pick<ProfileLink, 'id' | 'link_type' | 'url' | 'handle' | 'name'>>
   aboutHtml?: string | null
   isAdmin?: boolean
@@ -56,16 +56,14 @@ export function UserProfileHeader({
   const currentUserId = currentUser?.id
   const displayName = getUserLabel(user, t('shared.user.deletedUser'))
   const canFollow = currentUserId !== user.id
+  const profileCountLabel = (count: number, unit: 'review' | 'discussion' | 'comment') => {
+    const label = t('shared.countLabel.format', { count, unit })
+    return metrics?.post_counts_capped ? `${label}+` : label
+  }
   const summaryItems = [
-    metrics?.count.reviews
-      ? t('shared.countLabel.format', { count: metrics.count.reviews, unit: 'review' })
-      : null,
-    metrics?.count.discussions
-      ? t('shared.countLabel.format', { count: metrics.count.discussions, unit: 'discussion' })
-      : null,
-    metrics?.count.comments
-      ? t('shared.countLabel.format', { count: metrics.count.comments, unit: 'comment' })
-      : null,
+    metrics?.count.reviews ? profileCountLabel(metrics.count.reviews, 'review') : null,
+    metrics?.count.discussions ? profileCountLabel(metrics.count.discussions, 'discussion') : null,
+    metrics?.count.comments ? profileCountLabel(metrics.count.comments, 'comment') : null,
   ].filter(Boolean)
 
   return (

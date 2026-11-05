@@ -4,6 +4,7 @@ import { buildPostSearchQuery } from './query-builder.mts'
 import { executePostSearchQuery } from './execute-query.mts'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import { buildCountQuery, hasSemanticSearch } from '@modules/search-utils'
+import { getPostsWorkLimit } from '../work-limits.mts'
 import sql from 'sql-template-strings'
 
 type PostSearchFacets = {
@@ -46,47 +47,63 @@ export async function getPostFacets(
 
 export type UserPostTypeFacets = Record<'review' | 'discussion' | 'comment', number>
 
+export type UserPostTypeFacetResult = {
+  public: UserPostTypeFacets
+  viewer?: UserPostTypeFacets
+  capped: boolean
+}
+
+function emptyFacets(): UserPostTypeFacets {
+  return { review: 0, discussion: 0, comment: 0 }
+}
+
+/** One eligibility scan for this viewer, stopped after cap + 1 matching posts. */
+function buildCappedFacetQuery(userId: string, currentUser: PrivateUser | undefined, cap: number) {
+  const inner = buildPostSearchQuery(currentUser, {
+    user_id: userId,
+    post_types: ['review', 'discussion', 'comment'],
+    omitLimit: true,
+    omitOrderBy: true,
+  })
+  return sql`/* getUserPostTypeFacets */
+    WITH matched AS (
+      SELECT candidate.post_type
+      FROM (`.append(inner).append(sql`) AS candidate
+      LIMIT ${cap + 1}
+    ),
+    numbered AS (
+      SELECT post_type, row_number() OVER () AS rn
+      FROM matched
+    )
+    SELECT post_type,
+           COUNT(*) FILTER (WHERE rn <= ${cap})::int AS total_count,
+           (SELECT COUNT(*) > ${cap} FROM numbered) AS capped
+    FROM numbered
+    GROUP BY post_type`)
+}
+
 export async function getUserPostTypeFacets(
   userId: string,
   currentUser?: PrivateUser,
-): Promise<{ public: UserPostTypeFacets; viewer?: UserPostTypeFacets }> {
-  const buildQuery = (viewer?: PrivateUser) =>
-    buildPostSearchQuery(viewer, {
-      user_id: userId,
-      post_types: ['review', 'discussion', 'comment'],
-      omitLimit: true,
-      omitOrderBy: true,
-    })
-  const countQuery = sql`/* getUserPostTypeFacets */
-    SELECT metric_scope, post_type, COUNT(*) AS total_count
-    FROM (
-  `
-  countQuery.append(sql`SELECT 'public' AS metric_scope, public_posts.post_type FROM (`)
-  countQuery.append(buildQuery())
-  countQuery.append(sql`) AS public_posts`)
-  if (currentUser) {
-    countQuery.append(
-      sql` UNION ALL SELECT 'viewer' AS metric_scope, viewer_posts.post_type FROM (`,
-    )
-    countQuery.append(buildQuery(currentUser))
-    countQuery.append(sql`) AS viewer_posts`)
-  }
-  countQuery.append(sql`
-    ) AS user_posts
-    GROUP BY metric_scope, post_type
-  `)
-  const { rows } = await executePostSearchQuery(countQuery, false)
-  const facets: { public: UserPostTypeFacets; viewer?: UserPostTypeFacets } = {
-    public: { review: 0, discussion: 0, comment: 0 },
-    ...(currentUser ? { viewer: { review: 0, discussion: 0, comment: 0 } } : {}),
-  }
+): Promise<UserPostTypeFacetResult> {
+  const cap = getPostsWorkLimit('profile_post_count_cap')
+  const { rows } = await executePostSearchQuery(
+    buildCappedFacetQuery(userId, currentUser, cap),
+    false,
+  )
+  const counts = emptyFacets()
+  let capped = false
   for (const row of rows as {
-    metric_scope: 'public' | 'viewer'
     post_type: keyof UserPostTypeFacets
-    total_count: string
+    total_count: number | string
+    capped: boolean | null
   }[]) {
-    const counts = row.metric_scope === 'viewer' ? facets.viewer : facets.public
-    if (counts) counts[row.post_type] = Number.parseInt(row.total_count, 10)
+    counts[row.post_type] = Number(row.total_count)
+    capped = capped || row.capped === true
   }
-  return facets
+  return {
+    public: counts,
+    ...(currentUser ? { viewer: { ...counts } } : {}),
+    capped,
+  }
 }

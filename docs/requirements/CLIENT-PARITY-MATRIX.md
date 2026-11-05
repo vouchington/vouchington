@@ -24,6 +24,15 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Profile post counts
+
+`GET /api/v1/users/:idOrSlug` returns `user_metrics.post_counts_capped` when a profile's
+review, discussion, and comment counts stop at `profile_post_count_cap` (default 1,000,
+hard maximum 10,000). The counted rows are one live scan for that viewer. Web profile tabs
+and the profile header show the cap with a plus, including for the author, a stranger, and
+an anonymous viewer. Swift and .NET should render that plus from the same flag. This adds
+no new route or native parity claim beyond that display.
+
 ## Membership verification outcomes
 
 The billing feature's verification-outcomes row in `client-feature-parity.json` tracks native adoption.

@@ -4,7 +4,6 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import * as services from '../run-services.mts'
-import { POSTS_CREATOR_INDEXES } from './posts-creator-indexes.mts'
 
 const {
   getCommunitiesByIdBatch,
@@ -180,18 +179,12 @@ export async function runHotPathLoaderScenarios() {
     }),
   )
 
-  // User profile: per-profile metrics aggregation (view_user_metrics + member-community count).
+  // One profile facet scan stops at profile_post_count_cap (default 1,000).
+  // A 10,000-review author processed about 2,253 post rows at that cap.
+  // Saved-post private counts still look up about 5,000 posts, under this budget.
+  // The old uncapped facet scan processed 6,076 on its own.
   registerScenarioContract('user-profile-metrics', {
-    expectations: [
-      {
-        kind: 'usesIndexes',
-        indexes: POSTS_CREATOR_INDEXES,
-        anyOf: true,
-        queryContains: 'GROUP BY metric_scope, post_type',
-      },
-      // Both modes process 6,076 post rows across public and viewer visibility scopes; +20%.
-      { kind: 'maxProcessedRows', relation: 'posts', max: 7_292 },
-    ],
+    expectations: [{ kind: 'maxProcessedRows', relation: 'posts', max: 6_000 }],
   })
   await runAndCapture('user-profile-metrics', () =>
     getUserProfileMetricsByAny(seedUser.id, { currentUser: seedUser }),

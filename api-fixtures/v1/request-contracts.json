@@ -38034,6 +38034,9 @@
         "id": {
           "type": "string"
         },
+        "post_counts_capped": {
+          "type": "boolean"
+        },
         "private_count": {
           "additionalProperties": false,
           "properties": {

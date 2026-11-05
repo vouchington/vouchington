@@ -29,6 +29,7 @@ function makeUserMetrics(overrides: UserMetricsOverrides = {}): UserMetrics {
       communities_member: 0,
       ...overrides.count,
     },
+    post_counts_capped: overrides.post_counts_capped,
     viewer_count: overrides.viewer_count
       ? {
           reviews: 0,
@@ -98,6 +99,32 @@ describe('buildUserProfileDropdownItems', () => {
         value: 'comments',
         label: 'extracted.users.userDetailTabBuilders.commentsCount_147198f2:1',
         href: '/user/alice/comments',
+      }),
+    ])
+  })
+
+  it('shows the cap plus for every viewer when profile post counts are capped', () => {
+    const tabs = buildUserProfileDropdownItems(
+      t,
+      'posts',
+      'alice',
+      makeUserMetrics({
+        count: { reviews: 1000 },
+        post_counts_capped: true,
+      }),
+      '/posts',
+      'en',
+    )
+
+    expect(tabs).toEqual([
+      expect.objectContaining({
+        value: 'posts-all',
+        label: 'extracted.users.userDetailTabDefinitions.allCount_a58a7734:1,000+',
+      }),
+      expect.objectContaining({
+        value: 'reviews',
+        label: 'extracted.users.userDetailTabBuilders.reviewsCount_7dc3b459:1,000+',
+        href: '/user/alice/reviews',
       }),
     ])
   })

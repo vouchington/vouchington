@@ -171,6 +171,8 @@ export interface UserMetrics {
     rss_feeds_following: number
     communities_member: number
   }
+  /** True when profile post counts stopped at the configured cap. */
+  post_counts_capped?: boolean
   viewer_count?: {
     reviews: number
     discussions: number
