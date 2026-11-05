@@ -18,10 +18,7 @@ import {
   insertTestVoteIntegrityFlag,
   resetTestVoteBallotCleanupCursor,
 } from '@voucha/test-helpers'
-import {
-  cleanupSupersededVoteBallots,
-  cleanupSupersededVoteBallotTable,
-} from '../cleanup-vote-ballots.mts'
+import { cleanupSupersededVoteBallots } from '../cleanup-vote-ballots.mts'
 import { cleanupOrphanedUserAgentStrings } from '../cleanup-user-agent-strings.mts'
 import { cleanupVoteIntegrityDetails } from '../cleanup-vote-integrity-details.mts'
 import { runVoteRetentionCleanupPage } from '../cleanup.mts'
@@ -70,12 +67,14 @@ describe('vote and user-agent retention', () => {
 
   it('rejects pages beyond the per-run read bound before querying a table', async () => {
     const scopedIds = [uuidv7(), uuidv7(), uuidv7()]
-    await expect(cleanupSupersededVoteBallotTable('post_votes', 5_001)).rejects.toThrow(RangeError)
+    await expect(
+      cleanupSupersededVoteBallots(5_001, undefined, undefined, ['post_votes']),
+    ).rejects.toThrow(RangeError)
     await expect(cleanupOrphanedUserAgentStrings(5_001)).rejects.toThrow(RangeError)
     await expect(cleanupVoteIntegrityDetails(5_001)).rejects.toThrow(RangeError)
-    await expect(cleanupSupersededVoteBallotTable('post_votes', 1, NOW, scopedIds)).rejects.toThrow(
-      RangeError,
-    )
+    await expect(
+      cleanupSupersededVoteBallots(1, NOW, { post_votes: scopedIds }, ['post_votes']),
+    ).rejects.toThrow(RangeError)
     await expect(cleanupOrphanedUserAgentStrings(1, scopedIds)).rejects.toThrow(RangeError)
     await expect(cleanupVoteIntegrityDetails(1, NOW, scopedIds)).rejects.toThrow(RangeError)
   })
@@ -94,11 +93,12 @@ describe('vote and user-agent retention', () => {
     const retainedBefore = await getTestRetainedPostVoteCount(firstDayText)
     const engagementBefore = await getEngagement('all', new Date(0))
 
-    const page = await cleanupSupersededVoteBallotTable('post_votes', 3, NOW, [
-      firstId,
-      secondId,
-      recentId,
-    ])
+    const [page] = await cleanupSupersededVoteBallots(
+      3,
+      NOW,
+      { post_votes: [firstId, secondId, recentId] },
+      ['post_votes'],
+    )
     expect(page).toMatchObject({ scanned: 3, deleted: 1, hasMore: false })
     expect(await getTestPostVoteIds(postId, userId)).toEqual([secondId, recentId])
     expect((await getTestRetainedPostVoteCount(firstDayText)) - retainedBefore).toBe(1)
@@ -106,7 +106,9 @@ describe('vote and user-agent retention', () => {
     const dayCount = (engagement: typeof engagementAfter) =>
       engagement.votes_over_time.find(point => point.date === firstDayText)?.count ?? 0
     expect(dayCount(engagementAfter) - dayCount(engagementBefore)).toBe(0)
-    expect(await cleanupSupersededVoteBallotTable('post_votes', 1, NOW, [firstId])).toMatchObject({
+    expect(
+      (await cleanupSupersededVoteBallots(1, NOW, { post_votes: [firstId] }, ['post_votes']))[0]!,
+    ).toMatchObject({
       deleted: 0,
     })
     expect((await getTestRetainedPostVoteCount(firstDayText)) - retainedBefore).toBe(1)
@@ -131,7 +133,11 @@ describe('vote and user-agent retention', () => {
 
     const pages = []
     while (pages.length < olderIds.length) {
-      pages.push(await cleanupSupersededVoteBallotTable('post_votes', 1, NOW, [supersederId]))
+      pages.push(
+        (
+          await cleanupSupersededVoteBallots(1, NOW, { post_votes: [supersederId] }, ['post_votes'])
+        )[0]!,
+      )
     }
     expect(pages.map(page => page.deleted)).toEqual([1, 1, 1])
     expect(pages.map(page => page.hasMore)).toEqual([true, true, false])
@@ -140,7 +146,9 @@ describe('vote and user-agent retention', () => {
       expect((await getTestRetainedPostVoteCount(day.slice(0, 10))) - countsBefore[index]!).toBe(1)
     }
     expect(
-      await cleanupSupersededVoteBallotTable('post_votes', 1, NOW, [supersederId]),
+      (
+        await cleanupSupersededVoteBallots(1, NOW, { post_votes: [supersederId] }, ['post_votes'])
+      )[0]!,
     ).toMatchObject({
       deleted: 0,
     })
@@ -164,13 +172,11 @@ describe('vote and user-agent retention', () => {
     }
     await insertTestPostVote(postId, userId, '127.0.0.1', -1, supersederId, query)
 
-    const first = await cleanupSupersededVoteBallotTable(
-      'post_votes',
-      1,
-      futureNow,
-      undefined,
+    const [first] = await cleanupSupersededVoteBallots(1, futureNow, undefined, ['post_votes'], {
       query,
-    )
+      voteIds: [],
+    })
+    if (!first) throw new Error('Expected post ballot page')
     expect(first).toMatchObject({ scanned: 2, deleted: 1, hasMore: true })
     const frozenCutoffId = (await getTestVoteBallotCleanupCursor(query, 'post_votes'))
       .sweep_cutoff_id
@@ -180,13 +186,14 @@ describe('vote and user-agent retention', () => {
     })
     const pages = [first]
     while (pages.length < olderIds.length) {
-      const page = await cleanupSupersededVoteBallotTable(
-        'post_votes',
+      const [page] = await cleanupSupersededVoteBallots(
         1,
         new Date(futureNow.getTime() + 10 * 24 * 60 * 60 * 1_000),
         undefined,
-        query,
+        ['post_votes'],
+        { query, voteIds: [] },
       )
+      if (!page) throw new Error('Expected post ballot page')
       expect(page.scanned).toBeLessThanOrEqual(2)
       pages.push(page)
       expect((await getTestVoteBallotCleanupCursor(query, 'post_votes')).sweep_cutoff_id).toBe(
@@ -201,7 +208,12 @@ describe('vote and user-agent retention', () => {
       sweep_cutoff_id: null,
     })
     expect(
-      await cleanupSupersededVoteBallotTable('post_votes', 1, futureNow, undefined, query),
+      (
+        await cleanupSupersededVoteBallots(1, futureNow, undefined, ['post_votes'], {
+          query,
+          voteIds: [],
+        })
+      )[0]!,
     ).toMatchObject({ scanned: 0, deleted: 0, hasMore: false })
     expect((await getTestVoteBallotCleanupCursor(query, 'post_votes')).sweep_cutoff_id).toBeNull()
   })
@@ -256,7 +268,7 @@ describe('vote and user-agent retention', () => {
     })
     expect(await hasTestUserAgentString(agentId)).toBe(true)
 
-    await cleanupSupersededVoteBallotTable('post_votes', 5, NOW, [supersederId])
+    await cleanupSupersededVoteBallots(5, NOW, { post_votes: [supersederId] }, ['post_votes'])
     expect(await getTestPostVoteIds(postId, userId)).toEqual([supersederId])
     expect(await cleanupOrphanedUserAgentStrings(1, [agentId], afterAgeGuard)).toMatchObject({
       scanned: 1,

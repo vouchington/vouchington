@@ -11,7 +11,7 @@ import {
   setTestPostVoteRetentionDeferredAt,
 } from '@voucha/test-helpers'
 import { listPendingOutboundDistributionPage } from '../../activitypub-delivery/distribution-recovery.mts'
-import { cleanupSupersededVoteBallotTable } from '../cleanup-vote-ballots.mts'
+import { cleanupSupersededVoteBallots } from '../cleanup-vote-ballots.mts'
 import { cleanupDeferredPostVoteBallots } from '../cleanup-deferred-post-votes.mts'
 
 const NOW = new Date('2026-10-23T12:00:00.000Z')
@@ -38,7 +38,9 @@ describe('ActivityPub ballot source retention', () => {
     await setTestPostVoteActivityPubSource(postId, sourceId, sourceId)
     await setTestPostVoteActivityPubSource(postId, supersederId, sourceId)
 
-    const aged = await cleanupSupersededVoteBallotTable('post_votes', 2, NOW, [supersederId])
+    const aged = (
+      await cleanupSupersededVoteBallots(2, NOW, { post_votes: [supersederId] }, ['post_votes'])
+    )[0]!
     expect(aged.deleted).toBe(0)
     expect(await getTestPostVoteIds(postId, userId)).toEqual([sourceId, supersederId])
     expect(await getTestPostVoteRetentionDeferredAt(postId, sourceId)).not.toBeNull()
@@ -68,7 +70,9 @@ describe('ActivityPub ballot source retention', () => {
     await setTestPostVoteActivityPubSource(postId, sourceId, sourceId, null, NOW)
     await setTestPostVoteActivityPubSource(postId, supersederId, sourceId)
 
-    const aged = await cleanupSupersededVoteBallotTable('post_votes', 2, NOW, [supersederId])
+    const aged = (
+      await cleanupSupersededVoteBallots(2, NOW, { post_votes: [supersederId] }, ['post_votes'])
+    )[0]!
     expect(aged.deleted).toBe(1)
     expect(await getTestPostVoteIds(postId, userId)).toEqual([supersederId])
   })
@@ -81,7 +85,7 @@ describe('ActivityPub ballot source retention', () => {
     await insertTestPostVote(postId, userId, '127.0.0.1', 2, supersederId)
     await setTestPostVoteActivityPubSource(postId, sourceId, sourceId)
     await setTestPostVoteActivityPubSource(postId, supersederId, sourceId)
-    await cleanupSupersededVoteBallotTable('post_votes', 2, NOW, [supersederId])
+    await cleanupSupersededVoteBallots(2, NOW, { post_votes: [supersederId] }, ['post_votes'])
 
     await setTestPostVoteActivityPubSource(postId, sourceId, sourceId, null, NOW)
     const delivered = await cleanupDeferredPostVoteBallots(1, NOW, { voteIds: [sourceId] })
