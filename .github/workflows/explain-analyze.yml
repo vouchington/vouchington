@@ -141,26 +141,7 @@ jobs:
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
-        run: |
-          mkdir -p backend/scripts/explain-analyze/output
-          (
-            while :; do
-              {
-                printf 'sample_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-                printf 'host_cpu '; head -n 1 /proc/stat
-                printf 'host_memory\n'; head -n 5 /proc/meminfo
-                printf 'host_workspace_disk\n'; df -B1 "$GITHUB_WORKSPACE"
-                printf 'postgres_container_stats\n'
-                timeout 4s docker stats --no-stream --format '{{json .}}' "$POSTGRES_CONTAINER_ID" || true
-                printf 'postgres_container_tmpfs\n'
-                timeout 4s docker exec "$POSTGRES_CONTAINER_ID" df -B1 /var/lib/postgresql || true
-              } >> backend/scripts/explain-analyze/output/seed-resources.txt 2>&1
-              sleep 2
-            done
-          ) &
-          sampler_pid=$!
-          trap 'kill "$sampler_pid" 2>/dev/null || true; wait "$sampler_pid" 2>/dev/null || true' EXIT
-          node backend/scripts/explain-analyze/seed.mts
+        run: source "$GITHUB_WORKSPACE/.github/workflows/explain-analyze-seed-with-resource-samples.sh"
       - run: node backend/scripts/explain-analyze/run.mts
         timeout-minutes: 10
         env:
@@ -182,25 +163,7 @@ jobs:
         run: node backend/scripts/explain-analyze/pruning/run.mts
       - name: Convert native EXPLAIN and pruning coverage
         timeout-minutes: 1
-        run: >-
-          pnpm exec coverage-check native-v8-to-lcov
-          --v8-dir backend/scripts/explain-analyze/output/pruning-v8
-          --source-root "$GITHUB_WORKSPACE"
-          --output backend/scripts/explain-analyze/output/retirement-coverage/lcov.info
-          --include 'backend/data-stores/psql/migration-runner/before-retire-monthly-partition.mts'
-          --include 'backend/data-stores/psql/migrate.mts'
-          --include 'backend/services/data-retention/cleanup-text-embeddings.mts'
-          --include 'backend/data-stores/psql/explain-analyze.mts'
-          --include 'backend/services/crawls/{dispatch-per-hostname,dispatch-tier-urls}.mts'
-          --include 'backend/services/crawler-referral-links/dispatch.mts'
-          --include 'backend/services/rss-feeds/{get-to-fetch,crawl-config,update,update-fields,update-state-helpers}.mts'
-          --include 'backend/services/referral-link-unfurl/dispatch.mts'
-          --include 'backend/services/stories/story-post-related-url-projection-{work,reconcile,dispatch}.mts'
-          --include 'backend/services/stories/story-post-related-url-projection.mts'
-          --include 'backend/services/openai-moderation/{delete-flagged,quarantine-reconciliation}.mts'
-          --include 'backend/workers/openai-moderation/processors/openai-moderation-omni-single.mts'
-          --include 'backend/scripts/explain-analyze/pruning/{run,retirement-controls,retirement-fixture,retirement-schema,retirement-transaction,migration-*}.mts'
-          --include 'backend/scripts/explain-analyze/pruning/idle-embedding-retention.mts'
+        run: source "$GITHUB_WORKSPACE/.github/workflows/explain-analyze-convert-native-coverage.sh"
       - name: Preserve full native migration LCOV
         if: ${{ inputs.publish_coverage }}
         timeout-minutes: 1
