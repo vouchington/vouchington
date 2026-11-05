@@ -9,6 +9,7 @@ import {
 import { rejectPostgresReadForTest } from '@voucha/test-helpers/injected-failures'
 import { upsertTestHostnameId } from '@voucha/test-helpers/entities/email-domain-hostname'
 import { currentUserCanBookmarkTarget } from './authorization.mts'
+import { prepareBookmarkActions, upsertPreparedBookmarkActions } from './bookmark.mts'
 
 describe('bookmark target authorization', () => {
   it('shows a private community to its owner and hides it from strangers', async () => {
@@ -89,6 +90,16 @@ describe('bookmark target authorization', () => {
     await expect(currentUserCanBookmarkTarget(user, 'post', comment.id, 'save')).resolves.toBe(
       false,
     )
+    const [hide, save] = await prepareBookmarkActions(user, { kind: 'first_party' }, [
+      { entityType: 'post', entityId: comment.id, predicate: 'hide' },
+      { entityType: 'post', entityId: comment.id, predicate: 'save' },
+    ])
+    expect(hide).toMatchObject({ status: 'fulfilled' })
+    expect(save).toMatchObject({ status: 'rejected', reason: { status: 404 } })
+    if (hide?.status !== 'fulfilled') throw new Error('Placeholder hide was not authorized')
+    await expect(upsertPreparedBookmarkActions(user, [hide.value])).resolves.toMatchObject([
+      { object_id: comment.id },
+    ])
     await deleteTestPost(root.id)
     await expect(currentUserCanBookmarkTarget(user, 'post', comment.id, 'hide')).resolves.toBe(
       false,
