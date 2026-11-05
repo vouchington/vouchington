@@ -65,7 +65,7 @@ describe('IPv6 egress diagnostic sections', () => {
   it('stringifies a non-Error thrown value', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     await expect(
-      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Diagnostic formatting must accept primitive provider failures.
+      // oxlint-disable-next-line prefer-promise-reject-errors, typescript/prefer-promise-reject-errors -- Diagnostic formatting must accept primitive provider failures.
       reportSection('example', () => Promise.reject('not an error object')),
     ).resolves.toBe(false)
     expect(readLoggedPayload(error)).toEqual({

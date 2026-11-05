@@ -83,7 +83,7 @@ describe('request client information listener', () => {
     const response = await send({
       headers: validHeaders({ cookie: 'dt=valid' }),
       isEnforced: () => true,
-      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- The listener normalizes arbitrary verifier rejections.
+      // oxlint-disable-next-line prefer-promise-reject-errors, typescript/prefer-promise-reject-errors -- The listener normalizes arbitrary verifier rejections.
       verifyDeviceIdentity: async () => Promise.reject('invalid'),
     })
     expect(await response.json()).toEqual({
@@ -105,7 +105,7 @@ describe('request client information listener', () => {
     await send({
       headers: validHeaders({ cookie: 'dt=valid' }),
       isEnforced: () => true,
-      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Observe-mode logging must accept non-Error verifier failures.
+      // oxlint-disable-next-line prefer-promise-reject-errors, typescript/prefer-promise-reject-errors -- Observe-mode logging must accept non-Error verifier failures.
       verifyDeviceIdentity: async () => Promise.reject('invalid'),
     })
     expect(warn).toHaveBeenCalledTimes(2)
