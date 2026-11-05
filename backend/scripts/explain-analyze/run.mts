@@ -1,5 +1,6 @@
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
+import { runPostUrlCapacityScenarios } from './run-scenarios/post-related-url-capacity.mts'
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
 import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
 import { runSitemapPageScenarios } from './run-scenarios/sitemap-pages.mts'
@@ -97,6 +98,7 @@ async function main() {
   try {
     assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
     await assertSeedAnchorMatches()
+    await runStep(runPostUrlCapacityScenarios.name, runPostUrlCapacityScenarios())
     await runStep(runSitemapPageScenarios.name, runSitemapPageScenarios())
     await runStep(runStoryProjectionWorkScenarios.name, runStoryProjectionWorkScenarios())
     await runStep(runImageQuarantineScenarios.name, runImageQuarantineScenarios())

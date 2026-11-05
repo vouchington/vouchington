@@ -100,7 +100,6 @@ async function writePendingRelations(work: ProjectionWork, rows: SourceRow[]): P
   } as never
   const objects: Array<{ id: string }> = []
   for (const row of rows) objects.push({ id: row.url_id })
-  await assertPostRelatedUrlsAllowed(creator, relation, { id: work.post_id }, objects)
   await using transactionQuery = await beginTransaction()
   await transactionQuery(
     `/* markStoryPostRelatedUrlProjectionRelationWrite */
@@ -126,6 +125,13 @@ async function writePendingRelations(work: ProjectionWork, rows: SourceRow[]): P
   for (const object of objects) {
     if (!ineligibleUrlIds.has(object.id)) allowedUrlIds.push(object.id)
   }
+  await assertPostRelatedUrlsAllowed(
+    creator,
+    relation,
+    { id: work.post_id },
+    allowedUrlIds.map(id => ({ id })),
+    { query: transactionQuery },
+  )
   const internalRelations = await insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction(
     transactionQuery,
     creator,

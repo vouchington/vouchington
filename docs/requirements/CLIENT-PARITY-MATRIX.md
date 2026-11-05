@@ -489,13 +489,19 @@ code from a time dropdown, reusing the web options, and must page with the retur
 the same range. Client work is dependent (vouchington-clients#537) and does not gate this
 repository.
 
-## Follow and subscription admission
+## Relation admission
 
 REST and MCP share the same refusal when an account cannot add another follow or subscription of
 that type. The API returns HTTP 409 with `RELATION_LIMIT_REACHED`; clients compose localized
 recovery guidance from the code and requested action. Web retains the previous
 button state and explains that removing another relation of the same type frees room. Imports
 report skipped additions rather than presenting them as successful follows.
+
+Related URL additions use the same refusal code and status when a post has no remaining
+capacity. REST and MCP share that decision, including source URL creation and story projection
+writes. Existing active relations remain valid when capacity is lowered; adding another URL
+requires removing enough active relations to make room. This preserves the existing response
+shape and makes no new native UI parity claim.
 
 Swift and .NET adoption is tracked in [vouchington-clients#538](https://github.com/vouchington/vouchington-clients/issues/538). Native implementation
 does not gate the producer, and this change makes no new native UI parity claim.

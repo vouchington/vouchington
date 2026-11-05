@@ -6,11 +6,17 @@ import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 export const relationLimitsRegistryEntry = defineDynamicConfigNamespace({
   namespace: 'relation-limits-config',
-  label: 'Follow and subscription limits',
-  description: 'Maximum active follows and subscriptions per user.',
+  label: 'Relation limits',
+  description: 'Maximum active relations per subject, including related URLs per post.',
   config: relationLimitsConfig,
   access: { update_roles: ['developer'] },
   fields: {
+    post_related_url: {
+      description: 'Maximum active related URL relations per post.',
+      minValue: 1,
+      maxValue: relationLimitsMaxValues.post_related_url,
+      integer: true,
+    },
     follow_user: {
       description: 'Maximum active follow user relations per user.',
       minValue: 1,

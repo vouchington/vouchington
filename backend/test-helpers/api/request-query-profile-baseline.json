@@ -231,6 +231,21 @@
     ]
   },
   {
+    "annotation": "getRelationLimitState",
+    "maxCount": 2,
+    "reason": "Post-related URL admission checks capacity before mutation, then recounts in the insertion transaction after the publication lock so a concurrent writer cannot consume the last slot between check and insert.",
+    "permanent": true,
+    "code": "backend/services/entity-relations/assert-upsert-allowed.mts:45",
+    "routes": [
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/posts",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/mcp",
+      "POST /api/v1/mcp tools/call add_entity_relation",
+      "POST /api/v1/mcp tools/call create_post"
+    ]
+  },
+  {
     "annotation": "getLandingPageRowForUser",
     "maxCount": null,
     "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",

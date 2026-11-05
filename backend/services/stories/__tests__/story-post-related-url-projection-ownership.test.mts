@@ -1,7 +1,10 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { relationLimitsConfig } from '@services/entity-relations/relation-limits'
 import {
   createTestUserDirect,
   getPostRelatedUrlIds,
+  getEntityRelation,
   insertTestStory,
   insertTestStoryRssFeedItemsBatch,
   insertTestUrlDirect,
@@ -16,6 +19,36 @@ import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/
 describe('story post related URL projection ownership', () => {
   beforeAll(async () => {
     await upsertSystemUser('story-teller')
+  })
+
+  it('refuses a projection batch that exceeds the related URL capacity', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(relationLimitsConfig, { post_related_url: 1 }),
+    )
+    const suffix = crypto.randomUUID()
+    const [user, story, first, second] = await Promise.all([
+      createTestUserDirect(),
+      insertTestStory({ title: `Projection capacity ${suffix}` }),
+      insertTestUrlDirect(null, `https://story-first-${suffix}.example.test/article`),
+      insertTestUrlDirect(null, `https://story-second-${suffix}.example.test/article`),
+    ])
+    if (!user || !first || !second) throw new Error('Expected projection test fixtures')
+    await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: first.id, count: 1 })
+    await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: second.id, count: 1 })
+    const {
+      response: { post },
+    } = await prepareStoryPost(story.id, user)
+    await expect(drainProjection(post.id)).rejects.toMatchObject({
+      status: 409,
+      code: 'RELATION_LIMIT_REACHED',
+    })
+    expect(await getEntityRelation('relation__post__related__url', post.id, first.id)).toHaveLength(
+      0,
+    )
+    expect(
+      await getEntityRelation('relation__post__related__url', post.id, second.id),
+    ).toHaveLength(0)
   })
 
   it('preserves an active related URL re-confirmed after generation capture', async () => {
