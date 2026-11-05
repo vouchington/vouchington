@@ -201,6 +201,9 @@ jobs:
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
         timeout-minutes: 6
+      - name: Check workflow download integrity
+        run: node ci/check-workflow-download-integrity.mts
+        timeout-minutes: 2
       - name: Check Storybook component coverage
         run: >-
           pnpm exec vouchington story-coverage

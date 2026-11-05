@@ -7,6 +7,31 @@ import {
 import { makeJob, makeTopology, makeWorkflow } from './workflow-topology-test-fixtures.mts'
 
 describe('live topology audit', () => {
+  it('requires exactly one static download-integrity invocation', () => {
+    const policy = 'node ci/check-no-mistakes-test-policy.mts'
+    const download = 'node ci/check-workflow-download-integrity.mts'
+    const downloadErrors = (run: string) =>
+      liveTopologyAuditErrors(
+        makeTopology({
+          jobs: [
+            makeJob({
+              id: '.github/workflows/static-code-analysis.yml#no-mistakes',
+              steps: [{ index: 0, kind: 'run', run }],
+            }),
+          ],
+        }),
+      ).filter(message =>
+        message.includes('must invoke node ci/check-workflow-download-integrity.mts'),
+      )
+    expect(downloadErrors(`${policy}\n${download}`)).toEqual([])
+    expect(downloadErrors(policy)).toEqual([
+      '.github/workflows/static-code-analysis.yml no-mistakes job must invoke node ci/check-workflow-download-integrity.mts exactly once (found 0)',
+    ])
+    expect(downloadErrors(`${policy}\n${download}\n${download}`)).toEqual([
+      '.github/workflows/static-code-analysis.yml no-mistakes job must invoke node ci/check-workflow-download-integrity.mts exactly once (found 2)',
+    ])
+  })
+
   it('requires the real static-analysis job to invoke the independent policy checker once', () => {
     const job = makeJob({
       id: '.github/workflows/static-code-analysis.yml#no-mistakes',
