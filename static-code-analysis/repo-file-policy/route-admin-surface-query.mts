@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ruleYamlWithoutExamples } from '../ast-grep-rule-yaml.mts'
 
 type ByteRange = { start: number; end: number }
 export type NamedRange = { range: ByteRange; name: string }
@@ -41,7 +42,7 @@ const queryFiles = [
   'route-admin-return-defaults.yml',
 ]
 const queryText = queryFiles
-  .map(file => readFileSync(join(queryDirectory, file), 'utf8').trim())
+  .map(file => ruleYamlWithoutExamples(readFileSync(join(queryDirectory, file), 'utf8')).trim())
   .join('\n---\n')
 
 export function collectRouteAdminSurfaceFacts(
