@@ -82,9 +82,4 @@ jobs:
           # so an operator can see the effect before causing it.
           APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
         run: |
-          set -euo pipefail
-          if [ "$APPLY" = 'true' ]; then
-            bash "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/gha/ghcr-package-retention.sh" --main-history --apply
-          else
-            bash "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/gha/ghcr-package-retention.sh" --main-history --dry-run
-          fi
+          source "$GITHUB_WORKSPACE/.github/workflows/ghcr-cleanup-prune-packages.sh"
