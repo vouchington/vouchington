@@ -8,6 +8,7 @@ export async function reconsiderPostModerationPolicyRevision(
   query: QueryExecutor,
   batchSize: number,
   currentRevision = POST_MODERATION_POLICY_REVISION,
+  postIds?: readonly string[],
 ): Promise<{ hasMore: boolean; processed: boolean }> {
   await query(
     `/* ensurePostModerationPolicyRetentionCursor */
@@ -44,7 +45,7 @@ export async function reconsiderPostModerationPolicyRevision(
   if (!changed && cursor.policy_sweep_completed_at !== null)
     return { hasMore: false, processed: false }
   const afterId = changed ? ZERO_UUID : (cursor.cursor_policy_version_record_id ?? ZERO_UUID)
-  const page = await reconsiderPostModerationPolicyRevisionPage(query, batchSize, afterId)
+  const page = await reconsiderPostModerationPolicyRevisionPage(query, batchSize, afterId, postIds)
   await query(
     `/* checkpointPostModerationPolicyRetentionCursor */
      UPDATE post_moderation_retention_cursors
@@ -68,13 +69,14 @@ export async function reconsiderPostModerationPolicyRevisionPage(
   query: QueryExecutor,
   batchSize: number,
   afterId: string,
+  postIds?: readonly string[],
 ): Promise<{ hasMore: boolean; processed: boolean; lastId: string | null }> {
   const { rows: versions } = await query<{ id: string; post_id: string }>(
     `/* listPostModerationPolicyRetentionVersions */
      SELECT id, post_id FROM post_moderation_versions
      WHERE retention_hash_blocked_at IS NOT NULL AND id > $1::uuid
-     ORDER BY id LIMIT $2`,
-    [afterId, batchSize + 1],
+     ${postIds === undefined ? '' : 'AND post_id = ANY($3::uuid[])\n     '}ORDER BY id LIMIT $2`,
+    [afterId, batchSize + 1, ...(postIds === undefined ? [] : [postIds])],
   )
   const page = versions.slice(0, batchSize)
   if (page.length > 0) {
