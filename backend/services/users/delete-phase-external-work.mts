@@ -41,8 +41,6 @@ export async function processUserDeletionExternalWork(
         }
       } else if (work.work_kind === 'entity-relation-effects') {
         await processEntityRelationEffects(requestId, work.relation_impact_id)
-      } else {
-        throw new Error(`Unsupported user deletion external work kind: ${String(work.work_kind)}`)
       }
     })
   } catch (err) {

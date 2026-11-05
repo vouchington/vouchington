@@ -15,7 +15,5 @@ export function canonicalTopicLabelJoins(source: 'claim' | 'flag'): string {
     case 'flag':
       return `LEFT JOIN topics topic_label_source ON topic_label_source.id = f.topic_id
         AND topic_label_source.deleted_at IS NULL${DESTINATION_JOIN}`
-    default:
-      throw new Error(`Unsupported canonical topic label source: ${String(source)}`)
   }
 }
