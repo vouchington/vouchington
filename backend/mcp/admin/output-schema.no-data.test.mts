@@ -1,4 +1,3 @@
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Pure canonical JSON contract projection uses the data-store-free project. */
 import { describe, expect, it } from 'vitest'
 import { adminRouteOutputSchema } from './output-schema.mts'
 import { findSchemaViolation } from '@vouchington/mcp-server/schema'

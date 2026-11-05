@@ -1,4 +1,3 @@
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Pure prompt wrapping runs in the data-store-free project. */
 import { describe, expect, it } from 'vitest'
 import { adminOutputSchema, wrapAdminOutput } from './untrusted-output.mts'
 

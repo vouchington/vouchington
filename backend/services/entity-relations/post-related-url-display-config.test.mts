@@ -2,7 +2,6 @@ import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
 } from '../../test-helpers/dynamic-config.mts'
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Uses the project-level Sentry mock to verify invalid runtime config reporting. */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 

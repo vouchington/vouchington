@@ -2313,6 +2313,7 @@
     stemSuffixesToStrip:
       - .stripe
       - .no-data.mock
+      - .no-data
       - .real-glide.mock
       - .real-glide
       - .actions.mock

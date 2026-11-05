@@ -1,4 +1,3 @@
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Routed to backend-no-data-mocks for the project-level @sentry/node mock (vitest.setup.sentry-mock.mts); asserts sentryCaptureMessageMock, which the real recordOpenAiFlexFallback calls. The transport is injected through deps, so there is no in-file vi.mock and the rule's unnecessaryMock branch fires; the .mock suffix is load-bearing for routing. */
 import { APIError } from 'openai'
 import { describe, expect, it, vi } from 'vitest'
 import { runWithOpenAIResponseAttemptHooks } from '@modules/openai-utils/response-attempt-context'

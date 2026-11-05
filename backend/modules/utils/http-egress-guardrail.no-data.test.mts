@@ -1,4 +1,3 @@
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Routed to backend-no-data-mocks for the project-level @sentry/node mock (vitest.setup.sentry-mock.mts); asserts sentryCaptureMessageMock. @modules/utils does not depend on @sentry/node directly (only transitively via @modules/on-error), so this file relies on the global setup mock rather than declaring its own in-file vi.mock. No in-file vi.mock, so the rule's unnecessaryMock branch fires; the .mock suffix is load-bearing for routing. */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureMessageMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 let guardrail: typeof import('./http-egress-guardrail.mts')

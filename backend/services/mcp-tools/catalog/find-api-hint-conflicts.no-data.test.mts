@@ -1,4 +1,3 @@
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- This pure catalog check uses the DB/Valkey-free project selected by the .no-data.mock suffix. */
 import type { Tool, ToolAnnotations, ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import { describe, expect, it } from 'vitest'
 import { findApiHintConflicts } from './find-api-hint-conflicts.mts'

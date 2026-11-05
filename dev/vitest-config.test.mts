@@ -55,8 +55,15 @@ describe('dev-tools Vitest config', () => {
       ],
       [
         'backend-no-data-mocks',
-        'backend/services/mcp-tools/catalog/build-mcp-catalog.no-data.mock.test.mts',
+        'backend/services/mcp-tools/catalog/build-mcp-catalog.no-data.test.mts',
       ],
+      [
+        'backend-mocks',
+        'backend/services/entity-relations/post-related-url-display-config.test.mts',
+      ],
+      ['backend-mocks', 'backend/services/mcp-tools/call-tool.test.mts'],
+      ['backend-mocks', 'backend/services/post-content-limits/config.test.mts'],
+      ['backend-mocks', 'backend/services/recaptcha/assess.test.mts'],
     ] as const) {
       const owners = vitestProjects.filter(project => {
         const included =
