@@ -34,7 +34,6 @@ export async function runConfigDriven(rootDir: string, options: RunConfigDrivenO
     const file = configDriven[index]
     if (!file) return
 
-    // ast-grep-ignore: no-three-sequential-awaits -- config-driven files must read and execute in sorted order
     const string =
       isCanonicalFolder && file.endsWith('.mts')
         ? await readCanonicalConfigDrivenGenerator(file)

@@ -66,7 +66,6 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
   }
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
   const { community } = await loadCommunityForViewer(currentUser, idOrSlug)
 
   const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)

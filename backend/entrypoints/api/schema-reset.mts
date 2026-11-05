@@ -58,7 +58,7 @@ try {
       )
     }
   }
-  // ast-grep-ignore: no-three-sequential-awaits -- the schema must be dropped, recreated, granted and rebuilt in order
+  // ast-grep-ignore: no-three-sequential-awaits -- CREATE replaces the dropped schema; GRANT and migrations consume that schema; config SQL and views consume the migrated objects
   await write('/* resetStagingSchemaDropPublicSchema */ DROP SCHEMA IF EXISTS public CASCADE')
   await write('/* resetStagingSchemaCreatePublicSchema */ CREATE SCHEMA public')
   await write(

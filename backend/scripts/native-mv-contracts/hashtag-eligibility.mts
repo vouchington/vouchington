@@ -62,7 +62,7 @@ async function createRssHashtagItem(
   topicAliasId: string,
   hashtag: string,
 ): Promise<{ ownerId: string; topicId: string }> {
-  // ast-grep-ignore: no-three-sequential-awaits -- the RSS topic needs its owner before feed and item fixture writes
+  // ast-grep-ignore: no-three-sequential-awaits -- the owner id supplies the topic; its topic id supplies the feed; the feed id and URL id supply the RSS item and hashtag source
   const owner = await createTestUser({ administrator: true })
   const topicId = await insertTestTopic({
     name: `Eligibility RSS source ${index} ${suffix}`,

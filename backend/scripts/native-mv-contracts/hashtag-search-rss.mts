@@ -23,7 +23,7 @@ async function createRssHashtagItem(options: {
   authoredToken: string
   publishedAt: Date
 }): Promise<{ rssFeedItemId: string }> {
-  // ast-grep-ignore: no-three-sequential-awaits -- the owner, topic and feed have foreign-key dependencies before the RSS item exists
+  // ast-grep-ignore: no-three-sequential-awaits -- the owner id supplies the topic; its topic id supplies the feed; the feed id and URL id supply the RSS item and hashtag source
   const owner = await createTestUser({ administrator: true })
   const topicId = await insertTestTopic({
     name: `RSS hashtag source ${options.index} ${options.suffix}`,
