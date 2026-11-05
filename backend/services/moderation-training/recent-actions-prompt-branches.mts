@@ -1,6 +1,10 @@
 import sql from 'sql-template-strings'
 
 export function communityPromptAutomodBranch(communityId: string, windowHours: number) {
+  return communityPromptSelect().append(communityPromptFrom(communityId, windowHours))
+}
+
+function communityPromptSelect() {
   return sql`
       SELECT
         'community_prompt:' || am.id::text AS source_key,
@@ -31,7 +35,11 @@ export function communityPromptAutomodBranch(communityId: string, windowHours: n
         END AS categories,
         am.results AS model_output,
         'unpublished'::text AS current_state,
-        latest_feedback.label AS feedback_label
+        latest_feedback.label AS feedback_label`
+}
+
+function communityPromptFrom(communityId: string, windowHours: number) {
+  return sql`
       FROM agent_moderations am
       JOIN community_agent_prompts cap ON cap.id = am.prompt_id
       JOIN posts p ON p.id = am.post_id
@@ -69,6 +77,10 @@ export function communityPromptAutomodBranch(communityId: string, windowHours: n
 }
 
 export function agentModerationAutomodBranch(communityId: string, windowHours: number) {
+  return agentModerationSelect().append(agentModerationFrom(communityId, windowHours))
+}
+
+function agentModerationSelect() {
   return sql`
       SELECT
         'agent_moderation:' || am.id::text AS source_key,
@@ -99,7 +111,11 @@ export function agentModerationAutomodBranch(communityId: string, windowHours: n
         END AS categories,
         am.results AS model_output,
         CASE WHEN p.rejected_at IS NOT NULL THEN 'rejected' ELSE 'in_review' END::text AS current_state,
-        latest_feedback.label AS feedback_label
+        latest_feedback.label AS feedback_label`
+}
+
+function agentModerationFrom(communityId: string, windowHours: number) {
+  return sql`
       FROM agent_moderations am
       JOIN moderator_agents mod ON mod.agent_id = am.agent_id
       JOIN posts p ON p.id = am.post_id

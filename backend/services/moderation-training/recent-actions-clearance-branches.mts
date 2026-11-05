@@ -1,6 +1,10 @@
 import sql from 'sql-template-strings'
 
 export function clearanceRejectionAutomodBranch(communityId: string, windowHours: number) {
+  return clearanceRejectionSelect().append(clearanceRejectionFrom(communityId, windowHours))
+}
+
+function clearanceRejectionSelect() {
   return sql`
       SELECT
         'openai_omni:' || p.id::text || ':' || encode(version.content_sha256, 'hex') AS source_key,
@@ -24,7 +28,11 @@ export function clearanceRejectionAutomodBranch(communityId: string, windowHours
         '[]'::jsonb AS categories,
         disposition.evidence AS model_output,
         'rejected'::text AS current_state,
-        latest_feedback.label AS feedback_label
+        latest_feedback.label AS feedback_label`
+}
+
+function clearanceRejectionFrom(communityId: string, windowHours: number) {
+  return sql`
       FROM posts p
       JOIN post_moderation_versions version
         ON version.post_id = p.id
@@ -57,6 +65,10 @@ export function clearanceRejectionAutomodBranch(communityId: string, windowHours
 }
 
 export function spamDetectionAutomodBranch(communityId: string, windowHours: number) {
+  return spamDetectionSelect().append(spamDetectionFrom(communityId, windowHours))
+}
+
+function spamDetectionSelect() {
   return sql`
       SELECT
         'spam_detection:' || p.id::text || ':' || encode(version.content_sha256, 'hex') AS source_key,
@@ -80,7 +92,11 @@ export function spamDetectionAutomodBranch(communityId: string, windowHours: num
         '[]'::jsonb AS categories,
         disposition.evidence AS model_output,
         'rejected'::text AS current_state,
-        latest_feedback.label AS feedback_label
+        latest_feedback.label AS feedback_label`
+}
+
+function spamDetectionFrom(communityId: string, windowHours: number) {
+  return sql`
       FROM posts p
       JOIN post_moderation_versions version
         ON version.post_id = p.id
