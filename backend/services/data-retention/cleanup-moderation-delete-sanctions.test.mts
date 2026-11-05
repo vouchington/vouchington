@@ -21,6 +21,17 @@ const now = new Date('2026-10-23T12:00:00.000Z')
 const expiredAt = new Date('2024-09-01T12:00:00.000Z')
 
 describe('terminal moderation sanction expiry', () => {
+  it('rejects a history kind before deleting sanctions', async () => {
+    await expect(
+      deleteExpiredModerationSanctions(
+        'reports',
+        testModerationRetentionWrite,
+        [crypto.randomUUID()],
+        now,
+      ),
+    ).rejects.toThrow('Not a moderation sanction cleanup kind: reports')
+  })
+
   it('expires terminal sanctions while preserving active ones', async () => {
     const staff = await createTestUser()
     const member = await createTestUser()

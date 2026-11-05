@@ -18,6 +18,17 @@ const expiredAt = new Date('2024-09-01T12:00:00.000Z')
 const expiredJudgementAt = new Date('2019-09-01T12:00:00.000Z')
 
 describe('terminal moderation history expiry', () => {
+  it('rejects a sanction kind before deleting history', async () => {
+    await expect(
+      deleteExpiredModerationHistory(
+        'warnings',
+        testModerationRetentionWrite,
+        [crypto.randomUUID()],
+        now,
+      ),
+    ).rejects.toThrow('Not a moderation history cleanup kind: warnings')
+  })
+
   it('deletes a terminal case only after its report, and expires an old action', async () => {
     const staff = await createTestUser()
     const target = await createTestUser()
