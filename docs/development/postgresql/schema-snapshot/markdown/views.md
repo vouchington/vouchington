@@ -1117,7 +1117,7 @@ RSS feed response projection with current discoverability and topic references.
            FROM (relation__topic__publisher_type__topic relation
              JOIN topics ON ((topics.id = relation.object_id)))
           WHERE ((relation.subject_id = rss_feeds.topic_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision) AND (topics.deleted_at IS NULL))
-          ORDER BY relation.votes_score_sort DESC, relation.id
+          ORDER BY relation.votes_score_sort DESC, relation.created_at DESC, relation.object_id DESC
          LIMIT 1) publisher_type_topic ON (true))
      LEFT JOIN podcast_shows podcast_show ON ((podcast_show.rss_feed_id = rss_feeds.id)));
 ```
