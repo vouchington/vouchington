@@ -90447,7 +90447,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "archived_at": {
@@ -90458,7 +90458,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 40,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -90469,7 +90469,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 41,
           "type": "uuid"
         },
         "ban_evasion_post_embedding_input_sha256": {
@@ -90480,7 +90480,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 56,
+          "ordinalPosition": 57,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -90491,7 +90491,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 51,
+          "ordinalPosition": 52,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -90502,7 +90502,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 54,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -90513,7 +90513,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 54,
+          "ordinalPosition": 55,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -90524,7 +90524,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52,
+          "ordinalPosition": 53,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -90535,7 +90535,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 55,
+          "ordinalPosition": 56,
           "type": "integer"
         },
         "broadcast": {
@@ -90623,7 +90623,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 35,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -90634,7 +90634,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 34,
           "type": "uuid"
         },
         "created_via": {
@@ -90667,7 +90667,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 45,
           "type": "uuid"
         },
         "data_point_vertical": {
@@ -90678,7 +90678,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 42,
           "type": "text"
         },
         "declared_language": {
@@ -90689,7 +90689,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 46,
           "type": "text"
         },
         "deleted_at": {
@@ -90700,7 +90700,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 38,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -90711,7 +90711,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 39,
           "type": "uuid"
         },
         "has_creation_moderation_bypass": {
@@ -90723,6 +90723,17 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 29,
+          "type": "boolean"
+        },
+        "has_hacker_news_references": {
+          "collation": null,
+          "comment": "Whether the post has a qualifying Hacker News reference, maintained asynchronously or with post changes.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 30,
           "type": "boolean"
         },
         "id": {
@@ -90744,7 +90755,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 33,
           "type": "timestamp with time zone"
         },
         "is_anonymous": {
@@ -90766,7 +90777,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 48,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -90777,7 +90788,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 51,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -90788,7 +90799,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 47,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -90799,7 +90810,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 49,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -90810,7 +90821,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49,
+          "ordinalPosition": 50,
           "type": "jsonb"
         },
         "llm_moderation_content_sha256": {
@@ -90821,7 +90832,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 57,
+          "ordinalPosition": 58,
           "type": "bytea"
         },
         "markdown": {
@@ -90876,7 +90887,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "timestamp with time zone"
         },
         "root_post_id": {
@@ -90898,7 +90909,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58,
+          "ordinalPosition": 59,
           "type": "tsvector"
         },
         "structured_data": {
@@ -90909,7 +90920,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 43,
           "type": "jsonb"
         },
         "title": {
@@ -90931,7 +90942,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -90942,7 +90953,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 37,
           "type": "uuid"
         },
         "url_id": {
@@ -90953,7 +90964,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 44,
           "type": "uuid"
         },
         "votes_count_down": {
@@ -91618,6 +91629,53 @@
             }
           ],
           "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__hacker_news_references__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__id ON ONLY public.posts USING btree (id DESC) WHERE (has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__hacker_news_references__votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "float8_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -123265,7 +123323,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -123276,7 +123334,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -123287,7 +123345,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -123298,7 +123356,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -123309,7 +123367,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "integer"
         },
         "created_at": {
@@ -123320,7 +123378,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "data": {
@@ -123331,7 +123389,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "jsonb"
         },
         "deleted_at": {
@@ -123342,7 +123400,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "duration_seconds": {
@@ -123353,7 +123411,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "integer"
         },
         "enclosure_length": {
@@ -123364,7 +123422,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "bigint"
         },
         "enclosure_media_type_id": {
@@ -123375,7 +123433,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "bigint"
         },
         "enclosure_url": {
@@ -123386,8 +123444,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "text"
+        },
+        "has_hacker_news_references": {
+          "collation": null,
+          "comment": "Whether the item has a qualifying Hacker News reference, maintained asynchronously.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "boolean"
         },
         "id": {
           "collation": null,
@@ -123408,7 +123477,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -123419,7 +123488,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 34,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -123430,7 +123499,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -123441,7 +123510,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -123452,7 +123521,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 33,
           "type": "jsonb"
         },
         "media_type": {
@@ -123463,7 +123532,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "rss_feed_item_media_types"
         },
         "published_at": {
@@ -123474,7 +123543,7 @@
           "generatedExpression": "LEAST(COALESCE(fn_text_to_timestamptz((data ->> 'isoDate'::text)), 'infinity'::timestamp with time zone), COALESCE(fn_text_to_timestamptz((data ->> 'pubDate'::text)), 'infinity'::timestamp with time zone), uuid_extract_timestamp(id))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 39,
           "type": "timestamp with time zone"
         },
         "search_vector": {
@@ -123485,7 +123554,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "tsvector"
         },
         "story_id": {
@@ -123496,7 +123565,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 35,
           "type": "uuid"
         },
         "story_locked_at": {
@@ -123507,7 +123576,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "thumbnail_url": {
@@ -123518,7 +123587,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "updated_at": {
@@ -123529,7 +123598,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "url_id": {
@@ -123540,7 +123609,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "video_id": {
@@ -123551,7 +123620,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "text"
         },
         "video_platform": {
@@ -123562,7 +123631,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "text"
         },
         "votes_count_down": {
@@ -123661,7 +123730,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 38,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -123672,7 +123741,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 37,
           "type": "xid8"
         }
       },
@@ -123828,6 +123897,33 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_items__hacker_news_references__published_at__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__hacker_news_references__published_at__id ON ONLY public.rss_feed_items USING btree (published_at DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "published_at",
+              "descending": true,
+              "expression": "published_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(has_hacker_news_references AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

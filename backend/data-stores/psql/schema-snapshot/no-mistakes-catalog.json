@@ -95785,7 +95785,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "archived_at": {
           "comment": "Timestamp when this post was archived; NULL means not archived.",
@@ -95795,7 +95795,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39
+          "ordinalPosition": 40
         },
         "archived_by_id": {
           "comment": "User who archived this post; NULL if not archived or user was deleted.",
@@ -95805,7 +95805,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40
+          "ordinalPosition": 41
         },
         "ban_evasion_post_embedding_input_sha256": {
           "comment": "Post embedding input SHA for which ban-evasion detection was enqueued or skipped while an earlier live post remained in the same author and community scope. Deletion rearms the immediate live successor.",
@@ -95815,7 +95815,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 56
+          "ordinalPosition": 57
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
           "comment": null,
@@ -95825,7 +95825,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 51
+          "ordinalPosition": 52
         },
         "bedrock_nova_multimodal_v1_embedding": {
           "comment": null,
@@ -95835,7 +95835,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53
+          "ordinalPosition": 54
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
           "comment": null,
@@ -95845,7 +95845,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 54
+          "ordinalPosition": 55
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
           "comment": null,
@@ -95855,7 +95855,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52
+          "ordinalPosition": 53
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
           "comment": null,
@@ -95865,7 +95865,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 55
+          "ordinalPosition": 56
         },
         "broadcast": {
           "comment": "Audience for this post: everyone, users, followers, or mutual_followers.",
@@ -95945,7 +95945,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34
+          "ordinalPosition": 35
         },
         "created_by_id": {
           "comment": null,
@@ -95955,7 +95955,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 34
         },
         "created_via": {
           "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
@@ -95985,7 +95985,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44
+          "ordinalPosition": 45
         },
         "data_point_vertical": {
           "comment": "Discriminator for the structured data point schema (credit_card, bank_account). NULL for non-data-point posts.",
@@ -95995,7 +95995,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41
+          "ordinalPosition": 42
         },
         "declared_language": {
           "comment": "User-declared ISO 639-1 language opt-in (default null)",
@@ -96005,7 +96005,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45
+          "ordinalPosition": 46
         },
         "deleted_at": {
           "comment": null,
@@ -96015,7 +96015,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37
+          "ordinalPosition": 38
         },
         "deleted_by_id": {
           "comment": null,
@@ -96025,7 +96025,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38
+          "ordinalPosition": 39
         },
         "has_creation_moderation_bypass": {
           "comment": "Whether an administrator explicitly bypassed creation moderation; remains true after later resets.",
@@ -96036,6 +96036,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 29
+        },
+        "has_hacker_news_references": {
+          "comment": "Whether the post has a qualifying Hacker News reference, maintained asynchronously or with post changes.",
+          "dataType": "boolean",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 30
         },
         "id": {
           "comment": null,
@@ -96055,7 +96065,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 33
         },
         "is_anonymous": {
           "comment": "Whether the author's identity is hidden from other users.",
@@ -96075,7 +96085,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47
+          "ordinalPosition": 48
         },
         "lingua_rs_detected_at": {
           "comment": null,
@@ -96085,7 +96095,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50
+          "ordinalPosition": 51
         },
         "lingua_rs_detected_language": {
           "comment": null,
@@ -96095,7 +96105,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46
+          "ordinalPosition": 47
         },
         "lingua_rs_input_sha256": {
           "comment": null,
@@ -96105,7 +96115,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48
+          "ordinalPosition": 49
         },
         "lingua_rs_results": {
           "comment": null,
@@ -96115,7 +96125,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49
+          "ordinalPosition": 50
         },
         "llm_moderation_content_sha256": {
           "comment": null,
@@ -96125,7 +96135,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 57
+          "ordinalPosition": 58
         },
         "markdown": {
           "comment": "Post body in markdown format.",
@@ -96175,7 +96185,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "root_post_id": {
           "comment": "Root post of a comment thread. NULL for top-level posts.",
@@ -96195,7 +96205,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58
+          "ordinalPosition": 59
         },
         "structured_data": {
           "comment": "Structured JSONB payload for data point posts. Schema is determined by data_point_vertical.",
@@ -96205,7 +96215,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42
+          "ordinalPosition": 43
         },
         "title": {
           "comment": "Post title (max 255 chars). At least one of title, markdown, or ai_summary_markdown must be non-empty.",
@@ -96225,7 +96235,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35
+          "ordinalPosition": 36
         },
         "updated_by_id": {
           "comment": null,
@@ -96235,7 +96245,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36
+          "ordinalPosition": 37
         },
         "url_id": {
           "comment": "For link posts: the single external URL this post links. NULL for all other post types. Biconditional CHECK enforces mutual exclusivity.",
@@ -96245,7 +96255,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43
+          "ordinalPosition": 44
         },
         "votes_count_down": {
           "comment": null,
@@ -96961,6 +96971,61 @@
           ],
           "live": true,
           "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__hacker_news_references__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__id ON ONLY public.posts USING btree (id DESC) WHERE (has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__hacker_news_references__votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.float8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -130354,7 +130419,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "bedrock_nova_multimodal_v1_embedding": {
           "comment": null,
@@ -130364,7 +130429,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
           "comment": null,
@@ -130374,7 +130439,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
           "comment": null,
@@ -130384,7 +130449,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
           "comment": null,
@@ -130394,7 +130459,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "created_at": {
           "comment": null,
@@ -130404,7 +130469,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "data": {
           "comment": "Raw JSONB dump of the parsed feed item data.",
@@ -130414,7 +130479,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "deleted_at": {
           "comment": null,
@@ -130424,7 +130489,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "duration_seconds": {
           "comment": "Duration of audio/video content in seconds.",
@@ -130434,7 +130499,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "enclosure_length": {
           "comment": "File size of the enclosure in bytes.",
@@ -130444,7 +130509,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "enclosure_media_type_id": {
           "comment": "MIME type of the enclosure (e.g. audio/mpeg).",
@@ -130454,7 +130519,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "enclosure_url": {
           "comment": "URL of the media enclosure (podcast audio, video file).",
@@ -130464,7 +130529,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
+        },
+        "has_hacker_news_references": {
+          "comment": "Whether the item has a qualifying Hacker News reference, maintained asynchronously.",
+          "dataType": "boolean",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10
         },
         "id": {
           "comment": null,
@@ -130484,7 +130559,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "lingua_rs_detected_at": {
           "comment": null,
@@ -130494,7 +130569,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 34
         },
         "lingua_rs_detected_language": {
           "comment": null,
@@ -130504,7 +130579,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "lingua_rs_input_sha256": {
           "comment": null,
@@ -130514,7 +130589,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "lingua_rs_results": {
           "comment": null,
@@ -130524,7 +130599,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 33
         },
         "media_type": {
           "comment": "Content type: article, audio, or video.",
@@ -130534,7 +130609,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "published_at": {
           "comment": "Computed publication timestamp: earliest of feed dates and fetch time.",
@@ -130544,7 +130619,7 @@
           "generatedExpression": "LEAST(COALESCE(fn_text_to_timestamptz((data ->> 'isoDate'::text)), 'infinity'::timestamp with time zone), COALESCE(fn_text_to_timestamptz((data ->> 'pubDate'::text)), 'infinity'::timestamp with time zone), uuid_extract_timestamp(id))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38
+          "ordinalPosition": 39
         },
         "search_vector": {
           "comment": null,
@@ -130554,7 +130629,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "story_id": {
           "comment": "FK to the story this item belongs to.",
@@ -130564,7 +130639,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34
+          "ordinalPosition": 35
         },
         "story_locked_at": {
           "comment": "When set by admin, auto-clustering will not override the story assignment.",
@@ -130574,7 +130649,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35
+          "ordinalPosition": 36
         },
         "thumbnail_url": {
           "comment": "URL of a thumbnail image for the item.",
@@ -130584,7 +130659,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "updated_at": {
           "comment": null,
@@ -130594,7 +130669,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "url_id": {
           "comment": "The canonical URL for this feed item.",
@@ -130604,7 +130679,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "video_id": {
           "comment": "Platform-specific video identifier (e.g. YouTube video ID).",
@@ -130614,7 +130689,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "video_platform": {
           "comment": "Video hosting platform name (e.g. youtube).",
@@ -130624,7 +130699,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "votes_count_down": {
           "comment": null,
@@ -130714,7 +130789,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37
+          "ordinalPosition": 38
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -130724,7 +130799,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36
+          "ordinalPosition": 37
         }
       },
       "comment": "Partitioned RSS feed item content keyed by rss_feed_item_guids.id.",
@@ -130890,6 +130965,38 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_items__hacker_news_references__published_at__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__hacker_news_references__published_at__id ON ONLY public.rss_feed_items USING btree (published_at DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "published_at",
+              "descending": true,
+              "expression": "published_at",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(has_hacker_news_references AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
