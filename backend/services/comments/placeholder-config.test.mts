@@ -28,4 +28,15 @@ describe('comment walk and placeholder look-down limits', () => {
       restore()
     }
   })
+
+  it('raises a stored depth below the deeper-replies minimum to seven levels', () => {
+    const restore = overrideDynamicConfigFieldsForTest(commentPlaceholderConfig, {
+      descendant_max_depth: 2,
+    })
+    try {
+      expect(getCommentDescendantMaxDepth()).toBe(7)
+    } finally {
+      restore()
+    }
+  })
 })

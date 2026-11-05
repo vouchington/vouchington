@@ -8,7 +8,7 @@ describe('comment placeholder registry entry', () => {
       Object.keys(commentPlaceholderConfig.defaultFields).toSorted(),
     )
     expect(commentPlaceholderRegistryEntry.fields.descendant_max_depth).toMatchObject({
-      minValue: 1,
+      minValue: 7,
       maxValue: 20,
       integer: true,
     })

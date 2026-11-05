@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestPost,
   createTestUser,
@@ -8,7 +7,6 @@ import {
   setTestPostClearanceStatus,
 } from '@voucha/test-helpers'
 import { getVisibleCommentDescendantIdsPage } from './descendant-ids.mts'
-import { commentPlaceholderConfig } from './placeholder-config.mts'
 import { commentPlaceholderHasValidReply } from './placeholder-state.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUser>>
@@ -100,19 +98,14 @@ describe('comment placeholders in the descendant walk', () => {
 
   it('keeps an unmoderated boundary placeholder for a signed-out viewer', async () => {
     const { root, user, reply, walk } = await thread()
-    const parent = await reply(root)
-    const pending = await reply(parent)
+    const chain = [await reply(root)]
+    for (let i = 0; i < 5; i += 1) chain.push(await reply(chain.at(-1)!))
+    const pending = await reply(chain.at(-1)!)
     const valid = await reply(pending)
     await setTestPostClearanceStatus(pending.id, 'pending', user.id)
-    const restore = overrideDynamicConfigFieldsForTest(commentPlaceholderConfig, {
-      descendant_max_depth: 2,
-    })
-    try {
-      expect(await walk(null)).toEqual([parent.id, pending.id])
-      expect(await walk(null, pending.id)).toEqual([valid.id])
-    } finally {
-      restore()
-    }
+
+    expect(await walk(null)).toEqual([...chain.map(post => post.id), pending.id])
+    expect(await walk(null, pending.id)).toEqual([valid.id])
   })
 
   it('keeps a hidden placeholder when the look-down limits end the search without an answer', async () => {

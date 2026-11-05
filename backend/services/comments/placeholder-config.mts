@@ -7,6 +7,12 @@ const defaultFields = {
   look_down_max_rows: 50,
 }
 
+/**
+ * Fewest levels one descendant walk may read. The web thread renders its deeper-replies link only on
+ * a comment at zero-based depth 5 with a loaded child, so a walk must reach seven levels.
+ */
+export const COMMENT_DESCENDANT_MIN_DEPTH = 7
+
 /** Hard ceilings for the descendant walk and placeholder look-down. */
 export const COMMENT_PLACEHOLDER_MAX_VALUES = {
   descendant_max_depth: 20,
@@ -34,7 +40,7 @@ const read = (field: keyof typeof defaultFields) =>
 
 /** Number of comment levels returned by one descendant walk, counting its immediate children as one. */
 export function getCommentDescendantMaxDepth(): number {
-  return read('descendant_max_depth')
+  return Math.max(read('descendant_max_depth'), COMMENT_DESCENDANT_MIN_DEPTH)
 }
 
 /** The limits one request applies when deciding whether a placeholder has a valid reply below it. */
