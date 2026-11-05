@@ -48,3 +48,16 @@ COMMENT ON COLUMN url_hacker_news_comments.url_id IS 'The URL the comment links.
 COMMENT ON COLUMN url_hacker_news_comments.hacker_news_item_id IS 'Hacker News item id of the comment; an outside identifier with no row here.';
 COMMENT ON COLUMN url_hacker_news_comments.parent_story_item_id IS 'Hacker News item id of the story whose thread holds the comment; an outside identifier that may not link the URL itself.';
 COMMENT ON COLUMN url_hacker_news_comments.posted_at IS 'When the comment was posted on Hacker News.';
+
+-- Partial indexes support bounded post and feed searches with the reference filter.
+CREATE INDEX IF NOT EXISTS idx_posts__hacker_news_references__id
+  ON posts (id DESC)
+  WHERE has_hacker_news_references AND approved_at IS NOT NULL AND deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_posts__hacker_news_references__votes_score_sort__id
+  ON posts (votes_score_sort DESC, id DESC)
+  WHERE has_hacker_news_references AND approved_at IS NOT NULL AND deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__hacker_news_references__published_at__id
+  ON rss_feed_items (published_at DESC, id DESC)
+  WHERE has_hacker_news_references AND deleted_at IS NULL;

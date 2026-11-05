@@ -1,3 +1,4 @@
+import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { describe, expect, it } from 'vitest'
 import {
   createTestPost,
@@ -31,6 +32,7 @@ describe('Hacker News post URL selection', () => {
     expect(selected[post.id]).toEqual(best.toReversed())
     expect(selected[otherPost.id]).toEqual([urls[14]])
     await insertHackerNewsReferencesForTest({ url_id: urls[10]!, story_count: 1, comment_count: 0 })
+    await setHackerNewsReferenceFlagsForTest([post.id], [])
     const filtered = await getPostIds(undefined, {
       user_id: user!.id,
       time_range: 'all',
@@ -38,6 +40,16 @@ describe('Hacker News post URL selection', () => {
     })
     expect(filtered.results.map(row => row.id)).toContain(post.id)
     expect((await getPostHackerNewsSummaries([post.id]))[post.id]).toBeUndefined()
+  })
+
+  it('keeps a net-positive related URL even when its Wilson sort score rounds to zero', async () => {
+    const user = await createTestUser()
+    const post = await createTestPost({ user })
+    const related = await createTestUrlWithHostname()
+    await insertHackerNewsRelatedUrlsForTest(post.id, user!.id, [
+      { urlId: related, up: 1e-16, none: 1 },
+    ])
+    expect(await getHackerNewsUrlIdsByPostIds([post.id])).toEqual({ [post.id]: [related] })
   })
 
   it('keeps the link URL first and deduplicates it against related URLs', async () => {

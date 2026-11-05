@@ -1,3 +1,4 @@
+import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { getPostIdsCached, searchRssFeedItemsCached } from '../entity-fetch/search-caches.mts'
 import { createHash } from 'node:crypto'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -59,6 +60,8 @@ describe('has_hacker_news_references', () => {
       insertHackerNewsReferencesForTest(lookup(plainUrl, 0, 0)),
     ])
 
+    await setHackerNewsReferenceFlagsForTest([], [seen])
+
     const withRefs = await searchRssFeedItems({
       rss_feed_ids: [feedId],
       has_hacker_news_references: true,
@@ -116,6 +119,8 @@ describe('has_hacker_news_references', () => {
       insertHackerNewsReferencesForTest(lookup(relatedUrl, 0, 2)),
       insertHackerNewsReferencesForTest(lookup(otherUrl, 0, 0)),
     ])
+
+    await setHackerNewsReferenceFlagsForTest([viaRelation.id], [])
 
     const page = await getPostIds(undefined, {
       user_id: user!.id,
@@ -178,6 +183,7 @@ describe('references stored on a canonical URL', () => {
       createTestPost({ user, url_id: source, post_type: 'link' }),
       createTestPost({ user }),
     ])
+    await setHackerNewsReferenceFlagsForTest([post.id], [])
     const page = await getPostIds(undefined, {
       user_id: user!.id,
       has_hacker_news_references: true,
@@ -209,6 +215,7 @@ describe('references stored on a canonical URL', () => {
       itemData: { title: `HN Canon Item ${random}` },
       contentSha256: createHash('sha256').update(`hn-canon-${random}`).digest(),
     })
+    await setHackerNewsReferenceFlagsForTest([], [item])
     const page = await searchRssFeedItems({
       rss_feed_ids: [feedId],
       has_hacker_news_references: true,

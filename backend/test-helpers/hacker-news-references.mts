@@ -70,3 +70,18 @@ export async function linkTwoHopCanonicalUrlForTest(
     [source, middle, canonical],
   )
 }
+
+/** Seeds a maintained filter flag independently from the reference sidecar facts. */
+export async function setHackerNewsReferenceFlagsForTest(
+  postIds: readonly string[],
+  rssFeedItemIds: readonly string[],
+): Promise<void> {
+  await write(
+    `/* setHackerNewsReferenceFlagsForTest */
+    WITH posts_updated AS (
+      UPDATE posts SET has_hacker_news_references = true WHERE id = ANY($1::uuid[])
+    )
+    UPDATE rss_feed_items SET has_hacker_news_references = true WHERE id = ANY($2::uuid[])`,
+    [postIds, rssFeedItemIds],
+  )
+}

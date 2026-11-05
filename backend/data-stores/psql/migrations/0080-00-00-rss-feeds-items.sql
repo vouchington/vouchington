@@ -254,6 +254,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
   votes_score_sort DOUBLE PRECISION GENERATED ALWAYS AS (fn_wilson_score_lower_bound(votes_score_up, votes_score_up + votes_score_none + votes_score_down)) STORED,
   votes_score_net DOUBLE PRECISION GENERATED ALWAYS AS (votes_score_up - votes_score_down) STORED,
 
+  has_hacker_news_references BOOLEAN NOT NULL DEFAULT FALSE,
   url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE, -- as defined by the RSS feed
   data JSONB NOT NULL, -- dump of the data
 
@@ -473,6 +474,7 @@ COMMENT ON COLUMN rss_feed_items.duration_seconds IS 'Duration of audio/video co
 COMMENT ON COLUMN rss_feed_items.thumbnail_url IS 'URL of a thumbnail image for the item.';
 COMMENT ON COLUMN rss_feed_items.video_id IS 'Platform-specific video identifier (e.g. YouTube video ID).';
 COMMENT ON COLUMN rss_feed_items.video_platform IS 'Video hosting platform name (e.g. youtube).';
+COMMENT ON COLUMN rss_feed_items.has_hacker_news_references IS 'Whether the item has a qualifying Hacker News reference, maintained asynchronously.';
 COMMENT ON COLUMN rss_feed_items.published_at IS 'Computed publication timestamp: earliest of feed dates and fetch time.';
 COMMENT ON COLUMN rss_feed_items.story_id IS 'FK to the story this item belongs to.';
 COMMENT ON COLUMN rss_feed_items.story_locked_at IS 'When set by admin, auto-clustering will not override the story assignment.';
