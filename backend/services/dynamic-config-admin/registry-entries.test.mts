@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest'
 import { assertRegistryOrderIncludesEntries } from './registry-entries.mts'
 
 describe('dynamic config registry entry ordering', () => {
+  it('registers the bounded active session limit', () => {
+    expect(
+      dynamicConfigRegistry.get('session-limits-config')?.fields.active_sessions_per_user,
+    ).toMatchObject({ integer: true, minValue: 1, maxValue: 1_000 })
+  })
   it('registers the bounded bot challenge clearance window', () => {
     expect(
       dynamicConfigRegistry.get('bot-challenge-config')?.fields.clearance_seconds,

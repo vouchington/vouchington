@@ -52,8 +52,8 @@ CREATE OR REPLACE TRIGGER trigger_user_sessions_updated_at
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id_active_last_seen
-  ON user_sessions (user_id, last_seen_at DESC, id DESC)
+CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id_active_expires_at
+  ON user_sessions (user_id, expires_at, id)
   WHERE revoked_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

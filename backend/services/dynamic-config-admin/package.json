@@ -67,6 +67,7 @@
     "@services/friend-recommendations": "workspace:^",
     "@services/hostname-blocking": "workspace:^",
     "@services/images": "workspace:^",
+    "@services/jwt-session": "workspace:^",
     "@services/language-detection": "workspace:^",
     "@services/lists": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",

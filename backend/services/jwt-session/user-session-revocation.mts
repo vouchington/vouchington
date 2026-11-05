@@ -6,6 +6,7 @@ import {
   revokeSessionKeys,
   revokeUserSessionsBefore,
 } from './session-revocation-keys.mts'
+import { sessionLimitsMaxValues } from './session-limits-config.mts'
 
 export async function revokeAuthenticatedSession(
   currentUserId: string,
@@ -33,25 +34,39 @@ export async function revokeAuthenticatedSession(
 
 export async function revokeAllAuthenticatedSessions(currentUserId: string): Promise<string[]> {
   await using query = await beginTransaction()
+  const sessionIds = await revokeAllAuthenticatedSessionsInTransaction(currentUserId, query)
+  await query.commit()
+  await Promise.all([revokeSessionKeys(sessionIds), revokeUserSessionsBefore(currentUserId)])
+  return sessionIds
+}
+
+/** Revoke active sessions while the caller owns the transaction. */
+export async function revokeAllAuthenticatedSessionsInTransaction(
+  currentUserId: string,
+  query: TransactionQuery,
+): Promise<string[]> {
   await query(
     sql`/* revokeAllAuthenticatedSessions */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`,
   )
-  // no-mistakes-disable-next-line postgres-required-predicates: user-wide revocation must update sessions across all session-ID partitions
   const result = await query(sql`/* revokeAllAuthenticatedSessions */
-      -- no-mistakes-disable-next-line postgres-bounded-statements: revocation must reach every unexpired session and return every ID for key revocation, so a LIMIT would be wrong; no per-user session cap exists, so rows are bounded only by login rate times session lifetime
+      WITH active AS MATERIALIZED (
+        SELECT id
+        -- no-mistakes-disable-next-line postgres-required-predicates: a SID may be minted before its owning user, so every session-ID partition can hold an active session for this user
+        FROM user_sessions
+        WHERE user_id = ${currentUserId} AND revoked_at IS NULL
+          AND expires_at > CURRENT_TIMESTAMP
+        ORDER BY expires_at, id LIMIT ${sessionLimitsMaxValues.active_sessions_per_user}
+      )
       UPDATE user_sessions
-      SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP),
+      SET revoked_at = CURRENT_TIMESTAMP,
           last_seen_at = CURRENT_TIMESTAMP
-      WHERE user_id = ${currentUserId}
+      WHERE id = ANY(ARRAY(SELECT id FROM active))
+        AND user_id = ${currentUserId}
+        AND revoked_at IS NULL
         AND expires_at > CURRENT_TIMESTAMP
       RETURNING id
     `)
-  await query.commit()
-  const rows = result.rows
-
-  const sessionIds = rows.map(row => (row as { id: string }).id)
-  await Promise.all([revokeSessionKeys(sessionIds), revokeUserSessionsBefore(currentUserId)])
-  return sessionIds
+  return result.rows.map(row => (row as { id: string }).id)
 }
 
 export async function revokeSession(
@@ -101,10 +116,19 @@ export async function revokeOtherAuthenticatedSessions(
 ): Promise<void> {
   await options.query(
     `/* revokeOtherAuthenticatedSessions */
+     WITH active AS MATERIALIZED (
+       SELECT id
+       -- no-mistakes-disable-next-line postgres-required-predicates: a SID may be minted before its owning user, so every session-ID partition can hold an active session for this user
+       FROM user_sessions
+       WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP
+       ORDER BY expires_at, id LIMIT $3
+     )
      UPDATE user_sessions
      SET revoked_at = clock_timestamp(), account_change_proof_hash = NULL,
          account_change_proof_expires_at = NULL
-     WHERE user_id = $1 AND id <> $2 AND revoked_at IS NULL`,
-    [currentUserId, actorSessionId],
+     WHERE id = ANY(ARRAY(SELECT id FROM active))
+       AND user_id = $1 AND id <> $2 AND revoked_at IS NULL
+       AND expires_at > CURRENT_TIMESTAMP`,
+    [currentUserId, actorSessionId, sessionLimitsMaxValues.active_sessions_per_user],
   )
 }

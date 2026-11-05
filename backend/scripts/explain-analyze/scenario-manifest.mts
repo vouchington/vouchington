@@ -8,7 +8,7 @@ import { BOUNDED_WORK_SCENARIOS } from './scenario-manifest-work.mts'
 import { VOTE_WEIGHT_DISPATCH_SCENARIO_IDS } from './vote-weight-dispatch-scenario-ids.mts'
 import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
 import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
-
+import { SESSION_LIMIT_SCENARIO_IDS } from './session-limit-scenario-ids.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VIEW_DRIVEN_SCENARIO_IDS,
   ...BOUNDED_WORK_SCENARIOS,
@@ -180,6 +180,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'url-hostname-search-by-topic',
   ...(['url-search', 'url-search-hostname', 'url-search-text'] as const),
   'user-bookmark-counts',
+  ...SESSION_LIMIT_SCENARIO_IDS,
   ...(['user-by-username', 'user-metrics-batch'] as const),
   'user-profile-metrics',
   'user-removed-posts-page',
