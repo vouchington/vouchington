@@ -32,7 +32,11 @@ describe('QueuesPage', () => {
   })
 
   it('renders the extracted loading state before scheduled jobs load', () => {
-    mockFetchScheduledJobs.mockReturnValue(new Promise(() => undefined))
+    mockFetchScheduledJobs.mockReturnValue(
+      new Promise(() => {
+        // Keep the request pending to exercise the loading state.
+      }),
+    )
 
     render(<QueuesPage />)
 

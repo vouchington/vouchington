@@ -126,7 +126,9 @@ describe('push registration ownership handoff', () => {
     const activationStarted = Promise.withResolvers<void>()
     vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(() => {
       activationStarted.resolve()
-      return new Promise(resolve => (releaseActivation = resolve))
+      return new Promise(resolve => {
+        releaseActivation = resolve
+      })
     })
 
     const enabling = registerAndSavePush('unused-for-existing-subscription')
@@ -145,7 +147,9 @@ describe('push registration ownership handoff', () => {
     const activationStarted = Promise.withResolvers<void>()
     vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(() => {
       activationStarted.resolve()
-      return new Promise(resolve => (releaseActivation = resolve))
+      return new Promise(resolve => {
+        releaseActivation = resolve
+      })
     })
     Object.defineProperty(navigator, 'serviceWorker', {
       configurable: true,

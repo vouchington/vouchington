@@ -103,7 +103,10 @@ const scenario = process.argv[2] as ReplayScenario | undefined
 const userId = process.argv[3]
 const send = (message: object) =>
   new Promise<void>((resolve, reject) => {
-    if (!process.send) return reject(new Error('Vote-weight child IPC is unavailable'))
+    if (!process.send) {
+      reject(new Error('Vote-weight child IPC is unavailable'))
+      return
+    }
     process.send(message, error => (error ? reject(error) : resolve()))
   })
 try {

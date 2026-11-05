@@ -53,7 +53,11 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
   })
 
   it('shows loading state and disabled button while queue state loads', () => {
-    fetchQueues.mockReturnValue(new Promise(() => undefined))
+    fetchQueues.mockReturnValue(
+      new Promise(() => {
+        // Keep the request pending to exercise the loading state.
+      }),
+    )
     renderSection()
     expect(screen.getByText('Loading…')).toBeInTheDocument()
     expect(screen.getByRole('button')).toBeDisabled()

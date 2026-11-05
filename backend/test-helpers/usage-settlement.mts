@@ -31,7 +31,11 @@ export async function withResponseUsageSettlements<Result>(
   try {
     return await withOwnedApiServer(
       (request, response) => {
-        closes.push(new Promise<void>(resolve => response.once('close', resolve)))
+        closes.push(
+          new Promise<void>(resolve => {
+            response.once('close', resolve)
+          }),
+        )
         void listener(request, response)
       },
       app,

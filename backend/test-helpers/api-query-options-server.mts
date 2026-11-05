@@ -59,9 +59,9 @@ export async function withOwnedApiServer<Result>(
   } finally {
     // Closing admission precedes the drain. Existing HTTP requests finish naturally.
     const closed = server.listening
-      ? new Promise<void>((resolve, reject) =>
-          server.close(error => (error ? reject(error) : resolve())),
-        )
+      ? new Promise<void>((resolve, reject) => {
+          server.close(error => (error ? reject(error) : resolve()))
+        })
       : Promise.resolve()
     void closed.catch(() => undefined)
     for (const response of await Promise.allSettled(responses)) {

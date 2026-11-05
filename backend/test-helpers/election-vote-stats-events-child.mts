@@ -4,7 +4,10 @@ import { createOwnedWorkerFailures } from './election-vote-stats-worker-errors.m
 type Start = { name: string; options: WorkerOptions }
 const send = (message: object) =>
   new Promise<void>((resolve, reject) => {
-    if (!process.send) return reject(new Error('Owned worker IPC is unavailable'))
+    if (!process.send) {
+      reject(new Error('Owned worker IPC is unavailable'))
+      return
+    }
     process.send(message, error => (error ? reject(error) : resolve()))
   })
 const startup = Promise.withResolvers<unknown>()

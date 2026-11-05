@@ -174,7 +174,9 @@ describe('armDashboardEventStream', () => {
       await requestClosed.promise
       expect(body).toBe(': heartbeat\n\n')
     } finally {
-      await new Promise<void>(resolve => server.close(() => resolve()))
+      await new Promise<void>(resolve => {
+        server.close(() => resolve())
+      })
     }
   })
 })

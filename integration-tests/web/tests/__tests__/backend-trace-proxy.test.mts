@@ -14,9 +14,9 @@ import { createTraceProxy } from '../../helpers/backend-trace-proxy.mts'
 import { listenOnFetchSafeEphemeralPort } from '../../helpers/ports.mts'
 
 function closeServer(server: http.Server): Promise<void> {
-  return new Promise<void>((resolve, reject) =>
-    server.close(error => (error ? reject(error) : resolve())),
-  )
+  return new Promise<void>((resolve, reject) => {
+    server.close(error => (error ? reject(error) : resolve()))
+  })
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

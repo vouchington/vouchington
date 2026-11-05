@@ -84,9 +84,9 @@ export async function withOwnedPlatformStatsServer<Result>(
       }
       const closed = server.listening
         ? settle(
-            new Promise<void>((resolve, reject) =>
-              server.close(err => (err ? reject(err) : resolve())),
-            ),
+            new Promise<void>((resolve, reject) => {
+              server.close(err => (err ? reject(err) : resolve()))
+            }),
           )
         : Promise.resolve({ status: 'fulfilled' as const })
       // A response can close before its handler settles and admits a cache write.

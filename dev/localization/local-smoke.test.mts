@@ -35,7 +35,12 @@ async function listenOrigin(handler: RequestListener): Promise<string> {
 describe('localization tmux smoke readiness', () => {
   afterEach(async () => {
     await Promise.all(
-      servers.splice(0).map(server => new Promise<void>(resolve => server.close(() => resolve()))),
+      servers.splice(0).map(
+        server =>
+          new Promise<void>(resolve => {
+            server.close(() => resolve())
+          }),
+      ),
     )
   })
 
@@ -86,7 +91,12 @@ describe('localization tmux smoke readiness', () => {
 describe('SSR localization revision diagnostic', () => {
   afterEach(async () => {
     await Promise.all(
-      servers.splice(0).map(server => new Promise<void>(resolve => server.close(() => resolve()))),
+      servers.splice(0).map(
+        server =>
+          new Promise<void>(resolve => {
+            server.close(() => resolve())
+          }),
+      ),
     )
   })
 

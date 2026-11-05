@@ -182,7 +182,11 @@ describe('useManageSourcePage error handling', () => {
   it('reloads for a new id and ignores the stale prior load', async () => {
     let resolveFirstTopic!: (value: never) => void
     mockFetchTopic
-      .mockReturnValueOnce(new Promise(resolve => (resolveFirstTopic = resolve)))
+      .mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveFirstTopic = resolve
+        }),
+      )
       .mockResolvedValueOnce({ id: 'topic-2', name: 'Topic Two', hostname_id: null } as never)
     mockFetchRssFeeds.mockResolvedValue({ results: [] } as never)
     mockFetchAdditionalHostnames.mockResolvedValue({

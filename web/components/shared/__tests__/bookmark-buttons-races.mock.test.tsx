@@ -38,7 +38,9 @@ describe('bookmark button request races', () => {
     it(`does not let an old ${testCase.inactive} request update a new A view`, async () => {
       let reject!: (error: Error) => void
       vi.mocked(bookmarkEntity).mockReturnValueOnce(
-        new Promise((_, rejectPromise) => (reject = rejectPromise)),
+        new Promise((_, rejectPromise) => {
+          reject = rejectPromise
+        }),
       )
       const { Component } = testCase
       const { rerender } = render(
@@ -99,7 +101,9 @@ describe('bookmark button request races', () => {
   it('does not report a deferred Save failure after an immediate entity rerender', async () => {
     let reject!: (error: Error) => void
     vi.mocked(bookmarkEntity).mockReturnValueOnce(
-      new Promise((_, rejectPromise) => (reject = rejectPromise)),
+      new Promise((_, rejectPromise) => {
+        reject = rejectPromise
+      }),
     )
     const onActiveChange = vi.fn<(active: boolean) => void>()
     const { rerender } = render(
@@ -132,7 +136,11 @@ describe('bookmark button request races', () => {
 
   it('does not emit deferred Hide success callbacks after an immediate entity rerender', async () => {
     let resolve!: (value: Awaited<ReturnType<typeof bookmarkEntity>>) => void
-    vi.mocked(bookmarkEntity).mockReturnValueOnce(new Promise(done => (resolve = done)))
+    vi.mocked(bookmarkEntity).mockReturnValueOnce(
+      new Promise(done => {
+        resolve = done
+      }),
+    )
     const onHide = vi.fn<(entityId: string) => void>()
     const onActiveChange = vi.fn<(active: boolean) => void>()
     const hiddenEvent = vi.fn<() => void>()
