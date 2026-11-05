@@ -4,9 +4,11 @@ import { createTransactionLockOnce } from '@vouchington/postgres'
 import type { PostPublicationScope } from './types.mts'
 
 export function postPublicationScopeIdentifier(scope: PostPublicationScope): string {
+  let switchResult: string
   switch (scope.type) {
     case 'post':
-      return scope.postId
+      switchResult = scope.postId
+      break
     case 'author':
       return scope.authorUserId
     case 'community':
@@ -20,7 +22,7 @@ export function postPublicationScopeIdentifier(scope: PostPublicationScope): str
     case 'topic':
       return scope.topicId
   }
-  throw new Error('Unexpected value')
+  return switchResult
 }
 
 export function postPublicationScopeLockKey(scope: PostPublicationScope): string {

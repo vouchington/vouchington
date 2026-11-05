@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { write, type QueryOptions } from '@data-stores/psql'
 import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 import { isUUID } from '@modules/utils'
@@ -79,9 +78,11 @@ function topicAttributeUpsertQuery(
     ON CONFLICT (topic_id) DO UPDATE
     SET ${updateSets}
     RETURNING *`
+  let switchResult: string
   switch (tableName) {
     case 'card_topics':
-      return `/* upsertTopicAttributes:cards */ INSERT INTO card_topics ${suffix}`
+      switchResult = `/* upsertTopicAttributes:cards */ INSERT INTO card_topics ${suffix}`
+      break
     case 'referral_program_topics':
       return `/* upsertTopicAttributes:referralPrograms */ INSERT INTO referral_program_topics ${suffix}`
     case 'retailer_topics':
@@ -93,5 +94,5 @@ function topicAttributeUpsertQuery(
     case 'spending_category_topics':
       return `/* upsertTopicAttributes:spendingCategories */ INSERT INTO spending_category_topics ${suffix}`
   }
-  return assertNever(tableName)
+  return switchResult
 }

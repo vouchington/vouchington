@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { copyrightUsIntakeRoutesText } from './statement-of-reasons-redress-wording.mts'
 
 const copyrightStatementNotificationCopy = {
@@ -28,9 +27,14 @@ export function copyrightNotificationCopy(
     | 'redress_decision_notice',
   jurisdiction: string = 'us_dmca',
 ): { title: string; body: string } {
+  let switchResult: { title: string; body: string }
   switch (deliveryKind) {
     case 'claimant_receipt':
-      return { title: 'Copyright notice received', body: 'Your copyright notice was received.' }
+      switchResult = {
+        title: 'Copyright notice received',
+        body: 'Your copyright notice was received.',
+      }
+      break
     case 'claimant_decision_notice':
       return {
         title: 'Copyright notice decision',
@@ -53,7 +57,7 @@ export function copyrightNotificationCopy(
     case 'status_update':
       return { title: 'Copyright case update', body: 'There is an update to your copyright case.' }
   }
-  return assertNever(deliveryKind)
+  return switchResult
 }
 
 /** The fallback in-app body when the stored statement is unavailable, by the notice's jurisdiction. */

@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { DirectPostEligibilityOptions } from '@modules/feed-query-builders'
 
 /**
@@ -18,13 +17,15 @@ export const ANONYMOUS_ENTITY_RELATION_VIEWER: EntityRelationViewer = { kind: 'a
 
 /** Post access for the viewer. */
 export function postEligibilityFor(viewer: EntityRelationViewer): DirectPostEligibilityOptions {
+  let switchResult: DirectPostEligibilityOptions
   switch (viewer.kind) {
     case 'anonymous':
-      return { currentUserId: null, isModerationStaff: false }
+      switchResult = { currentUserId: null, isModerationStaff: false }
+      break
     case 'user':
       return { currentUserId: viewer.userId, isModerationStaff: viewer.staffRole !== null }
   }
-  return assertNever(viewer)
+  return switchResult
 }
 
 /**
@@ -35,11 +36,13 @@ export function postEligibilityFor(viewer: EntityRelationViewer): DirectPostElig
 export function anonymousAuthorMaskFor(
   viewer: EntityRelationViewer,
 ): { readonly viewerUserId: string | null } | undefined {
+  let switchResult: { readonly viewerUserId: string | null } | undefined
   switch (viewer.kind) {
     case 'anonymous':
-      return { viewerUserId: null }
+      switchResult = { viewerUserId: null }
+      break
     case 'user':
       return viewer.staffRole === 'administrator' ? undefined : { viewerUserId: viewer.userId }
   }
-  return undefined
+  return switchResult
 }

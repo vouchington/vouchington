@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { createTestRetainedMembershipIdentity } from '../../entities/retained-identities.mts'
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
@@ -32,11 +31,13 @@ export function attemptTestMembershipGrantMutation(
   grantId: string,
   transition: 'changeCalendarDays' | 'delete' | 'revoke' | 'rewriteReason' | 'rewriteRevoker',
 ): Promise<QueryResult> {
+  let switchResult: Promise<QueryResult>
   switch (transition) {
     case 'changeCalendarDays':
-      return write(
+      switchResult = write(
         sql`/* rejectTestMembershipGrantMutation */ UPDATE membership_grants SET calendar_days = 31 WHERE id = ${grantId}`,
       )
+      break
     case 'delete':
       return write(
         sql`/* deleteTestMembershipGrant */ DELETE FROM membership_grants WHERE id = ${grantId}`,
@@ -54,7 +55,7 @@ export function attemptTestMembershipGrantMutation(
         sql`/* rewriteTestMembershipGrantRevoker */ WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id) UPDATE membership_grants SET revoked_by_id = (SELECT id FROM actor) WHERE id = ${grantId}`,
       )
   }
-  return assertNever(transition)
+  return switchResult
 }
 export async function createTestImmutableMembershipOperation(
   idempotencyKey: string,
@@ -98,16 +99,17 @@ export function claimTestMembershipOperation(
     sql`/* claimImmutableTestOperation */ UPDATE membership_operation_execution_work_items SET lease_token = ${claimToken}, leased_at = clock_timestamp(), lease_expires_at = clock_timestamp() + INTERVAL '5 minutes', attempt_count = attempt_count + 1 WHERE membership_operation_id = ${operationId}`,
   )
 }
-
 export function attemptTestMembershipOperationTransition(
   operationId: string,
   transition: MembershipOperationTransition,
 ): Promise<QueryResult> {
+  let switchResult: Promise<QueryResult>
   switch (transition) {
     case 'changeIdempotencyKey':
-      return write(
+      switchResult = write(
         sql`/* rejectTestMembershipOperationIdempotencyMutation */ UPDATE membership_operations SET idempotency_key = 'changed' WHERE id = ${operationId}`,
       )
+      break
     case 'changeBinding':
       return write(
         sql`/* rejectTestMembershipOperationBindingMutation */ UPDATE membership_operations SET membership_lineage_binding_id = ${randomUUID()} WHERE id = ${operationId}`,
@@ -133,19 +135,20 @@ export function attemptTestMembershipOperationTransition(
         sql`/* failTestMembershipOperationWithMessage */ UPDATE membership_operations SET failed_at = CURRENT_TIMESTAMP, failure_message = 'provider request failed' WHERE id = ${operationId}`,
       )
   }
-  return assertNever(transition)
+  return switchResult
 }
-
 export function attemptTestRefundMembershipOperationTransition(
   operationId: string,
   transition: MembershipRefundOperationTransition,
   providerRefundId = `re_${randomUUID()}`,
 ): Promise<QueryResult> {
+  let switchResult: Promise<QueryResult>
   switch (transition) {
     case 'claimWithoutTimestamp':
-      return write(
+      switchResult = write(
         sql`/* rejectTestRefundOperationClaim */ UPDATE membership_operation_execution_work_items SET lease_token = ${randomUUID()} WHERE membership_operation_id = ${operationId}`,
       )
+      break
     case 'providerRefund':
       return write(
         sql`/* setTestProviderRefundId */ UPDATE membership_operations SET provider_refund_id = ${providerRefundId} WHERE id = ${operationId}`,
@@ -159,7 +162,7 @@ export function attemptTestRefundMembershipOperationTransition(
         sql`/* setTestRemainingRefundable */ UPDATE membership_operations SET remaining_refundable_minor_units = 50 WHERE id = ${operationId}`,
       )
   }
-  return assertNever(transition)
+  return switchResult
 }
 
 export async function createTestImmutableMembershipChange(): Promise<string> {

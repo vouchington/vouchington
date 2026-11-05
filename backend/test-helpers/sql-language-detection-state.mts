@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { read, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
@@ -72,9 +71,11 @@ export async function setRssFeedItemLanguageInputShaForTest(
 }
 
 function sqlTableForLanguageDetection(table: LanguageDetectionEntityTable): SQLStatement {
+  let switchResult: SQLStatement
   switch (table) {
     case 'posts':
-      return sql`posts`
+      switchResult = sql`posts`
+      break
     case 'communities':
       return sql`communities`
     case 'crawls':
@@ -86,7 +87,7 @@ function sqlTableForLanguageDetection(table: LanguageDetectionEntityTable): SQLS
     case 'rss_feed_items':
       return sql`rss_feed_items`
   }
-  return assertNever(table)
+  return switchResult
 }
 
 export type LanguageDetectionResultForTest = LanguageDetectionStateForTest & {

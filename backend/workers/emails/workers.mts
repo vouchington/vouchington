@@ -13,11 +13,13 @@ export const emails = createWorker(QUEUE_NAME, (job: Job) => processEmailJob(job
 
 async function processEmailJob(job: Job): Promise<unknown> {
   const parsed = parseEmailJob(job.name, job.data)
+  let switchResult: unknown
   switch (parsed.kind) {
     case 'copyright':
-      return processSendCopyrightNoticeEmail(parsed.data)
+      switchResult = processSendCopyrightNoticeEmail(parsed.data)
+      break
     case 'template':
       return processEmail(templates, parsed.name, parsed.input, parsed.variables)
   }
-  throw new Error('Unexpected value')
+  return switchResult
 }

@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql from 'sql-template-strings'
@@ -35,6 +34,7 @@ export async function runLockedPage(
   notice: EligibleNotice,
   pageSize: number,
 ): Promise<PageResult> {
+  let switchResult: Promise<PageResult> | PageResult
   switch (data.phase) {
     case 'parties': {
       if (data.phaseIndex >= COPYRIGHT_CASE_PARTY_SOURCE_COUNT)
@@ -49,7 +49,7 @@ export async function runLockedPage(
         data.afterId,
         pageSize,
       )
-      return {
+      switchResult = {
         data: {
           ...data,
           phaseIndex: page.hasMore ? data.phaseIndex : data.phaseIndex + 1,
@@ -57,6 +57,7 @@ export async function runLockedPage(
         },
         hasMore: true,
       }
+      break
     }
     case 'verify_parties': {
       const page = await verifyCopyrightCasePartyPage(query, data.noticeId, data.afterId, pageSize)
@@ -180,5 +181,5 @@ export async function runLockedPage(
     case 'residual_parties':
       throw new Error('Residual case parties are handled after the live notice is gone')
   }
-  return assertNever(data.phase)
+  return switchResult
 }

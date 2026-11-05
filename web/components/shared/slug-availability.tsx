@@ -9,6 +9,7 @@ import { topicHref, communityHref } from '@/lib/links/entity-href'
 import { getCanonicalPostPath } from '@/lib/post-helpers'
 
 function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
+  let switchResult
   switch (conflict.kind) {
     case 'topic': {
       const href = topicHref({
@@ -16,7 +17,7 @@ function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
         slug: conflict.slug,
         id: conflict.id,
       })
-      return (
+      switchResult = (
         <Link
           href={href}
           className='underline underline-offset-2'
@@ -24,6 +25,7 @@ function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
           {conflict.name}
         </Link>
       )
+      break
     }
     case 'community': {
       const href = communityHref({ slug: conflict.slug })
@@ -48,7 +50,7 @@ function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
       )
     }
   }
-  throw new Error('Unexpected value in ConflictLink')
+  return switchResult
 }
 
 function labelForKind(kind: AvailabilityKind): string {

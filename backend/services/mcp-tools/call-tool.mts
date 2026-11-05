@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { McpError, ErrorCode, type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import onError from '@modules/on-error'
 import { runWithRequestContext } from '@modules/utils/request-context'
@@ -160,9 +159,11 @@ function toMcpToolCallError(
   resolution: Exclude<McpToolCallResolution, { status: 'allowed' }>,
   toolName: string,
 ): McpError {
+  let switchResult: McpError
   switch (resolution.status) {
     case 'not_found':
-      return new McpError(ErrorCode.MethodNotFound, `Tool not found: ${toolName}`)
+      switchResult = new McpError(ErrorCode.MethodNotFound, `Tool not found: ${toolName}`)
+      break
     case 'suspended':
       return new McpError(ErrorCode.InvalidRequest, 'suspended')
     case 'role_denied':
@@ -177,5 +178,5 @@ function toMcpToolCallError(
         `Tool requires scopes ${resolution.requiredScopes.join(', ')}: ${toolName}`,
       )
   }
-  return assertNever(resolution)
+  return switchResult
 }

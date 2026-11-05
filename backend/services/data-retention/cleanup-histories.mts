@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { beginTransaction } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
@@ -75,10 +74,12 @@ async function cleanupHistory(kind: HistoryKind, options: HistoryCleanupOptions)
 }
 
 function cutoffFor(kind: HistoryKind, now: Date): Date {
+  let switchResult: Date
   switch (kind) {
     case 'dynamic_configuration_revisions':
     case 'fediverse_instance_integration_changes':
-      return subtractUtcMonths(now, 12)
+      switchResult = subtractUtcMonths(now, 12)
+      break
     case 'rss_feed_setting_changes':
     case 'referral_attribution_scrub':
       return getRetentionCutoffDate(90, now)
@@ -90,7 +91,7 @@ function cutoffFor(kind: HistoryKind, now: Date): Date {
     case 'referral_attribution_expiry':
       return subtractUtcMonths(now, 24)
   }
-  return assertNever(kind)
+  return switchResult
 }
 
 function subtractUtcMonths(now: Date, months: number): Date {

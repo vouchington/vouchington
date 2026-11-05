@@ -25,12 +25,14 @@ export const initialAppealsClientState: State = {
 }
 
 export function appealsClientReducer(state: State, action: Action): State {
+  let switchResult: State
   switch (action.type) {
     case 'update_appeal': {
-      return {
+      switchResult = {
         ...state,
         appealOverrides: { ...state.appealOverrides, [action.appeal.id]: action.appeal },
       }
+      break
     }
     case 'open_appeal': {
       return {
@@ -56,7 +58,7 @@ export function appealsClientReducer(state: State, action: Action): State {
       return { ...state, draftEdits: { ...state.draftEdits, [action.id]: action.text } }
     }
   }
-  throw new Error('Unexpected value in appealsClientReducer')
+  return switchResult
 }
 
 /** A row stands for the full appeal once staff opened or changed it. */

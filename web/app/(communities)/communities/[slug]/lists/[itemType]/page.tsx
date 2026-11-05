@@ -45,9 +45,11 @@ function buildItemTypeConfig(apiType: CommunityListItemType): ItemTypeConfig {
 }
 
 async function fetchListData(slug: string, itemType: string): Promise<CommunityListPageData> {
+  let result: Promise<CommunityListPageData>
   switch (itemType) {
     case 'topics': {
-      return getCommunityListTopics(slug)
+      result = getCommunityListTopics(slug)
+      break
     }
     case 'feeds': {
       return getCommunityListRssFeeds(slug)
@@ -62,9 +64,10 @@ async function fetchListData(slug: string, itemType: string): Promise<CommunityL
       return getCommunityListUrls(slug)
     }
     default: {
-      return notFound()
+      notFound()
     }
   }
+  return result
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

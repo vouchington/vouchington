@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
 import type { AIRetentionFamily } from '@queues/psql/types'
@@ -38,6 +37,7 @@ export async function createAIRetentionContinuationFixture(
   family: AIRetentionFamily,
   query: TransactionQuery,
 ) {
+  let switchResult
   switch (family) {
     case 'textEmbeddingCache': {
       const { aged, ...window } = createExactRetentionWindow(TEXT_EMBEDDING_RETENTION_DAYS)
@@ -50,7 +50,7 @@ export async function createAIRetentionContinuationFixture(
         new Date(aged.getTime() - 1),
       )
       await setup.commit()
-      return {
+      switchResult = {
         options: { ...window, batchSize: 1, maxBatches: 1 },
         excludedState: async () => {
           await using reader = await beginTransaction()
@@ -65,6 +65,7 @@ export async function createAIRetentionContinuationFixture(
           )
         },
       }
+      break
     }
     case 'terminalEmbeddingBatches': {
       const { aged, ...window } = createExactRetentionWindow(EMBEDDING_BATCH_RETENTION_DAYS)
@@ -110,5 +111,5 @@ export async function createAIRetentionContinuationFixture(
       }
     }
   }
-  return assertNever(family)
+  return switchResult
 }

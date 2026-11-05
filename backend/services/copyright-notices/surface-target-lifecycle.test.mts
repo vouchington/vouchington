@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import * as cachePurgeEnqueues from '../../queues/cache-purge/enqueues.mts'
@@ -31,9 +30,11 @@ import { completeCopyrightMandatoryHumanReview, processCopyrightActionIntent } f
 type SurfaceFixture = Awaited<ReturnType<typeof createTestCopyrightImageFixture>>
 
 function ownerCache(fixture: SurfaceFixture) {
+  let switchResult
   switch (fixture.ownerKind) {
     case 'post':
-      return caches.posts
+      switchResult = caches.posts
+      break
     case 'user':
       return caches.users_public
     case 'topic':
@@ -41,7 +42,7 @@ function ownerCache(fixture: SurfaceFixture) {
     case 'community':
       return null // Community pages use edge Cache-Tag purges, not a Valkey entity cache.
   }
-  return assertNever(fixture.ownerKind)
+  return switchResult
 }
 
 async function warmOwnerCache(fixture: SurfaceFixture): Promise<void> {
@@ -136,13 +137,17 @@ async function seedOwnerCache(fixture: SurfaceFixture): Promise<void> {
 }
 
 async function publicImageIsProjected(fixture: SurfaceFixture): Promise<boolean> {
+  let switchResult:
+    | ReturnType<typeof publicImageIsProjected>
+    | Awaited<ReturnType<typeof publicImageIsProjected>>
   switch (fixture.selector.surfaceKind) {
     case 'post-image':
-      return Boolean(
+      switchResult = Boolean(
         (await getPostByAny(fixture.ownerId))?.images?.some(
           image => image.image_id === fixture.imageId,
         ),
       )
+      break
     case 'user-profile-image':
       return (
         (await getPublicUserByAny(fixture.ownerId))?.profile_image_placement?.image_id ===
@@ -171,7 +176,7 @@ async function publicImageIsProjected(fixture: SurfaceFixture): Promise<boolean>
         (await getCommunity(fixture.ownerId))?.banner_image_placement?.image_id === fixture.imageId
       )
   }
-  return assertNever(fixture.selector)
+  return switchResult
 }
 
 async function communityPurgeWasQueued(id: string): Promise<boolean> {

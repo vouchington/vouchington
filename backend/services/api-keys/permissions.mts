@@ -54,9 +54,11 @@ function apiKeyScopeValidationError(
   type: ApiKeyType,
   result: Exclude<ApiKeyScopeSetValidationResult, { valid: true }>,
 ): string {
+  let switchResult: string
   switch (result.code) {
     case 'duplicate-scope':
-      return 'api key scopes must not contain duplicates'
+      switchResult = 'api key scopes must not contain duplicates'
+      break
     case 'empty-scope-set':
       return 'api key scopes must not be empty'
     case 'missing-prerequisite':
@@ -70,5 +72,5 @@ function apiKeyScopeValidationError(
     case 'unsupported-surface':
       return `scope is not supported for API keys: ${result.scope}`
   }
-  throw new Error('Unexpected value')
+  return switchResult
 }

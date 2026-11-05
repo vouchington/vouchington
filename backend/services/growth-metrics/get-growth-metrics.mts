@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { GrowthMetrics, GrowthRange } from './types.mts'
 import { getUserGrowth } from './get-user-growth.mts'
 import { getContentProduction } from './get-content-production.mts'
@@ -55,10 +54,12 @@ async function loadGrowthMetrics(range: GrowthRange): Promise<GrowthMetrics> {
 
 function getRangeStart(range: GrowthRange, now: Date): Date {
   const d = new Date(now)
+  let switchResult: Date
   switch (range) {
     case 'today': {
       d.setUTCHours(0, 0, 0, 0)
-      return d
+      switchResult = d
+      break
     }
     case '7d': {
       d.setUTCDate(d.getUTCDate() - 7)
@@ -76,5 +77,5 @@ function getRangeStart(range: GrowthRange, now: Date): Date {
       return new Date(0)
     }
   }
-  return assertNever(range)
+  return switchResult
 }

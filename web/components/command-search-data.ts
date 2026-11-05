@@ -67,11 +67,13 @@ export async function searchByTab(
   tab: SearchTab,
   signal: AbortSignal,
 ): Promise<SearchResults> {
+  let switchResult: Promise<SearchResults> | SearchResults
   switch (tab) {
     case 'topics':
       return searchTopicsOnly(q, signal)
     case 'communities':
-      return searchCommunitiesOnly(q, signal)
+      switchResult = searchCommunitiesOnly(q, signal)
+      break
     case 'posts':
       return searchPostsOnly(q, signal)
     case 'news':
@@ -84,7 +86,7 @@ export async function searchByTab(
     case 'all':
       return EMPTY_RESULTS
   }
-  throw new Error('Unexpected value in searchByTab')
+  return switchResult
 }
 
 export function getPostRoute(postType: string): string {

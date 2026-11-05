@@ -53,12 +53,14 @@ export const initialRaidModeState: RaidModeState = {
 }
 
 export function raidModeReducer(state: RaidModeState, action: RaidModeAction): RaidModeState {
+  let switchResult: RaidModeState
   switch (action.type) {
     case 'toggleRestriction': {
       const selectedTypes = new Set(state.selectedTypes)
       if (action.checked) selectedTypes.add(action.restrictionType)
       else selectedTypes.delete(action.restrictionType)
-      return { ...state, selectedTypes }
+      switchResult = { ...state, selectedTypes }
+      break
     }
     case 'setDuration': {
       return { ...state, duration: action.duration }
@@ -76,7 +78,7 @@ export function raidModeReducer(state: RaidModeState, action: RaidModeAction): R
       return { ...state, isSaving: false, liftingId: null }
     }
   }
-  throw new Error('Unexpected value in raidModeReducer')
+  return switchResult
 }
 
 export function getActiveRestrictions(

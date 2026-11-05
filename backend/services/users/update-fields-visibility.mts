@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { isValidPrivacyAudience } from './privacy.mts'
 import type { UpdateUserOptions } from './types.mts'
 import assert from 'http-assert'
@@ -57,9 +56,11 @@ function visibilityEntries(
 }
 
 function visibilityAssignment(column: (typeof visibilityFieldNames)[number], value: string) {
+  let switchResult
   switch (column) {
     case 'cards_visibility':
-      return sql`cards_visibility = ${value}`
+      switchResult = sql`cards_visibility = ${value}`
+      break
     case 'community_memberships_visibility':
       return sql`community_memberships_visibility = ${value}`
     case 'direct_messages_audience':
@@ -79,7 +80,7 @@ function visibilityAssignment(column: (typeof visibilityFieldNames)[number], val
     case 'topic_follows_visibility':
       return sql`topic_follows_visibility = ${value}`
   }
-  return assertNever(column)
+  return switchResult
 }
 
 const visibilityFieldNames = [

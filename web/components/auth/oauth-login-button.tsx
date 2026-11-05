@@ -43,6 +43,7 @@ export function OAuthLoginButton({
     )
   }
   const buttonProps: OAuthButtonProps = { onToken, disabled, onAvailabilityChange }
+  let switchResult
   switch (provider) {
     case 'facebook': {
       return <FacebookLoginButton {...buttonProps} />
@@ -51,7 +52,8 @@ export function OAuthLoginButton({
       return <AppleLoginButton {...buttonProps} />
     }
     case 'google': {
-      return <GoogleLoginButton {...buttonProps} />
+      switchResult = <GoogleLoginButton {...buttonProps} />
+      break
     }
     case 'x': {
       return <XLoginButton {...buttonProps} />
@@ -66,5 +68,5 @@ export function OAuthLoginButton({
       return <GithubLoginButton {...buttonProps} />
     }
   }
-  throw new Error('Unexpected value in OAuthLoginButton')
+  return switchResult
 }

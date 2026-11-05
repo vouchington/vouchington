@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { createReportInputParser, ReportValidationError } from '@vouchington/utils/moderation'
@@ -81,6 +80,7 @@ function reportValidationMessage(error: ReportValidationError): string {
     return error.message
   }
 
+  let switchResult: string
   switch (error.code) {
     case 'invalid_target_type':
       return 'Invalid entity type'
@@ -89,9 +89,10 @@ function reportValidationMessage(error: ReportValidationError): string {
     case 'invalid_reason':
       return 'Invalid reason'
     case 'invalid_note':
-      return 'Invalid note'
+      switchResult = 'Invalid note'
+      break
     case 'note_too_long':
       return 'Note must be 1000 characters or fewer'
   }
-  return assertNever(error.code)
+  return switchResult
 }

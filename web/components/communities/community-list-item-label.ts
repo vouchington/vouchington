@@ -9,9 +9,11 @@ export function getCommunityListItemLabel(
   itemType: CommunityListItemType,
   data: CommunityListPageData,
 ): string {
+  let switchResult: string
   switch (itemType) {
     case 'topic': {
-      return data.topics?.[item.entity_id]?.name ?? 'topic'
+      switchResult = data.topics?.[item.entity_id]?.name ?? 'topic'
+      break
     }
     case 'rss_feed': {
       return data.rss_feeds?.[item.entity_id]?.title ?? 'source'
@@ -26,5 +28,5 @@ export function getCommunityListItemLabel(
       return data.urls?.[item.entity_id]?.url ?? 'URL'
     }
   }
-  throw new Error('Unexpected value in getCommunityListItemLabel')
+  return switchResult
 }

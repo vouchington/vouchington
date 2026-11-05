@@ -37,13 +37,17 @@ async function searchByItemType(
   signal: AbortSignal,
   untitledPost: string,
 ): Promise<SearchResult[]> {
+  let switchResult:
+    | ReturnType<typeof searchByItemType>
+    | Awaited<ReturnType<typeof searchByItemType>>
   switch (itemType) {
     case 'topic': {
       const res = await fetchTopics({ q, limit: 10, signal })
-      return res.results.flatMap(r => {
+      switchResult = res.results.flatMap(r => {
         const topic = res.topics?.[r.id]
         return topic ? [{ id: topic.id, displayName: topic.name, kind: 'ui-text' as const }] : []
       })
+      break
     }
     case 'rss_feed': {
       const feeds = await searchRssFeedsClient(q, signal)
@@ -92,7 +96,7 @@ async function searchByItemType(
       })
     }
   }
-  throw new Error('Unexpected value in searchByItemType')
+  return switchResult
 }
 
 export function CommunityListAutocomplete({ itemType, onSelect, disabled }: Props) {

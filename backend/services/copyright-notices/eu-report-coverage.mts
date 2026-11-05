@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { QueryExecutor } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -40,13 +39,15 @@ export async function readEuCopyrightReportCoveragePage(
 
   const cursor = afterId === null ? sql`` : sql` AND fact.id > ${afterId}::uuid`
   const source = (() => {
+    let switchResult: ReturnType<typeof sql>
     switch (family) {
       case 'receipts':
-        return sql`SELECT fact.id, fact.received_at AS occurred_at
+        switchResult = sql`SELECT fact.id, fact.received_at AS occurred_at
           FROM copyright_territorial_notice_receipts fact
           WHERE fact.copyright_notice_id = ${noticeId}::uuid AND fact.jurisdiction = 'eu_dsa'`.append(
           cursor,
         )
+        break
       case 'decisions':
         return sql`SELECT fact.id, fact.decided_at AS occurred_at
           FROM copyright_territorial_decisions fact
@@ -77,7 +78,7 @@ export async function readEuCopyrightReportCoveragePage(
           cursor,
         )
     }
-    return assertNever(family)
+    return switchResult
   })()
   const page = sql`/* readEuCopyrightReportCoveragePage.facts */
     SELECT fact.id, EXISTS (

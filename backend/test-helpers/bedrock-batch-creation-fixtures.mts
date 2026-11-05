@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { randomUUID } from 'node:crypto'
 import { rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -23,13 +22,17 @@ export async function createLockedEntityId(
   orderIndex = 0,
 ): Promise<string> {
   const suffix = randomUUID().slice(0, 8)
+  let switchResult:
+    | ReturnType<typeof createLockedEntityId>
+    | Awaited<ReturnType<typeof createLockedEntityId>>
   switch (jobType) {
     case 'topics':
-      return insertTestTopic({
+      switchResult = insertTestTopic({
         name: `Batch Lock ${suffix}`,
         slug: `batch-lock-${suffix}`,
         createdById: userId,
       })
+      break
     case 'posts':
       return insertTestPost({
         title: `Batch Lock ${suffix}`,
@@ -68,7 +71,7 @@ export async function createLockedEntityId(
     case 'images':
       return insertTestImage(userId)
   }
-  return assertNever(jobType)
+  return switchResult
 }
 
 /** Each owned file is removed even when submission rejects before its normal cleanup. */

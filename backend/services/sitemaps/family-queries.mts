@@ -37,9 +37,11 @@ export async function readSitemapFamilyPage(
 }
 
 function buildSitemapFamilyQuery(family: SitemapFamilyType, options: FamilyPageOptions) {
+  let switchResult
   switch (family) {
     case 'users':
-      return buildUsersQuery(options)
+      switchResult = buildUsersQuery(options)
+      break
     case 'topics':
       return buildTopicsQuery(options)
     case 'communities':
@@ -49,7 +51,7 @@ function buildSitemapFamilyQuery(family: SitemapFamilyType, options: FamilyPageO
     case 'landing-pages':
       return buildLandingPagesQuery(options)
   }
-  throw new Error('Unexpected value')
+  return switchResult
 }
 
 function buildUsersQuery(options: FamilyPageOptions) {

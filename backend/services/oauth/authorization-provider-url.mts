@@ -24,14 +24,19 @@ export function buildProviderAuthorizationUrl(options: {
     state: options.state,
     response_type: 'code',
   }
+  let switchResult: string
   switch (options.provider) {
     case 'facebook':
       // Facebook's authorization endpoint does not accept RFC 7636 PKCE parameters.
-      return withQuery(`https://www.facebook.com/${FACEBOOK_GRAPHQL_VERSION}/dialog/oauth`, {
-        ...shared,
-        client_id: options.clientId,
-        scope: 'email,user_friends',
-      })
+      switchResult = withQuery(
+        `https://www.facebook.com/${FACEBOOK_GRAPHQL_VERSION}/dialog/oauth`,
+        {
+          ...shared,
+          client_id: options.clientId,
+          scope: 'email,user_friends',
+        },
+      )
+      break
     case 'x':
       return withQuery('https://x.com/i/oauth2/authorize', {
         ...shared,
@@ -82,7 +87,7 @@ export function buildProviderAuthorizationUrl(options: {
         code_challenge_method: 'S256',
       })
   }
-  throw new Error('Unexpected value')
+  return switchResult
 }
 
 function withQuery(url: string, params: Record<string, string>): string {

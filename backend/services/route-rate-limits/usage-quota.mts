@@ -102,9 +102,18 @@ function toApiUsage(settlement: UsageSettlement, units: number): ApiUsage {
 function identityDimensions(
   identity: UsageIdentity,
 ): Pick<ApiUsage, 'credential' | 'user_id' | 'api_key_id' | 'oauth_client_id' | 'oauth_grant_id'> {
+  let switchResult: Pick<
+    ApiUsage,
+    'credential' | 'user_id' | 'api_key_id' | 'oauth_client_id' | 'oauth_grant_id'
+  >
   switch (identity.credential) {
     case 'api_key':
-      return { credential: 'api_key', user_id: identity.userId, api_key_id: identity.apiKeyId }
+      switchResult = {
+        credential: 'api_key',
+        user_id: identity.userId,
+        api_key_id: identity.apiKeyId,
+      }
+      break
     case 'oauth':
       return {
         credential: 'oauth',
@@ -117,5 +126,5 @@ function identityDimensions(
     case 'anonymous':
       return { credential: 'anonymous' }
   }
-  throw new Error('Unexpected value')
+  return switchResult
 }

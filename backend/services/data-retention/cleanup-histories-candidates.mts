@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 
 export const HISTORY_KINDS = [
@@ -34,6 +33,9 @@ export async function listRawCandidates(
   limit: number,
 ): Promise<Candidate[]> {
   const params = [cursorId, cutoffId, lowerBoundId, limit]
+  let switchResult:
+    | ReturnType<typeof listRawCandidates>
+    | Awaited<ReturnType<typeof listRawCandidates>>
   switch (kind) {
     case 'dynamic_configuration_revisions': {
       const { rows } = await query<Candidate>(
@@ -45,7 +47,8 @@ export async function listRawCandidates(
          ORDER BY id LIMIT $4 FOR UPDATE SKIP LOCKED`,
         params,
       )
-      return rows
+      switchResult = rows
+      break
     }
     case 'rss_feed_setting_changes': {
       const { rows } = await query<Candidate>(
@@ -134,7 +137,7 @@ export async function listRawCandidates(
       return rows
     }
   }
-  return assertNever(kind)
+  return switchResult
 }
 
 /** One unresolved row behind the checkpoint catches late commits without rereading cleared rows. */

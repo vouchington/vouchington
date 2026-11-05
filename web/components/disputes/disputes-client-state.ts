@@ -30,9 +30,11 @@ export function disputesClientReducer(
   state: DisputesClientState,
   action: DisputesClientAction,
 ): DisputesClientState {
+  let switchResult: DisputesClientState
   switch (action.type) {
     case 'set_loading': {
-      return { ...state, loadingId: action.id }
+      switchResult = { ...state, loadingId: action.id }
+      break
     }
     case 'update_dispute': {
       return {
@@ -54,7 +56,7 @@ export function disputesClientReducer(
       return { ...state, draftEdits: { ...state.draftEdits, [action.id]: action.text } }
     }
   }
-  throw new Error('Unexpected value in disputesClientReducer')
+  return switchResult
 }
 
 export function uniqueDisputes(disputes: ReviewDisputeSummary[]): ReviewDisputeSummary[] {

@@ -18,9 +18,13 @@ function getTrustColor(tier: TrustTier): string {
 }
 
 function getTrustTooltip(tier: TrustTier, t: ReturnType<typeof useTranslations>): string {
+  let switchResult: string
   switch (tier) {
     case 'trusted': {
-      return t('extracted.domains.domainTrustBadge.trusted3NetVotesAnd5PositiveVotes_48d9392f')
+      switchResult = t(
+        'extracted.domains.domainTrustBadge.trusted3NetVotesAnd5PositiveVotes_48d9392f',
+      )
+      break
     }
     case 'neutral': {
       return t(
@@ -34,7 +38,7 @@ function getTrustTooltip(tier: TrustTier, t: ReturnType<typeof useTranslations>)
       return t('extracted.domains.domainTrustBadge.unratedNoVotesYet_3213d916')
     }
   }
-  throw new Error('Unexpected value in getTrustTooltip')
+  return switchResult
 }
 
 function getTrustBgColor(tier: TrustTier): string {

@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { CopyrightDeliveryKind } from './delivery-types.mts'
 import { copyrightUsIntakeRoutesText } from './statement-of-reasons-redress-wording.mts'
 
@@ -6,9 +5,11 @@ export const copyrightNeedsInformationText =
   'We need more information before we can evaluate your copyright notice.'
 
 export function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
+  let switchResult: string
   switch (kind) {
     case 'email_intake_rejected':
-      return 'We could not accept your copyright notice'
+      switchResult = 'We could not accept your copyright notice'
+      break
     case 'email_intake_needs_information':
     case 'staff_information_request':
       return 'More information is needed for your copyright notice'
@@ -32,7 +33,7 @@ export function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
     case 'status_update':
       return 'Update to your copyright case'
   }
-  return assertNever(kind)
+  return switchResult
 }
 
 /** Unpromoted intake has neither a copyright case nor an established legal ground. */

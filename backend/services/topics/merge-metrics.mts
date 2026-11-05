@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 import { processTopicMergeReviewMetricsPage } from './merge-metrics-reviews.mts'
 import {
@@ -29,6 +28,9 @@ export async function processTopicMergeMetricsPage(
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new RangeError('Topic merge metric page limit must be a positive integer')
 
+  let switchResult:
+    | ReturnType<typeof processTopicMergeMetricsPage>
+    | Awaited<ReturnType<typeof processTopicMergeMetricsPage>>
   switch (phase) {
     case 0: {
       // The event id, including a null-score retraction, determines each user's current ballot.
@@ -65,7 +67,8 @@ export async function processTopicMergeMetricsPage(
         SELECT id FROM page ORDER BY id`,
         [operationId, destinationTopicId, cursor, limit],
       )
-      return pageResult(phase, cursor, rows, limit, partialStats, row => row.id)
+      switchResult = pageResult(phase, cursor, rows, limit, partialStats, row => row.id)
+      break
     }
     case 1: {
       const rows = await processTopicMergeReviewMetricsPage(
@@ -117,7 +120,7 @@ export async function processTopicMergeMetricsPage(
       return pageResult(phase, cursor, rows, limit, nextStats, row => row.subject_id)
     }
   }
-  return assertNever(phase)
+  return switchResult
 }
 
 function pageResult<Row>(

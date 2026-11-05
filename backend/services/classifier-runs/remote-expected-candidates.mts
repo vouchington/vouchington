@@ -44,9 +44,11 @@ export function expectedCandidates<C>(
 export function resultKey(
   result: ClassifierDecisionInputResult | PersistedClassifierDecisionResult,
 ): string {
+  let switchResult: string
   switch (result.candidateKind) {
     case 'topic':
-      return `topic:${result.topicId}:${result.storedCandidateId ?? ''}`
+      switchResult = `topic:${result.topicId}:${result.storedCandidateId ?? ''}`
+      break
     case 'story':
       return `story:${result.storyId}`
     case 'rss_feed_item':
@@ -54,7 +56,7 @@ export function resultKey(
     case 'community_prompt':
       return `community_prompt:${result.communityPromptId}`
   }
-  throw new Error('Unexpected value')
+  return switchResult
 }
 
 export function matchesExpectedThresholds(

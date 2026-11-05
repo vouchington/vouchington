@@ -109,21 +109,25 @@ export function blocklistBloomRebuildFollowUpJobId(
 }
 
 function blocklistReplicaLagDelay(filter: RebuildBloomFilterData['filter']): number | undefined {
+  let switchResult: number | undefined
   switch (filter) {
     case 'url-blocklist':
     case 'email-blocklist':
-      return BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs
+      switchResult = BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs
+      break
     case 'embedding':
     case 'api-keys':
       return undefined
   }
-  return undefined
+  return switchResult
 }
 
 function rebuildBloomFilterOrdering(data: RebuildBloomFilterData): JobOptions['ordering'] {
+  let switchResult: JobOptions['ordering']
   switch (data.filter) {
     case 'url-blocklist':
-      return BLOOM_FILTER_ORDERING.rebuild_url_blocklist
+      switchResult = BLOOM_FILTER_ORDERING.rebuild_url_blocklist
+      break
     case 'email-blocklist':
       return BLOOM_FILTER_ORDERING.rebuild_email_blocklist
     case 'embedding':
@@ -131,7 +135,7 @@ function rebuildBloomFilterOrdering(data: RebuildBloomFilterData): JobOptions['o
     case 'api-keys':
       return BLOOM_FILTER_ORDERING.rebuild_api_keys
   }
-  throw new Error('Unexpected value')
+  return switchResult
 }
 
 export function rebuildEmbeddingBloomFilterJobOptions(priority?: number): Partial<JobOptions> {

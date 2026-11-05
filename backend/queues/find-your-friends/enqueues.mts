@@ -32,15 +32,17 @@ type SyncConfig = {
 )
 
 function buildSyncData(field: SyncConfig['idField'], id: string) {
+  let switchResult
   switch (field) {
     case 'facebookAccountId':
-      return { facebookAccountId: id }
+      switchResult = { facebookAccountId: id }
+      break
     case 'xAccountId':
       return { xAccountId: id }
     case 'githubAccountId':
       return { githubAccountId: id }
   }
-  throw new Error('Unexpected value')
+  return switchResult
 }
 
 function buildJobOptions(

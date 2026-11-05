@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -52,9 +51,11 @@ function registerTopicRoutes(registerCases: () => void): void {
 function suiteRegistrar(
   segment: CommunityListItemRouteCase['segment'],
 ): (registerCases: () => void) => void {
+  let switchResult: (registerCases: () => void) => void
   switch (segment) {
     case 'domains':
-      return registerDomainRoutes
+      switchResult = registerDomainRoutes
+      break
     case 'urls':
       return registerUrlRoutes
     case 'posts':
@@ -62,7 +63,7 @@ function suiteRegistrar(
     case 'topics':
       return registerTopicRoutes
   }
-  return assertNever(segment)
+  return switchResult
 }
 
 /** Shared community list-item mutation cases. Extra reads register through `registerAdditional`. */

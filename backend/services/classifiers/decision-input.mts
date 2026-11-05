@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { ClassifierCandidateKind } from '@voucha/types'
 import { createHash } from 'node:crypto'
 import type {
@@ -95,9 +94,11 @@ export function flattenClassifierDecisionResults(
 
 /** The topic, story, standalone RSS feed item or community prompt a result scores. */
 export function classifierDecisionEntityId(result: ClassifierDecisionInputResult): string {
+  let switchResult: string
   switch (result.candidateKind) {
     case 'topic':
-      return result.topicId
+      switchResult = result.topicId
+      break
     case 'story':
       return result.storyId
     case 'rss_feed_item':
@@ -105,7 +106,7 @@ export function classifierDecisionEntityId(result: ClassifierDecisionInputResult
     case 'community_prompt':
       return result.communityPromptId
   }
-  return assertNever(result)
+  return switchResult
 }
 
 export function classifierDecisionResultKey(result: ClassifierDecisionInputResult): string {

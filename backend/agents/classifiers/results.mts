@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type {
   NoulAnswer,
   StructuredDecisionAnswer,
@@ -99,14 +98,16 @@ function resultForCandidate(
   if (!Number.isFinite(probability) || probability < 0 || probability > 1)
     throw new Error('Structured-decision answer produced an invalid probability')
   const shared = { probability, rawResponse }
+  let switchResult: ClassifierDecisionInputResult
   switch (candidate.candidateKind) {
     case 'topic':
-      return {
+      switchResult = {
         candidateKind: 'topic',
         topicId: candidate.topicId,
         storedCandidateId: candidate.storedCandidateId,
         ...shared,
       }
+      break
     case 'story':
       return {
         candidateKind: 'story',
@@ -129,5 +130,5 @@ function resultForCandidate(
         ...shared,
       }
   }
-  return assertNever(candidate)
+  return switchResult
 }

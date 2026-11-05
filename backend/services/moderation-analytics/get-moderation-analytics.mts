@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { getModerationAnalyticsWorkLimit } from './work-limits.mts'
 /* oxlint-disable max-lines -- Moderation analytics keeps related SQL aggregates together for one dashboard contract. */
 import { read } from '@data-stores/psql'
@@ -67,10 +66,12 @@ export async function getModerationAnalytics(
 
 function getRangeStart(range: ModerationAnalyticsRange, now: Date): Date {
   const d = new Date(now)
+  let switchResult: Date
   switch (range) {
     case 'today': {
       d.setUTCHours(0, 0, 0, 0)
-      return d
+      switchResult = d
+      break
     }
     case '7d': {
       d.setUTCDate(d.getUTCDate() - 7)
@@ -91,7 +92,7 @@ function getRangeStart(range: ModerationAnalyticsRange, now: Date): Date {
       return d
     }
   }
-  return assertNever(range)
+  return switchResult
 }
 
 async function getQueueVolume(

@@ -32,9 +32,11 @@ export const initialModQueueState: ModQueueState = {
 }
 
 export function modQueueReducer(state: ModQueueState, action: ModQueueAction): ModQueueState {
+  let switchResult: ModQueueState
   switch (action.type) {
     case 'fail': {
-      return { ...state, error: action.message, loading: null }
+      switchResult = { ...state, error: action.message, loading: null }
+      break
     }
     case 'reject-cancelled': {
       return { ...state, activeAction: null, rejectionReason: '' }
@@ -68,5 +70,5 @@ export function modQueueReducer(state: ModQueueState, action: ModQueueAction): M
       return { ...state, loading: null }
     }
   }
-  throw new Error('Unexpected value in modQueueReducer')
+  return switchResult
 }

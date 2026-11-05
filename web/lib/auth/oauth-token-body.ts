@@ -1,9 +1,11 @@
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
 
 export function tokenToBody(token: OAuthLoginToken): Record<string, unknown> {
+  let switchResult: Record<string, unknown>
   switch (token.provider) {
     case 'facebook': {
-      return { token: token.token }
+      switchResult = { token: token.token }
+      break
     }
     case 'apple': {
       return {
@@ -24,5 +26,5 @@ export function tokenToBody(token: OAuthLoginToken): Record<string, unknown> {
       return { code: token.code, redirectUri: token.redirectUri }
     }
   }
-  throw new Error('Unexpected value in tokenToBody')
+  return switchResult
 }

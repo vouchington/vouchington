@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { boundRateLimitDeferral } from '@vouchington/queue-errors'
 import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { background } from '@queues/background/queues'
@@ -70,9 +69,11 @@ function nextDistributionPage(
     cursor,
     ...(data.recovery ? { recovery: true as const } : {}),
   }
+  let switchResult: DistributeActivityData
   switch (data.activityType) {
     case 'Follow':
-      return { ...base, activityType: 'Follow', targetUserId: data.targetUserId }
+      switchResult = { ...base, activityType: 'Follow', targetUserId: data.targetUserId }
+      break
     case 'UndoFollow':
       return {
         ...base,
@@ -90,7 +91,7 @@ function nextDistributionPage(
         originalActivityId: data.originalActivityId,
       }
   }
-  return assertNever(data)
+  return switchResult
 }
 
 export async function processDeliverActivityJob(

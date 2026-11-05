@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { RssFeedHardDeleteChildPhase } from '@queues/rss-feed-maintenance/types'
 
@@ -16,9 +15,12 @@ export async function lockHardDeleteRssFeedChildRows(
   phase: RssFeedHardDeleteChildPhase,
   limit: number,
 ): Promise<HardDeleteChildRow[]> {
+  let switchResult:
+    | ReturnType<typeof lockHardDeleteRssFeedChildRows>
+    | Awaited<ReturnType<typeof lockHardDeleteRssFeedChildRows>>
   switch (phase) {
     case 'setting_changes':
-      return (
+      switchResult = (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:settingChanges */
         SELECT id, NULL::uuid AS topic_id, NULL::uuid AS community_id, NULL::uuid AS user_id
@@ -27,6 +29,7 @@ export async function lockHardDeleteRssFeedChildRows(
           [feedId, limit],
         )
       ).rows
+      break
     case 'crawls':
       return (
         await query<HardDeleteChildRow>(
@@ -98,5 +101,5 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
   }
-  return assertNever(phase)
+  return switchResult
 }

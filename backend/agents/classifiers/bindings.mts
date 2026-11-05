@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type {
   ChoiceQuestion,
   NoulQuestion,
@@ -42,9 +41,11 @@ export function candidatesForBinding(
 export function classifierCandidateEntityId(
   candidate: ClassifierDecisionCandidate | ClassifierDecisionInputResult,
 ): string {
+  let switchResult: string
   switch (candidate.candidateKind) {
     case 'topic':
-      return candidate.topicId
+      switchResult = candidate.topicId
+      break
     case 'story':
       return candidate.storyId
     case 'rss_feed_item':
@@ -52,7 +53,7 @@ export function classifierCandidateEntityId(
     case 'community_prompt':
       return candidate.communityPromptId
   }
-  return assertNever(candidate)
+  return switchResult
 }
 
 /** The persisted classifier candidate kind a concrete candidate belongs to. */

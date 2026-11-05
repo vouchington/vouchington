@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { describe, expect, it, beforeAll } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import {
@@ -86,9 +85,11 @@ function membershipWrites(
   communityId: string,
   membership: MineFeedMembership,
 ): Promise<unknown>[] {
+  let switchResult: Promise<unknown>[]
   switch (membership) {
     case 'member':
-      return [insertTestCommunityMember({ communityId, userId: viewerId })]
+      switchResult = [insertTestCommunityMember({ communityId, userId: viewerId })]
+      break
     case 'proxy-follow':
       return [insertTestProxyFollowCommunity(viewerId, communityId)]
     case 'proxy-mute':
@@ -101,13 +102,15 @@ function membershipWrites(
     case 'none':
       return []
   }
-  return assertNever(membership)
+  return switchResult
 }
 
 function listItemEntityId(itemType: MineFeedListItem, fixtures: MineFeedFixtures): string {
+  let switchResult: string
   switch (itemType) {
     case 'topic':
-      return fixtures.topicId
+      switchResult = fixtures.topicId
+      break
     case 'rss_feed': {
       if (fixtures.feedId === undefined) {
         throw new Error('rss_feed list item requires an RSS feed fixture')
@@ -121,7 +124,7 @@ function listItemEntityId(itemType: MineFeedListItem, fixtures: MineFeedFixtures
       return fixtures.postId
     }
   }
-  return assertNever(itemType)
+  return switchResult
 }
 
 async function insertScenarioCommunities(

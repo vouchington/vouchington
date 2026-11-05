@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import {
   COPYRIGHT_COURT_REDRESS_TEXT,
   copyrightUsIntakeRoutesText,
@@ -10,11 +9,14 @@ import type { CopyrightStatementInput } from './statement-of-reasons-types.mts'
  * notice links to the case, so neither paragraph points the reader at the case page for reasons.
  */
 export function copyrightStatementSummary(input: CopyrightStatementInput): string {
+  let switchResult: string
   switch (input.event) {
     case 'restricted':
-      return input.audience === 'claimant'
-        ? `Your copyright notice resulted in authorization of an image restriction for case ${input.noticeId}. The reasons and redress routes are included in this notice.`
-        : `An image restriction was authorized for copyright case ${input.noticeId}.`
+      switchResult =
+        input.audience === 'claimant'
+          ? `Your copyright notice resulted in authorization of an image restriction for case ${input.noticeId}. The reasons and redress routes are included in this notice.`
+          : `An image restriction was authorized for copyright case ${input.noticeId}.`
+      break
     case 'confirmed':
       return input.audience === 'claimant'
         ? `A person confirmed the image restriction for your copyright case ${input.noticeId}. The reasons and redress routes are included in this notice.`
@@ -33,7 +35,7 @@ export function copyrightStatementSummary(input: CopyrightStatementInput): strin
       return `The image restriction for copyright case ${input.noticeId} ended (${copyrightRestorationCauseText(input.restorationCause)}). ${outcome}`
     }
   }
-  return assertNever(input.event)
+  return switchResult
 }
 
 function copyrightNotAcceptedSummary(input: CopyrightStatementInput): string {

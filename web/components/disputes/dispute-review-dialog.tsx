@@ -31,9 +31,11 @@ type Action =
   | { type: 'reset' }
 
 function reducer(state: State, action: Action): State {
+  let switchResult: State
   switch (action.type) {
     case 'set_reason': {
-      return { ...state, reason: action.value }
+      switchResult = { ...state, reason: action.value }
+      break
     }
     case 'set_claim_text': {
       return { ...state, claimText: action.value }
@@ -51,7 +53,7 @@ function reducer(state: State, action: Action): State {
       return { reason: '', claimText: '', loading: false, error: null, submitted: false }
     }
   }
-  throw new Error('Unexpected value in reducer')
+  return switchResult
 }
 
 interface DisputeReviewDialogProps {

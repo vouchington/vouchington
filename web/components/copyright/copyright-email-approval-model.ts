@@ -164,9 +164,11 @@ export function toCopyrightEmailApprovalInput(draft: CopyrightEmailApprovalDraft
 }
 
 function ownerId(target: CopyrightEmailApprovalTarget): string | undefined {
+  let switchResult: string | undefined
   switch (target.surface) {
     case 'post-image':
-      return target.post_id
+      switchResult = target.post_id
+      break
     case 'user-profile-image':
       return target.user_id
     case 'user-profile-link-image':
@@ -178,7 +180,7 @@ function ownerId(target: CopyrightEmailApprovalTarget): string | undefined {
     case 'community-banner-image':
       return target.community_id
   }
-  return undefined
+  return switchResult
 }
 
 function stringValue(value: unknown): string {

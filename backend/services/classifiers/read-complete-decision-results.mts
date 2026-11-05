@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { QueryExecutor } from '@data-stores/psql'
 import type { ClassifierCandidateKind } from '@voucha/types'
 import sql from 'sql-template-strings'
@@ -30,15 +29,19 @@ export async function readResults(
   batchId: string,
   candidateKind: ClassifierCandidateKind,
 ): Promise<PersistedClassifierDecision['results']> {
+  let switchResult:
+    | Promise<PersistedClassifierDecision['results']>
+    | PersistedClassifierDecision['results']
   switch (candidateKind) {
     case 'topic':
-      return readTopicResults(query, batchId)
+      switchResult = readTopicResults(query, batchId)
+      break
     case 'story':
       return readStoryResults(query, batchId)
     case 'community_prompt':
       return readCommunityPromptResults(query, batchId)
   }
-  return assertNever(candidateKind)
+  return switchResult
 }
 
 async function readTopicResults(
@@ -125,9 +128,11 @@ function toPersistedResult(
     rawResponse: row.raw_response,
     scope: toScope(row.scope_category, row.scope_community_id),
   }
+  let switchResult: PersistedClassifierDecisionResult
   switch (candidateKind) {
     case 'topic':
-      return { ...shared, candidateKind, topicId: entityId }
+      switchResult = { ...shared, candidateKind, topicId: entityId }
+      break
     case 'story':
       return { ...shared, candidateKind, storyId: entityId }
     case 'rss_feed_item': {
@@ -144,7 +149,7 @@ function toPersistedResult(
         thresholdId: null,
       }
   }
-  return assertNever(candidateKind)
+  return switchResult
 }
 
 export function toScope(

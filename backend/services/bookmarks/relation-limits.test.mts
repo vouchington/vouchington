@@ -28,9 +28,11 @@ describe('follow and subscription limits', () => {
       onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { [field]: 1 }))
       const user = await createTestUser()
       const createObject = async () => {
+        let switchResult
         switch (objectType) {
           case 'user':
-            return createTestUser()
+            switchResult = createTestUser()
+            break
           case 'topic':
             return createTestTopic()
           case 'post':
@@ -38,7 +40,7 @@ describe('follow and subscription limits', () => {
           case 'rss_feed':
             return insertTestRssFeedDirect({})
         }
-        throw new Error('Unexpected value')
+        return switchResult
       }
       const [first, second] = await Promise.all([createObject(), createObject()])
       const relation = getEntityRelationMetadataOrThrow({

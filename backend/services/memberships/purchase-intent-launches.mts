@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { createHash } from 'node:crypto'
 import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT, IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
@@ -96,9 +95,15 @@ function getNativeMembershipLaunch(
     'id' | 'user_id' | 'provider' | 'provider_product_id' | 'base_plan_id' | 'offer_id' | 'sku_id'
   >,
 ): Exclude<MembershipPurchaseLaunch, { kind: 'stripe_checkout' }> {
+  let switchResult: Exclude<MembershipPurchaseLaunch, { kind: 'stripe_checkout' }>
   switch (row.provider) {
     case 'apple_app_store':
-      return { kind: row.provider, product_id: row.provider_product_id, app_account_token: row.id }
+      switchResult = {
+        kind: row.provider,
+        product_id: row.provider_product_id,
+        app_account_token: row.id,
+      }
+      break
     case 'google_play':
       return {
         kind: row.provider,
@@ -112,7 +117,7 @@ function getNativeMembershipLaunch(
     case 'stripe':
       throw new Error('Stripe purchase intents do not use a native launch payload')
   }
-  return assertNever(row.provider)
+  return switchResult
 }
 
 export function getMembershipManagementDestination(provider: MembershipPurchaseProvider) {

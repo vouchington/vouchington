@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { calendarYearsAgo } from './security-retention-cutoff.mts'
 
 export type Source =
@@ -39,9 +38,10 @@ export type SourcePlan = {
 
 export function sourcePlan(source: Source, now: Date): SourcePlan {
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000)
+  let switchResult: SourcePlan
   switch (source) {
     case 'oauth_native_mints':
-      return {
+      switchResult = {
         table: 'oauth_native_session_token_mints',
         keyAt: 'target.occurred_at',
         cutoffAt: calendarYearsAgo(now, 1),
@@ -52,6 +52,7 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
             AND preservation_hold.released_at IS NULL
         )`,
       }
+      break
     case 'oauth_events':
       return {
         table: 'oauth_authorization_server_events',
@@ -174,5 +175,5 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         deletePredicateUsesCutoff: true,
       }
   }
-  return assertNever(source)
+  return switchResult
 }

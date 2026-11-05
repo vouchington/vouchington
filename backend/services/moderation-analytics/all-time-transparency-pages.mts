@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { write } from '@data-stores/psql'
 import { decodeScopedTimestampUuidCursor, encodeCursor } from '@modules/pagination'
@@ -80,9 +79,11 @@ export async function releaseModerationTransparencyCohorts(
 function getTransparencyRangeStart(range: ModerationAnalyticsRange, cutoff: Date): Date {
   const start = new Date(cutoff)
   start.setUTCHours(0, 0, 0, 0)
+  let switchResult: Date
   switch (range) {
     case 'today':
-      return start
+      switchResult = start
+      break
     case '7d':
       start.setUTCDate(start.getUTCDate() - 6)
       return start
@@ -95,7 +96,7 @@ function getTransparencyRangeStart(range: ModerationAnalyticsRange, cutoff: Date
     case 'all':
       return new Date(0)
   }
-  return assertNever(range)
+  return switchResult
 }
 
 function getAllTimePeriodEnd(after: string, scope: string): Date {

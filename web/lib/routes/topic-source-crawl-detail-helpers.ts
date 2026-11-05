@@ -15,9 +15,13 @@ function getStringField(item: Record<string, unknown>, field: string): string | 
 import type { CrawlOutcome } from '@/components/topics/manage-source/crawl-outcome'
 
 export function getCrawlOutcomeMessage(outcome: CrawlOutcome) {
+  let switchResult
   switch (outcome.kind) {
     case 'not_modified':
-      return { key: 'extracted.manageSource.crawlHistorySection.notModified_2dca2e47' } as const
+      switchResult = {
+        key: 'extracted.manageSource.crawlHistorySection.notModified_2dca2e47',
+      } as const
+      break
     case 'items':
       return {
         key: 'extracted.manageSource.crawlHistorySection.itemCount_89f0312c',
@@ -30,7 +34,7 @@ export function getCrawlOutcomeMessage(outcome: CrawlOutcome) {
     case 'error':
       return { key: 'extracted.manageSource.crawlHistorySection.error_19448d29' } as const
   }
-  throw new Error('Unexpected value in getCrawlOutcomeMessage')
+  return switchResult
 }
 
 export function getCrawlOutcomeBackgroundClass(tone: CrawlOutcome['tone']): string {

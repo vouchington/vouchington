@@ -14,15 +14,17 @@ type State =
 type Action = { type: 'loaded'; warnings: UserWarningItem[] } | { type: 'error' }
 
 function reducer(_state: State, action: Action): State {
+  let switchResult: State
   switch (action.type) {
     case 'loaded': {
-      return { status: 'loaded', warnings: action.warnings }
+      switchResult = { status: 'loaded', warnings: action.warnings }
+      break
     }
     case 'error': {
       return { status: 'error' }
     }
   }
-  throw new Error('Unexpected value in reducer')
+  return switchResult
 }
 
 interface UserAdminWarningsProps {

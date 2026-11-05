@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -41,11 +40,13 @@ export function attemptTestProviderLineageTransition(
   lineageId: string,
   transition: ProviderLineageTransition,
 ): Promise<QueryResult> {
+  let switchResult: Promise<QueryResult>
   switch (transition) {
     case 'fillAccount':
-      return write(
+      switchResult = write(
         sql`/* fillTestProviderLineageAccount */ UPDATE membership_provider_lineages SET provider_account_id = 'account-token-one' WHERE id = ${lineageId}`,
       )
+      break
     case 'rewriteAccount':
       return write(
         sql`/* rewriteTestProviderLineageAccount */ UPDATE membership_provider_lineages SET provider_account_id = 'account-token-two' WHERE id = ${lineageId}`,
@@ -55,7 +56,7 @@ export function attemptTestProviderLineageTransition(
         sql`/* rewriteTestProviderLineageId */ UPDATE membership_provider_lineages SET provider_lineage_id = ${`rewritten-${randomUUID()}`} WHERE id = ${lineageId}`,
       )
   }
-  return assertNever(transition)
+  return switchResult
 }
 
 export async function createTestImmutableLifecycleLineageBinding(
@@ -76,11 +77,13 @@ export function attemptTestLifecycleLineageBindingTransition(
   bindingId: string,
   transition: LineageBindingTransition,
 ): Promise<QueryResult> {
+  let switchResult: Promise<QueryResult>
   switch (transition) {
     case 'changeBoundAt':
-      return write(
+      switchResult = write(
         sql`/* changeTestLifecycleBindingBoundAt */ UPDATE membership_lineage_bindings SET bound_at = bound_at - INTERVAL '1 second' WHERE id = ${bindingId}`,
       )
+      break
     case 'changeUser':
       return write(
         sql`/* changeTestLifecycleBindingUser */ UPDATE membership_lineage_bindings SET user_id = ${randomUUID()} WHERE id = ${bindingId}`,
@@ -114,7 +117,7 @@ export function attemptTestLifecycleLineageBindingTransition(
         sql`/* rewriteTestLifecycleBindingReleasedAt */ UPDATE membership_lineage_bindings SET released_at = released_at + INTERVAL '1 second' WHERE id = ${bindingId}`,
       )
   }
-  return assertNever(transition)
+  return switchResult
 }
 
 export function deleteTestLifecycleUser(userId: string): Promise<QueryResult> {
@@ -151,11 +154,13 @@ export function attemptTestGrantActivationTransition(
   activationId: string,
   transition: GrantActivationTransition,
 ): Promise<QueryResult> {
+  let switchResult: Promise<QueryResult>
   switch (transition) {
     case 'changeStartedAt':
-      return write(
+      switchResult = write(
         sql`/* changeTestGrantActivationStartedAt */ UPDATE membership_grant_activation_periods SET started_at = started_at - INTERVAL '1 second' WHERE id = ${activationId}`,
       )
+      break
     case 'changeUser':
       return write(
         sql`/* changeTestGrantActivationUser */ UPDATE membership_grant_activation_periods SET user_id = ${randomUUID()} WHERE id = ${activationId}`,
@@ -185,5 +190,5 @@ export function attemptTestGrantActivationTransition(
         sql`/* rewriteTestGrantActivationEndedAt */ UPDATE membership_grant_activation_periods SET ended_at = ended_at + INTERVAL '1 second' WHERE id = ${activationId}`,
       )
   }
-  return assertNever(transition)
+  return switchResult
 }

@@ -33,9 +33,11 @@ type Action =
   | { type: 'set_copied'; value: boolean }
 
 function reducer(state: State, action: Action): State {
+  let switchResult: State
   switch (action.type) {
     case 'set_token': {
-      return { ...state, token: action.token }
+      switchResult = { ...state, token: action.token }
+      break
     }
     case 'set_evidence': {
       return { ...state, evidence: action.text }
@@ -50,7 +52,7 @@ function reducer(state: State, action: Action): State {
       return { ...state, copied: action.value }
     }
   }
-  throw new Error('Unexpected value in reducer')
+  return switchResult
 }
 
 interface DomainVerificationPanelProps {

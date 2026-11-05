@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { TransactionQuery } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
@@ -11,6 +10,7 @@ export async function mutatePage(
   ids: string[],
   cutoff: Date,
 ): Promise<number> {
+  let switchResult: Promise<number> | number
   switch (kind) {
     case 'dynamic_configuration_revisions': {
       const result = await query(
@@ -24,7 +24,8 @@ export async function mutatePage(
            ) AS fixed_probe) = 50`,
         [ids],
       )
-      return result.rowCount ?? 0
+      switchResult = result.rowCount ?? 0
+      break
     }
     case 'rss_feed_setting_changes': {
       const result = await query(
@@ -112,5 +113,5 @@ export async function mutatePage(
       return result.rowCount ?? 0
     }
   }
-  return assertNever(kind)
+  return switchResult
 }

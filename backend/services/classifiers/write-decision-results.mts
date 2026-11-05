@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import type { ClassifierCandidateKind } from '@voucha/types'
 import type { OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -35,15 +34,19 @@ export async function insertClassifierDecisionResults(
   if (rows.some(row => !row.decisionCallId)) {
     throw new Error('Classifier decision call is missing its persisted shard')
   }
+  let switchResult:
+    | ReturnType<typeof insertClassifierDecisionResults>
+    | Awaited<ReturnType<typeof insertClassifierDecisionResults>>
   switch (candidateKind) {
     case 'topic':
-      return insertTopicResults(query, input, rows)
+      switchResult = insertTopicResults(query, input, rows)
+      break
     case 'story':
       return insertStoryResults(query, input, rows)
     case 'community_prompt':
       return insertCommunityPromptResults(query, input, rows)
   }
-  return assertNever(candidateKind)
+  return switchResult
 }
 
 function toPersistedInputRow(

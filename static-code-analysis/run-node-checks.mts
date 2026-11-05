@@ -15,10 +15,12 @@ import { runNodeChecksCli } from './run-node-checks-cli.mts'
 export type { CheckName, CheckResult } from './node-check-types.mts'
 
 async function runOne(check: CheckName, ctx: SharedContext): Promise<CheckResult> {
+  let switchResult: Promise<CheckResult> | CheckResult
   switch (check) {
     case 'config-inventory-policy': {
       const report = await checkConfigInventoryPolicy(ctx)
-      return { name: check, errors: report.errors }
+      switchResult = { name: check, errors: report.errors }
+      break
     }
     case 'dependency-license-policy': {
       const report = await checkDependencyLicensePolicy(ctx)
@@ -37,7 +39,7 @@ async function runOne(check: CheckName, ctx: SharedContext): Promise<CheckResult
       return { name: check, errors: report.errors }
     }
   }
-  throw new Error('Unexpected value in runOne')
+  return switchResult
 }
 
 function runOneOrWorker(

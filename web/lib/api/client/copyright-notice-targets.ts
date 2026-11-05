@@ -176,9 +176,11 @@ export function copyrightNoticeTargetInput(
   target: CopyrightNoticeResolvedTarget,
 ): CopyrightNoticeTargetInput {
   const common = { image_id: target.image_id, target_url: target.target_url }
+  let switchResult: CopyrightNoticeTargetInput
   switch (target.surface) {
     case 'post-image':
-      return { ...common, surface: target.surface, post_id: target.post_id }
+      switchResult = { ...common, surface: target.surface, post_id: target.post_id }
+      break
     case 'user-profile-image':
       return { ...common, surface: target.surface, user_id: target.user_id }
     case 'user-profile-link-image':
@@ -194,5 +196,5 @@ export function copyrightNoticeTargetInput(
     case 'community-banner-image':
       return { ...common, surface: target.surface, community_id: target.community_id }
   }
-  throw new Error('Unexpected value in copyrightNoticeTargetInput')
+  return switchResult
 }

@@ -1,4 +1,3 @@
-import { assertNever } from '@modules/utils/assert-never'
 import { parseEmailDigestJob } from '@queues/email-digests/payload/job-payload'
 import { dispatchCommunityModerationSummaryEmails } from '@services/communities/moderation-summary-emails'
 import { dispatchEngagementEmails } from '@services/engagement-emails/dispatch-engagement-emails'
@@ -42,15 +41,17 @@ export async function processEmailDigestJob(
   templates: EmailDigestTemplates = defaultTemplates,
 ): Promise<unknown> {
   const parsed = parseEmailDigestJob(name, data)
+  let switchResult: unknown
   switch (parsed.kind) {
     case 'api-key-expiry':
-      return processSendApiKeyExpiryReminder(parsed.apiKeyId)
+      switchResult = processSendApiKeyExpiryReminder(parsed.apiKeyId)
+      break
     case 'dispatcher':
       return runDispatcher(parsed.name, dispatchers, parsed.data)
     case 'template':
       return templates[parsed.name](parsed.input, parsed.variables as never)
   }
-  return assertNever(parsed)
+  return switchResult
 }
 
 function runDispatcher(
@@ -58,13 +59,15 @@ function runDispatcher(
   dispatchers: EmailDigestDispatchers,
   data: { afterId?: string },
 ): Promise<unknown> {
+  let switchResult: Promise<unknown>
   switch (name) {
     case 'dispatchApiKeyExpiryReminders':
-      return dispatchers.dispatchApiKeyExpiryReminders(data)
+      switchResult = dispatchers.dispatchApiKeyExpiryReminders(data)
+      break
     case 'dispatchEngagementEmails':
       return dispatchers.dispatchEngagementEmails()
     case 'dispatchCommunityModerationSummaryEmails':
       return dispatchers.dispatchCommunityModerationSummaryEmails()
   }
-  return assertNever(name)
+  return switchResult
 }

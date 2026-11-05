@@ -20,6 +20,7 @@ export function redirectUriValidationMessage(
   t: Translator,
   code: OAuthRedirectUriValidationCode,
 ): string {
+  let switchResult: string
   switch (code) {
     case 'invalid_count':
       return t('settings.oauthApps.redirectUriErrors.invalidCount')
@@ -32,9 +33,10 @@ export function redirectUriValidationMessage(
     case 'invalid_scheme':
       return t('settings.oauthApps.redirectUriErrors.invalidScheme')
     case 'duplicate':
-      return t('settings.oauthApps.redirectUriErrors.duplicate')
+      switchResult = t('settings.oauthApps.redirectUriErrors.duplicate')
+      break
   }
-  throw new Error('Unexpected value in redirectUriValidationMessage')
+  return switchResult
 }
 
 export function hasValidOAuthAppDetails(name: string, redirectUris: readonly string[]): boolean {
