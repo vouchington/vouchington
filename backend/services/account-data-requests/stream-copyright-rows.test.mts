@@ -3,7 +3,6 @@ import { encryptSecret } from '@modules/token-secrets'
 import {
   type AppealBody,
   type CounterNoticeBody,
-  EXPORT_COPYRIGHT_ERASED_TEXT,
   type FiledNoticeRow,
   appealExportRow,
   counterNoticeExportRow,
@@ -83,8 +82,8 @@ describe('copyright export rows', () => {
     const erased = filedNoticeExportRow(filedRow({ erased_by_retention_at: ids.received_at }))
     expect(Object.keys(erased)).toEqual(Object.keys(live))
     expect(erased).toMatchObject({
-      claimant_display_name: EXPORT_COPYRIGHT_ERASED_TEXT,
-      work_description: EXPORT_COPYRIGHT_ERASED_TEXT,
+      claimant_display_name: '[erased by the retention policy]',
+      work_description: '[erased by the retention policy]',
       claimant_contact: '1 Claimant Road',
       electronic_signature: '/s/ Claimant',
       claimant_targets: [{ postId: 'p' }],
