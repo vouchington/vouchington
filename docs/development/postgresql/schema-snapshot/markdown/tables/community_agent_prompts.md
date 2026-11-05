@@ -38,7 +38,8 @@ Not partitioned — growth: unbounded.
 
 - `community_agent_prompts_pkey`: `CREATE UNIQUE INDEX community_agent_prompts_pkey ON public.community_agent_prompts USING btree (id)`
 - `idx_community_agent_prompts__active`: `CREATE INDEX idx_community_agent_prompts__active ON public.community_agent_prompts USING btree (community_id) WHERE ((is_slot_allocated = true) AND (activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))`
-- `idx_community_agent_prompts__community_id`: `CREATE INDEX idx_community_agent_prompts__community_id ON public.community_agent_prompts USING btree (community_id) WHERE (deleted_at IS NULL)`
+- `idx_community_agent_prompts__community_creator_id`: `CREATE INDEX idx_community_agent_prompts__community_creator_id ON public.community_agent_prompts USING btree (community_id, created_by_id, id) WHERE (deleted_at IS NULL)`
+- `idx_community_agent_prompts__community_id`: `CREATE INDEX idx_community_agent_prompts__community_id ON public.community_agent_prompts USING btree (community_id, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_community_agent_prompts__community_id_bare`: `CREATE INDEX idx_community_agent_prompts__community_id_bare ON public.community_agent_prompts USING btree (community_id)`
 - `idx_community_agent_prompts__created_by_id`: `CREATE INDEX idx_community_agent_prompts__created_by_id ON public.community_agent_prompts USING btree (created_by_id)`
 - `idx_community_agent_prompts__created_by_id__slot`: `CREATE INDEX idx_community_agent_prompts__created_by_id__slot ON public.community_agent_prompts USING btree (created_by_id, is_slot_allocated) WHERE (deleted_at IS NULL)`

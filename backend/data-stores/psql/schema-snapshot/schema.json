@@ -17218,10 +17218,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_agent_prompts__community_id": {
+        "idx_community_agent_prompts__community_creator_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_agent_prompts__community_id ON public.community_agent_prompts USING btree (community_id) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_community_agent_prompts__community_creator_id ON public.community_agent_prompts USING btree (community_id, created_by_id, id) WHERE (deleted_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -17229,6 +17229,47 @@
               "descending": false,
               "expression": "community_id",
               "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_agent_prompts__community_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_agent_prompts__community_id ON public.community_agent_prompts USING btree (community_id, id DESC) WHERE (deleted_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "uuid_ops"
             }
           ],
