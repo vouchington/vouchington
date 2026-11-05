@@ -141,7 +141,7 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
       has_next_page: hasNextPage,
       end_cursor:
         hasNextPage && entries.length > 0
-          ? encodeCommunityModerationQueueCursor(entries[entries.length - 1]!)
+          ? encodeCommunityModerationQueueCursor(entries.at(-1)!)
           : null,
       start_cursor: null,
     },

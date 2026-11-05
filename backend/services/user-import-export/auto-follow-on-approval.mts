@@ -40,7 +40,7 @@ export async function autoFollowOnRecommendationApproval(
     /* oxlint-enable no-await-in-loop */
     const requests = rows as PendingImportRequest[]
     if (requests.length === 0) return
-    cursor = requests[requests.length - 1]!.id
+    cursor = requests.at(-1)!.id
 
     try {
       /* oxlint-disable no-await-in-loop -- this page's users must be loaded before its follows are attempted */

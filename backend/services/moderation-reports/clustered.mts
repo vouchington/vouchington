@@ -86,7 +86,7 @@ export async function listClusteredModerationReports(
       return []
     },
   )
-  const lastRow = pageRows[pageRows.length - 1]
+  const lastRow = pageRows.at(-1)
   return {
     cluster_mode: 'entity',
     results: clusters,

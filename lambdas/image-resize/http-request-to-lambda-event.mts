@@ -9,7 +9,7 @@ export function httpRequestToLambdaEvent(req: http.IncomingMessage): APIGatewayP
   const multiValueQueryStringParameters: Record<string, string[]> = {}
   for (const key of new Set(url.searchParams.keys())) {
     const values = url.searchParams.getAll(key)
-    queryStringParameters[key] = values[values.length - 1]
+    queryStringParameters[key] = values.at(-1)!
     multiValueQueryStringParameters[key] = values
   }
 

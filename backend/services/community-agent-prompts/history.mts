@@ -70,7 +70,7 @@ export async function listCommunityAgentPromptHistory(
   let nextCursor: string | null = null
   if (rows.length > limit) {
     rows.pop()
-    nextCursor = rows[rows.length - 1]?.id ?? null
+    nextCursor = rows.at(-1)?.id ?? null
   }
 
   const entries: CommunityAgentPromptHistoryEntry[] = rows.map(row => ({

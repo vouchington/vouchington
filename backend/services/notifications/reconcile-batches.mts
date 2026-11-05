@@ -142,7 +142,7 @@ async function createNextRecipientNotificationBatch(
     createdTable,
   )
   return {
-    lastUserId: rows[rows.length - 1]!.user_id,
+    lastUserId: rows.at(-1)!.user_id,
     created: createdBatch.length,
     recipients: rows.length,
   }

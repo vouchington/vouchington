@@ -128,7 +128,7 @@ function pageResult<Row>(
 ): MetricPage {
   return {
     phase,
-    cursor: rows.length ? getCursor(rows[rows.length - 1]!) : cursor,
+    cursor: rows.length ? getCursor(rows.at(-1)!) : cursor,
     hasMore: rows.length === limit,
     partialStats,
   }

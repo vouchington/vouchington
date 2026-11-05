@@ -82,7 +82,7 @@ export async function searchCommunityRestrictions(
           ? encodeCursor({
               score: (rows[Math.min(rows.length, limit) - 1]! as CommunityRestrictionSearchRow)
                 .active_score,
-              id: results[results.length - 1]!.id,
+              id: results.at(-1)!.id,
             })
           : null,
       start_cursor:

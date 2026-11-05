@@ -63,7 +63,7 @@ async function dispatchNextCreatedNotificationBatch(
   if (rows.length === 0) return null
 
   await onCreatedNotifications(rows)
-  const lastRow = rows[rows.length - 1]!
+  const lastRow = rows.at(-1)!
   return { lastUserId: lastRow.user_id, lastNotificationId: lastRow.id }
 }
 

@@ -173,7 +173,7 @@
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/prefer-array-index-of": "off", // Policy: findIndex predicates are allowed even for equality searches.
     "unicorn/prefer-array-some": "error",
-    "unicorn/prefer-at": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/prefer-at": "error",
     "unicorn/prefer-bigint-literals": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/prefer-blob-reading-methods": "error",
     "unicorn/prefer-class-fields": "error",

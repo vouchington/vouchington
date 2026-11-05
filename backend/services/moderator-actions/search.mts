@@ -118,9 +118,7 @@ export async function searchModeratorActions(
     page_info: {
       has_next_page: hasNextPage,
       end_cursor:
-        hasNextPage && results.length > 0
-          ? encodeCursor({ id: results[results.length - 1]!.id })
-          : null,
+        hasNextPage && results.length > 0 ? encodeCursor({ id: results.at(-1)!.id }) : null,
       start_cursor: results.length > 0 ? encodeCursor({ id: results[0]!.id }) : null,
     },
   }

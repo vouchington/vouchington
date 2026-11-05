@@ -41,7 +41,7 @@ function expectPagesCoverEachUserOnce(pages: Page[], userIds: string[]) {
   expect(pages.map(page => page.created.length)).toEqual(
     sortedIds.reduce<number[]>((sizes, _id, index) => {
       if (index % PAGE_SIZE === 0) sizes.push(0)
-      sizes[sizes.length - 1]! += 1
+      sizes[Math.floor(index / PAGE_SIZE)]! += 1
       return sizes
     }, []),
   )
