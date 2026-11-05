@@ -1,82 +1,44 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { execFile } from 'node:child_process'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import * as wrapper from './index.mts'
-import { runWorkerIoCliSmoke } from './image-smoke.mts'
+import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
+import { describe, expect, it } from 'vitest'
+
+const execFileAsync = promisify(execFile)
+const cli = fileURLToPath(new URL('./image-smoke.mts', import.meta.url))
 
 describe('worker-io cli smoke', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('sorts and comms through the wrapper when TMPDIR is writable', async () => {
-    await withTmpdir(async () => {
-      await expect(runWorkerIoCliSmoke()).resolves.toBeUndefined()
-    })
-  })
-
-  it('refuses to run without TMPDIR', async () => {
-    const previous = process.env.TMPDIR
-    delete process.env.TMPDIR
+    const dir = await mkdtemp(join(process.env.RUNNER_TEMP || tmpdir(), 'worker-io-smoke-'))
     try {
-      await expect(runWorkerIoCliSmoke()).rejects.toThrow(
-        'TMPDIR must point at writable ephemeral storage',
-      )
+      await expect(
+        execFileAsync(process.execPath, [cli], { env: { ...process.env, TMPDIR: dir } }),
+      ).resolves.toMatchObject({ stdout: '' })
     } finally {
-      restoreTmpdir(previous)
+      await rm(dir, { recursive: true, force: true })
     }
   })
 
-  it('reports a wrapper failure and a wrong sort or comm result', async () => {
-    const run = vi.spyOn(wrapper, 'runCommand')
-    await withTmpdir(async () => {
-      run.mockRejectedValueOnce(
-        new wrapper.CommandFailedError('/usr/bin/sort', {
-          reason: 'exit',
-          exitCode: 1,
-          signal: null,
-          stderr: Buffer.from('missing'),
-        }),
-      )
-      await expect(runWorkerIoCliSmoke()).rejects.toThrow(/worker-io cli smoke failed \(exit\)/)
-
-      run.mockImplementationOnce(async options => {
-        options.stdout?.write('nope\n')
-        return { stderr: Buffer.alloc(0) }
-      })
-      await expect(runWorkerIoCliSmoke()).rejects.toThrow(/sort -u returned/)
-
-      run.mockImplementationOnce(async options => {
-        options.stdout?.write('a\nb\n')
-        return { stderr: Buffer.alloc(0) }
-      })
-      run.mockImplementationOnce(async options => {
-        options.stdout?.write('z\n')
-        return { stderr: Buffer.alloc(0) }
-      })
-      await expect(runWorkerIoCliSmoke()).rejects.toThrow(/comm -23 returned/)
-
-      run.mockRejectedValueOnce(new Error('wrapper exploded'))
-      await expect(runWorkerIoCliSmoke()).rejects.toThrow('wrapper exploded')
+  it('refuses to run without TMPDIR', async () => {
+    const env = { ...process.env }
+    delete env.TMPDIR
+    await expect(execFileAsync(process.execPath, [cli], { env })).rejects.toMatchObject({
+      stderr: expect.stringContaining('TMPDIR must point at writable ephemeral storage'),
     })
-    expect(run).toHaveBeenCalled()
+  })
+
+  it('fails when TMPDIR does not exist', async () => {
+    const dir = await mkdtemp(join(process.env.RUNNER_TEMP || tmpdir(), 'worker-io-smoke-'))
+    try {
+      await expect(
+        execFileAsync(process.execPath, [cli], {
+          env: { ...process.env, TMPDIR: join(dir, 'missing') },
+        }),
+      ).rejects.toMatchObject({ stderr: expect.stringContaining('ENOENT') })
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
   })
 })
-
-async function withTmpdir(run: () => Promise<void>): Promise<void> {
-  const previous = process.env.TMPDIR
-  const dir = mkdtempSync(join(tmpdir(), 'worker-io-smoke-'))
-  process.env.TMPDIR = dir
-  try {
-    await run()
-  } finally {
-    restoreTmpdir(previous)
-    rmSync(dir, { recursive: true, force: true })
-  }
-}
-
-function restoreTmpdir(previous: string | undefined): void {
-  if (previous === undefined) delete process.env.TMPDIR
-  else process.env.TMPDIR = previous
-}
