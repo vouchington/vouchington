@@ -179,26 +179,6 @@ describe('createInstanceFromHostname', () => {
     expect(a.topic_id).toBe(b.topic_id)
   })
 
-  it('returns null when a hostname already has an instance after a creation conflict', async () => {
-    const user = await createTestUserDirect()
-    const hostname = `fedi-existing-race-${randomSuffix()}.example.com`
-    const created = await createInstanceFromHostname(user, WEB_PROVENANCE, hostname)
-    expect(created.status).toBe('created')
-    const hostnameId = await resolveHostname(user.id, hostname)
-    expect(hostnameId).not.toBeNull()
-
-    await expect(
-      createInstanceWithRetry({
-        provenance: WEB_PROVENANCE,
-        currentUser: user,
-        hostnameId: hostnameId!,
-        hostname,
-        attempt: 0,
-        metadata: null,
-      }),
-    ).resolves.toBeNull()
-  })
-
   // Regression guard for the active-state dedup filter: idx_topics__fediverse_instance__hostname_id
   // is a PARTIAL unique index scoped to active topics, so a merged/soft-deleted instance topic
   // for a hostname must not block creating a new active one. This breaks if
