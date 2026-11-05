@@ -24,13 +24,14 @@ export async function processExportRequest(
   userId: string,
   processingAttemptId?: string,
   isFinalAttempt = true,
+  tempRoot = tmpdir(),
 ): Promise<void> {
   const started = await markDataRequestProcessing(requestId, processingAttemptId)
   if (!started) return
 
   let tmpDir: string | undefined
   try {
-    tmpDir = await mkdtemp(join(tmpdir(), `voucha-export-${requestId}-`))
+    tmpDir = await mkdtemp(join(tempRoot, `voucha-export-${requestId}-`))
     const exportDir = join(tmpDir, 'export')
     const zipPath = join(tmpDir, `${requestId}.zip`)
 
