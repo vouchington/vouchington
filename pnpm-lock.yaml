@@ -698,9 +698,6 @@ importers:
 
   backend/api:
     dependencies:
-      '@services/hacker-news-flags':
-        specifier: workspace:^
-        version: link:../services/hacker-news-flags
       '@agents/community-moderation':
         specifier: workspace:^
         version: link:../agents/community-moderation
@@ -1587,9 +1584,6 @@ importers:
 
   backend/entrypoints/api:
     dependencies:
-      '@services/hacker-news-flags':
-        specifier: workspace:^
-        version: link:../../services/hacker-news-flags
       '@backend/md':
         specifier: workspace:^
         version: link:../../md
