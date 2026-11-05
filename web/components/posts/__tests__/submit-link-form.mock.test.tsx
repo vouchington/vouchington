@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createLinkPost } from '@/lib/api/client/posts'
+import { createLinkPost } from '@/lib/api/client/post-mutations'
 import { SubmitLinkForm } from '../submit-link-form'
 
 const mockPush = vi.fn<VitestLooseMock>()
@@ -31,7 +31,7 @@ vi.mock(import('@/components/shared/turnstile-field'), () => ({
   TurnstileField: () => <div data-testid='turnstile-field' />,
 }))
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   createLinkPost: vi.fn<VitestLooseMock>(),
 }))
 

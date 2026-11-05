@@ -7,6 +7,7 @@ import type {
   WebPushSubscription,
 } from './pagination-and-entities'
 import type { CommunityRelationItem } from './communities'
+import type { UserMetrics } from '../user-metrics'
 import type { PublicUrl } from './urls-onboarding-and-trends'
 
 type ElectionVote = Api.ElectionVote
@@ -19,7 +20,6 @@ type ProfileLink = Api.ProfileLink
 type PublicUser = Api.PublicUser
 type User = Api.User
 type UserSearchResult = Api.UserSearchResult
-type UserMetrics = Api.UserMetrics
 type IndividualCard = Api.IndividualCard
 type SpendingCategory = Api.SpendingCategory
 type PointValuation = Api.PointValuation

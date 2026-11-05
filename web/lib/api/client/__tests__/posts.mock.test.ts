@@ -17,15 +17,8 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
-import {
-  createCommunityPost,
-  createLinkPost,
-  createPost,
-  deletePost,
-  fetchPostAncestors,
-  fetchPost,
-  fetchPostDescendants,
-} from '../posts'
+import { fetchPostAncestors, fetchPost, fetchPostDescendants } from '../posts'
+import { createCommunityPost, createLinkPost, createPost, deletePost } from '../post-mutations'
 
 const mockDelete = vi.mocked(clientApi.delete)
 const mockGet = vi.mocked(clientApi.get)

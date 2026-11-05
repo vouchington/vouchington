@@ -12,7 +12,8 @@ import { InviteCodeNotice } from './invite-code-notice'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { sendInvite, revokeInvite } from '@/lib/api/client'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
-import type { CommunityInvite, CommunityInvitesResponseBody } from '@/types/api-responses'
+import type { CommunityInvite } from '@/types/api-responses'
+import type { CommunityInvitesResponseBody } from '@/types/api-responses/community-applications'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface InviteManagerProps {

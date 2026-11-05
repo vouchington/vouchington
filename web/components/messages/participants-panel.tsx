@@ -1,22 +1,20 @@
 'use client'
-/* oxlint-disable max-lines -- component covers the full participant lifecycle */
 
 import { useState } from 'react'
 import * as Sentry from '@sentry/nextjs'
 import { useRouter } from 'next/navigation'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { Button } from '@/components/ui/button'
-import { EntityAutocomplete } from '@/components/shared/entity-autocomplete'
 import {
   addConversationParticipant,
   removeConversationParticipant,
   updateConversationParticipantPolicy,
 } from '@/lib/api/client/messages'
-import { searchUsersExcluding } from '@/components/shared/search-users-excluding'
 import onError from '@/lib/on-error'
 import type { DirectMessageParticipant } from '@/types/messages'
 import type { UserSearchResult } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { ParticipantAddForm, ParticipantPolicyControls } from './participant-membership-controls'
 
 interface Props {
   conversationId: string
@@ -39,7 +37,6 @@ export function ParticipantsPanel({
   const router = useRouter()
   const [participants, setParticipants] = useState(initialParticipants)
   const [policy, setPolicy] = useState(initialParticipantAddPolicy)
-  const [showAddForm, setShowAddForm] = useState(false)
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
 
@@ -49,7 +46,6 @@ export function ParticipantsPanel({
   )
 
   async function handleAddParticipant(user: UserSearchResult) {
-    setShowAddForm(false)
     try {
       const result = await addConversationParticipant(conversationId, user.id)
       const updated = [...participants, result.participant]
@@ -92,10 +88,6 @@ export function ParticipantsPanel({
     } finally {
       setUpdating(false)
     }
-  }
-
-  async function searchNonMembers(query: string, signal: AbortSignal) {
-    return searchUsersExcluding(query, existingUserIds, { signal })
   }
 
   return (
@@ -166,69 +158,19 @@ export function ParticipantsPanel({
         ))}
       </div>
 
-      {canAdd &&
-        (showAddForm ? (
-          <div className='space-y-2'>
-            <EntityAutocomplete<UserSearchResult>
-              search={searchNonMembers}
-              getKey={u => u.id}
-              renderItem={u => <span>{u.username ? `@${u.username}` : u.id}</span>}
-              onSelect={(user, { setQuery }) => {
-                setQuery('')
-                void handleAddParticipant(user)
-              }}
-              clearResultsOnSelect
-              placeholder={t('extracted.messages.participantsPanel.searchUsers_02b756f1')}
-              ariaLabel={t('extracted.messages.participantsPanel.addParticipant_464c355c')}
-              emptyText={t('extracted.messages.participantsPanel.noUsersFound_bf1e104f')}
-              dataPw={{ input: 'add-participant-input', item: 'add-participant-item' }}
-            />
-            <Button
-              data-pw='participants-panel-cancel-add'
-              size='sm'
-              variant='outline'
-              onClick={() => setShowAddForm(false)}
-            >
-              {t('extracted.messages.participantsPanel.cancel_19766ed6')}
-            </Button>
-          </div>
-        ) : (
-          <Button
-            size='sm'
-            variant='outline'
-            data-pw='add-participant-button'
-            onClick={() => setShowAddForm(true)}
-          >
-            {t('extracted.messages.participantsPanel.addParticipant_464c355c')}
-          </Button>
-        ))}
+      {canAdd && (
+        <ParticipantAddForm
+          existingUserIds={existingUserIds}
+          onAdd={handleAddParticipant}
+        />
+      )}
 
       {isOwner && (
-        <div className='space-y-2'>
-          <p className='text-xs font-medium text-muted-foreground'>
-            {t('extracted.messages.participantsPanel.whoCanAddParticipants_2281bfc0')}
-          </p>
-          <div className='flex gap-2'>
-            <Button
-              size='sm'
-              variant={policy === 'owner_only' ? 'default' : 'outline'}
-              data-pw='policy-owner-only'
-              disabled={updating}
-              onClick={() => handlePolicyChange('owner_only').catch(Sentry.captureException)}
-            >
-              {t('extracted.messages.participantsPanel.ownerOnly_55a834c8')}
-            </Button>
-            <Button
-              size='sm'
-              variant={policy === 'all_members' ? 'default' : 'outline'}
-              data-pw='policy-all-members'
-              disabled={updating}
-              onClick={() => handlePolicyChange('all_members').catch(Sentry.captureException)}
-            >
-              {t('extracted.messages.participantsPanel.allMembers_3d6fe3e7')}
-            </Button>
-          </div>
-        </div>
+        <ParticipantPolicyControls
+          policy={policy}
+          updating={updating}
+          onPolicyChange={handlePolicyChange}
+        />
       )}
 
       {!isOwner && (

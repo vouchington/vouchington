@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { EntityMenubarNav } from '@/components/shared/entity-menubar-nav'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import type { UserMetrics } from '@/types/user'
+import type { UserMetrics } from '@/types/user-metrics'
 import { getActiveTabValue } from './user-detail-tab-active'
 import { buildUserProfileDropdownItems } from './user-detail-tab-definitions'
 import {

@@ -3,7 +3,7 @@
 
 import type { MessageKey } from '@ts-shared/ui-messages'
 import type { useTranslations } from '@/lib/i18n/use-translations'
-import type { UserMetrics } from '@/types/user'
+import type { UserMetrics } from '@/types/user-metrics'
 import type { UserDetailTab } from './user-detail-tab-types'
 import { formatNumber, type NumberFormatLocale } from '@ts-shared/utils/format'
 

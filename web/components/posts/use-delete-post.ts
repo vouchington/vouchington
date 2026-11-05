@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { deletePost } from '@/lib/api/client/posts'
+import { deletePost } from '@/lib/api/client/post-mutations'
 import onError, { onSuccess } from '@/lib/on-error'
 
 export function useDeletePost(postIdOrSlug: string, onDeleted?: () => void) {

@@ -10,7 +10,10 @@ import {
   sendDirectMessage,
   updateConversationParticipantPolicy,
 } from '../../../../../lib/api/client/messages'
-import { sendPostToFollowers, sharePostWithFollowers } from '../../../../../lib/api/client/posts'
+import {
+  sendPostToFollowers,
+  sharePostWithFollowers,
+} from '../../../../../lib/api/client/post-follower-distributions'
 import {
   sendRssFeedItemToFollowers,
   shareRssFeedItemWithFollowers,

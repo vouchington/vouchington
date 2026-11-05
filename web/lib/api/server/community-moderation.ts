@@ -5,8 +5,8 @@ import type {
   CommunityBansResponseBody,
   CommunityModeratorStatsResponseBody,
   ModlogResponseBody,
-  CommunityModerationQueueResponseBody,
 } from '@/types/api-responses'
+import type { CommunityModerationQueueResponseBody } from '@/types/api-responses/community-moderation-queue'
 
 interface GetOptions {
   searchParams?: Record<string, string | number | boolean | undefined>

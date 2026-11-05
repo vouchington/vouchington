@@ -1,20 +1,11 @@
 'use client'
-/* oxlint-disable max-lines -- landing page editor controller keeps detail, item, and ordering handlers colocated for shared draft state */
 
 import { useState } from 'react'
 import { useCandidatePages } from './landing-pages-manager/use-candidate-pages'
 import type { LandingPageCandidatesResponseBody } from '@/types/api-responses'
 import { useRouter } from 'next/navigation'
 import {
-  deleteMyLandingPage,
-  replaceMyLandingPageItems,
-  setDefaultMyLandingPage,
-  updateMyLandingPage,
-} from '@/lib/api/client'
-import onError, { onSuccess } from '@/lib/on-error'
-import {
   type LandingPageAddType,
-  toLandingPageItemInput,
   useLandingPageItemOptions,
 } from '@/components/my/landing-pages-manager/options'
 import {
@@ -27,7 +18,12 @@ import {
   moveDraftItem,
   removeDraftGroupEntry,
 } from '@/components/my/landing-pages-manager/draft-item-actions'
-import { myLandingPageHref } from '@/lib/links/entity-href'
+import {
+  deleteLandingPageEditorPage,
+  persistDefaultLandingPage,
+  persistLandingPageDetails,
+  persistLandingPageItems,
+} from './landing-page-editor-persistence'
 import type { LandingPageItem, LandingPageWithItems } from '@/types/landing-pages'
 
 export function useLandingPageEditorController(
@@ -108,72 +104,34 @@ export function useLandingPageEditorController(
     event.preventDefault()
     if (loading) return
     setLoading(true)
-    try {
-      const { landing_page } = await updateMyLandingPage(page.id, {
-        title,
-        subtitle: subtitle || null,
-        slug,
-      })
-      const previousSlug = page.slug
-      setPage(prev => ({ ...prev, ...landing_page }))
-      onSuccess('Page details saved')
-      if (landing_page.slug !== previousSlug) {
-        router.replace(myLandingPageHref(landing_page))
-      }
-    } catch (err) {
-      /* c8 ignore next -- error path requires injecting a save page details failure */
-      onError(err, { fallback: 'Failed to save page details' })
-    } finally {
-      setLoading(false)
-    }
+    await persistLandingPageDetails({ page, title, subtitle, slug, setPage, router })
+    setLoading(false)
   }
 
   async function handleSaveItems() {
     if (loading) return
     setLoading(true)
-    try {
-      const { landing_page, item_limit } = await replaceMyLandingPageItems(page.id, {
-        items: draftItems.map(toLandingPageItemInput),
-      })
-      candidatePages.setItemLimit(item_limit)
-      setPage(landing_page)
-      setDraftItems(landing_page.items)
-      onSuccess('Landing page content saved')
-    } catch (err) {
-      /* c8 ignore next -- error path requires injecting a save landing page content failure */
-      onError(err, { fallback: 'Failed to save landing page content' })
-    } finally {
-      setLoading(false)
-    }
+    await persistLandingPageItems({
+      pageId: page.id,
+      draftItems,
+      setPage,
+      setDraftItems,
+      setItemLimit: candidatePages.setItemLimit,
+    })
+    setLoading(false)
   }
 
   async function handleSetDefault() {
     if (loading) return
     setLoading(true)
-    try {
-      const { landing_page } = await setDefaultMyLandingPage(page.id)
-      setPage(prev => ({ ...prev, is_default: landing_page.is_default }))
-      onSuccess('Default landing page updated')
-    } catch (err) {
-      /* c8 ignore next -- error path requires injecting a set default landing page failure */
-      onError(err, { fallback: 'Failed to set default landing page' })
-    } finally {
-      setLoading(false)
-    }
+    await persistDefaultLandingPage({ pageId: page.id, setPage })
+    setLoading(false)
   }
 
   async function handleDelete() {
     if (loading) return
     setLoading(true)
-    try {
-      await deleteMyLandingPage(page.id)
-      onSuccess('Landing page deleted')
-      router.push('/my/landing-pages')
-    } catch (err) {
-      /* c8 ignore next 2 -- error path requires injecting a delete landing page failure */
-      onError(err, { fallback: 'Failed to delete landing page' })
-      setLoading(false)
-    }
+    await deleteLandingPageEditorPage({ pageId: page.id, router, setLoading })
   }
 
   return {

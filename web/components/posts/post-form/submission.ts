@@ -1,12 +1,17 @@
 import { toast } from 'sonner'
-import { createCommunityPost, createPost, setPostImages, updatePost } from '@/lib/api/client/posts'
-import { createEntityRelation } from '@/lib/api/client/entity-relations'
+import {
+  createCommunityPost,
+  createPost,
+  setPostImages,
+  updatePost,
+} from '@/lib/api/client/post-mutations'
 import { ApiError } from '@vouchington/api-client'
 import type { PostMutationResponseBody } from '@/types/api-responses'
 import type { Post, PostBroadcast, PostPrivacy, PostType } from '@/types/posts'
 import type { StructuredDataState, DataPointVertical } from '../data-point-fields'
 import type { ReviewTopicEntry } from '../post-form-sections'
 import type { ImageEntry } from '../post-form-images-fieldset'
+import { linkRelatedUrls } from './related-url-links'
 import { updateProfileFromStructuredData } from './profile-sync'
 import { syncReviewRatings } from './rating-sync'
 import { getPostStructuredData } from './structured-data'
@@ -190,11 +195,4 @@ async function syncImages(
       return !orig || img.order_index !== orig.order_index || img.caption !== orig.caption
     })
   if (imagesChanged) await setPostImages(saved.id, uploadedImages)
-}
-
-async function linkRelatedUrls(saved: Post, relatedUrls: RelatedUrl[]): Promise<void> {
-  if (relatedUrls.length === 0) return
-  await Promise.allSettled(
-    relatedUrls.map(u => createEntityRelation('post', saved.id, 'related', 'url', u.id)),
-  )
 }

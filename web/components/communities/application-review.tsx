@@ -1,23 +1,18 @@
-/* eslint-disable max-lines -- Application review component requires detailed UI for actions, answers, and message display. */
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmptyState } from '@/components/shared/empty-state'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { approveApplication, rejectApplication } from '@/lib/api/client'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
-import type {
-  CommunityApplicationStatus,
-  CommunityApplicationsResponseBody,
-} from '@/types/api-responses'
+import type { CommunityApplicationStatus } from '@/types/api-responses'
+import type { CommunityApplicationsResponseBody } from '@/types/api-responses/community-applications'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getUserLabel } from '@/lib/users/user-helpers'
 import { ApplicationDetailDialog } from './application-detail'
+import { ApplicationReviewCard } from './application-review-card'
 
 interface ApplicationReviewProps {
   data: CommunityApplicationsResponseBody
@@ -122,143 +117,30 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
         resetKey={resetKey}
       >
         <div className='space-y-4'>
-          {applications.map(application => {
-            const user = users[application.user_id]
-            const isPending = application.status === 'pending'
-            const isApproved = application.status === 'approved'
-            const isRejected = application.status === 'rejected'
-
-            return (
-              <div
-                key={application.id}
-                className='rounded-md border bg-card p-4'
-              >
-                <div className='flex items-start justify-between gap-3'>
-                  <div>
-                    <p className='font-medium'>
-                      {getUserLabel(user, t('shared.user.deletedUser'))}
-                    </p>
-                    <p
-                      className='text-xs text-muted-foreground'
-                      suppressHydrationWarning
-                    >
-                      {t('extracted.communities.applicationReview.appliedDate_6e231f5e', {
-                        date: new Date(application.created_at).toLocaleDateString(),
-                      })}
-                    </p>
-                  </div>
-                  {isApproved && (
-                    <Badge>{t('extracted.communities.applicationReview.approved_87b42e40')}</Badge>
-                  )}
-                  {isRejected && (
-                    <Badge variant='destructive'>
-                      {t('extracted.communities.applicationReview.rejected_aea4a04a')}
-                    </Badge>
-                  )}
-                  {isPending && (
-                    <Badge variant='outline'>
-                      {t('extracted.communities.applicationReview.pending_331551b0')}
-                    </Badge>
-                  )}
-                </div>
-
-                {application.message_preview && (
-                  <div className='mt-3'>
-                    <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                      {t('extracted.communities.applicationReview.message_2f77668a')}
-                    </p>
-                    <p className='mt-1 whitespace-pre-wrap break-words text-sm'>
-                      {application.message_preview}
-                    </p>
-                  </div>
-                )}
-                <p className='mt-3 text-xs text-muted-foreground'>
-                  {t('extracted.communities.applicationReview.answerCount_90a51327', {
-                    count: application.answer_count,
-                  })}
-                </p>
-
-                <Button
-                  data-pw='application-review-view-details'
-                  className='mt-3'
-                  size='sm'
-                  variant='ghost'
-                  onClick={() => setOpenApplicationId(application.id)}
-                >
-                  {t('extracted.communities.applicationReview.showDetails_1af77ee2')}
-                </Button>
-
-                {isPending &&
-                  (activeAction?.applicationId === application.id &&
-                  activeAction.type === 'reject' ? (
-                    <div className='mt-4 space-y-3'>
-                      <Textarea
-                        aria-label={t(
-                          'extracted.communities.applicationReview.rejectionReason_e5749926',
-                        )}
-                        value={rejectionReason}
-                        onChange={e => setRejectionReason(e.target.value)}
-                        placeholder={t(
-                          'extracted.communities.applicationReview.reasonForRejectionOptional_e546287e',
-                        )}
-                        rows={2}
-                      />
-                      <div className='flex gap-2'>
-                        <Button
-                          data-pw='application-review-confirm-reject'
-                          size='sm'
-                          variant='destructive'
-                          loading={loading === application.id}
-                          disabled={loading === application.id}
-                          onClick={() => handleRejectSubmit(application.id)}
-                        >
-                          {loading === application.id
-                            ? t('extracted.communities.applicationReview.rejecting_47f29154')
-                            : t('extracted.communities.applicationReview.confirmReject_48426f9f')}
-                        </Button>
-                        <Button
-                          data-pw='application-review-cancel'
-                          size='sm'
-                          variant='outline'
-                          onClick={() => {
-                            setActiveAction(null)
-                            setRejectionReason('')
-                          }}
-                        >
-                          {t('extracted.communities.applicationReview.cancel_19766ed6')}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className='mt-4 flex gap-2'>
-                      <Button
-                        data-pw='application-review-approve'
-                        size='sm'
-                        loading={loading === application.id}
-                        disabled={loading === application.id}
-                        onClick={() => handleApprove(application.id)}
-                      >
-                        {loading === application.id
-                          ? t('extracted.communities.applicationReview.approving_cee0e61b')
-                          : t('extracted.communities.applicationReview.approve_6007acbe')}
-                      </Button>
-                      <Button
-                        data-pw='application-review-reject'
-                        size='sm'
-                        variant='outline'
-                        disabled={loading === application.id}
-                        onClick={() => {
-                          setActiveAction({ applicationId: application.id, type: 'reject' })
-                          setRejectionReason('')
-                        }}
-                      >
-                        {t('extracted.communities.applicationReview.reject_ab604a36')}
-                      </Button>
-                    </div>
-                  ))}
-              </div>
-            )
-          })}
+          {applications.map(application => (
+            <ApplicationReviewCard
+              key={application.id}
+              application={application}
+              user={users[application.user_id]}
+              isLoading={loading === application.id}
+              isRejecting={
+                activeAction?.applicationId === application.id && activeAction.type === 'reject'
+              }
+              rejectionReason={rejectionReason}
+              onRejectionReasonChange={setRejectionReason}
+              onApprove={() => handleApprove(application.id)}
+              onConfirmReject={() => handleRejectSubmit(application.id)}
+              onCancelReject={() => {
+                setActiveAction(null)
+                setRejectionReason('')
+              }}
+              onStartReject={() => {
+                setActiveAction({ applicationId: application.id, type: 'reject' })
+                setRejectionReason('')
+              }}
+              onShowDetails={() => setOpenApplicationId(application.id)}
+            />
+          ))}
         </div>
       </InfiniteScroll>
       {openApplication && (

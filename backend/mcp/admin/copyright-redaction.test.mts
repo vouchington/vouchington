@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type {
-  CopyrightParticipantNoticeDetail,
-  CopyrightStaffEmailIntake,
-} from '@services/copyright-notices/read-models'
+import type { CopyrightParticipantNoticeDetail } from '@services/copyright-notices/read-models'
+import type { CopyrightStaffEmailIntake } from '@services/copyright-notices/read-models-staff-email-intake'
 import type { CopyrightStaffQueueCase } from '@services/copyright-notices/read-models-staff-types'
 import {
   redactCopyrightContactFields,

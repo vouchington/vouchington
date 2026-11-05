@@ -4,7 +4,8 @@ import type { ReactNode } from 'react'
 import { CommunityListItemCard } from '../community-list-item-card'
 import { removeCommunityListItem } from '@/lib/api/client'
 import onError, { onSuccess } from '@/lib/on-error'
-import type { CommunityListItem, CommunityListPageData } from '@/types/api-responses'
+import type { CommunityListItem } from '@/types/api-responses'
+import type { CommunityListPageData } from '@/types/api-responses/community-list-pages'
 
 vi.mock(
   import('next/link'),

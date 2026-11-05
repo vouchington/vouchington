@@ -185,6 +185,6 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
       ],
     },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
-    migratedFrom: ['backend/api/v1/copyright-notices/moderator-routes.mts'],
+    migratedFrom: ['backend/api/v1/copyright-notices/copyright-notice-match-routes.mts'],
   },
 ]

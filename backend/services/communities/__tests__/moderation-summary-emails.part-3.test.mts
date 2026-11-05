@@ -7,7 +7,7 @@ import {
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { insertBackdatedModerationSummaryCommunity } from '@voucha/test-helpers/moderation-summary-activity-community'
-import { getCommunityModerationSummaryCommunities } from '../moderation-summary-emails.mts'
+import { getCommunityModerationSummaryCommunities } from '../moderation-summary-communities.mts'
 import { deleteUser } from '../../users/delete.mts'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000

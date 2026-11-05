@@ -32,7 +32,7 @@ vi.mock(import('@/lib/api/client/stories'), () => ({
   createStoryPostFromStory: mockCreateStoryPost,
 }))
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   createLinkPost: mockCreateLinkPost,
 }))
 

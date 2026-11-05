@@ -14,10 +14,8 @@ import {
   recordCopyrightEmailParse,
   reviewCopyrightCounterNotice,
 } from './index.mts'
-import {
-  admitCopyrightEmailCorrespondence,
-  rejectCopyrightEmailCorrespondence,
-} from './email-correspondence-admission.mts'
+import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
+import { rejectCopyrightEmailCorrespondence } from './email-correspondence-rejection.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { copyrightSubmissionPurpose } from './submissions.mts'

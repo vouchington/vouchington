@@ -1,5 +1,5 @@
 import type { useTranslations } from '@/lib/i18n/use-translations'
-import type { UserMetrics } from '@/types/user'
+import type { UserMetrics } from '@/types/user-metrics'
 import type { UserDetailTab, BuildUserDetailTabsOptions } from './user-detail-tab-types'
 import type { TopLevelTabName } from './user-profile-tabs-config'
 import {

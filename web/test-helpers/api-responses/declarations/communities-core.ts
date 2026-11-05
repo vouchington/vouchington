@@ -19,16 +19,18 @@ import type {
   CommunityAgentPromptsResponseBody,
   CommunityAiAgentResponseBody,
   CommunityAiAgentsResponseBody,
-  CommunityApplicationQuestionsResponseBody,
-  CommunityApplicationResponseBody,
-  CommunityApplicationsResponseBody,
   CommunityArchiveResponseBody,
-  CommunityInvitesResponseBody,
   CommunityMembersResponseBody,
   CommunityPinnedPostsResponseBody,
   CommunityPostsResponseBody,
   CommunityResponseBody,
 } from '@/types/api-responses'
+import type {
+  CommunityApplicationQuestionsResponseBody,
+  CommunityApplicationResponseBody,
+  CommunityApplicationsResponseBody,
+  CommunityInvitesResponseBody,
+} from '@/types/api-responses/community-applications'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 

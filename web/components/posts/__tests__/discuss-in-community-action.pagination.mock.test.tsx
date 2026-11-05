@@ -24,7 +24,7 @@ vi.mock(import('@/lib/api/client/communities'), () => ({
   searchMyCommunities: mockSearchMyCommunitiesFn,
 }))
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   createCommunityPost: vi.fn<VitestLooseMock>(),
 }))
 

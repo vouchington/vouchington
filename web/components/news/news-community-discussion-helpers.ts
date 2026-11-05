@@ -1,5 +1,5 @@
 import { createEntityRelation } from '@/lib/api/client/entity-relations'
-import { createCommunityPost } from '@/lib/api/client/posts'
+import { createCommunityPost } from '@/lib/api/client/post-mutations'
 import { loadMyCommunities } from '@/lib/api/client/communities'
 import onError from '@/lib/on-error'
 import type { Community } from '@/types/api-responses'

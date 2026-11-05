@@ -25,7 +25,7 @@ import {
 } from '@voucha/test-helpers/copyright-statement-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
-import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
+import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
 
 describe('statement recipient scope and lifecycle', () => {
   useCopyrightIntakeEnvironment()

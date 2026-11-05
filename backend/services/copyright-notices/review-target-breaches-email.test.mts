@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
 import { readCopyrightReviewTargetBreaches } from './index.mts'
-import { rejectCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
+import { rejectCopyrightEmailCorrespondence } from './email-correspondence-rejection.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import {
   createParsedCopyrightEmailIntake,

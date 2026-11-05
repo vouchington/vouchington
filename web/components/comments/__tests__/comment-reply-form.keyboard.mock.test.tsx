@@ -5,7 +5,7 @@ import { expectTextareaCmdEnterSubmits } from '@/test-helpers/form-keyboard'
 let mockIsAuthenticated = true
 let mockPathname = '/topic/voucha/comments'
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   createPost: vi.fn<VitestLooseMock>(),
 }))
 
@@ -40,7 +40,7 @@ vi.mock(
 )
 
 import { CommentReplyForm } from '../comment-reply-form'
-import { createPost } from '@/lib/api/client/posts'
+import { createPost } from '@/lib/api/client/post-mutations'
 
 const mockCreatePost = vi.mocked(createPost)
 

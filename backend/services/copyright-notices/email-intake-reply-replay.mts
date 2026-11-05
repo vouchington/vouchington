@@ -1,7 +1,7 @@
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import { replayFailedCopyrightEmailIntakeReplyIntent } from './delivery-intents.mts'
+import { replayFailedCopyrightEmailIntakeReplyIntent } from './delivery-intent-recovery.mts'
 
 /**
  * Lets a reviewer put the failed reply to a declined email intake back in the delivery queue, with

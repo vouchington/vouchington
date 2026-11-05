@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { CommunityAutomodFlagsPanel } from '../community-automod-flags-panel'
-import type { CommunityModerationQueueEntry } from '@/types/api-responses'
+import type { CommunityModerationQueueEntry } from '@/types/api-responses/community-moderation-queue'
 
 const mocks = vi.hoisted(() => ({
   onError: vi.fn<VitestLooseMock>(),

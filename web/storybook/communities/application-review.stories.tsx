@@ -1,9 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ApplicationReview } from '@/components/communities/application-review'
-import type {
-  CommunityApplicationSummary,
-  CommunityApplicationsResponseBody,
-} from '@/types/api-responses'
+import type { CommunityApplicationSummary } from '@/types/api-responses'
+import type { CommunityApplicationsResponseBody } from '@/types/api-responses/community-applications'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { page_info } from '@/storybook/entities/fixtures/shared'
 import { publicUsers } from '@/storybook/entities/fixtures/users'

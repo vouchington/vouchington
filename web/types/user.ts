@@ -1,6 +1,4 @@
 import type { AccountType } from '@ts-shared/utils/account-type'
-/* oxlint-disable max-lines -- User entity shape intentionally mirrors the backend private-user projection. */
-import type { UserPrivateMetricsCount } from './user-metrics'
 export type { MfaStatus, TotpAuthenticator } from './mfa'
 
 export type UserPrivacyAudience = 'everyone' | 'users' | 'followers' | 'mutual_followers' | 'nobody'
@@ -155,37 +153,6 @@ export type UserSearchResult = PublicUser & {
   suspended_at?: string | null
   suspended_reason?: string | null
   suspended_by_id?: string | null
-}
-export interface UserMetrics {
-  __entity_type: 'user_metrics'
-  id: string
-  /**
-   * Profile totals. `reviews`, `discussions`, and `comments` are the posts this viewer can see.
-   */
-  count: {
-    reviews: number
-    discussions: number
-    comments: number
-    users_following: number
-    users_followers: number
-    topics_following: number
-    rss_feeds_following: number
-    communities_member: number
-  }
-  /** True when profile post counts stopped at the configured cap. */
-  post_counts_capped?: boolean
-  private_count?: UserPrivateMetricsCount
-  bookmarks: {
-    follow: {
-      topics: number
-      posts: number
-      users: number
-    }
-  }
-  bookmarkers: {
-    follow: number
-  }
-  bookmarks__updated_at: string
 }
 export interface EmailAddress {
   email_address: string

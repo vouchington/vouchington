@@ -22,6 +22,10 @@ export type ModQueueAction =
   | { type: 'start'; id: string }
   | { type: 'stop' }
 
+export type ModQueueSelectionKey = `post:${string}` | `report:${string}`
+
+export type ModQueueTab = 'reports' | 'posts' | 'escalated'
+
 export const initialModQueueState: ModQueueState = {
   activeAction: null,
   error: null,

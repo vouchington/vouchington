@@ -5,7 +5,7 @@ import { IMAGE_DELETION_RECOVER_JOB } from '@queues/background/enqueues/image-de
 import { readAllQueueJobs } from './queue-jobs.mts'
 import { approveTestPost } from './entities/post-clearance.mts'
 import { createTestUserDirect } from './entities/users-direct.mts'
-import { getPostModerationResetState } from './entities/post-moderation.mts'
+import { getPostModerationResetState } from './entities/post-moderation-reads.mts'
 import { insertTestImage } from './entities/images-insert.mts'
 import { insertTestPost } from './entities/posts.mts'
 import { insertTestPostImage } from './entities/images-post-placements.mts'

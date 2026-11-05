@@ -1,11 +1,11 @@
 'use client'
 
 import { clientApi } from './instance'
+import type { PageInfo } from '@/types/api-responses'
 import type {
   CommunityModmailInboxResponseBody,
   CommunityModmailThread,
-  PageInfo,
-} from '@/types/api-responses'
+} from '@/types/api-responses/community-modmail'
 
 export type ModmailThread = CommunityModmailThread
 export type ModmailInboxResponseBody = CommunityModmailInboxResponseBody

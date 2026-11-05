@@ -1,4 +1,3 @@
-/* oxlint-disable max-lines -- referral stories cover form, card, list, aside, and feed surfaces together */
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
@@ -6,14 +5,18 @@ import { ReferralLinkForm } from '@/components/referral-links/referral-link-form
 import { ReferralLinkCard } from '@/components/referral-links/referral-link-card'
 import { ReferralLinkFeedCard } from '@/components/feed/referral-link-feed-card'
 import { ReferralLinkList } from '@/components/referral-links/referral-link-list'
-import { ReferralLinksAsideContent } from '@/components/referral-links/referral-links-aside-content'
-import { EntityStoryFrame, AsideStack } from './entity-story-frame'
+import { EntityStoryFrame } from './entity-story-frame'
 import { storyCurrentUser } from './entity-fixtures'
-import type {
-  PrioritizedReferralLinksResponse,
-  ReferralLinkFeedItem,
-  ReferralLinkFeedUser,
-} from '@/types/api-responses'
+import { EmptyReferralLinksAside, ReferralLinksAside } from './referral-links-story-aside'
+import {
+  emptyResponse,
+  feedItem,
+  feedUser,
+  sampleLink,
+  sampleLinkWithReview,
+  sampleResponse,
+  sampleUser,
+} from './referral-links-story-fixtures'
 
 const meta = {
   title: 'Entities/Referral Links',
@@ -24,58 +27,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const t = createTranslator('en', await loadJsonMessages('en'))
-
-const sampleUser = {
-  id: storyCurrentUser.id,
-  username: storyCurrentUser.username!,
-  display_name: 'Alex Morgan',
-}
-
-const sampleLink = {
-  id: 'link-sample',
-  user_id: storyCurrentUser.id,
-  is_official: false,
-  referral_program_id: 'rp-chase',
-  url: 'https://www.referyourchasecard.com/m/21a/abc123',
-  label: 'My Chase Sapphire link',
-  priority_group: 1,
-  contribution_rank: 1,
-  tier_rank: 1,
-  best_score: 10,
-  review_post_id: null,
-  review_post_slug: null,
-  review_avg_rating: null,
-}
-
-const sampleLinkWithReview = {
-  ...sampleLink,
-  id: 'link-with-review',
-  review_post_id: 'post-chase-review',
-  review_post_slug: 'chase-sapphire-preferred-review',
-  review_avg_rating: 4.5,
-}
-
-const sampleResponse: PrioritizedReferralLinksResponse = {
-  links: [
-    sampleLink,
-    {
-      ...sampleLink,
-      id: 'link-2',
-      user_id: 'user-bob',
-      label: "Bob's Chase link",
-      priority_group: 2,
-    },
-  ],
-  users: {
-    [storyCurrentUser.id]: sampleUser,
-    'user-bob': { id: 'user-bob', username: 'bob', display_name: 'Bob Chen' },
-  },
-}
-
-const emptyResponse: PrioritizedReferralLinksResponse = {
-  links: [],
-  users: {},
-}
 
 export const AddForm: Story = {
   render: () => (
@@ -180,23 +131,6 @@ export const EmptyPersonalizedAside: Story = {
   ),
 }
 
-const feedUser: ReferralLinkFeedUser = {
-  id: storyCurrentUser.id,
-  username: storyCurrentUser.username!,
-  display_name: 'Alex Morgan',
-  profile_image_id: null,
-}
-
-const feedItem: ReferralLinkFeedItem = {
-  id: 'feed-link-1',
-  user_id: storyCurrentUser.id,
-  referral_program_id: 'rp-chase',
-  referral_program_name: 'Chase Sapphire Preferred',
-  referral_program_slug: 'chase-sapphire-preferred',
-  url: 'https://www.referyourchasecard.com/m/21a/abc123',
-  label: 'My Chase Sapphire link',
-}
-
 export const FeedCard: Story = {
   render: () => (
     <EntityStoryFrame title='Referral link feed card'>
@@ -206,29 +140,4 @@ export const FeedCard: Story = {
       />
     </EntityStoryFrame>
   ),
-}
-
-function ReferralLinksAside() {
-  return (
-    <AsideStack>
-      <ReferralLinksAsideContent
-        topicId='rp-chase'
-        topicType='referral-program'
-        response={sampleResponse}
-      />
-    </AsideStack>
-  )
-}
-
-function EmptyReferralLinksAside() {
-  return (
-    <AsideStack>
-      <ReferralLinksAsideContent
-        topicId='rp-chase'
-        topicSlug='chase-sapphire-preferred'
-        topicType='referral-program'
-        response={emptyResponse}
-      />
-    </AsideStack>
-  )
 }

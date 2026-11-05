@@ -11,7 +11,7 @@ import {
   readTestLiftDeliveryIntents,
 } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
+import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
 import { createCopyrightAppeal, createCopyrightCounterNotice } from './submissions.mts'
 import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
 
