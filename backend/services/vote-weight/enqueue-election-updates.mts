@@ -62,7 +62,6 @@ export async function enqueueElectionUpdatePageForUser(
   const statement = sql`/* enqueueElectionUpdatesForUser */
     SELECT lane, entity_type, entity_id, entity_relation, sort_id FROM (
       (SELECT 1 AS lane, 'post' AS entity_type, post_id AS entity_id, NULL::text AS entity_relation, post_id AS sort_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
       FROM post_votes
       WHERE user_id = ${userId} AND (1 > ${lane}::int OR (1 = ${lane}::int AND post_id > ${afterId}::uuid))
       ORDER BY post_id LIMIT ${limit})
@@ -70,7 +69,6 @@ export async function enqueueElectionUpdatePageForUser(
       UNION ALL
 
       (SELECT 2, 'topic', topic_id, NULL, topic_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
       FROM topic_votes
       WHERE user_id = ${userId} AND (2 > ${lane}::int OR (2 = ${lane}::int AND topic_id > ${afterId}::uuid))
       ORDER BY topic_id LIMIT ${limit})
@@ -78,7 +76,6 @@ export async function enqueueElectionUpdatePageForUser(
       UNION ALL
 
       (SELECT 3, 'hostname', hostname_id, NULL, hostname_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
       FROM hostname_votes
       WHERE user_id = ${userId} AND (3 > ${lane}::int OR (3 = ${lane}::int AND hostname_id > ${afterId}::uuid))
       ORDER BY hostname_id LIMIT ${limit})
@@ -86,7 +83,6 @@ export async function enqueueElectionUpdatePageForUser(
       UNION ALL
 
       (SELECT 4, 'rss_feed_item', rss_feed_item_id, NULL, rss_feed_item_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
       FROM rss_feed_item_votes
       WHERE user_id = ${userId} AND (4 > ${lane}::int OR (4 = ${lane}::int AND rss_feed_item_id > ${afterId}::uuid))
       ORDER BY rss_feed_item_id LIMIT ${limit})
@@ -94,7 +90,6 @@ export async function enqueueElectionUpdatePageForUser(
       UNION ALL
 
       (SELECT 6, 'agent_moderation', agent_moderation_id, NULL, agent_moderation_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
       FROM agent_moderation_votes
       WHERE user_id = ${userId} AND (6 > ${lane}::int OR (6 = ${lane}::int AND agent_moderation_id > ${afterId}::uuid))
       ORDER BY agent_moderation_id LIMIT ${limit})
@@ -102,7 +97,6 @@ export async function enqueueElectionUpdatePageForUser(
       UNION ALL
 
       (SELECT 7, 'user_vouch', target_user_id, NULL, target_user_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
       FROM user_vouch_votes
       WHERE user_id = ${userId} AND (7 > ${lane}::int OR (7 = ${lane}::int AND target_user_id > ${afterId}::uuid))
       ORDER BY target_user_id LIMIT ${limit})

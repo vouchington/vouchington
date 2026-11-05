@@ -37,7 +37,6 @@ export async function selectTopicAliasUnlinkNextPage(
       UNION ALL
       (
         SELECT 'post_relations' AS phase, relation.id::text AS page_cursor, 2 AS ord
-        -- no-mistakes-disable-next-line postgres-required-predicates: unlink drains soft-deleted alias edges before the alias row can go
         FROM relation__post__category__topic_alias relation
         WHERE relation.object_id = $1::uuid
         ORDER BY relation.subject_id, relation.id
@@ -57,7 +56,6 @@ export async function selectTopicAliasUnlinkNextPage(
       UNION ALL
       (
         SELECT 'rss_item_relations' AS phase, relation.id::text AS page_cursor, 4 AS ord
-        -- no-mistakes-disable-next-line postgres-required-predicates: unlink drains soft-deleted alias edges before the alias row can go
         FROM relation__rss_feed_item__category__topic_alias relation
         WHERE relation.object_id = $1::uuid
         ORDER BY relation.subject_id, relation.id

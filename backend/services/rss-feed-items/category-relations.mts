@@ -159,7 +159,7 @@ export async function getRssFeedItemMappedTopics(
   const { rows } = await query(
     `/* getRssFeedItemMappedTopics */
     SELECT t.id, t.name
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints rss_feed_item_categories.topic_id to the destination; mapped item-category lookup still excludes deleted topics
     FROM rss_feed_item_categories rfc
     JOIN topics t ON t.id = rfc.topic_id
     WHERE rfc.rss_feed_item_id = $1

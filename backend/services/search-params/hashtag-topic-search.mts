@@ -46,7 +46,7 @@ export async function resolveHashtagTopicSearch(
           WHEN topics.id IS NULL THEN NULL
           ELSE topic_aliases.topic_id
         END AS topic_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints topic_aliases.topic_id to the destination; hashtag alias resolution still excludes deleted topics
       FROM topic_aliases
       LEFT JOIN topics
         ON topics.id = topic_aliases.topic_id

@@ -11,7 +11,7 @@ export async function aggregateCommunityActivityDigestBatch(input: {
   windowEndId: string
 }): Promise<Array<CommunityActivityDigestCounts & { user_id: string }>> {
   const now = input.now ?? new Date()
-  // no-mistakes-disable-next-line postgres-bounded-statements: weekly digest for owners and moderators only; activity is limited to the week's id window and pending moderation counts are per recipient community; member totals come from the stored community_search_counts.member_count.
+  // no-mistakes-disable-next-line postgres-bounded-statements: the recipient page needs complete weekly activity and pending-review totals for every eligible community; recipient paging does not cap communities or matching activity, and a LIMIT would undercount the digest.
   const { rows } = await read<CommunityActivityDigestCounts & { user_id: string }>(sql`
     /* aggregateCommunityActivityDigestBatch */
     WITH eligible AS (

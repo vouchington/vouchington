@@ -41,7 +41,7 @@ export async function listCuratedItems(asideType: CuratedAsideType): Promise<Cur
             'slug', community.slug
           ) END
       END AS entity_data
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge moves curated_aside_items.topic_id to the destination with collision handling; aside hydration still excludes deleted topics
     FROM curated_aside_items cai
     LEFT JOIN topics topic ON topic.id = cai.topic_id
       AND topic.deleted_at IS NULL

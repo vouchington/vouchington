@@ -16,7 +16,6 @@ export const assertUserReferenceTopicExists = async (
       deleted_at,
       merged_into_topic_id,
       CASE ${expectedType}
-        -- no-mistakes-disable-next-line postgres-required-predicates: include inactive topics to preserve not-found and merge-conflict distinctions
         WHEN 'card' THEN topics.topic_type = 'card'
         WHEN 'rewards_program' THEN EXISTS (
           SELECT 1 FROM rewards_program_topics WHERE topic_id = topics.id

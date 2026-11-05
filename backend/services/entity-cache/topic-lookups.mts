@@ -56,7 +56,7 @@ export async function getTopicIdByAny(identifier: string): Promise<string | null
       AND destination_topic.merged_into_topic_id IS NULL
     UNION ALL
     SELECT ta.topic_id AS topic_id, 2 AS priority
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints topic_aliases.topic_id to the destination; cached alias resolution still excludes deleted topics
     FROM topic_aliases ta
     JOIN topics t ON t.id = ta.topic_id
     WHERE t.deleted_at IS NULL
@@ -93,9 +93,6 @@ export async function getTopicIdsByAnyBatch(identifiers: string[]): Promise<Arra
 
   const { rows } = await read<{ topic_id: string; input_order: number }>(
     `/* getTopicIdsByAnyBatch */
-    -- no-mistakes-disable-next-line postgres-required-predicates: dynamic \${inputCtes.ctes} interpolation breaks structural
-    -- SQL parsing; id_lookups/slug_candidates below are manually verified to filter both deleted_at
-    -- and merged_into_topic_id, following merge chains via destination_topic.
     WITH ${inputCtes.ctes},
     id_lookups AS (
       SELECT COALESCE(t.merged_into_topic_id, t.id) AS topic_id, input_data.input_order

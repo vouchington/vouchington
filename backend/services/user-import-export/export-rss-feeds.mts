@@ -54,7 +54,7 @@ export async function userRssFeedExportExceedsLimit(
 ): Promise<boolean> {
   const query = sql`/* userRssFeedExportExceedsLimit */
       SELECT COUNT(*)::int AS count
-      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints rss_feeds.topic_id to the destination; followed-feed export counting still excludes deleted topics
       FROM relation__user__follow__rss_feed r
       JOIN rss_feeds rf ON rf.id = r.object_id
       JOIN topics t ON t.id = rf.topic_id

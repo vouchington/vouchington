@@ -46,7 +46,6 @@ export async function backfillTopicsBloomFilter(): Promise<void> {
     read('/* backfillTopicsBloomFilter */ SELECT COUNT(*)::int AS count FROM topic_aliases', []),
     read(
       `/* backfillTopicsBloomFilter */
-      -- no-mistakes-disable-next-line postgres-required-predicates: merged source topic UUIDs must stay in the bloom filter for redirect lookups
       SELECT COUNT(*)::int AS count
       FROM topics source_topic
       JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
@@ -74,7 +73,6 @@ async function* topicsKeysFromDb(): AsyncGenerator<string> {
   }
   for await (const { id } of createAsyncGeneratorFromCursor<{ id: string }>(
     `/* topicsKeysFromDb */
-    -- no-mistakes-disable-next-line postgres-required-predicates: merged source topic UUIDs must stay in the bloom filter for redirect lookups
     SELECT source_topic.id
     FROM topics source_topic
     JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id

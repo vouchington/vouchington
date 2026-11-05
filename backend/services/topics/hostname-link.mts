@@ -56,7 +56,7 @@ async function clearOtherHostnameLinks(
     sql`/* clearOtherHostnameLinks */
       UPDATE url_hostnames
       SET topic_id = NULL
-      -- no-mistakes-disable-next-line postgres-required-predicates: id-scoped lookup of a specific, already-validated topic's hostname_id, not a listing/existence query
+      -- no-mistakes-disable-next-line postgres-required-predicates: topic lifecycle and hostname ownership fences protect this exact retained primary-pointer comparison until the old hostname is released; this lookup does not authorize the topic
       WHERE id = (SELECT hostname_id FROM topics WHERE id = ${topicId})
         AND topic_id = ${topicId}
         AND (${hostnameId}::uuid IS NULL OR id <> ${hostnameId}::uuid)

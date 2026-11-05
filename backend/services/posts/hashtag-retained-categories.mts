@@ -10,7 +10,7 @@ export async function getRetainedPostCategories(
     write<{ topic_id: string }>(
       `/* getRetainedPostCategories topics */
       SELECT explicit.topic_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+      -- no-mistakes-disable-next-line postgres-required-predicates: merge moves post_explicit_topic_categories.topic_id to the destination with collision handling; retained category lookup still excludes deleted topics
       FROM post_explicit_topic_categories explicit
       JOIN topics topic ON topic.id = explicit.topic_id
       WHERE explicit.post_id = $1

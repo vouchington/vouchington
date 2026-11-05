@@ -20,7 +20,7 @@ export async function detectRssFeedItemLanguage(itemId: string): Promise<void> {
     FROM rss_feed_items rfi
     JOIN rss_feeds rf ON rf.id = (
       SELECT rfis.rss_feed_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints source feeds through rss_feeds.topic_id; item declared-language selection still excludes deleted topics
       FROM rss_feed_item_sources rfis
       JOIN rss_feeds rf2 ON rf2.id = rfis.rss_feed_id
       JOIN topics t ON t.id = rf2.topic_id

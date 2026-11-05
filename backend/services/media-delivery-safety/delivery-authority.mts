@@ -10,7 +10,7 @@ export async function lockImageDeliveryLegalAuthority(
 ): Promise<void> {
   // Filing admission takes the notice lock. Hold it from proof through provider publication.
   await query(sql`/* imageDeliveryIsAuthorized:noticeLocks */
-      -- no-mistakes-disable-next-line postgres-bounded-statements: locks only the notices that target this one placement; more than a handful is an edge case (see docs/runbooks/copyright-notices.md, Copyright notice locks).
+      -- no-mistakes-disable-next-line postgres-bounded-statements: publication must retain locks on every notice targeting this placement from the authority proof through provider publication; notice history is uncapped, and a LIMIT would omit a legal-authority fence.
       SELECT notice.id FROM copyright_notices notice
       WHERE EXISTS (
         SELECT 1 FROM copyright_notice_targets target

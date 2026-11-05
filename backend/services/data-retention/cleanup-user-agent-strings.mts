@@ -15,7 +15,6 @@ const BALLOT_REFERENCE_PREDICATES = voteTables
   .map(({ table }) => {
     const voteTable = assertWhitelistedSqlIdentifier(table, VOTE_TABLE_IDENTIFIERS, 'voteTable')
     return `AND NOT EXISTS (
-         -- no-mistakes-disable-next-line postgres-required-predicates: a ballot in any entity partition keeps this user agent referenced; user_agent_string_id has an index
          SELECT 1 FROM ${voteTable} ballot WHERE ballot.user_agent_string_id = ua.id LIMIT 1
        )`
   })
@@ -74,7 +73,6 @@ export async function cleanupOrphanedUserAgentStrings(
      DELETE FROM user_agent_strings ua
      WHERE ua.id = ANY($1::uuid[])
        AND NOT EXISTS (
-         -- no-mistakes-disable-next-line postgres-required-predicates: any surviving session in any ID partition keeps this user agent referenced; user_agent_string_id has an index
          SELECT 1 FROM user_sessions session
          WHERE session.user_agent_string_id = ua.id LIMIT 1
        )

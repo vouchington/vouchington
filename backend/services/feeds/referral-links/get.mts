@@ -86,7 +86,7 @@ export async function getReferralLinksFeed(
       vup.account_type,
       vup.display_account->>'name' AS display_name,
       vup.profile_image_id
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints user_referral_program_links.referral_program_topic_id and removes the source program subtype; followed-link reads still exclude deleted topics
     FROM user_referral_program_links urpl
     JOIN urls u ON u.id = urpl.url_id
     JOIN topics t ON t.id = urpl.referral_program_topic_id

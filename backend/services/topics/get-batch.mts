@@ -98,9 +98,6 @@ function normalizeTopicBatchIdentifier(
 
 function topicAnyBatchStatement(inputCtes: string): string {
   return `/* getTopicsByAnyBatch */
-    -- no-mistakes-disable-next-line postgres-required-predicates: dynamic \${inputCtes} interpolation breaks structural
-    -- SQL parsing; id_lookups/slug_lookups below are manually verified to filter both deleted_at
-    -- and merged_into_topic_id, following merge chains via destination_topic.
     WITH ${inputCtes},
     id_lookups AS (
       SELECT COALESCE(t.merged_into_topic_id, t.id) AS id, input_data.input_order
@@ -159,9 +156,6 @@ async function readTopicAnyBatchRows(
   options: QueryOptions,
 ): Promise<ReadonlyArray<Topic & { input_order: number }>> {
   const prefix = `/* getTopicsByAnyBatch */
-    -- no-mistakes-disable-next-line postgres-required-predicates: dynamic \${inputCtes} interpolation breaks structural
-    -- SQL parsing; id_lookups/slug_lookups below are manually verified to filter both deleted_at
-    -- and merged_into_topic_id, following merge chains via destination_topic.
     WITH `
   if (!sql.startsWith(prefix)) throw new Error('Unexpected topic batch query')
   const { rows } = await read<Topic & { input_order: number }>(sql, values, options)
