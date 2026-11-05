@@ -29,44 +29,44 @@ export type VoteBallotCleanupPage = {
   deleted: number
   hasMore: boolean
 }
-
 export async function cleanupSupersededVoteBallots(
   batchSize: number,
   now = new Date(),
   voteIdsByTable?: Readonly<Record<string, readonly string[]>>,
   tableNames?: readonly string[],
+  options?: Parameters<typeof cleanupDeferredPostVoteBallots>[2],
 ): Promise<VoteBallotCleanupPage[]> {
   const selected = tableNames ? new Set(tableNames) : null
   if (selected && [...selected].some(table => !voteTables.some(config => config.table === table))) {
     throw new RangeError('Unknown ballot table in retention continuation')
   }
   const results: VoteBallotCleanupPage[] = []
-  for (const config of voteTables) {
-    if (selected && !selected.has(config.table)) continue
-    const voteIds = voteIdsByTable ? (voteIdsByTable[config.table] ?? []) : undefined
+  for (const { table } of voteTables) {
+    if (selected && !selected.has(table)) continue
+    const voteIds = voteIdsByTable ? (voteIdsByTable[table] ?? []) : undefined
     // oxlint-disable-next-line no-await-in-loop -- each ballot table owns an independent bounded cursor transaction.
-    const page = await cleanupSupersededVoteBallotTable(config.table, batchSize, now, voteIds) // no-mistakes-disable-line query-reached-per-item: fixed schema-declared ballot tables each require one independent capped cursor transaction
+    const page = await cleanupSupersededVoteBallotTable(table, batchSize, now, voteIds, options) // no-mistakes-disable-line query-reached-per-item: fixed schema-declared ballot tables each require one independent capped cursor transaction
     results.push(page)
   }
   return results
 }
 
-export async function cleanupSupersededVoteBallotTable(
+async function cleanupSupersededVoteBallotTable(
   voteTable: string,
   batchSize: number,
   now = new Date(),
   voteIds?: readonly string[],
-  borrowedQuery?: TransactionQuery,
+  options?: Parameters<typeof cleanupDeferredPostVoteBallots>[2],
 ): Promise<VoteBallotCleanupPage> {
   const ordinary = await cleanupOrdinarySupersededVoteBallotTable(
     voteTable,
     batchSize,
     now,
     voteIds,
-    borrowedQuery,
+    options?.query,
   )
   if (voteTable !== 'post_votes' || voteIds) return ordinary
-  const deferred = await cleanupDeferredPostVoteBallots(batchSize, now, { query: borrowedQuery })
+  const deferred = await cleanupDeferredPostVoteBallots(batchSize, now, options)
   return {
     ...ordinary,
     scanned: ordinary.scanned + deferred.scanned,
