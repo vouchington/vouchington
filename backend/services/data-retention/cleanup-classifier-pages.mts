@@ -77,10 +77,17 @@ async function sweepClassifierPage(
   `)
   const storedCursor = progress[0]!.cursor_id
   const storedEnd = progress[0]!.sweep_end_key
+  const resumesScopedSweep =
+    recordIds === undefined || (storedCursor !== null && recordIds.includes(storedCursor))
   const sweepEnd =
-    storedEnd !== null && storedEnd >= lowerBoundId && storedEnd <= cutoffId ? storedEnd : cutoffId
+    resumesScopedSweep && storedEnd !== null && storedEnd >= lowerBoundId && storedEnd <= cutoffId
+      ? storedEnd
+      : cutoffId
   const cursor =
-    storedCursor !== null && storedCursor >= lowerBoundId && storedCursor < sweepEnd
+    resumesScopedSweep &&
+    storedCursor !== null &&
+    storedCursor >= lowerBoundId &&
+    storedCursor < sweepEnd
       ? storedCursor
       : null
   const statement = sql`/* listClassifierRetentionPage */ SELECT id FROM `

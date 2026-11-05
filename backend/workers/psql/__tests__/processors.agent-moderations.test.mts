@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import type { runDataRetentionCleanup } from '@services/data-retention'
 import {
   createTestAgentModerationRetentionPage,
-  createTestAgentModerationRetentionCursor,
   createTestAgentModerationRetentionContinuationPage,
+  createTestAgentModerationRetentionCursor,
+  createTestAgentModerationRetentionDailyContinuationPage,
   getTestAgentModerationRetentionState,
 } from '@voucha/test-helpers/agent-moderation-retention-pages'
 import {
@@ -15,31 +16,16 @@ import {
 } from '@voucha/test-helpers/entities/agent-moderation-retention'
 import { psql } from '@queues/psql/queues'
 import { DATA_RETENTION_ORDERING } from '@queues/psql/config'
-import {
-  AI_RETENTION_FAMILIES,
-  type AgentModerationRetentionContinuationData,
-  type PsqlRetentionJobData,
+import type {
+  AgentModerationRetentionContinuationData,
+  PsqlRetentionJobData,
 } from '@queues/psql/types'
 import { rejectNextQueueJobAddForTest } from '@voucha/test-helpers/injected-failures'
+import { countClassifierRows } from '@voucha/test-helpers/classifier-retention'
+import { withClassifierRetentionSweepLockWithoutReset } from '@voucha/test-helpers/classifier-retention-sweep-lock'
+import { createAgentClassifierRetentionFixture } from '@voucha/test-helpers/agent-classifier-retention'
+import { insertTestAgentModeration } from '@voucha/test-helpers/entities/post-llm-moderations'
 import processPsql from '../processors.mts'
-
-const emptyCleanupResult = {
-  softDeletedUsers: { deleted: 0, hasMore: false },
-  postModerationLedger: {
-    deletedVersions: 0,
-    clearedPassEvidence: 0,
-    hasMore: false,
-    remainingKinds: [],
-  },
-  agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
-  ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
-  classifierRecords: { runs: { hasMore: false } },
-  supersededVoteBallots: [],
-  orphanedUserAgentStrings: { hasMore: false },
-  voteIntegrityDetails: { hasMore: false },
-  aiUsageRecords: { hasMore: false },
-} as unknown as Awaited<ReturnType<typeof runDataRetentionCleanup>>
-
 describe('agent moderation retention continuations', () => {
   it('chains only moderation pages through their own ordered job', async () => {
     const initialJobId = `retention-test-${randomUUID()}`
@@ -48,26 +34,37 @@ describe('agent moderation retention continuations', () => {
     onTestFinished(async () => {
       await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
     })
-    const owned = await createTestAgentModerationRetentionContinuationPage()
-    const neighbor = await createTestAgentModerationRetentionPage()
+    const [owned, neighbor] = await Promise.all([
+      createTestAgentModerationRetentionDailyContinuationPage(),
+      createTestAgentModerationRetentionPage(),
+    ])
     const options = {
       postIds: [owned.postId],
       batchSize: 2,
       maxBatches: 1,
       now: new Date('2026-10-29T00:00:00Z'),
     }
-    const firstCursor = createTestAgentModerationRetentionCursor(owned.postId)
+    const firstCursor = {
+      afterDueAt: '2026-10-01T00:00:00.000Z',
+      afterId: owned.initialDeletedId,
+      afterPostId: owned.postId,
+      upperBoundDueAt: '2026-10-29T00:00:00.000Z',
+      upperBoundId: owned.initialUpperBoundId,
+    }
     const secondCursor = {
       ...firstCursor,
       afterDueAt: '2026-10-03T00:00:00.000Z',
       afterId: owned.secondId,
     }
-    const cleanup = vi.fn<typeof runDataRetentionCleanup>().mockResolvedValue({
-      ...emptyCleanupResult,
-      agentModerations: { scanned: 2, deleted: 1, hasMore: true, continuation: firstCursor },
+    const initial = (await processPsql('dataRetentionCleanup', {}, undefined, initialJobId, {
+      retention: { families: ['agentModerations'], agentModerations: options },
+    })) as Awaited<ReturnType<typeof runDataRetentionCleanup>>
+    expect(initial.agentModerations).toEqual({
+      scanned: 2,
+      deleted: 1,
+      hasMore: true,
+      continuation: firstCursor,
     })
-
-    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
     const first = await psql.getJob(ids[0]!)
     expect(first!.opts.ordering).toEqual(DATA_RETENTION_ORDERING)
     expect(
@@ -103,11 +100,19 @@ describe('agent moderation retention continuations', () => {
       blockedReason: 'reference',
     })
     expect(await getTestAgentModerationRetentionState(owned.postId, owned.thirdId)).toBeNull()
+    expect(
+      await getTestAgentModerationRetentionState(owned.postId, owned.initialBlockedId),
+    ).toEqual({
+      dueAt: null,
+      blockedReason: 'reference',
+    })
+    expect(
+      await getTestAgentModerationRetentionState(owned.postId, owned.initialDeletedId),
+    ).toBeNull()
     expect(await getTestAgentModerationRetentionState(neighbor.postId, neighbor.oldId)).toEqual({
       dueAt: '2026-10-02T00:00:00.000Z',
       blockedReason: null,
     })
-    expect(cleanup).toHaveBeenCalledTimes(1)
     expect(await psql.getJob(ids[2]!)).toBeNull()
   })
 
@@ -208,27 +213,87 @@ describe('agent moderation retention continuations', () => {
   it('does not restart a finished agent moderation sweep while classifier pages continue', async () => {
     const initialJobId = `retention-test-${randomUUID()}`
     const runId = createHash('sha256').update(initialJobId).digest('hex')
-    const ids = [1, 2].map(step => `data-retention-cleanup__${runId}__${step}`)
+    const ids = [1, 2, 3, 4, 5].map(step => `data-retention-cleanup__${runId}__${step}`)
     onTestFinished(async () => {
       await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
     })
-    const cleanup = vi.fn<typeof runDataRetentionCleanup>().mockResolvedValue({
-      ...emptyCleanupResult,
-      classifierRecords: {
-        ...emptyCleanupResult.classifierRecords,
-        runs: { scanned: 1, deleted: 0, hasMore: true },
-      },
-    })
+    await withClassifierRetentionSweepLockWithoutReset(async () => {
+      const { agent, excludedAgent, ownedRuns, excludedRuns, options, cleanup } =
+        await createAgentClassifierRetentionFixture()
+      try {
+        const runPage = async (data: PsqlRetentionJobData, jobId: string) =>
+          (await processPsql('dataRetentionCleanup', data, undefined, jobId, options)) as Awaited<
+            ReturnType<typeof runDataRetentionCleanup>
+          >
+        const firstResult = await runPage({}, initialJobId)
+        expect(firstResult.agentModerations).toEqual({
+          scanned: 1,
+          deleted: 1,
+          hasMore: false,
+          continuation: null,
+        })
+        expect(firstResult.classifierRecords.runs).toEqual({
+          scanned: 1,
+          deleted: 1,
+          hasMore: true,
+        })
+        expect(await countClassifierRows('classifier_runs', ownedRuns.terminalIds)).toBe(2)
+        expect(await countClassifierRows('classifier_runs', excludedRuns.terminalIds)).toBe(1)
+        const rearmedId = await insertTestAgentModeration({
+          ...agent,
+          occurredAt: new Date('2026-07-07T00:00:00Z'),
+        })
+        expect(await getTestAgentModerationRetentionState(agent.postId, rearmedId)).toEqual({
+          dueAt: '2026-10-05T00:00:00.000Z',
+          blockedReason: null,
+        })
 
-    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
-    const first = await psql.getJob(ids[0]!)
-    await processPsql(
-      'dataRetentionCleanup',
-      first!.data as PsqlRetentionJobData,
-      { dataRetentionCleanup: cleanup },
-      first!.id,
-    )
-    expect(cleanup.mock.calls[1]?.[1]).toMatchObject({ includeAgentModerations: false })
-    expect(await psql.getJob(ids[1]!)).not.toBeNull()
+        const first = await psql.getJob(ids[0]!)
+        expect(first?.data).toMatchObject({ continuation: { runId, step: 1 } })
+        const secondResult = await runPage(first!.data as PsqlRetentionJobData, first!.id)
+        expect(secondResult.agentModerations).toEqual({
+          scanned: 0,
+          deleted: 0,
+          hasMore: false,
+          continuation: null,
+        })
+        expect(secondResult.classifierRecords.runs).toEqual({
+          scanned: 1,
+          deleted: 1,
+          hasMore: true,
+        })
+        expect(await countClassifierRows('classifier_runs', ownedRuns.terminalIds)).toBe(1)
+        expect(await getTestAgentModerationRetentionState(agent.postId, rearmedId)).toEqual({
+          dueAt: '2026-10-05T00:00:00.000Z',
+          blockedReason: null,
+        })
+        expect(
+          await getTestAgentModerationRetentionState(excludedAgent.postId, excludedAgent.oldId),
+        ).toEqual({ dueAt: '2026-10-02T00:00:00.000Z', blockedReason: null })
+        expect(await countClassifierRows('classifier_runs', excludedRuns.terminalIds)).toBe(1)
+        expect(await psql.getJob(ids[1]!)).not.toBeNull()
+
+        const second = await psql.getJob(ids[1]!)
+        const thirdResult = await runPage(second!.data as PsqlRetentionJobData, second!.id)
+        expect(thirdResult.classifierRecords.runs).toEqual({
+          scanned: 1,
+          deleted: 1,
+          hasMore: true,
+        })
+        const third = await psql.getJob(ids[2]!)
+        const finalResult = await runPage(third!.data as PsqlRetentionJobData, third!.id)
+        expect(finalResult.classifierRecords.runs).toEqual({
+          scanned: 1,
+          deleted: 0,
+          hasMore: false,
+        })
+        expect(await countClassifierRows('classifier_runs', ownedRuns.terminalIds)).toBe(0)
+        expect(await countClassifierRows('classifier_runs', [ownedRuns.pendingId])).toBe(1)
+        expect(await countClassifierRows('classifier_runs', excludedRuns.terminalIds)).toBe(1)
+        expect(await psql.getJob(ids[3]!)).toBeNull()
+      } finally {
+        await cleanup()
+      }
+    })
   })
 })

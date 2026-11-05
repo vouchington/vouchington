@@ -1,4 +1,5 @@
 import { v7 as uuidv7 } from 'uuid'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestAgentModeration } from './entities/post-llm-moderations.mts'
@@ -34,6 +35,29 @@ export async function createTestAgentModerationRetentionContinuationPage() {
   await attachTestAgentModerationAuditReference(fixture.postId, fixture.oldId)
   await attachTestAgentModerationTrainingReference(fixture.postId, secondId)
   return { ...fixture, secondId, thirdId }
+}
+
+export async function createTestAgentModerationRetentionDailyContinuationPage() {
+  const fixture = await createTestAgentModerationRetentionContinuationPage()
+  const [initialBlockedId, initialDeletedId] = await Promise.all([
+    insertTestAgentModeration({
+      ...fixture,
+      occurredAt: new Date('2026-07-03T00:00:00Z'),
+      occurredAtSequence: 1,
+    }),
+    insertTestAgentModeration({
+      ...fixture,
+      occurredAt: new Date('2026-07-03T00:00:00Z'),
+      occurredAtSequence: 2,
+    }),
+  ])
+  await attachTestAgentModerationAuditReference(fixture.postId, initialBlockedId)
+  return {
+    ...fixture,
+    initialBlockedId,
+    initialDeletedId,
+    initialUpperBoundId: getMinUUIDv7ForDate(new Date('2026-07-31T00:00:00Z')),
+  }
 }
 
 export async function getTestAgentModerationRetentionState(postId: string, id: string) {

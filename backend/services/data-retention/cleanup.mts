@@ -192,6 +192,7 @@ export type DataRetentionCleanupOptions = {
   /** Continuations name the membership families that exceeded the previous run's cap. */
   activeMembershipFamilies?: readonly string[]
   includeAgentModerations?: boolean
+  voteRetention?: Pick<VoteRetentionCleanupOptions, 'batchSize' | 'now'>
   voteBallotIdsByTable?: Readonly<Record<string, readonly string[]>>
   userAgentStringIds?: readonly string[]
   voteIntegrityFlagIds?: readonly string[]
@@ -245,6 +246,7 @@ export type DataRetentionCleanupOptions = {
     kinds?: readonly PostModerationRetentionKind[]
   }
   agentModerations?: OptionalRetentionLimits<{
+    postIds?: readonly string[]
     batchSize?: number
     maxBatches: number
     now?: Date
@@ -726,13 +728,25 @@ export async function runDataRetentionCleanup(
         terminalLikeIdentities: { deleted: 0, hasMore: false },
       }
   const supersededVoteBallots = active('supersededVoteBallots')
-    ? await cleanupSupersededVoteBallots(limits.batchSize, new Date(), options.voteBallotIdsByTable)
+    ? await cleanupSupersededVoteBallots(
+        options.voteRetention?.batchSize ?? limits.batchSize,
+        options.voteRetention?.now ?? new Date(),
+        options.voteBallotIdsByTable,
+      )
     : []
   const orphanedUserAgentStrings = active('orphanedUserAgentStrings')
-    ? await cleanupOrphanedUserAgentStrings(limits.batchSize, options.userAgentStringIds)
+    ? await cleanupOrphanedUserAgentStrings(
+        options.voteRetention?.batchSize ?? limits.batchSize,
+        options.userAgentStringIds,
+        options.voteRetention?.now,
+      )
     : { scanned: 0, deleted: 0, hasMore: false }
   const voteIntegrityDetails = active('voteIntegrityDetails')
-    ? await cleanupVoteIntegrityDetails(limits.batchSize, new Date(), options.voteIntegrityFlagIds)
+    ? await cleanupVoteIntegrityDetails(
+        options.voteRetention?.batchSize ?? limits.batchSize,
+        options.voteRetention?.now ?? new Date(),
+        options.voteIntegrityFlagIds,
+      )
     : { scanned: 0, redacted: 0, hasMore: false }
   // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const copyright = await runCopyrightOperationalRetentionCleanup({

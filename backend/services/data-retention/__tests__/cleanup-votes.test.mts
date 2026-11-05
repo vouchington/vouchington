@@ -1,6 +1,7 @@
 import { randomInt, randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
+import { reserveTestVoteRetention } from '@voucha/test-helpers/vote-retention-reservation'
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import {
   createTestUserDirect,
@@ -42,6 +43,11 @@ async function postForTest() {
 }
 
 describe('vote and user-agent retention', () => {
+  beforeEach(async () => {
+    const reservation = await reserveTestVoteRetention()
+    onTestFinished(() => reservation.release())
+  })
+
   it('visits only the unfinished ballot tables in a continuation', async () => {
     const pages = await cleanupSupersededVoteBallots(1, NOW, { post_votes: [] }, ['post_votes'])
     expect(pages).toEqual([{ voteTable: 'post_votes', scanned: 0, deleted: 0, hasMore: false }])
@@ -63,7 +69,7 @@ describe('vote and user-agent retention', () => {
   })
 
   it('rejects pages beyond the per-run read bound before querying a table', async () => {
-    const scopedIds = [uuidv7(), uuidv7()]
+    const scopedIds = [uuidv7(), uuidv7(), uuidv7()]
     await expect(cleanupSupersededVoteBallotTable('post_votes', 5_001)).rejects.toThrow(RangeError)
     await expect(cleanupOrphanedUserAgentStrings(5_001)).rejects.toThrow(RangeError)
     await expect(cleanupVoteIntegrityDetails(5_001)).rejects.toThrow(RangeError)
@@ -71,6 +77,7 @@ describe('vote and user-agent retention', () => {
       RangeError,
     )
     await expect(cleanupOrphanedUserAgentStrings(1, scopedIds)).rejects.toThrow(RangeError)
+    await expect(cleanupVoteIntegrityDetails(1, NOW, scopedIds)).rejects.toThrow(RangeError)
   })
 
   it('deletes only ballots superseded for 90 days and keeps the newest ballot', async () => {
@@ -94,15 +101,15 @@ describe('vote and user-agent retention', () => {
     ])
     expect(page).toMatchObject({ scanned: 3, deleted: 1, hasMore: false })
     expect(await getTestPostVoteIds(postId, userId)).toEqual([secondId, recentId])
-    expect(await getTestRetainedPostVoteCount(firstDayText)).toBe(retainedBefore + 1)
+    expect((await getTestRetainedPostVoteCount(firstDayText)) - retainedBefore).toBe(1)
     const engagementAfter = await getEngagement('all', new Date(0))
     const dayCount = (engagement: typeof engagementAfter) =>
       engagement.votes_over_time.find(point => point.date === firstDayText)?.count ?? 0
-    expect(dayCount(engagementAfter)).toBe(dayCount(engagementBefore))
+    expect(dayCount(engagementAfter) - dayCount(engagementBefore)).toBe(0)
     expect(await cleanupSupersededVoteBallotTable('post_votes', 1, NOW, [firstId])).toMatchObject({
       deleted: 0,
     })
-    expect(await getTestRetainedPostVoteCount(firstDayText)).toBe(retainedBefore + 1)
+    expect((await getTestRetainedPostVoteCount(firstDayText)) - retainedBefore).toBe(1)
   })
 
   it('drains a long actor history in bounded pages before retiring its superseder', async () => {
@@ -130,7 +137,7 @@ describe('vote and user-agent retention', () => {
     expect(pages.map(page => page.hasMore)).toEqual([true, true, false])
     expect(await getTestPostVoteIds(postId, userId)).toEqual([supersederId])
     for (const [index, day] of olderDays.entries()) {
-      expect(await getTestRetainedPostVoteCount(day.slice(0, 10))).toBe(countsBefore[index]! + 1)
+      expect((await getTestRetainedPostVoteCount(day.slice(0, 10))) - countsBefore[index]!).toBe(1)
     }
     expect(
       await cleanupSupersededVoteBallotTable('post_votes', 1, NOW, [supersederId]),
