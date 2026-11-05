@@ -1,4 +1,5 @@
-import { rm } from 'node:fs/promises'
+import { rm, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { collectConfigInventory } from './collect.mts'
@@ -40,6 +41,54 @@ describe('collectConfigInventory shared reader', () => {
       expect.objectContaining({ name: 'GENERATED_CATALOG_ENV' }),
     )
     expect(fixture.ctx.readTrackedFile).toHaveBeenCalledTimes(2)
+  })
+
+  it('discovers tracked workflow shell consumers without accepting stale or untracked readers', async () => {
+    const workflowPath = '.github/workflows/ci.yml'
+    const scriptPath = '.github/workflows/dependency-mirror.sh'
+    const fixture = await makeRepoFixture({
+      [workflowPath]: [
+        'jobs:',
+        '  mirror:',
+        '    steps:',
+        '      - env:',
+        '          GHCR_TOKEN: fixture',
+        '          REGCTL: fixture',
+        '          REGCTL_PATH: fixture',
+        '          STALE_SHELL_ENV: fixture',
+        '          SKIPPED_WORKFLOW_ENV: fixture',
+        '          UNTRACKED_WORKFLOW_ENV: fixture',
+        '        run: source "$GITHUB_WORKSPACE/.github/workflows/dependency-mirror.sh"',
+      ].join('\n'),
+      [scriptPath]: [
+        '#!/usr/bin/env bash',
+        '"$REGCTL" registry login --pass "$GHCR_TOKEN"',
+        'printf "%s" "${REGCTL_PATH}" "$STALE_SHELL_ENV_EXTRA" "$SHELL_LOCAL_ONLY"',
+      ].join('\n'),
+      '.github/workflows/ignored.test.sh': 'echo "$SKIPPED_WORKFLOW_ENV"',
+    })
+    testDirs.push(fixture.dir)
+    await writeFile(
+      join(fixture.dir, '.github/workflows/untracked.sh'),
+      'echo "$UNTRACKED_WORKFLOW_ENV"',
+    )
+
+    const inventory = await collectConfigInventory(fixture.ctx)
+
+    for (const name of ['GHCR_TOKEN', 'REGCTL', 'REGCTL_PATH']) {
+      expect(inventory.envVars).toContainEqual(
+        expect.objectContaining({ name, readers: [scriptPath], workflows: [workflowPath] }),
+      )
+    }
+    expect(inventory.envVars).not.toContainEqual(
+      expect.objectContaining({ name: 'SHELL_LOCAL_ONLY' }),
+    )
+    expect(checkWorkflowEnvReferences(fixture.ctx, inventory)).toEqual(
+      ['SKIPPED_WORKFLOW_ENV', 'STALE_SHELL_ENV', 'UNTRACKED_WORKFLOW_ENV'].map(
+        name =>
+          `workflow env ${name} in ${workflowPath} is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
+      ),
+    )
   })
 
   it('reads package-manager gates only from pnpm-workspace.yaml', async () => {
