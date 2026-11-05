@@ -6,10 +6,12 @@ import { stripSqlComments } from './sql-scanner.mts'
 import { extractPolymorphicTargetTables } from './sql-constraint-ast.mts'
 import {
   ALLOWED_POLYMORPHIC_TARGET_TABLES,
+  LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS,
   POSTGRES_SCHEMA_GUARDRAIL_ALLOWLIST_FILE,
 } from './postgres-schema-guardrail-allowlist.mts'
 import {
   checkEditedInPlaceMarkerWording,
+  checkLegacyEditedInPlaceMarkerRatchet,
   checkStaleLegacyEditedInPlaceMarkerEntries,
 } from './edited-in-place-marker-guard.mts'
 
@@ -47,6 +49,11 @@ export async function checkMigrationSqlGuard(
       )
     }
     checkStaleLegacyEditedInPlaceMarkerEntries(observedLegacyMarkerMigrations, errors)
+    checkLegacyEditedInPlaceMarkerRatchet(
+      repoRoot,
+      LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS,
+      errors,
+    )
   }
   return observedCreateTableNames
 }

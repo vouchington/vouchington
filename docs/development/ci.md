@@ -116,6 +116,11 @@ job sends it under a carryforward flag without gating. Each concurrency group st
 literal area prefix and cancels only superseded pull-request runs, and
 [`nightly.yml`](../../.github/workflows/nightly.yml) calls every area daily.
 
+Repository policy ratchets need the comparison commit's tree even in a shallow checkout. Pull
+requests and merge groups use the event base, while manual and scheduled runs compare the previous
+commit. An unavailable base blocks validation; it must not silently substitute the current tree.
+Local checks use `origin/main`, or an explicit `BASE_SHA` for a synthetic or alternate comparison.
+
 The Backend area prepares one migrated PostgreSQL baseline per workflow run for every backend database
 consumer: unit shards, trusted provider tests, schema contracts, smoke tests, and EXPLAIN scenarios.
 The producer checks SQL safety, staging RSS and retained-relation bootstrap, and the canonical schema

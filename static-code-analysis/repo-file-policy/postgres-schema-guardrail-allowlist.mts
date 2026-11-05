@@ -7,7 +7,8 @@ export const ALLOWED_POLYMORPHIC_TARGET_TABLES = new Set<string>()
 // `-- edited-in-place: pre-launch, never deployed to production` marker wording instead of the
 // current `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)` wording
 // mandated by backend/data-stores/psql/AGENTS.md#migration-rules. edited-in-place-marker-guard.mts
-// rejects that retired wording in any file NOT listed here, so this set can only shrink -- new files must use
+// rejects that retired wording in any file NOT listed here. Its Git-base ratchet rejects entries
+// absent from the base commit's retired-marker migration paths, so this set can only shrink. New files must use
 // the current wording, and an entry becomes stale (CI-rejected) the moment its file's wording is
 // updated or the file stops existing. Emptying this set only means every file has moved onto the
 // current wording -- it does NOT retire the pre-launch in-place-edit convention itself; that is

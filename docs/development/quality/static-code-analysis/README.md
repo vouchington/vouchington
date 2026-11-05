@@ -85,6 +85,12 @@ Numeric constants named `*BATCH_SIZE`, `*PAGE_SIZE`, `*CHUNK_SIZE`, `MAX_BATCHES
 
 The relational-storage guard reads the generated schema snapshot with no debt inventory: every UUID array, UUID reference without a target foreign key, and scoped encoded key fails unless an exact entry in the reviewed catalog covers it. Structured documents, data points, change history, and reviewed opaque or provider JSON stay JSON; a JSON column is not a defect. A stale catalog entry fails. See the [schema policy](../../postgres-schema-rules.md#prelaunch-relational-storage).
 
+Legacy migration exceptions use the committed comparison base rather than a frozen ceiling, so
+an exception removed from the base cannot later be reintroduced. The ratchet reads retired-marker
+SQL paths at that base: existing wording and stale-entry checks make those paths equivalent to
+the base allowlist without executing or parsing historical TypeScript. It does not establish that
+any migration was never staged; existing legacy markers stay until their provenance is resolved.
+
 ## PostgreSQL Conflict Ordering
 
 `postgres-conflict-ordering` and `postgres-lock-ordering` (catalog-backed `no-mistakes` rules over the generated [catalog](../../postgresql/schema-snapshot/README.md#no-mistakes-catalog)) require a multi-row UPSERT's conflict target and source `ORDER BY` to begin with the same unique-index key sequence, and multi-row row locks to follow the same prefix, so concurrent writers acquire locks in one order and cannot deadlock. Dynamic SQL that reaches the parser fails closed. Tests, fixtures, migrations, views, and manual scripts are outside the production paths.

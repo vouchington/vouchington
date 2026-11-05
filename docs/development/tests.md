@@ -22,6 +22,10 @@ These rules apply to backend, web, and tooling tests, and to every file a test c
 - **R12. Deleting a test.** Delete a redundant test when line and branch coverage of the production file it exercises does not drop. Compare `pnpm exec vitest run --project <project> <test files> --coverage --coverage.include=<production file>` with and without the test, and put both numbers in the pull request. If coverage would drop, rewrite the test. See [test value](reference-tests-value-and-reduction.md).
 - **R13. API contracts.** A new option on an internal service function is fine. A new or changed REST route, query parameter, or MCP tool parameter needs [client parity](../requirements/CLIENT-PARITY-MATRIX.md) and an owner decision.
 
+Git-history guard tests create small synthetic repositories and refs, including shallow clones
+when a comparison depends on historical trees. This verifies removals and forbidden reintroductions
+without turning unit tests into scans of the live checkout.
+
 Sweeps and their processors keep bounded pages and accept owned ids through plain parameters.
 Test-only parameters are allowed even when production callers leave them unset; injected
 replacement sweep functions are not. Tests age their own fixtures through the relevant timestamp,
