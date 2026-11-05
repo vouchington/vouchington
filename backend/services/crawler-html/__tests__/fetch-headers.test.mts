@@ -2,7 +2,7 @@ import undici from 'undici'
 import * as http from '@modules/utils/http'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import CrawlerHtml, { fetchCrawlerHtml } from '../index.mts'
+import CrawlerHtml from '../index.mts'
 import type { CrawlerHtmlOptions } from '../types.mts'
 
 type UndiciResponse = Awaited<ReturnType<typeof undici.fetch>>
@@ -77,7 +77,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
       url: 'https://example.com',
     }
 
-    const result = await fetchCrawlerHtml(options, {})
+    const result = await CrawlerHtml(options, {})
 
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -109,7 +109,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
     const mockResponse = createResponse(304)
     fetchSpy.mockResolvedValue(fetched(mockResponse))
 
-    await fetchCrawlerHtml(
+    await CrawlerHtml(
       {
         url: 'https://example.com',
         lastModifiedAt: 'Mon, 01 Jan 2024 00:00:00 GMT',
@@ -132,7 +132,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
     const mockResponse = createResponse(304)
     fetchSpy.mockResolvedValue(fetched(mockResponse))
 
-    await fetchCrawlerHtml(
+    await CrawlerHtml(
       {
         url: 'https://example.com',
         etag: '"abc123"',
@@ -155,7 +155,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
     const mockResponse = createResponse(304)
     fetchSpy.mockResolvedValue(fetched(mockResponse))
 
-    await fetchCrawlerHtml(
+    await CrawlerHtml(
       {
         url: 'https://example.com',
         lastModifiedAt: 'Mon, 01 Jan 2024 00:00:00 GMT',
@@ -179,10 +179,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
     const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
     fetchSpy.mockResolvedValue(fetched(createResponse(304)))
 
-    await fetchCrawlerHtml(
-      { url: 'https://example.com', requestTimeoutMs: 1, responseTimeoutMs: 2 },
-      {},
-    )
+    await CrawlerHtml({ url: 'https://example.com', requestTimeoutMs: 1, responseTimeoutMs: 2 }, {})
 
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -203,14 +200,16 @@ describe('fetchCrawlerHtml headers and request options', () => {
     fetchSpy.mockResolvedValue(fetched(mockResponse))
 
     await expect(
-      fetchCrawlerHtml(
+      CrawlerHtml(
         {
           url: 'https://example.com',
           maxResponseSizeBytes: 5,
         },
         {},
       ),
-    ).rejects.toThrow('Response size exceeded limit: 32 > 5 bytes for https://example.com')
+    ).rejects.toMatchObject({
+      cause: { message: 'Response size exceeded limit: 32 > 5 bytes for https://example.com' },
+    })
   })
 
   it('includes response headers in the result', async () => {
@@ -226,7 +225,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
     )
     fetchSpy.mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(result.response_headers).toEqual({
       'content-type': 'text/html',
@@ -240,7 +239,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
     const mockResponse = createResponse(304)
     fetchSpy.mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml(
+    const result = await CrawlerHtml(
       {
         url: 'https://example.com',
         lastModifiedAt: 'Mon, 01 Jan 2024 00:00:00 GMT',
@@ -263,7 +262,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
     const mockResponse = createResponse(304)
     fetchSpy.mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(result.crawl_started_at).toBeInstanceOf(Date)
     expect(result.crawl_completed_at).toBeInstanceOf(Date)

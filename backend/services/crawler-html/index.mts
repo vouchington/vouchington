@@ -32,7 +32,7 @@ const MAX_CRAWLER_HTML_BYTES = 4 * 1024 * 1024
 
 /** Fetches an HTML response under Vouchington transport policy and extracts its content upstream. */
 /* no-mistakes: integration=http */
-export async function fetchCrawlerHtml(
+async function fetchCrawlerHtml(
   {
     url,
     lastModifiedAt,

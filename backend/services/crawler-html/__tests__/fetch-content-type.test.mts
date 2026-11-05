@@ -3,7 +3,7 @@ import * as http from '@modules/utils/http'
 import { readFile } from 'node:fs/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { fetchCrawlerHtml } from '../index.mts'
+import CrawlerHtml from '../index.mts'
 import type { CrawlerHtmlOptions } from '../types.mts'
 import type { CrawlerHtmlToMarkdownOptions } from '@vouchington/crawler-html'
 import * as embedResolver from '@services/crawl-embeds/embed-resolver'
@@ -74,7 +74,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
       lastModifiedAt: 'Mon, 01 Jan 2024 00:00:00 GMT',
     }
 
-    const result = await fetchCrawlerHtml(options, {})
+    const result = await CrawlerHtml(options, {})
 
     expect(mockResponse.body?.cancel).toHaveBeenCalled()
     expect(result.response_status_code).toBe(304)
@@ -85,7 +85,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     const mockResponse = createResponse(204)
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(mockResponse.body?.cancel).toHaveBeenCalled()
     expect(result.response_status_code).toBe(204)
@@ -101,7 +101,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     )
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(result.content).toBeDefined()
     expect(result.content?.content).toContain('XHTML Test')
@@ -119,7 +119,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
         ),
       ),
     )
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
     expect(result.embedMetadata).toBeNull()
     expect(result.embedOEmbedUrl).toBeNull()
     await result.htmlFile!.cleanup()
@@ -137,7 +137,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
       ),
     )
 
-    const result = await fetchCrawlerHtml(
+    const result = await CrawlerHtml(
       { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', skipEmbedResolution: true },
       {},
     )
@@ -163,7 +163,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     )
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(await readFile(result.htmlFile!.filePath)).toStrictEqual(cp1252Html)
     expect(result.content?.title).toBe('Legacy Page')
@@ -188,7 +188,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     )
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(result.content?.title).toBe('Meta Charset')
     expect(result.content?.content).toContain('“Meta”')
@@ -203,7 +203,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     )
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(result.content?.title).toBe('Résumé')
   })
@@ -212,7 +212,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     const mockResponse = createResponse(200, { 'content-type': 'text/plain; charset=utf-8' })
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(mockResponse.body?.cancel).toHaveBeenCalledOnce()
     expect(result.content).toBeUndefined()
@@ -222,7 +222,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     const mockResponse = createResponse(200, { 'content-type': 'application/json' })
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(result.content).toBeUndefined()
   })
@@ -231,7 +231,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     const mockResponse = createResponse(200)
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(result.content).toBeUndefined()
   })
@@ -244,9 +244,9 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     )
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    await expect(fetchCrawlerHtml({ url: 'https://example.com' }, {})).rejects.toThrow(
-      'Read failed',
-    )
+    await expect(CrawlerHtml({ url: 'https://example.com' }, {})).rejects.toMatchObject({
+      cause: { message: 'Read failed' },
+    })
     expect(mockResponse.body?.cancel).toHaveBeenCalledOnce()
   })
 
@@ -254,7 +254,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     const mockResponse = createResponse(200, { 'content-type': 'application/json' })
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(result.content).toBeUndefined()
     expect(mockResponse.body?.cancel).toHaveBeenCalledOnce()
@@ -269,7 +269,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     )
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
+    const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
     expect(result.content).toBeDefined()
   })
@@ -288,7 +288,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     )
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
-    const result = await fetchCrawlerHtml({ url: 'https://example.com' }, markdownOptions)
+    const result = await CrawlerHtml({ url: 'https://example.com' }, markdownOptions)
 
     expect(result.content).toBeDefined()
     expect(result.content?.content).toContain('Test')
