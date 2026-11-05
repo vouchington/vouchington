@@ -10,13 +10,23 @@ import { LIVING_DOCS_PIN_CASES } from '../../static-code-analysis/repo-file-poli
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const CI_DETECT_CHANGES = '.github/workflows/ci-detect-changes.yml'
 
-// The workflow file is the single source of truth for the pattern; extracting it here means
-// there is exactly one copy in the repo instead of two kept in sync by hand.
+const DOCS_CHECK_SCRIPT = '.github/workflows/ci-detect-changes/docs-check.sh'
+const classifierWorkflow = parseYaml(readFileSync(CI_DETECT_CHANGES, 'utf8')) as {
+  jobs: { 'detect-changes': { steps: { id?: string; run?: string }[] } }
+}
+const classifierStep = classifierWorkflow.jobs['detect-changes'].steps.find(
+  step => step.id === 'docs-check',
+)
+if (classifierStep?.run !== `source ${DOCS_CHECK_SCRIPT}`) {
+  throw new Error(`${CI_DETECT_CHANGES}: docs-check must invoke its reviewed classifier script`)
+}
+
+// Read the production classifier's pattern so the test does not maintain a second copy.
 const patternMatch = /TEST_FIXTURE_DOCS=\$\(echo "\$CHANGED" \| grep -E '([^']+)'/.exec(
-  readFileSync(CI_DETECT_CHANGES, 'utf8'),
+  readFileSync(DOCS_CHECK_SCRIPT, 'utf8'),
 )
 if (patternMatch === null) {
-  throw new Error(`${CI_DETECT_CHANGES}: TEST_FIXTURE_DOCS grep line not found`)
+  throw new Error(`${DOCS_CHECK_SCRIPT}: TEST_FIXTURE_DOCS grep line not found`)
 }
 const testFixtureDocsPattern = patternMatch[1]
 

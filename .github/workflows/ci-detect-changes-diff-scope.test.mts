@@ -10,7 +10,14 @@ import { runtimePathFilters } from '../test-helpers/path-filter-test-fixtures.mt
 // Each change-detection consumer has one intended diff scope (docs/development/reference-ci-ci-job-conditions.md):
 // PR docs-only is the layer (this file), merge-group docs-only is the combined queued range, and
 // patch coverage is the layer through HEAD^1.
+const classifierScripts = Object.fromEntries(
+  ['merge-queue-range', 'docs-check', 'trusted-context', 'areas'].map(name => {
+    const path = `.github/workflows/ci-detect-changes/${name}.sh`
+    return [path, readFileSync(path, 'utf8')]
+  }),
+)
 const rootFiles: Files = {
+  ...classifierScripts,
   'README.md': 'root\n',
   'CHANGELOG.md': 'root\n',
   'web/README.md': 'web\n',

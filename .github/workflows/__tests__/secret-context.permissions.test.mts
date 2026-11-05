@@ -82,6 +82,8 @@ describe('secret-backed workflow context gates (permissions and security)', () =
 
   it('publishes separate trusted and dependency-bot test contexts', () => {
     const workflow = read('.github/workflows/ci-detect-changes.yml')
+    const classifier = read('.github/workflows/ci-detect-changes/trusted-context.sh')
+    expect(workflow).toContain('run: source .github/workflows/ci-detect-changes/trusted-context.sh')
 
     expect(workflow).toContain(
       'trusted-secret-context: ${{ steps.trusted-context.outputs.trusted }}',
@@ -90,11 +92,11 @@ describe('secret-backed workflow context gates (permissions and security)', () =
       'dependency-bot-test-context: ${{ steps.trusted-context.outputs.dependency-bot-test }}',
     )
     expect(workflow).toContain('id: trusted-context')
-    expect(workflow).toContain('"dependabot[bot]"|"renovate[bot]")')
-    expect(workflow).toContain('[ "$HEAD_REPO" = "$BASE_REPO" ]')
-    expect(workflow).not.toContain('HEAD_REF')
-    expect(workflow).not.toContain('dependabot/*')
-    expect(workflow).not.toContain('renovate/*')
+    expect(classifier).toContain('"dependabot[bot]"|"renovate[bot]")')
+    expect(classifier).toContain('[ "$HEAD_REPO" = "$BASE_REPO" ]')
+    expect(`${workflow}\n${classifier}`).not.toContain('HEAD_REF')
+    expect(`${workflow}\n${classifier}`).not.toContain('dependabot/*')
+    expect(`${workflow}\n${classifier}`).not.toContain('renovate/*')
   })
 
   it('isolates Codecov OIDC from PR-controlled coverage code', () => {

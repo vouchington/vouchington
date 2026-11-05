@@ -54,6 +54,18 @@ function gitCompareLines(script: string): string[] {
   )
 }
 
+const extractedCiScripts = new Map(
+  ['merge-queue-range', 'docs-check', 'trusted-context', 'areas'].map(name => {
+    const path = `.github/workflows/ci-detect-changes/${name}.sh`
+    return [`source ${path}`, path] as const
+  }),
+)
+
+function stepScript(step: WorkflowStep): string | undefined {
+  const path = step.run ? extractedCiScripts.get(step.run) : undefined
+  return path ? readFileSync(path, 'utf8') : step.run
+}
+
 function mixedPairViolations(path: string): string[] {
   const workflow = load(readFileSync(path, 'utf8')) as WorkflowFile
   const violations: string[] = []
@@ -70,7 +82,7 @@ function mixedPairViolations(path: string): string[] {
           `${label}: TOPOLOGY_BASE_SHA is pull_request.base.sha while TOPOLOGY_HEAD_SHA is github.sha`,
         )
       }
-      const script = step.run
+      const script = stepScript(step)
       if (!script || baseVars.length === 0 || mergeVars.length === 0) continue
       for (const line of gitCompareLines(script)) {
         const usesBase = baseVars.some(name => envUsesVar(line, name))
@@ -106,9 +118,9 @@ describe('PR compare revision pairs', () => {
       MERGE_QUEUE_HEAD_SHA: '${{ steps.merge-queue-range.outputs.head }}',
     })
     expect(range.if).toBe("github.event_name == 'merge_group'")
-    expect(range.run).toContain('git rev-parse HEAD')
-    expect(range.run).toContain('git merge-base origin/main "$HEAD_SHA"')
-    expect(step.run).toContain(
+    expect(stepScript(range)).toContain('git rev-parse HEAD')
+    expect(stepScript(range)).toContain('git merge-base origin/main "$HEAD_SHA"')
+    expect(stepScript(step)).toContain(
       'git diff --name-only "$MERGE_QUEUE_BASE_SHA" "$MERGE_QUEUE_HEAD_SHA"',
     )
     // Both inputs are empty outside merge groups, so on pull requests paths-filter reads the PR API
