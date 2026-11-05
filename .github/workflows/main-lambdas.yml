@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/main-lambdas.yml'
+      - '.github/workflows/main-lambdas/build.sh'
       - '.github/workflows/tests-lambdas.yml'
       - '.github/workflows/checks-static.yml'
       - '.github/actions/**'
@@ -40,13 +41,7 @@ jobs:
           deadline-seconds: '150'
       - name: Build and validate the image-resize deployment package
         timeout-minutes: 4
-        run: |
-          set -euo pipefail
-          pnpm --filter @lambdas/image-resize run build
-          unzip -t lambdas/image-resize/dist/function.zip
-          zipinfo -1 lambdas/image-resize/dist/function.zip | grep -Fxq index.mjs
-          mkdir -p delivery
-          cp lambdas/image-resize/dist/function.zip delivery/image-resize.zip
+        run: source .github/workflows/main-lambdas/build.sh
       - name: Publish the image-resize deployment package
         timeout-minutes: 1
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

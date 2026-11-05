@@ -73,6 +73,22 @@ describe('detect-changes path filters', () => {
     expect(filterMatches(mainStorybook.on?.push?.paths, projectPath)).toBe(true)
   })
 
+  it('routes main publication script changes to their owning workflows', () => {
+    const publicationScripts = [
+      ['main-cloudflare-worker', '.github/workflows/main-cloudflare-worker/build.sh'],
+      ['main-lambdas', '.github/workflows/main-lambdas/build.sh'],
+      ['main-storybook', '.github/workflows/main-storybook/build.sh'],
+    ] as const
+
+    for (const [workflowName, scriptPath] of publicationScripts) {
+      const workflow = load(readFileSync(`.github/workflows/${workflowName}.yml`, 'utf8')) as {
+        on?: { push?: { paths?: string[] } }
+      }
+
+      expect(filterMatches(workflow.on?.push?.paths, scriptPath)).toBe(true)
+    }
+  })
+
   it('fails open for filter changes and routes CI control workflows through topology', () => {
     const filterPaths = ['.github/ci-path-filters.yml']
     const areaPaths = ['backend', 'web', 'cloudflare-worker', 'lambdas', 'tooling', 'static'].map(
