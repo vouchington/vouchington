@@ -7,9 +7,11 @@ import {
 } from '@/test-helpers/app/admin/postgresql/sync-articles-button.mock-support'
 
 import { act, render, screen } from '@testing-library/react'
+import { ApiError } from '@vouchington/api-client'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ARTICLE_SYNC_STREAM_REATTACH_MS } from '../article-sync-stream-recovery'
 import { SyncArticlesButton } from '../sync-articles-button'
 
 describe('SyncArticlesButton', () => {
@@ -17,6 +19,8 @@ describe('SyncArticlesButton', () => {
     vi.useFakeTimers()
     MockEventSource.instances = []
     vi.stubGlobal('EventSource', MockEventSource)
+    mockedGetStatus.mockReset()
+    mockedTrigger.mockReset()
   })
 
   afterEach(() => {
@@ -115,6 +119,67 @@ describe('SyncArticlesButton', () => {
       second.simulateError(true)
     })
     expect(MockEventSource.instances).toHaveLength(3)
+  })
+
+  it.each([
+    ['gateway', new ApiError('bad gateway', 503)],
+    ['network', new TypeError('Failed to fetch')],
+  ])(
+    'reattaches a permanently closed stream after a transient %s probe while the sync is active',
+    async (_label, probeError) => {
+      mockedTrigger.mockResolvedValueOnce({ jobId: 'job-spot' })
+      mockedGetStatus.mockRejectedValueOnce(probeError).mockResolvedValueOnce({ status: 'active' })
+
+      render(<SyncArticlesButton />)
+      await clickAndSettle()
+
+      const closed = MockEventSource.instances[0]!
+      await act(async () => {
+        closed.simulateError(true)
+      })
+      expect(MockEventSource.instances).toHaveLength(1)
+      expect(screen.getByRole('button', { name: 'Syncing...' })).toBeDisabled()
+      expect(mockedToast.error).not.toHaveBeenCalled()
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ARTICLE_SYNC_STREAM_REATTACH_MS - 1)
+      })
+      expect(MockEventSource.instances).toHaveLength(1)
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1)
+      })
+      expect(mockedGetStatus).toHaveBeenCalledTimes(2)
+      expect(MockEventSource.instances).toHaveLength(2)
+      expect(MockEventSource.instances[1]?.url).toContain('job-spot')
+      expect(MockEventSource.instances[1]?.closed).toBe(false)
+      expect(screen.getByRole('button', { name: 'Syncing...' })).toBeDisabled()
+    },
+  )
+
+  it('reattaches after the one-shot reopen is exhausted while the sync stays active', async () => {
+    mockedTrigger.mockResolvedValueOnce({ jobId: 'job-spot-2' })
+    mockedGetStatus.mockResolvedValue({ status: 'active' })
+
+    render(<SyncArticlesButton />)
+    await clickAndSettle()
+
+    await act(async () => {
+      MockEventSource.instances[0]!.simulateError(true)
+    })
+    expect(MockEventSource.instances).toHaveLength(2)
+
+    await act(async () => {
+      MockEventSource.instances[1]!.simulateError(true)
+    })
+    expect(MockEventSource.instances).toHaveLength(2)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ARTICLE_SYNC_STREAM_REATTACH_MS)
+    })
+    expect(MockEventSource.instances).toHaveLength(3)
+    expect(MockEventSource.instances[2]?.url).toContain('job-spot-2')
+    expect(screen.getByRole('button', { name: 'Syncing...' })).toBeDisabled()
   })
 
   it('keeps tracking long-running syncs past the previous timeout duration', async () => {
