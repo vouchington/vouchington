@@ -1,5 +1,4 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUrlWithHostname,
@@ -10,7 +9,11 @@ import {
   insertTestRssFeedItem,
   insertTestTopic,
 } from '@voucha/test-helpers'
-import { getRssHackerNewsFlagStateForTest } from '@voucha/test-helpers/hacker-news-flag-state'
+import {
+  getRssHackerNewsFlagStateForTest,
+  getRssUpdatedAtForTest,
+  updateRssContentForTest,
+} from '@voucha/test-helpers/hacker-news-flag-state'
 import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { upsertRssFeedItems } from './upsert.mts'
 import { recomputeRssFeedItemHackerNewsFlags } from './hacker-news-flags.mts'
@@ -60,37 +63,15 @@ describe('RSS Hacker News flags', () => {
       ),
     )
     await insertHackerNewsReferencesForTest({ url_id: ids[0]!, story_count: 1, comment_count: 0 })
-    const before = await write<{ updated_at: string }>(
-      'SELECT updated_at::text FROM rss_feed_items WHERE id = $1',
-      [items[0]],
-    )
+    const before = await getRssUpdatedAtForTest(items[0]!)
     await recomputeRssFeedItemHackerNewsFlags(items)
-    const after = await write<{ updated_at: string }>(
-      'SELECT updated_at::text FROM rss_feed_items WHERE id = $1',
-      [items[0]],
-    )
-    expect(after.rows[0]?.updated_at).toEqual(before.rows[0]?.updated_at)
-    await write(
-      'UPDATE rss_feed_items SET data = data || \'{"title":"Changed"}\'::jsonb WHERE id = $1',
-      [items[0]],
-    )
-    const contentUpdate = await write<{ advanced: boolean; updated_at: string }>(
-      'SELECT updated_at::text, updated_at > $2::timestamptz AS advanced FROM rss_feed_items WHERE id = $1',
-      [items[0], before.rows[0]!.updated_at],
-    )
-    expect(contentUpdate.rows[0]!.advanced).toBe(true)
-    const noop = await write<{ advanced: boolean; updated_at: string }>(
-      `UPDATE rss_feed_items SET data = data WHERE id = $1
-       RETURNING updated_at::text, updated_at > $2::timestamptz AS advanced`,
-      [items[0], contentUpdate.rows[0]!.updated_at],
-    )
-    expect(noop.rows[0]!.advanced).toBe(true)
-    const mixed = await write<{ advanced: boolean }>(
-      `UPDATE rss_feed_items SET data = data, has_hacker_news_references = false WHERE id = $1
-       RETURNING updated_at > $2::timestamptz AS advanced`,
-      [items[0], noop.rows[0]!.updated_at],
-    )
-    expect(mixed.rows[0]!.advanced).toBe(true)
+    expect(await getRssUpdatedAtForTest(items[0]!)).toEqual(before)
+    const contentUpdate = await updateRssContentForTest(items[0]!, 'content', before)
+    expect(contentUpdate.advanced).toBe(true)
+    const noop = await updateRssContentForTest(items[0]!, 'noop', contentUpdate.updated_at)
+    expect(noop.advanced).toBe(true)
+    const mixed = await updateRssContentForTest(items[0]!, 'mixed', noop.updated_at)
+    expect(mixed.advanced).toBe(true)
     await recomputeRssFeedItemHackerNewsFlags(items)
     expect(await getRssHackerNewsFlagStateForTest(items[0]!)).toEqual({
       stored: true,
