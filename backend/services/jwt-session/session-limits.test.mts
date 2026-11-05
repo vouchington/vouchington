@@ -1,7 +1,10 @@
-import { beginTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
-import { createTestUser, getTestUserSessionById, insertTestUserSession } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUser,
+  getTestUserSessionById,
+  insertTestUserSession,
+} from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
@@ -12,7 +15,11 @@ import { registerAuthenticatedSession } from './user-sessions.mts'
 async function registerTestSession(
   userId: string,
   sid: string,
-  options: { query?: TransactionQuery; did?: string; expiresAt?: Date } = {},
+  options: {
+    query?: Awaited<ReturnType<typeof beginTransaction>>
+    did?: string
+    expiresAt?: Date
+  } = {},
 ) {
   await registerAuthenticatedSession(
     {
@@ -68,21 +75,27 @@ describe('active user session limit', () => {
     })
     await registerTestSession(user.id, third)
 
-    sessionLimitsConfig.fields.set('active_sessions_per_user', 1)
-    await registerTestSession(user.id, second, { did: secondDeviceId })
-    expect((await getTestUserSessionById(second))?.expires_at.getTime()).toBeGreaterThan(
-      Date.now() + 45_000,
-    )
-    expect((await getTestUserSessionById(first))?.revoked_at).toBeNull()
-    expect((await getTestUserSessionById(third))?.revoked_at).toBeNull()
+    const restoreLowerLimit = overrideDynamicConfigFieldsForTest(sessionLimitsConfig, {
+      active_sessions_per_user: 1,
+    })
+    try {
+      await registerTestSession(user.id, second, { did: secondDeviceId })
+      expect((await getTestUserSessionById(second))?.expires_at.getTime()).toBeGreaterThan(
+        Date.now() + 45_000,
+      )
+      expect((await getTestUserSessionById(first))?.revoked_at).toBeNull()
+      expect((await getTestUserSessionById(third))?.revoked_at).toBeNull()
 
-    const fourth = v7()
-    await registerTestSession(user.id, fourth)
-    for (const sid of [first, second, third]) {
-      expect((await getTestUserSessionById(sid))?.revoked_at).not.toBeNull()
-      await expect(sessionValkeyClient.get(getJwtRevokedKey(sid))).resolves.toBe('1')
+      const fourth = v7()
+      await registerTestSession(user.id, fourth)
+      for (const sid of [first, second, third]) {
+        expect((await getTestUserSessionById(sid))?.revoked_at).not.toBeNull()
+        await expect(sessionValkeyClient.get(getJwtRevokedKey(sid))).resolves.toBe('1')
+      }
+      expect((await getTestUserSessionById(fourth))?.revoked_at).toBeNull()
+    } finally {
+      restoreLowerLimit()
     }
-    expect((await getTestUserSessionById(fourth))?.revoked_at).toBeNull()
   })
 
   it('keeps a newly registered SID that was minted before other active sessions', async () => {
