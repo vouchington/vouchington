@@ -38,7 +38,7 @@ export const DetailPane: Story = {
     <CopyrightEmailReviewDetailPane
       items={[queueItem]}
       refreshTimedOut={false}
-      resetToFirstPage={undefined}
+      resetToFirstPage={() => undefined}
     >
       {review => {
         const handleSelectQueueItem = review.selectQueueItem
