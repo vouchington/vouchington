@@ -9,6 +9,7 @@ on:
       - 'ci/cleanup-artifacts-patterns.json'
       - '.github/workflows/main-storybook.yml'
       - '.github/workflows/storybook.yml'
+      - '.github/workflows/storybook/*.sh'
       - '.github/actions/**'
       - 'ci/storybook-pages*.mts'
       - 'cloudflare-worker/package.json'

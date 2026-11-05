@@ -71,6 +71,11 @@ describe('detect-changes path filters', () => {
     expect(filterMatches(loadDetectChangesFilters().storybook, projectPath)).toBe(true)
     expect(filterMatches(loadRuntimeFilters().storybook, projectPath, true)).toBe(true)
     expect(filterMatches(mainStorybook.on?.push?.paths, projectPath)).toBe(true)
+    for (const script of ['preserve-node-lcov', 'preserve-browser-lcov']) {
+      expect(
+        filterMatches(mainStorybook.on?.push?.paths, `.github/workflows/storybook/${script}.sh`),
+      ).toBe(true)
+    }
   })
 
   it('fails open for filter changes and routes CI control workflows through topology', () => {
