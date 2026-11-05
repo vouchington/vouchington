@@ -1,10 +1,11 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { testOAuthClientExists } from '@voucha/test-helpers/data-stores/psql/oauth-client-metadata'
-import {
-  resolveClientIdMetadataDocument,
-  type ClientIdMetadataDependencies,
-} from './client-id-metadata-document.mts'
+import { resolveClientIdMetadataDocument } from './client-id-metadata-document.mts'
+
+type ClientIdMetadataDependencies = Required<
+  NonNullable<Parameters<typeof resolveClientIdMetadataDocument>[1]>
+>
 
 function randomMetadataUrl(): string {
   return `https://client.example/${randomBytes(12).toString('hex')}/metadata.json`

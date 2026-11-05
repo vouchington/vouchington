@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createTestOAuthMetadataExpiryFixture } from '@voucha/test-helpers/oauth-client-metadata-expiry'
 import { getFreshClientIdMetadataClient } from './client-id-metadata-cache.mts'
-import {
-  resolveClientIdMetadataDocument,
-  type ClientIdMetadataDependencies,
-} from './client-id-metadata-document.mts'
+import { resolveClientIdMetadataDocument } from './client-id-metadata-document.mts'
+
+type ClientIdMetadataDependencies = Required<
+  NonNullable<Parameters<typeof resolveClientIdMetadataDocument>[1]>
+>
 
 function fetchedMetadata(
   clientId: string,
