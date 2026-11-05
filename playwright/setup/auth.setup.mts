@@ -19,16 +19,16 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { test, expect } from '../helpers/test.mts'
 import { TEST_USER_EMAIL, TEST_USER_ID } from '../../integration-tests/web/helpers/constants.mts'
-import { createLoginToken } from '../../backend/services/users/login-token.mts'
-import { insertEmailAddressLoginToken } from '../../backend/test-helpers/entities/email-addresses.mts'
+import { createEmailAddressLoginToken } from '../../backend/services/users/authentication.mts'
 import { createVerifiedMfaTestSession } from '../../backend/test-helpers/authenticated-session.mts'
 import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { ADMIN_AUTH_STATE, AUTH_STATE } from '../helpers/auth-state.mts'
 
 test('authenticate seeded administrator through login and verified TOTP', async ({ page }) => {
   // ── Step 1: Verify the real /login UI works ──────────────────────────────
-  const token = createLoginToken()
-  await insertEmailAddressLoginToken(TEST_USER_EMAIL, token)
+  // The production issuer invalidates any earlier pending token, so a retry after
+  // a partial attempt does not collide with the one-pending-login-token index.
+  const { token } = await createEmailAddressLoginToken(TEST_USER_EMAIL)
 
   // Stub the send-token endpoint so no real email is dispatched.
   await page.route('**/api/v1/auth/email-address/tokens', route =>
