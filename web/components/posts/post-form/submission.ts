@@ -47,9 +47,9 @@ export interface SubmitPostInput {
 export class PostSavedWithRatingError extends Error {
   constructor(
     readonly saved: Post,
-    readonly cause: unknown,
+    cause: unknown,
   ) {
-    super('Post saved, but some rating changes may not have saved.')
+    super('Post saved, but some rating changes may not have saved.', { cause })
   }
 }
 
