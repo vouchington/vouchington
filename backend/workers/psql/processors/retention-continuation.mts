@@ -1,11 +1,7 @@
 import type { Job } from 'glide-mq'
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import { cleanupAIRetentionFamily } from '@services/data-retention'
-import {
-  dataRetentionConfig,
-  getDataRetentionLimits,
-  type DataRetentionLimits,
-} from '@services/data-retention/config'
+import { dataRetentionConfig, getDataRetentionLimits } from '@services/data-retention/config'
 import {
   AI_RETENTION_FAMILIES,
   type AIRetentionContinuationData,
@@ -13,10 +9,7 @@ import {
 } from '@queues/psql/types'
 
 export function createAIRetentionContinuationProcessor(
-  run: (
-    family: AIRetentionFamily,
-    limits: DataRetentionLimits,
-  ) => Promise<{ deleted: number; hasMore: boolean }> = cleanupAIRetentionFamily,
+  options?: Partial<Record<AIRetentionFamily, Parameters<typeof cleanupAIRetentionFamily>[1]>>,
 ) {
   return async (
     job: Pick<Job<AIRetentionContinuationData>, 'data' | 'updateData' | 'moveToDelayed'>,
@@ -26,6 +19,8 @@ export function createAIRetentionContinuationProcessor(
       throw new Error(`Unknown AI retention family: ${family}`)
     await dataRetentionConfig.waitForInitialization()
     // Native yielding keeps the fixed identity live; adding the active id would drop the request.
-    return processRetainedSweep(job, () => run(family, getDataRetentionLimits()))
+    return processRetainedSweep(job, () =>
+      cleanupAIRetentionFamily(family, { ...getDataRetentionLimits(), ...options?.[family] }),
+    )
   }
 }

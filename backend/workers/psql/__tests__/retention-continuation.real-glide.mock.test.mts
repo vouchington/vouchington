@@ -74,6 +74,23 @@ async function removeContinuation(family: AIRetentionFamily): Promise<void> {
 }
 
 describe('AI retention continuation delivery', () => {
+  it('rejects an unknown family without advancing the fetched job', async () => {
+    const reservation = await reserveAIRetentionContinuationJobs()
+    onTestFinished(() => reservation.release())
+    const family = 'textEmbeddingCache' satisfies AIRetentionFamily
+    removeContinuationOnFinish(family)
+    await removeContinuation(family)
+    await enqueueAIRetentionContinuations([family])
+    const job = await requireContinuationJob(family)
+    const invalidJob = continuationProcessorJob(job)
+    invalidJob.data.family = 'unknownFamily' as AIRetentionFamily
+
+    await expect(createAIRetentionContinuationProcessor()(invalidJob)).rejects.toThrow(
+      'Unknown AI retention family: unknownFamily',
+    )
+    expect((await requireContinuationJob(family)).attemptsMade).toBe(0)
+  })
+
   it.each(AI_RETENTION_FAMILIES)(
     '%s drains bounded pages on the fetched continuation and admits again after that record is removed',
     async family => {
@@ -83,9 +100,7 @@ describe('AI retention continuation delivery', () => {
       await removeContinuation(family)
       await using query = await beginTransaction()
       const fixture = await createAIRetentionContinuationFixture(family, query)
-      const process = createAIRetentionContinuationProcessor((selected, limits) =>
-        cleanupAIRetentionFamily(selected, { ...limits, ...fixture.options }),
-      )
+      const process = createAIRetentionContinuationProcessor({ [family]: fixture.options })
       const first = await enqueueAIRetentionContinuations([family])
       expect(first.map(job => job.id)).toEqual([continuationJobId(family)])
       const job = await requireContinuationJob(family)
@@ -132,10 +147,9 @@ describe('AI retention continuation delivery', () => {
     expect(await drained.excludedState()).toBe(true)
     expect(await terminalBatches.excludedState()).toBe(true)
     expect(await mediaChanges.excludedState()).toEqual([true, true, true, true])
-    const process = createAIRetentionContinuationProcessor((family, limits) => {
-      const fixture = fixtures.get(family)
-      if (!fixture) throw new Error(`missing AI retention fixture for ${family}`)
-      return cleanupAIRetentionFamily(family, { ...limits, ...fixture.options })
+    const process = createAIRetentionContinuationProcessor({
+      terminalEmbeddingBatches: terminalBatches.options,
+      oldMediaDeliveryChanges: mediaChanges.options,
     })
     const result = await processPsql('dataRetentionCleanup', undefined, undefined, undefined, {
       retention: {
@@ -159,7 +173,6 @@ describe('AI retention continuation delivery', () => {
     const mediaJob = await requireContinuationJob('oldMediaDeliveryChanges')
     expect(mediaJob.id).toBe('ai_retention_continuation__oldMediaDeliveryChanges')
     expect(await mediaChanges.excludedState()).toEqual([true, true, true, true])
-    expect(await psql.getJob(continuationJobId('textEmbeddingCache'))).toBeNull()
     for (const family of ['terminalEmbeddingBatches', 'oldMediaDeliveryChanges'] as const) {
       const fixture = fixtures.get(family)
       if (!fixture) throw new Error(`missing AI retention fixture for ${family}`)
@@ -180,28 +193,27 @@ describe('AI retention continuation delivery', () => {
     await removeContinuation(family)
     await using query = await beginTransaction()
     const fixture = await createAIRetentionContinuationFixture(family, query)
-    let failNext = true
-    const process = createAIRetentionContinuationProcessor((selected, limits) => {
-      if (failNext) {
-        failNext = false
-        throw new Error('Owned retention attempt failure')
-      }
-      return cleanupAIRetentionFamily(selected, { ...limits, ...fixture.options })
+    const failingProcess = createAIRetentionContinuationProcessor({
+      [family]: { ...fixture.options, now: new Date(Number.NaN) },
     })
+    const process = createAIRetentionContinuationProcessor({ [family]: fixture.options })
     await enqueueAIRetentionContinuations([family])
     const job = await requireContinuationJob(family)
     expect(job.opts).toMatchObject({
       attempts: 3,
       backoff: { type: 'exponential', delay: 1_000, jitter: 0.5 },
     })
-    await expect(process(continuationProcessorJob(job))).rejects.toThrow(
-      'Owned retention attempt failure',
-    )
+    expect(await fixture.state()).toEqual([true, true, true])
+    expect(await fixture.excludedState()).toBe(true)
+    await expect(failingProcess(continuationProcessorJob(job))).rejects.toBeDefined()
+    expect(await fixture.state()).toEqual([true, true, true])
+    expect(await fixture.excludedState()).toBe(true)
     expect((await requireContinuationJob(family)).attemptsMade).toBe(0)
     for (let pass = 0; pass < fixture.passes; pass += 1) {
       await runFetchedContinuation(family, process)
     }
     expect(await fixture.state()).toEqual(fixture.expected)
+    expect(await fixture.excludedState()).toBe(true)
   })
 
   it('commits each pass before the next call and cleans only its owned cache hashes', async () => {
@@ -212,9 +224,7 @@ describe('AI retention continuation delivery', () => {
     await removeContinuation(family)
     const fixture = await createCommittedRetentionCacheFixture()
     onTestFinished(fixture.cleanup)
-    const process = createAIRetentionContinuationProcessor((selected, limits) =>
-      cleanupAIRetentionFamily(selected, { ...limits, ...fixture.options }),
-    )
+    const process = createAIRetentionContinuationProcessor({ [family]: fixture.options })
     await enqueueAIRetentionContinuations([family])
     await runFetchedContinuation(family, process)
     const afterFirst = await fixture.state()

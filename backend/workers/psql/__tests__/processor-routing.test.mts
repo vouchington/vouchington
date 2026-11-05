@@ -10,6 +10,12 @@ describe('PostgreSQL processor routing', () => {
     refreshMaterializedView.mockReset()
   })
 
+  it('requires a family selection for vote continuations', async () => {
+    await expect(processPsql('continueVoteRetentionCleanup')).rejects.toThrow(
+      'continueVoteRetentionCleanup job requires family selection',
+    )
+  })
+
   it('calls runConfigDriven when the job name is runConfigDriven', async () => {
     runConfigDriven.mockResolvedValue()
     await processPsql('runConfigDriven', undefined, { runConfigDriven })
