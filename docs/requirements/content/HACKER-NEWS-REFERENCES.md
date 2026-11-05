@@ -25,7 +25,9 @@ next canonical update flattens it.
   filtering only.
 - Each reference is a link out to the Hacker News item. Voucha does not copy comment text, post on
   Hacker News, or run an agent there.
-- Lists can be filtered to items that have references.
+- Lists can be filtered to items that have references. For posts, the filter uses the same link
+  and highest-ranked positively voted related URLs shown on the card; references on other related
+  URLs do not make the post match.
 
 ## Operational controls
 
