@@ -6,6 +6,8 @@ import { checkPrShepherdGuidance } from './check-pr-shepherd-guidance.mts'
 import { checkThinRouteCoverage } from './check-thin-route-coverage.mts'
 import { checkWorkerSecretExemptPaths } from './check-worker-secret-exempt-paths.mts'
 import { checkWorkflowArtifactPolicy } from './check-workflow-artifact-policy.mts'
+import { checkBuildWebTargetsContractPolicy } from './check-build-web-targets-contract-policy.mts'
+import { checkScheduledPromptIndexPolicy } from './check-scheduled-prompt-index-policy.mts'
 
 /** Run live repository policies once in the dedicated static CI job. */
 export async function checkRepositoryPolicyScans(root: string): Promise<void> {
@@ -19,6 +21,8 @@ export async function checkRepositoryPolicyScans(root: string): Promise<void> {
     ...checkPrShepherdGuidance(root),
     ...checkThinRouteCoverage(root),
     ...checkWorkerSecretExemptPaths(root),
+    ...checkBuildWebTargetsContractPolicy(root),
+    ...checkScheduledPromptIndexPolicy(root),
   ]
   if (violations.length > 0) {
     throw new Error(violations.join('\n'))
