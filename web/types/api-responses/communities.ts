@@ -146,6 +146,7 @@ export interface CommunityAgentPrompt {
 
 export interface CommunityAgentPromptsResponseBody {
   community_agent_prompts: CommunityAgentPrompt[]
+  page_info: Api.PageInfo
   slot_info: {
     used: number
     limit: number

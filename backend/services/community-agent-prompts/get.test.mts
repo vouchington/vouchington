@@ -77,7 +77,7 @@ describe('get', () => {
         }),
       ])
 
-      const results = await searchCommunityAgentPrompts(otherCommunity.id)
+      const { results } = await searchCommunityAgentPrompts(otherCommunity.id)
       const ids = results.map(r => r.id)
       expect(ids).toContain(p1.id)
       expect(ids).toContain(p2.id)
@@ -97,7 +97,7 @@ describe('get', () => {
       ])
       await deleteCommunityAgentPrompt(user, deleted)
 
-      const results = await searchCommunityAgentPrompts(otherCommunity.id)
+      const { results } = await searchCommunityAgentPrompts(otherCommunity.id)
       const ids = results.map(r => r.id)
       expect(ids).toContain(kept.id)
       expect(ids).not.toContain(deleted.id)
@@ -112,14 +112,46 @@ describe('get', () => {
         createdById: user.id,
       })
 
-      const resultsB = await searchCommunityAgentPrompts(communityB.id)
+      const { results: resultsB } = await searchCommunityAgentPrompts(communityB.id)
       expect(resultsB.map(r => r.id)).not.toContain(promptA.id)
     })
 
     it('returns empty array for community with no prompts', async () => {
       const emptyCommunity = await insertTestCommunity({ createdById: user.id })
-      const results = await searchCommunityAgentPrompts(emptyCommunity.id)
+      const { results } = await searchCommunityAgentPrompts(emptyCommunity.id)
       expect(results).toEqual([])
+    })
+
+    it('pages newest first without overlap and rejects a cursor from another community', async () => {
+      const paged = await insertTestCommunity({ createdById: user.id })
+      const oldest = await insertTestCommunityAgentPrompt({
+        communityId: paged.id,
+        createdById: user.id,
+      })
+      const middle = await insertTestCommunityAgentPrompt({
+        communityId: paged.id,
+        createdById: user.id,
+      })
+      const newest = await insertTestCommunityAgentPrompt({
+        communityId: paged.id,
+        createdById: user.id,
+      })
+      const first = await searchCommunityAgentPrompts(paged.id, { limit: 2 })
+      expect(first.results.map(prompt => prompt.id)).toEqual([newest.id, middle.id])
+      expect(first.page_info.has_next_page).toBe(true)
+      const after = first.page_info.end_cursor!
+      expect(after).not.toBe(middle.id)
+      const older = await searchCommunityAgentPrompts(paged.id, { limit: 2, after })
+      expect(older.results.map(prompt => prompt.id)).toEqual([oldest.id])
+      expect(older.page_info.has_next_page).toBe(false)
+      await expect(searchCommunityAgentPrompts(community.id, { after })).rejects.toMatchObject({
+        status: 400,
+      })
+      await expect(
+        searchCommunityAgentPrompts(paged.id, { after: 'invalid' }),
+      ).rejects.toMatchObject({ status: 400 })
+      const clamped = await searchCommunityAgentPrompts(paged.id, { limit: 0 })
+      expect(clamped.results.map(prompt => prompt.id)).toEqual([newest.id])
     })
   })
 })

@@ -467,6 +467,16 @@ under `community_application_summaries`: applicant, status, a message preview, `
 move to the summary type with the producer. Client work is dependent and does not gate this
 repository.
 
+## Community agent prompt list pagination
+
+The moderator-only REST prompt list returns a bounded page with an opaque `page_info` cursor. Its
+`slot_info` remains a creator-wide allocation summary across communities, independent of the
+current community page. Prompt creation is capped per creator and community; a full cap returns
+`COMMUNITY_AGENT_PROMPT_LIMIT_REACHED` with HTTP 409. This is a REST-only surface; no MCP prompt
+creation or listing tool exists. Web and native consumers must continue through pages instead of
+treating the first response as the complete list. Native adoption is tracked in the client parity
+contract.
+
 ## Post time range
 
 `GET /api/v1/posts` and `GET /api/v1/communities/:idOrSlug/posts` (MCP post search and

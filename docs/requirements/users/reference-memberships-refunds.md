@@ -92,6 +92,10 @@ Paid members can allocate LLM agent prompts within communities they moderate. Ea
 
 Slot limits are **per user across all communities** (not per community). A Plus member can allocate a limited number of prompts across all the communities they moderate.
 
+Draft creation has a separate per-creator, per-community capacity so unallocated prompts cannot
+grow without bound. Deleted prompts free that capacity. Moderators browse older prompts through
+cursor pages; the slot summary continues to cover their allocations across every community.
+
 - Slots are consumed when a prompt's `is_slot_allocated` is set to `true` via `POST /api/v1/communities/:slug/agent-prompts/:promptId/allocate`
 - Slots are freed when a prompt is deallocated or when the moderator is removed from a community
 - Removing a moderator deactivates and frees all of their allocated prompts in that community

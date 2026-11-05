@@ -50,7 +50,8 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   registerScenarioContract('moderation-summary-recipients', {
     expectations: [
       // Global discovery includes the cap fixture's 1,099 moderator seats. CI measured 1,111
-      // membership rows and 1,109 user probes; 1,350 preserves roughly 20% headroom.
+      // membership rows and 1,109 user probes before the prompt-page fixture adds 199
+      // seats; the existing 1,350 budget still covers the expanded realistic fixture.
       { kind: 'maxProcessedRows', relation: 'community_members', max: 1350 },
       { kind: 'maxProcessedRows', relation: 'users', max: 1350 },
     ],
@@ -104,7 +105,6 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
 
   registerScenarioContract('active-community-agent-prompts', {
     expectations: [{ kind: 'maxProcessedRows', relation: 'memberships', max: 50 }],
-    seededRows: { community_agent_prompts: 4, agent_prompts: 4 },
   })
   await runAndCapture('active-community-agent-prompts', () =>
     getActiveCommunityAgentPrompts(seedUuid(0, '14')),

@@ -2,6 +2,50 @@
   "version": 1,
   "features": [
     {
+      "id": "community-agent-prompt-pagination",
+      "title": "Community agent prompt pagination and creation limits",
+      "domain": "Community",
+      "intents": ["communities"],
+      "requirements": ["docs/requirements/CLIENT-PARITY-MATRIX.md"],
+      "matrixRows": [],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/communities/community-agent-prompts-panel.tsx"],
+          "apiEvidence": ["web/lib/api/client/community-agent-prompts.ts"],
+          "behaviorTests": [
+            "web/components/communities/__tests__/community-agent-prompts-panel.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "partial",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Communities/CommunityDetailViewModel+AgentActions.swift"
+          ],
+          "apiEvidence": [
+            "swift-clients/core/Sources/VouchaAPI/Endpoint+CommunityAgents.swift",
+            "swift-clients/core/Sources/VouchaModels/CommunityAgentPromptModels.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/EndpointCommunityAgentsCoverageTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "partial",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/CommunityDetailPage.cs"],
+          "apiEvidence": [
+            "dotnet-clients/src/Voucha.Client.Core/Api/VouchaApiClient.Communities.Agents.cs",
+            "dotnet-clients/src/Voucha.Client.Core/Api/ApiModels.CommunityAgents.cs"
+          ],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Native clients must traverse opaque prompt-list pages, preserve creator-wide slot_info, and handle the coded prompt-cap conflict.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/542"
+      }
+    },
+    {
       "id": "staff-rss-feed-deletion",
       "title": "Staff asynchronous RSS feed deletion",
       "domain": "Admin",

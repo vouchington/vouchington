@@ -1,6 +1,9 @@
+import agentPromptsFixture from '../../../../api-fixtures/v1/responses/web.communities.agent-prompts.default.json'
+import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createCommunityAgentPrompt,
+  fetchCommunityAgentPrompts,
   updateCommunityAgentPrompt,
   deleteCommunityAgentPrompt,
   allocateCommunityAgentPromptSlot,
@@ -38,6 +41,23 @@ describe('community-agent-prompts client api helpers', () => {
     mockPost.mockResolvedValue({ community_agent_prompt: { id: 'prompt-1' } })
     mockPatch.mockResolvedValue({ community_agent_prompt: { id: 'prompt-1' } })
     mockDelete.mockResolvedValue(undefined)
+  })
+
+  it('requests an opaque continuation with an encoded community slug', async () => {
+    const response: Awaited<ReturnType<typeof fetchCommunityAgentPrompts>> = {
+      ...agentPromptsFixture,
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response,
+      call: () =>
+        fetchCommunityAgentPrompts('community/name', { after: 'opaque-cursor', limit: 25 }),
+      expectedArgs: [
+        '/api/v1/communities/community%2Fname/agent-prompts',
+        { searchParams: { after: 'opaque-cursor', limit: '25' } },
+      ],
+    })
   })
 
   describe('createCommunityAgentPrompt', () => {

@@ -605,7 +605,13 @@ CREATE TABLE IF NOT EXISTS community_agent_prompts (
 -- Lookup by community for listing
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__community_id
-  ON community_agent_prompts(community_id)
+  ON community_agent_prompts(community_id, id DESC)
+  WHERE deleted_at IS NULL;
+
+-- Admission counts drafts independently for each creator and community.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__community_creator_id
+  ON community_agent_prompts(community_id, created_by_id, id)
   WHERE deleted_at IS NULL;
 
 -- Lookup by creator for slot counting

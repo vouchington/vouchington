@@ -8525,6 +8525,46 @@
             },
             "type": "object"
           },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
           "Record<MembershipPlanSlug,number>": {
             "additionalProperties": false,
             "properties": {
@@ -8555,6 +8595,13 @@
                   "type": "ref"
                 },
                 "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
               }
             },
             "slot_info": {
@@ -100936,7 +100983,7 @@
       "migratedFrom": ["backend/api/v1/communities/agent-prompts.mts"],
       "path": "/api/v1/communities/test-community/agent-prompts",
       "responseSchema": {
-        "hash": "c0e19de0a1437c59a37da07c982d6ba344c1c4a726914e80f1834756b0811ec7",
+        "hash": "cc11a752b66e690b87936920bb452445b372f413005164c23c7f1126912a8a08",
         "key": "web.communities.agent-prompts.default"
       },
       "route": {

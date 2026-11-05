@@ -5284,9 +5284,18 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/membership-helpers':
         specifier: workspace:^
         version: link:../../modules/membership-helpers
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@services/agents':
         specifier: workspace:^
         version: link:../agents
@@ -5314,6 +5323,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/sentry':
+        specifier: ^0.5.0
+        version: 0.5.0(@sentry/browser@11.10.0)(@sentry/core@11.10.0)(@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -5323,6 +5335,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -6270,6 +6285,9 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
+      '@services/community-agent-prompts':
+        specifier: workspace:^
+        version: link:../community-agent-prompts
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating

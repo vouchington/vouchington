@@ -1,7 +1,11 @@
 'use client'
 
 import { clientApi } from './instance'
-import type { CommunityAgentPrompt, CommunityAutomodActionSetting } from '@/types/api-responses'
+import type {
+  CommunityAgentPromptsResponseBody,
+  CommunityAgentPrompt,
+  CommunityAutomodActionSetting,
+} from '@/types/api-responses'
 
 export type { CommunityAgentPrompt } from '@/types/api-responses'
 
@@ -42,6 +46,18 @@ export interface CommunityAutomodSimulation {
     } | null
   }
   results: CommunityAutomodSimulationResult[]
+}
+
+export function fetchCommunityAgentPrompts(
+  slug: string,
+  options: { after?: string; limit?: number } = {},
+): Promise<CommunityAgentPromptsResponseBody> {
+  const searchParams: Record<string, string> = {}
+  if (options.after) searchParams['after'] = options.after
+  if (options.limit !== undefined) searchParams['limit'] = String(options.limit)
+  return clientApi.get(`/api/v1/communities/${encodeURIComponent(slug)}/agent-prompts`, {
+    searchParams,
+  })
 }
 
 export function createCommunityAgentPrompt(
