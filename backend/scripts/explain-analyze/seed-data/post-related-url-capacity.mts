@@ -5,7 +5,8 @@ import { seedUuid } from './common.mts'
 export const POST_URL_CAPACITY_SEED = {
   user: seedUuid(0, 'f6'),
   hostname: seedUuid(0, 'f6'),
-  posts: [0, 1, 2, 3].map(index => seedUuid(index, 'f6')),
+  posts: Array.from({ length: 1003 }, (_, index) => seedUuid(index, 'f6')),
+  activeCounts: [1000, 10000, 11000, ...Array<number>(1000).fill(5)],
   urlStart: seedUuid(100, 'f6'),
   urlEnd: seedUuid(21101, 'f6'),
   activeUrl: seedUuid(100, 'f6'),
@@ -14,7 +15,7 @@ export const POST_URL_CAPACITY_SEED = {
   relationRows: 57000,
 }
 
-/** Owned hot subjects, deleted history, and unrelated active rows challenge both count subplans. */
+/** Hot subjects amid many sparse owners expose generic-plan subject estimates and deleted history. */
 export async function seedPostUrlCapacity(): Promise<void> {
   const s = POST_URL_CAPACITY_SEED
   await using query = await beginTransaction()
@@ -50,12 +51,12 @@ export async function seedPostUrlCapacity(): Promise<void> {
     INSERT INTO relation__post__related__url (subject_id, object_id, created_by_id, deleted_at)
     SELECT input.post_id, url.id, $2,
       CASE WHEN url.id >= $3 THEN CURRENT_TIMESTAMP ELSE NULL END
-    FROM unnest($1::uuid[], ARRAY[1000,10000,11000,5000]) input(post_id,active_count)
+    FROM unnest($1::uuid[], $6::integer[]) WITH ORDINALITY input(post_id,active_count,position)
     CROSS JOIN urls url
     WHERE url.id >= $4 AND url.id < $5
       AND (url.id < ('019e0000-f600-7000-8000-' || lpad(to_hex(input.active_count+100),12,'0'))::uuid
-        OR (input.post_id <> $6 AND url.id >= $3))`,
-    [s.posts, s.user, s.deletedUrl, s.urlStart, s.newUrl, s.posts[3]],
+        OR (input.position <= 3 AND url.id >= $3))`,
+    [s.posts, s.user, s.deletedUrl, s.urlStart, s.newUrl, s.activeCounts],
   )
   const { rows } = await query<{ count: number }>(
     `/* countSeededPostUrlCapacity */ SELECT count(*)::integer AS count

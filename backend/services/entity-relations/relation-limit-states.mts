@@ -39,11 +39,15 @@ export async function readRelationLimitStates(
     if (table === 'relation__post__related__url')
       query.append(' ORDER BY created_at DESC, object_id DESC')
     query.append(sql` LIMIT ${group.limit}) capped) AS active_count,
-      ARRAY(SELECT existing.object_id FROM `)
+      ARRAY(SELECT existing.object_id
+        FROM unnest(${ids}::uuid[]) requested(object_id)
+        -- LIMIT 1 keeps generic plans on unique-key probes instead of scanning a hot subject.
+        CROSS JOIN LATERAL (SELECT existing.object_id FROM `)
     query.append(table)
     query.append(sql` existing WHERE existing.subject_id = ${subjectId}
-      AND existing.object_id = ANY(${ids}::uuid[])
-      AND (existing.deleted_at IS NULL OR ${group.skipIfDeleted === true})) AS existing_object_ids`)
+      AND existing.object_id = requested.object_id
+      AND (existing.deleted_at IS NULL OR ${group.skipIfDeleted === true})
+      LIMIT 1) existing) AS existing_object_ids`)
   }
   const { rows } = await write<{
     table_name: string
