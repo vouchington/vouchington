@@ -15,6 +15,7 @@ import { formatPercent } from '@ts-shared/utils/format'
 import { clearAgentModerationVote, submitAgentModerationVote } from '@/lib/api/client/elections'
 import type { AgentModeration, AgentModerationElection, AgentModerationVote } from '@/types/agents'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface AdminModerationButtonProps {
   moderations: AgentModeration[]
@@ -33,16 +34,16 @@ export default function AdminModerationButton({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button
+        <DataPw
+          dataPw={hasFlagged ? 'admin-moderation-flagged-trigger' : 'admin-moderation-trigger'}
+          as={Button}
           type='button'
           variant='ghost'
           className={`h-auto min-h-[44px] w-auto px-2 text-xs hover:underline ${hasFlagged ? 'text-destructive' : 'text-muted-foreground'}`}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- conditional button based on state
-          data-pw={hasFlagged ? 'admin-moderation-flagged-trigger' : 'admin-moderation-trigger'}
         >
           <Shield className='h-3 w-3' />
           {hasFlagged ? 'Flagged' : 'Moderation'}
-        </Button>
+        </DataPw>
       </DialogTrigger>
       <DialogContent className='max-w-2xl'>
         <DialogHeader>

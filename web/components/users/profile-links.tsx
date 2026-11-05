@@ -5,6 +5,7 @@ import type { ProfileLink, ProfileLinkType } from '@/types/user'
 import { getProfileLinkHref, getProfileLinkLabel } from '@/lib/users/profile-link-href'
 import type { useTranslations } from '@/lib/i18n/use-translations'
 import { ExternalLink } from '@/components/ui/external-link'
+import { DataPw } from '@/components/shared/data-pw'
 
 const BADGE_LINK_TYPE_ICON: Record<ProfileLinkType, ComponentType<{ className?: string }>> = {
   twitter: AtSign,
@@ -63,18 +64,18 @@ export function UserProfileLinks({ links, variant, t }: ProfileLinksProps) {
           const Icon = INLINE_LINK_TYPE_ICON[link.link_type]
           const label = link.name?.trim() || inlineLinkTypeLabel[link.link_type]
           return (
-            <a
+            <DataPw
               key={link.id}
+              dataPw={`profile-link-${link.link_type}`}
+              as='a'
               href={href}
               target='_blank'
               rel='noopener noreferrer nofollow'
               aria-label={label}
               className='flex size-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground'
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-              data-pw={`profile-link-${link.link_type}`}
             >
               <Icon className='h-4 w-4' />
-            </a>
+            </DataPw>
           )
         })}
       </div>

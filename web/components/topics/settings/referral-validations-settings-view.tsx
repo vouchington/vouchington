@@ -3,6 +3,7 @@ import { LinkValidationForm } from '@/components/referral-links/validations/link
 import { UnlinkValidationButton } from '@/components/referral-links/validations/unlink-validation-button'
 import type { ReferralLinkValidation } from '@/lib/api/client/referral-link-validations'
 import type { ReferralValidationsSettingsLabels } from './referral-validations-settings-labels'
+import { DataPw } from '@/components/shared/data-pw'
 
 export interface ReferralValidationsSettingsProps {
   referralProgramId: string
@@ -73,15 +74,15 @@ export function ReferralValidationsSettingsView({
                 className='flex items-center justify-between py-3'
               >
                 <div className='space-y-1'>
-                  <Link
+                  <DataPw
+                    dataPw={`linked-validation-link-${validation.id}`}
+                    as={Link}
                     prefetch={false}
                     href={`${validationsBasePath}/${validation.id}`}
-                    // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                    data-pw={`linked-validation-link-${validation.id}`}
                     className='text-sm font-medium text-primary hover:text-primary/80'
                   >
                     {validation.slug}
-                  </Link>
+                  </DataPw>
                   {validation.user_help_text ? (
                     <p className='text-sm text-muted-foreground'>{validation.user_help_text}</p>
                   ) : null}

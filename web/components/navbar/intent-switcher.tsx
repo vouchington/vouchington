@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-literals -- Intent switcher item IDs come from intent config data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import { ChevronDown } from 'lucide-react'
@@ -17,6 +16,7 @@ import { NAV_INTENTS, findIntentLandingHref } from '@/lib/navigation/intents'
 import { useResolvedIntent } from '@/lib/navigation/intents/nav-intent-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { useFeatureFlags } from '@/lib/feature-flags/use-feature-flags'
+import { DataPw } from '@/components/shared/data-pw'
 
 export function IntentSwitcher({ variant }: { variant: 'navbar' | 'sidebar' }) {
   const t = useTranslations()
@@ -87,14 +87,15 @@ export function IntentSwitcher({ variant }: { variant: 'navbar' | 'sidebar' }) {
               aria-current={isActive ? 'true' : undefined}
               className={cn(isActive && 'font-semibold')}
             >
-              <Link
+              <DataPw
+                dataPw={`intent-switcher-item-${intent.id}`}
+                as={Link}
                 href={landingHref}
                 prefetch={false}
-                data-pw={`intent-switcher-item-${intent.id}`}
               >
                 <Icon className='size-4 shrink-0' />
                 {t(intent.label)}
-              </Link>
+              </DataPw>
             </DropdownMenuItem>
           )
         })}

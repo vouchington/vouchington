@@ -10,6 +10,7 @@ import {
   type TopicSettingsSubPage,
 } from '@/lib/links/entity-href'
 import type { EntityMenubarItem } from '@/components/shared/entity-menubar-nav'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface SettingsSubPageConfig {
   segment: TopicSettingsSubPage
@@ -63,7 +64,9 @@ export function buildAdminTabItems(
       dropdownItems: subPages.map(sub => ({
         key: sub.segment,
         content: (
-          <Link
+          <DataPw
+            dataPw={`settings-tab-${sub.segment}`}
+            as={Link}
             href={topicManagementHref(
               { topic_type: topicType, id: topicId, slug: topicSlug },
               `settings/${sub.segment}`,
@@ -74,11 +77,9 @@ export function buildAdminTabItems(
                 ? 'page'
                 : undefined
             }
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from settings sub-page config
-            data-pw={`settings-tab-${sub.segment}`}
           >
             {sub.label}
-          </Link>
+          </DataPw>
         ),
         active: isActivePath(pathname, `/${topicType}/${idOrSlug}/settings/${sub.segment}`),
       })),

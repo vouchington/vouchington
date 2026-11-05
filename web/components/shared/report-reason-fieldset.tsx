@@ -9,6 +9,7 @@ import {
   type ReportReason,
 } from '@/lib/api/client/reports'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface Props {
   entityType: ReportableEntityType
@@ -61,11 +62,11 @@ export function ReportReasonFieldset({ entityType, reason, onSelect }: Props) {
               htmlFor={id}
               className='flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm font-normal hover:bg-accent'
             >
-              <RadioGroupItem
+              <DataPw
+                dataPw={`report-reason-${REPORT_REASON_PW_SUFFIX[option.value]}`}
+                as={RadioGroupItem}
                 id={id}
                 value={option.value}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- single-interpolation kebab id; consumed by playwright/tests/reporting specs
-                data-pw={`report-reason-${REPORT_REASON_PW_SUFFIX[option.value]}`}
               />
               {t(REPORT_REASON_LABEL_KEYS[option.value])}
             </Label>

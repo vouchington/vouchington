@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-literals -- Sidebar nav IDs come from intent config data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import Link from 'next/link'
@@ -15,6 +14,7 @@ import {
 import type { NavGroup } from '@/lib/navigation/intents'
 import { getNavIcon, isNavItemActive } from '@/lib/navigation/sidebar-nav'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 type AppSidebarNavGroupProps = {
   group: NavGroup
@@ -34,13 +34,14 @@ export function AppSidebarNavGroup({ group, pathname, isAuthenticated }: AppSide
     >
       <SidebarGroup>
         <SidebarGroupLabel asChild>
-          <CollapsibleTrigger
+          <DataPw
+            dataPw={group.dataPw}
+            as={CollapsibleTrigger}
             className='cursor-pointer'
-            data-pw={group.dataPw}
           >
             {t(group.label)}
             <ChevronDown className='ml-auto size-4 shrink-0 transition-transform group-data-[state=closed]:-rotate-90' />
-          </CollapsibleTrigger>
+          </DataPw>
         </SidebarGroupLabel>
         <CollapsibleContent>
           <SidebarGroupContent>
@@ -49,16 +50,17 @@ export function AppSidebarNavGroup({ group, pathname, isAuthenticated }: AppSide
                 if (item.comingSoon) {
                   return (
                     <SidebarMenuItem key={item.dataPw}>
-                      <SidebarMenuButton
+                      <DataPw
+                        dataPw={item.dataPw}
+                        as={SidebarMenuButton}
                         aria-disabled='true'
-                        data-pw={item.dataPw}
                         className='cursor-not-allowed opacity-50'
                       >
                         <span>{t(item.label)}</span>
                         <span className='ml-auto text-xs text-muted-foreground'>
                           {t('extracted.appSidebar.navSection.soon_cf0ee354')}
                         </span>
-                      </SidebarMenuButton>
+                      </DataPw>
                     </SidebarMenuItem>
                   )
                 }
@@ -76,14 +78,15 @@ export function AppSidebarNavGroup({ group, pathname, isAuthenticated }: AppSide
                         item.excludePathPrefixes,
                       )}
                     >
-                      <Link
+                      <DataPw
+                        dataPw={item.dataPw}
+                        as={Link}
                         href={item.href}
-                        data-pw={item.dataPw}
                         prefetch={false}
                       >
                         <Icon />
                         <span>{t(item.label)}</span>
-                      </Link>
+                      </DataPw>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )

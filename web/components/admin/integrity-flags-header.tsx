@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { IntegrityFlagStatusFilter } from '@ts-shared/utils/moderation-catalogs'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface IntegrityFlagsHeaderLabels {
   all: string
@@ -77,29 +78,29 @@ export function IntegrityFlagsHeader({
             variant='outline'
             size='touchSm'
           >
-            <Link
+            <DataPw
+              dataPw={penaltiesPw}
+              as={Link}
               href={penaltiesHref}
               prefetch={false}
-              // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- each flags page passes its own literal penalties tab id
-              data-pw={penaltiesPw}
             >
               {labels.penalties}
-            </Link>
+            </DataPw>
           </Button>
         </ButtonGroup>
         <Select
           value={selectedStatus}
           onValueChange={value => onStatusChange(value as IntegrityFlagStatusFilter)}
         >
-          <SelectTrigger
+          <DataPw
+            dataPw={statusFilterPw}
+            as={SelectTrigger}
             className='w-36'
             aria-label={labels.status}
-            // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- vote passes a literal id; report omits it so a default would add a ghost selector
-            data-pw={statusFilterPw}
             disabled={isPending}
           >
             <SelectValue placeholder={labels.pending} />
-          </SelectTrigger>
+          </DataPw>
           <SelectContent>
             <SelectItem value='pending'>{labels.pending}</SelectItem>
             <SelectItem value='resolved'>{labels.resolved}</SelectItem>

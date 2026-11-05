@@ -1,21 +1,24 @@
-/* oxlint-disable no-mistakes/playwright-literals -- configured selector wrappers forward literal test ids from each spec */
 import { expect, type Page } from './test.mts'
 import { MOBILE_VIEWPORTS } from 'vouchington-tooling/playwright'
+
+function managerControl(page: Page, testId = 'manager-control') {
+  return page.getByTestId(testId)
+}
 
 export async function assertManagerHeading(
   page: Page,
   testId: string,
   text: string,
 ): Promise<void> {
-  await expect(page.getByTestId(testId)).toContainText(text)
+  await expect(managerControl(page, testId)).toContainText(text)
 }
 
 export async function assertSeededName(page: Page, testId: string, name: string): Promise<void> {
-  await expect(page.getByTestId(testId).filter({ hasText: name })).toBeVisible()
+  await expect(managerControl(page, testId).filter({ hasText: name })).toBeVisible()
 }
 
 export async function assertExactValue(page: Page, testId: string, text: string): Promise<void> {
-  await expect(page.getByTestId(testId).first()).toHaveText(text)
+  await expect(managerControl(page, testId).first()).toHaveText(text)
 }
 
 export async function assertContainedValue(
@@ -23,31 +26,31 @@ export async function assertContainedValue(
   testId: string,
   text: string,
 ): Promise<void> {
-  await expect(page.getByTestId(testId).first()).toContainText(text)
+  await expect(managerControl(page, testId).first()).toContainText(text)
 }
 
 export async function assertManagerControlVisible(page: Page, testId: string): Promise<void> {
-  await expect(page.getByTestId(testId)).toBeVisible()
+  await expect(managerControl(page, testId)).toBeVisible()
 }
 
 export async function assertFirstManagerControlVisible(page: Page, testId: string): Promise<void> {
-  await expect(page.getByTestId(testId).first()).toBeVisible()
+  await expect(managerControl(page, testId).first()).toBeVisible()
 }
 
 export async function clickFirstManagerControl(page: Page, testId: string): Promise<void> {
-  await page.getByTestId(testId).first().click()
+  await managerControl(page, testId).first().click()
 }
 
 export async function clickManagerControl(page: Page, testId: string): Promise<void> {
-  await page.getByTestId(testId).click()
+  await managerControl(page, testId).click()
 }
 
 export async function clearManagerInputWithFill(page: Page, testId: string): Promise<void> {
-  await page.getByTestId(testId).fill('')
+  await managerControl(page, testId).fill('')
 }
 
 export async function clearManagerInputWithSelectAll(page: Page, testId: string): Promise<void> {
-  const input = page.getByTestId(testId)
+  const input = managerControl(page, testId)
   await input.press('ControlOrMeta+A')
   await input.press('Backspace')
 }

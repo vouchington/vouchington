@@ -5,6 +5,7 @@ import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getPreference, setPreference } from '@/lib/preferences/storage'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface DismissibleAsideProps {
   dismissKey: string
@@ -41,17 +42,17 @@ export function DismissibleAside({ dismissKey, children }: DismissibleAsideProps
 
   return (
     <div className='relative'>
-      <Button
+      <DataPw
+        dataPw={`dismissible-aside-button-${dismissKey}`}
+        as={Button}
         variant='ghost'
         size='icon'
         className='absolute right-1 top-1 z-10 h-11 w-11'
         onClick={handleDismiss}
         aria-label={label}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-        data-pw={`dismissible-aside-button-${dismissKey}`}
       >
         <X className='h-3 w-3' />
-      </Button>
+      </DataPw>
       {children}
     </div>
   )

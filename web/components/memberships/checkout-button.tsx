@@ -1,9 +1,9 @@
-/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Checkout button ID derives from the plan slug prop; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { createMembershipPurchaseIntent } from '@/lib/api/client'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface CheckoutButtonProps {
   planSlug: string
@@ -49,15 +49,16 @@ export function CheckoutButton({ planSlug, productId, planName, onCheckout }: Ch
 
   return (
     <div>
-      <Button
+      <DataPw
+        dataPw={buttonTestId}
+        as={Button}
         className='w-full'
         loading={loading}
         disabled={loading}
         onClick={startCheckout}
-        data-pw={buttonTestId}
       >
         {loading ? 'Loading...' : `Subscribe to ${planName}`}
-      </Button>
+      </DataPw>
       {error && <p className='mt-2 text-sm text-destructive'>{error}</p>}
     </div>
   )

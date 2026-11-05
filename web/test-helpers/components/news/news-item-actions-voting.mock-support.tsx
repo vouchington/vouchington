@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { render } from '@testing-library/react'
 import type { ComponentProps, ReactNode } from 'react'
 import { vi } from 'vitest'
@@ -29,45 +29,56 @@ createNavMock().setPathname('/news')
 
 vi.mock(import('next/dynamic'), () => createNextDynamicMock())
 
-vi.mock(
-  import('@/components/votes/score-vote'),
-  () =>
-    ({
-      ScoreVote: ({
-        countUp,
-        countDown,
-        signedOut,
-        existingVoteChoice,
-        entityType,
-        electionId,
-        submitVote,
-        'data-pw': dataPw,
-      }: {
-        countUp: number
-        countDown: number
-        signedOut?: boolean
-        existingVoteChoice?: string
-        entityType?: string
-        electionId: string
-        submitVote: (id: string, choice: string) => Promise<void>
-        'data-pw'?: string
-      }) => (
-        <div data-testid={dataPw ?? 'score-vote'}>
-          <span data-testid='count-up'>{countUp}</span>
-          <span data-testid='count-down'>{countDown}</span>
-          <span data-testid='signed-out'>{String(signedOut)}</span>
-          <span data-testid='existing-vote-choice'>{String(existingVoteChoice)}</span>
-          <span data-testid='entity-type'>{String(entityType)}</span>
-          <button
-            type='button'
-            aria-label='Submit vote'
-            data-testid={`${dataPw ?? 'score-vote'}-submit`}
-            onClick={() => submitVote(electionId, 'vouch')}
-          />
-        </div>
-      ),
-    }) as unknown as typeof import('@/components/votes/score-vote'),
-)
+vi.mock(import('@/components/votes/score-vote'), () => {
+  const voteSubmitDouble = ({
+    testId = 'score-vote-submit',
+    onClick,
+  }: {
+    testId?: string
+    onClick: () => void
+  }) => (
+    <button
+      type='button'
+      aria-label='Submit vote'
+      data-testid={testId}
+      onClick={onClick}
+    />
+  )
+
+  return {
+    ScoreVote: ({
+      countUp,
+      countDown,
+      signedOut,
+      existingVoteChoice,
+      entityType,
+      electionId,
+      submitVote,
+      'data-pw': dataPw = 'score-vote',
+    }: {
+      countUp: number
+      countDown: number
+      signedOut?: boolean
+      existingVoteChoice?: string
+      entityType?: string
+      electionId: string
+      submitVote: (id: string, choice: string) => Promise<void>
+      'data-pw'?: string
+    }) => (
+      <div data-testid={dataPw}>
+        <span data-testid='count-up'>{countUp}</span>
+        <span data-testid='count-down'>{countDown}</span>
+        <span data-testid='signed-out'>{String(signedOut)}</span>
+        <span data-testid='existing-vote-choice'>{String(existingVoteChoice)}</span>
+        <span data-testid='entity-type'>{String(entityType)}</span>
+        {voteSubmitDouble({
+          testId: `${dataPw}-submit`,
+          onClick: () => submitVote(electionId, 'vouch'),
+        })}
+      </div>
+    ),
+  } as unknown as typeof import('@/components/votes/score-vote')
+})
 
 vi.mock(import('@/components/news/news-discuss-menu'), () => ({
   NewsDiscussMenu: () => <div data-testid='news-discuss-menu' />,

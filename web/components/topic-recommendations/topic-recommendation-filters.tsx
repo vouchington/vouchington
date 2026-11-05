@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 function TopicRecommendationFiltersContent() {
   const t = useTranslations()
@@ -76,14 +77,14 @@ function TopicRecommendationFiltersContent() {
         </SelectTrigger>
         <SelectContent>
           {STATUS_OPTIONS.map(option => (
-            <SelectItem
+            <DataPw
               key={option.value}
+              dataPw={`topic-recommendation-status-option-${option.value}`}
+              as={SelectItem}
               value={option.value}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from options
-              data-pw={`topic-recommendation-status-option-${option.value}`}
             >
               {option.label}
-            </SelectItem>
+            </DataPw>
           ))}
         </SelectContent>
       </Select>

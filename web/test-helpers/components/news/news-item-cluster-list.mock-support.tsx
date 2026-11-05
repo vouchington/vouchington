@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { render } from '@testing-library/react'
 import { vi } from 'vitest'
@@ -72,22 +72,50 @@ vi.mock(import('@/components/shared/shared-byline'), () => ({
     ) : null,
 }))
 
-vi.mock(import('@/components/votes/score-vote'), () => ({
-  ScoreVote: ({
-    electionId,
-    existingVoteChoice,
-    entityType,
+vi.mock(import('@/components/votes/score-vote'), () => {
+  const clusterTestId = ({
+    testId = 'score-vote',
+    children,
   }: {
-    electionId: string
-    existingVoteChoice?: string
-    entityType?: string
-  }) => (
-    <div data-testid={`score-vote-${electionId}`}>
-      <span data-testid={`existing-vote-choice-${electionId}`}>{String(existingVoteChoice)}</span>
-      <span data-testid={`entity-type-${electionId}`}>{String(entityType)}</span>
-    </div>
-  ),
-}))
+    testId?: string
+    children?: ReactNode
+  }) => <div data-testid={testId}>{children}</div>
+
+  const clusterTestText = ({
+    testId = 'existing-vote-choice',
+    children,
+  }: {
+    testId?: string
+    children?: ReactNode
+  }) => <span data-testid={testId}>{children}</span>
+
+  return {
+    ScoreVote: ({
+      electionId,
+      existingVoteChoice,
+      entityType,
+    }: {
+      electionId: string
+      existingVoteChoice?: string
+      entityType?: string
+    }) =>
+      clusterTestId({
+        testId: `score-vote-${electionId}`,
+        children: (
+          <>
+            {clusterTestText({
+              testId: `existing-vote-choice-${electionId}`,
+              children: String(existingVoteChoice),
+            })}
+            {clusterTestText({
+              testId: `entity-type-${electionId}`,
+              children: String(entityType),
+            })}
+          </>
+        ),
+      }),
+  }
+})
 
 vi.mock(import('@/components/news/news-discuss-menu'), () => ({
   NewsDiscussMenu: () => <div data-testid='news-discuss-menu' />,

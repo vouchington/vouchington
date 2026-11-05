@@ -9,6 +9,7 @@ import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { ListPageActions } from './list-page-actions'
 import { ListItemsAccumulator } from './list-items-accumulator'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 type Translate = Awaited<ReturnType<typeof getTranslations>>
 
@@ -109,8 +110,10 @@ export default async function ListPage({
           const href = tab.key === 'all' ? `/list/${id}` : `/list/${id}?tab=${tab.key}`
           const isActive = activeTab === tab.key
           return (
-            <Link
+            <DataPw
               key={tab.key}
+              dataPw={`list-tab-${tab.key}`}
+              as={Link}
               href={href}
               prefetch={false}
               className={`px-3 py-2 text-sm font-medium transition-colors ${
@@ -118,12 +121,10 @@ export default async function ListPage({
                   ? 'border-b-2 border-primary text-primary'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- static template over finite tab key enum
-              data-pw={`list-tab-${tab.key}`}
               aria-current={isActive ? 'page' : undefined}
             >
               {tab.label}
-            </Link>
+            </DataPw>
           )
         })}
       </nav>

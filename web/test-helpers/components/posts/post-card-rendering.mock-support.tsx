@@ -1,8 +1,9 @@
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals, no-mistakes/playwright-defaults, no-mistakes/playwright-unique -- moved test support preserves the original post-card doubles, including the shared follower-share-actions id */
+/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-unique -- moved test support preserves the original post-card doubles, including the shared follower-share-actions id */
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import type { User } from '@/types/user'
+import { DataPw } from '@/components/shared/data-pw'
 
 const mockPostCardUser: { current: User | null } = { current: null }
 const mockUseEmblaCarousel = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -17,12 +18,13 @@ vi.mock(
           return () => <div data-testid='follower-share-actions' />
         if (src.includes('report-menu-item'))
           return ({ 'data-pw': dataPw }: { 'data-pw'?: string }) => (
-            <Button
+            <DataPw
+              dataPw={dataPw}
+              as={Button}
               type='button'
-              data-pw={dataPw}
             >
               Report
-            </Button>
+            </DataPw>
           )
         return () => null
       },

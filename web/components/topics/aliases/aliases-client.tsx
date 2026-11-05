@@ -12,6 +12,7 @@ import type { ListResponse } from '@/types/api-responses'
 import { dedupeBy } from '@ts-shared/utils/collections'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { AddAliasesForm } from './add-aliases-form'
+import { DataPw } from '@/components/shared/data-pw'
 
 export function AliasesClient({
   topic,
@@ -122,30 +123,30 @@ export function AliasesClient({
           ) : (
             <ul className='divide-y divide-border'>
               {aliases.map(alias => (
-                <li
+                <DataPw
                   key={alias.id}
-                  // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                  data-pw={`alias-row-${alias.alias}`}
+                  dataPw={`alias-row-${alias.alias}`}
                   className='flex items-center justify-between py-3'
+                  as='li'
                 >
                   <span className='text-sm text-foreground'>{alias.alias}</span>
                   {alias.alias === topic.slug ? null : (
-                    <Button
+                    <DataPw
                       type='button'
                       variant='destructive'
                       size='sm'
-                      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                      data-pw={`alias-remove-${alias.alias}`}
+                      dataPw={`alias-remove-${alias.alias}`}
                       onClick={() => handleDeleteAlias(alias)}
                       loading={deletingAlias === alias.id}
                       disabled={deletingAlias === alias.id}
+                      as={Button}
                     >
                       {deletingAlias === alias.id
                         ? t('extracted.aliases.aliasesClient.removing_60d18e42')
                         : t('extracted.aliases.aliasesClient.remove_c3812fc4')}
-                    </Button>
+                    </DataPw>
                   )}
-                </li>
+                </DataPw>
               ))}
             </ul>
           )}

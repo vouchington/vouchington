@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createCrawlerPathname } from '@/lib/links/entity-href'
 import type { ViewCrawler } from '@/types/hostnames'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface Props {
   crawlers: ViewCrawler[]
@@ -68,25 +69,25 @@ export default function DomainCrawlersPanel({ crawlers }: Props) {
                     {crawler.priority}
                   </td>
                   <td className='whitespace-nowrap px-4 py-3 text-sm'>
-                    <Link
+                    <DataPw
+                      dataPw={`domain-crawler-view-${crawler.id}`}
+                      as={Link}
                       prefetch={false}
                       href={createCrawlerPathname(crawler)}
                       className='text-primary hover:text-primary/80'
-                      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                      data-pw={`domain-crawler-view-${crawler.id}`}
                     >
                       {t('extracted.domains.domainCrawlersPanel.view_dcc839a4')}
-                    </Link>
+                    </DataPw>
                     {' | '}
-                    <Link
+                    <DataPw
+                      dataPw={`domain-crawler-edit-${crawler.id}`}
+                      as={Link}
                       prefetch={false}
                       href={createCrawlerPathname(crawler, '/edit')}
                       className='text-primary hover:text-primary/80'
-                      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                      data-pw={`domain-crawler-edit-${crawler.id}`}
                     >
                       {t('extracted.domains.domainCrawlersPanel.edit_464c4ffd')}
-                    </Link>
+                    </DataPw>
                   </td>
                 </tr>
               ))}

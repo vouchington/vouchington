@@ -6,6 +6,7 @@ import { communityHref, topicTabForPostType } from '@/lib/links/entity-href'
 import { humanizePostType } from '@ts-shared/utils/format'
 import { Lock, UserCheck, Users } from 'lucide-react'
 import type { Post, PostCommunity, PostType } from '@/types/posts'
+import { DataPw } from '@/components/shared/data-pw'
 
 export interface PostDetailBadgeLabels {
   private: string
@@ -49,13 +50,13 @@ export function PostDetailBadges({
 }: PostDetailBadgesProps) {
   return (
     <div className='scrollbar-hide flex items-center gap-1.5 overflow-x-auto'>
-      <Badge
+      <DataPw
+        dataPw={`post-detail-type-badge-${postType}`}
+        as={Badge}
         variant={postType}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-        data-pw={`post-detail-type-badge-${postType}`}
       >
         {humanizePostType(postType)}
-      </Badge>
+      </DataPw>
       <ProvenanceBadges
         testIdPrefix='post'
         provenance={provenance}

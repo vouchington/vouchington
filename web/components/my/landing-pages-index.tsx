@@ -13,6 +13,7 @@ import { SettingsPageHeader } from '@/components/my/settings-page-header'
 import { CreatePageForm } from '@/components/my/landing-pages-manager/page-forms'
 import type { LandingPage } from '@/types/landing-pages'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface Props {
   username: string | null
@@ -102,12 +103,12 @@ export function LandingPagesIndex({ username, initialPages }: Props) {
                   </p>
                 </div>
                 <div className='flex shrink-0 items-center gap-2'>
-                  <Button
+                  <DataPw
+                    dataPw={`landing-pages-settings-page-button-${page.slug}`}
+                    as={Button}
                     asChild
                     variant='outline'
                     size='sm'
-                    // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                    data-pw={`landing-pages-settings-page-button-${page.slug}`}
                   >
                     <Link
                       href={myLandingPageHref(page)}
@@ -115,7 +116,7 @@ export function LandingPagesIndex({ username, initialPages }: Props) {
                     >
                       {t('extracted.my.landingPagesIndex.edit_464c4ffd')}
                     </Link>
-                  </Button>
+                  </DataPw>
                   <Button
                     asChild
                     variant='ghost'

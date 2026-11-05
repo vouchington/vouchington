@@ -1,10 +1,10 @@
 'use client'
 
-/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Field IDs are passed through this shared renderer from literal call sites; ast-grep still bans inline calls in data-pw. */
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { CrawlerResponse } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 export function CrawlerRemovalFields({ crawler }: { crawler: CrawlerResponse }) {
   const t = useTranslations()
@@ -56,10 +56,11 @@ function CrawlerListField({
   return (
     <div>
       <Label htmlFor={id}>{label}</Label>
-      <Textarea
+      <DataPw
+        dataPw={dataPw}
+        as={Textarea}
         id={id}
         name={id}
-        data-pw={dataPw}
         rows={5}
         defaultValue={value.join('\n')}
         placeholder={placeholder}

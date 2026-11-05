@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ManageSourceRssFeed } from './manage-source-model'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 export function SourceSection({
   onSubmit,
@@ -19,15 +20,15 @@ export function SourceSection({
   const t = useTranslations()
   return (
     <section className='bg-card p-6 shadow-sm dark:shadow-none sm:rounded-lg'>
-      <h2
+      <DataPw
+        dataPw={rssFeed ? 'update-source-heading' : 'source-heading'}
+        as='h2'
         className='mb-4 text-xl font-semibold text-foreground'
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- conditional heading based on state
-        data-pw={rssFeed ? 'update-source-heading' : 'source-heading'}
       >
         {rssFeed
           ? t('extracted.manageSource.sourceSection.updateSource_d413c6b0')
           : t('extracted.manageSource.sourceSection.source_0e570ca6')}
-      </h2>
+      </DataPw>
       {rssFeed ? (
         <form
           key={rssFeed.id}

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import { FILTER_CONTROL_HEIGHT } from '@/components/shared/filter-control-height'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 import {
   DEFAULT_POST_TIME_RANGE,
   POST_TIME_RANGES,
@@ -78,14 +79,14 @@ function PostTimeRangeSelectContent({
       </SelectTrigger>
       <SelectContent>
         {options.map(range => (
-          <SelectItem
+          <DataPw
             key={range}
+            dataPw={`post-time-range-option-${range}`}
+            as={SelectItem}
             value={range}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from option code
-            data-pw={`post-time-range-option-${range}`}
           >
             {labels[range]}
-          </SelectItem>
+          </DataPw>
         ))}
       </SelectContent>
     </Select>

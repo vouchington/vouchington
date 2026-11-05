@@ -21,6 +21,7 @@ import { formatNumber, formatUtcDate } from '@ts-shared/utils/format'
 import type { DailyTypedCountDataPoint, ModerationAnalytics } from '@/types/moderation-analytics'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getUserLabel } from '@/lib/users/user-helpers'
+import { DataPw } from '@/components/shared/data-pw'
 
 const axisTick = { fontSize: 11 }
 const colors = ['#2563eb', '#16a34a', '#f97316', '#db2777', '#0891b2', '#7c3aed']
@@ -356,8 +357,10 @@ function MetricCard({
   'data-pw'?: string
 }) {
   return (
-    // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- call sites always pass a literal; default omitted to avoid ghost selectors
-    <Card data-pw={dataPw}>
+    <DataPw
+      dataPw={dataPw}
+      as={Card}
+    >
       <CardHeader className='pb-2'>
         <CardTitle className='text-sm font-medium text-muted-foreground'>{label}</CardTitle>
       </CardHeader>
@@ -365,7 +368,7 @@ function MetricCard({
         <div className='text-2xl font-bold'>{value}</div>
         <p className='mt-1 text-xs text-muted-foreground'>{detail}</p>
       </CardContent>
-    </Card>
+    </DataPw>
   )
 }
 
@@ -379,14 +382,14 @@ function MiniStat({
   'data-pw'?: string
 }) {
   return (
-    <div
+    <DataPw
+      dataPw={dataPw}
+      as='div'
       className='rounded border bg-muted/30 p-2'
-      // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- call sites always pass a literal; default omitted to avoid ghost selectors
-      data-pw={dataPw}
     >
       <div className='text-xs text-muted-foreground'>{label}</div>
       <div className='font-semibold'>{value}</div>
-    </div>
+    </DataPw>
   )
 }
 
@@ -400,13 +403,15 @@ function ChartPanel({
   'data-pw'?: string
 }) {
   return (
-    // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- call sites always pass a literal; default omitted to avoid ghost selectors
-    <Card data-pw={dataPw}>
+    <DataPw
+      dataPw={dataPw}
+      as={Card}
+    >
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>{children}</CardContent>
-    </Card>
+    </DataPw>
   )
 }
 
@@ -422,8 +427,10 @@ function RankedList({
   'data-pw'?: string
 }) {
   return (
-    // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- call sites always pass a literal; default omitted to avoid ghost selectors
-    <Card data-pw={dataPw}>
+    <DataPw
+      dataPw={dataPw}
+      as={Card}
+    >
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
@@ -444,7 +451,7 @@ function RankedList({
           </ol>
         )}
       </CardContent>
-    </Card>
+    </DataPw>
   )
 }
 

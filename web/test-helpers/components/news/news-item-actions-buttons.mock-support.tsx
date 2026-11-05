@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
@@ -7,6 +7,7 @@ import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigatio
 import type { RssFeedItem } from '@/types/rss-feed-items'
 // Imported after the mock helpers above so the lucide mock factory can reference them.
 import { Button } from '@/components/ui/button'
+import { DataPw } from '@/components/shared/data-pw'
 
 vi.mock(
   import('next/navigation'),
@@ -42,8 +43,8 @@ interface FollowerShareActionsMockProps {
 }
 
 vi.mock(import('@/components/votes/score-vote'), () => ({
-  ScoreVote: ({ 'data-pw': dataPw }: { display?: string; 'data-pw'?: string }) => (
-    <div data-testid={dataPw ?? 'score-vote'} />
+  ScoreVote: ({ 'data-pw': dataPw = 'score-vote' }: { display?: string; 'data-pw'?: string }) => (
+    <div data-testid={dataPw} />
   ),
 }))
 
@@ -131,10 +132,11 @@ vi.mock(import('@/components/shared/follower-share-actions'), () => ({
     className,
   }: FollowerShareActionsMockProps) => (
     <div className={className}>
-      <Button
+      <DataPw
+        dataPw={dataPw ?? 'follower-share-more-actions-button'}
+        as={Button}
         type='button'
         aria-label='More actions'
-        data-pw={dataPw ?? 'follower-share-more-actions-button'}
       />
       {menuLeadingItems}
     </div>

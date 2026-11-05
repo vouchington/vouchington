@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
@@ -93,7 +93,7 @@ vi.mock(
       ScoreVote: ({
         existingVoteChoice,
         entityType,
-        'data-pw': dataPw,
+        'data-pw': dataPw = 'score-vote',
       }: {
         electionId: string
         countUp: number
@@ -104,7 +104,7 @@ vi.mock(
         entityType?: string
         'data-pw'?: string
       }) => (
-        <div data-testid={dataPw ?? 'score-vote'}>
+        <div data-testid={dataPw}>
           <span data-testid='existing-vote-choice'>{String(existingVoteChoice)}</span>
           <span data-testid='entity-type'>{String(entityType)}</span>
         </div>

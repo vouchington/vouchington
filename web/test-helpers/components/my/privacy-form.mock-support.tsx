@@ -1,8 +1,9 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- moved test support forwards the component data-pw props the privacy tests query */
+/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support forwards the component data-pw props the privacy tests query */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import type { UserPrivacyAudience } from '@/types/user'
+import { DataPw } from '@/components/shared/data-pw'
 
 vi.mock(import('@/components/ui/select'), () => {
   return {
@@ -32,12 +33,13 @@ vi.mock(import('@/components/ui/select'), () => {
       children: ReactNode
       'data-pw'?: string
     }) => (
-      <Button
+      <DataPw
+        as={Button}
         type='button'
-        data-pw={dataPw}
+        dataPw={dataPw}
       >
         {children}
-      </Button>
+      </DataPw>
     ),
     SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
     SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -50,12 +52,13 @@ vi.mock(import('@/components/ui/select'), () => {
       value: string
       'data-pw'?: string
     }) => (
-      <option
+      <DataPw
+        as='option'
         value={value}
-        data-pw={dataPw}
+        dataPw={dataPw}
       >
         {children}
-      </option>
+      </DataPw>
     ),
   } as unknown as typeof import('@/components/ui/select')
 })

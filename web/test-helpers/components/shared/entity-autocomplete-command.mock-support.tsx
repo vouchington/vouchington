@@ -1,10 +1,11 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ComponentProps, KeyboardEvent, ReactNode } from 'react'
 import { render } from '@testing-library/react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EntityAutocomplete } from '@/components/shared/entity-autocomplete'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface Item {
   id: string
@@ -45,13 +46,14 @@ vi.mock(
         'aria-label'?: string
         'data-pw'?: string
       }) => (
-        <Input
+        <DataPw
+          dataPw={dataPw ?? 'command-input'}
+          as={Input}
           placeholder={placeholder}
           value={value}
           disabled={disabled}
           id={id}
           aria-label={ariaLabel}
-          data-pw={dataPw ?? 'command-input'}
           onChange={event => onValueChange?.(event.target.value)}
           onFocus={onFocus}
           onKeyDown={onKeyDown}

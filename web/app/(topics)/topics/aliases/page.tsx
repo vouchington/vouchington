@@ -11,6 +11,7 @@ import { topicManagementHref } from '@/lib/links/entity-href'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = createNoIndexMetadata('Topic Aliases | Admin')
@@ -103,15 +104,15 @@ export default async function TopicAliasesPage({
                     <td className='px-6 py-4 text-sm text-foreground'>{result.topic.name}</td>
                     <td className='px-6 py-4 text-sm text-muted-foreground'>{result.alias}</td>
                     <td className='whitespace-nowrap px-6 py-4 text-sm text-muted-foreground'>
-                      <Link
+                      <DataPw
+                        dataPw={`alias-search-edit-link-${result.alias}`}
+                        as={Link}
                         prefetch={false}
                         href={topicManagementHref(result.topic, 'settings/aliases')}
                         className='text-primary hover:text-primary/80'
-                        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                        data-pw={`alias-search-edit-link-${result.alias}`}
                       >
                         {t('extracted.aliases.page.editAliases_c526d9ba')}
-                      </Link>
+                      </DataPw>
                     </td>
                   </tr>
                 ))

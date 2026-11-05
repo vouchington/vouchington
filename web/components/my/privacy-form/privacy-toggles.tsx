@@ -1,9 +1,9 @@
 'use client'
 
-// oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Privacy toggle call sites pass literal test IDs through this shared row.
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface PrivacyTogglesProps {
   pending: Set<string>
@@ -74,12 +74,13 @@ function PrivacySwitchRow({
 }) {
   return (
     <div className='flex items-start gap-4'>
-      <Switch
+      <DataPw
+        dataPw={dataPw}
+        as={Switch}
         id={id}
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
-        data-pw={dataPw}
       />
       <div className='space-y-1'>
         <Label htmlFor={id}>{label}</Label>

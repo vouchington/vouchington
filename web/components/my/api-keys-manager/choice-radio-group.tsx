@@ -3,6 +3,7 @@
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface ChoiceOption<T extends string> {
   value: T
@@ -46,11 +47,11 @@ export function ChoiceRadioGroup<T extends string>({
                 option.value === value && 'border-primary bg-primary/5 hover:bg-primary/5',
               )}
             >
-              <RadioGroupItem
+              <DataPw
+                dataPw={option.dataPw}
+                as={RadioGroupItem}
                 id={id}
                 value={option.value}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- literal identifier supplied by each option
-                data-pw={option.dataPw}
               />
               {option.label}
             </Label>

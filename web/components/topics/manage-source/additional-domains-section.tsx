@@ -5,6 +5,7 @@ import type { TopicAdditionalHostname } from '@/lib/api/client/topic-additional-
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { HostnameInput } from './hostname-input'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 export function AdditionalDomains({
   additionalHostnames,
@@ -106,28 +107,28 @@ function AdditionalDomainList({
   return (
     <ul className='mb-3 space-y-2'>
       {additionalHostnames.map(h => (
-        <li
+        <DataPw
           key={h.hostname_id}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-          data-pw={`additional-domain-row-${h.hostname}`}
+          dataPw={`additional-domain-row-${h.hostname}`}
           className='flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm'
+          as='li'
         >
           <span className='text-foreground'>{h.hostname}</span>
-          <Button
+          <DataPw
             type='button'
             variant='outline'
             size='sm'
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-            data-pw={`additional-domain-remove-${h.hostname}`}
+            dataPw={`additional-domain-remove-${h.hostname}`}
             onClick={() => onRemoveHostname(h.hostname_id, h.hostname)}
             loading={removingHostnameId === h.hostname_id}
             disabled={removingHostnameId === h.hostname_id}
+            as={Button}
           >
             {removingHostnameId === h.hostname_id
               ? t('extracted.manageSource.additionalDomainsSection.removing_60d18e42')
               : t('extracted.manageSource.additionalDomainsSection.remove_c3812fc4')}
-          </Button>
-        </li>
+          </DataPw>
+        </DataPw>
       ))}
     </ul>
   )
