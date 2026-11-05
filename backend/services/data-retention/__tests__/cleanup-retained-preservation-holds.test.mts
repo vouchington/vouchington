@@ -9,7 +9,7 @@ import {
 import { readPreservationHoldsForTest } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { readTestRetainedUserLegalClocks } from '@voucha/test-helpers/entities/retained-user-legal-clocks'
 import { placeUserPreservationHold, releaseUserPreservationHold } from '@services/users'
-import { cleanupSoftDeletedUsers } from '../cleanup.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 
@@ -38,7 +38,10 @@ describe('legal preservation holds and final user purge', () => {
     expect(await getTestUserRaw(user.id)).not.toBeNull()
 
     await releaseUserPreservationHold(admin, user.id)
-    await cleanupSoftDeletedUsers(window)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
 
     expect(await getTestUserRaw(user.id)).toBeNull()
   })
@@ -53,7 +56,10 @@ describe('legal preservation holds and final user purge', () => {
     ])
     await placeUserPreservationHold(admin, held.id, 'matter-purge-batch')
 
-    await cleanupSoftDeletedUsers(window)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
 
     expect(await getTestUserRaw(sibling.id)).toBeNull()
     expect(await getTestUserRaw(held.id)).not.toBeNull()
@@ -67,7 +73,10 @@ describe('legal preservation holds and final user purge', () => {
     await releaseUserPreservationHold(admin, user.id)
 
     await softDeleteUserAt(user.id, window.firstEligibleDate)
-    await cleanupSoftDeletedUsers(window)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
     await cleanupRetainedIdentityRoots(1_000, { user: [user.id] })
 
     expect(await getTestUserRaw(user.id)).toBeNull()

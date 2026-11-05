@@ -12,7 +12,7 @@ import {
 import { v7 } from 'uuid'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 
-import { cleanupOldReferralAttributions } from '../cleanup.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 // Namespaced far enough into the future that this test's own rows can't collide with
@@ -40,11 +40,17 @@ describe('cleanupOldReferralAttributions', () => {
 
     expect(atId).toBe(getMinUUIDv7ForDate(cutoff))
     expect(
-      await cleanupOldReferralAttributions({
-        now: new Date(cutoff.getTime() + 30 * DAY_MS),
-        lowerBoundDate: window.lowerBoundDate,
-        maxBatches: window.maxBatches,
-      }),
+      await runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        {
+          families: ['oldReferralAttributions'],
+          oldReferralAttributions: {
+            now: new Date(cutoff.getTime() + 30 * DAY_MS),
+            lowerBoundDate: window.lowerBoundDate,
+            maxBatches: window.maxBatches,
+          },
+        },
+      ).then(result => result.oldReferralAttributions),
     ).toEqual({ deleted: 1, hasMore: false })
     expect(await referralAttributionExistsById(beforeId)).toBe(false)
     expect(await referralAttributionExistsById(atId)).toBe(true)
@@ -72,11 +78,17 @@ describe('cleanupOldReferralAttributions', () => {
       new Date(now.getTime() - 40 * DAY_MS),
     )
 
-    await cleanupOldReferralAttributions({
-      maxBatches: 10,
-      now,
-      lowerBoundDate: new Date(now.getTime() - 45 * DAY_MS),
-    })
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      {
+        families: ['oldReferralAttributions'],
+        oldReferralAttributions: {
+          maxBatches: 10,
+          now,
+          lowerBoundDate: new Date(now.getTime() - 45 * DAY_MS),
+        },
+      },
+    ).then(result => result.oldReferralAttributions)
 
     expect(await referralAttributionExistsById(survivingId)).toBe(true)
     expect(await referralAttributionExistsById(sweptId)).toBe(false)
@@ -94,7 +106,10 @@ describe('cleanupOldReferralAttributions', () => {
       linkedUser.id,
     )
 
-    const result = await cleanupOldReferralAttributions(window)
+    const result = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['oldReferralAttributions'], oldReferralAttributions: window },
+    ).then(result => result.oldReferralAttributions)
 
     expect(result).toEqual({ deleted: 0, hasMore: false })
     expect(await referralAttributionExistsById(oldLinkedId)).toBe(true)
@@ -120,7 +135,10 @@ describe('cleanupOldReferralAttributions', () => {
       window.afterUpperBoundDate,
     )
 
-    const result = await cleanupOldReferralAttributions(window)
+    const result = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['oldReferralAttributions'], oldReferralAttributions: window },
+    ).then(result => result.oldReferralAttributions)
 
     expect(result).toEqual({ deleted: 1, hasMore: false })
     expect(await referralAttributionExistsById(originalId)).toBe(false)
@@ -143,7 +161,10 @@ describe('cleanupOldReferralAttributions', () => {
     // the anonymous sweep even though signed_up_at is still set.
     await clearReferralAttributionUserId(rowId)
 
-    const result = await cleanupOldReferralAttributions(window)
+    const result = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['oldReferralAttributions'], oldReferralAttributions: window },
+    ).then(result => result.oldReferralAttributions)
 
     expect(result).toEqual({ deleted: 1, hasMore: false })
     expect(await referralAttributionExistsById(rowId)).toBe(false)
@@ -157,21 +178,33 @@ describe('cleanupOldReferralAttributions', () => {
     const firstOldId = await insertReferralAttributionAt(referrer.id, window.firstEligibleDate)
     const secondOldId = await insertReferralAttributionAt(referrer.id, window.secondEligibleDate)
 
-    const firstResult = await cleanupOldReferralAttributions({
-      ...window,
-      batchSize: 1,
-      maxBatches: 1,
-    })
+    const firstResult = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      {
+        families: ['oldReferralAttributions'],
+        oldReferralAttributions: {
+          ...window,
+          batchSize: 1,
+          maxBatches: 1,
+        },
+      },
+    ).then(result => result.oldReferralAttributions)
     const existsAfterFirstRun = [
       await referralAttributionExistsById(firstOldId),
       await referralAttributionExistsById(secondOldId),
     ]
 
-    const secondResult = await cleanupOldReferralAttributions({
-      ...window,
-      batchSize: 1,
-      maxBatches: 1,
-    })
+    const secondResult = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      {
+        families: ['oldReferralAttributions'],
+        oldReferralAttributions: {
+          ...window,
+          batchSize: 1,
+          maxBatches: 1,
+        },
+      },
+    ).then(result => result.oldReferralAttributions)
 
     expect(firstResult).toEqual({ deleted: 1, hasMore: true })
     expect(existsAfterFirstRun.filter(Boolean)).toHaveLength(1)
