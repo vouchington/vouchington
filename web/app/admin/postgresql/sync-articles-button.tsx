@@ -7,33 +7,26 @@ import { Button } from '@/components/ui/button'
 import {
   getArticleSyncStatus,
   triggerArticleSync,
-  type ArticleSyncJobStatus,
   type ArticleSyncResult,
 } from '@/lib/api/client/admin'
 import { ApiError } from '@vouchington/api-client'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
-
-type SyncStream = ReturnType<typeof createRecoverableEventSource>
+import { createArticleSyncStreamSession } from './article-sync-stream-session'
 
 type SyncStatus =
   | { status: 'completed'; result: ArticleSyncResult }
-  | { status: 'failed'; error?: string }
-type TerminalSyncStatus =
-  | Extract<ArticleSyncJobStatus, { status: 'completed' }>
   | { status: 'failed'; error?: string }
 
 export function SyncArticlesButton() {
   const t = useTranslations()
   const [syncing, setSyncing] = useState(false)
   const [result, setResult] = useState<ArticleSyncResult | null>(null)
-  const streamRef = useRef<SyncStream | null>(null)
+  const actions = useRef({
+    finish(_status: SyncStatus) {},
+    fail(_error: unknown) {},
+  })
 
-  function finishSync(data: TerminalSyncStatus, stream?: SyncStream) {
-    if (stream && streamRef.current !== stream) return
-    stream?.close()
-    if (streamRef.current === stream) streamRef.current = null
-
+  function finishSync(data: SyncStatus) {
     if (data.status === 'completed') {
       setResult(data.result)
       const { created, updated, skipped } = data.result.summary
@@ -44,7 +37,9 @@ export function SyncArticlesButton() {
         ),
       )
       setSyncing(false)
-    } else if (data.status === 'failed') {
+      return
+    }
+    if (data.status === 'failed') {
       onError(new Error(data.error ?? 'Sync failed'), {
         fallback: t('extracted.postgresql.syncArticlesButton.syncFailedError_1ccd2643', {
           error: data.error ?? t('extracted.postgresql.syncArticlesButton.unknownError_3e8c5a92'),
@@ -56,69 +51,44 @@ export function SyncArticlesButton() {
     }
   }
 
+  function failTracking(error: unknown) {
+    onError(error, {
+      fallback: t(
+        'extracted.postgresql.syncArticlesButton.failedToTrackArticleSyncStatus_d66a1c43',
+      ),
+      tags: { form: 'admin-article-sync' },
+    })
+    setSyncing(false)
+  }
+
+  const session = useRef<ReturnType<typeof createArticleSyncStreamSession> | null>(null)
+
   useEffect(() => {
+    actions.current = { finish: finishSync, fail: failTracking }
+  })
+
+  useEffect(() => {
+    const current = createArticleSyncStreamSession({
+      readStatus: getArticleSyncStatus,
+      onTerminal: status => actions.current.finish(status),
+      onTrackingFailure: error => actions.current.fail(error),
+    })
+    session.current = current
     return () => {
-      streamRef.current?.close()
-      streamRef.current = null
+      current.stop()
+      session.current = null
     }
   }, [])
 
-  function connectStream(jobId: string) {
-    const stream = createRecoverableEventSource({
-      url: `/api/v1/admin/article-syncs/${jobId}/stream`,
-      eventName: 'status',
-      isCurrent: () => streamRef.current === stream,
-      onEvent: handleStatus,
-      onError: handleError,
-    })
-    streamRef.current = stream
-
-    function handleStatus(event: MessageEvent) {
-      let data: SyncStatus
-      try {
-        data = JSON.parse(event.data) as SyncStatus
-      } catch {
-        return
-      }
-
-      finishSync(data, stream)
-    }
-
-    function handleError(source: EventSource) {
-      if (!stream.isCurrentSource(source)) return
-      getArticleSyncStatus(jobId)
-        .then(status => {
-          if (streamRef.current !== stream || !stream.isCurrentSource(source)) return
-          if (status.status === 'active') {
-            stream.recoverClosed(source)
-            return
-          }
-          finishSync(status, stream)
-        })
-        .catch(err => {
-          if (streamRef.current !== stream || !stream.isCurrentSource(source)) return
-          if (!(err instanceof ApiError) || err.status >= 500 || err.status === 429) return
-          stream.close()
-          if (streamRef.current === stream) streamRef.current = null
-          onError(err, {
-            fallback: t(
-              'extracted.postgresql.syncArticlesButton.failedToTrackArticleSyncStatus_d66a1c43',
-            ),
-            tags: { form: 'admin-article-sync' },
-          })
-          setSyncing(false)
-        })
-    }
-  }
-
   async function handleSync() {
+    const current = session.current
+    if (!current) return
     setSyncing(true)
     setResult(null)
-    streamRef.current?.close()
-    streamRef.current = null
+    current.stop()
     try {
       const { jobId } = await triggerArticleSync()
-      connectStream(jobId)
+      current.start(jobId)
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         onError(new Error('An article sync was already triggered recently'), {

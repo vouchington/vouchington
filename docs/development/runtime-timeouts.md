@@ -23,6 +23,12 @@ probe: no later transport event can restart recovery. These retries retain the e
 budget and cancellation cleanup; a successful nonterminal probe reattaches the stream. Connection
 loss alone never marks the image ready or failed.
 
+Article sync uses the same cycle and the durable job status for completion. A routine cycle leaves
+the browser reconnecting. When the browser permanently closes that stream, an active sync schedules
+another status probe and reattaches; a transient probe failure does the same. Terminal completed
+and failed statuses still end tracking. The sync lock duration stays a crash-recovery window and
+is not shortened to match the connection cycle.
+
 The GlideMQ dashboard event stream is an Express route in the API process, so the entrypoint ends
 that response on the same cycle and still writes no named error event. The dashboard page
 reconnects. Queue rows stay in the queue; event lines that existed only on the dropped connection
