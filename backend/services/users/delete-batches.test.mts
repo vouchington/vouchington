@@ -22,6 +22,18 @@ import { processUserDeletionPhaseBatch } from './delete-phases.mts'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('user deletion batches', () => {
+  it('rejects an unsupported persisted deletion phase', async () => {
+    await expect(
+      processUserDeletionPhaseBatch({
+        requestId: crypto.randomUUID(),
+        userId: crypto.randomUUID(),
+        processingAttemptId: crypto.randomUUID(),
+        phase: 'unknown' as 'posts',
+        batchSize: 1,
+      }),
+    ).rejects.toThrow('Unsupported user deletion phase: unknown')
+  })
+
   it('drains 201 authored posts in three committed batches of at most 100', async () => {
     const user = await createTestUser()
     await insertTestPostsForUser(user.id, 201)

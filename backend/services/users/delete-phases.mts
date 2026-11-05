@@ -43,6 +43,8 @@ export const processUserDeletionPhaseBatch: UserDeletionPhaseProcessor = async i
       return processUserDeletionExternalWork(input.requestId, input.processingAttemptId)
     case 'finalize':
       return { hasMore: false }
+    default:
+      throw new Error(`Unsupported user deletion phase: ${String(input.phase)}`)
   }
 }
 

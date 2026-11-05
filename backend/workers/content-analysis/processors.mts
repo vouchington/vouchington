@@ -159,6 +159,10 @@ export async function processLanguageDetectionBackfill(
       )
       break
     }
+    default: {
+      const _exhaustive: never = jobName
+      throw new Error(`Unknown backfill job: ${String(_exhaustive)}`)
+    }
   }
   // An exactly full page may have no successor; one empty retained pass closes the sweep.
   return { updated, hasMore: read === maxRows }

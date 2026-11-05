@@ -1,13 +1,9 @@
 import { write } from '@data-stores/psql'
-import { sanitizeStripeCustomer } from '@modules/stripe/customers'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import { deleteExportFromS3 } from '@services/account-data-requests'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { purgeCacheTags } from '@services/entity-cache/purge'
 import {
   userDeletionErrorMessage,
   runWithUserDeletionAttemptHeartbeat,
-  type UserDeletionExternalWorkKind,
 } from '@services/user-deletions'
 import sql from 'sql-template-strings'
 import {
@@ -16,6 +12,10 @@ import {
 } from './enqueue-reconcile-post-topic-notifications.mts'
 import { hasTopHashtagVoteTarget } from './top-hashtag-vote-targets.mts'
 import { mapRelationImpactRow } from './relation-impact-targets.mts'
+import {
+  executeUserDeletionExternalWork,
+  type PendingExternalWork,
+} from './delete-external-work-dispatch.mts'
 
 export async function processUserDeletionExternalWork(
   requestId: string,
@@ -24,25 +24,9 @@ export async function processUserDeletionExternalWork(
   const work = await getPendingExternalWork(requestId)
   if (!work) return { hasMore: false }
   try {
-    await runWithUserDeletionAttemptHeartbeat(requestId, processingAttemptId, async () => {
-      if (work.work_kind === 'cloudflare-cache-tag') {
-        await purgeCacheTags([work.work_key])
-      } else if (work.work_kind === 's3-export') {
-        await deleteExportFromS3(work.work_key)
-      } else if (work.work_kind === 'stripe-customer') {
-        try {
-          await sanitizeStripeCustomer(
-            work.stripe_customer_id,
-            undefined,
-            `user-deletion__${requestId}__stripe__${work.stripe_customer_id}`,
-          )
-        } catch (err) {
-          if (!isStripeMissingCustomerError(err)) throw err
-        }
-      } else if (work.work_kind === 'entity-relation-effects') {
-        await processEntityRelationEffects(requestId, work.relation_impact_id)
-      }
-    })
+    await runWithUserDeletionAttemptHeartbeat(requestId, processingAttemptId, () =>
+      executeUserDeletionExternalWork(work, requestId, processEntityRelationEffects),
+    )
   } catch (err) {
     await recordExternalWorkFailure(work.id, requestId, processingAttemptId, err)
     throw err
@@ -100,34 +84,7 @@ async function getPendingExternalWork(requestId: string) {
     FROM user_deletion_external_works work
     LEFT JOIN membership_provider_lineages lineage ON lineage.id = work.membership_provider_lineage_id
     WHERE work.request_id = ${requestId} AND work.completed_at IS NULL ORDER BY work.id LIMIT 1`)
-  return rows[0] as
-    | (
-        | {
-            id: string
-            work_kind: 'entity-relation-effects'
-            work_key: null
-            relation_impact_id: string
-            stripe_customer_id: null
-          }
-        | {
-            id: string
-            work_kind: 'stripe-customer'
-            work_key: null
-            relation_impact_id: null
-            stripe_customer_id: string
-          }
-        | {
-            id: string
-            work_kind: Exclude<
-              UserDeletionExternalWorkKind,
-              'entity-relation-effects' | 'stripe-customer'
-            >
-            work_key: string
-            relation_impact_id: null
-            stripe_customer_id: null
-          }
-      )
-    | undefined
+  return rows[0] as PendingExternalWork | undefined
 }
 
 async function completeExternalWork(
@@ -159,14 +116,4 @@ async function recordExternalWorkFailure(
       AND request.id = work.request_id AND request.id = ${requestId}
       AND request.processing_attempt_id = ${processingAttemptId}
       AND request.processing_started_at IS NOT NULL AND request.completed_at IS NULL`)
-}
-
-function isStripeMissingCustomerError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    'code' in error &&
-    error.code === 'resource_missing' &&
-    'param' in error &&
-    error.param === 'id'
-  )
 }
