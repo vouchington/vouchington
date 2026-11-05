@@ -152,11 +152,25 @@ export async function insertEmailAddressLoginToken(
       : `email-address-re-auth-token:${sessionId}`,
     token.toUpperCase(),
   )
+  // A pending login or reauthentication code is unique. Invalidate the previous one in
+  // the same statement, matching createEmailAddressLoginToken, so a retry can issue
+  // a replacement. A consumed row does not take that slot and leaves a pending code.
   await write(
     sql`/* insertEmailAddressLoginToken */
+    WITH invalidated_tokens AS (
+      UPDATE email_address_login_tokens SET invalidated_at = CURRENT_TIMESTAMP
+      WHERE NOT ${consumed}
+        AND purpose = ${scope.purpose}
+        AND consumed_at IS NULL
+        AND invalidated_at IS NULL
+        AND ((${scope.purpose} = 'login' AND email_address = ${emailAddress})
+          OR (${scope.purpose} = 're_auth' AND reauthentication_session_id = ${sessionId}))
+      RETURNING id
+    )
     INSERT INTO email_address_login_tokens (email_address, token, consumed_at, purpose, user_id, reauthentication_session_id)
-    VALUES (${emailAddress}, ${hashed}, CASE WHEN ${consumed} THEN CURRENT_TIMESTAMP ELSE NULL END,
-      ${scope.purpose}, ${currentUserId}, ${sessionId})
+    SELECT ${emailAddress}, ${hashed}, CASE WHEN ${consumed} THEN CURRENT_TIMESTAMP ELSE NULL END,
+      ${scope.purpose}, ${currentUserId}, ${sessionId}
+    FROM (SELECT COUNT(*) FROM invalidated_tokens) AS completed_invalidation
   `,
   )
 }
