@@ -48,7 +48,7 @@
     "@voucha/config": "workspace:^",
     "@vouchington/edge": "^0.7.0",
     "@vouchington/rate-limit": "^0.4.0",
-    "@vouchington/session-jwt": "^0.0.2",
+    "@vouchington/session-jwt": "^0.0.3",
     "@vouchington/utils": "^0.11.1",
     "isbot": "^5.2.2"
   },

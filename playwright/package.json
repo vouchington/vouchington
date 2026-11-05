@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {},
   "dependencies": {
-    "@vouchington/session-jwt": "^0.0.2"
+    "@vouchington/session-jwt": "^0.0.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
