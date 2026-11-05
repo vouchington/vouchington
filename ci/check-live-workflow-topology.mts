@@ -19,6 +19,26 @@ function assertNoWorkflowViolations(violations: readonly string[], heading?: str
 }
 
 const noMistakesPolicyCommand = 'node ci/check-no-mistakes-test-policy.mts'
+const downloadIntegrityCommand = 'node ci/check-workflow-download-integrity.mts'
+
+function downloadIntegrityInvocationErrors(topology: WorkflowTopology): string[] {
+  const job = topology.jobs.find(
+    job =>
+      job.workflowId === '.github/workflows/static-code-analysis.yml' && job.key === 'no-mistakes',
+  )
+  const matches =
+    job?.steps.flatMap(step =>
+      (step.run ?? '')
+        .split('\n')
+        .map(line => line.trim().split(/\s+/u).join(' '))
+        .filter(line => line === downloadIntegrityCommand),
+    ).length ?? 0
+  return matches === 1
+    ? []
+    : [
+        `.github/workflows/static-code-analysis.yml no-mistakes job must invoke ${downloadIntegrityCommand} exactly once (found ${matches})`,
+      ]
+}
 
 export function noMistakesPolicyInvocationErrors(topology: WorkflowTopology): string[] {
   const job = topology.jobs.find(
@@ -48,6 +68,7 @@ export function liveTopologyAuditErrors(topology: WorkflowTopology): string[] {
 
   return [
     ...noMistakesPolicyInvocationErrors(topology),
+    ...downloadIntegrityInvocationErrors(topology),
     ...callerCalleePermissionMismatches(topology),
     ...missingInventoryEntries(topology).map(
       name => `secret ${name} is referenced with no SECRET_INVENTORY entry`,
