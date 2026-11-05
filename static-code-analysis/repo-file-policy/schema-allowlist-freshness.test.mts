@@ -2,57 +2,58 @@ import { describe, expect, it } from 'vitest'
 
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 import {
-  checkStaleSchemaAllowlistEntries,
-  findStaleSchemaAllowlistEntries,
+  checkSchemaAllowlistFreshness,
+  findSchemaAllowlistEntryErrors,
+  type AllowlistEntries,
 } from './schema-allowlist-freshness.mts'
 
-const emptySchema = { tables: {} } as Pick<SchemaSnapshot, 'tables'>
+const schema = {
+  tables: { posts: { columns: { owner_id: {} } } },
+} as unknown as Pick<SchemaSnapshot, 'tables'>
 
 describe('schema allowlist freshness', () => {
-  it('checks evaluated map and spread entries against table and column existence', () => {
+  it('checks evaluated map spreads and table-only entries', () => {
+    const file =
+      'backend/test-helpers/data-stores/psql/schema-static-analysis/example-allowlists.mts'
     const base = new Map([['posts.owner_id', 'reason']])
-    const entries = [...base, ['removed.id', 'reason'], ['missing_table', 'reason']] as const
-    const schema = {
-      tables: { posts: { columns: { owner_id: {} } } },
-    } as unknown as Pick<SchemaSnapshot, 'tables'>
+    const composed = [...base, ['removed.id', 'reason']] as const
+    const modules: ReadonlyMap<string, readonly AllowlistEntries[]> = new Map([
+      [file, [composed, new Map([['missing_table', 'reason']])]],
+    ])
+    const errors: string[] = []
 
-    expect(findStaleSchemaAllowlistEntries(entries, schema)).toEqual([
-      'removed.id',
-      'missing_table',
+    checkSchemaAllowlistFreshness([file], schema, modules, errors)
+
+    expect(errors).toEqual([
+      `::error file=${file}::stale PostgreSQL schema allowlist entry: removed.id`,
+      `::error file=${file}::stale PostgreSQL schema allowlist entry: missing_table`,
     ])
   })
 
-  it('checks a spread entry in an evaluated tracked allowlist', () => {
-    const file =
-      'backend/test-helpers/data-stores/psql/schema-static-analysis/notification-push-retention-allowlists.mts'
-    const errors: string[] = []
+  it('rejects malformed keys instead of accepting a valid prefix', () => {
+    const entries = [
+      ['posts.owner_id', 'valid column'],
+      ['posts', 'valid table'],
+      ['posts.owner_id.extra', 'extra segment'],
+      ['posts.', 'empty column'],
+      ['.owner_id', 'empty table'],
+    ] as const
 
-    checkStaleSchemaAllowlistEntries([file], emptySchema, errors)
-
-    expect(errors).toContain(
-      `::error file=${file}::stale PostgreSQL schema allowlist entry: agent_moderation_retention_post_work_items.cursor_moderation_record_id`,
-    )
-  })
-
-  it('checks table-only entries in a tracked allowlist', () => {
-    const file =
-      'backend/test-helpers/data-stores/psql/schema-static-analysis/timestamp-allowlists.mts'
-    const errors: string[] = []
-
-    checkStaleSchemaAllowlistEntries([file], emptySchema, errors)
-
-    expect(errors).toContain(
-      `::error file=${file}::stale PostgreSQL schema allowlist entry: retained_image_placement_bindings`,
-    )
+    expect(findSchemaAllowlistEntryErrors(entries, schema)).toEqual([
+      'invalid PostgreSQL schema allowlist entry (expected table or table.column): posts.owner_id.extra',
+      'invalid PostgreSQL schema allowlist entry (expected table or table.column): posts.',
+      'invalid PostgreSQL schema allowlist entry (expected table or table.column): .owner_id',
+    ])
   })
 
   it('rejects a new tracked allowlist without a registered evaluated module', () => {
     const file = 'backend/test-helpers/new-schema-allowlist.mts'
     const errors: string[] = []
 
-    checkStaleSchemaAllowlistEntries(
+    checkSchemaAllowlistFreshness(
       ['backend/test-helpers/unrelated.mts', file],
-      emptySchema,
+      schema,
+      new Map(),
       errors,
     )
 

@@ -22,11 +22,11 @@ import * as operationalCursorUuidAllowlists from '../../backend/test-helpers/ope
 import * as rssCategorySnapshotUuidAllowlists from '../../backend/test-helpers/rss-category-snapshot-uuid-allowlist.mts'
 import * as topicMergeSchemaAllowlists from '../../backend/test-helpers/topic-merge-schema-allowlists.mts'
 
-type AllowlistEntries = ReadonlyMap<string, string> | readonly (readonly [string, string])[]
+export type AllowlistEntries = ReadonlyMap<string, string> | readonly (readonly [string, string])[]
 
 // Keep this registry aligned with every tracked schema allowlist module. Evaluated exports
 // include entries composed with spreads, which source-text extraction cannot see.
-const SCHEMA_ALLOWLIST_MODULES: ReadonlyMap<string, readonly AllowlistEntries[]> = new Map([
+export const schemaAllowlistModules: ReadonlyMap<string, readonly AllowlistEntries[]> = new Map([
   [
     'backend/test-helpers/data-stores/psql/schema-static-analysis/ai-retention-uuid-allowlists.mts',
     Object.values(aiRetentionUuidAllowlists),
@@ -121,30 +121,38 @@ function isSchemaAllowlistFile(file: string): boolean {
   )
 }
 
-export function findStaleSchemaAllowlistEntries(
+export function findSchemaAllowlistEntryErrors(
   entries: Iterable<readonly [string, string]>,
   schema: Pick<SchemaSnapshot, 'tables'>,
 ): string[] {
-  const stale = new Set<string>()
+  const errors = new Set<string>()
   for (const [entry] of entries) {
-    const [table, column] = entry.split('.')
-    const tableSnapshot = table ? schema.tables[table] : undefined
+    const match = /^([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?$/.exec(entry)
+    if (!match) {
+      errors.add(
+        `invalid PostgreSQL schema allowlist entry (expected table or table.column): ${entry}`,
+      )
+      continue
+    }
+    const tableSnapshot = schema.tables[match[1]!]
+    const column = match[2]
     if (tableSnapshot === undefined || (column && tableSnapshot.columns[column] === undefined)) {
-      stale.add(entry)
+      errors.add(`stale PostgreSQL schema allowlist entry: ${entry}`)
     }
   }
-  return [...stale]
+  return [...errors]
 }
 
-/** Checks tracked schema allowlist modules for entries absent from the current schema snapshot. */
-export function checkStaleSchemaAllowlistEntries(
+/** Checks tracked schema allowlist modules for invalid or absent snapshot entries. */
+export function checkSchemaAllowlistFreshness(
   trackedFiles: string[],
   schema: Pick<SchemaSnapshot, 'tables'>,
+  allowlistModules: ReadonlyMap<string, readonly AllowlistEntries[]>,
   errors: string[],
 ): void {
   for (const file of trackedFiles) {
     if (!isSchemaAllowlistFile(file)) continue
-    const exports = SCHEMA_ALLOWLIST_MODULES.get(file)
+    const exports = allowlistModules.get(file)
     if (!exports) {
       errors.push(
         `::error file=${file}::schema allowlist module is missing from freshness registry`,
@@ -152,8 +160,8 @@ export function checkStaleSchemaAllowlistEntries(
       continue
     }
     for (const entries of exports) {
-      for (const entry of findStaleSchemaAllowlistEntries(entries, schema)) {
-        errors.push(`::error file=${file}::stale PostgreSQL schema allowlist entry: ${entry}`)
+      for (const error of findSchemaAllowlistEntryErrors(entries, schema)) {
+        errors.push(`::error file=${file}::${error}`)
       }
     }
   }
