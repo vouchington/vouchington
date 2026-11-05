@@ -1,6 +1,9 @@
 import { allowUnannotatedQuery } from '../../../backend/data-stores/psql/prepared-statement-name.mts'
 import { write } from '../../../backend/data-stores/psql/clients.mts'
-import { insertHackerNewsReferencesForTest } from '../../../backend/test-helpers/hacker-news-references.mts'
+import {
+  insertHackerNewsReferencesForTest,
+  setHackerNewsReferenceFlagsForTest,
+} from '../../../backend/test-helpers/hacker-news-references.mts'
 import { insertTestRssFeedItem } from '../../../backend/test-helpers/entities/rss-feed-items.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
@@ -63,6 +66,7 @@ test.describe('Hacker News references', () => {
         },
       ],
     })
+    await setHackerNewsReferenceFlagsForTest([], [rssItemId])
   })
 
   test.afterEach(async () => {
