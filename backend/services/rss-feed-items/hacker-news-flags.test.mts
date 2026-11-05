@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { write } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUrlWithHostname,
@@ -59,7 +60,25 @@ describe('RSS Hacker News flags', () => {
       ),
     )
     await insertHackerNewsReferencesForTest({ url_id: ids[0]!, story_count: 1, comment_count: 0 })
+    const before = await write<{ updated_at: string }>(
+      'SELECT updated_at::text FROM rss_feed_items WHERE id = $1',
+      [items[0]],
+    )
     await recomputeRssFeedItemHackerNewsFlags(items)
+    const after = await write<{ updated_at: string }>(
+      'SELECT updated_at::text FROM rss_feed_items WHERE id = $1',
+      [items[0]],
+    )
+    expect(after.rows[0]?.updated_at).toEqual(before.rows[0]?.updated_at)
+    await write(
+      'UPDATE rss_feed_items SET data = data || \'{"title":"Changed"}\'::jsonb WHERE id = $1',
+      [items[0]],
+    )
+    const contentUpdate = await write<{ advanced: boolean }>(
+      'SELECT updated_at > $2::timestamptz AS advanced FROM rss_feed_items WHERE id = $1',
+      [items[0], before.rows[0]!.updated_at],
+    )
+    expect(contentUpdate.rows[0]!.advanced).toBe(true)
     expect(await getRssHackerNewsFlagStateForTest(items[0]!)).toEqual({
       stored: true,
       expected: true,

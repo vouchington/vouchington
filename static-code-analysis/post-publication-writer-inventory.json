@@ -170,7 +170,7 @@
     },
     {
       "path": "backend/services/rss-feed-items/hacker-news-flags.mts",
-      "reason": "updates only the derived Hacker News reference filter flag; public publication eligibility and its updated_at fingerprint remain unchanged"
+      "reason": "updates only the derived Hacker News reference filter flag, which is not a public publication eligibility predicate"
     },
     {
       "path": "backend/services/rss-feed-items/upsert-queries.mts",
