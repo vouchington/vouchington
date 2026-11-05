@@ -22,6 +22,8 @@ export type CrawlUrlOptions = {
   /** Total ceiling across the whole redirect-hop chain. Default: 60000ms (60s). Independent of
    *  `timeoutMs` — a hard stop between hops, not a divisor of the per-phase budgets. */
   totalTimeoutMs?: number
+  /** Optional epoch-ms origin for the first hop's total budget; defaults to the current time. */
+  startedAt?: number
   /** Internal: absolute deadline (`Date.now()`-based) stamped on the first hop and carried
    *  verbatim through the redirect recursion so hop 2+ inherits hop 1's remaining budget instead
    *  of restarting a fresh `totalTimeoutMs`. Callers should not set this directly. */
