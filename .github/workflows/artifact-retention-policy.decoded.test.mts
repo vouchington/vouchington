@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { uploadArtifactBlocks } from '../test-helpers/artifact-retention-policy.fixtures.mts'
+import { uploadArtifactBlocks } from '../../ci/workflow-artifact-policy.mts'
 
 describe('decoded artifact policy data', () => {
   it('checks each use of a shared sequence even when its anchor is outside steps', () => {

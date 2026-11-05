@@ -1,44 +1,58 @@
-import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
-
-import { parse as loadYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import { stringify } from 'yaml'
+import {
+  artifactUploadOutcomeViolations,
+  outcomeSteps,
+} from '../../ci/workflow-artifact-outcome-policy.mts'
 
 const EXPECTED_RUN =
   'node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"'
-const workflowsDir = '.github/workflows'
+const PRODUCER_SUITES = [
+  'backend-modules',
+  'backend-native-migrations',
+  'backend-native-mv',
+  'backend-shard-${{ matrix.shard }}',
+  'cloudflare-worker',
+  'lambdas',
+  'portability-linux',
+  'tooling',
+  'ts-shared',
+  'web-api-shard-${{ matrix.shard }}',
+  'web-integration-shard-${{ matrix.shard }}',
+  'web-shard-${{ matrix.shard }}',
+  'web-storybook',
+  'web-storybook-browser',
+]
 
-type OutcomeStep = {
-  name?: string
-  id?: string
-  run?: string
-  env?: Record<string, unknown>
-}
-type ProducerWorkflow = { jobs?: Record<string, { steps?: OutcomeStep[] }> }
-
-// Every artifact-upload family's terminal outcome step must reduce to this one call shape (plan:
-// "Simplify the GitHub-artifact upload retry"). A step whose env block drifts from this shape would
-// still lint and typecheck — only this test catches the re-divergence the consolidation exists to
-// prevent.
-function outcomeSteps(): OutcomeStep[] {
-  return readdirSync(workflowsDir)
-    .filter(file => file.endsWith('.yml'))
-    .flatMap(file => {
-      const workflow = loadYaml(readFileSync(join(workflowsDir, file), 'utf8')) as ProducerWorkflow
-      return Object.values(workflow.jobs ?? {}).flatMap(job =>
-        (job.steps ?? []).filter(step => step.run === EXPECTED_RUN),
-      )
-    })
+const STEP = {
+  run: EXPECTED_RUN,
+  env: {
+    FAMILY: 'full-lcov',
+    FIRST_OUTCOME: '${{ steps.first.outcome }}',
+    RETRY_OUTCOME: '${{ steps.retry.outcome }}',
+    SUITE: 'backend-modules',
+  },
 }
 
 describe('artifact-upload-outcome.mts call sites', () => {
-  it('all use the identical run string and a well-formed env block', () => {
-    const steps = outcomeSteps()
+  it('keeps all fourteen literal producer suites and their env shape', () => {
+    const files = [
+      {
+        path: '.github/workflows/fixture.yml',
+        source: stringify({
+          jobs: {
+            upload: {
+              steps: PRODUCER_SUITES.map(suite => ({
+                ...STEP,
+                env: { ...STEP.env, SUITE: suite },
+              })),
+            },
+          },
+        }),
+      },
+    ]
+    const steps = outcomeSteps(files)
 
-    // Full-LCOV uploads include native migrations and materialized views (the live-provider
-    // credentialed job publishes none).
-    // A correctly-shaped new producer legitimately bumps these counts — update them deliberately
-    // rather than treating the failure as a defect.
     expect(steps).toHaveLength(14)
     expect(steps.map(step => step.env?.SUITE).toSorted()).toEqual([
       'backend-modules',
@@ -56,7 +70,6 @@ describe('artifact-upload-outcome.mts call sites', () => {
       'web-storybook',
       'web-storybook-browser',
     ])
-
     for (const step of steps) {
       expect(step.run).toBe(EXPECTED_RUN)
       expect(Object.keys(step.env ?? {}).toSorted()).toEqual([
@@ -65,7 +78,6 @@ describe('artifact-upload-outcome.mts call sites', () => {
         'RETRY_OUTCOME',
         'SUITE',
       ])
-
       const env = step.env ?? {}
       expect(env.FAMILY).toBe('full-lcov')
       expect(typeof env.SUITE).toBe('string')
@@ -73,5 +85,25 @@ describe('artifact-upload-outcome.mts call sites', () => {
       expect(env.FIRST_OUTCOME).toMatch(/^\$\{\{ steps\.[\w-]+\.outcome \}\}$/)
       expect(env.RETRY_OUTCOME).toMatch(/^\$\{\{ steps\.[\w-]+\.outcome \}\}$/)
     }
+    expect(artifactUploadOutcomeViolations(files)).toEqual([])
+  })
+
+  it('rejects a missing producer and malformed outcome env', () => {
+    const files = [
+      {
+        path: '.github/workflows/fixture.yml',
+        source: stringify({
+          jobs: {
+            upload: { steps: [{ ...STEP, env: { ...STEP.env, FIRST_OUTCOME: 'success' } }] },
+          },
+        }),
+      },
+    ]
+    expect(artifactUploadOutcomeViolations(files)).toContain(
+      'Artifact outcome FIRST_OUTCOME must reference a step outcome',
+    )
+    expect(artifactUploadOutcomeViolations(files)).toContain(
+      'Expected 14 artifact outcome steps, got 1',
+    )
   })
 })

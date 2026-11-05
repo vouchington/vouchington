@@ -1,7 +1,6 @@
-// Shared by artifact-retention-policy.test.mts; extracted to stay under the 300-line Vitest
-// test-file cap (same rationale as coverage-summary.test-helpers.mts in this directory).
 import { parse, stringify } from 'yaml'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import { isExplicitlyClassified } from './cleanup-artifacts-patterns.mts'
 
 export type UploadArtifactBlock = {
   retentionValue: unknown
@@ -100,4 +99,28 @@ export function artifactNameFromBlock(block: UploadArtifactBlock): string {
     throw new Error(`No artifact name found in upload-artifact block:\n${block.stepSource}`)
   }
   return stringFromUnknown(block.artifactName).replace(/\$\{\{[^}]*\}\}/g, 'INTERPOLATED')
+}
+
+export type WorkflowSource = { path: string; source: string }
+
+/** Evaluate every upload in the tracked workflow and composite-action corpus. */
+export function artifactPolicyViolations(files: readonly WorkflowSource[]): string[] {
+  const blocks = files.flatMap(({ path, source }) =>
+    uploadArtifactBlocks(source).map(block => ({ path, block })),
+  )
+  const violations = blocks.flatMap(({ path, block }) => [
+    ...(String(block.retentionValue) === '1'
+      ? []
+      : [
+          `${path}: invalid retention-days value ${JSON.stringify(block.retentionValue)}\n${block.stepSource}`,
+        ]),
+    ...(block.requiresOverwrite && String(block.overwriteValue) !== 'true'
+      ? [`${path}: actions/upload-artifact step without overwrite: true\n${block.stepSource}`]
+      : []),
+    ...(!isExplicitlyClassified(artifactNameFromBlock(block))
+      ? [`${path}: unclassified artifact name ${artifactNameFromBlock(block)}`]
+      : []),
+  ])
+  if (blocks.length === 0) violations.push('No upload-artifact steps found')
+  return violations
 }
