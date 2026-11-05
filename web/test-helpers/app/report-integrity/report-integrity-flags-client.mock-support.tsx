@@ -14,54 +14,51 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
   InfiniteScroll: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
 
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        value,
-        onValueChange,
-        children,
-      }: {
-        value: string
-        onValueChange: (value: string) => void
-        children: ReactNode
-      }) => {
-        const setResolved = (
-          // ast-grep-ignore: web-no-raw-form-elements -- test double replaces Select with a button the flag tests click by name
-          <button
-            type='button'
-            onClick={() => onValueChange('resolved')}
-          >
-            set resolved
-          </button>
-        )
-        const setAll = (
-          // ast-grep-ignore: web-no-raw-form-elements -- test double replaces Select with a button the flag tests click by name
-          <button
-            type='button'
-            onClick={() => onValueChange('all')}
-          >
-            set all
-          </button>
-        )
-        return (
-          <div>
-            <div>{`Filter: ${value}`}</div>
-            {setResolved}
-            {setAll}
-            {children}
-          </div>
-        )
-      },
-      SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      SelectItem: ({ value, children }: { value: string; children: ReactNode }) => (
-        <div data-value={value}>{children}</div>
-      ),
-      SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      SelectValue: () => null,
-    }) as unknown as typeof import('@/components/ui/select'),
-)
+vi.mock(import('@/components/ui/select'), async () => {
+  const { Button } = await import('@/components/ui/button')
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value: string
+      onValueChange: (value: string) => void
+      children: ReactNode
+    }) => {
+      const setResolved = (
+        <Button
+          type='button'
+          onClick={() => onValueChange('resolved')}
+        >
+          set resolved
+        </Button>
+      )
+      const setAll = (
+        <Button
+          type='button'
+          onClick={() => onValueChange('all')}
+        >
+          set all
+        </Button>
+      )
+      return (
+        <div>
+          <div>{`Filter: ${value}`}</div>
+          {setResolved}
+          {setAll}
+          {children}
+        </div>
+      )
+    },
+    SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    SelectItem: ({ value, children }: { value: string; children: ReactNode }) => (
+      <div data-value={value}>{children}</div>
+    ),
+    SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    SelectValue: () => null,
+  } as unknown as typeof import('@/components/ui/select')
+})
 
 vi.mock(import('@/lib/api/client/report-integrity'), () => ({
   resolveReportIntegrityFlag: vi.fn<VitestLooseMock>(),

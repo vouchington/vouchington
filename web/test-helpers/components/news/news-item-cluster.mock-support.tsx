@@ -75,16 +75,18 @@ vi.mock(import('@/lib/api/client/elections'), () => ({
   submitRssFeedItemVote: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
 }))
 
-vi.mock(import('@/components/shared/hide-button'), () => ({
-  HideButton: () => (
-    // ast-grep-ignore: web-no-raw-form-elements -- test double replaces HideButton with a native button the cluster tests query by label
-    <button
-      data-testid='hide-button'
-      type='button'
-      aria-label='Hide news item'
-    />
-  ),
-}))
+vi.mock(import('@/components/shared/hide-button'), async () => {
+  const { Button } = await import('@/components/ui/button')
+  return {
+    HideButton: () => (
+      <Button
+        data-testid='hide-button'
+        type='button'
+        aria-label='Hide news item'
+      />
+    ),
+  }
+})
 
 vi.mock(
   import('@/components/votes/score-vote'),

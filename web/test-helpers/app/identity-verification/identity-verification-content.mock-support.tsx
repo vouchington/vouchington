@@ -43,7 +43,6 @@ vi.mock(
       ),
       SelectContent: ({ children }: { children: ReactNode }) => children,
       SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
-        // ast-grep-ignore: web-no-raw-form-elements -- test double forwards the select the identity verification tests query
         <option value={value}>{children}</option>
       ),
       SelectTrigger: () => null,

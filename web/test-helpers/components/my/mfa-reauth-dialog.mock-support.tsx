@@ -1,5 +1,6 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- reauth dialog test double keeps the static data-testid the manager reauth tests query */
 import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
 
 export function MfaReauthDialogMock({
   onClose,
@@ -11,22 +12,20 @@ export function MfaReauthDialogMock({
   open: boolean
 }) {
   const verify = (
-    // ast-grep-ignore: web-no-raw-form-elements -- reauth tests click this stand-in for the dialog verify action
-    <button
+    <Button
       type='button'
       onClick={() => void onVerified('reauth-token')}
     >
       Verify MFA
-    </button>
+    </Button>
   )
   const close = (
-    // ast-grep-ignore: web-no-raw-form-elements -- reauth tests click this stand-in for the dialog close action
-    <button
+    <Button
       type='button'
       onClick={onClose}
     >
       Close MFA
-    </button>
+    </Button>
   )
   return (
     <div

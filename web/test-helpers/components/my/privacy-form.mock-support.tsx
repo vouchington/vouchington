@@ -3,77 +3,62 @@ import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import type { UserPrivacyAudience } from '@/types/user'
 
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        children,
-        value,
-        onValueChange,
-      }: {
-        children: ReactNode
-        value: string
-        onValueChange?: (next: string) => void
-        disabled?: boolean
-      }) => (
-        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces Select with a button the privacy tests click
-        <button
-          type='button'
-          data-testid='select'
-          data-value={value}
-          onClick={() => onValueChange?.('followers')}
-        >
-          {children}
-        </button>
-      ),
-      SelectTrigger: ({
-        children,
-        'data-pw': dataPw,
-      }: {
-        children: ReactNode
-        'data-pw'?: string
-      }) => (
-        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces SelectTrigger with a button the privacy tests query
-        <button
-          type='button'
-          data-pw={dataPw}
-        >
-          {children}
-        </button>
-      ),
-      SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
-      SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      SelectItem: ({
-        children,
-        value,
-        'data-pw': dataPw,
-      }: {
-        children: ReactNode
-        value: string
-        'data-pw'?: string
-      }) => (
-        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces SelectItem with an option the privacy tests query
-        <option
-          value={value}
-          data-pw={dataPw}
-        >
-          {children}
-        </option>
-      ),
-    }) as unknown as typeof import('@/components/ui/select'),
-)
-
-vi.mock(
-  import('@/components/ui/label'),
-  () =>
-    ({
-      Label: ({ children }: { children: ReactNode }) => (
-        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces Label with a native label
-        <label>{children}</label>
-      ),
-    }) as unknown as typeof import('@/components/ui/label'),
-)
+vi.mock(import('@/components/ui/select'), async () => {
+  const { Button } = await import('@/components/ui/button')
+  return {
+    Select: ({
+      children,
+      value,
+      onValueChange,
+    }: {
+      children: ReactNode
+      value: string
+      onValueChange?: (next: string) => void
+      disabled?: boolean
+    }) => (
+      <Button
+        type='button'
+        data-testid='select'
+        data-value={value}
+        onClick={() => onValueChange?.('followers')}
+      >
+        {children}
+      </Button>
+    ),
+    SelectTrigger: ({
+      children,
+      'data-pw': dataPw,
+    }: {
+      children: ReactNode
+      'data-pw'?: string
+    }) => (
+      <Button
+        type='button'
+        data-pw={dataPw}
+      >
+        {children}
+      </Button>
+    ),
+    SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
+    SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    SelectItem: ({
+      children,
+      value,
+      'data-pw': dataPw,
+    }: {
+      children: ReactNode
+      value: string
+      'data-pw'?: string
+    }) => (
+      <option
+        value={value}
+        data-pw={dataPw}
+      >
+        {children}
+      </option>
+    ),
+  } as unknown as typeof import('@/components/ui/select')
+})
 
 function makeSettings(overrides?: Partial<Record<string, string>>) {
   return {

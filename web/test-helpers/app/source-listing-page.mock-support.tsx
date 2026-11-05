@@ -67,11 +67,11 @@ vi.mock(import('@/components/shared/list-search-error'), () => ({
   ListSearchError: ({ message }: { message: string }) => <p data-pw='search-error'>{message}</p>,
 }))
 
-vi.mock(import('@/components/sources/add-source-button'), () => ({
-  AddSourceButton: () => (
-    // ast-grep-ignore: web-no-raw-form-elements -- test double replaces AddSourceButton with a button the source listing tests query
-    <button type='button'>mock-add-source</button>
-  ),
-}))
+vi.mock(import('@/components/sources/add-source-button'), async () => {
+  const { Button } = await import('@/components/ui/button')
+  return {
+    AddSourceButton: () => <Button type='button'>mock-add-source</Button>,
+  }
+})
 
 export { mockGetListSearchErrorMessage, mockGetRssFeeds }

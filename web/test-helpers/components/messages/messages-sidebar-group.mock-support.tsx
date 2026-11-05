@@ -43,28 +43,20 @@ vi.mock(
     }) as unknown as typeof import('@/components/ui/sidebar'),
 )
 
-vi.mock(
-  import('@/components/ui/collapsible'),
-  () =>
-    ({
-      Collapsible: ({ children, ...props }: { children: ReactNode; [k: string]: unknown }) => (
-        <div {...props}>{children}</div>
-      ),
-      CollapsibleTrigger: ({
-        children,
-        ...props
-      }: {
-        children: ReactNode
-        [k: string]: unknown
-      }) => (
-        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces CollapsibleTrigger with a button the sidebar tests click
-        <button
-          type='button'
-          {...props}
-        >
-          {children}
-        </button>
-      ),
-      CollapsibleContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-    }) as unknown as typeof import('@/components/ui/collapsible'),
-)
+vi.mock(import('@/components/ui/collapsible'), async () => {
+  const { Button } = await import('@/components/ui/button')
+  return {
+    Collapsible: ({ children, ...props }: { children: ReactNode; [k: string]: unknown }) => (
+      <div {...props}>{children}</div>
+    ),
+    CollapsibleTrigger: ({ children, ...props }: { children: ReactNode; [k: string]: unknown }) => (
+      <Button
+        type='button'
+        {...props}
+      >
+        {children}
+      </Button>
+    ),
+    CollapsibleContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  } as unknown as typeof import('@/components/ui/collapsible')
+})
