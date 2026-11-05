@@ -126,7 +126,7 @@ export const staticCommands: CiLocalCommand[] = [
   workflowCommand(
     'dependency license policy',
     'pnpm run dependency-license-policy',
-    'static-code-analysis.yml',
+    'static-code-analysis-dependency-license-policy.sh',
   ),
   workflowCommand(
     'workspace registry',
