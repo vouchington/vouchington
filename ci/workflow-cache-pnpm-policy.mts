@@ -1,9 +1,9 @@
+import { setupStepViolations } from './workflow-cache-pnpm-setup-policy.mts'
+import { workflowCachePnpmSourceViolations } from './workflow-cache-pnpm-source-policy.mts'
 import {
   ACTION,
   SCRIPT_FREE,
   WORKFLOW,
-  actionStepBlocks,
-  cachePathViolations,
   hasCredential,
   inlineLocalComposites,
   isActionsCacheStep,
@@ -11,7 +11,6 @@ import {
   parsed,
   runsPnpmInstall,
   setupCall,
-  setupNodePnpm,
   stepLists,
   type YamlSources,
 } from './workflow-cache-pnpm-parsing.mts'
@@ -29,44 +28,7 @@ export function workflowCachePnpmViolations(sources: YamlSources): string[] {
   const directInstalls: string[] = []
   const scriptFree: string[] = []
   let dockerBuildSteps = 0
-  const lockfileHashKeyRe = /\$\{\{\s*steps\.[\w-]+\.outputs\.lockfile-hash\s*\}\}/
-  const lockfileHashComputeRe = /lockfile-hash=\$\(\s*(?:sha256sum|shasum -a 256)\s+pnpm-lock\.yaml/
-  for (const [path, source] of sources) {
-    violations.push(...cachePathViolations(source, path))
-    if (/^\s+cache:\s*['"]?(?:npm|pnpm|yarn)['"]?/m.test(source) || source.includes('pnpm-cache:'))
-      violations.push(`${path}: package manager cache is prohibited`)
-    if (
-      actionStepBlocks(source, /uses:\s+actions\/setup-node@/).some(block =>
-        /^\s+cache:/m.test(block),
-      )
-    )
-      violations.push(`${path}: setup-node cache input is prohibited`)
-    for (const block of actionStepBlocks(source, /uses:\s+actions\/cache(?:\/restore|\/save)?@/)) {
-      if (!block.includes('ms-playwright')) continue
-      const firstLine = block.trim().split('\n')[0]
-      if (!lockfileHashKeyRe.test(block))
-        violations.push(`${path}: "${firstLine}" must key on steps.*.outputs.lockfile-hash.`)
-      else if (!lockfileHashComputeRe.test(source))
-        violations.push(`${path}: "${firstLine}" keys on lockfile-hash but no step computes it.`)
-      if (!block.includes('runner.os') || !block.includes('runner.arch'))
-        violations.push(`${path}: "${firstLine}" must scope its key by runner.os/runner.arch.`)
-      if (block.includes('restore-keys:'))
-        violations.push(`${path}: Playwright cache "${firstLine}" must not declare restore-keys.`)
-    }
-    for (const block of actionStepBlocks(source, /uses:\s+actions\/setup-node@/)) {
-      const tagged = /uses:\s+actions\/setup-node@v(\d+)/.exec(block)?.[1]
-      const pinned = /uses:\s+actions\/setup-node@[0-9a-f]{40}\s+#\s+v(\d+)/.exec(block)?.[1]
-      if (Number(tagged ?? pinned ?? -1) < 6)
-        violations.push(`${path}: setup-node must be v6 or higher`)
-      if (!block.includes("node-version-file: '.nvmrc'"))
-        violations.push(`${path}: setup-node must read .nvmrc`)
-      if (/node-version-file:\s*['"]?(?:\$\{\{|\/)/u.test(block))
-        violations.push(`${path}: unsafe node-version-file`)
-      if (/^\s+node-version:/m.test(block)) violations.push(`${path}: hardcoded Node version`)
-      if (!block.includes('package-manager-cache: false'))
-        violations.push(`${path}: setup-node must disable package manager cache`)
-    }
-  }
+  violations.push(...workflowCachePnpmSourceViolations(sources))
   for (const { owner, steps } of lists) {
     for (const step of steps) {
       const command = step.with?.command
@@ -87,31 +49,9 @@ export function workflowCachePnpmViolations(sources: YamlSources): string[] {
     violations.push(
       `pnpm install must be owned by setup-node-pnpm; direct sites: ${directInstalls.join(', ')}`,
     )
-  for (const { owner, step } of setupSteps) {
-    for (const input of Object.keys(step.with ?? {}))
-      if (!setupNodePnpm(step) || !['deadline-seconds', 'install-scripts'].includes(input))
-        violations.push(`${owner}: unexpected setup input ${input}`)
-    if (setupNodePnpm(step)) {
-      const timeout = step['timeout-minutes']
-      const cap = typeof timeout === 'number' ? timeout : undefined
-      const rawDeadline = step.with?.['deadline-seconds']
-      const deadline = rawDeadline === undefined ? undefined : Number(rawDeadline)
-      if (
-        cap !== undefined && cap <= 5
-          ? !(
-              deadline !== undefined &&
-              Number.isInteger(deadline) &&
-              deadline > 0 &&
-              deadline < cap * 60
-            )
-          : deadline !== undefined
-      )
-        violations.push(`${owner}: deadline is not below the step cap`)
-    }
-    if (step.with && 'install-scripts' in step.with && step.with['install-scripts'] !== 'false')
-      violations.push(`${owner}: install-scripts must be false`)
-    if (step.with?.['install-scripts'] === 'false') scriptFree.push(owner)
-  }
+  const setupResult = setupStepViolations(setupSteps)
+  violations.push(...setupResult.violations)
+  scriptFree.push(...setupResult.scriptFree)
   for (const path of workflowPaths) {
     const host = parsed(sources, path)
     for (const [jobId, job] of Object.entries(host.jobs ?? {})) {
