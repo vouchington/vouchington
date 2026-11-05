@@ -7,8 +7,8 @@ import {
   getHackerNewsFlagsLimit,
 } from '@queues/hacker-news-flags/config'
 import type { HackerNewsFlagData } from '@queues/hacker-news-flags/types'
-import { refreshUrlHackerNewsFlags } from './url-page.mts'
-import { repairHackerNewsFlags } from './repair-page.mts'
+import { refreshUrlHackerNewsFlags } from './workers/url-page.mts'
+import { repairHackerNewsFlags } from './workers/repair-page.mts'
 import type { Job } from 'glide-mq'
 
 /** Lane caps are loaded before worker startup and shared by every process. */
