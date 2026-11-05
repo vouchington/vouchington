@@ -15,6 +15,7 @@ const SOURCE_IMPORT_ERROR_MESSAGE_KEYS = {
   CONTRIBUTION_LIMIT_EXCEEDED:
     'extracted.posts.contributionGatedCta.youHaveReachedTheCurrentContribution_b3fa428c',
   ACCOUNT_SUSPENDED: 'extracted.accountStatus.page.yourAccountHasBeenSuspended_b51655b9',
+  RELATION_LIMIT_REACHED: 'shared.relationLimit.follow',
   IMPORT_FAILED: 'extracted.api.errorHelpers.anErrorOccurredPleaseTryAgain_9c170dda',
 } as const satisfies Record<RssFeedImportErrorCode, MessageKey>
 

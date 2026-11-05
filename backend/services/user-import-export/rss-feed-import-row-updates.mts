@@ -9,25 +9,30 @@ export async function updateRssFeedImportRowCompleted(
 ): Promise<void> {
   await write(
     sql`/* updateRssFeedImportRowCompleted */
-      WITH prev AS (
-        SELECT (failed_at IS NOT NULL)::int AS was_failed
+      WITH prev AS MATERIALIZED (
+        SELECT id, (failed_at IS NOT NULL)::int AS was_failed, error_message
         FROM user_rss_feed_import_rows
         WHERE id = ${rowId}
+        FOR UPDATE
       ), updated_row AS (
-        UPDATE user_rss_feed_import_rows
+        UPDATE user_rss_feed_import_rows target
         SET completed_at = CURRENT_TIMESTAMP,
             failed_at = NULL,
             outcome = ${outcome},
             rss_feed_id = ${rssFeedId}::uuid,
             error_message = NULL
-        WHERE id = ${rowId}
-          AND completed_at IS NULL
-          AND failed_at IS NULL
-        RETURNING batch_id
+        FROM prev
+        WHERE target.id = prev.id
+          AND target.completed_at IS NULL
+          AND (target.failed_at IS NULL OR target.error_message = 'RELATION_LIMIT_REACHED')
+        RETURNING target.batch_id
       )
       UPDATE user_rss_feed_import_batches
       SET completed_rows = completed_rows + 1,
           failed_rows = failed_rows - (SELECT was_failed FROM prev),
+          skipped_rows = skipped_rows - (SELECT CASE
+            WHEN was_failed = 1 AND error_message = 'RELATION_LIMIT_REACHED' THEN 1
+            ELSE 0 END FROM prev),
           completed_at = CASE
             WHEN completed_at IS NOT NULL THEN completed_at
             WHEN completed_rows + 1 + failed_rows - (SELECT was_failed FROM prev) >= total_rows
@@ -43,7 +48,7 @@ export async function updateRssFeedImportRowCompleted(
 export async function updateRssFeedImportRowFailed(
   rowId: string,
   errorMessage: string,
-  options: { isFinalAttempt: boolean },
+  options: { isFinalAttempt: boolean; rssFeedId?: string },
 ): Promise<void> {
   if (!options.isFinalAttempt) {
     await write(
@@ -68,6 +73,7 @@ export async function updateRssFeedImportRowFailed(
         UPDATE user_rss_feed_import_rows
         SET failed_at = COALESCE(failed_at, CURRENT_TIMESTAMP),
             outcome = 'error',
+            rss_feed_id = COALESCE(${options.rssFeedId ?? null}::uuid, rss_feed_id),
             error_message = ${errorMessage.trim()}
         WHERE id = ${rowId}
           AND completed_at IS NULL
@@ -76,6 +82,10 @@ export async function updateRssFeedImportRowFailed(
       )
       UPDATE user_rss_feed_import_batches
       SET failed_rows = failed_rows + 1 - (SELECT was_failed FROM prev),
+          skipped_rows = skipped_rows + CASE
+            WHEN ${errorMessage.trim()} = 'RELATION_LIMIT_REACHED'
+              THEN 1 - (SELECT was_failed FROM prev)
+            ELSE 0 END,
           completed_at = CASE
             WHEN completed_at IS NOT NULL THEN completed_at
             WHEN completed_rows + failed_rows + 1 - (SELECT was_failed FROM prev) >= total_rows

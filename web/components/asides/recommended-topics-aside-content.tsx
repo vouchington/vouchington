@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { bookmarkEntity } from '@/lib/api/client/bookmarks'
+import { getRelationLimitMessage } from '@/lib/api/relation-limit-error'
 import { ApiError } from '@vouchington/api-client'
 import { topicHref } from '@/lib/links/entity-href'
 import type { Topic } from '@/types/api-responses/shared'
@@ -52,11 +53,11 @@ export function RecommendedTopicsAsideContent({
       await bookmarkEntity('topic', topicId, 'follow')
       setFollowed(prev => new Set([...prev, topicId]))
     } catch (err) {
-      /* c8 ignore next 2 -- error path requires injecting a follow failure */
       const message =
-        err instanceof ApiError
+        getRelationLimitMessage(err, 'follow', t) ??
+        (err instanceof ApiError
           ? err.message
-          : t('extracted.asides.recommendedTopicsAsideContent.failedToFollowTopic_82dd9258')
+          : t('extracted.asides.recommendedTopicsAsideContent.failedToFollowTopic_82dd9258'))
       toast.error(message)
     } finally {
       setActionInFlight(prev => {

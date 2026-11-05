@@ -24,6 +24,7 @@ export type RssFeedImportErrorCode =
   | 'CONTRIBUTION_LIMIT_EXCEEDED'
   | 'ACCOUNT_SUSPENDED'
   | 'IMPORT_FAILED'
+  | 'RELATION_LIMIT_REACHED'
 
 export interface ImportResult {
   id?: string
@@ -52,8 +53,9 @@ export interface RssFeedImportStatus {
 }
 
 export interface TopicImportResult {
+  error_code?: 'RELATION_LIMIT_REACHED'
   input: string
-  status: 'followed' | 'recommendation_created' | 'already_following' | 'error'
+  status: 'followed' | 'recommendation_created' | 'already_following' | 'skipped' | 'error'
   error?: string
   entity_id?: string
   recommendation_post_id?: string

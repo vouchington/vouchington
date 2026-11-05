@@ -1,10 +1,19 @@
+import { deleteBookmarkAction, upsertBookmarkAction } from '@services/entity-relation-actions'
+import { relationLimitsConfig } from '@services/entity-relations/relation-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   callRejectedMcpTool,
   callStructuredMcpTool,
   optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
-import { describe, expect, it } from 'vitest'
-import { createTestMembership, createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import {
+  createTestMembership,
+  createTestUser,
+  insertTestTopic,
+  createTestTopic,
+  getTopicFollowExistsForTest,
+} from '@voucha/test-helpers'
 
 const SCOPES = ['bookmarks:read', 'bookmarks:write', 'topic-recommendations:write'] as const
 
@@ -75,5 +84,90 @@ describe('set_bookmark batch — real DB', () => {
     )
     expect(first.results).toMatchObject([{ status: 'recommendation_created' }])
     expect(second).toEqual(first)
+  })
+})
+
+describe('MCP bookmark follow capacity', () => {
+  it('replays a completed topic import after capacity changes', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { follow_topic: 1 }))
+    const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    const [original, replacement] = await Promise.all([createTestTopic(), createTestTopic()])
+    const args = {
+      predicate: 'follow',
+      recommend_unknown_topics: true,
+      idempotency_key: crypto.randomUUID(),
+      targets: [{ entity_type: 'topic', entity: original.name }],
+    }
+    const first = await callStructuredMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', args),
+      SCOPES,
+    )
+    expect(first.results).toMatchObject([{ status: 'followed', entity_id: original.id }])
+    await deleteBookmarkAction(caller, {
+      entityType: 'topic',
+      entityId: original.id,
+      predicate: 'follow',
+    })
+    await upsertBookmarkAction(
+      caller,
+      { kind: 'first_party' },
+      { entityType: 'topic', entityId: replacement.id, predicate: 'follow' },
+    )
+    const replay = await callStructuredMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', args),
+      SCOPES,
+    )
+    expect(replay).toEqual(first)
+    expect(await getTopicFollowExistsForTest(caller.id, original.id)).toBe(false)
+    expect(await getTopicFollowExistsForTest(caller.id, replacement.id)).toBe(true)
+  })
+  it('refuses an overflowing batch with the REST code before following any target', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { follow_topic: 1 }))
+    const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    const [first, second] = await Promise.all([createTestTopic(), createTestTopic()])
+    const response = await callRejectedMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', {
+        predicate: 'follow',
+        targets: [first, second].map(topic => ({ entity_type: 'topic', entity: topic.id })),
+      }),
+      SCOPES,
+    )
+    expect(JSON.parse(response)).toMatchObject({
+      error: { status: 409, code: 'RELATION_LIMIT_REACHED' },
+    })
+    expect(await getTopicFollowExistsForTest(caller.id, first.id)).toBe(false)
+    expect(await getTopicFollowExistsForTest(caller.id, second.id)).toBe(false)
+  })
+
+  it('counts known topic names and UUID targets together before recommendation imports', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { follow_topic: 1 }))
+    const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    const [first, second] = await Promise.all([createTestTopic(), createTestTopic()])
+    const response = await callRejectedMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', {
+        predicate: 'follow',
+        recommend_unknown_topics: true,
+        idempotency_key: crypto.randomUUID(),
+        targets: [
+          { entity_type: 'topic', entity: first.name },
+          { entity_type: 'topic', entity: second.id },
+        ],
+      }),
+      SCOPES,
+    )
+    expect(JSON.parse(response)).toMatchObject({ error: { code: 'RELATION_LIMIT_REACHED' } })
+    expect(await getTopicFollowExistsForTest(caller.id, first.id)).toBe(false)
+    expect(await getTopicFollowExistsForTest(caller.id, second.id)).toBe(false)
   })
 })

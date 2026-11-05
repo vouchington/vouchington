@@ -9,6 +9,7 @@ import { ButtonGroup } from '@/components/ui/button-group'
 import { Card } from '@/components/ui/card'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { bookmarkEntity } from '@/lib/api/client/bookmarks'
+import { getRelationLimitMessage } from '@/lib/api/relation-limit-error'
 import { ApiError } from '@vouchington/api-client'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
 import type { FriendRecommendationsResponseBody } from '@/types/api-responses'
@@ -46,11 +47,11 @@ export function FriendRecommendationsList({
       toast.success(t('extracted.my.friendRecommendationsList.followedUser_efccdf67'))
     } catch (err) {
       setFollowed(prev => without(prev, userId))
-      /* c8 ignore next 2 -- error path requires injecting a follow failure */
       const message =
-        err instanceof ApiError
+        getRelationLimitMessage(err, 'follow', t) ??
+        (err instanceof ApiError
           ? err.message
-          : t('extracted.my.friendRecommendationsList.failedToFollowUser_f5a7643b')
+          : t('extracted.my.friendRecommendationsList.failedToFollowUser_f5a7643b'))
       toast.error(message)
     } finally {
       actionInFlightRef.current.delete(userId)

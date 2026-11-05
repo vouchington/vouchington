@@ -1,3 +1,4 @@
+import { relationLimitsRegistryEntry } from './registry-relation-limits-entry.mts'
 import {
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
@@ -26,6 +27,7 @@ import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-ent
 import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 
 const unorderedRegistryEntries = [
+  relationLimitsRegistryEntry,
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
   ...paginationRegistryEntries,

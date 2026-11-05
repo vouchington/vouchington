@@ -39,10 +39,10 @@ export async function getRssFeedImportSummary(
 
   const { rows } = await write<UserRssFeedImportBatchRow>(
     sql`/* getRssFeedImportSummary */
-      SELECT id, total_rows, completed_rows, failed_rows, completed_at, created_at
-      FROM user_rss_feed_import_batches
-      WHERE id = ${importId}
-        AND user_id = ${currentUserId}
+      SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows, batch.completed_at, batch.created_at, batch.skipped_rows
+      FROM user_rss_feed_import_batches batch
+      WHERE batch.id = ${importId}
+        AND batch.user_id = ${currentUserId}
     `,
   )
   return rows[0] ? toImportSummary(rows[0]) : null
@@ -69,7 +69,8 @@ export async function getRssFeedImport(
 
   const query = sql`/* getRssFeedImport */
     SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows,
-      batch.completed_at, batch.created_at, page.id AS row_id, page.input_url, page.outcome,
+      batch.completed_at, batch.created_at, batch.skipped_rows,
+      page.id AS row_id, page.input_url, page.outcome,
       page.error_message, page.rss_feed_id, page.topic_slug,
       EXISTS (
         SELECT 1 FROM user_rss_feed_import_rows cursor_row

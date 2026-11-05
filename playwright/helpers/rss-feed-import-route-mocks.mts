@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import type { RssFeedImportSummary } from '../../web/types/rss-feed-imports.js'
 
 export const DEFAULT_RSS_FEED_IMPORT_ID = '01900000-0000-7000-8000-000000000001'
 export const DEFAULT_RSS_FEED_IMPORT_CREATED_AT = '2026-05-31T00:00:00.000Z'
@@ -53,10 +54,11 @@ export async function mockCompletedRssFeedImport(
     total_rows: totalRows,
     completed_rows: completedRows,
     failed_rows: failedRows,
+    skipped_rows: 0,
     pending_rows: pendingRows,
     completed_at: completedAt,
     created_at: createdAt,
-  }
+  } satisfies RssFeedImportSummary
 
   await page.route(RSS_FEED_IMPORT_ROUTE_PATTERNS.submit, async route => {
     await route.fulfill({

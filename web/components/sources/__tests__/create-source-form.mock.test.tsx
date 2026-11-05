@@ -64,6 +64,7 @@ const mockImport = {
   total_rows: 2,
   completed_rows: 0,
   failed_rows: 0,
+  skipped_rows: 0,
   pending_rows: 2,
   completed_at: null,
   created_at: '2026-05-31T00:00:00.000Z',
@@ -164,6 +165,37 @@ describe('CreateSourceForm', () => {
     const onSubmit = vi.fn<VitestLooseMock>()
     textarea.form!.addEventListener('submit', onSubmit)
     expectTextareaCmdEnterSubmits({ textarea, onSubmit })
+  })
+
+  it('shows skipped source follows and completes progress at the follow limit', async () => {
+    vi.mocked(importExportApi.importRssFeeds).mockResolvedValue({
+      import: mockImport,
+      status_url: `/api/v1/my/import/rss-feeds/${mockImport.id}`,
+    })
+    vi.mocked(importStreamApi.streamImportProgress).mockImplementationOnce(
+      async (_id, onProgress) => {
+        onProgress({
+          batchId: mockImport.id,
+          completed: 0,
+          failed: 0,
+          skipped: 2,
+          total: 2,
+          done: true,
+        })
+      },
+    )
+    render(<CreateSourceForm />)
+    const textarea = screen.getByRole('textbox', { name: /RSS Feed URLs/i })
+    fireEvent.change(textarea, {
+      target: { value: 'https://a.example.test/feed.xml\nhttps://b.example.test/feed.xml' },
+    })
+    fireEvent.submit(textarea.closest('form')!)
+    expect(
+      await screen.findByText(
+        'Done. 0 imported, 0 failed, 2 skipped. 2 skipped because the follow limit was reached.',
+      ),
+    ).toBeVisible()
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100')
   })
 
   it('displays progress indicator after batch submission', async () => {

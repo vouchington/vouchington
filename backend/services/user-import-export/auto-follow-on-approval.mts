@@ -1,3 +1,4 @@
+import { isRelationLimitError } from '@services/entity-relations/relation-limits'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -120,6 +121,7 @@ async function followRequest(
     await upsertEntityRelation(user, relation, { id: request.user_id }, [{ id: objectId }])
     return request
   } catch (err) {
+    if (isRelationLimitError(err)) return null
     const followError = err instanceof Error ? err : new Error(String(err))
     onError(followError)
     return null

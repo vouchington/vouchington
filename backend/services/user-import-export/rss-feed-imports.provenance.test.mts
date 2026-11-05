@@ -124,6 +124,7 @@ describe('user RSS feed import provenance', () => {
       'failed_rows',
       'id',
       'pending_rows',
+      'skipped_rows',
       'total_rows',
     ])
     expect(JSON.stringify({ created, status })).not.toMatch(/created_via|oauth/)

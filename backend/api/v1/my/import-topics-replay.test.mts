@@ -1,9 +1,13 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestTopic, createTestUser, getTopicImportRequestForTest } from '@voucha/test-helpers'
+import {
+  createTestTopic,
+  createTestUser,
+  getTopicImportRequestForTest,
+  getTopicFollowExistsForTest,
+} from '@voucha/test-helpers'
 import { getTopicImportFailureStateForTest } from '@voucha/test-helpers/topic-import-failure-state'
 import type { PrivateUser } from '@services/users/types'
-import { getFollowedTopicIds } from '@services/user-import-export/import-topics-queries'
 
 describe('POST /api/v1/my/import/topics response replay', () => {
   let user: PrivateUser
@@ -53,7 +57,7 @@ describe('POST /api/v1/my/import/topics response replay', () => {
 
     expect(response.body).toMatchObject({ code: '22021' })
     expect(response.body).not.toHaveProperty('results')
-    await expect(getFollowedTopicIds(importingUser.id, [topic.id])).resolves.toEqual(new Set())
+    await expect(getTopicFollowExistsForTest(importingUser.id, topic.id)).resolves.toBe(false)
     await expect(getTopicImportRequestForTest(importingUser.id, topic.id)).resolves.toBeNull()
     // The actor-owned request key is reserved before lookup, but no import result is written.
     await expect(

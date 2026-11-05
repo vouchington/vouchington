@@ -9,6 +9,7 @@ import {
   preflightExport,
 } from '@/lib/api/client/import-export'
 import { streamImportProgress } from '@/lib/api/client/import-stream'
+import { toast } from 'sonner'
 import onError from '@/lib/on-error'
 
 vi.mock(import('@/lib/api/client/import-export'), () => ({
@@ -52,6 +53,7 @@ const mockImport = {
   total_rows: 2,
   completed_rows: 0,
   failed_rows: 0,
+  skipped_rows: 0,
   pending_rows: 2,
   completed_at: null,
   created_at: '2026-05-31T00:00:00.000Z',
@@ -204,6 +206,25 @@ describe('ImportExportManager', () => {
     fireEvent.click(screen.getByRole('button', { name: /import topics/i }))
     await waitFor(() => {
       expect(mockImportTopics).toHaveBeenCalledWith({ names: ['Tech', 'Finance'] })
+    })
+  })
+
+  it('reports topic follows skipped at the limit without counting them as imported', async () => {
+    mockImportTopics.mockResolvedValue({
+      results: [
+        { input: 'Tech', status: 'followed', entity_id: 'id-1' },
+        { input: 'Finance', status: 'skipped', error_code: 'RELATION_LIMIT_REACHED' },
+      ],
+    })
+    render(<ImportExportManager feedType='topics' />)
+    fireEvent.change(screen.getByLabelText('Topic names to import'), {
+      target: { value: 'Tech\nFinance' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /import topics/i }))
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'Done. 1 imported, 0 failed, 1 skipped. 1 skipped because the follow limit was reached.',
+      )
     })
   })
 

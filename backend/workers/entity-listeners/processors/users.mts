@@ -1,3 +1,4 @@
+import { isRelationLimitError } from '@services/entity-relations/relation-limits'
 import { repairEntityBloomKeys } from '@services/entity-cache/repair-entity-keys'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
@@ -39,5 +40,7 @@ export const processAutoFollowReferrer = async ({
   // A signup retry or reconciliation replay must not resurrect a follow the user already removed.
   await upsertEntityRelation(creator, followRelation, { id: newUserId }, [{ id: referrerId }], {
     skipIfDeleted: true,
+  }).catch(err => {
+    if (!isRelationLimitError(err)) throw err
   })
 }

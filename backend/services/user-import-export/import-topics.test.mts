@@ -1,5 +1,8 @@
+import { softDeleteTopic } from '@voucha/test-helpers/entities/topics/deletion'
+import { relationLimitsConfig } from '@services/entity-relations/relation-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestTopic,
   createTestUser,
@@ -53,6 +56,26 @@ describe('topic import follow audits', () => {
 })
 
 describe('topic import follow errors', () => {
+  it('follows valid topics when another target cannot be bookmarked', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { follow_topic: 1 }))
+    const caller = await createTestUser()
+    const [invalid, valid] = await Promise.all([createTestTopic(), createTestTopic()])
+    const unknown = `Missing topic ${randomUUID()}`
+    const names = [invalid.name, valid.name, unknown]
+    const options = {
+      assertCanCreateTopicRecommendations: async () => {
+        await softDeleteTopic(invalid.id, caller.id)
+        throw new Error('Recommendation disabled for this test')
+      },
+      importAttemptId: randomUUID(),
+    }
+    const results = await importTopics(caller, WEB_PROVENANCE, names, options)
+    expect(await importTopics(caller, WEB_PROVENANCE, names, options)).toEqual(results)
+    expect(results[0]).toMatchObject({ status: 'error' })
+    expect(results[1]).toMatchObject({ status: 'followed', entity_id: valid.id })
+    expect(await getTopicFollowExistsForTest(caller.id, valid.id)).toBe(true)
+  })
   it('returns a per-item error when the follow is rejected', async () => {
     const caller = await createTestUser()
     const topic = await createTestTopic({ user: caller })
@@ -73,5 +96,43 @@ describe('topic import follow errors', () => {
       error: 'Your account has been suspended',
     })
     await expect(getTopicFollowExistsForTest(caller.id, topic.id)).resolves.toBe(false)
+  })
+})
+
+describe('topic import follow capacity', () => {
+  it('follows the available prefix, reports skipped inputs, and replays the result', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { follow_topic: 1 }))
+    const user = await createTestUser()
+    const [first, second] = await Promise.all([createTestTopic(), createTestTopic()])
+    const options = {
+      assertCanCreateTopicRecommendations: async () => {},
+      importAttemptId: randomUUID(),
+    }
+    const names = [first.name, first.name, second.name, second.name]
+    const results = await importTopics(user, WEB_PROVENANCE, names, options)
+    expect(results.map(result => result.status)).toEqual([
+      'followed',
+      'already_following',
+      'skipped',
+      'skipped',
+    ])
+    expect(results.slice(2)).toEqual([
+      {
+        input: second.name,
+        entity_id: second.id,
+        status: 'skipped',
+        error_code: 'RELATION_LIMIT_REACHED',
+      },
+      {
+        input: second.name,
+        entity_id: second.id,
+        status: 'skipped',
+        error_code: 'RELATION_LIMIT_REACHED',
+      },
+    ])
+    expect(await getTopicFollowExistsForTest(user.id, first.id)).toBe(true)
+    expect(await getTopicFollowExistsForTest(user.id, second.id)).toBe(false)
+    expect(await importTopics(user, WEB_PROVENANCE, names, options)).toEqual(results)
   })
 })

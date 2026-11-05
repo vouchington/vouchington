@@ -114,13 +114,30 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
     ).not.toBe(initialActivityId)
   })
 
-  it('preserves PostgreSQL cardinality errors for duplicate relation keys in one batch', async () => {
+  it('deduplicates repeated relation keys before writing one active follow', async () => {
     const follower: PrivateUser = await createTestUser()
     const followee = await createTestUser()
 
-    await expect(
-      upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee, followee]),
-    ).rejects.toMatchObject({ code: '21000' })
+    const relations = await upsertEntityRelation(follower, userFollowUserMetadata, follower, [
+      followee,
+      followee,
+    ])
+    expect(relations).toHaveLength(1)
+    expect(relations[0]).toMatchObject({
+      subject_id: follower.id,
+      object_id: followee.id,
+      newly_active: true,
+    })
+    const retry = await upsertEntityRelation(follower, userFollowUserMetadata, follower, [
+      followee,
+      followee,
+    ])
+    expect(retry).toHaveLength(1)
+    expect(retry[0]).toMatchObject({
+      subject_id: follower.id,
+      object_id: followee.id,
+      newly_active: false,
+    })
   })
 
   it('serializes reverse overlapping bidirectional writes while preserving caller object order', async () => {

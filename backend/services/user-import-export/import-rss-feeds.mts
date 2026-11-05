@@ -3,8 +3,9 @@
 import '@services/bookmarks'
 import type { BasicUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { isRelationLimitError } from '@services/entity-relations/relation-limits'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertAutomaticTopicUpvote } from '@services/elections-votes/topic/automatic-upvote'
@@ -17,6 +18,7 @@ import { validateRssFeedUrl } from './validate-rss-feed-url.mts'
 export type ImportRssFeedResult = {
   input: string
   status: ImportRssFeedStatus
+  error_code?: 'RELATION_LIMIT_REACHED'
   error?: string
   entity_id?: string
 }
@@ -83,9 +85,19 @@ export async function importSingleRssFeed(
     }
 
     if (follow) {
-      await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
-        { id: existingFeed.feed.id },
-      ])
+      try {
+        await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
+          { id: existingFeed.feed.id },
+        ])
+      } catch (err) {
+        if (!isRelationLimitError(err)) throw err
+        return {
+          input: rawUrl,
+          status: 'error',
+          error_code: 'RELATION_LIMIT_REACHED',
+          entity_id: existingFeed.feed.id,
+        }
+      }
       await recordRssFeedImportRequest(currentUser.id, rawUrl, existingFeed.feed.id, importRowId)
       return {
         input: rawUrl,
@@ -109,6 +121,14 @@ export async function importSingleRssFeed(
     importRowId,
     crawlerRssOptions,
   })
+  if (sourceResult.follow_skipped) {
+    return {
+      input: rawUrl,
+      status: 'error',
+      error_code: 'RELATION_LIMIT_REACHED',
+      entity_id: sourceResult.rss_feed_id,
+    }
+  }
   if (follow) {
     await recordRssFeedImportRequest(currentUser.id, rawUrl, sourceResult.rss_feed_id, importRowId)
   }
@@ -133,7 +153,7 @@ async function findExistingRssFeedByUrl(url: string): Promise<{
 }
 
 async function isUserFollowingRssFeed(userId: string, rssFeedId: string): Promise<boolean> {
-  const { rows } = await read(
+  const { rows } = await write(
     sql`/* isUserFollowingRssFeed */
       SELECT 1
       FROM relation__user__follow__rss_feed

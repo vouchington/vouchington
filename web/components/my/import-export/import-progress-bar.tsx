@@ -2,6 +2,7 @@
 
 import { useId } from 'react'
 
+import { useTranslations } from '@/lib/i18n/use-translations'
 import { Progress } from '@/components/ui/progress'
 import type { ImportProgress } from '@/lib/api/client/import-stream'
 
@@ -10,14 +11,21 @@ interface Props {
 }
 
 export function ImportProgressBar({ progress }: Props) {
+  const t = useTranslations()
   const labelId = useId()
   const pct =
     progress.total > 0
-      ? Math.round(((progress.completed + progress.failed) / progress.total) * 100)
+      ? Math.round(
+          ((progress.completed + progress.failed + progress.skipped) / progress.total) * 100,
+        )
       : 0
   const label = progress.done
-    ? `Done — ${progress.completed} imported, ${progress.failed} failed`
-    : `Processing… ${progress.completed + progress.failed} / ${progress.total}`
+    ? t('shared.relationLimit.importResult', {
+        completed: progress.completed,
+        failed: progress.failed,
+        skipped: progress.skipped,
+      })
+    : `Processing… ${progress.completed + progress.failed + progress.skipped} / ${progress.total}`
 
   return (
     <div
@@ -33,6 +41,9 @@ export function ImportProgressBar({ progress }: Props) {
         className='text-sm text-muted-foreground'
       >
         {label}
+        {progress.skipped > 0
+          ? ` ${t('shared.relationLimit.importSkipped', { count: progress.skipped })}`
+          : null}
       </p>
     </div>
   )

@@ -16,6 +16,7 @@ Not partitioned — growth: bounded.
 | `total_rows`                   | `integer`                   | no       |                              |          |           |           | Total number of URLs in this import batch.                                                                         |
 | `completed_rows`               | `integer`                   | no       | `0`                          |          |           |           | Number of rows that completed with a non-error outcome.                                                            |
 | `failed_rows`                  | `integer`                   | no       | `0`                          |          |           |           | Number of rows that reached a terminal error outcome.                                                              |
+| `skipped_rows`                 | `integer`                   | no       | `0`                          |          |           |           | Number of failed rows skipped because the follow relation limit was reached; included in failed_rows.              |
 | `completed_at`                 | `timestamp with time zone`  | yes      |                              |          |           |           | When every row reached a terminal success or error outcome.                                                        |
 | `created_at`                   | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                    |
 | `updated_at`                   | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                    |
@@ -28,6 +29,7 @@ _none_
 **Check constraints:**
 
 - `chk_user_rss_feed_import_batches__lifecycle`: `CHECK ((((completed_rows + failed_rows) <= total_rows) AND ((completed_at IS NOT NULL) = ((completed_rows + failed_rows) = total_rows))))`
+- `user_rss_feed_import_batches_check`: `CHECK (((skipped_rows >= 0) AND (skipped_rows <= failed_rows)))`
 - `user_rss_feed_import_batches_completed_rows_check`: `CHECK ((completed_rows >= 0))`
 - `user_rss_feed_import_batches_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 - `user_rss_feed_import_batches_failed_rows_check`: `CHECK ((failed_rows >= 0))`

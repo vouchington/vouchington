@@ -92,6 +92,7 @@ describe('import/export client helpers', () => {
             total_rows: 1,
             completed_rows: 0,
             failed_rows: 0,
+            skipped_rows: 0,
             pending_rows: 1,
             completed_at: null,
             created_at: '2026-01-01T00:00:00.000Z',

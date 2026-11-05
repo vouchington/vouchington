@@ -152,6 +152,13 @@ async function processLockedRssFeedImportRow(
         options.budgetMs ?? getUserImportExportConfig().rss_feed_import_budget_ms,
       ),
     })
+    if (result.error_code === 'RELATION_LIMIT_REACHED') {
+      await updateRssFeedImportRowFailed(row.id, result.error_code, {
+        isFinalAttempt: true,
+        rssFeedId: result.entity_id,
+      })
+      return
+    }
     await updateRssFeedImportRowCompleted(
       row.id,
       result.status as CompletedImportRssFeedStatus,

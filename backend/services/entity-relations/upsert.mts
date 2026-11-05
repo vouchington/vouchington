@@ -31,7 +31,6 @@ import { insertBidirectionalRelationRows } from './insert-bidirectional-rows.mts
 import { runRelationTransaction } from './run-relation-transaction.mts'
 import { lockBidirectionalRelationMutation } from './bidirectional-pair-lock.mts'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
-
 export type { UpsertEntityTypes, EntityIdentifier, EntityRelation }
 export type { UpsertEntityRelationOptions } from './upsert-options.mts'
 export { assertEntityRelationUpsertAllowed } from './assert-upsert-allowed.mts'
@@ -39,10 +38,13 @@ export const upsertEntityRelation = async (
   creator: BasicUser | null,
   relation: EntityRelationMetadata,
   subject: UpsertEntityTypes | EntityIdentifier,
-  objects: Array<UpsertEntityTypes | EntityIdentifier>,
+  inputObjects: Array<UpsertEntityTypes | EntityIdentifier>,
   options?: UpsertEntityRelationOptions,
 ): Promise<EntityRelation[]> => {
-  if (objects.length === 0) return []
+  if (inputObjects.length === 0) return []
+  const objects = [
+    ...new Map(inputObjects.map(object => [object.id.toLowerCase(), object])).values(),
+  ]
   const { deferredNotification, relationOptions, suppressNotificationReconcile } =
     prepareUpsertEntityRelationOptions(options)
   await assertEntityRelationUpsertAllowed(creator, relation, subject, objects, relationOptions)
@@ -129,7 +131,6 @@ export const upsertEntityRelation = async (
     }
     return relations
   }
-
   const reverseRelation = getEntityRelationMetadataOrThrow({
     subjectType: relation.object_type,
     objectType: relation.subject_type,

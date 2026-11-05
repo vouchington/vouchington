@@ -10421,7 +10421,8 @@
                               "error",
                               "followed",
                               "already_following",
-                              "recommendation_created"
+                              "recommendation_created",
+                              "skipped"
                             ]
                           }
                         },
@@ -14027,7 +14028,8 @@
                               "FEED_FETCH_TIMEOUT",
                               "CONTRIBUTION_LIMIT_EXCEEDED",
                               "ACCOUNT_SUSPENDED",
-                              "IMPORT_FAILED"
+                              "IMPORT_FAILED",
+                              "RELATION_LIMIT_REACHED"
                             ],
                             "type": "string"
                           },
@@ -14093,6 +14095,9 @@
                     },
                     "total_rows": {
                       "type": "number"
+                    },
+                    "skipped_rows": {
+                      "type": "number"
                     }
                   },
                   "required": [
@@ -14102,7 +14107,8 @@
                     "failed_rows",
                     "id",
                     "pending_rows",
-                    "total_rows"
+                    "total_rows",
+                    "skipped_rows"
                   ],
                   "type": "object"
                 },

@@ -2,13 +2,13 @@ import { apiSseFrame } from '@vouchington/utils/api-response-contract'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ImportProgressChunk, ImportProgressSubscription } from '@data-stores/valkey-pubsub'
 import { pipeImportProgressToSSE, pipeUserRssFeedImportProgressToSSE } from './stream-helpers.mts'
-
 const FAKE_USER_ID = '01900000-0000-7000-0000-000000000001'
 const pendingImport = {
   id: '01900000-0000-7000-8000-000000000123',
   total_rows: 1,
   completed_rows: 0,
   failed_rows: 0,
+  skipped_rows: 0,
   pending_rows: 1,
   completed_at: null,
   created_at: new Date(),
@@ -197,6 +197,40 @@ describe('pipeImportProgressToSSE', () => {
 })
 
 describe('pipeUserRssFeedImportProgressToSSE', () => {
+  it('reports skipped follows separately from failed rows in the terminal progress frame', async () => {
+    const emit =
+      vi.fn<
+        (
+          event: Parameters<Parameters<typeof pipeUserRssFeedImportProgressToSSE>[0]['emit']>[0],
+        ) => void
+      >()
+    await pipeUserRssFeedImportProgressToSSE({
+      batchId: pendingImport.id,
+      userId: FAKE_USER_ID,
+      initialImport: {
+        ...pendingImport,
+        failed_rows: 1,
+        skipped_rows: 1,
+        pending_rows: 0,
+        completed_at: new Date(),
+      },
+      emit,
+      disconnectSignal: new AbortController().signal,
+    })
+    expect(emit).toHaveBeenNthCalledWith(1, {
+      event: 'progress',
+      data: {
+        batchId: pendingImport.id,
+        total: 1,
+        completed: 0,
+        failed: 0,
+        skipped: 1,
+        done: true,
+      },
+    })
+    expect(emit).toHaveBeenNthCalledWith(2, { event: 'done', data: {} })
+  })
+
   it('does not wait when disconnect occurs immediately before the poll delay', async () => {
     const controller = new AbortController()
     const writes: string[] = []

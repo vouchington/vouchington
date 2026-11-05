@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS user_rss_feed_import_batches (
   total_rows INT NOT NULL CHECK (total_rows > 0),
   completed_rows INT NOT NULL DEFAULT 0 CHECK (completed_rows >= 0),
   failed_rows INT NOT NULL DEFAULT 0 CHECK (failed_rows >= 0),
+  skipped_rows INT NOT NULL DEFAULT 0 CHECK (skipped_rows >= 0 AND skipped_rows <= failed_rows),
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -188,9 +189,16 @@ BEFORE UPDATE ON user_rss_feed_import_rows
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- A limit-refused follow may later complete; other terminal outcomes remain immutable.
 CREATE OR REPLACE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle
 BEFORE UPDATE ON user_rss_feed_import_rows
 FOR EACH ROW
+WHEN (
+  OLD.failed_at IS NULL
+  OR OLD.error_message IS DISTINCT FROM 'RELATION_LIMIT_REACHED'
+  OR NEW.completed_at IS NULL
+  OR NEW.failed_at IS NOT NULL
+)
 EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at');
 
 -- A successful import keeps its outcome/input URL after its feed is hard-deleted. Only the
@@ -280,6 +288,7 @@ COMMENT ON COLUMN user_rss_feed_import_batches.should_follow_imported_feeds IS '
 COMMENT ON COLUMN user_rss_feed_import_batches.total_rows IS 'Total number of URLs in this import batch.';
 COMMENT ON COLUMN user_rss_feed_import_batches.completed_rows IS 'Number of rows that completed with a non-error outcome.';
 COMMENT ON COLUMN user_rss_feed_import_batches.failed_rows IS 'Number of rows that reached a terminal error outcome.';
+COMMENT ON COLUMN user_rss_feed_import_batches.skipped_rows IS 'Number of failed rows skipped because the follow relation limit was reached; included in failed_rows.';
 COMMENT ON COLUMN user_rss_feed_import_batches.completed_at IS 'When every row reached a terminal success or error outcome.';
 COMMENT ON TABLE user_rss_feed_import_rows IS 'Individual RSS feed import URLs and per-row processing outcomes.';
 COMMENT ON COLUMN user_rss_feed_import_rows.batch_id IS 'The RSS feed import batch this row belongs to.';

@@ -30,7 +30,8 @@ export async function pipeUserRssFeedImportProgressToSSE(options: {
     const chunk = {
       batchId: options.batchId,
       completed: current.completed_rows,
-      failed: current.failed_rows,
+      failed: current.failed_rows - current.skipped_rows,
+      skipped: current.skipped_rows,
       total: current.total_rows,
       done: current.pending_rows === 0 || current.completed_at !== null,
     }

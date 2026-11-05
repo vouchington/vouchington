@@ -3,6 +3,7 @@ import type CrawlerRss from '@services/crawler-rss'
 
 export type CreateSourceResult = {
   status: 'created' | 'upvoted'
+  follow_skipped: boolean
   rss_feed_id: string
   topic_id: string
   topic_slug: string

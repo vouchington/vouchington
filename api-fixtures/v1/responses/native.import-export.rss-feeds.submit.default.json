@@ -6,6 +6,7 @@
     "failed_rows": 0,
     "id": "70000000-0000-7000-8000-000000000001",
     "pending_rows": 2,
+    "skipped_rows": 0,
     "total_rows": 2
   },
   "status_url": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000000001"

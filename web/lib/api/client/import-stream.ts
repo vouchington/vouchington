@@ -8,6 +8,7 @@ export interface ImportProgress {
   batchId: string
   completed: number
   failed: number
+  skipped: number
   total: number
   done: boolean
 }
@@ -50,7 +51,8 @@ export async function streamImportProgress(
     const progress = {
       batchId: body.import.id,
       completed: body.import.completed_rows,
-      failed: body.import.failed_rows,
+      failed: body.import.failed_rows - body.import.skipped_rows,
+      skipped: body.import.skipped_rows,
       total: body.import.total_rows,
       done: body.import.pending_rows === 0 || body.import.completed_at !== null,
     }
