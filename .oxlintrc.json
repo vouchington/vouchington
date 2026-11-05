@@ -162,7 +162,7 @@
     "unicorn/no-unreadable-iife": "error",
     "unicorn/no-useless-collection-argument": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/no-useless-error-capture-stack-trace": "error",
-    "unicorn/no-useless-promise-resolve-reject": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/no-useless-promise-resolve-reject": "error",
     "unicorn/no-useless-switch-case": "error",
     "unicorn/no-useless-undefined": "off", // Policy: explicit undefined documents optional values and return contracts.
     "unicorn/no-zero-fractions": "off", // Intentional #1692: staged pedantic/style exclusion.

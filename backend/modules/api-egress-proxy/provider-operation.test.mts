@@ -22,7 +22,9 @@ describe('provider operation timeout', () => {
   it('maps abort and Undici timeout errors to an upstream 502', async () => {
     const abort = new DOMException('Request timed out', 'TimeoutError')
     await expect(
-      withProviderOperationTimeout('GitHub', async () => Promise.reject(abort)),
+      withProviderOperationTimeout('GitHub', async () => {
+        throw abort
+      }),
     ).rejects.toMatchObject({
       status: 502,
       cause: abort,

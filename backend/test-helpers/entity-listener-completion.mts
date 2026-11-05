@@ -160,12 +160,10 @@ export async function withEntityListenerCompletion<T>(
   }
   const unreported = takeCleanupErrors()
   if (unreported.length)
-    return Promise.reject(
-      new AggregateError(
-        failed ? [primary, ...unreported] : unreported,
-        'Entity listener action or completion failed',
-        { cause: failed ? primary : unreported[0] },
-      ),
+    throw new AggregateError(
+      failed ? [primary, ...unreported] : unreported,
+      'Entity listener action or completion failed',
+      { cause: failed ? primary : unreported[0] },
     )
   if (failed) return rejectEntityListenerReason<T>(primary)
   return result!

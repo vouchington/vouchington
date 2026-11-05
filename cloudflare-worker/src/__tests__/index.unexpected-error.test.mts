@@ -146,7 +146,9 @@ describe('worker unexpected-error boundary', () => {
     const env = {
       WEB_ORIGIN: 'https://web.example.com',
       RATE_LIMITER_GET_HEAD: {
-        limit: async () => Promise.reject(new Error('rate limiter unavailable')),
+        limit: async () => {
+          throw new Error('rate limiter unavailable')
+        },
       },
     } as Env
 

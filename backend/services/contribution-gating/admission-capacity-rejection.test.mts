@@ -19,9 +19,9 @@ const POLICY: ContributionPolicy = {
 }
 
 function failingQuery(failure: Error): TransactionQuery {
-  return vi.fn<() => Promise<never>>(async () =>
-    Promise.reject(failure),
-  ) as unknown as TransactionQuery
+  return vi.fn<() => Promise<never>>(async () => {
+    throw failure
+  }) as unknown as TransactionQuery
 }
 
 describe('assertContributionAdmissionCapacityOrReject', () => {

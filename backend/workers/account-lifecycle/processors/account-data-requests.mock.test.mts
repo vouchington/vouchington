@@ -194,7 +194,7 @@ describe('processExportRequest', () => {
 
   it.each([
     ['succeeds', async () => ({})],
-    ['fails', async () => Promise.reject(new Error('S3 error'))],
+    ['fails', () => Promise.reject(new Error('S3 error'))],
   ])(
     'deletes the orphaned S3 object when the request failed during upload and the delete %s',
     async (_outcome, deleteResult) => {

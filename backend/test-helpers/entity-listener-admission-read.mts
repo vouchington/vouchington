@@ -126,11 +126,9 @@ export function withEntityListenerAdmissionRead<T>(
         // The generic admission owner retains/reports raw rejection and drains every physical receipt.
       }
       if (secondary.length)
-        return Promise.reject(
-          new AggregateError(secondary, 'Admission read action failed', {
-            cause: failed ? primary : secondary[0],
-          }),
-        )
+        throw new AggregateError(secondary, 'Admission read action failed', {
+          cause: failed ? primary : secondary[0],
+        })
       if (failed) return rejectEntityListenerReason<T>(primary)
       if (outcome!.status !== 'fulfilled') throw new Error('Mutation did not fulfill')
       return outcome!.value

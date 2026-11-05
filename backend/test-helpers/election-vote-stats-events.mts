@@ -71,11 +71,11 @@ export function observeElectionTerminalSource(events: ElectionTerminalEventSourc
   return {
     ready: () => events.waitUntilReady(),
     async wait(id: string): Promise<ElectionTerminal> {
-      if (!id) return Promise.reject(new Error('A concrete owned job ID is required'))
-      if (closing) return Promise.reject(new Error('Owned election observer is closed'))
+      if (!id) throw new Error('A concrete owned job ID is required')
+      if (closing) throw new Error('Owned election observer is closed')
       if (errors.length) throw errors[0]
       const known = terminals.get(id)
-      if (known) return Promise.resolve(known)
+      if (known) return known
       const wait = Promise.withResolvers<ElectionTerminal>()
       void wait.promise.catch(() => {})
       const waits = pending.get(id) ?? []
