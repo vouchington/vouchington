@@ -20,10 +20,10 @@ export const searchUrlHostnames = async (
     results: results.map(({ cursor_score: _cursorScore, ...hostname }) => hostname),
     page_info: buildPageInfo(results, {
       hasNextPage,
-      getCursor:
+      getCursor: h =>
         options.sort === 'trust'
-          ? h => ({ score: h.cursor_score, id: h.id })
-          : h => ({ name: h.hostname, id: h.id }),
+          ? { score: h.cursor_score, id: h.id }
+          : { name: h.hostname, id: h.id },
     }),
   }
 }
