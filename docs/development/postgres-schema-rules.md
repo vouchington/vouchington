@@ -93,6 +93,9 @@ recovery follow [One current contract](../../AGENTS.md).
 - Relations and their votes have one table per relation, generated from metadata. Per-relation state
   is keyed by an enum generated from the same metadata; after launch a new relation adds its enum
   value in its own migration before anything uses it.
+- Always use `votes_score_sort` for vote-based sorting and `votes_score_net` for vote-based filters.
+  Sorting accounts for uncertainty in the vote evidence; filtering tests net weighted support.
+  Keeping these roles separate prevents confidence adjustments from changing which rows qualify.
 
 ## R4 — One shape per concept
 
