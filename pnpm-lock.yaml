@@ -7,6 +7,7 @@ settings:
 packageExtensionsChecksum: sha256-bbmVVRGKsBKLHaY0nkyFIslfKkPA9e0ePZh1EFdkZzU=
 
 importers:
+
   .:
     devDependencies:
       '@ast-grep/cli':
@@ -1793,12 +1794,6 @@ importers:
 
   backend/entrypoints/worker-io:
     dependencies:
-      '@workers/hacker-news-flags':
-        specifier: workspace:^
-        version: link:../../workers/hacker-news-flags
-      '@queues/hacker-news-flags':
-        specifier: workspace:^
-        version: link:../../queues/hacker-news-flags
       '@backend/service-registrations':
         specifier: workspace:^
         version: link:../../service-registrations
@@ -1844,6 +1839,9 @@ importers:
       '@queues/hacker-news':
         specifier: workspace:^
         version: link:../../queues/hacker-news
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
@@ -1907,6 +1905,9 @@ importers:
       '@workers/hacker-news':
         specifier: workspace:^
         version: link:../../workers/hacker-news
+      '@workers/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../workers/hacker-news-flags
       '@workers/memberships':
         specifier: workspace:^
         version: link:../../workers/memberships
@@ -6135,9 +6136,6 @@ importers:
 
   backend/services/data-retention:
     dependencies:
-      '@queues/hacker-news-flags':
-        specifier: workspace:^
-        version: link:../../queues/hacker-news-flags
       '@data-stores/analytics':
         specifier: workspace:^
         version: link:../../data-stores/analytics
@@ -6153,6 +6151,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@services/ap-inbox-activities':
         specifier: workspace:^
         version: link:../ap-inbox-activities
@@ -6263,9 +6264,6 @@ importers:
 
   backend/services/dynamic-config-admin:
     dependencies:
-      '@queues/hacker-news-flags':
-        specifier: workspace:^
-        version: link:../../queues/hacker-news-flags
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -6296,6 +6294,9 @@ importers:
       '@queues/hacker-news':
         specifier: workspace:^
         version: link:../../queues/hacker-news
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
@@ -7429,24 +7430,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-
-  backend/services/hacker-news-flags:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@queues/hacker-news-flags':
-        specifier: workspace:^
-        version: link:../../queues/hacker-news-flags
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../posts
-      '@services/rss-feed-items':
-        specifier: workspace:^
-        version: link:../rss-feed-items
-      uuid:
-        specifier: ^14.0.3
-        version: 14.0.3
 
   backend/services/honeypot:
     dependencies:
@@ -9974,9 +9957,6 @@ importers:
 
   backend/services/queue-monitoring:
     dependencies:
-      '@queues/hacker-news-flags':
-        specifier: workspace:^
-        version: link:../../queues/hacker-news-flags
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -10046,6 +10026,9 @@ importers:
       '@queues/hacker-news':
         specifier: workspace:^
         version: link:../../queues/hacker-news
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../../queues/heartbeat
@@ -11777,9 +11760,6 @@ importers:
 
   backend/services/urls:
     dependencies:
-      '@queues/hacker-news-flags':
-        specifier: workspace:^
-        version: link:../../queues/hacker-news-flags
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -11810,6 +11790,9 @@ importers:
       '@queues/hacker-news':
         specifier: workspace:^
         version: link:../../queues/hacker-news
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@services/crawlers':
         specifier: workspace:^
         version: link:../crawlers
@@ -14333,28 +14316,34 @@ importers:
 
   backend/workers/hacker-news-flags:
     dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
       '@queues/hacker-news-flags':
         specifier: workspace:^
         version: link:../../queues/hacker-news-flags
-      '@services/hacker-news-flags':
+      '@services/posts':
         specifier: workspace:^
-        version: link:../../services/hacker-news-flags
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@queues/hacker-news':
-        specifier: workspace:^
-        version: link:../../queues/hacker-news
+        version: link:../../services/posts
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items
       '@services/urls':
         specifier: workspace:^
         version: link:../../services/urls
+      glide-mq:
+        specifier: ^0.20.0
+        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
+    devDependencies:
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

@@ -1,7 +1,8 @@
-import { write } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
 import type { RepairFlagCursor } from '@queues/hacker-news-flags/types'
-import { recomputeHackerNewsFlags } from '@services/hacker-news-flags'
+import { pagePostHackerNewsFlagRepair } from '@services/posts/hacker-news-flag-pages'
+import { pageRssHackerNewsFlagRepair } from '@services/rss-feed-items/hacker-news-flag-pages'
+import { recomputeHackerNewsFlags } from './recompute.mts'
 
 /** Recent entity reconciliation cannot repair arbitrarily old URL/relation changes. */
 export async function repairHackerNewsFlags(
@@ -11,13 +12,10 @@ export async function repairHackerNewsFlags(
   const phase = data.phase ?? 'posts'
   const upperId = data.upperId ?? uuidv7()
   const afterId = data.afterId ?? '00000000-0000-0000-0000-000000000000'
-  const page = await write<{ id: string }>(
+  const ids =
     phase === 'posts'
-      ? `/* pageHackerNewsPostFlagRepair */ SELECT id FROM posts WHERE id > $1 AND id <= $2 ORDER BY id LIMIT $3`
-      : `/* pageHackerNewsRssFlagRepair */ SELECT id FROM rss_feed_items WHERE id > $1 AND id <= $2 ORDER BY id LIMIT $3`,
-    [afterId, upperId, size],
-  )
-  const ids = page.rows.map(row => row.id)
+      ? await pagePostHackerNewsFlagRepair(afterId, upperId, size)
+      : await pageRssHackerNewsFlagRepair(afterId, upperId, size)
   await recomputeHackerNewsFlags(phase === 'posts' ? { postIds: ids } : { rssFeedItemIds: ids })
   if (ids.length === size) return { kind: 'repair', phase, upperId, afterId: ids.at(-1) }
   return phase === 'posts' ? { kind: 'repair', phase: 'rss', upperId } : null
