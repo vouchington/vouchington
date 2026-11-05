@@ -52,8 +52,6 @@ import {
 
 type ProcessPsqlDependencies = PartitionCleanupDependencies & {
   createPartitions: typeof createMonthlyPartitions
-  dataRetentionCleanup: typeof runDataRetentionCleanup
-  enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
   refreshMaterializedView: typeof refreshMaterializedView
   runConfigDriven: typeof runConfigDriven
   runMigrations: typeof runMigrations
@@ -104,9 +102,8 @@ export default async function processPsql(
       if (copyrightFamilies) {
         return processCopyrightRetentionContinuation(data!.continuation!, options?.copyright)
       }
-      const cleanup = dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup
       const result = data?.continuation
-        ? await cleanup(getDataRetentionLimits(), {
+        ? await runDataRetentionCleanup(getDataRetentionLimits(), {
             ...options?.retention,
             activeCopyrightFamilies: [],
             classifierRecords: {
@@ -137,12 +134,10 @@ export default async function processPsql(
               active: data.continuation.activeAiUsage ?? false,
             },
           })
-        : await cleanup(getDataRetentionLimits(), options?.retention)
+        : await runDataRetentionCleanup(getDataRetentionLimits(), options?.retention)
       const aiFamilies = AI_RETENTION_FAMILIES.filter(family => result[family].hasMore)
       if (aiFamilies.length > 0) {
-        await (dependencies?.enqueueAIRetentionContinuations ?? enqueueAIRetentionContinuations)(
-          aiFamilies,
-        )
+        await enqueueAIRetentionContinuations(aiFamilies)
       }
       await admitDataRetentionContinuations(result, data?.continuation, jobId)
       await startAgentModerationRetentionContinuation(result.agentModerations.continuation, jobId)
