@@ -1,32 +1,31 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import {
   createReferralProgramFixture,
   createTestUser,
   createRandomString,
+  insertTestLocalFollow,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createUserReferralLink } from '@services/user-referral-program-links'
-import { createOfficialReferralLink } from '@services/official-referral-program-links'
+import {
+  createOfficialReferralLink,
+  deleteOfficialReferralLink,
+} from '@services/official-referral-program-links'
 import { getPrioritizedReferralLinks } from '../get-prioritized.mts'
+import { getAllReferralLinksPage } from '../show-all.mts'
 
 describe('getPrioritizedReferralLinks — official links', () => {
   let admin: PrivateUser
   let referralProgramId: string
   let testHostname: string
 
-  beforeAll(async () => {
-    // Ensure the @voucha system user exists
+  beforeEach(async () => {
     await upsertSystemUser('voucha', 'official')
-
-    const adminUser = await createTestUser({ administrator: true })
-    if (!adminUser) throw new Error('Failed to create admin user')
-    admin = adminUser
-
+    admin = await createTestUser({ administrator: true })
     const suffix = createRandomString(8)
     testHostname = `official-prioritized-${suffix}.example.com`
-
     const fixture = await createReferralProgramFixture({
       createdById: admin.id,
       randomSuffix: suffix,
@@ -36,109 +35,66 @@ describe('getPrioritizedReferralLinks — official links', () => {
     referralProgramId = fixture.referralProgramId
   })
 
-  it('official links appear as priority_group 0 and is_official true', async () => {
-    const suffix = createRandomString(8)
-    const link = await createOfficialReferralLink(admin, WEB_PROVENANCE, {
+  async function createOfficialLink(label: string) {
+    return createOfficialReferralLink(admin, WEB_PROVENANCE, {
       referral_program_id: referralProgramId,
-      url: `https://${testHostname}/ref/official-${suffix}`,
-      label: 'Official link',
+      url: `https://${testHostname}/ref/${label}-${createRandomString(8)}`,
+      label,
     })
+  }
 
+  it('lists official links in group 0 with the official account in the users map', async () => {
+    const link = await createOfficialLink('official')
     const viewer = await createTestUser()
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
 
-    const officialLinks = result.links.filter(l => l.is_official)
-    const thisLink = officialLinks.find(l => l.id === link.id)
-    expect(thisLink).toBeDefined()
-    expect(thisLink!.priority_group).toBe(0)
-    expect(thisLink!.is_official).toBe(true)
-    expect(thisLink!.referral_program_id).toBe(referralProgramId)
-    const allLinks = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, { all: true })
-    expect(allLinks.links.find(item => item.id === link.id)?.referral_program_id).toBe(
-      referralProgramId,
-    )
+    const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
+
+    const official = result.links.find(l => l.id === link.id)
+    expect(official).toMatchObject({
+      priority_group: 0,
+      is_official: true,
+      referral_program_id: referralProgramId,
+    })
+    expect(result.users[official!.user_id!]).toBeDefined()
+    const page = await getAllReferralLinksPage(viewer.id, referralProgramId)
+    expect(page.links.find(l => l.id === link.id)).toMatchObject({
+      priority_group: 0,
+      is_official: true,
+    })
   })
 
-  it('official links appear before personal links', async () => {
-    const suffix = createRandomString(8)
-
-    // Create a personal link for a regular user
-    const personalUser = await createTestUser()
-    if (!personalUser) throw new Error('Failed to create personal user')
+  it('puts official links before personal links, and keeps them for viewers with a network', async () => {
+    const [{ id: officialId }, personalUser, viewer] = await Promise.all([
+      createOfficialLink('official-order'),
+      createTestUser(),
+      createTestUser(),
+    ])
     await createUserReferralLink(personalUser, WEB_PROVENANCE, {
       user_id: personalUser.id,
       referral_program_id: referralProgramId,
-      url: `https://${testHostname}/ref/personal-${suffix}`,
-      label: 'Personal link',
+      url: `https://${testHostname}/ref/personal-${createRandomString(8)}`,
     })
 
-    // Create an official link
-    const officialSuffix = createRandomString(8)
-    await createOfficialReferralLink(admin, WEB_PROVENANCE, {
-      referral_program_id: referralProgramId,
-      url: `https://${testHostname}/ref/official-order-${officialSuffix}`,
-    })
+    const stranger = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
+    expect(stranger.links.map(l => [l.id === officialId, l.priority_group])).toEqual([
+      [true, 0],
+      [false, 5],
+    ])
 
-    const viewer = await createTestUser()
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
-
-    expect(result.links.length).toBeGreaterThan(0)
-
-    // Official links (group 0) come first
-    const firstNonOfficialIdx = result.links.findIndex(l => !l.is_official)
-    const lastOfficialIdx = result.links.map(l => l.is_official).lastIndexOf(true)
-
-    expect(lastOfficialIdx).toBeGreaterThanOrEqual(0)
-    expect(firstNonOfficialIdx).toBeGreaterThanOrEqual(0)
-    expect(lastOfficialIdx).toBeLessThan(firstNonOfficialIdx)
+    await insertTestLocalFollow(viewer.id, personalUser.id)
+    const withNetwork = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
+    expect(withNetwork.links.map(l => [l.id === officialId, l.priority_group])).toEqual([
+      [true, 0],
+      [false, 2],
+    ])
   })
 
-  it('personal links still appear in groups 1-5', async () => {
-    const suffix = createRandomString(8)
+  it('stops listing an official link once it is deleted', async () => {
+    const link = await createOfficialLink('official-deleted')
+    expect((await getPrioritizedReferralLinks(null, referralProgramId)).links).toHaveLength(1)
 
-    const personalUser = await createTestUser()
-    if (!personalUser) throw new Error('Failed to create personal user')
-    await createUserReferralLink(personalUser, WEB_PROVENANCE, {
-      user_id: personalUser.id,
-      referral_program_id: referralProgramId,
-      url: `https://${testHostname}/ref/personal-groups-${suffix}`,
-    })
+    await deleteOfficialReferralLink(admin, link.id)
 
-    const viewer = await createTestUser()
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
-
-    const personalLinks = result.links.filter(l => !l.is_official)
-    const personalLink = personalLinks.find(l => l.user_id === personalUser.id)
-    expect(personalLink).toBeDefined()
-    expect(personalLink!.priority_group).toBeGreaterThanOrEqual(1)
-    expect(personalLink!.priority_group).toBeLessThanOrEqual(5)
-    expect(personalLink!.referral_program_id).toBe(referralProgramId)
-  })
-
-  it('collectUsers does not fail for official links (user_id is not null for voucha)', async () => {
-    const suffix = createRandomString(8)
-    await createOfficialReferralLink(admin, WEB_PROVENANCE, {
-      referral_program_id: referralProgramId,
-      url: `https://${testHostname}/ref/users-check-${suffix}`,
-    })
-
-    const viewer = await createTestUser()
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
-
-    // Should not throw; official links have a real user_id (voucha user)
-    const officialLinks = result.links.filter(l => l.is_official)
-    expect(officialLinks.length).toBeGreaterThan(0)
-    for (const link of officialLinks) {
-      // user_id is set to voucha's actual user id (not null)
-      expect(link.user_id).toBeTruthy()
-    }
+    expect((await getPrioritizedReferralLinks(null, referralProgramId)).links).toHaveLength(0)
   })
 })

@@ -22,7 +22,8 @@ export function ReferralLinksAsideContent({
   response,
 }: ReferralLinksAsideContentProps) {
   const t = useTranslations()
-  const topLinks = response.links.slice(0, 5)
+  // The API already caps the list at the personalized-link limit, so it is shown as returned.
+  const topLinks = response.links
   if (topLinks.length === 0) return null
 
   return (

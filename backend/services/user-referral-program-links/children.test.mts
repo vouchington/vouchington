@@ -79,6 +79,44 @@ describe('children', () => {
     }
   })
 
+  it('returns the programs of the children it deletes, which can differ from the parent’s', async () => {
+    const suffix = Math.random().toString(36).slice(7)
+    const hostname = `children-other-${suffix}.com`
+    const other = await createReferralProgramFixture({
+      createdById: user.id,
+      randomSuffix: suffix,
+      hostname,
+      pathname: '/refer',
+    })
+    const makeParent = async () =>
+      createUserReferralLink(user, WEB_PROVENANCE, {
+        user_id: user.id,
+        referral_program_id: referralProgramId!,
+        url: `https://${testHostname}/refer?test=parent-${Math.random().toString(36).slice(7)}`,
+        label: 'Parent link',
+      })
+    const makeChild = async (parentLinkId: string) =>
+      (
+        await createChildReferralLinks(user.id, WEB_PROVENANCE, [
+          {
+            userId: user.id,
+            referralProgramId: other.referralProgramId,
+            url: `https://${hostname}/refer?test=child-${parentLinkId}`,
+            parentLinkId,
+          },
+        ])
+      )[0]!
+
+    const reconciled = await makeParent()
+    await makeChild(reconciled.id)
+    assert.deepEqual(await reconcileChildrenForParent(reconciled.id, []), [other.referralProgramId])
+    assert.deepEqual(await reconcileChildrenForParent(reconciled.id, []), [])
+
+    const deleted = await makeParent()
+    await makeChild(deleted.id)
+    assert.deepEqual(await softDeleteChildrenOfParent(deleted.id), [other.referralProgramId])
+  })
+
   it("softDeleteChildrenForUser soft-deletes all of a user's children across parents", async () => {
     onTestFinished(overrideDynamicConfigFieldsForTest(referralLinkCleanupConfig, { batch_size: 1 }))
     const otherUser = await createTestUser()

@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { contentHash, seedUuid } from './common.mts'
+import { seedLargeReferralProgram } from './referral-links-large-program.mts'
 
 // prioritized-referral-links needs a real referral-program topic (referral_program_topics)
 // plus one active, non-owner user_referral_program_links row so getPrioritizedReferralLinks'
@@ -39,6 +40,7 @@ export async function seedPrioritizedReferralLink(): Promise<void> {
 
     await transaction.commit()
   }
+  await seedLargeReferralProgram(referralProgramId)
 }
 
 // friend-recommendations needs a facebook_accounts row for seedUser plus a second, otherwise

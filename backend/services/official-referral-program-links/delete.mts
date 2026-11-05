@@ -4,6 +4,7 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { validateUUID } from '@modules/utils'
 import { currentUserCanManageOfficialReferralLink } from './authorization.mts'
+import { clearPrioritizedLinksCache } from '@services/user-referral-program-links/prioritized-links-cache'
 import { getOfficialReferralLink } from './get.mts'
 
 export async function deleteOfficialReferralLink(
@@ -24,4 +25,5 @@ export async function deleteOfficialReferralLink(
     WHERE id = ${linkId}
       AND deleted_at IS NULL
   `)
+  await clearPrioritizedLinksCache([link.referral_program_id])
 }

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import {
   createReferralProgramFixture,
@@ -17,13 +17,20 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links'
-import { getPrioritizedReferralLinks } from '../get-prioritized.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { loadOutOfNetworkLinks } from '../out-of-network.mts'
+import { prioritizedReferralLinksWorkConfig } from '../work-limits.mts'
 
 let admin: PrivateUser
 
 let referralProgramId: string
 
 let testHostname: string
+
+/** The uncached ranking behind the shared out-of-network list. */
+async function rankedLinks() {
+  return (await loadOutOfNetworkLinks(referralProgramId)).others
+}
 
 async function createUserWithLink(
   labelPrefix: string,
@@ -57,6 +64,15 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     referralProgramId = fixture.referralProgramId
   })
 
+  // These tests rank more links than the default limit keeps.
+  beforeEach(() => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(prioritizedReferralLinksWorkConfig, {
+        personalized_link_limit: 25,
+      }),
+    )
+  })
+
   it('counts contributions from topics linked to the referral program', async () => {
     const suffix = createRandomString(8)
 
@@ -68,8 +84,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     })
     await setTopicReferralProgramId(cardTopicId, referralProgramId)
 
-    const [viewer, { user: bothUser }, { user: oneUser }, { user: noneUser }] = await Promise.all([
-      createTestUser(),
+    const [{ user: bothUser }, { user: oneUser }, { user: noneUser }] = await Promise.all([
       createUserWithLink(`linked-both-${suffix}`),
       createUserWithLink(`linked-one-${suffix}`),
       createUserWithLink(`linked-none-${suffix}`),
@@ -102,11 +117,9 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
 
     // noneUser: no contributions
 
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
+    const result = await rankedLinks()
 
-    const group5 = result.links.filter(l => l.priority_group === 5)
+    const group5 = result.links
     const bothLink = group5.find(l => l.user_id === bothUser.id)
     const oneLink = group5.find(l => l.user_id === oneUser.id)
     const noneLink = group5.find(l => l.user_id === noneUser.id)
@@ -121,9 +134,8 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
   })
 
   it('excludes elapsed finite entitlement tiers while retaining direct provider tiers', async () => {
-    const [viewer, { user: elapsedAdmin }, { user: elapsedFamily }, { user: elapsedDirect }] =
+    const [{ user: elapsedAdmin }, { user: elapsedFamily }, { user: elapsedDirect }] =
       await Promise.all([
-        createTestUser(),
         createUserWithLink('elapsed-admin-tier'),
         createUserWithLink('elapsed-family-tier'),
         createUserWithLink('elapsed-direct-tier'),
@@ -153,9 +165,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
       updateTestMembershipExpiresAt(directMembership.id, elapsedAt),
     ])
 
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      all: true,
-    })
+    const result = await rankedLinks()
     const tierByUserId = Object.fromEntries(
       result.links.map(link => [link.user_id, link.tier_rank]),
     )
@@ -166,8 +176,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
   })
 
   it('returns review_post_id and review_avg_rating when user has a review', async () => {
-    const [viewer, { user: reviewer }, { user: noReviewer }] = await Promise.all([
-      createTestUser(),
+    const [{ user: reviewer }, { user: noReviewer }] = await Promise.all([
       createUserWithLink('review-info'),
       createUserWithLink('no-review-info'),
     ])
@@ -182,9 +191,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     })
     await insertTestPostReview(reviewPostId, referralProgramId, 4)
 
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
+    const result = await rankedLinks()
 
     const reviewerLink = result.links.find(l => l.user_id === reviewer.id)
     const noReviewerLink = result.links.find(l => l.user_id === noReviewer.id)
@@ -201,10 +208,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
   })
 
   it('picks the review with highest votes_score_net when user has multiple reviews', async () => {
-    const [viewer, { user: multiReviewer }] = await Promise.all([
-      createTestUser(),
-      createUserWithLink('multi-review'),
-    ])
+    const [{ user: multiReviewer }] = await Promise.all([createUserWithLink('multi-review')])
 
     const suffix = createRandomString(8)
     const [lowPostId, highPostId] = await Promise.all([
@@ -229,9 +233,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     ])
     await setPostVotesScoreUp(highPostId, 20)
 
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
+    const result = await rankedLinks()
 
     const link = result.links.find(l => l.user_id === multiReviewer.id)
     expect(link).toBeDefined()
@@ -251,8 +253,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     })
     await setTopicReferralProgramId(cardTopicId, referralProgramId)
 
-    const [viewer, { user: highUser }, { user: lowUser }] = await Promise.all([
-      createTestUser(),
+    const [{ user: highUser }, { user: lowUser }] = await Promise.all([
       createUserWithLink(`linked-score-high-${suffix}`),
       createUserWithLink(`linked-score-low-${suffix}`),
     ])
@@ -274,11 +275,9 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
 
     await setPostVotesScoreUp(highPostId, 10)
 
-    const result = await getPrioritizedReferralLinks(viewer!.id, referralProgramId, {
-      limit: 100,
-    })
+    const result = await rankedLinks()
 
-    const group5 = result.links.filter(l => l.priority_group === 5)
+    const group5 = result.links
     const highLink = group5.find(l => l.user_id === highUser.id)
     const lowLink = group5.find(l => l.user_id === lowUser.id)
 

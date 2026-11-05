@@ -6,6 +6,7 @@ import { validateUUID } from '@modules/utils'
 import { currentUserCanUpdateUserReferralLink } from './authorization.mts'
 import { getUserReferralLink } from './get.mts'
 import { softDeleteChildrenOfParent } from './children.mts'
+import { clearPrioritizedLinksCache } from './prioritized-links-cache.mts'
 import { assertUserReferralLinkScope, type UserReferralLinkScope } from './scope.mts'
 
 export async function deleteUserReferralLink(
@@ -26,6 +27,7 @@ export async function deleteUserReferralLink(
   // FK `ON DELETE CASCADE` on parent_link_id only fires on a hard-delete; a parent's
   // soft-delete must explicitly cascade to soft-delete its unfurled children too.
   await using query = await beginTransaction()
+  let childProgramIds: string[] = []
   {
     await write(
       sql`/* deleteUserReferralLink */
@@ -37,7 +39,9 @@ export async function deleteUserReferralLink(
       { query },
     )
 
-    await softDeleteChildrenOfParent(linkId, { query })
+    childProgramIds = await softDeleteChildrenOfParent(linkId, { query })
   }
   await query.commit()
+  // Children live in other programs than the parent; their cached lists hold them too.
+  await clearPrioritizedLinksCache([...new Set([link.referral_program_id, ...childProgramIds])])
 }

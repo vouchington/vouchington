@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { ReferralLinkCard } from './referral-link-card'
 import { getAllReferralLinks } from '@/lib/api/client/referral-links'
 import onError from '@/lib/on-error'
@@ -39,6 +40,8 @@ export function ReferralLinksShowAll({ referralProgramId }: ReferralLinksShowAll
   const t = useTranslations()
   const [data, setData] = useState<PrioritizedReferralLinksResponse | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [fetchError, setFetchError] = useState<Error | null>(null)
 
   async function handleShowAll() {
     setLoading(true)
@@ -56,6 +59,25 @@ export function ReferralLinksShowAll({ referralProgramId }: ReferralLinksShowAll
     }
   }
 
+  async function handleLoadMore() {
+    const cursor = data?.page_info?.end_cursor
+    if (!data || !cursor) return
+    setLoadingMore(true)
+    try {
+      const next = await getAllReferralLinks(referralProgramId, cursor)
+      setData({
+        links: [...data.links, ...next.links],
+        users: { ...data.users, ...next.users },
+        page_info: next.page_info,
+      })
+      setFetchError(null)
+    } catch (err) {
+      setFetchError(err instanceof Error ? err : new Error(String(err)))
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
   if (data) {
     return (
       <div className='space-y-4'>
@@ -65,7 +87,16 @@ export function ReferralLinksShowAll({ referralProgramId }: ReferralLinksShowAll
         >
           {t('extracted.referralLinks.referralLinksShowAll.allReferralLinks_6692443e')}
         </h3>
-        <ShowAllList data={data} />
+        <InfiniteScroll
+          hasNextPage={data.page_info?.has_next_page ?? false}
+          endCursor={data.page_info?.end_cursor ?? null}
+          onLoadMore={handleLoadMore}
+          loadingMore={loadingMore}
+          fetchError={fetchError}
+          clearError={() => setFetchError(null)}
+        >
+          <ShowAllList data={data} />
+        </InfiniteScroll>
       </div>
     )
   }

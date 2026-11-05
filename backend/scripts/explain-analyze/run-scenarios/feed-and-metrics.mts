@@ -5,6 +5,7 @@ import { seedUuid } from '../seed-data/common.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import * as services from '../run-services.mts'
 import { runFeedRssScenarios } from './feed-rss.mts'
+import { runPrioritizedReferralLinkScenarios } from './prioritized-referral-links.mts'
 import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
 
 const {
@@ -16,7 +17,6 @@ const {
   getPostIdsByUrlIds,
   getPostMetricsByAny,
   getPostMetricsByAnyBatch,
-  getPrioritizedReferralLinks,
   getTopicIds,
   getTopicMetricsByAnyBatch,
   getTopicViewerCounts,
@@ -53,12 +53,7 @@ export async function runFeedAndMetricScenarios() {
     `${SEED_PREFIX}-0200-7000-8000-000000000002`,
   ]
   await runAndCapture('top-urls-by-hostname-ids', () => getTopUrlsByHostnameIds(seedHostnameIds))
-  const seedReferralProgramId = `${SEED_PREFIX}-0900-7000-8000-000000000000`
-  await runAndCapture('prioritized-referral-links', async () => {
-    await getPrioritizedReferralLinks(seedUser.id, seedReferralProgramId, {
-      limit: 10,
-    })
-  })
+  await runPrioritizedReferralLinkScenarios()
   const seedUrlIds = [
     `${SEED_PREFIX}-0300-7000-8000-000000000000`,
     `${SEED_PREFIX}-0300-7000-8000-000000000001`,

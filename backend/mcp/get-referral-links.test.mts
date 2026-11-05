@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import getReferralLinksTool from './get-referral-links.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { prioritizedReferralLinksWorkConfig } from '@services/prioritized-referral-links/work-limits'
 import {
   createRandomString,
   createReferralProgramFixture,
@@ -133,6 +135,114 @@ describe('get-referral-links', () => {
       expect(result.success).toBe(true)
       const successResult = result as Extract<typeof result, { success: true }>
       expect(successResult.links[0]).toMatchObject({ id: link.id, label: null })
+    })
+
+    it('pages every visible link newest first with all, limit and after', async () => {
+      const user = await createTestUser()
+      const { cardTopicId, referralProgramId, hostname } = await createCardWithReferralProgram(user)
+      const first = await createLinkForProgram({ referralProgramId, hostname })
+      const second = await createLinkForProgram({ referralProgramId, hostname })
+      const execute = getReferralLinksTool.function(user)
+
+      const page1 = (await execute({ topic_id: cardTopicId, all: true, limit: 1 })) as Extract<
+        Awaited<ReturnType<typeof execute>>,
+        { success: true }
+      >
+      expect(page1.links.map(l => l.id)).toEqual([second.link.id])
+      expect(page1.page_info.has_next_page).toBe(true)
+
+      const page2 = (await execute({
+        topic_id: cardTopicId,
+        all: true,
+        limit: 1,
+        after: page1.page_info!.end_cursor!,
+      })) as Extract<Awaited<ReturnType<typeof execute>>, { success: true }>
+      expect(page2.links.map(l => l.id)).toEqual([first.link.id])
+      expect(page2.page_info.has_next_page).toBe(false)
+    })
+
+    it('pages the shared ranked list with limit and after, clamping an oversized limit', async () => {
+      const user = await createTestUser()
+      const { cardTopicId, referralProgramId, hostname } = await createCardWithReferralProgram(user)
+      const created = []
+      for (let i = 0; i < 3; i++)
+        created.push(await createLinkForProgram({ referralProgramId, hostname }))
+      const execute = getReferralLinksTool.function(user)
+      type Success = Extract<Awaited<ReturnType<typeof execute>>, { success: true }>
+
+      const page1 = (await execute({ topic_id: cardTopicId, limit: 2 })) as Success
+      expect(page1.links).toHaveLength(2)
+      expect(page1.page_info.has_next_page).toBe(true)
+      const page2 = (await execute({
+        topic_id: cardTopicId,
+        limit: 2,
+        after: page1.page_info.end_cursor!,
+      })) as Success
+      expect(page2.links).toHaveLength(1)
+      expect(page2.page_info.has_next_page).toBe(false)
+      expect(new Set([...page1.links, ...page2.links].map(l => l.id))).toEqual(
+        new Set(created.map(c => c.link.id)),
+      )
+
+      const oversized = (await execute({ topic_id: cardTopicId, limit: 1000 })) as Success
+      expect(oversized.links).toHaveLength(3)
+    })
+
+    it('uses the configured default page size when limit is omitted', async () => {
+      const user = await createTestUser()
+      const { cardTopicId, referralProgramId, hostname } = await createCardWithReferralProgram(user)
+      for (let i = 0; i < 5; i++) await createLinkForProgram({ referralProgramId, hostname })
+      onTestFinished(
+        overrideDynamicConfigFieldsForTest(prioritizedReferralLinksWorkConfig, {
+          personalized_link_limit: 3,
+        }),
+      )
+
+      const result = await getReferralLinksTool.function(user)({ topic_id: cardTopicId })
+
+      expect(result.success && result.links).toHaveLength(3)
+    })
+
+    it('rejects a limit below 1 or not an integer, with and without all', async () => {
+      const user = await createTestUser()
+      const { cardTopicId } = await createCardWithReferralProgram(user)
+      const execute = getReferralLinksTool.function(user)
+
+      for (const limit of [0, -3, 1.5]) {
+        expect(await execute({ topic_id: cardTopicId, limit })).toEqual({
+          success: false,
+          error: 'Invalid limit',
+        })
+        expect(await execute({ topic_id: cardTopicId, limit, all: true })).toEqual({
+          success: false,
+          error: 'Invalid limit',
+        })
+      }
+    })
+
+    it('rejects a malformed cursor without all', async () => {
+      const user = await createTestUser()
+      const { cardTopicId } = await createCardWithReferralProgram(user)
+
+      const result = await getReferralLinksTool.function(user)({
+        topic_id: cardTopicId,
+        after: 'not-a-cursor',
+      })
+
+      expect(result).toEqual({ success: false, error: 'Invalid cursor' })
+    })
+
+    it('rejects a malformed cursor with all', async () => {
+      const user = await createTestUser()
+      const { cardTopicId } = await createCardWithReferralProgram(user)
+
+      const result = await getReferralLinksTool.function(user)({
+        topic_id: cardTopicId,
+        all: true,
+        after: 'not-a-cursor',
+      })
+
+      expect(result).toEqual({ success: false, error: 'Invalid cursor' })
     })
   })
 })

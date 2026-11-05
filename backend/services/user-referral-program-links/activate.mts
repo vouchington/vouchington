@@ -5,6 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import { validateUUID } from '@modules/utils'
 import { currentUserCanUpdateUserReferralLink } from './authorization.mts'
 import { getUserReferralLink } from './get.mts'
+import { clearPrioritizedLinksCache } from './prioritized-links-cache.mts'
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
 import { assertUserReferralLinkScope, type UserReferralLinkScope } from './scope.mts'
@@ -34,6 +35,7 @@ export async function activateUserReferralLink(
       RETURNING `.append(userReferralLinkColumns()),
   )
 
+  await clearPrioritizedLinksCache([link.referral_program_id])
   return rows[0] ?? null
 }
 
@@ -62,5 +64,6 @@ export async function deactivateUserReferralLink(
       RETURNING `.append(userReferralLinkColumns()),
   )
 
+  await clearPrioritizedLinksCache([link.referral_program_id])
   return rows[0] ?? null
 }

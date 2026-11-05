@@ -87,6 +87,7 @@
     "@services/post-content-limits": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",
+    "@services/prioritized-referral-links": "workspace:^",
     "@services/recaptcha": "workspace:^",
     "@services/recommended-topics": "workspace:^",
     "@services/referral-link-unfurl": "workspace:^",

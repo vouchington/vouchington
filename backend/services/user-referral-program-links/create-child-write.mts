@@ -13,7 +13,10 @@ type ResolvedChildReferralLink = {
   label: string | null
 }
 
-/** Validated unfurl candidates, with manual-link conflicts left untouched. */
+/**
+ * Validated unfurl candidates, with manual-link conflicts left untouched. Runs in the caller's
+ * transaction, so the caller clears the prioritized-links cache after commit.
+ */
 export async function insertChildReferralLinkRows(
   provenance: ContentProvenance,
   inputs: ResolvedChildReferralLink[],
