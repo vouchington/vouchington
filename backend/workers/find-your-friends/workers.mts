@@ -9,7 +9,6 @@ import {
   getFriendSyncProviderUserId,
   type FriendSyncProvider,
 } from '@services/friend-recommendations/accounts-to-sync'
-import type { FindYourFriendsSyncJobs } from '@queues/find-your-friends/types'
 import type { Job } from 'glide-mq'
 
 export const findYourFriends = createWorker(
@@ -21,42 +20,31 @@ export const findYourFriends = createWorker(
 
     switch (orderingKey) {
       case 'sync_facebook': {
-        switch (job.name as FindYourFriendsSyncJobs) {
-          case 'syncFacebookFriends': {
-            const facebookAccountId = job.data?.facebookAccountId
-            if (!facebookAccountId)
-              throw new Error('syncFacebookFriends: facebookAccountId is required')
-            return syncProviderFriends('facebook', facebookAccountId, syncFacebookFriends)
-          }
-          default:
-            throw new Error(`find-your-friends sync_facebook job ${job.name} not found`)
-        }
+        if (job.name !== 'syncFacebookFriends')
+          throw new Error(`find-your-friends sync_facebook job ${job.name} not found`)
+        const facebookAccountId = job.data?.facebookAccountId
+        if (!facebookAccountId)
+          throw new Error('syncFacebookFriends: facebookAccountId is required')
+        return syncProviderFriends('facebook', facebookAccountId, syncFacebookFriends)
       }
       case 'sync_x': {
-        switch (job.name as FindYourFriendsSyncJobs) {
-          case 'syncXFriends': {
-            const xAccountId = job.data?.xAccountId
-            if (!xAccountId) throw new Error('syncXFriends: xAccountId is required')
-            return syncProviderFriends('x', xAccountId, syncXFriends)
-          }
-          default:
-            throw new Error(`find-your-friends sync_x job ${job.name} not found`)
-        }
+        if (job.name !== 'syncXFriends')
+          throw new Error(`find-your-friends sync_x job ${job.name} not found`)
+        const xAccountId = job.data?.xAccountId
+        if (!xAccountId) throw new Error('syncXFriends: xAccountId is required')
+        return syncProviderFriends('x', xAccountId, syncXFriends)
       }
       case 'sync_github': {
-        switch (job.name as FindYourFriendsSyncJobs) {
-          case 'syncGithubFriends': {
-            const githubAccountId = job.data?.githubAccountId
-            if (!githubAccountId) throw new Error('syncGithubFriends: githubAccountId is required')
-            return syncProviderFriends('github', githubAccountId, syncGithubFriends)
-          }
-          default:
-            throw new Error(`find-your-friends sync_github job ${job.name} not found`)
-        }
+        if (job.name !== 'syncGithubFriends')
+          throw new Error(`find-your-friends sync_github job ${job.name} not found`)
+        const githubAccountId = job.data?.githubAccountId
+        if (!githubAccountId) throw new Error('syncGithubFriends: githubAccountId is required')
+        return syncProviderFriends('github', githubAccountId, syncGithubFriends)
       }
-      default:
-        throw new Error(`Unknown ordering key: ${orderingKey}`)
+      case undefined:
+        break
     }
+    throw new Error(`Unknown ordering key: ${orderingKey}`)
   },
   {
     dedicatedCommandClient: true,

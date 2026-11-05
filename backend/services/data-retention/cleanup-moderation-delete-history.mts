@@ -13,9 +13,8 @@ export async function deleteExpiredModerationHistory(
 ): Promise<number> {
   if (ids.length === 0) return 0
   let rowCount: number | null
-  switch (kind) {
-    case 'reports':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:reports */
+  if (kind === 'reports') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:reports */
         DELETE FROM moderation_reports report
         WHERE report.id = ANY(${ids}::uuid[])
           AND report.reviewed_at < ${now}::timestamptz - interval '24 months'
@@ -26,9 +25,8 @@ export async function deleteExpiredModerationHistory(
               AND conversation.resolved_at IS NULL AND conversation.deleted_at IS NULL
           )
       `))
-      break
-    case 'cases':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:cases */
+  } else if (kind === 'cases') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:cases */
         DELETE FROM moderation_cases moderation_case
         WHERE moderation_case.id = ANY(${ids}::uuid[])
           AND moderation_case.resolved_at < ${now}::timestamptz - interval '24 months'
@@ -38,23 +36,20 @@ export async function deleteExpiredModerationHistory(
           AND NOT EXISTS (SELECT 1 FROM community_bans ban WHERE ban.case_id = moderation_case.id)
           AND NOT EXISTS (SELECT 1 FROM moderation_report_judgements judgement WHERE judgement.case_id = moderation_case.id)
       `))
-      break
-    case 'appeals':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:appeals */
+  } else if (kind === 'appeals') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:appeals */
         DELETE FROM moderation_appeals appeal
         WHERE appeal.id = ANY(${ids}::uuid[])
           AND appeal.resolved_at < ${now}::timestamptz - make_interval(months => ${MODERATION_APPEAL_HISTORY_RETENTION_MONTHS})
       `))
-      break
-    case 'disputes':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:disputes */
+  } else if (kind === 'disputes') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:disputes */
         DELETE FROM review_disputes dispute
         WHERE dispute.id = ANY(${ids}::uuid[])
           AND dispute.resolved_at < ${now}::timestamptz - interval '24 months'
       `))
-      break
-    case 'actions':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:actions */
+  } else if (kind === 'actions') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:actions */
         DELETE FROM moderator_actions action
         WHERE action.id = ANY(${ids}::uuid[])
           AND (
@@ -71,9 +66,8 @@ export async function deleteExpiredModerationHistory(
               AND action.id < fn_min_uuidv7(${now}::timestamptz - interval '24 months'))
           )
       `))
-      break
-    case 'training_feedbacks':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:trainingFeedbacks */
+  } else if (kind === 'training_feedbacks') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:trainingFeedbacks */
         DELETE FROM moderation_training_feedbacks feedback
         WHERE feedback.id = ANY(${ids}::uuid[])
           AND feedback.id < ${sixMonthUpperId(now)}::uuid
@@ -96,9 +90,8 @@ export async function deleteExpiredModerationHistory(
             ), FALSE)
           )
       `))
-      break
-    case 'judgements':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:judgements */
+  } else if (kind === 'judgements') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:judgements */
         DELETE FROM moderation_report_judgements judgement
         WHERE judgement.id = ANY(${ids}::uuid[])
           AND judgement.dispatched_at IS NOT NULL
@@ -138,10 +131,7 @@ export async function deleteExpiredModerationHistory(
             ))
           )
       `))
-      break
-    default:
-      throw new Error(`Not a moderation history cleanup kind: ${kind}`)
-  }
+  } else throw new Error(`Not a moderation history cleanup kind: ${kind}`)
   return rowCount ?? 0
 }
 

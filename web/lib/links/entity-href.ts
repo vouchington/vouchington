@@ -139,6 +139,7 @@ export function podcastCategoryHref(category: string | SlugInput): string {
 }
 
 export function userTabForPostType(postType: string | undefined): UserTab | undefined {
+  if (postType === undefined) return undefined
   switch (postType) {
     case 'review': {
       return 'reviews'

@@ -159,19 +159,10 @@ export async function enqueueOAuthFriendSyncBestEffort(
   account: OAuthAccount,
 ): Promise<void> {
   try {
-    switch (provider) {
-      case 'facebook':
-        await enqueueSyncFacebookFriends(requireFriendSyncAccountId(account))
-        return
-      case 'x':
-        await enqueueSyncXFriends(requireFriendSyncAccountId(account))
-        return
-      case 'github':
-        await enqueueSyncGithubFriends(requireFriendSyncAccountId(account))
-        break
-      default:
-        break
-    }
+    if (provider === 'facebook')
+      await enqueueSyncFacebookFriends(requireFriendSyncAccountId(account))
+    if (provider === 'x') await enqueueSyncXFriends(requireFriendSyncAccountId(account))
+    if (provider === 'github') await enqueueSyncGithubFriends(requireFriendSyncAccountId(account))
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
   }

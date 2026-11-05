@@ -62,7 +62,19 @@ const invalidateFollowMetrics = async (
       case 'rss_feed':
         await enqueueBulkRefreshUserMetricsById([userId])
         break
-      default:
+      case 'card':
+      case 'community':
+      case 'discussion':
+      case 'image':
+      case 'referral_program':
+      case 'remote_actor':
+      case 'review':
+      case 'rewards_program':
+      case 'rewards_program_status':
+      case 'rss_feed_item':
+      case 'topic_alias':
+      case 'url':
+      case 'url_hostname':
         break
     }
   } catch (err) {

@@ -1,10 +1,10 @@
 # Stripe Events
 
 Canonical list of Stripe events the application handles. The source of truth is the
-`switch (event.type)` inside `handleStripeEvent` in
+`handleStripeEvent` in
 [`backend/services/stripe-event-processing/event-handlers.mts`](../../backend/services/stripe-event-processing/event-handlers.mts).
 
-**When you add or remove a `case` in that switch, update this file in the same commit.**
+**When you change a processed event type, update this file in the same commit.**
 
 ## Subscribe to (processed)
 
@@ -62,6 +62,6 @@ need to subscribe to them; the destination tolerates them if Stripe sends them.
 
 ## See Also
 
-- Handler switch: [`backend/services/stripe-event-processing/event-handlers.mts`](../../backend/services/stripe-event-processing/event-handlers.mts)
+- Event handler: [`backend/services/stripe-event-processing/event-handlers.mts`](../../backend/services/stripe-event-processing/event-handlers.mts)
 - Event ingestion: [`docs/overview/architecture/queues/README.md`](../overview/architecture/queues/README.md)
 - Stripe service: [`docs/overview/architecture/services/README.md`](../overview/architecture/services/README.md)

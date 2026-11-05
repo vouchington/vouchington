@@ -12,30 +12,26 @@ export async function deleteExpiredModerationSanctions(
   if (ids.length === 0) return 0
   const thirtyDaysAgo = daysBefore(now, 30)
   let rowCount: number | null
-  switch (kind) {
-    case 'integrity_flags':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:integrityFlags */
+  if (kind === 'integrity_flags') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:integrityFlags */
         DELETE FROM report_integrity_flags flag
         WHERE flag.id = ANY(${ids}::uuid[])
           AND flag.resolved_at < ${now}::timestamptz - interval '180 days'
       `))
-      break
-    case 'report_penalties':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:reportPenalties */
+  } else if (kind === 'report_penalties') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:reportPenalties */
         DELETE FROM report_abuse_penalties penalty
         WHERE penalty.id = ANY(${ids}::uuid[])
           AND penalty.revoked_at < ${now}::timestamptz - interval '180 days'
       `))
-      break
-    case 'vote_penalties':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:votePenalties */
+  } else if (kind === 'vote_penalties') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:votePenalties */
         DELETE FROM vote_weight_penalties penalty
         WHERE penalty.id = ANY(${ids}::uuid[])
           AND penalty.revoked_at < ${now}::timestamptz - interval '180 days'
       `))
-      break
-    case 'warnings':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:warnings */
+  } else if (kind === 'warnings') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:warnings */
         DELETE FROM user_warnings warning
         WHERE warning.id = ANY(${ids}::uuid[])
           AND (warning.id < fn_min_uuidv7(${now}::timestamptz - interval '12 months')
@@ -44,9 +40,8 @@ export async function deleteExpiredModerationSanctions(
             SELECT 1 FROM moderation_appeals appeal WHERE appeal.user_warning_id = warning.id
           )
       `))
-      break
-    case 'suspensions':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:suspensions */
+  } else if (kind === 'suspensions') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:suspensions */
         DELETE FROM user_suspensions suspension
         WHERE suspension.id = ANY(${ids}::uuid[])
           AND suspension.lifted_at < ${now}::timestamptz - interval '12 months'
@@ -54,9 +49,8 @@ export async function deleteExpiredModerationSanctions(
             SELECT 1 FROM moderation_appeals appeal WHERE appeal.user_suspension_id = suspension.id
           )
       `))
-      break
-    case 'bans':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:bans */
+  } else if (kind === 'bans') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:bans */
         DELETE FROM community_bans ban
         WHERE ban.id = ANY(${ids}::uuid[])
           AND COALESCE(ban.lifted_at, ban.expires_at) < ${now}::timestamptz - interval '12 months'
@@ -64,24 +58,19 @@ export async function deleteExpiredModerationSanctions(
             SELECT 1 FROM moderation_appeals appeal WHERE appeal.community_ban_id = ban.id
           )
       `))
-      break
-    case 'notes':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:notes */
+  } else if (kind === 'notes') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:notes */
         DELETE FROM user_moderator_notes note
         WHERE note.id = ANY(${ids}::uuid[])
           AND note.deleted_at < ${thirtyDaysAgo}
       `))
-      break
-    case 'applications':
-      ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:applications */
+  } else if (kind === 'applications') {
+    ;({ rowCount } = await query(sql`/* deleteExpiredModerationSanctions:applications */
         DELETE FROM community_applications application
         WHERE application.id = ANY(${ids}::uuid[])
           AND COALESCE(application.approved_at, application.rejected_at) < ${now}::timestamptz - interval '12 months'
       `))
-      break
-    default:
-      throw new Error(`Not a moderation sanction cleanup kind: ${kind}`)
-  }
+  } else throw new Error(`Not a moderation sanction cleanup kind: ${kind}`)
   return rowCount ?? 0
 }
 

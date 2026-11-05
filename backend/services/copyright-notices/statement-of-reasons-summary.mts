@@ -57,7 +57,8 @@ function copyrightRestorationCauseText(cause: CopyrightStatementInput['restorati
       return 'a complaint reversed the decision'
     case 'counter_notice_window':
       return 'the counter-notice waiting period ended'
-    default:
-      throw new Error('Restoration cause is required')
+    case undefined:
+      break
   }
+  throw new Error('Restoration cause is required')
 }

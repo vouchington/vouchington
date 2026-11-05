@@ -39,9 +39,12 @@ function prepareValue(value: unknown, contract: QueryParameterContract): unknown
       return parseWireNumber(value, Number.isFinite)
     case 'csv-array':
       return prepareCsvArray(value)
-    default:
-      return value
+    case 'enum':
+    case 'string':
+    case 'uuid-or-uri':
+      break
   }
+  return value
 }
 
 function parseWireBoolean(value: unknown): unknown {

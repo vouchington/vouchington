@@ -45,25 +45,19 @@ function buildPostsForDayQuery(
 }
 
 function reviewUpdatedAtColumn(postType: SitemapPostType): SQLStatement {
-  switch (postType) {
-    case 'review':
-      return sql`pr.updated_at AS review_updated_at`
-    default:
-      return sql`NULL::TIMESTAMPTZ AS review_updated_at`
-  }
+  return postType === 'review'
+    ? sql`pr.updated_at AS review_updated_at`
+    : sql`NULL::TIMESTAMPTZ AS review_updated_at`
 }
 
 function reviewRatingsJoin(postType: SitemapPostType): SQLStatement {
-  switch (postType) {
-    case 'review':
-      return sql`LEFT JOIN LATERAL (
+  return postType === 'review'
+    ? sql`LEFT JOIN LATERAL (
       SELECT MAX(prtr.updated_at) AS updated_at
       FROM post_review_topic_ratings prtr
       WHERE prtr.post_id = p.id
     ) pr ON TRUE`
-    default:
-      return sql``
-  }
+    : sql``
 }
 
 function buildLatestPostSlugJoinSql() {

@@ -70,7 +70,16 @@ export async function currentUserCanBookmarkTarget(
         }
         throw err
       }
-    default:
-      return false
+    case 'card':
+    case 'discussion':
+    case 'image':
+    case 'referral_program':
+    case 'remote_actor':
+    case 'review':
+    case 'rewards_program':
+    case 'rewards_program_status':
+    case 'topic_alias':
+      break
   }
+  return false
 }

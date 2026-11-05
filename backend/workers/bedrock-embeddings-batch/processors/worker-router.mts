@@ -75,9 +75,10 @@ export const processBedrockEmbeddingsBatchJob = async (
           throw new UnrecoverableError(`Unknown reconciliation job type: ${job.name}`)
       }
     }
-    default:
-      throw new Error(`Unknown ordering key: ${orderingKey}`)
+    case undefined:
+      break
   }
+  throw new Error(`Unknown ordering key: ${orderingKey}`)
 }
 
 function assertReconciliationCursor(after: unknown, scope: string): void {

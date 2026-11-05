@@ -51,9 +51,11 @@ async function labelsFor(
       return label(await getUrlsByIdBatch(entityIds), 'url')
     case 'rss_feed':
       return label(await getRssFeedByIdCachedBatch(entityIds), 'title')
-    default:
-      return entityIds.map(() => null)
+    case 'post':
+    case 'topic':
+      break
   }
+  return entityIds.map(() => null)
 }
 
 /** A page of community list entries, each with its label. Every entry is of `itemType`. */

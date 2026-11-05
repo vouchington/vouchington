@@ -11,13 +11,12 @@ export async function readCopyrightThreadScreeningPage(
   batchSize: number,
   cursor: BlockerCursor,
 ): Promise<BlockerCursor & { blocked: boolean }> {
-  switch (cursor.phase) {
-    case 'form_intake': {
-      const { rows } = await transaction<{
-        id: string
-        source_kind: string
-        reviewed: boolean
-      }>(sql`
+  if (cursor.phase === 'form_intake') {
+    const { rows } = await transaction<{
+      id: string
+      source_kind: string
+      reviewed: boolean
+    }>(sql`
         /* scanCopyrightThreadFormIntakeBlocker */
         SELECT intake.id, submission.source_kind,
           review.id IS NOT NULL AS reviewed
@@ -27,14 +26,14 @@ export async function readCopyrightThreadScreeningPage(
         LEFT JOIN copyright_notice_form_intake_reviews review
           ON review.copyright_notice_form_intake_id = intake.id
         WHERE intake.copyright_notice_id = ${noticeId} LIMIT 1`)
-      const intake = rows[0]
-      if (!intake || intake.reviewed)
-        return advanceCopyrightThreadBlockerPhase(cursor, 'territorial_receipts')
-      if (intake.source_kind === 'guest_form') return { ...cursor, blocked: true }
-      return { ...cursor, phase: 'form_assessments', childId: null, blocked: false }
-    }
-    case 'form_assessments': {
-      const { rows } = await transaction<{ id: string; qualifies: boolean | null }>(sql`
+    const intake = rows[0]
+    if (!intake || intake.reviewed)
+      return advanceCopyrightThreadBlockerPhase(cursor, 'territorial_receipts')
+    if (intake.source_kind === 'guest_form') return { ...cursor, blocked: true }
+    return { ...cursor, phase: 'form_assessments', childId: null, blocked: false }
+  }
+  if (cursor.phase === 'form_assessments') {
+    const { rows } = await transaction<{ id: string; qualifies: boolean | null }>(sql`
         /* scanCopyrightThreadFormAssessmentBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         intake_source AS MATERIALIZED (
@@ -79,19 +78,19 @@ export async function readCopyrightThreadScreeningPage(
         ) execution ON true
         LEFT JOIN copyright_notice_form_screenings screening
           ON screening.id = execution.copyright_notice_form_screening_id`)
-      if (rows.some(row => row.qualifies)) {
-        return {
-          ...cursor,
-          phase: 'form_screening_targets',
-          childId: null,
-          blocked: false,
-        }
+    if (rows.some(row => row.qualifies)) {
+      return {
+        ...cursor,
+        phase: 'form_screening_targets',
+        childId: null,
+        blocked: false,
       }
-      if (rows.length < batchSize) return { ...cursor, blocked: true }
-      return { ...cursor, childId: rows.at(-1)!.id, blocked: false }
     }
-    case 'form_screening_targets': {
-      const { rows } = await transaction<{ id: string; qualifies: boolean }>(sql`
+    if (rows.length < batchSize) return { ...cursor, blocked: true }
+    return { ...cursor, childId: rows.at(-1)!.id, blocked: false }
+  }
+  if (cursor.phase === 'form_screening_targets') {
+    const { rows } = await transaction<{ id: string; qualifies: boolean }>(sql`
         /* scanCopyrightThreadScreeningTargetProof */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
@@ -105,19 +104,19 @@ export async function readCopyrightThreadScreeningPage(
           SELECT 1 FROM copyright_notice_target_images image
           WHERE image.copyright_notice_target_id = page.id LIMIT 1
         )) AS qualifies FROM page`)
-      if (rows.some(row => row.qualifies)) {
-        return {
-          ...cursor,
-          phase: 'form_screening_receipts',
-          childId: null,
-          blocked: false,
-        }
+    if (rows.some(row => row.qualifies)) {
+      return {
+        ...cursor,
+        phase: 'form_screening_receipts',
+        childId: null,
+        blocked: false,
       }
-      if (rows.length < batchSize) return { ...cursor, blocked: true }
-      return { ...cursor, childId: rows.at(-1)!.id, blocked: false }
     }
-    case 'form_screening_receipts': {
-      const { rows } = await transaction<{ id: string; qualifies: boolean }>(sql`
+    if (rows.length < batchSize) return { ...cursor, blocked: true }
+    return { ...cursor, childId: rows.at(-1)!.id, blocked: false }
+  }
+  if (cursor.phase === 'form_screening_receipts') {
+    const { rows } = await transaction<{ id: string; qualifies: boolean }>(sql`
         /* scanCopyrightThreadScreeningReceiptProof */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
@@ -133,15 +132,13 @@ export async function readCopyrightThreadScreeningPage(
             SELECT 1 FROM copyright_notice_delivery_recipients recipient
             WHERE recipient.copyright_notice_delivery_work_item_id = page.id LIMIT 1
           )) AS qualifies FROM page`)
-      if (rows.some(row => row.qualifies)) {
-        return {
-          ...advanceCopyrightThreadBlockerPhase(cursor, 'territorial_receipts'),
-        }
+    if (rows.some(row => row.qualifies)) {
+      return {
+        ...advanceCopyrightThreadBlockerPhase(cursor, 'territorial_receipts'),
       }
-      if (rows.length < batchSize) return { ...cursor, blocked: true }
-      return { ...cursor, childId: rows.at(-1)!.id, blocked: false }
     }
-    default:
-      throw new Error(`Unexpected copyright screening blocker phase: ${cursor.phase}`)
+    if (rows.length < batchSize) return { ...cursor, blocked: true }
+    return { ...cursor, childId: rows.at(-1)!.id, blocked: false }
   }
+  throw new Error(`Unexpected copyright screening blocker phase: ${cursor.phase}`)
 }
