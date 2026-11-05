@@ -251,6 +251,7 @@ tooling:
   - '.husky/**'
   - '.coverage-rules.yml'
   - '.no-mistakes.yml'
+  - '.no-mistakes/**'
   - '.syncpackrc.json'
   - '**/package.json'
   - 'pnpm-workspace.yaml'

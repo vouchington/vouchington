@@ -1,8 +1,6 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig } from 'no-mistakes'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -19,16 +17,16 @@ type ReachabilityRule = {
   }
 }
 
-function configuredReachabilityRules(): ReachabilityRule[] {
-  const config = parseYaml(readFileSync(join(repoRoot, '.no-mistakes.yml'), 'utf8')) as {
-    rules?: ReachabilityRule[]
-  }
-  return (config.rules ?? []).filter(rule => rule.rule === 'required-entrypoint-reachability')
+const config = (await resolveConfig({ root: repoRoot, view: 'declared' })) as {
+  rules?: ReachabilityRule[]
 }
+const reachabilityRules = (config.rules ?? []).filter(
+  rule => rule.rule === 'required-entrypoint-reachability',
+)
 
 describe('required entrypoint reachability configuration', () => {
   it('covers scheduled-job manifests, worker modules, and service registrations from their runtime roots', () => {
-    expect(configuredReachabilityRules()).toEqual([
+    expect(reachabilityRules).toEqual([
       {
         name: 'Valkey pubsub loads its shutdown owner',
         rule: 'required-entrypoint-reachability',

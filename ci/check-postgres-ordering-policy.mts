@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig } from 'no-mistakes'
 
 import {
   directiveInventory,
@@ -18,9 +18,9 @@ import { trackedFiles } from './tracked-files.mts'
 type Rule = { name: string; options?: Record<string, unknown>; rule: string; scope: string }
 
 /** Full tracked-source policy check; run once in dedicated static CI. */
-export function checkPostgresOrderingPolicy(root: string): void {
+export async function checkPostgresOrderingPolicy(root: string): Promise<void> {
   const readSource = (path: string) => readFileSync(join(root, path), 'utf8')
-  const config = parseYaml(readSource('.no-mistakes.yml')) as { rules: Rule[] }
+  const config = (await resolveConfig({ root, view: 'declared' })) as { rules: Rule[] }
   const catalogOrderingRules = config.rules.filter(
     rule =>
       rule.options?.schemaCatalogPath === expectedCatalogOptions.schemaCatalogPath &&
@@ -58,4 +58,4 @@ export function checkPostgresOrderingPolicy(root: string): void {
   assert.deepEqual(uncoveredOrderingPaths(backendPaths, plainLocks, catalogLocks), [])
 }
 
-if (import.meta.main) checkPostgresOrderingPolicy(process.cwd())
+if (import.meta.main) await checkPostgresOrderingPolicy(process.cwd())

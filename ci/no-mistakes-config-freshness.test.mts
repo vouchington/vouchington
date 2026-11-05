@@ -1,13 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig } from 'no-mistakes'
 import { parse as parseJsonc } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
 type NoMistakesConfig = {
+  projects?: Record<string, { root?: string }>
   rules?: Array<{ name?: string; options?: Record<string, unknown>; rule?: string }>
 }
 
@@ -19,8 +20,16 @@ function readRepoFile(path: string): string {
   return readFileSync(`${repoRoot}/${path}`, 'utf8')
 }
 
-function readNoMistakesConfig(): NoMistakesConfig {
-  return parseYaml(readRepoFile('.no-mistakes.yml')) as NoMistakesConfig
+const noMistakesConfig = (await resolveConfig({
+  root: repoRoot,
+  view: 'declared',
+})) as NoMistakesConfig
+
+function declaredStrings(value: unknown): string[] {
+  if (typeof value === 'string') return [value]
+  if (Array.isArray(value)) return value.flatMap(declaredStrings)
+  if (value && typeof value === 'object') return Object.values(value).flatMap(declaredStrings)
+  return []
 }
 
 function readOxlintConfig(): OxlintConfig {
@@ -29,7 +38,7 @@ function readOxlintConfig(): OxlintConfig {
 
 describe('no-mistakes config freshness', () => {
   it('routes no-data mock tests to backend CI and their production source stems', () => {
-    const rules = readNoMistakesConfig().rules ?? []
+    const rules = noMistakesConfig.rules ?? []
     const correspondence = rules.find(rule => rule.rule === 'vitest-test-correspondence')
     const ciCoverage = rules.find(rule => rule.rule === 'vitest-ci-path-coverage')
 
@@ -48,16 +57,14 @@ describe('no-mistakes config freshness', () => {
   })
 
   it('enables no-mistakes Next.js feature ban rules for the web project', () => {
-    const noMistakes = readRepoFile('.no-mistakes.yml')
-
-    expect(noMistakes).toContain('root: web')
-    expect(noMistakes).toContain('rule: nextjs-no-api-routes')
-    expect(noMistakes).toContain('rule: nextjs-no-caching')
+    expect(noMistakesConfig.projects?.web?.root).toBe('web')
+    for (const rule of ['nextjs-no-api-routes', 'nextjs-no-caching'])
+      expect(noMistakesConfig.rules).toContainEqual(expect.objectContaining({ rule }))
   })
 
   // The release-age rule owns registry synchronization; structured config owns value shapes.
   it('keeps pnpm patch bans and release-age/allowBuilds value assertions in repository policy', () => {
-    const rules = readNoMistakesConfig().rules?.filter(
+    const rules = noMistakesConfig.rules?.filter(
       candidate => candidate.name === 'pnpm-workspace.yaml value types',
     )
 
@@ -99,12 +106,12 @@ describe('no-mistakes config freshness', () => {
   })
 
   it('keeps filesystem exceptions limited to current files', () => {
-    const config = readNoMistakesConfig()
+    const config = noMistakesConfig
     const agentCoverage = config.rules?.find(rule => rule.name === 'backend agent test coverage')
     const storyCoverage = config.rules?.find(
       rule => rule.name === 'web/components/ui story coverage',
     )
-    const noMistakes = readRepoFile('.no-mistakes.yml')
+    const declarations = declaredStrings(config)
     const webVitestConfig = readRepoFile('test-helpers/vitest-config/web-projects.mts')
 
     expect(agentCoverage?.options).not.toHaveProperty('excludeDirs')
@@ -119,8 +126,8 @@ describe('no-mistakes config freshness', () => {
       ],
     })
     expect(storyCoverage?.options).not.toHaveProperty('excludePrefixes')
-    expect(noMistakes).not.toContain('web/node_modules/**')
+    expect(declarations).not.toContain('web/node_modules/**')
     expect(webVitestConfig).not.toContain("'web/node_modules/**'")
-    expect(noMistakes).not.toContain('.github/workflows/AGENTS.md')
+    expect(declarations).not.toContain('.github/workflows/AGENTS.md')
   })
 })

@@ -1,8 +1,7 @@
-import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig } from 'no-mistakes'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
@@ -33,9 +32,10 @@ function withoutBaseline(rule: ForbiddenCallsRule): Omit<ForbiddenCallsRule, 'ex
 }
 
 describe('no-mistakes forbidden-calls config', () => {
-  it('applies the general analyzer repeatedly across test layers', () => {
-    const source = readFileSync(`${repoRoot}/.no-mistakes.yml`, 'utf8')
-    const config = parseYaml(source) as { rules: ForbiddenCallsRule[] }
+  it('applies the general analyzer repeatedly across test layers', async () => {
+    const config = (await resolveConfig({ root: repoRoot, view: 'declared' })) as {
+      rules: ForbiddenCallsRule[]
+    }
     const rules = config.rules.filter(candidate => candidate.rule === 'forbidden-calls')
     const byName = new Map(rules.map(rule => [rule.name, rule]))
     const rule = (name: string): ForbiddenCallsRule => {

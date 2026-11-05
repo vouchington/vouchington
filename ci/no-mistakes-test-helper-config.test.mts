@@ -1,8 +1,7 @@
-import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
-import { parse as parseYaml } from 'yaml'
+import { resolveConfig } from 'no-mistakes'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
@@ -27,10 +26,8 @@ type NoMistakesConfig = {
 }
 
 describe('no-mistakes test-helper path config', () => {
-  it('allows only literal first-layer test-helpers directories', () => {
-    const config = parseYaml(
-      readFileSync(`${repoRoot}/.no-mistakes.yml`, 'utf8'),
-    ) as NoMistakesConfig
+  it('allows only literal first-layer test-helpers directories', async () => {
+    const config = (await resolveConfig({ root: repoRoot, view: 'declared' })) as NoMistakesConfig
     const rule = config.rules?.find(rule => rule.name === 'banned repository paths')
     const expectedGlobs = [
       '*/*/**/test-helpers/**',

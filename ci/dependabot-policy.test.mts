@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import { resolveConfig } from 'no-mistakes'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
@@ -37,8 +38,12 @@ function readDependabotUpdates(): Update[] {
   return readYamlFile<{ updates?: Update[] }>('.github/dependabot.yml').updates ?? []
 }
 
+const noMistakesConfig = (await resolveConfig({ root: repoRoot, view: 'declared' })) as {
+  rules?: NoMistakesRule[]
+}
+
 function readReleaseAgePolicy(): ReleaseAgeOptions {
-  const rules = readYamlFile<{ rules?: NoMistakesRule[] }>('.no-mistakes.yml').rules ?? []
+  const rules = noMistakesConfig.rules ?? []
   return (
     rules.find(rule => rule.name === 'first-party package release-age exemptions stay synchronized')
       ?.options ?? {}
