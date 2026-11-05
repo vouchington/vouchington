@@ -15,7 +15,7 @@ import { addUrl } from '@services/urls/upsert'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { getTopicByAny } from '@services/topics/get'
 import { createSourceWithRetry } from '../rss-feeds/create-source-helpers.mts'
-import { createInstanceInTransaction } from '../fediverse-instances/create-instance-helpers.mts'
+import { createFediverseInstance } from '../fediverse-instances/create-instance-helpers.mts'
 import { prepareTopicRecommendation } from './create-topic-recommendation.mts'
 import { approveTopicRecommendationInTransaction } from './approve-topic-recommendation.mts'
 
@@ -74,14 +74,14 @@ describe('source creation serializes hostname ownership before aliases', () => {
                   feedType: 'article',
                   attempt: 0,
                 })
-              : createInstanceInTransaction(
-                  WEB_PROVENANCE,
-                  admin.id,
+              : createFediverseInstance({
+                  provenance: WEB_PROVENANCE,
+                  createdById: admin.id,
                   hostnameId,
-                  `Source ${suffix}`,
-                  `source-${suffix}`,
-                  null,
-                )
+                  name: `Source ${suffix}`,
+                  slug: `source-${suffix}`,
+                  metadata: null,
+                })
           await waitForLock(creating)
           await holder.commit()
           return creating

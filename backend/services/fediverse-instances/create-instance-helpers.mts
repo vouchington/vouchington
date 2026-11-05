@@ -54,7 +54,7 @@ export type CreateInstanceTransactionResult = { topicId: string; claimedAlias: T
  *
  * createdById is always a real user, so the topic revision is created unconditionally.
  */
-export async function createInstanceInTransaction(
+async function createInstanceInTransaction(
   provenance: ContentProvenance,
   createdById: string,
   hostnameId: string,
