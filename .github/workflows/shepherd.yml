@@ -66,35 +66,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.issue.number }}
-        run: |
-          set -euo pipefail
-
-          echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
-
-          PR_JSON="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
-          HEAD_REPO="$(echo "$PR_JSON" | jq -r '.head.repo.full_name')"
-          PR_TITLE="$(echo "$PR_JSON" | jq -r '.title')"
-          PR_URL="$(echo "$PR_JSON" | jq -r '.html_url')"
-          PR_HEAD_REF="$(echo "$PR_JSON" | jq -r '.head.ref')"
-          PR_HEAD_SHA="$(echo "$PR_JSON" | jq -r '.head.sha')"
-
-          if [[ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]]; then
-            gh issue comment "$PR_NUMBER" \
-              --repo "$GITHUB_REPOSITORY" \
-              --body "Cannot run \`/shepherd\` on fork PRs because automation may update the pull request branch."
-            echo "Skipping fork PR #$PR_NUMBER from $HEAD_REPO."
-            exit 0
-          fi
-
-          {
-            echo "pr_number=$PR_NUMBER"
-            echo "pr_url=$PR_URL"
-            echo "pr_head_ref=$PR_HEAD_REF"
-            echo "pr_head_sha=$PR_HEAD_SHA"
-          } >> "$GITHUB_OUTPUT"
-          printf '%s' "$PR_TITLE" | \
-            "$GITHUB_WORKSPACE/ci/write-github-multiline-output.sh" pr_title
-          echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
+        run: source "$GITHUB_WORKSPACE/.github/workflows/shepherd-resolve-pr.sh"
 
       - name: Prepare durable shepherd checkpoint
         timeout-minutes: 2
@@ -105,66 +77,10 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           PR_HEAD_REF: ${{ steps.gate.outputs.pr_head_ref }}
           PR_HEAD_SHA: ${{ steps.gate.outputs.pr_head_sha }}
+          CHECKPOINT_RUN_ID: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
-        run: |
-          set -euo pipefail
-          CHECKPOINT_ACTOR="github-actions[bot]"
-          export CHECKPOINT_ACTOR PR_NUMBER="$ISSUE_NUMBER"
-          gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments?per_page=100" \
-            | jq -s 'add' > "$RUNNER_TEMP/pr-shepherd-comments.json"
-          if ! SELECTION="$(node ci/shepherd-checkpoint-cli.mts select \
-            "$RUNNER_TEMP/pr-shepherd-comments.json" \
-            2>"$RUNNER_TEMP/pr-shepherd-resume-error.txt")"; then
-            gh issue comment "$ISSUE_NUMBER" \
-              --repo "$GITHUB_REPOSITORY" \
-              --body "Cannot safely resume the previous Harness shepherd session because its local transcript failed checkpoint validation. [Inspect this workflow run]($RUN_URL), then retry after correcting or removing the corrupt local session."
-            cat "$RUNNER_TEMP/pr-shepherd-resume-error.txt" >&2
-            exit 1
-          fi
-          RESUME_SESSION_ID="$(printf '%s' "$SELECTION" | jq -r '.sessionId // empty')"
-          SESSION_START_SHA="$(printf '%s' "$SELECTION" | jq -r '.sessionStartSha // empty')"
-          RESUME_SOURCE_RUN_ID="$(printf '%s' "$SELECTION" | jq -r '.runId // empty')"
-          if [[ -z "$SESSION_START_SHA" ]]; then
-            SESSION_START_SHA="$PR_HEAD_SHA"
-          fi
-          CREATED_AT="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-
-          jq -n \
-            --arg marker "shepherd-checkpoint:v1" \
-            --arg repository "$GITHUB_REPOSITORY" \
-            --argjson pr "$ISSUE_NUMBER" \
-            --argjson triggerCommentId "$TRIGGER_COMMENT_ID" \
-            --arg headRef "$PR_HEAD_REF" \
-            --arg startSha "$PR_HEAD_SHA" \
-            --arg sessionStartSha "$SESSION_START_SHA" \
-            --arg runId "${{ github.run_id }}" \
-            --arg runUrl "$RUN_URL" \
-            --arg actor "$CHECKPOINT_ACTOR" \
-            --arg sessionId "$RESUME_SESSION_ID" \
-            --arg resumeSourceRunId "$RESUME_SOURCE_RUN_ID" \
-            --arg status "queued" \
-            --arg createdAt "$CREATED_AT" \
-            --arg updatedAt "$CREATED_AT" \
-            '{marker: $marker, repository: $repository, pr: $pr,
-              triggerCommentId: $triggerCommentId, headRef: $headRef,
-              startSha: $startSha, sessionStartSha: $sessionStartSha, runId: $runId,
-              runUrl: $runUrl, actor: $actor, sessionId: $sessionId,
-              resumeSourceRunId: $resumeSourceRunId, status: $status,
-              createdAt: $createdAt, updatedAt: $updatedAt}' \
-            > "$RUNNER_TEMP/pr-shepherd-checkpoint.json"
-          BODY="$(node ci/shepherd-checkpoint-cli.mts render \
-            "$RUNNER_TEMP/pr-shepherd-checkpoint.json")"
-          COMMENT_JSON="$(gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" \
-            -f body="$BODY")"
-          printf '%s' "$COMMENT_JSON" | jq -e \
-            '.user.login == "github-actions[bot]" and
-             .user.type == "Bot" and
-             .performed_via_github_app.slug == "github-actions"' > /dev/null
-          CHECKPOINT_COMMENT_ID="$(printf '%s' "$COMMENT_JSON" | jq -er '.id | select(type == "number" and . > 0)')"
-
-          echo "resume_session_id=$RESUME_SESSION_ID" >> "$GITHUB_OUTPUT"
-          echo "checkpoint_comment_id=$CHECKPOINT_COMMENT_ID" >> "$GITHUB_OUTPUT"
+        run: source "$GITHUB_WORKSPACE/.github/workflows/shepherd-prepare-checkpoint.sh"
 
       - name: Acknowledge
         timeout-minutes: 2
@@ -195,11 +111,7 @@ jobs:
       - name: Resolve trusted pr-shepherd version
         timeout-minutes: 2
         id: pr-shepherd-version
-        run: |
-          set -euo pipefail
-          VERSION="$(pnpm exec pr-shepherd --version)"
-          echo "Trusted pr-shepherd version (from main): $VERSION"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        run: source "$GITHUB_WORKSPACE/.github/workflows/shepherd-resolve-version.sh"
 
       - name: Prepare prompt variables
         timeout-minutes: 2
@@ -288,14 +200,7 @@ jobs:
           PR_HEAD_SHA: ${{ needs.gate.outputs.pr_head_sha }}
           PR_NUMBER: ${{ needs.gate.outputs.pr_number }}
           TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
-        run: |
-          set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \
-            'select(.state == "open" and .head.repo.full_name == env.GITHUB_REPOSITORY and .head.ref == env.PR_HEAD_REF and .head.sha == env.PR_HEAD_SHA) | .number' \
-            | grep -qx "$PR_NUMBER"
-          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$CHECKPOINT_COMMENT_ID" > "$RUNNER_TEMP/checkpoint-comment.json"
-          BODY="$(node ci/shepherd-checkpoint-cli.mts update "$RUNNER_TEMP/checkpoint-comment.json")"
-          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$CHECKPOINT_COMMENT_ID" -f body="$BODY" > /dev/null
+        run: source "$GITHUB_WORKSPACE/.github/workflows/shepherd-update-checkpoint.sh"
 
   escalate:
     name: Comment failure on PR

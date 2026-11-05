@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { executeGateWithTitle } from '../test-helpers/shepherd.fixtures.mts'
+import { executeGateWithTitle, readShepherdStepScript } from '../test-helpers/shepherd.fixtures.mts'
 type WorkflowJob = {
   'runs-on'?: string | string[]
   permissions?: Record<string, string>
@@ -56,14 +56,15 @@ describe('shepherd workflow', () => {
     const gateJob = workflow.jobs?.['gate']
     const gateStep = gateJob?.steps?.find(step => step.id === 'gate')
     const parseStep = gateJob?.steps?.find(step => step.id === 'parse')
+    const gateScript = readShepherdStepScript(gateStep?.run)
     expect(parseStep?.uses).toContain('/comment-command-parse@')
     expect(parseStep?.with).toEqual({ command: '/shepherd', mode: 'whole-body' })
     expect(gateStep?.if).toContain("steps.parse.outputs.accepted == 'true'")
     expect(gateStep?.env?.['PR_NUMBER']).toBe('${{ github.event.issue.number }}')
-    expect(gateStep?.run).toContain('gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"')
-    expect(gateStep?.run).toContain('HEAD_REPO')
-    expect(gateStep?.run).toContain('Cannot run \\`/shepherd\\` on fork PRs')
-    expect(gateStep?.run).toContain('should_dispatch=true')
+    expect(gateScript).toContain('gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"')
+    expect(gateScript).toContain('HEAD_REPO')
+    expect(gateScript).toContain('Cannot run \\`/shepherd\\` on fork PRs')
+    expect(gateScript).toContain('should_dispatch=true')
   })
 
   it('keeps the elevated Codex token off trusted checkout and output serialization', () => {
@@ -121,6 +122,7 @@ describe('shepherd workflow', () => {
     const steps = gateJob?.steps ?? []
     const ackStep = steps.find(step => step.uses?.includes('/comment-command-acknowledge@'))
     const checkpointStep = gateJob?.steps?.find(step => step.id === 'checkpoint')
+    const checkpointScript = readShepherdStepScript(checkpointStep?.run)
     const setupNodeIndex = steps.findIndex(step =>
       step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@'),
     )
@@ -133,15 +135,16 @@ describe('shepherd workflow', () => {
     expect(setupNodeIndex).toBeLessThan(checkpointIndex)
     expect(steps[setupNodeIndex]?.with).toEqual({ 'deadline-seconds': '270' })
     expect(checkpointStep?.env?.['GH_TOKEN']).toBe('${{ github.token }}')
-    expect(checkpointStep?.run).toContain('github-actions[bot]')
-    expect(checkpointStep?.run).toContain('shepherd-checkpoint-cli.mts select')
-    expect(checkpointStep?.run).toContain('shepherd-checkpoint-cli.mts render')
-    expect(checkpointStep?.run).toContain('comments?per_page=100')
-    expect(checkpointStep?.run).toContain('gh api -X POST')
-    expect(checkpointStep?.run).toContain('COMMENT_JSON=')
-    expect(checkpointStep?.run).toContain('.user.login == "github-actions[bot]"')
-    expect(checkpointStep?.run).toContain('CHECKPOINT_COMMENT_ID=')
-    expect(checkpointStep?.run).toContain('checkpoint_comment_id=$CHECKPOINT_COMMENT_ID')
+    expect(checkpointStep?.env?.['CHECKPOINT_RUN_ID']).toBe('${{ github.run_id }}')
+    expect(checkpointScript).toContain('github-actions[bot]')
+    expect(checkpointScript).toContain('shepherd-checkpoint-cli.mts select')
+    expect(checkpointScript).toContain('shepherd-checkpoint-cli.mts render')
+    expect(checkpointScript).toContain('comments?per_page=100')
+    expect(checkpointScript).toContain('gh api -X POST')
+    expect(checkpointScript).toContain('COMMENT_JSON=')
+    expect(checkpointScript).toContain('.user.login == "github-actions[bot]"')
+    expect(checkpointScript).toContain('CHECKPOINT_COMMENT_ID=')
+    expect(checkpointScript).toContain('checkpoint_comment_id=$CHECKPOINT_COMMENT_ID')
     expect(gateJob?.outputs?.['checkpoint_comment_id']).toBe(
       '${{ steps.checkpoint.outputs.checkpoint_comment_id }}',
     )
@@ -216,13 +219,13 @@ describe('shepherd workflow', () => {
     // hooks could be trusted, which blocked ordinary stale/diverged branches. Mergeability and
     // conflict checks would recreate the same deadlock when GitHub cannot offer Update branch:
     // resolving that state is deliberately pr-shepherd's job.
-    expect(gateRun).not.toContain('repos/$GITHUB_REPOSITORY/commits/main')
-    expect(gateRun).not.toContain('/compare/')
-    expect(gateRun).not.toContain('mergeable')
-    expect(gateRun).not.toContain('mergeStateStatus')
-    expect(gateRun).not.toContain('Skipping stale-base PR')
-    expect(gateRun).not.toContain('COMPARE_FILE_COUNT')
-    expect(gateRun).not.toContain('ALLOW_POLICY_PRS')
+    expect(readShepherdStepScript(gateRun)).not.toContain('repos/$GITHUB_REPOSITORY/commits/main')
+    expect(readShepherdStepScript(gateRun)).not.toContain('/compare/')
+    expect(readShepherdStepScript(gateRun)).not.toContain('mergeable')
+    expect(readShepherdStepScript(gateRun)).not.toContain('mergeStateStatus')
+    expect(readShepherdStepScript(gateRun)).not.toContain('Skipping stale-base PR')
+    expect(readShepherdStepScript(gateRun)).not.toContain('COMPARE_FILE_COUNT')
+    expect(readShepherdStepScript(gateRun)).not.toContain('ALLOW_POLICY_PRS')
   })
 
   it('grants checkpoint-dispatch checkout access alongside its comment-patch scopes', () => {
@@ -251,7 +254,7 @@ describe('shepherd workflow', () => {
       step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@'),
     )
     const checkpointCliIndex = steps.findIndex(step =>
-      step.run?.includes('ci/shepherd-checkpoint-cli.mts'),
+      readShepherdStepScript(step.run).includes('ci/shepherd-checkpoint-cli.mts'),
     )
 
     expect(checkoutIndex).toBeGreaterThanOrEqual(0)
