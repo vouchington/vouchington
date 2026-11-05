@@ -1,3 +1,4 @@
+import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
 import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
@@ -87,8 +88,6 @@ async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
       moderation_training_feedbacks, vote_integrity_flags, moderator_actions,
       moderation_transparency_released_daily_rollups`)
 }
-
-// A failing step is recorded and the run continues, so one run reports every failure.
 async function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
   await result.catch(err => recordScenarioFailure(scenario, err))
 }
@@ -170,6 +169,7 @@ async function main() {
     await runStep(runMembershipRenewalSelection.name, runMembershipRenewalSelection())
     const measureReferralCache = runPrioritizedReferralCacheMeasurement
     await runStep(measureReferralCache.name, measureReferralCache())
+    await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios())
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)

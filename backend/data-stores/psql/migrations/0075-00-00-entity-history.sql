@@ -21,6 +21,9 @@ CREATE TABLE IF NOT EXISTS post_revisions (
     DEFERRABLE INITIALLY DEFERRED
 ) PARTITION BY RANGE (id);
 
+CREATE INDEX IF NOT EXISTS idx_post_revisions__revised_by_id
+  ON post_revisions (revised_by_id) WHERE revised_by_id IS NOT NULL;
+
 COMMENT ON TABLE post_revisions IS 'Append-only revision log for posts. Stores per-field before/after diffs.';
 COMMENT ON COLUMN post_revisions.post_id IS 'The post this revision is for.';
 COMMENT ON COLUMN post_revisions.revision_type IS 'Type of change: create, update, or delete.';
@@ -46,6 +49,9 @@ CREATE TABLE IF NOT EXISTS topic_revisions (
     FOREIGN KEY (revised_by_id) REFERENCES users(id) ON DELETE SET NULL
     DEFERRABLE INITIALLY DEFERRED
 ) PARTITION BY RANGE (id);
+
+CREATE INDEX IF NOT EXISTS idx_topic_revisions__revised_by_id
+  ON topic_revisions (revised_by_id) WHERE revised_by_id IS NOT NULL;
 
 COMMENT ON TABLE topic_revisions IS 'Append-only revision log for topics. Stores per-field before/after diffs.';
 COMMENT ON COLUMN topic_revisions.topic_id IS 'The topic this revision is for.';

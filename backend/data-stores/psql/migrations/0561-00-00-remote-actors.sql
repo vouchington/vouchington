@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS remote_actors (
   hostname_id UUID REFERENCES url_hostnames ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_remote_actors__deleted_by_id
+  ON remote_actors (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+
 CREATE OR REPLACE TRIGGER trigger_remote_actors_updated_at
 BEFORE UPDATE ON remote_actors
 FOR EACH ROW

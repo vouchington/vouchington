@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS url_hostname_blocks (
       (domain_blocklist_source_id IS NOT NULL)
   )
 );
+
+CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__blocked_by_id
+  ON url_hostname_blocks (blocked_by_id) WHERE blocked_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__lifted_by_id
+  ON url_hostname_blocks (lifted_by_id) WHERE lifted_by_id IS NOT NULL;
 ALTER TABLE url_hostname_blocks
   ADD CONSTRAINT fk_url_hostname_blocks__domain_blocklist_source
   FOREIGN KEY (domain_blocklist_source_id) REFERENCES domain_blocklist_sources(id)

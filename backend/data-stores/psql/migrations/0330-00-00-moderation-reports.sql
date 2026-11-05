@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS moderation_reports (
   CHECK (escalated_at IS NOT NULL OR escalated_by_id IS NULL)
 );
 
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__escalated_by_id
+  ON moderation_reports (escalated_by_id) WHERE escalated_by_id IS NOT NULL;
+
 -- Per-entity dedup: one pending report per reporter per target.
 -- User reports without an operational community stay global. User reports owned by a
 -- community, including ban-evasion system reports, are one pending row per community.

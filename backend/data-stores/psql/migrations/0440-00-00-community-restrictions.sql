@@ -25,6 +25,11 @@ CREATE TABLE IF NOT EXISTS community_restrictions (
   CHECK (reason IS NULL OR reason = TRIM(reason))
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_restrictions__activated_by_id
+  ON community_restrictions (activated_by_id) WHERE activated_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_restrictions__lifted_by_id
+  ON community_restrictions (lifted_by_id) WHERE lifted_by_id IS NOT NULL;
+
 CREATE OR REPLACE TRIGGER trigger_community_restrictions_updated_at
   BEFORE UPDATE ON community_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

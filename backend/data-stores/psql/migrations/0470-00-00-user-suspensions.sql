@@ -11,6 +11,11 @@ CREATE TABLE IF NOT EXISTS user_suspensions (
   lifted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_user_suspensions__lifted_by_id
+  ON user_suspensions (lifted_by_id) WHERE lifted_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_user_suspensions__suspended_by_id
+  ON user_suspensions (suspended_by_id) WHERE suspended_by_id IS NOT NULL;
+
 CREATE OR REPLACE TRIGGER trigger_user_suspensions_updated_at
   BEFORE UPDATE ON user_suspensions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

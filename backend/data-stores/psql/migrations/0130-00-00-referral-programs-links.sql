@@ -49,6 +49,11 @@ CREATE TABLE IF NOT EXISTS user_referral_program_links (
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__created_by_id
+  ON user_referral_program_links (created_by_id) WHERE created_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__deleted_by_id
+  ON user_referral_program_links (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_referral_program_links_updated_at
 BEFORE UPDATE ON user_referral_program_links

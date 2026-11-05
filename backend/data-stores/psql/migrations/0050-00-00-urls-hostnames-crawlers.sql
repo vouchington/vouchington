@@ -99,6 +99,9 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_url_hostnames__created_by_id
+  ON url_hostnames (created_by_id) WHERE created_by_id IS NOT NULL;
+
 COMMENT ON COLUMN url_hostnames.publicly_introduced_at IS 'First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identities and email blocklist domains. Never cleared.';
 
 -- One durable cache repair per live hostname. A newer generation fences stale workers.
@@ -338,6 +341,9 @@ CREATE TABLE IF NOT EXISTS urls (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_urls__created_by_id
+  ON urls (created_by_id) WHERE created_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_urls_updated_at
 BEFORE UPDATE ON urls
@@ -511,6 +517,11 @@ CREATE TABLE IF NOT EXISTS hostname_crawler_configurations (
   content_selectors TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
   referral_program_topic_id UUID  -- FK to referral_program_topics added in 0130
 );
+
+CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__deleted_by_id
+  ON hostname_crawler_configurations (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__updated_by_id
+  ON hostname_crawler_configurations (updated_by_id) WHERE updated_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_hostname_crawler_configurations_updated_at

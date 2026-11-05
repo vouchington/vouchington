@@ -10,6 +10,11 @@ CREATE TABLE IF NOT EXISTS post_locks (
   lifted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_post_locks__lifted_by_id
+  ON post_locks (lifted_by_id) WHERE lifted_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_post_locks__locked_by_id
+  ON post_locks (locked_by_id) WHERE locked_by_id IS NOT NULL;
+
 CREATE OR REPLACE TRIGGER trigger_post_locks_updated_at
   BEFORE UPDATE ON post_locks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

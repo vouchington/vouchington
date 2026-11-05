@@ -237,6 +237,15 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
     CHECK (sent_at IS NULL OR discarded_at IS NULL)
 ) PARTITION BY RANGE (conversation_id);
 
+CREATE INDEX IF NOT EXISTS idx_conversation_messages__approved_by_id
+  ON conversation_messages (approved_by_id) WHERE approved_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_conversation_messages__deleted_by_id
+  ON conversation_messages (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_conversation_messages__edited_by_id
+  ON conversation_messages (edited_by_id) WHERE edited_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_conversation_messages__updated_by_id
+  ON conversation_messages (updated_by_id) WHERE updated_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_conversation_messages_updated_at
 BEFORE UPDATE ON conversation_messages
@@ -312,6 +321,9 @@ CREATE TABLE IF NOT EXISTS conversation_participants (
     CHECK (removed_at IS NOT NULL OR removed_by_id IS NULL),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_conversation_participants__removed_by_id
+  ON conversation_participants (removed_by_id) WHERE removed_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_conversation_participants_updated_at

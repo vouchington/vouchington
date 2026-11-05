@@ -85,6 +85,13 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_review_disputes__approved_by_id
+  ON review_disputes (approved_by_id) WHERE approved_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_review_disputes__edited_by_id
+  ON review_disputes (edited_by_id) WHERE edited_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_review_disputes__resolved_by_id
+  ON review_disputes (resolved_by_id) WHERE resolved_by_id IS NOT NULL;
+
 -- Queue pagination index
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_review_disputes__status_created
@@ -240,6 +247,9 @@ CREATE TABLE IF NOT EXISTS post_dispute_annotations (
   removed_by_id uuid REFERENCES users (id) ON DELETE SET NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
+
+CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__removed_by_id
+  ON post_dispute_annotations (removed_by_id) WHERE removed_by_id IS NOT NULL;
 
 -- At most one active annotation per dispute
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
