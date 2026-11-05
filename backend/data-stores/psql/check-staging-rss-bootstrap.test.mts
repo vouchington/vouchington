@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it, vi } from 'vitest'
 import { STAGING_RSS_FEEDS } from './config-driven/utils/staging-rss-feeds.mts'
-import { checkStagingRssBootstrap } from './check-staging-rss-bootstrap.mts'
+import { checkStagingRssBootstrap } from './staging-rss-bootstrap-command.mts'
 
 type StagingFeedRow = {
   url: string
