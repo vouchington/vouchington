@@ -7,6 +7,7 @@ import { checkPrShepherdGuidance } from './check-pr-shepherd-guidance.mts'
 import { checkThinRouteCoverage } from './check-thin-route-coverage.mts'
 import { checkWorkerSecretExemptPaths } from './check-worker-secret-exempt-paths.mts'
 import { checkWorkflowArtifactPolicy } from './check-workflow-artifact-policy.mts'
+import { checkWorkflowOpsPolicy } from './check-workflow-ops-policy.mts'
 import { checkBuildWebTargetsContractPolicy } from './check-build-web-targets-contract-policy.mts'
 import { checkScheduledPromptIndexPolicy } from './check-scheduled-prompt-index-policy.mts'
 import { checkWorkflowCachePnpmPolicy } from './check-workflow-cache-pnpm-policy.mts'
@@ -19,6 +20,7 @@ export async function checkRepositoryPolicyScans(root: string): Promise<void> {
 
   const violations = [
     ...checkWorkflowSafetyPolicy(root),
+    ...checkWorkflowOpsPolicy(root),
     ...(await checkTransientRetryPolicy(root)),
     ...checkAgentWorkflowDocs(root),
     ...checkPrShepherdGuidance(root),

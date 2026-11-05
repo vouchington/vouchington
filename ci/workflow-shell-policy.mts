@@ -25,7 +25,6 @@ export function shellLogicalLines(script: string): string[] {
   if (current) lines.push(current)
   return lines
 }
-
 export function workflowHasTrigger(trigger: unknown, name: string): boolean {
   if (typeof trigger === 'string') return trigger === name
   if (Array.isArray(trigger)) return trigger.includes(name)
