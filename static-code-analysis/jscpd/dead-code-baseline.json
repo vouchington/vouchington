@@ -1,13 +1,4 @@
 {
   "version": 1,
-  "findings": [
-    {
-      "category": "unused-member",
-      "path": "web/components/ui/error-boundary.tsx",
-      "parent": "ErrorBoundary",
-      "name": "getDerivedStateFromError",
-      "symbolKind": "method",
-      "count": 1
-    }
-  ]
+  "findings": []
 }

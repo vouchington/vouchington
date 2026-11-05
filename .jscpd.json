@@ -14,6 +14,15 @@
       "unused-member"
     ],
     "minConfidence": 70,
+    "frameworks": [
+      {
+        "name": "react-error-boundary",
+        "detect": { "dependencies": ["react"] },
+        "globals": [
+          { "names": ["getDerivedStateFromError"], "files": ["components/ui/error-boundary.tsx"] }
+        ]
+      }
+    ],
     "entry": [
       ".pr-shepherd/classification/auto-harness-session.mts",
       "backend/data-stores/psql/config-driven/*.mts",
