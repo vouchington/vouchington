@@ -72,7 +72,10 @@ describe('recordScheduledJobConfigMissing', () => {
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
       recordScheduledJobConfigMissing('reconcile', 'S3_BUCKET_SES_INBOUND')
-      expect(consoleWarn).toHaveBeenCalledOnce()
+      expect(consoleWarn).toHaveBeenCalledExactlyOnceWith(
+        '[scheduled-job] skipping run, missing required config',
+        { jobName: 'reconcile', missingEnvVar: 'S3_BUCKET_SES_INBOUND' },
+      )
       expect(captureMessage).toHaveBeenCalledOnce()
     } finally {
       consoleWarn.mockRestore()

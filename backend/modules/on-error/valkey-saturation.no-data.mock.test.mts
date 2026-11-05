@@ -33,8 +33,8 @@ vi.mock<typeof import('@sentry/node')>(import('@sentry/node'), () => ({
 const { captureMessage, addBreadcrumb } = sentryMocks
 
 const context = {
-  client: 'private-client-sentinel',
-  command: 'private-command-sentinel',
+  client: 'glide-mq',
+  command: 'HGETALL',
   attempt: 2,
 }
 
@@ -54,18 +54,17 @@ describe('recordValkeySaturation console privacy', () => {
     vi.resetModules()
   })
 
-  it('omits deployed client and command strings while retaining the original Sentry context', async () => {
+  it('keeps deployed selected client and command identifiers and original Sentry context', async () => {
     const { recordValkeySaturation } = await import('./valkey-saturation.mts')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     recordValkeySaturation(context)
 
     expect(consoleWarn).toHaveBeenCalledExactlyOnceWith('[valkey] inflight saturation retry', {
+      client: 'glide-mq',
+      command: 'HGETALL',
       attempt: 2,
     })
-    const output = JSON.stringify(consoleWarn.mock.calls)
-    expect(output).not.toContain(context.client)
-    expect(output).not.toContain(context.command)
     expect(addBreadcrumb).toHaveBeenCalledExactlyOnceWith({
       category: 'valkey',
       message: 'inflight saturation retry',
@@ -81,6 +80,19 @@ describe('recordValkeySaturation console privacy', () => {
       },
       extra: { attempt: 2 },
     })
+  })
+
+  it('omits a selected identifier containing free-form provider text', async () => {
+    const { recordValkeySaturation } = await import('./valkey-saturation.mts')
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    recordValkeySaturation({ client: 'Bearer private-client-secret', command: 'GET', attempt: 1 })
+
+    expect(consoleWarn).toHaveBeenCalledExactlyOnceWith('[valkey] inflight saturation retry', {
+      command: 'GET',
+      attempt: 1,
+    })
+    expect(JSON.stringify(consoleWarn.mock.calls)).not.toContain('private-client-secret')
   })
 
   it.each([

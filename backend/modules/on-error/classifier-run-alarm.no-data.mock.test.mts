@@ -209,7 +209,10 @@ describe('recordClassifierRunAlarm', () => {
       const { recordClassifierRunAlarm } = await import('./classifier-run-alarm.mts')
       const context = { ...clientUnavailable, prompt: 'private-prompt' }
       recordClassifierRunAlarm(context)
-      expect(consoleWarn).toHaveBeenCalledExactlyOnceWith('[classifier-runs] run alarm', {})
+      expect(consoleWarn).toHaveBeenCalledExactlyOnceWith(
+        '[classifier-runs] run alarm',
+        clientUnavailable,
+      )
       expect(JSON.stringify(consoleWarn.mock.calls)).not.toContain('private-prompt')
     } finally {
       consoleWarn.mockRestore()

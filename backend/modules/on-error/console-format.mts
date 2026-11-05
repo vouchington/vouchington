@@ -52,7 +52,7 @@ function projectError(error: Error, depth: number): ErrorProjection {
   }
 }
 
-/** Recorders expose only their explicitly selected numeric fields outside development and CI. */
+/** Deployed recorders retain selected finite numbers and validated diagnostic identifiers. */
 export function consoleContext(
   context: Record<string, unknown>,
   fullContext: Record<string, unknown> = context,
@@ -60,7 +60,9 @@ export function consoleContext(
   if (useFullConsoleOutput()) return fullContext
   return Object.fromEntries(
     Object.entries(context).filter(
-      ([, value]) => typeof value === 'number' && Number.isFinite(value),
+      ([, value]) =>
+        (typeof value === 'number' && Number.isFinite(value)) ||
+        (typeof value === 'string' && SAFE_CODE.test(value)),
     ),
   )
 }

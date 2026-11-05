@@ -25,7 +25,7 @@ export function recordOffAllowlistEgress(
     console.warn(
       '[egress-guardrail] off-allowlist API egress',
       ...(useFullConsoleOutput() ? [host] : []),
-      consoleContext({ path: extra.path, method: extra.method }, extra),
+      consoleContext({ method: extra.method }, extra),
     )
   }
   Sentry.captureMessage(`off-allowlist API egress: ${host}`, {

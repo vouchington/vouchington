@@ -70,7 +70,7 @@ describe('deployed console error privacy', () => {
     expect(formatConsoleError(error)).not.toContain('private-frame')
   })
 
-  it('keeps deployed recorder counts but omits every free-form context string', () => {
+  it('keeps deployed recorder counts and selected identifiers but omits free-form text', () => {
     vi.stubEnv('NODE_ENV', 'staging')
     vi.stubEnv('CI', '')
     expect(
@@ -81,10 +81,18 @@ describe('deployed console error privacy', () => {
         path: '/oncall/integrations/v1/formatted_webhook/private-grafana/heartbeat',
         message: 'Bearer private-bearer https://[malformed/private-url?code=private-code',
         url: 'https://user:password@example.test/path?code=private-query#private-fragment',
-        token: 'private-token',
+        jobName: 'reconcile',
+        missingEnvVar: 'S3_BUCKET_SES_INBOUND',
+        invalidIdentifier: 'Bearer private-token',
+        tooLong: 'x'.repeat(65),
         nested: { secret: 'private-nested' },
       }),
-    ).toEqual({ count: 3, status: 503 })
+    ).toEqual({
+      count: 3,
+      status: 503,
+      jobName: 'reconcile',
+      missingEnvVar: 'S3_BUCKET_SES_INBOUND',
+    })
   })
 
   it.each([

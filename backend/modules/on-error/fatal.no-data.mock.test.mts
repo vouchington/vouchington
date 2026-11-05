@@ -38,7 +38,7 @@ describe('onFatalError console reporting', () => {
     vi.clearAllMocks()
     vi.stubEnv('ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('CI', 'true')
+    vi.stubEnv('CI', '')
     vi.stubEnv('SENTRY_DSN', '')
   })
 
@@ -71,6 +71,23 @@ describe('onFatalError console reporting', () => {
     expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain('private-captured-fatal')
     expect(captureException).toHaveBeenCalledExactlyOnceWith(err, {})
     expect(captureException.mock.calls[0]![0]).toBe(err)
+  })
+
+  it.each([
+    ['development', ''],
+    ['production', 'true'],
+  ])('logs the full fatal error exactly once in %s with CI=%s', async (environment, ci) => {
+    vi.stubEnv('NODE_ENV', environment)
+    vi.stubEnv('CI', ci)
+    const { onFatalError } = await import('./index.mts')
+    const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
+    const err = new TypeError('fatal diagnostic message for development or CI')
+
+    onFatalError(err)
+
+    expect(consoleSpy).toHaveBeenCalledExactlyOnceWith(err)
+    expect(consoleSpy.mock.calls[0]![0]).toBe(err)
+    expect(captureException).toHaveBeenCalledExactlyOnceWith(err, {})
   })
 
   it.each([false, true])(

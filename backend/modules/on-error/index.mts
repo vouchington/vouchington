@@ -50,9 +50,9 @@ export default function onError(err: Error) {
   reportError(err, shouldLogToConsole())
 }
 
-/** Fatal failures always have one safe console record, even when ordinary reporting filters them. */
+/** Fatal failures always have one console record, even when ordinary reporting filters them. */
 export function onFatalError(err: Error): void {
-  console.error(formatConsoleError(err))
+  console.error(useFullConsoleOutput() ? err : formatConsoleError(err))
   reportError(err, false)
 }
 

@@ -64,4 +64,21 @@ describe('recordOffAllowlistEgress', () => {
       vi.unstubAllEnvs()
     }
   })
+  it('omits deployed host and path even when they look like diagnostic identifiers', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('CI', '')
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      recordOffAllowlistEgress('private-host', { path: 'private-path', method: 'POST' })
+      expect(consoleWarn).toHaveBeenCalledExactlyOnceWith(
+        '[egress-guardrail] off-allowlist API egress',
+        { method: 'POST' },
+      )
+      expect(JSON.stringify(consoleWarn.mock.calls)).not.toContain('private-host')
+      expect(JSON.stringify(consoleWarn.mock.calls)).not.toContain('private-path')
+    } finally {
+      consoleWarn.mockRestore()
+      vi.unstubAllEnvs()
+    }
+  })
 })
