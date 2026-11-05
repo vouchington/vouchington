@@ -13,7 +13,6 @@ import {
 import { PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS } from './seed-data/copyright-case-purge-volume.mts'
 import * as claimantMisuse from './seed-data/claimant-misuse-windows.mts'
 
-/** Explicit seed.mts fixture counts plus conservative bounds for captured ancillary relations. */
 // Ancillary relations have no dedicated EXPLAIN seed count; refresh this bound if fixtures grow.
 const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
