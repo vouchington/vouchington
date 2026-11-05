@@ -1,7 +1,10 @@
 import { DelayedError } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { beginTransaction } from '@voucha/test-helpers'
-import { createAIRetentionContinuationFixture } from '@voucha/test-helpers/ai-retention-continuation-fixtures'
+import {
+  createAIRetentionContinuationFixture,
+  reserveAIRetentionContinuationJobs,
+} from '@voucha/test-helpers/ai-retention-continuation-fixtures'
 import { createCommittedRetentionCacheFixture } from '@voucha/test-helpers/ai-retention-committed-cache'
 import { enqueueAIRetentionContinuations } from '@queues/psql/enqueues'
 import { psql } from '@queues/psql/queues'
@@ -74,6 +77,8 @@ describe('AI retention continuation delivery', () => {
   it.each(AI_RETENTION_FAMILIES)(
     '%s drains bounded pages on the fetched continuation and admits again after that record is removed',
     async family => {
+      const reservation = await reserveAIRetentionContinuationJobs()
+      onTestFinished(() => reservation.release())
       removeContinuationOnFinish(family)
       await removeContinuation(family)
       await using query = await beginTransaction()
@@ -104,6 +109,8 @@ describe('AI retention continuation delivery', () => {
   )
 
   it('the daily seed admits actual backlogged families and skips the family already drained', async () => {
+    const reservation = await reserveAIRetentionContinuationJobs()
+    onTestFinished(() => reservation.release())
     for (const family of AI_RETENTION_FAMILIES) removeContinuationOnFinish(family)
     for (const family of AI_RETENTION_FAMILIES) await removeContinuation(family)
     await using query = await beginTransaction()
@@ -117,52 +124,43 @@ describe('AI retention continuation delivery', () => {
     )
     const drained = fixtures.get('textEmbeddingCache')
     if (!drained) throw new Error('missing text embedding retention fixture')
+    const terminalBatches = fixtures.get('terminalEmbeddingBatches')
+    const mediaChanges = fixtures.get('oldMediaDeliveryChanges')
+    if (!terminalBatches || !mediaChanges) throw new Error('missing AI retention fixture')
     await cleanupAIRetentionFamily('textEmbeddingCache', { ...drained.options, maxBatches: 3 })
-    const familyResults = Object.fromEntries(
-      await Promise.all(
-        AI_RETENTION_FAMILIES.map(async family => {
-          const fixture = fixtures.get(family)
-          if (!fixture) throw new Error(`missing AI retention fixture for ${family}`)
-          return [family, await cleanupAIRetentionFamily(family, fixture.options)] as const
-        }),
-      ),
-    ) as Record<(typeof AI_RETENTION_FAMILIES)[number], { deleted: number; hasMore: boolean }>
-    const dailyResults = {
-      ...familyResults,
-      classifierRecords: {},
-      softDeletedUsers: { deleted: 0, hasMore: false },
-      agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
-      aiUsageRecords: { hasMore: false },
-      supersededVoteBallots: [],
-      orphanedUserAgentStrings: { hasMore: false },
-      voteIntegrityDetails: { hasMore: false },
-      postModerationLedger: {
-        deletedVersions: 0,
-        clearedPassEvidence: 0,
-        hasMore: false,
-        remainingKinds: [],
-      },
-    }
-    const backlogged = AI_RETENTION_FAMILIES.filter(family => family !== 'textEmbeddingCache')
-    expect(AI_RETENTION_FAMILIES.filter(family => dailyResults[family].hasMore)).toEqual(backlogged)
+    expect(await drained.state()).toEqual(drained.expected)
+    expect(await drained.excludedState()).toBe(true)
+    expect(await terminalBatches.excludedState()).toBe(true)
+    expect(await mediaChanges.excludedState()).toEqual([true, true, true, true])
     const process = createAIRetentionContinuationProcessor((family, limits) => {
       const fixture = fixtures.get(family)
       if (!fixture) throw new Error(`missing AI retention fixture for ${family}`)
       return cleanupAIRetentionFamily(family, { ...limits, ...fixture.options })
     })
-    const admitted: string[] = []
-    const result = await processPsql('dataRetentionCleanup', undefined, {
-      dataRetentionCleanup: async () => dailyResults as never,
-      enqueueAIRetentionContinuations: async families => {
-        const jobs = await enqueueAIRetentionContinuations(families)
-        admitted.push(...jobs.map(job => job.id))
-        return jobs
+    const result = await processPsql('dataRetentionCleanup', undefined, undefined, undefined, {
+      retention: {
+        families: ['textEmbeddingCache', 'terminalEmbeddingBatches', 'oldMediaDeliveryChanges'],
+        textEmbeddingCache: drained.options,
+        terminalEmbeddingBatches: { ...terminalBatches.options, lowerBoundDate: undefined },
+        oldMediaDeliveryChanges: { ...mediaChanges.options, lowerBoundDate: undefined },
       },
     })
-    expect(result).toBe(dailyResults)
-    expect(admitted).toEqual(backlogged.map(continuationJobId))
+    expect(result).toMatchObject({ textEmbeddingCache: { deleted: 0, hasMore: false } })
     expect(await psql.getJob(continuationJobId('textEmbeddingCache'))).toBeNull()
-    for (const family of backlogged) {
+    expect(await drained.excludedState()).toBe(true)
+    expect(result).toMatchObject({
+      terminalEmbeddingBatches: { deleted: 1, hasMore: true },
+    })
+    const terminalJob = await requireContinuationJob('terminalEmbeddingBatches')
+    expect(terminalJob.id).toBe('ai_retention_continuation__terminalEmbeddingBatches')
+    expect(await terminalBatches.excludedState()).toBe(true)
+
+    expect(result).toMatchObject({ oldMediaDeliveryChanges: { deleted: 1, hasMore: true } })
+    const mediaJob = await requireContinuationJob('oldMediaDeliveryChanges')
+    expect(mediaJob.id).toBe('ai_retention_continuation__oldMediaDeliveryChanges')
+    expect(await mediaChanges.excludedState()).toEqual([true, true, true, true])
+    expect(await psql.getJob(continuationJobId('textEmbeddingCache'))).toBeNull()
+    for (const family of ['terminalEmbeddingBatches', 'oldMediaDeliveryChanges'] as const) {
       const fixture = fixtures.get(family)
       if (!fixture) throw new Error(`missing AI retention fixture for ${family}`)
       for (let pass = 0; pass < fixture.passes; pass += 1) {
@@ -175,6 +173,8 @@ describe('AI retention continuation delivery', () => {
   })
 
   it('propagates a processor failure without advancing the fetched job, then drains that same job', async () => {
+    const reservation = await reserveAIRetentionContinuationJobs()
+    onTestFinished(() => reservation.release())
     const family = 'textEmbeddingCache' satisfies AIRetentionFamily
     removeContinuationOnFinish(family)
     await removeContinuation(family)
@@ -205,6 +205,8 @@ describe('AI retention continuation delivery', () => {
   })
 
   it('commits each pass before the next call and cleans only its owned cache hashes', async () => {
+    const reservation = await reserveAIRetentionContinuationJobs()
+    onTestFinished(() => reservation.release())
     const family = 'textEmbeddingCache' satisfies AIRetentionFamily
     removeContinuationOnFinish(family)
     await removeContinuation(family)
