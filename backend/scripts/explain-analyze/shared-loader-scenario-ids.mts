@@ -8,4 +8,5 @@ export const SHARED_LOADER_SCENARIO_IDS = [
   'post-image-lock',
   'prioritized-referral-links-all-page',
   'prioritized-referral-links-cache-miss',
+  'prioritized-referral-links-cache-miss-10k',
 ] as const

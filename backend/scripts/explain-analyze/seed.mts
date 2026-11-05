@@ -53,7 +53,7 @@ import {
   seedConversations,
   seedConversationPaginationRows,
   seedFriendRecommendation,
-  seedPrioritizedReferralLink,
+  seedPrioritizedReferralPrograms,
   seedRssFeedItemCategories,
   seedRssFeeds,
   seedSemanticRssFeedItems,
@@ -121,7 +121,7 @@ async function main() {
   await seedUserAgentStrings()
   await seedCopyrightStaffEvidence()
   await seedRemoteFollowers()
-  await seedUrls()
+  await seedUrls(10_000)
   await seedTopics(2500)
   await seedIndividualCards(INDIVIDUAL_CARD_SEED_COUNT)
   await seedPointValuations(POINT_VALUATION_SEED_COUNT)
@@ -177,7 +177,7 @@ async function main() {
   await seedPostReviewTopicRatings(1000)
   await seedAnchorPostReviewTopicRating()
   await seedViewPostsAndUserImportApproval()
-  await seedPrioritizedReferralLink()
+  await seedPrioritizedReferralPrograms()
   await seedFriendRecommendation()
   await seedIngestionRawPages()
   await seedBloomReconciliation()

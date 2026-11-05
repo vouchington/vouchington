@@ -31,7 +31,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   user_topic_import_attempts: 25_001,
   url_hostnames: 4_017, // Existing 2000 hosts, 11 policy flags and 2006 crawl-sweep hosts.
   url_hostname_blocks: 6,
-  urls: 3_100,
+  urls: 10_000,
   rss_feeds: 2_500,
   rss_feed_items: 25_000,
   rss_feed_item_guids: 25_000,
@@ -93,7 +93,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   relation__user__save__post: 5_000,
   topic_metrics: 5_000,
   user_phone_numbers: 0,
-  user_referral_program_links: 1,
+  user_referral_program_links: 13_002,
   agents: ANCILLARY_SEED_ROW_UPPER_BOUND + prompt.COMMUNITY_AGENT_PROMPT_TOTAL_ROWS,
   apple_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   bluesky_linked_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,

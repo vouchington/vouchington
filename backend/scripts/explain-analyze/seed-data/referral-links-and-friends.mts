@@ -6,10 +6,18 @@ import { seedLargeReferralProgram } from './referral-links-large-program.mts'
 // plus one active, non-owner user_referral_program_links row so getPrioritizedReferralLinks'
 // active_links CTE has a row to rank. User index 2 is the link owner: never followed, muted, or
 // blocked by seedUser (index 0), so it isn't excluded by the query's own filters.
-export async function seedPrioritizedReferralLink(): Promise<void> {
+export async function seedPrioritizedReferralPrograms(): Promise<void> {
+  await seedPrioritizedReferralLink()
+  await seedPrioritizedReferralLink(1, 10_000)
+}
+
+async function seedPrioritizedReferralLink(
+  programIndex: 0 | 1 = 0,
+  authorCount = 3_000,
+): Promise<void> {
   console.log('Seeding a referral program topic and an active referral link...')
 
-  const referralProgramId = seedUuid(0, '09')
+  const referralProgramId = seedUuid(programIndex, '09')
   const linkOwnerId = seedUuid(2, '01')
   const urlId = seedUuid(0, '03')
 
@@ -22,9 +30,9 @@ export async function seedPrioritizedReferralLink(): Promise<void> {
        VALUES ($1, 'referral_program', $2, $3, $4, 'system') ON CONFLICT DO NOTHING`,
       [
         referralProgramId,
-        'Seed Referral Program',
-        'seed-referral-program',
-        contentHash('referral-program-0'),
+        programIndex === 0 ? 'Seed Referral Program' : 'Seed Referral Program 10k',
+        programIndex === 0 ? 'seed-referral-program' : 'seed-referral-program-10k',
+        contentHash(`referral-program-${programIndex}`),
       ],
     )
     await query(
@@ -40,7 +48,7 @@ export async function seedPrioritizedReferralLink(): Promise<void> {
 
     await transaction.commit()
   }
-  await seedLargeReferralProgram(referralProgramId)
+  await seedLargeReferralProgram(referralProgramId, authorCount)
 }
 
 // friend-recommendations needs a facebook_accounts row for seedUser plus a second, otherwise

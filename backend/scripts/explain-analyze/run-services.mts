@@ -9,7 +9,6 @@ export { getTopUrlsByHostnameIds } from '@services/urls-hostnames/top-urls'
 export {
   getAllReferralLinksPage,
   getPrioritizedReferralLinks,
-  loadOutOfNetworkLinks,
 } from '@services/prioritized-referral-links'
 export { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 export { getRssFeedItemFeedIds } from '@services/feeds/rss-feed-items/get-ids'
