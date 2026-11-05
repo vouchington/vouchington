@@ -1,23 +1,43 @@
 import { describe, expect, it } from 'vitest'
-import {
-  POST_SHARE_DENSE_DELIVERIES_PER_TARGET,
-  POST_SHARE_DENSE_TARGET_COUNT,
-  POST_SHARE_SPARSE_DELIVERIES_PER_TARGET,
-  POST_SHARE_SPARSE_TARGET_COUNT,
-  postShareSeedRows,
-} from './post-feed-shares.mts'
+import { capturePostShareSeedStatements } from '@voucha/test-helpers/explain-post-share-seed-capture'
+import { withNextPostgresConnectFailure } from '@voucha/test-helpers/postgres-connect-failure'
+import { seedPostFeedShares } from './post-feed-shares.mts'
 
 describe('post feed share EXPLAIN fixtures', () => {
-  it('deduplicates repeated deliveries into the declared sparse and dense target counts', () => {
-    for (const [recipient, targetCount, repeats] of [
-      [0, POST_SHARE_SPARSE_TARGET_COUNT, POST_SHARE_SPARSE_DELIVERIES_PER_TARGET],
-      [1, POST_SHARE_DENSE_TARGET_COUNT, POST_SHARE_DENSE_DELIVERIES_PER_TARGET],
-    ] as const) {
-      const rows = postShareSeedRows(recipient, targetCount, repeats)
-      expect(rows).toHaveLength(targetCount * repeats)
-      expect(new Set(rows.map(row => row.postId)).size).toBe(targetCount)
-      expect(new Set(rows.map(row => row.id)).size).toBe(rows.length)
-      expect(rows.every(row => row.id.replaceAll('-', '').at(12) === '7')).toBe(true)
-    }
+  it('deduplicates repeated deliveries into the declared sparse and dense target counts', async () => {
+    const statements = await capturePostShareSeedStatements()
+    expect(statements).toHaveLength(3)
+    expect(statements[0]?.text).toContain('INSERT INTO post_feed_shares')
+    expect(statements[1]?.text).toContain('INSERT INTO post_feed_shares')
+    expect(statements[2]?.text).toContain('INSERT INTO relation__user__follow__user')
+    const sparse = statements[0]!.values
+    const dense = statements[1]!.values
+    expect(sparse[0]).toBe('019e0000-0100-7000-8000-000000000000')
+    expect(dense[0]).toBe('019e0000-0100-7000-8000-000000000001')
+    expect(sparse[1]).toBe('019e0000-0100-7000-8000-000000000002')
+    expect(dense[1]).toBe('019e0000-0100-7000-8000-000000000002')
+    expect(statements[2]!.values).toEqual([
+      '019e0000-0100-7000-8000-000000004e1f',
+      '019e0000-0100-7000-8000-000000000002',
+    ])
+    const sparseIds = sparse[2] as string[]
+    const sparsePosts = sparse[3] as string[]
+    const denseIds = dense[2] as string[]
+    const densePosts = dense[3] as string[]
+    expect(sparseIds).toHaveLength(64)
+    expect(new Set(sparsePosts).size).toBe(8)
+    expect(new Set(sparseIds).size).toBe(64)
+    expect(sparseIds.every(id => id.replaceAll('-', '').at(12) === '7')).toBe(true)
+    expect(denseIds).toHaveLength(4000)
+    expect(new Set(densePosts).size).toBe(1000)
+    expect(new Set(denseIds).size).toBe(4000)
+    expect(denseIds.every(id => id.replaceAll('-', '').at(12) === '7')).toBe(true)
+  })
+
+  it('propagates the write-pool connection failure before seeding', async () => {
+    const failure = new Error('write-pool checkout failed')
+    await withNextPostgresConnectFailure(failure, async () => {
+      await expect(seedPostFeedShares()).rejects.toBe(failure)
+    })
   })
 })

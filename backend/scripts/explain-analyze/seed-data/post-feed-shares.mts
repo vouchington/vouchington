@@ -1,14 +1,14 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 
 export const POST_SHARE_SPARSE_TARGET_COUNT = 8
 export const POST_SHARE_DENSE_TARGET_COUNT = 1000
-export const POST_SHARE_SPARSE_DELIVERIES_PER_TARGET = 8
-export const POST_SHARE_DENSE_DELIVERIES_PER_TARGET = 4
+const POST_SHARE_SPARSE_DELIVERIES_PER_TARGET = 8
+const POST_SHARE_DENSE_DELIVERIES_PER_TARGET = 4
 export const POST_SHARE_EMPTY_USER_INDEX = 19_999
 const FIRST_TARGET_POST_INDEX = 60_000
 
-export function postShareSeedRows(
+function postShareSeedRows(
   recipientIndex: number,
   targetCount: number,
   deliveriesPerTarget: number,
@@ -23,9 +23,9 @@ export function postShareSeedRows(
   })
 }
 
-export async function seedPostFeedShares(): Promise<void> {
+export async function seedPostFeedShares(ownedTransaction?: OwnedTransaction): Promise<void> {
   console.log('Seeding repeated post feed share targets...')
-  await using transaction = await beginTransaction()
+  await using transaction = ownedTransaction ?? (await beginTransaction())
   for (const [recipientIndex, targetCount, deliveriesPerTarget] of [
     [0, POST_SHARE_SPARSE_TARGET_COUNT, POST_SHARE_SPARSE_DELIVERIES_PER_TARGET],
     [1, POST_SHARE_DENSE_TARGET_COUNT, POST_SHARE_DENSE_DELIVERIES_PER_TARGET],
