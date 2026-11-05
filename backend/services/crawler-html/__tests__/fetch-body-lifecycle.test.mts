@@ -1,6 +1,6 @@
 import * as http from '@modules/utils/http'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchCrawlerHtml } from '../index.mts'
+import CrawlerHtml from '../index.mts'
 
 const fetched = (
   response: Response,
@@ -32,7 +32,7 @@ describe('HTML crawler response body lifecycle', () => {
         ),
       )
 
-      const result = await fetchCrawlerHtml(
+      const result = await CrawlerHtml(
         { url: 'https://example.com/source', responseTimeoutMs: 100 },
         {},
       )
@@ -62,8 +62,8 @@ describe('HTML crawler response body lifecycle', () => {
     )
 
     await expect(
-      fetchCrawlerHtml({ url: 'https://example.com/', responseTimeoutMs: 100 }, {}),
-    ).rejects.toMatchObject({ name: 'AbortError' })
+      CrawlerHtml({ url: 'https://example.com/', responseTimeoutMs: 100 }, {}),
+    ).rejects.toMatchObject({ cause: { name: 'AbortError' } })
     expect(cancel).toHaveBeenCalledOnce()
     expect(body.locked).toBe(false)
   })
@@ -78,10 +78,7 @@ describe('HTML crawler response body lifecycle', () => {
       ),
     )
 
-    const result = await fetchCrawlerHtml(
-      { url: 'https://example.com/', skipEmbedResolution: true },
-      {},
-    )
+    const result = await CrawlerHtml({ url: 'https://example.com/', skipEmbedResolution: true }, {})
     try {
       expect(result.content?.title).toBe('Missing Location')
       expect(result.htmlFile?.byteLength).toBeGreaterThan(0)
@@ -97,8 +94,9 @@ describe('HTML crawler response body lifecycle', () => {
       fetched(new Response(body, { status })),
     )
 
-    await expect(fetchCrawlerHtml({ url: 'https://example.com/' }, {})).rejects.toMatchObject({
+    await expect(CrawlerHtml({ url: 'https://example.com/' }, {})).rejects.toMatchObject({
       status,
+      cause: { status },
     })
     expect(cancel).toHaveBeenCalledOnce()
     expect(body.locked).toBe(false)
