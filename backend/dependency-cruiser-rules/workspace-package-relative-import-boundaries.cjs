@@ -77,7 +77,9 @@ function discoverWorkspacePackageRoots() {
     )
   }
 
-  return [...roots].toSorted()
+  return [...roots].toSorted(
+    (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)),
+  )
 }
 
 module.exports = discoverWorkspacePackageRoots().map(packageRoot => {

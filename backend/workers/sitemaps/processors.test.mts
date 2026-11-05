@@ -250,7 +250,7 @@ describe('sitemap processors', () => {
     const firstAdmissions = addBulk.mock.calls.flatMap(([jobs]) => jobs)
     const firstDays = [
       ...new Set(firstAdmissions.map(job => getSitemapPostDayData(job)?.day)),
-    ].toSorted()
+    ].toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)))
     expect(first).toEqual({ enqueued: SITEMAP_CONFIG.POST_TYPES.length * 2, hasMore: true })
     expect(firstDays).toHaveLength(2)
     const continuation = add.mock.calls.find(

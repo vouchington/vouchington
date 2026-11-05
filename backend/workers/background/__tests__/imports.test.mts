@@ -157,7 +157,11 @@ describe('imports background domain', () => {
     await done
 
     expect(adminRows.toSorted()).toEqual(rows.map(row => row.id).toSorted())
-    expect(enqueuedOwnedRowIds().toSorted()).toEqual(rows.map(row => row.id).toSorted())
+    expect(
+      enqueuedOwnedRowIds().toSorted(
+        (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)),
+      ),
+    ).toEqual(rows.map(row => row.id).toSorted())
 
     addBulk.mockClear()
     await dispatchAdminTopicImport({ batchId: batch.id, cursor: rows.length })

@@ -169,7 +169,9 @@ describe('MCP output schema contract for the other read tools — real DB', () =
     expect(result).toMatchObject({ success: true, referral_program_id: fixture.referralProgramId })
     expect(result['links']).toHaveLength(2)
     expect(
-      (result['links'] as { label: string | null }[]).map(link => link.label).toSorted(),
+      (result['links'] as { label: string | null }[])
+        .map(link => link.label)
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     ).toEqual(['My referral link', null])
   })
 

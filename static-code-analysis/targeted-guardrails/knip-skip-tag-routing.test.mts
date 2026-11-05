@@ -86,7 +86,7 @@ describe('Knip skip-tag configuration routing', () => {
           ...Array(6).fill('backend/workers/sitemaps/processors.mts'),
           'backend/workers/sitemaps/workers.mts',
           'backend/workers/sitemaps/unapproved.mts',
-        ].toSorted(),
+        ].toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
       )
     } finally {
       rmSync(root, { recursive: true, force: true })

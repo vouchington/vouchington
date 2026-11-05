@@ -93,13 +93,17 @@ describe('RSS feed decision instant', () => {
       { feed_type: 'any', time_range: '1d', limit: 25 },
       asOf,
     )
-    expect(windowed.results.map(row => [row.entity_id, row.delivery_type]).toSorted()).toEqual(
+    expect(
+      windowed.results
+        .map(row => [row.entity_id, row.delivery_type])
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual(
       [
         [equal.id, 'direct'],
         [equal.id, 'share'],
         [newer.id, 'direct'],
         [newer.id, 'share'],
-      ].toSorted(),
+      ].toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     )
 
     const unbounded = await getRssFeedItemFeedIds(
@@ -107,14 +111,18 @@ describe('RSS feed decision instant', () => {
       { feed_type: 'any', time_range: 'all', limit: 25 },
       asOf,
     )
-    expect(unbounded.results.map(row => [row.entity_id, row.delivery_type]).toSorted()).toEqual(
+    expect(
+      unbounded.results
+        .map(row => [row.entity_id, row.delivery_type])
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual(
       [
         [older.id, 'direct'],
         [older.id, 'share'],
         [equal.id, 'share'],
         [newer.id, 'direct'],
         [newer.id, 'share'],
-      ].toSorted(),
+      ].toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     )
   })
 })

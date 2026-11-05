@@ -25,7 +25,9 @@ describe('findOrCreateDirectConversation', () => {
 
     const participants = await getConversationParticipants(conversation.id)
     expect(participants).toHaveLength(2)
-    const userIds = participants.map(p => p.user_id).toSorted()
+    const userIds = participants
+      .map(p => p.user_id)
+      .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)))
     expect(userIds).toEqual([sender.id, recipient.id].toSorted())
   })
 
@@ -71,7 +73,7 @@ describe('createGroupConversation', () => {
         if (p.role === 'member') acc.push(p.user_id)
         return acc
       }, [])
-      .toSorted()
+      .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)))
     expect(memberIds).toEqual([recipient1.id, recipient2.id].toSorted())
   })
 })

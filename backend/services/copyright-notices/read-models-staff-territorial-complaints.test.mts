@@ -142,7 +142,11 @@ describe('territorial poster cursor walk', () => {
     }
     expect(pageSizes).toEqual([1, 1])
     expect(new Set(walked.map(row => row.target_id)).size).toBe(2)
-    expect(walked.map(row => row.user_id).toSorted()).toEqual(posters)
+    expect(
+      walked
+        .map(row => row.user_id)
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual(posters)
 
     const everything = await listCopyrightTerritorialPosters(scene.staff, noticeId, { limit: 5 })
     expect(everything.results.map(row => row.target_id)).toEqual(walked.map(row => row.target_id))

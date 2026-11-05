@@ -173,7 +173,7 @@ export function useNotificationSettings(initialSettings: NotificationSettingsSta
     const selectedDays = settingsRef.current.moderation_email_days_of_week
     if (!checked && selectedDays.length === 1 && selectedDays.includes(day)) return
     const nextDays = checked
-      ? [...new Set([...selectedDays, day])].toSorted()
+      ? [...new Set([...selectedDays, day])].toSorted((a, b) => a - b)
       : selectedDays.filter(value => value !== day)
     void updateNotificationSetting('moderation_email_days_of_week', nextDays)
   }

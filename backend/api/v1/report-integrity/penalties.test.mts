@@ -228,7 +228,8 @@ describe('report-integrity penalties API', () => {
         request1.delete(`/api/v1/report-integrity/penalties/${penalties[0]!.id}`),
         request2.delete(`/api/v1/report-integrity/penalties/${penalties[0]!.id}`),
       ])
-      expect(responses.map(response => response.status).toSorted()).toEqual([200, 404])
+      const sortedStatuses = responses.map(response => response.status).toSorted((a, b) => a - b)
+      expect(sortedStatuses).toEqual([200, 404])
       expect(await getTestUserBadFaithReporterAt(reporterUser!.id)).toBeNull()
     })
 

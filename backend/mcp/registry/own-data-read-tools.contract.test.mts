@@ -188,9 +188,11 @@ describe('own-data read tools — real DB', () => {
 
       expect(tool['unread_count']).toBe(unread.length)
       expect(tool['unread_count']).toBe(route['unread_count'])
-      expect((tool['results'] as Body[]).map(row => row['id']).toSorted()).toEqual(
-        unread.toSorted(),
-      )
+      expect(
+        (tool['results'] as Body[])
+          .map(row => row['id'])
+          .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+      ).toEqual(unread.toSorted())
       expect(await call('read_my_notifications', NOTIFICATIONS, optionArgs('unread', {}))).toEqual(
         tool,
       )

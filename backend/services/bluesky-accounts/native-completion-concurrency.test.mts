@@ -34,7 +34,7 @@ describe('native Bluesky completion admission', () => {
     expect(
       results
         .map(result => (result.status === 'fulfilled' ? 204 : result.reason.status))
-        .toSorted(),
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     ).toEqual([204, 404])
     expect((await getTestBlueskyLinkedAccountRow(completion.did))?.user_id).toBe(user.id)
     expect(await testBlueskyLinkCompletionExists(completion.flowId)).toBe(false)

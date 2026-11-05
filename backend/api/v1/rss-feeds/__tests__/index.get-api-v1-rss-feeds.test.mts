@@ -225,7 +225,9 @@ describe('index', () => {
           ...page1.body.results.map((f: { id: string }) => f.id),
           ...page2.body.results.map((f: { id: string }) => f.id),
         ]
-        expect(allIds.toSorted()).toEqual(feedIds.toSorted())
+        expect(
+          allIds.toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+        ).toEqual(feedIds.toSorted())
       })
 
       it('should return 400 when after cursor is combined with text_search_query', async () => {

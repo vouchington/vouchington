@@ -48,7 +48,7 @@ describe('enqueueBulkCrawlUrls', () => {
     const dedupIds = jobs
       .filter(j => (j.data as { url_id?: string }).url_id === 'url-ratelimit')
       .map(j => (j.opts as { deduplication?: { id?: string } }).deduplication?.id)
-      .toSorted()
+      .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)))
     expect(dedupIds).toEqual([
       'crawl.crawl_url_ratelimit__url-ratelimit__1',
       'crawl.crawl_url_ratelimit__url-ratelimit__2',

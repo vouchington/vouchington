@@ -40,9 +40,11 @@ describe('community purge cache invalidation', () => {
       await Promise.all(page.afterCommit.map(effect => effect()))
 
       expect(communities).toHaveBeenCalledTimes(1)
-      expect([...communities.mock.calls[0]!].toSorted()).toEqual(
-        [archived.id, transferred.id].toSorted(),
-      )
+      expect(
+        [...communities.mock.calls[0]!].toSorted(
+          (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)),
+        ),
+      ).toEqual([archived.id, transferred.id].toSorted())
       expect(userMetrics).toHaveBeenCalledExactlyOnceWith(successor.id)
     } finally {
       communities.mockRestore()

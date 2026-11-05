@@ -54,7 +54,11 @@ describe('artifact-upload-outcome.mts call sites', () => {
     const steps = outcomeSteps(files)
 
     expect(steps).toHaveLength(14)
-    expect(steps.map(step => step.env?.SUITE).toSorted()).toEqual([
+    expect(
+      steps
+        .map(step => step.env?.SUITE)
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual([
       'backend-modules',
       'backend-native-migrations',
       'backend-native-mv',

@@ -138,11 +138,15 @@ describe('get-referral-links', () => {
       for (const args of [{ topic_id: cardTopicId }, { topic_id: cardTopicId, all: true }]) {
         const result = await execute(args)
         const links = (result as Extract<typeof result, { success: true }>).links
-        expect(links.map(l => [l.id, l.priority_group, l.is_official]).toSorted()).toEqual(
+        expect(
+          links
+            .map(l => [l.id, l.priority_group, l.is_official])
+            .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+        ).toEqual(
           [
             [official.id, 5, true],
             [link.id, 6, false],
-          ].toSorted(),
+          ].toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
         )
       }
       const result = await execute({ topic_id: cardTopicId })
