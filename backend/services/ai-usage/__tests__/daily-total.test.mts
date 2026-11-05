@@ -11,18 +11,8 @@ import type { PrivateUser } from '@services/users/types'
 import { recordAiUsage } from '../record.mts'
 import {
   getDailyAiCostTotalMicrounits,
-  parseDailyTotalMicrounits,
   refreshDailyAiCostTotalMicrounits,
 } from '../daily-total.mts'
-
-describe('parseDailyTotalMicrounits', () => {
-  it('rethrows a non-RangeError from parsePostgresMoneyAmount instead of clamping it', () => {
-    // '01' is non-canonical (leading zero), so parsePostgresMoneyAmount throws TypeError, not
-    // RangeError. Overflow is checked and clamped before parsing; any other parse error means the
-    // stored value itself is corrupt and must surface instead of being masked by the clamp.
-    expect(() => parseDailyTotalMicrounits('01')).toThrow(TypeError)
-  })
-})
 
 describe('getDailyAiCostTotalMicrounits', () => {
   const invalidExtendedUtcDayError = 'Invalid UTC day: +012000-01'

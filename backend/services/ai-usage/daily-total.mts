@@ -107,7 +107,7 @@ async function loadDailyAiCostTotalMicrounits(day: string): Promise<DailyAiCostT
  * the raw SUM past MAX_MONEY_AMOUNT (Number.MAX_SAFE_INTEGER), and parsePostgresMoneyAmount throws
  * a RangeError on that overflow. This known lower bound is already above the configured cap.
  */
-export function parseDailyTotalMicrounits(value: string): number {
+function parseDailyTotalMicrounits(value: string): number {
   if (!/^\d+$/.test(value)) throw new Error('Invalid daily AI cost total')
   if (BigInt(value) > BigInt(MAX_MONEY_AMOUNT)) return MAX_MONEY_AMOUNT
   return parsePostgresMoneyAmount(value)
