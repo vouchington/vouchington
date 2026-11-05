@@ -136,7 +136,10 @@ async function runCopyrightStaffCases(): Promise<void> {
       'copyright_notice_evidence_artifacts',
       'copyright_notice_email_intakes',
     ],
-    expectations: [{ kind: 'maxProcessedRows', relation: 'copyright_notices', max: 100 }],
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'copyright_notices', max: 100 },
+      { kind: 'maxProcessedRows', relation: 'copyright_notice_evidence_artifacts', max: 100 },
+    ],
     // The development seed, the review-target breach and the purge fixture leave a handful of intakes.
     seededRows: { copyright_notice_email_intakes: PURGE_EVIDENCE_SEEDED_ROWS + 7 },
   })
