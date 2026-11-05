@@ -8,12 +8,15 @@ export const REPO_ROOT = resolve(import.meta.dirname, '../../..')
 
 export type BunPlugin = {
   name: string
-  setup(build: {
-    onLoad(
-      options: { filter: RegExp },
-      callback: (args: { path: string }) => { contents: string; loader: 'js' | 'ts' } | undefined,
-    ): void
-  }): void
+  setup(
+    build: {
+      onLoad(
+        options: { filter: RegExp },
+        callback: (args: { path: string }) => { contents: string; loader: 'js' | 'ts' } | undefined,
+      ): void
+    },
+    repoRoot?: string,
+  ): void
 }
 
 // Without --aot, every bundled module shares `import.meta.dir` (`/$bunfs/root`) and an embedded
@@ -46,7 +49,7 @@ function resolveUndici(importer: string, subpath: string): string {
 const PLAYWRIGHT_PACKAGE_JSON_REQUIRE =
   /require\([\w$]+\.default\.join\(packageRoot, "([\w.-]+\.json)"\)\)/g
 
-export function rewriteModuleSource(source: string, modulePath: string): string {
+function rewriteModuleSource(source: string, modulePath: string, repoRoot: string): string {
   let rewritten = source
     // The bundler can't follow requires made through createRequire (sharp's addon); Bun's own
     // `require` in ESM is followed and embedded.
@@ -66,8 +69,8 @@ export function rewriteModuleSource(source: string, modulePath: string): string 
         `${prefix}${quote}${resolveUndici(modulePath, subpath)}${quote}`,
     )
   }
-  if (!usesRepositoryLayout(modulePath)) return rewritten
-  const embeddedPath = `${EMBEDDED_ROOT}/${relative(REPO_ROOT, modulePath)}`
+  if (!usesRepositoryLayout(modulePath, repoRoot)) return rewritten
+  const embeddedPath = `${EMBEDDED_ROOT}/${relative(repoRoot, modulePath)}`
   // CommonJS package files: shadow the module-scoped bindings after any directive prologue, so
   // strings that merely mention `__dirname` stay as they are and strict mode is kept.
   if (modulePath.includes('/node_modules/') && /\b__(?:dir|file)name\b/.test(rewritten)) {
@@ -83,18 +86,18 @@ export function rewriteModuleSource(source: string, modulePath: string): string 
     .replaceAll('import.meta.url', JSON.stringify(`file://${embeddedPath}`))
 }
 
-function usesRepositoryLayout(modulePath: string): boolean {
-  if (!modulePath.startsWith(`${REPO_ROOT}/`)) return false
-  if (!relative(REPO_ROOT, modulePath).split('/').includes('node_modules')) return true
+function usesRepositoryLayout(modulePath: string, repoRoot: string): boolean {
+  if (!modulePath.startsWith(`${repoRoot}/`)) return false
+  if (!relative(repoRoot, modulePath).split('/').includes('node_modules')) return true
   return REWRITTEN_PACKAGE_PATHS.some(path => modulePath.includes(path))
 }
 
 export const sourceRewritePlugin: BunPlugin = {
   name: 'voucha-compiled-module-layout',
-  setup(build) {
+  setup(build, repoRoot = REPO_ROOT) {
     build.onLoad({ filter: /\.(?:mts|cts|ts|mjs|cjs|js)$/ }, args => {
       const source = readFileSync(args.path, 'utf8')
-      const contents = rewriteModuleSource(source, args.path)
+      const contents = rewriteModuleSource(source, args.path, repoRoot)
       if (contents === source) return undefined
       return { contents, loader: /\.[mc]?ts$/.test(args.path) ? 'ts' : 'js' }
     })
