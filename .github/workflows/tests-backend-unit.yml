@@ -240,17 +240,17 @@ jobs:
     needs: [prep, backend-tests]
     if: ${{ !cancelled() && needs.backend-tests.result == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 11
     permissions:
       contents: read
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
-      - uses: ./.github/actions/start-valkey
-        timeout-minutes: 2
-      - uses: ./.github/actions/setup-backend
-        timeout-minutes: 6
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
+        timeout-minutes: 5
+        with:
+          deadline-seconds: '270'
       - name: Download complete backend-unit query-profile hits
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         timeout-minutes: 3
@@ -264,7 +264,6 @@ jobs:
       - name: Check query-profile baseline freshness
         timeout-minutes: 1
         env:
-          DATABASE_URL: postgres://localhost/voucha-query-profile-check
           EXPECTED_SHARDS: ${{ needs.prep.outputs.shard-total }}
         shell: bash
         run: |

@@ -4,29 +4,37 @@
 // Together, the input logs must contain every backend-unit shard from one complete run.
 // A scope is considered absent only when its matching diagnostic kind was present in the logs.
 import { readFileSync, writeFileSync } from 'node:fs'
-import '../s3-test-environment.mts'
-import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'
-import { onGracefulShutdown as closeValkey } from '@data-stores/valkey'
-import app from './request-query-profile-registered-routes.mts'
 import {
   buildStaleReport,
   MIN_STALE_EVIDENCE_LOGS,
   parseRepeatBaseline,
 } from 'vouchington-tooling/request-query-profile'
-import { resolveRequestProfileRoute } from '../request-query-profile-route.mts'
 import {
   buildStaleReportFromHitManifests,
   collectQueryProfileHitManifest,
 } from './request-query-profile-hit-manifest.mts'
 
+let shutdownDataStores: (() => Promise<void>) | undefined
 try {
-  await closeValkey.waitForInitialization()
   const baseline = parseRepeatBaseline(
     JSON.parse(
       readFileSync(new URL('./request-query-profile-baseline.json', import.meta.url), 'utf8'),
     ),
   )
   const args = process.argv.slice(2)
+  let resolveRoute: (route: string) => string = () => {
+    throw new Error('Request route resolver was not initialized')
+  }
+  if (args[0] !== '--manifests') {
+    await import('../s3-test-environment.mts')
+    const { shutdownDataStoresForOneOffCommand } = await import('@data-stores/graceful-shutdown')
+    shutdownDataStores = shutdownDataStoresForOneOffCommand
+    const { onGracefulShutdown: closeValkey } = await import('@data-stores/valkey')
+    const { default: app } = await import('./request-query-profile-registered-routes.mts')
+    const { resolveRequestProfileRoute } = await import('../request-query-profile-route.mts')
+    await closeValkey.waitForInitialization()
+    resolveRoute = route => resolveRequestProfileRoute(app, route)
+  }
   if (args[0] === '--collect') {
     if (args.length !== 4) throw new Error('Expected shard/total, shard log, and manifest path')
     const match = /^([1-9]\d*)\/([1-9]\d*)$/u.exec(args[1]!)
@@ -36,7 +44,7 @@ try {
       readFileSync(args[2]!, 'utf8'),
       Number(match[1]),
       Number(match[2]),
-      route => resolveRequestProfileRoute(app, route),
+      resolveRoute,
     )
     writeFileSync(args[3]!, `${JSON.stringify(manifest)}\n`)
     process.stdout.write(
@@ -52,7 +60,7 @@ try {
         : buildStaleReport(
             baseline,
             args.map(path => readFileSync(path, 'utf8')),
-            route => resolveRequestProfileRoute(app, route),
+            resolveRoute,
           )
     const totalScopes = baseline.reduce(
       (total, entry) => total + entry.routes.length + (entry.workers?.length ?? 0),
@@ -135,5 +143,5 @@ try {
   process.stderr.write(`error: ${err instanceof Error ? err.message : String(err)}\n`)
   process.exitCode = 2
 } finally {
-  await shutdownDataStoresForOneOffCommand()
+  await shutdownDataStores?.()
 }
