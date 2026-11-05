@@ -23,13 +23,13 @@ declare module 'cloudflare:workers' {
         ? true
         : false
       : false
-  type VerifiedUpstreamWorkerEntrypoint<Env, Props> =
+  type VerifiedUpstreamWorkerEntrypointContext<Env, Props> =
     IsExact<
       ConstructorParameters<UpstreamWorkerEntrypointConstructor<Env, Props>>[1],
       Env
     > extends true
       ? IsExact<UpstreamWorkerEntrypointProps<Env, Props>, Props> extends true
-        ? unknown
+        ? WorkerEntrypointContext<Props>
         : never
       : never
   type WorkerEntrypointContext<Props> = Pick<
@@ -40,9 +40,6 @@ declare module 'cloudflare:workers' {
   export abstract class WorkerEntrypoint<Env = unknown, Props = unknown> {
     protected readonly ctx: WorkerEntrypointContext<Props>
     protected readonly env: Env
-    constructor(
-      ctx: WorkerEntrypointContext<Props> & VerifiedUpstreamWorkerEntrypoint<Env, Props>,
-      env: Env,
-    )
+    constructor(ctx: VerifiedUpstreamWorkerEntrypointContext<Env, Props>, env: Env)
   }
 }

@@ -121,7 +121,7 @@ export type Post = {
     created_topic_slug?: string | null
   } | null
   data_point_vertical?: string | null
-  structured_data?: unknown | null
+  structured_data?: unknown
   declared_language?: string | null
   lingua_rs_detected_language?: string | null
   url_id?: string | null

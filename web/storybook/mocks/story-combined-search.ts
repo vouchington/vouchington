@@ -8,7 +8,7 @@ export function clearCombinedSearchFixture(): void {
   enabled = false
 }
 
-export function combinedSearchGet(endpoint: string): unknown | undefined {
+export function combinedSearchGet(endpoint: string): unknown {
   if (!enabled || endpoint !== '/api/v1/search') return undefined
   return {
     topics: [

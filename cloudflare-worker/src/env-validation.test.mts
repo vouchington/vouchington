@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 
 // vi.resetModules() resets the module-level productionValueInvalidLogged flag between tests.
 // Return the import promise without await to avoid the ban-dynamic-imports static-analysis rule.
@@ -11,7 +11,7 @@ function importProductionMode() {
   return import('./production-mode.mts')
 }
 
-type ConsoleErrorSpy = () => ReturnType<typeof vi.spyOn>
+type ConsoleErrorSpy = () => MockInstance<typeof console.error>
 
 type EnvErrorWarner = 'warnIfProductionValueInvalid' | 'warnIfCspAssetOriginInvalid'
 
@@ -21,7 +21,7 @@ type WarnerEnv = {
 }
 
 function installConsoleErrorSpy(): ConsoleErrorSpy {
-  let errorSpy: ReturnType<typeof vi.spyOn> | undefined
+  let errorSpy: MockInstance<typeof console.error> | undefined
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
@@ -152,7 +152,7 @@ describe('warnIfCspAssetOriginInvalid', () => {
 })
 
 describe('warnIfSentryConfigurationInvalid', () => {
-  let warnSpy: ReturnType<typeof vi.spyOn>
+  let warnSpy: MockInstance<typeof console.warn>
 
   beforeEach(() => {
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})

@@ -1,5 +1,5 @@
 import { act, fireEvent, render } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { AuthProvider } from '@/lib/auth/auth-provider'
 import { PodcastPlayerProvider } from './context'
 import { usePodcastPlayer } from './use-podcast-player'
@@ -59,7 +59,7 @@ function AuthedWrapper({ children }: { children: React.ReactNode }) {
 
 describe('PodcastPlayerSpacer', () => {
   let resizeObserverCallback: ResizeObserverCallback | null = null
-  let getBoundingClientRectSpy: ReturnType<typeof vi.spyOn> | null = null
+  let getBoundingClientRectSpy: MockInstance<HTMLElement['getBoundingClientRect']> | null = null
 
   beforeEach(() => {
     resizeObserverCallback = null

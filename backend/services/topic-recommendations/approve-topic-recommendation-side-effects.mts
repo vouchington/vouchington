@@ -22,7 +22,7 @@ const landingPageRelation = getEntityRelationMetadataOrThrow({
   predicate: 'landing_page',
 })
 
-async function runBestEffort(effect: () => unknown | Promise<unknown>): Promise<void> {
+async function runBestEffort(effect: () => unknown): Promise<void> {
   try {
     await effect()
   } catch (err) {

@@ -74,7 +74,7 @@ function rememberFeed(endpoint: string, body: unknown) {
   return { rss_feed: rssFeed }
 }
 
-export function storyTopicGet(endpoint: string): unknown | undefined {
+export function storyTopicGet(endpoint: string): unknown {
   const search = combinedSearchGet(endpoint)
   if (search !== undefined) return search
   if (!enabled) return undefined
@@ -122,7 +122,7 @@ export function storyTopicGet(endpoint: string): unknown | undefined {
   return undefined
 }
 
-export function storyTopicPost(endpoint: string, body: unknown): unknown | undefined {
+export function storyTopicPost(endpoint: string, body: unknown): unknown {
   if (/^\/api\/v1\/topics\/[^/]+\/aliases$/.test(endpoint)) {
     const added = storyText(body, 'aliases')
       .split(/[\n,]/)
@@ -156,7 +156,7 @@ export function storyTopicPost(endpoint: string, body: unknown): unknown | undef
   return undefined
 }
 
-export function storyTopicPatch(endpoint: string, body: unknown): unknown | undefined {
+export function storyTopicPatch(endpoint: string, body: unknown): unknown {
   const topic = endpoint.match(/^\/api\/v1\/topics\/([^/]+)$/)
   if (topic) return { topic: storyTopic(topic[1]!, body) }
   if (/^\/api\/v1\/topics\/[^/]+\/spending-category$/.test(endpoint)) {
@@ -170,7 +170,7 @@ export function storyTopicPatch(endpoint: string, body: unknown): unknown | unde
   return undefined
 }
 
-export function storyTopicDelete(endpoint: string): unknown | undefined {
+export function storyTopicDelete(endpoint: string): unknown {
   const alias = endpoint.match(/^\/api\/v1\/topics\/[^/]+\/aliases\/([^/]+)$/)
   if (alias) {
     aliasRecords = aliasRecords.filter(entry => entry.id !== alias[1])

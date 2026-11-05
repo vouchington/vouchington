@@ -3,7 +3,7 @@ import { insertTestCentralizedEmbeddingsBulk } from '../_bedrock-embeddings-supp
 import sql from 'sql-template-strings'
 import pgvector from 'pgvector/pg'
 
-export async function getTopicEmbeddingData(topicId: string): Promise<unknown | null> {
+export async function getTopicEmbeddingData(topicId: string): Promise<unknown> {
   const { rows } = await read(
     sql`/* getTopicEmbeddingData */
     SELECT

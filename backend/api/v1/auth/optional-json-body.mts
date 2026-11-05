@@ -1,10 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 
 /** Reads a JSON body while preserving the established empty-body mutation contract. */
-export async function readOptionalJsonBody(
-  ctx: Context,
-  limit: string,
-): Promise<unknown | undefined> {
+export async function readOptionalJsonBody(ctx: Context, limit: string): Promise<unknown> {
   const rawBody = await ctx.request.buffer(limit)
   if (rawBody.length === 0) return undefined
   try {

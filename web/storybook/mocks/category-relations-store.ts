@@ -34,7 +34,7 @@ export function categoryRelationPost(body: unknown): unknown {
   return { relation }
 }
 
-export function categoryRelationsResponse(endpoint: string): unknown | undefined {
+export function categoryRelationsResponse(endpoint: string): unknown {
   if (!enabled || !endpoint.startsWith('/api/v1/entity-relations/')) return undefined
   return {
     results: [...relations.values()].map(relation => ({

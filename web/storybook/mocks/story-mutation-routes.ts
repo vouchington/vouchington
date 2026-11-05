@@ -12,7 +12,7 @@ import { storyTopicDelete, storyTopicPatch } from './story-topic-routes'
 
 export { storyMutationPost }
 
-export function storyMutationPatch(endpoint: string, body: unknown): unknown | undefined {
+export function storyMutationPatch(endpoint: string, body: unknown): unknown {
   if (/^\/api\/v1\/posts\/[^/]+$/.test(endpoint)) return patchedPost(endpoint, body)
   if (/^\/api\/v1\/communities\/[^/]+$/.test(endpoint)) {
     return {
@@ -39,7 +39,7 @@ export function storyMutationPatch(endpoint: string, body: unknown): unknown | u
   return storyTopicPatch(endpoint, body)
 }
 
-export function storyMutationDelete(endpoint: string): unknown | undefined {
+export function storyMutationDelete(endpoint: string): unknown {
   if (endpoint.includes('/mod-notes/')) return { ok: true }
   if (endpoint.includes('/invites/') || endpoint.endsWith('/members')) return {}
   if (/^\/api\/v1\/posts\/[^/]+$/.test(endpoint)) return {}
@@ -56,7 +56,7 @@ export function storyMutationDelete(endpoint: string): unknown | undefined {
   return storyTopicDelete(endpoint)
 }
 
-export function storyMutationPut(endpoint: string): unknown | undefined {
+export function storyMutationPut(endpoint: string): unknown {
   if (endpoint.endsWith('/claim')) {
     return {
       claim: {

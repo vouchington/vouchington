@@ -23,7 +23,7 @@ export function resetInviteSequence(): void {
   nextInvite = 0
 }
 
-function exactPost(endpoint: string, body: unknown): unknown | undefined {
+function exactPost(endpoint: string, body: unknown): unknown {
   if (endpoint === '/api/v1/markdown/preview') {
     const markdown = storyText(body, 'markdown')
     return { html: markdown.trim() ? `<p>${markdown}</p>` : '' }
@@ -76,7 +76,7 @@ function communityInvite(body: unknown) {
   }
 }
 
-function patternPost(endpoint: string, body: unknown): unknown | undefined {
+function patternPost(endpoint: string, body: unknown): unknown {
   if (/^\/api\/v1\/communities\/[^/]+\/posts$/.test(endpoint)) return communityDiscussion(body)
   if (endpoint.endsWith('/automod/simulate')) return automodSimulation(body)
   if (endpoint.includes('/automod/recent-actions/') && endpoint.endsWith('/feedback')) {
@@ -130,6 +130,6 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
   return storyClaimMutation(endpoint, body) ?? storyTopicPost(endpoint, body)
 }
 
-export function storyMutationPost(endpoint: string, body: unknown): unknown | undefined {
+export function storyMutationPost(endpoint: string, body: unknown): unknown {
   return exactPost(endpoint, body) ?? patternPost(endpoint, body) ?? followerActionPost(endpoint)
 }

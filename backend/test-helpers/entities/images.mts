@@ -60,7 +60,7 @@ export async function setImageOpenAIModerationResults(
 
 export async function getImageModerationState(imageId: string): Promise<{
   deleted_at: Date | null
-  openai_omni_moderation_results: unknown | null
+  openai_omni_moderation_results: unknown
   is_flagged_by_openai_omni_moderation: boolean | null
   openai_omni_moderation_created_at: Date | null
 } | null> {
@@ -68,7 +68,7 @@ export async function getImageModerationState(imageId: string): Promise<{
     deleted_at: Date | null
     quarantine_pending_at: Date | null
     quarantined_at: Date | null
-    openai_omni_moderation_results: unknown | null
+    openai_omni_moderation_results: unknown
     is_flagged_by_openai_omni_moderation: boolean | null
     openai_omni_moderation_created_at: Date | null
   }>(

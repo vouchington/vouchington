@@ -1,4 +1,4 @@
-import { createElement, isValidElement, type ElementType, type ReactNode } from 'react'
+import { createElement, isValidElement, type ComponentType, type ReactNode } from 'react'
 import { AsideColumn } from '@/components/aside-column'
 import { AsideDrawer } from '@/components/aside-drawer'
 import { ContentContainer } from '@/components/layout/content-container'
@@ -21,7 +21,7 @@ export function PageWithAside({
   mobileHidden = false,
 }: {
   children: ReactNode
-  aside?: ElementType | ReactNode
+  aside?: ComponentType | ReactNode
   showFooter?: boolean
   /** When true, the aside column is hidden on mobile (AsideDrawer still handles mobile access). */
   mobileHidden?: boolean
@@ -30,7 +30,7 @@ export function PageWithAside({
     aside &&
     (typeof aside === 'function' ||
       (typeof aside === 'object' && !isValidElement(aside) && isComponentObject(aside)))
-      ? createElement(aside as ElementType)
+      ? createElement(aside as ComponentType)
       : aside
 
   return (

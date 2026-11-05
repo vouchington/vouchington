@@ -26,9 +26,9 @@ const ranking = encodeCursor({ ranking: 1, id: ID })
 const tier = encodeCursor({ tier: 1, id: ID })
 const currentUser = { id: ID, roles: [] }
 
-type CursorCase = [string, () => unknown | Promise<unknown>]
+type CursorCase = [string, () => unknown]
 
-function cursorCase(label: string, run: () => unknown | Promise<unknown>): CursorCase {
+function cursorCase(label: string, run: () => unknown): CursorCase {
   return [label, run]
 }
 

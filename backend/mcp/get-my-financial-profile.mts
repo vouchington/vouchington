@@ -8,7 +8,7 @@ const API = { method: 'GET', path: '/api/v1/my/financial-profile' } as const
 
 const tool: Tool<
   Record<string, never>,
-  { success: true; result: { financial_profile: unknown | null } }
+  { success: true; result: { financial_profile: unknown } }
 > = {
   schema: {
     name: 'get_my_financial_profile',

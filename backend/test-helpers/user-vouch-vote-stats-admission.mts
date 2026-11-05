@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Job } from 'glide-mq'
-import { vi } from 'vitest'
+import { vi, type MockInstance } from 'vitest'
 import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
 
@@ -95,8 +95,8 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
   }
   const retryReal = retry.retryTransientEnqueue
   const bulkReal = queue.addBulk
-  let retrySpy: ReturnType<typeof vi.spyOn> | undefined
-  let bulkSpy: ReturnType<typeof vi.spyOn> | undefined
+  let retrySpy: MockInstance<typeof retry.retryTransientEnqueue> | undefined
+  let bulkSpy: MockInstance<typeof queue.addBulk> | undefined
   let result: Result | undefined
   try {
     worker.on('active', active)

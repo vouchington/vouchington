@@ -20,7 +20,7 @@ type MentionConfig = {
   type: MentionType
   prefix: string
   className: string
-  batchGet: (identifiers: string[]) => Promise<Array<unknown | null>>
+  batchGet: (identifiers: string[]) => Promise<Array<unknown>>
   buildResolved: (mention: EntityMention, entity: unknown) => ResolvedMention
   getText: (mention: ResolvedMention) => string
   getTitle: (mention: ResolvedMention) => string

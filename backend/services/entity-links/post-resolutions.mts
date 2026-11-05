@@ -4,7 +4,7 @@ import type { PostMention, ResolvedPostMention } from './types.mts'
 export function buildResolvedPostMention(
   mention: PostMention,
   entity: unknown,
-  rootPostsByCommentId: Map<string, unknown | null>,
+  rootPostsByCommentId: Map<string, unknown>,
 ): ResolvedPostMention {
   const post = entity as {
     id: string

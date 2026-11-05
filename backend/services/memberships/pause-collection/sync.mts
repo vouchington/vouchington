@@ -78,7 +78,7 @@ async function applyPauseCollection(
   return sendPauseCollection(input, subscriptionId, desired)
 }
 
-async function loadDirectSubscriptionId(input: OwnedLease): Promise<string | 'superseded' | null> {
+async function loadDirectSubscriptionId(input: OwnedLease): Promise<string | null> {
   if (!(await membershipPauseCollectionLeaseHeld(input))) return 'superseded'
   return loadPauseCollectionDirectSubscriptionId(input.userId)
 }

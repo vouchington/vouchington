@@ -7,12 +7,12 @@ export function resetStoryTopicMerge(): void {
   topicMerge = null
 }
 
-export function storyTopicMergeGet(endpoint: string): unknown | undefined {
+export function storyTopicMergeGet(endpoint: string): unknown {
   if (/^\/api\/v1\/topics\/[^/]+\/merges\/[^/]+$/.test(endpoint) && topicMerge) return topicMerge
   return undefined
 }
 
-export function storyTopicMergePost(endpoint: string, body: unknown): unknown | undefined {
+export function storyTopicMergePost(endpoint: string, body: unknown): unknown {
   if (!/^\/api\/v1\/topics\/[^/]+\/merges$/.test(endpoint)) return undefined
   const sourceId = endpoint.split('/')[4] ?? 'source-topic'
   topicMerge = {
