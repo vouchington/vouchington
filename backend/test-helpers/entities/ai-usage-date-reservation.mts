@@ -20,10 +20,10 @@ export function getTestAiUsageSlotGridForDate(date: Date): {
   const firstSlot = Math.ceil(windowStart / SLOT_MS)
   const endSlot = Math.floor(windowEnd / SLOT_MS)
   const slots = Array.from({ length: endSlot - firstSlot }, (_, offset) => firstSlot + offset)
-  const controlSlot = slots.find(slot => slot % CONTROL_SLOT_STRIDE === 0)
-  if (controlSlot === undefined) throw new Error('AI usage date window has no control slot')
+  const reservedSlot = slots.find(slot => slot % CONTROL_SLOT_STRIDE === 0)
+  if (reservedSlot === undefined) throw new Error('AI usage date window has no control slot')
   return {
-    controlSlot,
+    controlSlot: reservedSlot,
     ordinarySlots: slots.filter(slot => slot % CONTROL_SLOT_STRIDE !== 0),
   }
 }

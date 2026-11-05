@@ -37,18 +37,20 @@ describe('fetchWithPinnedDns', () => {
       new UnsafeUrlError('https://10.0.0.1/', 'IP address is private: 10.0.0.1'),
     )
     const signal = AbortSignal.timeout(5000)
-    const err = await fetchWithPinnedDns('https://10.0.0.1/', signal).catch((err: unknown) => err)
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(403)
+    const failure = await fetchWithPinnedDns('https://10.0.0.1/', signal).catch(
+      (err: unknown) => err,
+    )
+    expect(failure).toBeInstanceOf(HttpOperationError)
+    expect((failure as HttpOperationError).statusCode).toBe(403)
   })
 
   it('maps UnsafeUrlError with invalid URL reason to HttpOperationError(400)', async () => {
     const { UnsafeUrlError } = await import('ssrf-guard/node')
     mockSafeFetch.mockRejectedValue(new UnsafeUrlError('not-a-url', 'invalid URL'))
     const signal = AbortSignal.timeout(5000)
-    const err = await fetchWithPinnedDns('not-a-url', signal).catch((err: unknown) => err)
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(400)
+    const failure = await fetchWithPinnedDns('not-a-url', signal).catch((err: unknown) => err)
+    expect(failure).toBeInstanceOf(HttpOperationError)
+    expect((failure as HttpOperationError).statusCode).toBe(400)
   })
 
   it('maps UnsafeUrlError with scheme not allowed reason to HttpOperationError(400)', async () => {
@@ -57,9 +59,11 @@ describe('fetchWithPinnedDns', () => {
       new UnsafeUrlError('file:///etc/passwd', 'scheme not allowed: file:'),
     )
     const signal = AbortSignal.timeout(5000)
-    const err = await fetchWithPinnedDns('file:///etc/passwd', signal).catch((err: unknown) => err)
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(400)
+    const failure = await fetchWithPinnedDns('file:///etc/passwd', signal).catch(
+      (err: unknown) => err,
+    )
+    expect(failure).toBeInstanceOf(HttpOperationError)
+    expect((failure as HttpOperationError).statusCode).toBe(400)
   })
 
   it('maps UnsafeUrlError with too-many-redirects reason to HttpOperationError(403)', async () => {
@@ -68,20 +72,20 @@ describe('fetchWithPinnedDns', () => {
       new UnsafeUrlError('https://example.com/', 'too many redirects (max: 10)'),
     )
     const signal = AbortSignal.timeout(5000)
-    const err = await fetchWithPinnedDns('https://example.com/', signal).catch(
+    const failure = await fetchWithPinnedDns('https://example.com/', signal).catch(
       (err: unknown) => err,
     )
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(403)
+    expect(failure).toBeInstanceOf(HttpOperationError)
+    expect((failure as HttpOperationError).statusCode).toBe(403)
   })
 
   it('re-throws non-UnsafeUrlError errors unchanged', async () => {
     const networkError = new Error('Network failure')
     mockSafeFetch.mockRejectedValue(networkError)
     const signal = AbortSignal.timeout(5000)
-    const err = await fetchWithPinnedDns('https://example.com/', signal).catch(
+    const failure = await fetchWithPinnedDns('https://example.com/', signal).catch(
       (err: unknown) => err,
     )
-    expect(err).toBe(networkError)
+    expect(failure).toBe(networkError)
   })
 })

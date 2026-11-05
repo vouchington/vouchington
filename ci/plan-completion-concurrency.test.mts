@@ -69,8 +69,8 @@ function snapshotFixture() {
       })
     if (path.endsWith('/issues'))
       return JSON.stringify([
-        plans.map(number => ({
-          number,
+        plans.map(planNumber => ({
+          number: planNumber,
           state: 'open',
           author_association: 'MEMBER',
           title: 'Plan: discovered',
@@ -80,12 +80,14 @@ function snapshotFixture() {
       await readPhase('timeline')
       const plan = Number(path.split('/').at(-2))
       return JSON.stringify([
-        [2 * plan, 2 * plan + 1].map(number => ({
+        [2 * plan, 2 * plan + 1].map(planNumber => ({
           event: 'cross-referenced',
           source: {
             issue: {
-              number,
-              pull_request: { url: `https://api.github.com/repos/${REPOSITORY}/pulls/${number}` },
+              number: planNumber,
+              pull_request: {
+                url: `https://api.github.com/repos/${REPOSITORY}/pulls/${planNumber}`,
+              },
             },
             type: 'issue',
           },

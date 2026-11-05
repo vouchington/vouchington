@@ -74,12 +74,12 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
     ? await getPostIds(currentUser, searchOptions)
     : await getPostIdsCached(searchOptions)
   if (!currentUser) {
-    const publicPostIds = await getPublicPostIds(result.results.map(result => result.id))
-    result.results = result.results.filter(result => publicPostIds.has(result.id))
+    const publicPostIds = await getPublicPostIds(result.results.map(postResult => postResult.id))
+    result.results = result.results.filter(postResult => publicPostIds.has(postResult.id))
   }
   const postIds = result.results.map((r: { id: string }) => r.id)
   const postsAndRootsPromise = getPostsWithRootsByAnyCached(postIds)
-  const rawPostsPromise = postsAndRootsPromise.then(result => result.posts)
+  const rawPostsPromise = postsAndRootsPromise.then(postsAndRoots => postsAndRoots.posts)
   // Page posts and their roots are labelled together in one read of the provenance facts.
   const labelledPostsPromise = postsAndRootsPromise.then(async ({ posts, roots }) => {
     const labelled = await labelAndMaskPosts([...posts, ...roots], currentUser)

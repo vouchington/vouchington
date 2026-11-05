@@ -91,7 +91,7 @@ async function runPruningProof(): Promise<void> {
       control => {
         lifecycleControls.push(control)
       },
-      name => lifecycleDatabases.push(name),
+      databaseName => lifecycleDatabases.push(databaseName),
     )
     if (lifecycleControls.length !== 3)
       throw new Error('Expected all three native lifecycle controls')
@@ -134,7 +134,7 @@ async function runPruningProof(): Promise<void> {
     const { seedPruningProof, assertPruningFixturePlacement } = await import('./seed.mts')
     const { capturePruningProof } = await import('./capture.mts')
     const { assertMonthlyRetirementControls } = await import('./retirement-controls.mts')
-    await assertMonthlyRetirementControls(owned.name, name => retirementControls.push(name))
+    await assertMonthlyRetirementControls(owned.name, dbName => retirementControls.push(dbName))
     if (retirementControls.length !== 3)
       throw new Error('Expected all three native retirement controls')
     await attachProofRanges(write)

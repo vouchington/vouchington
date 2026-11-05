@@ -5,7 +5,7 @@ import { ROUTE_SELECTORS, WEB_CHROME_SELECTOR } from '../route-selectors.generat
 
 describe('webSelectorsForPath', () => {
   it('requests chrome and every route selector with route-local copy within the public bound', () => {
-    for (const route of ROUTE_SELECTORS.filter(route => route.hasMembership)) {
+    for (const route of ROUTE_SELECTORS.filter(candidate => candidate.hasMembership)) {
       const pathname = route.pattern
       const selectors = webSelectorsForPath(pathname)
       expect(selectors).toContain(WEB_CHROME_SELECTOR)

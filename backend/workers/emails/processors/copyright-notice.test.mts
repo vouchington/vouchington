@@ -52,7 +52,9 @@ async function createEmailDeliveryIntent(): Promise<{ intentId: string; noticeId
     },
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(intake.intake.copyright_notice_id)
-  const intent = aggregate?.deliveryIntents.find(intent => intent.channel === 'email')
+  const intent = aggregate?.deliveryIntents.find(
+    candidateIntent => candidateIntent.channel === 'email',
+  )
   if (!intent) throw new Error('fixture email delivery intent missing')
   return { intentId: intent.id, noticeId: intake.intake.copyright_notice_id }
 }

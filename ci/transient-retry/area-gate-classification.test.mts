@@ -52,7 +52,7 @@ describe('area gate classification', () => {
     expect(isAreaGateJob(workflow, 'unknown')).toBe(false)
     expect(isAreaGateJob('Main CI (backend)', gate)).toBe(false)
     expect(isAreaGateJob('unknown', gate)).toBe(false)
-    for (const other of areaGates.filter(other => other.workflow !== workflow)) {
+    for (const other of areaGates.filter(candidate => candidate.workflow !== workflow)) {
       expect(isAreaGateJob(workflow, other.gate)).toBe(false)
       expect(isAreaGateJob(other.workflow, gate)).toBe(false)
     }

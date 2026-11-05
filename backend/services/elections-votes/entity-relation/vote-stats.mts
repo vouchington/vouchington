@@ -142,8 +142,8 @@ export function enqueueTopHashtagRefreshIfUpdated(
 export function enqueuePostNotificationReconciliationIfUpdated(
   target: EntityRelationElectionTarget,
   postId: string | undefined,
-  enqueue: (postId: string) => unknown = postId =>
-    enqueueReconcilePostNotifications(postId, randomUUID()),
+  enqueue: (postId: string) => unknown = notifiedPostId =>
+    enqueueReconcilePostNotifications(notifiedPostId, randomUUID()),
 ): void {
   if (
     postId &&

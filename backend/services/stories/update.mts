@@ -31,14 +31,14 @@ export async function updateStoryTitle(
   `,
       { query },
     )
-    const story = (rows[0] as Story) ?? null
-    if (story)
+    const updatedStory = (rows[0] as Story) ?? null
+    if (updatedStory)
       await recordModeratorAction(
         actorId,
         { actionType: 'story_rename', metadata: { story_id: storyId, title } },
         { query },
       )
-    return story
+    return updatedStory
   })
   if (story) await invalidateStories(story.id)
   return story
@@ -76,8 +76,8 @@ export async function adminSetStoryOfficialItem(
   `,
       { query },
     )
-    const story = (rows[0] as Story) ?? null
-    if (story)
+    const updatedStory = (rows[0] as Story) ?? null
+    if (updatedStory)
       await recordModeratorAction(
         actorId,
         {
@@ -86,7 +86,7 @@ export async function adminSetStoryOfficialItem(
         },
         { query },
       )
-    return story
+    return updatedStory
   })
   if (story) await invalidateStories(story.id)
   return story

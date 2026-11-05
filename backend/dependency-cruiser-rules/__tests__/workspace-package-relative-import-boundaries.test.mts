@@ -39,7 +39,7 @@ describe('workspace-package-relative-import-boundaries', () => {
   describe('a generated package-boundary rule', () => {
     const packageRoot = 'backend/agents/_shared'
     const rule = rules.find(
-      rule => rule.name === 'workspace-package-boundary-backend-agents-_shared',
+      candidate => candidate.name === 'workspace-package-boundary-backend-agents-_shared',
     )
     if (!rule) throw new Error(`missing generated rule for ${packageRoot}`)
 

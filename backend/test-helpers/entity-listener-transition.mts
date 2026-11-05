@@ -66,7 +66,7 @@ export async function withTestEntityListenerCompletion<T>(
     restoreObservers.push(() => spy.mockRestore())
 
     actionPromise = Promise.resolve().then(action)
-    const result = await actionPromise
+    const actionResult = await actionPromise
     const attempts = await Promise.allSettled(matchingAdds)
     const successful = attempts.filter(result => result.status === 'fulfilled')
     if (successful.length !== 1)
@@ -89,7 +89,7 @@ export async function withTestEntityListenerCompletion<T>(
     if (finalAttempts.filter(result => result.status === 'fulfilled').length !== 1) {
       throw new Error(`Expected one successful '${jobName}' admission for ${entityId}`)
     }
-    return result
+    return actionResult
   } finally {
     await cleanup()
   }

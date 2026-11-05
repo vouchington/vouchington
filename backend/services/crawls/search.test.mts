@@ -69,7 +69,7 @@ describe('search', () => {
     const crawl = await createCrawl(url!.id, crawler.id)
 
     const result = await searchPublicUrlCrawlsForUrl(url!.id)
-    const retrieved = result.results.find(result => result.id === crawl.id)
+    const retrieved = result.results.find(crawlResult => crawlResult.id === crawl.id)
 
     expect(retrieved).toMatchObject({
       __entity_type: 'crawl',

@@ -40,9 +40,9 @@ describe('view lookup predicate configuration', () => {
       ),
     ) as { views: Record<string, { materialized: boolean }> }
     const rule = config.rules.find(
-      (rule): rule is ViewRule =>
-        rule.rule === 'postgres-required-predicates' &&
-        (rule.options.relations?.some(
+      (candidate): candidate is ViewRule =>
+        candidate.rule === 'postgres-required-predicates' &&
+        (candidate.options.relations?.some(
           relation => relation.table === 'view_publicly_projected_image_placements',
         ) ??
           false),

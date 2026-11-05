@@ -135,9 +135,9 @@ export async function withdrawCopyrightJurisdictionPolicyApproval(
 ): Promise<{ id: string }> {
   assert(currentUserCanApproveCopyrightJurisdictionPolicy(currentUser), 403, 'Forbidden')
   if (options.query || options.client) return withTransactionOptions(options, execute)
-  await using transaction = await beginTransaction()
-  const result = await execute(transaction)
-  await transaction.commit()
+  await using ownedTransaction = await beginTransaction()
+  const result = await execute(ownedTransaction)
+  await ownedTransaction.commit()
   return result
 
   async function execute(transaction: TransactionQuery) {

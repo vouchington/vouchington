@@ -42,8 +42,8 @@ export async function refreshStoryPostForStory(
   storyId: string,
   options: RefreshStoryPostQueryOptions = {},
 ): Promise<StoryPostRefreshResult | null> {
-  const query = options.query
-  if (!query) {
+  const existingQuery = options.query
+  if (!existingQuery) {
     await using query = await beginTransaction()
     await lockStoryLifecycles(query, [storyId])
     const result = await refreshStoryPostForStoryInTransaction(storyId, { query })
@@ -54,7 +54,7 @@ export async function refreshStoryPostForStory(
     }
     return result
   }
-  return refreshStoryPostForStoryInTransaction(storyId, { ...options, query })
+  return refreshStoryPostForStoryInTransaction(storyId, { ...options, query: existingQuery })
 }
 
 async function refreshStoryPostForStoryInTransaction(

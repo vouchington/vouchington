@@ -33,8 +33,8 @@ export async function createMigrationPlatformFixture(
     const errors: unknown[] = [err]
     try {
       await rm(root, { force: true, recursive: true })
-    } catch (err) {
-      errors.push(err)
+    } catch (err_) {
+      errors.push(err_)
     }
     if (errors.length > 1)
       throw new AggregateError(errors, 'Migration fixture setup and cleanup failed', { cause: err })

@@ -55,11 +55,13 @@ export async function runWithOwnedPostElectionVoteStats(
   }
   const [result] = await Promise.allSettled([operation])
   const [cleanup] = await Promise.allSettled([close()])
-  const errors = result?.status === 'rejected' ? [result.reason] : []
-  if (cleanup?.status === 'rejected') errors.push(cleanup.reason)
-  if (errors.length === 1) throw errors[0]
-  if (errors.length)
-    throw new AggregateError(errors, 'Election operation and cleanup failed', { cause: errors[0] })
+  const operationErrors = result?.status === 'rejected' ? [result.reason] : []
+  if (cleanup?.status === 'rejected') operationErrors.push(cleanup.reason)
+  if (operationErrors.length === 1) throw operationErrors[0]
+  if (operationErrors.length)
+    throw new AggregateError(operationErrors, 'Election operation and cleanup failed', {
+      cause: operationErrors[0],
+    })
   if (result?.status !== 'fulfilled') throw new Error('Missing election result')
   return result.value
 

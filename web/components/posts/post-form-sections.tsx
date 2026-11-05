@@ -75,8 +75,8 @@ export function ReviewTopicsFieldset({
               value={entry.topicId || null}
               label={entry.topicName || (entry.topicId ? t('shared.topic.unavailable') : '')}
               onChange={(id, name) => onReviewTopicChange(index, id, name)}
-              excludeIds={reviewTopics.flatMap((t, i) =>
-                i !== index && t.topicId ? [t.topicId] : [],
+              excludeIds={reviewTopics.flatMap((topic, i) =>
+                i !== index && topic.topicId ? [topic.topicId] : [],
               )}
               inputRef={el => {
                 setTopicInputRef(index, el)

@@ -110,8 +110,8 @@ afterEach(async ({ task }) => {
     throw new Error(
       findings
         .map(
-          ({ verdict, counts, poolMetrics, observations }) =>
-            `${formatForkLeakDiagnostics(verdict, counts, poolMetrics, {
+          ({ verdict, counts: findingCounts, poolMetrics, observations }) =>
+            `${formatForkLeakDiagnostics(verdict, findingCounts, poolMetrics, {
               poolMetricsLabel: 'PostgreSQL pool metrics:',
             })}\nTCP handshake observations: ${observations
               .map(

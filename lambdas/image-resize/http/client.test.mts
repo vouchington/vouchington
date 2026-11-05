@@ -265,14 +265,19 @@ describe('fetchImageFromUrl', () => {
       },
     } as never)
 
-    const err = await fetchImageFromUrl('https://example.com/image.jpg', undefined, undefined, {
-      fetchWithPinnedDns: mockFetchWithPinnedDns,
-    }).catch((err: unknown) => err)
+    const fetchError = await fetchImageFromUrl(
+      'https://example.com/image.jpg',
+      undefined,
+      undefined,
+      {
+        fetchWithPinnedDns: mockFetchWithPinnedDns,
+      },
+    ).catch((err: unknown) => err)
 
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(403)
+    expect(fetchError).toBeInstanceOf(HttpOperationError)
+    expect((fetchError as HttpOperationError).statusCode).toBe(403)
     expect(() => {
-      throw err
+      throw fetchError
     }).toThrow('URL not allowed: too many redirects')
     expect(mockFetchWithPinnedDns).toHaveBeenCalledTimes(6)
   })
@@ -280,13 +285,13 @@ describe('fetchImageFromUrl', () => {
   it('should re-throw HttpOperationError from fetchWithPinnedDns', async () => {
     mockFetchWithPinnedDns.mockRejectedValue(new HttpOperationError('URL host is not allowed', 403))
 
-    const err = await fetchImageFromUrl(
+    const fetchError = await fetchImageFromUrl(
       'https://blocked.example.com/image.jpg',
       undefined,
       undefined,
       { fetchWithPinnedDns: mockFetchWithPinnedDns },
     ).catch((err: unknown) => err)
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(403)
+    expect(fetchError).toBeInstanceOf(HttpOperationError)
+    expect((fetchError as HttpOperationError).statusCode).toBe(403)
   })
 })

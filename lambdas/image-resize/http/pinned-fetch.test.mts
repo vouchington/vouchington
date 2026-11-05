@@ -30,9 +30,9 @@ describe('fetchWithPinnedDns (real ssrf-guard)', () => {
     ['first-party staging images host', 'https://images-staging.voucha.ai/photo.jpg'],
     ['first-party images subdomain', 'https://cdn.images.voucha.ai/photo.jpg'],
   ])('blocks %s (%s) with HttpOperationError(403)', async (_label, url) => {
-    const err = await fetchWithPinnedDns(url, signal).catch((err: unknown) => err)
+    const failure = await fetchWithPinnedDns(url, signal).catch((err: unknown) => err)
 
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(403)
+    expect(failure).toBeInstanceOf(HttpOperationError)
+    expect((failure as HttpOperationError).statusCode).toBe(403)
   })
 })

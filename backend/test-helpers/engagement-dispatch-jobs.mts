@@ -121,7 +121,7 @@ export async function withOwnedEngagementAdmissions<T>(
   return outcome.value
 
   async function settle() {
-    const outcome = await action.promise
+    const actionOutcome = await action.promise
     const errors: unknown[] = []
     const jobs: Array<{ name: string; data: unknown }> = []
     try {
@@ -157,11 +157,11 @@ export async function withOwnedEngagementAdmissions<T>(
       return {
         ok: false as const,
         error: new AggregateError(errors, 'Owned engagement admission failed', {
-          cause: outcome.ok ? errors[0] : outcome.error,
+          cause: actionOutcome.ok ? errors[0] : actionOutcome.error,
         }),
       }
-    if (!outcome.ok) return outcome
-    return { ok: true as const, value: { value: outcome.value, jobs } }
+    if (!actionOutcome.ok) return actionOutcome
+    return { ok: true as const, value: { value: actionOutcome.value, jobs } }
   }
 }
 

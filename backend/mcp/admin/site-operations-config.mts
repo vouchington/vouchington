@@ -49,9 +49,9 @@ const history = createAdminTool<{ namespace: string }>({
   outputSchema: adminRouteOutputSchema(historyApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
   run: async (user, args) => {
-    const history = await listDynamicConfigNamespaceHistory(user, args.namespace)
-    assert(history, 404, 'Dynamic config namespace not found')
-    return { history }
+    const namespaceHistory = await listDynamicConfigNamespaceHistory(user, args.namespace)
+    assert(namespaceHistory, 404, 'Dynamic config namespace not found')
+    return { history: namespaceHistory }
   },
 })
 const updateApi = { method: 'PATCH', path: '/api/v1/dynamic-config/namespaces/:namespace' } as const

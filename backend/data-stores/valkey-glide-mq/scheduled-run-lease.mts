@@ -38,8 +38,8 @@ export async function withScheduledRunLease(
     // colliding tick while the current holder is live, even if this read fails.
     try {
       onError(err instanceof Error ? err : new Error(String(err)))
-    } catch (err) {
-      console.error('scheduled_interval_reporting_failed', err)
+    } catch (err_) {
+      console.error('scheduled_interval_reporting_failed', err_)
     }
   }
   const interval = scheduleInterval(entry)
@@ -65,9 +65,9 @@ export async function withScheduledRunLease(
     } catch (err) {
       try {
         await release()
-      } catch (err) {
+      } catch (err_) {
         // A failed cleanup must not hide the bookkeeping failure that triggered it.
-        console.error('scheduled_lease_bookkeeping_release_failed', err)
+        console.error('scheduled_lease_bookkeeping_release_failed', err_)
       }
       throw err
     }
@@ -91,8 +91,8 @@ export async function withScheduledRunLease(
     } catch (err) {
       try {
         onError(err instanceof Error ? err : new Error(String(err)))
-      } catch (err) {
-        console.error('scheduled_overlap_metric_reporting_failed', err)
+      } catch (err_) {
+        console.error('scheduled_overlap_metric_reporting_failed', err_)
       }
     }
     console.info('deferred_admitted', { queue, scheduler, jobId: job.id })

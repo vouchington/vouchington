@@ -19,9 +19,9 @@ describe('helper file basename configuration', () => {
       rules: Rule[]
     }
     const rule = config.rules.find(
-      rule =>
-        rule.rule === 'banned-paths' &&
-        rule.options?.bannedPaths?.some(entry => entry.glob === '**/*test-helpers*'),
+      candidateRule =>
+        candidateRule.rule === 'banned-paths' &&
+        candidateRule.options?.bannedPaths?.some(entry => entry.glob === '**/*test-helpers*'),
     )
     const guard = rule?.options?.bannedPaths?.find(entry => entry.glob === '**/*test-helpers*')
 

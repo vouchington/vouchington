@@ -7,11 +7,11 @@ import {
 } from './test-helpers/runtime-public-config'
 
 const { sentryInitCall, mockSentryInit } = vi.hoisted(() => {
-  const sentryInitCall: { options?: Parameters<typeof Sentry.init>[0] } = {}
+  const capturedInit: { options?: Parameters<typeof Sentry.init>[0] } = {}
   return {
-    sentryInitCall,
+    sentryInitCall: capturedInit,
     mockSentryInit: vi.fn<typeof Sentry.init>(options => {
-      sentryInitCall.options = options
+      capturedInit.options = options
     }),
   }
 })

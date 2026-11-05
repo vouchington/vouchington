@@ -45,11 +45,11 @@ describe('getTrendingPosts reference clock', () => {
           await insertScoredPostTopicCategoryRelation(postId, topicId, postOwner)
         }
 
-        const result = await getTrendingPosts(
+        const trendingResult = await getTrendingPosts(
           { timeRange: scenario.timeRange, limit: 10, topicId },
           referenceTime,
         )
-        return { result, postIds }
+        return { result: trendingResult, postIds }
       },
       {
         afterCreateForTest: async (fixture, ownedSpec) => {

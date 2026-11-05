@@ -24,7 +24,7 @@ describe('sideload source hops', () => {
   })
 
   it('rejects a direct first-party media origin before any fetch', async () => {
-    const err = await fetchImageFromUrl(
+    const failure = await fetchImageFromUrl(
       'https://images.voucha.ai/photo.jpg',
       undefined,
       undefined,
@@ -33,8 +33,8 @@ describe('sideload source hops', () => {
       },
     ).catch((err: unknown) => err)
 
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(403)
+    expect(failure).toBeInstanceOf(HttpOperationError)
+    expect((failure as HttpOperationError).statusCode).toBe(403)
     expect(fetchWithPinnedDns).not.toHaveBeenCalled()
   })
 
@@ -43,26 +43,26 @@ describe('sideload source hops', () => {
       redirectResponse('https://cdn.images.voucha.ai/stolen.jpg') as never,
     )
 
-    const err = await fetchImageFromUrl('https://cdn.example/photo.jpg', undefined, undefined, {
+    const failure = await fetchImageFromUrl('https://cdn.example/photo.jpg', undefined, undefined, {
       fetchWithPinnedDns,
     }).catch((err: unknown) => err)
 
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(403)
+    expect(failure).toBeInstanceOf(HttpOperationError)
+    expect((failure as HttpOperationError).statusCode).toBe(403)
     expect(fetchWithPinnedDns).toHaveBeenCalledTimes(1)
   })
 
   it('rejects a configured first-party alias before any fetch', async () => {
     process.env.MEDIA_SOURCE_HOST_ALIASES = 'media.partner.test'
-    const err = await fetchImageFromUrl(
+    const failure = await fetchImageFromUrl(
       'https://edge.media.partner.test/photo.jpg',
       undefined,
       undefined,
       { fetchWithPinnedDns },
     ).catch((err: unknown) => err)
 
-    expect(err).toBeInstanceOf(HttpOperationError)
-    expect((err as HttpOperationError).statusCode).toBe(403)
+    expect(failure).toBeInstanceOf(HttpOperationError)
+    expect((failure as HttpOperationError).statusCode).toBe(403)
     expect(fetchWithPinnedDns).not.toHaveBeenCalled()
   })
 })

@@ -6,8 +6,8 @@ const rootId = '123e4567-e89b-12d3-a456-426614174000'
 
 describe('query-builder.generated', () => {
   it('buildCommentTreeQuery best sort retains vote score ordering and pagination', () => {
-    const rootId = '123e4567-e89b-12d3-a456-426614174000'
-    const query = buildCommentTreeQuery(rootId, {
+    const testRootId = '123e4567-e89b-12d3-a456-426614174000'
+    const query = buildCommentTreeQuery(testRootId, {
       sort: 'best',
       vote_score_lt: 0.42,
       id_lt: '123e4567-e89b-12d3-a456-426614174001',

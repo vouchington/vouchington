@@ -18,9 +18,9 @@ export async function recordMembershipEntitlementEffect(
   query?: QueryExecutor,
 ): Promise<void> {
   if (!query) {
-    await using query = await beginTransaction()
-    await recordMembershipEntitlementEffect(membershipChangeId, userId, query)
-    await query.commit()
+    await using transactionQuery = await beginTransaction()
+    await recordMembershipEntitlementEffect(membershipChangeId, userId, transactionQuery)
+    await transactionQuery.commit()
     return
   }
   await query(sql`/* recordMembershipEntitlementEffect */

@@ -42,7 +42,9 @@ const registration = { active: {}, pushManager: { getSubscription } }
 describe('push registration ownership handoff', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(waitForActiveServiceWorker).mockImplementation(async registration => registration)
+    vi.mocked(waitForActiveServiceWorker).mockImplementation(
+      async activeRegistration => activeRegistration,
+    )
     bootstrapBindingMock.mockResolvedValue(null)
     getSubscription.mockResolvedValue(physicalSubscription)
     vi.mocked(clearPushBinding).mockResolvedValue({ status: 'disabled', revision })

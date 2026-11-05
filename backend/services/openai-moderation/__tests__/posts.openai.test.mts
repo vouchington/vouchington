@@ -67,12 +67,12 @@ describe('posts.openai', () => {
       expect(moderationData!.openai_omni_moderation_content_sha256).toEqual(result.content_sha256)
       expect(moderationData!.openai_omni_moderation_input_sha256).toEqual(result.content_sha256)
 
-      const flagged = moderationResults.some(result => result.flagged)
+      const flagged = moderationResults.some(moderationResult => moderationResult.flagged)
       expect(moderationData!.is_flagged_by_openai_omni_moderation).toBe(flagged)
       expect(moderationData!.openai_omni_moderation_results).toEqual({
         flagged_categories: moderationResults
-          .flatMap(result =>
-            Object.entries(result.categories)
+          .flatMap(moderationResult =>
+            Object.entries(moderationResult.categories)
               .filter(([, categoryFlagged]) => categoryFlagged)
               .map(([category]) => category),
           )

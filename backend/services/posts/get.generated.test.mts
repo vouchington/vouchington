@@ -42,7 +42,7 @@ describe('get.generated', () => {
 
   it('getPostByAny throws error for invalid post id or slug', async () => {
     // 'not-a-uuid-or-slug' is actually a valid slug format, so use something that's neither UUID nor slug
-    const err = await getPostByAny('not a valid slug!').catch((err: unknown) => err)
+    const err = await getPostByAny('not a valid slug!').catch((err_: unknown) => err_)
     expect(err).toBeDefined()
     expect(err).toHaveProperty('message', 'Invalid post id or slug')
     expect(err).toHaveProperty('statusCode', 422)

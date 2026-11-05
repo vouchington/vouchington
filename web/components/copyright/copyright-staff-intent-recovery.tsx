@@ -25,7 +25,7 @@ export function CopyrightStaffIntentRecovery({
     <section className='space-y-2'>
       <h3 className='font-medium'>Delivery failures</h3>
       {failedActions.map(intent => {
-        const target = notice.targets.find(target => target.id === intent.target_id)
+        const target = notice.targets.find(candidate => candidate.id === intent.target_id)
         return (
           <RecoveryRow
             key={intent.id}

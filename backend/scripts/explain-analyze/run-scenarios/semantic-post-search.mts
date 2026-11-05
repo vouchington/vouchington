@@ -70,8 +70,8 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
     } catch (err) {
       try {
         await recordSemanticPostFailure(scenario, options, seed)
-      } catch (err) {
-        console.error(`${scenario}: secondary diagnostic failure`, err)
+      } catch (err_) {
+        console.error(`${scenario}: secondary diagnostic failure`, err_)
       }
       throw err
     }

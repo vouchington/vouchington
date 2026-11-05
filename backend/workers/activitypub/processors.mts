@@ -26,14 +26,14 @@ export async function processDistributeActivityJob(
     target: background,
     targetName: 'background',
     readAndDispatch: async pageSize => {
-      const result = await distributeActivity(job.data, pageSize)
+      const distributionResult = await distributeActivity(job.data, pageSize)
       return {
-        result,
-        ...(!result.completed
+        result: distributionResult,
+        ...(!distributionResult.completed
           ? {
               next: nextDistributionPage(
                 job.data,
-                'cursor' in result ? result.cursor : job.data.cursor,
+                'cursor' in distributionResult ? distributionResult.cursor : job.data.cursor,
               ),
             }
           : {}),

@@ -31,11 +31,11 @@ export async function bindPushBinding(
     },
     {
       messageType,
-      accept: state =>
-        state.status === 'bound' &&
-        state.binding.endpoint === binding.endpoint &&
-        state.binding.subscription_id === binding.subscription_id &&
-        state.revision === expectedRevision,
+      accept: workerState =>
+        workerState.status === 'bound' &&
+        workerState.binding.endpoint === binding.endpoint &&
+        workerState.binding.subscription_id === binding.subscription_id &&
+        workerState.revision === expectedRevision,
     },
   )
   if (state.status !== 'bound') throw new Error('The service worker rejected the push binding.')
@@ -48,7 +48,7 @@ export async function clearPushBinding(
   const state = await requestWorkerState(
     registration,
     { action: 'clear' },
-    { messageType, accept: state => state.status === 'disabled' },
+    { messageType, accept: workerState => workerState.status === 'disabled' },
   )
   if (state.status !== 'disabled') throw new Error('The service worker rejected the push binding.')
   return state
@@ -60,7 +60,7 @@ export async function beginPushBindingReconciliation(
   const state = await requestWorkerState(
     registration,
     { action: 'begin-reconciliation' },
-    { messageType, accept: state => state.status === 'reconciling' },
+    { messageType, accept: workerState => workerState.status === 'reconciling' },
   )
   if (state.status !== 'reconciling')
     throw new Error('The service worker rejected push binding reconciliation.')

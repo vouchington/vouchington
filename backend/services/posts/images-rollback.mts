@@ -1,6 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
 import { compensatePostRevision } from '@services/post-revisions'
-import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 import {
@@ -32,7 +31,7 @@ export async function rollbackPostImages(
   await using query = await beginTransaction()
   await lockImageAssetAdmission(deliveryImageIds, query)
   let ensuredCurrentVersion = false
-  async function rollbackImagesInTransaction(query: TransactionQuery) {
+  async function rollbackImagesInTransaction() {
     const imageIds = [
       ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),
     ].toSorted()
@@ -159,7 +158,7 @@ export async function rollbackPostImages(
     })
     return true
   }
-  const result = await rollbackImagesInTransaction(query)
+  const result = await rollbackImagesInTransaction()
   await query.commit()
   if (ensuredCurrentVersion) await admitAutomatedPostModeration(postId)
   if (result) {

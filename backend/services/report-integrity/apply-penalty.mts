@@ -1,9 +1,5 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import {
-  beginTransaction,
-  registerPostCommitAction,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import { markJwtStaleBatch } from '@services/jwt-session/invalidation'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -41,7 +37,7 @@ export async function applyReportAbusePenalty(
   flagId: string,
 ): Promise<ApplyReportAbusePenaltyResult> {
   await using query = await beginTransaction()
-  const result = await applyPenaltyInTransaction(query)
+  const result = await applyPenaltyInTransaction()
   await recordModeratorAction(
     currentUserId,
     {
@@ -69,7 +65,7 @@ export async function applyReportAbusePenalty(
   await query.commit()
   return applied
 
-  async function applyPenaltyInTransaction(query: TransactionQuery): Promise<{
+  async function applyPenaltyInTransaction(): Promise<{
     flag: ReportIntegrityFlag & { hostname: string | null }
     penalties: AppliedReportAbusePenalty[]
   }> {

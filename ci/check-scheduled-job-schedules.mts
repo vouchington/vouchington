@@ -46,7 +46,7 @@ async function importSpecifier<T>(specifier: string): Promise<T> {
 }
 
 async function scheduleCatalogFailures(): Promise<string[]> {
-  const failures: string[] = []
+  const catalogFailures: string[] = []
   if (schedulePaths.length === 0) {
     return ['no schedule modules matched the schedule globs']
   }
@@ -75,13 +75,15 @@ async function scheduleCatalogFailures(): Promise<string[]> {
       )
       const manifest = loadedModule.scheduledJobManifest
       if (manifest === undefined) {
-        failures.push(`${path}: missing scheduledJobManifest`)
+        catalogFailures.push(`${path}: missing scheduledJobManifest`)
       }
       const combinedQueue = manifest !== undefined && combinedQueues.includes(manifest.queueName)
       const upsertKind = typeof loadedModule.upsertSchedules
       const expectedUpsert = combinedQueue ? 'undefined' : 'function'
       if (manifest !== undefined && upsertKind !== expectedUpsert) {
-        failures.push(`${path}: upsertSchedules is ${upsertKind}, expected ${expectedUpsert}`)
+        catalogFailures.push(
+          `${path}: upsertSchedules is ${upsertKind}, expected ${expectedUpsert}`,
+        )
       }
       return loadedModule
     }),
@@ -103,7 +105,7 @@ async function scheduleCatalogFailures(): Promise<string[]> {
   const onlyCatalog = catalogOwn.filter(manifest => !moduleOwnSet.has(manifest))
   const onlyModules = moduleOwn.filter(manifest => !catalogOwnSet.has(manifest))
   if (onlyCatalog.length > 0 || onlyModules.length > 0) {
-    failures.push(
+    catalogFailures.push(
       [
         'API catalog manifests are not the discovered own-queue manifests',
         `only in catalog: ${onlyCatalog.map(describeManifest).join('; ') || '(none)'}`,
@@ -177,7 +179,7 @@ async function scheduleCatalogFailures(): Promise<string[]> {
       'worker runtime schedule functions are not the discovered upsert functions plus the combined registrations',
     )
   }
-  return failures
+  return catalogFailures
 }
 
 function describeManifest(manifest: ScheduledJobManifest): string {

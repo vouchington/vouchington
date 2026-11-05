@@ -80,9 +80,9 @@ describe('remote Follow identity at user purge', () => {
     const inboundFenceSubmitted = Promise.withResolvers<void>()
     await using inboundTransaction = await beginTransaction()
     const observedQuery = new Proxy(inboundTransaction, {
-      apply(target, thisArg, args: Parameters<typeof inboundTransaction>) {
+      apply(proxyTarget, thisArg, args: Parameters<typeof inboundTransaction>) {
         const [input] = args
-        const pending = Reflect.apply(target, thisArg, args)
+        const pending = Reflect.apply(proxyTarget, thisArg, args)
         if (
           (typeof input === 'string' ? input : input.text).includes(
             'lockActiveUserSubjectsForMutation',

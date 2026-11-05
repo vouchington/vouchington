@@ -60,7 +60,7 @@ describe('reconcile-post batches', () => {
       onCreatedNotifications: async () => {
         throw failure
       },
-    }).catch((err: unknown) => err)
+    }).catch((err_: unknown) => err_)
 
     expect(err).toBe(failure)
     expect(err).toMatchObject({

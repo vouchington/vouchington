@@ -57,16 +57,16 @@ export async function syncOrCreateStripeMembershipInTransaction(
         stripeEventId: eventId,
         membershipId: lockedFactMembershipId,
         observedAt,
-        onLockedSource: async query => {
-          route = await getLockedStripeMembershipSource(sourceIdentity, query)
+        onLockedSource: async lockedQuery => {
+          route = await getLockedStripeMembershipSource(sourceIdentity, lockedQuery)
         },
-        onAcceptedObservation: async (query, lifecycleAt, evidenceId, snapshot) => {
+        onAcceptedObservation: async (acceptedQuery, lifecycleAt, evidenceId, snapshot) => {
           if (!route) throw new Error('Stripe membership route was not locked')
           await reconcileLockedStripeMembershipSource(
             eventId,
             sourceIdentity,
             values,
-            query,
+            acceptedQuery,
             lifecycleAt,
             route,
             evidenceId,

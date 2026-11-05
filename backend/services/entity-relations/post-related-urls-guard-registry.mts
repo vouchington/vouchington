@@ -30,11 +30,11 @@ export function getRegisteredPostRelatedUrlsGuard(): PostRelatedUrlsGuard {
 export function createPostRelatedUrlsGuardRegistry() {
   let registeredGuard: PostRelatedUrlsGuard | null = null
 
-  function registerPostRelatedUrlsGuard(guard: PostRelatedUrlsGuard): void {
+  function registerGuard(guard: PostRelatedUrlsGuard): void {
     registeredGuard = guard
   }
 
-  function getRegisteredPostRelatedUrlsGuard(): PostRelatedUrlsGuard {
+  function getRegisteredGuard(): PostRelatedUrlsGuard {
     if (!registeredGuard) {
       throw createCodedError(
         500,
@@ -45,5 +45,8 @@ export function createPostRelatedUrlsGuardRegistry() {
     return registeredGuard
   }
 
-  return { registerPostRelatedUrlsGuard, getRegisteredPostRelatedUrlsGuard }
+  return {
+    registerPostRelatedUrlsGuard: registerGuard,
+    getRegisteredPostRelatedUrlsGuard: getRegisteredGuard,
+  }
 }

@@ -40,9 +40,9 @@ describe('post.ancestors', () => {
         parentId: rootId,
       })
 
-      for (const suffix of ['', '?limit=1']) {
+      for (const querySuffix of ['', '?limit=1']) {
         const response = await createRequest()
-          .get(`/api/v1/posts/${commentSlug}/ancestors${suffix}`)
+          .get(`/api/v1/posts/${commentSlug}/ancestors${querySuffix}`)
           .expect(200)
         expect(response.body.results.map((item: { id: string }) => item.id)).toEqual([
           rootId,

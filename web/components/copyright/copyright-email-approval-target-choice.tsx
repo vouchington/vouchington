@@ -29,7 +29,7 @@ export function CopyrightEmailApprovalTargetChoice({
         checked={checked}
         disabled={disabled}
         id={id}
-        onCheckedChange={checked => onCheckedChange(checked === true)}
+        onCheckedChange={nextChecked => onCheckedChange(nextChecked === true)}
       />
       {label}
     </Label>

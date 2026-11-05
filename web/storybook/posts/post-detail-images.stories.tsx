@@ -63,7 +63,7 @@ export const MultipleImages: Story = {
   ),
   play: async ({ canvasElement }) => {
     await Promise.all(
-      Array.from(canvasElement.querySelectorAll('img')).map(image => image.decode()),
+      Array.from(canvasElement.querySelectorAll('img')).map(element => element.decode()),
     )
   },
 }

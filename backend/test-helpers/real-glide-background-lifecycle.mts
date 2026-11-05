@@ -109,16 +109,15 @@ export async function startRealGlideBackgroundLifecycle<TJob extends JobDefiniti
   startup = Promise.all(started.map(worker => worker.waitUntilReady())).then(() => undefined)
   try {
     await startup
-  } catch (err) {
-    const primary = err
+  } catch (err_) {
     try {
       await close()
     } catch (err) {
-      throw new AggregateError([primary, err], 'Background startup and cleanup failed', {
+      throw new AggregateError([err_, err], 'Background startup and cleanup failed', {
         cause: err,
       })
     }
-    throw primary
+    throw err_
   }
   if (closing) throw new Error('Background harness closed during startup')
   return {

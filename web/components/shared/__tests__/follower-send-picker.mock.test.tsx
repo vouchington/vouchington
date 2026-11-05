@@ -24,8 +24,12 @@ vi.mock(
   import('@/components/shared/entity-autocomplete'),
   () =>
     ({
-      EntityAutocomplete: ({ search, results = [], footer }: EntityAutocompleteMockProps) => {
-        latestSearch = search
+      EntityAutocomplete: ({
+        search: searchFollowers,
+        results = [],
+        footer,
+      }: EntityAutocompleteMockProps) => {
+        latestSearch = searchFollowers
         return (
           <div>
             {results.map(follower => (

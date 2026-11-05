@@ -165,7 +165,7 @@ async function syncExistingMembership(
         : values.cancelAtPeriodEnd,
       query,
     },
-    async (updated, query) => {
+    async (updated, reconciliationQuery) => {
       const changeType = getMembershipChangeType({
         previousStatus: updated.previous.status,
         nextStatus: updated.current.status,
@@ -190,7 +190,7 @@ async function syncExistingMembership(
         ...getMembershipLifecycleSnapshotFromFields(updated.current),
         membershipProviderEvidenceId,
         stripeEventId: eventId,
-        query,
+        query: reconciliationQuery,
       })
       return false
     },

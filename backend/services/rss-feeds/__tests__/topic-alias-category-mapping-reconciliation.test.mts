@@ -95,7 +95,7 @@ describe('topic alias category mapping reconciliation', () => {
     const item = await owned.run(() => createTestRssFeedItemWithUrl(feedId))
     const [alias] = await owned.run(
       () => createTopicAliases(topicA.id, `reconcile-unlinked-${item.id}`),
-      aliases => owned.ids.push(...aliases.map(alias => alias.id)),
+      aliases => owned.ids.push(...aliases.map(topicAlias => topicAlias.id)),
     )
     const foreignId = uuidv7()
     owned.ids.push(foreignId)
@@ -144,7 +144,7 @@ describe('topic alias category mapping reconciliation', () => {
     const topicB = await owned.run(() => createTestTopic())
     const [alias] = await owned.run(
       () => createTopicAliases(topicA.id, `reconcile-cas-${topicA.id}`),
-      aliases => owned.ids.push(...aliases.map(alias => alias.id)),
+      aliases => owned.ids.push(...aliases.map(topicAlias => topicAlias.id)),
     )
     const first = (await owned.run(() => getTopicAliasCategoryMappingDirtyRowForTest(alias!.id)))!
     await owned.run(() => updateTestTopicAliasCategoryMappingOwner(alias!.id, topicB.id))

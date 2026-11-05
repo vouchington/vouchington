@@ -93,8 +93,8 @@ describe('direct post-publication capture', () => {
     })
     expect(jobs).toHaveLength(postIds.length)
     for (const postId of postIds) {
-      const job = jobs.find(job => job.scope.id === postId)
-      expect(job?.keys).toContainEqual({ kind: 'impact_post', uuidValue: postId })
+      const matchingJob = jobs.find(candidateJob => candidateJob.scope.id === postId)
+      expect(matchingJob?.keys).toContainEqual({ kind: 'impact_post', uuidValue: postId })
     }
   })
 

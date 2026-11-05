@@ -108,11 +108,11 @@ app
     } catch (err) {
       clearAuthenticationCookies(ctx)
       await revokeSessionForLogout({ deviceToken: cookieDt, sessionToken: cookieSt }).catch(
-        (err: unknown) => onError(err instanceof Error ? err : new Error(String(err))),
+        (err_: unknown) => onError(err_ instanceof Error ? err_ : new Error(String(err_))),
       )
       if (dt !== cookieDt || st !== cookieSt)
-        await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch((err: unknown) =>
-          onError(err instanceof Error ? err : new Error(String(err))),
+        await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch((err_: unknown) =>
+          onError(err_ instanceof Error ? err_ : new Error(String(err_))),
         )
       throw err
     }

@@ -152,10 +152,10 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     )
 
     output.election_votes = Promise.all([postsPromise, moderationsPromise]).then(
-      ([posts, moderations]) =>
+      ([resolvedPosts, moderations]) =>
         getPostElectionVotesWithModerations(
           currentUser.id,
-          posts.flatMap(post => (post ? [post.id] : [])),
+          resolvedPosts.flatMap(resolvedPost => (resolvedPost ? [resolvedPost.id] : [])),
           moderations,
           'undefined',
         ),

@@ -59,12 +59,15 @@ export async function processExtractImageMetadata(imageId: string): Promise<void
       body,
       async filename => {
         const sharpMetadata = await sharp(filename).metadata()
-        const metadata: ExtractedMetadata = { ...sharpMetadata }
+        const extractedMetadata: ExtractedMetadata = { ...sharpMetadata }
 
-        if (!metadata.format || !SUPPORTED_IMAGE_FORMATS.includes(metadata.format)) {
-          throw createHttpError(415, `Unsupported format: ${metadata.format}`)
+        if (
+          !extractedMetadata.format ||
+          !SUPPORTED_IMAGE_FORMATS.includes(extractedMetadata.format)
+        ) {
+          throw createHttpError(415, `Unsupported format: ${extractedMetadata.format}`)
         }
-        return metadata
+        return extractedMetadata
       },
       { prefix: 'image-extract-' },
     )

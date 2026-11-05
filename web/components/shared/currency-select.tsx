@@ -44,7 +44,7 @@ export function CurrencySelect({
       <Label htmlFor={id}>{resolvedLabel}</Label>
       <Select
         value={value}
-        onValueChange={value => onValueChange(value as CurrencyCode)}
+        onValueChange={currencyCode => onValueChange(currencyCode as CurrencyCode)}
       >
         <SelectTrigger id={id}>
           <SelectValue />
