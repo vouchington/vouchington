@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { contentHash, seedUuid } from './common.mts'
 import { seedLargeReferralProgram } from './referral-links-large-program.mts'
+import { seedReferralBenchmarkUrls } from './referral-links-benchmark-urls.mts'
 
 // prioritized-referral-links needs a real referral-program topic (referral_program_topics)
 // plus one active, non-owner user_referral_program_links row so getPrioritizedReferralLinks'
@@ -8,6 +9,7 @@ import { seedLargeReferralProgram } from './referral-links-large-program.mts'
 // blocked by seedUser (index 0), so it isn't excluded by the query's own filters.
 export async function seedPrioritizedReferralPrograms(): Promise<void> {
   await seedPrioritizedReferralLink()
+  await seedReferralBenchmarkUrls()
   await seedPrioritizedReferralLink(1, 10_000)
 }
 

@@ -121,7 +121,7 @@ async function main() {
   await seedUserAgentStrings()
   await seedCopyrightStaffEvidence()
   await seedRemoteFollowers()
-  await seedUrls(10_000)
+  await seedUrls()
   await seedTopics(2500)
   await seedIndividualCards(INDIVIDUAL_CARD_SEED_COUNT)
   await seedPointValuations(POINT_VALUATION_SEED_COUNT)
