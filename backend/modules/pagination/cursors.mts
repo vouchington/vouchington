@@ -24,6 +24,14 @@ export {
   isTimestampCursor,
 } from '@vouchington/pagination'
 
+/** The extra row is only the has-more probe. The cursor is the last key of the consumed window. */
+export function sliceRawKeysetPage<T>(
+  rows: readonly T[],
+  limit: number,
+): { window: T[]; hasMore: boolean } {
+  return { window: rows.slice(0, limit), hasMore: rows.length > limit }
+}
+
 export function buildPageInfo<T>(
   items: readonly T[],
   options: {

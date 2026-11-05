@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
+import { read } from '@data-stores/psql'
 import {
   createTestUser,
   createRandomString,
@@ -6,15 +7,17 @@ import {
   insertTestRssFeed,
   createTestRssFeedItemWithUrl,
   insertTestPost,
+  deleteTestPost,
   insertTestCommunity,
   insertTestCommunityListItem,
+  insertTestCommunityListPostBatch,
   insertTestList,
   listPostItemExists,
   listPostItemCount,
   listRssFeedItemsFromFeedExist,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { importCommunityList } from '../import.mts'
+import { importCommunityList, importCommunityListPostsSourceSql } from '../import.mts'
 import { getManageableList, type ManageableList } from '../manage.mts'
 
 describe('importCommunityList', () => {
@@ -88,6 +91,38 @@ describe('importCommunityList', () => {
     expect(result.posts).toBe(0)
 
     expect(await listPostItemCount(listId, postId)).toBe(1)
+  })
+
+  it('stops the source page on a deleted newest membership', async () => {
+    const community = await insertTestCommunity({ createdById: user.id })
+    const older = await insertTestPost({
+      title: `Older import ${createRandomString(8)}`,
+      slug: `older-import-${createRandomString(8)}`,
+      createdById: user.id,
+      markdown: 'older',
+    })
+    const newer = await insertTestPost({
+      title: `Newer import ${createRandomString(8)}`,
+      slug: `newer-import-${createRandomString(8)}`,
+      createdById: user.id,
+      markdown: 'newer',
+    })
+    await insertTestCommunityListPostBatch({
+      communityId: community.id,
+      postIds: [older, newer],
+      addedById: user.id,
+    })
+    await deleteTestPost(newer)
+
+    const viewer = viewerFor(user.id)
+    const newestOnly = await read(
+      importCommunityListPostsSourceSql(list.id, community.id, viewer, 1),
+    )
+    expect(newestOnly.rows).toHaveLength(0)
+    const withOlder = await read(
+      importCommunityListPostsSourceSql(list.id, community.id, viewer, 2),
+    )
+    expect(withOlder.rows.map(row => row.id)).toEqual([older])
   })
 })
 

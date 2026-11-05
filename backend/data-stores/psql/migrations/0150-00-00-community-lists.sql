@@ -35,6 +35,12 @@ CREATE INDEX IF NOT EXISTS idx_community_list_topics__removed_by_id
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_topics__unique ON community_list_topics (community_id, topic_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_topics__community ON community_list_topics (community_id);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Live membership keyset in list order. Target eligibility is applied after this page.
+CREATE INDEX IF NOT EXISTS idx_community_list_topics__community_id__order_index__id
+  ON community_list_topics (community_id, order_index, id)
+  WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_topics__topic ON community_list_topics (topic_id);
 
@@ -71,6 +77,12 @@ CREATE TRIGGER trigger_community_list_rss_feeds_guard_hard_delete
 BEFORE INSERT OR UPDATE OF rss_feed_id ON community_list_rss_feeds
 FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
 CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__community ON community_list_rss_feeds (community_id);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Live membership keyset in list order. Target eligibility is applied after this page.
+CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__community_id__order_index__id
+  ON community_list_rss_feeds (community_id, order_index, id)
+  WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__rss_feed ON community_list_rss_feeds (rss_feed_id, id);
 
@@ -104,6 +116,18 @@ CREATE INDEX IF NOT EXISTS idx_community_list_posts__removed_by_id
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_posts__unique ON community_list_posts (community_id, post_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_posts__community ON community_list_posts (community_id);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Live membership keyset in list order. Target eligibility is applied after this page.
+CREATE INDEX IF NOT EXISTS idx_community_list_posts__community_id__order_index__id
+  ON community_list_posts (community_id, order_index, id)
+  WHERE removed_at IS NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Live membership keyset for import, newest id first.
+CREATE INDEX IF NOT EXISTS idx_community_list_posts__community_id__id
+  ON community_list_posts (community_id, id DESC)
+  WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_posts__post ON community_list_posts (post_id);
 
@@ -137,6 +161,12 @@ CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__removed_by_id
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_url_hostnames__unique ON community_list_url_hostnames (community_id, url_hostname_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__community ON community_list_url_hostnames (community_id);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Live membership keyset in list order. Target eligibility is applied after this page.
+CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__community_id__order_index__id
+  ON community_list_url_hostnames (community_id, order_index, id)
+  WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__url_hostname ON community_list_url_hostnames (url_hostname_id);
 
@@ -170,6 +200,12 @@ CREATE INDEX IF NOT EXISTS idx_community_list_urls__removed_by_id
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_urls__unique ON community_list_urls (community_id, url_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_urls__community ON community_list_urls (community_id);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Live membership keyset in list order. Target eligibility is applied after this page.
+CREATE INDEX IF NOT EXISTS idx_community_list_urls__community_id__order_index__id
+  ON community_list_urls (community_id, order_index, id)
+  WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_urls__url ON community_list_urls (url_id);
 

@@ -17,19 +17,25 @@ export function importCommunityListPostsSourceSql(
   delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string },
 ): SQLStatement {
   const statement = sql`/* importCommunityListPostsSource */
+    WITH source_page AS MATERIALIZED (
+      SELECT item.post_id
+      FROM community_list_posts item
+      WHERE item.community_id = ${communityId}::uuid
+        AND item.removed_at IS NULL
+      ORDER BY item.id DESC
+      LIMIT ${limit}
+    )
     SELECT ${targetListId}::uuid, picked.id
     FROM (
     SELECT candidate_post.id
-    FROM community_list_posts item
+    FROM source_page item
     JOIN posts candidate_post
       ON candidate_post.id = item.post_id
      AND candidate_post.deleted_at IS NULL
     JOIN posts access_post
       ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
      AND access_post.deleted_at IS NULL
-    WHERE item.community_id = ${communityId}::uuid
-      AND item.removed_at IS NULL
-      AND `
+    WHERE `
   const eligibility = buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'listed')
   statement.append(eligibility)
   if (delegated) {
@@ -48,8 +54,6 @@ export function importCommunityListPostsSourceSql(
       )`)
   }
   statement.append(sql`
-    ORDER BY item.id DESC
-    LIMIT ${limit}
     ) picked
     ORDER BY picked.id ASC NULLS LAST`)
   return statement
@@ -85,9 +89,10 @@ export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeed
 
 /**
  * Copies a community's posts and feed items into a list the caller already loaded through
- * `getManageableList`, which has answered the 404 and 403 for it. Posts use list-read discovery
- * eligibility. A delegated copy also drops a private root the items path would refuse. Each
- * source is bounded by the same runtime limit.
+ * `getManageableList`, which has answered the 404 and 403 for it. Posts use one raw membership
+ * page of `limit` newest live rows, then list-read discovery eligibility. Ineligible rows inside
+ * that page are not replaced from older memberships. A delegated copy also drops a private root
+ * the items path would refuse. Each source is bounded by the same runtime limit.
  */
 export async function importCommunityList(
   targetList: ManageableList,

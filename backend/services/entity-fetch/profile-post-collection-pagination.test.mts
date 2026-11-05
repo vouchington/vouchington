@@ -66,10 +66,7 @@ describe('private post collection pagination', () => {
     })
     await insertSavedRelationAt(owner.id, commentId, 1)
 
-    const collection = await getUserPostsCollection(owner, owner.id, 'saved', { limit: 1 })
-
-    expect(collection.results.map(post => post.id)).toEqual([visibleId])
-    expect(collection.page_info.has_next_page).toBe(false)
+    expect(await expectSavedPageAfterHidden(owner, visibleId)).toEqual([visibleId])
   })
 
   it('skips a newest private-community post for a nonmember before applying limit', async () => {
@@ -95,10 +92,7 @@ describe('private post collection pagination', () => {
     })
     await insertSavedRelationAt(owner.id, hiddenId, 1)
 
-    const collection = await getUserPostsCollection(owner, owner.id, 'saved', { limit: 1 })
-
-    expect(collection.results.map(post => post.id)).toEqual([visibleId])
-    expect(collection.page_info.has_next_page).toBe(false)
+    expect(await expectSavedPageAfterHidden(owner, visibleId)).toEqual([visibleId])
   })
 
   it('skips a newest unapproved community post before applying limit', async () => {
@@ -122,10 +116,7 @@ describe('private post collection pagination', () => {
     })
     await insertSavedRelationAt(owner.id, hiddenId, 1)
 
-    const collection = await getUserPostsCollection(owner, owner.id, 'saved', { limit: 1 })
-
-    expect(collection.results.map(post => post.id)).toEqual([visibleId])
-    expect(collection.page_info.has_next_page).toBe(false)
+    expect(await expectSavedPageAfterHidden(owner, visibleId)).toEqual([visibleId])
   })
   it.each([
     ['saved', 'relation__user__save__post'],
@@ -164,13 +155,9 @@ describe('private post collection pagination', () => {
       slug: `blocked-${owner.id}`,
       markdown: 'blocked',
     })
-    await insertEntityRelation('relation__user__save__post', owner.id, visibleId)
-    await insertEntityRelation('relation__user__save__post', owner.id, blockedId)
-
-    const collection = await getUserPostsCollection(owner, owner.id, 'saved', { limit: 1 })
-
-    expect(collection.results.map(post => post.id)).toEqual([visibleId])
-    expect(collection.page_info.has_next_page).toBe(false)
+    await insertSavedRelationAt(owner.id, visibleId, 0)
+    await insertSavedRelationAt(owner.id, blockedId, 1)
+    expect(await expectSavedPageAfterHidden(owner, visibleId)).toEqual([visibleId])
   })
 
   it('continues with a scoped timestamp cursor without gaps or duplicates', async () => {
@@ -258,6 +245,22 @@ describe('private post collection pagination', () => {
     expect(second.results[0]?.id).toBe([...postIds].toSorted().toReversed()[1])
   })
 })
+
+async function expectSavedPageAfterHidden(
+  owner: NonNullable<Awaited<ReturnType<typeof createTestUser>>>,
+  visibleId: string,
+): Promise<void> {
+  const first = await getUserPostsCollection(owner, owner.id, 'saved', { limit: 1 })
+  expect(first.results).toEqual([])
+  expect(first.page_info.has_next_page).toBe(true)
+  expect(first.page_info.end_cursor).toEqual(expect.any(String))
+  const second = await getUserPostsCollection(owner, owner.id, 'saved', {
+    limit: 1,
+    after: first.page_info.end_cursor!,
+  })
+  expect(second.page_info.has_next_page).toBe(false)
+  return second.results.map(post => post.id)
+}
 
 async function insertVisibleSavedPost(
   ownerId: string,
