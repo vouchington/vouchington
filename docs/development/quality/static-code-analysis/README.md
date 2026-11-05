@@ -4,6 +4,8 @@ Source entrypoint: [static-code-analysis/README.md](../../../../static-code-anal
 
 Rules live in code and config ([`.no-mistakes/`](../../../../.no-mistakes/), `.oxlintrc.json`, `ast-grep-rules/`, `static-code-analysis/`), not in this page. This page records where a new guard belongs, how to author and roll one out, and the reasoning behind a few rule families. Before authoring or changing a guard, use the [static-analysis-checklist skill](../../../../.agents/skills/static-analysis-checklist/SKILL.md). Scoped repository-state invariants are in [AGENTS.md](../../../../static-code-analysis/AGENTS.md). The `config-inventory/` check generates `./dev/config-inventory` and keeps env-var, DynamicConfig, workflow-env, and package-manager gate documentation in sync with code.
 
+Environment usage must survive refactoring between orchestration and executable workflow code; otherwise inventory cleanup can remove live configuration.
+
 ## Where To Put A New Rule (Priority Order)
 
 Pick the highest tier that can express the rule. Keep rules small and focused (#4988).
