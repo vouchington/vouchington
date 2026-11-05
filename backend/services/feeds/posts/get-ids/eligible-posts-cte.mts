@@ -69,6 +69,7 @@ export function appendEligiblePostsSelect(
       JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       WHERE 1 = 1`)
   if (targetPostId) query.append(sql` AND posts.id = `).append(targetPostId)
+  query.append(sql` AND `).append(hotScoreEligibilityFilter(sort))
   // `hide` on a comment only collapses it in its thread. Feeds exclude comments unless a caller asks
   // for them, so the comment exemption is added only then and the usual anti-join stays plain.
   const hiddenPostCheck = sql`NOT EXISTS (
@@ -161,5 +162,16 @@ export function appendEligiblePostsSelect(
         HAVING COUNT(*) = ${uniqueUniversalTopicIds.length}
       )
     `)
+  }
+}
+
+function hotScoreEligibilityFilter(sort: string): SQLStatement {
+  switch (sort) {
+    case 'hot':
+      return sql`posts.votes_score_net > 0`
+    case 'new':
+      return sql`TRUE`
+    default:
+      throw new Error(`Unknown post feed sort: ${sort}`)
   }
 }

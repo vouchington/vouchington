@@ -19,6 +19,7 @@ import {
   VOTE_SCORE_PUBLISHER_ROWS,
   type VoteScoreRankingCursors,
 } from './vote-score-ranking-cursors.mts'
+import { runVoteScorePostHotScenarios } from './vote-score-post-hot.mts'
 
 type RankingScenario = Readonly<{
   id: string
@@ -170,6 +171,7 @@ async function captureScenarios(scenarios: readonly RankingScenario[]): Promise<
 }
 
 export async function runVoteScoreRankingScenarios(): Promise<void> {
+  await runVoteScorePostHotScenarios()
   await seedVoteScorePublisherAndPostFixture()
   await captureScenarios(getVoteScorePublisherScenarios())
   await seedVoteScoreHostnameFixture()

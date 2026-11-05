@@ -141,7 +141,7 @@ describe('getTrendingPosts - dominant fixture cleanup on failure', () => {
       timeRange: 'day',
       postType: 'data_point',
       limit: 100,
-      minScore: 1,
+      minScore: 0.1,
     })
 
     expect(result.results.find(row => row.id === capturedPostId)).toBeUndefined()

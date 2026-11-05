@@ -1,4 +1,10 @@
 export const VOTE_SCORE_SCENARIO_IDS = [
+  'vote-score-post-search-hot-first',
+  'vote-score-post-search-hot-after',
+  'vote-score-post-feed-hot-first',
+  'vote-score-post-feed-hot-after',
+  'vote-score-trending-posts-first',
+  'vote-score-trending-posts-after',
   'vote-score-hostnames-top-first',
   'vote-score-hostnames-top-after',
   'vote-score-hostnames-top-by-topic-first',

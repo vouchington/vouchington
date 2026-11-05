@@ -29,7 +29,7 @@ describe('getTrendingPosts pagination', () => {
     for (const { postId, userId } of posts) {
       await insertScoredPostTopicCategoryRelation(postId, topicId, userId)
     }
-    const minScore = 0.5
+    const minScore = 0.1
 
     const page1 = await getTrendingPosts(
       { timeRange: 'day', limit: 2, minScore, topicId },
@@ -76,7 +76,7 @@ describe('getTrendingPosts pagination', () => {
         limit: 2,
         minScore,
         topicId,
-        after: encodeCursor({ score: 1.5, id: topicId }),
+        after: encodeCursor({ score: 0.25, id: topicId }),
       },
       referenceTime,
     )

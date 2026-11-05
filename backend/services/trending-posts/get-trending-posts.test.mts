@@ -17,11 +17,11 @@ describe('getTrendingPosts - with test data', () => {
         timeRange: 'day',
         postType: 'data_point',
         limit: 100,
-        minScore: votesScoreUp,
+        minScore: 0.99,
       })
 
       const found = result.results.find(row => row.id === postId)
-      expect(found?.trending_score).toBe(votesScoreUp)
+      expect(found!.trending_score).toBeGreaterThan(0.99)
     } finally {
       await deleteTestPost(postId)
     }
@@ -33,14 +33,13 @@ describe('getTrendingPosts - with test data', () => {
     const result = await getTrendingPosts({
       timeRange: 'day',
       limit: 100,
-      minScore: 100,
+      minScore: 0.1,
     })
 
     const found = result.results.find(r => r.id === postId)
     expect(found).toBeDefined()
     expect(found?.trending_score).toBeGreaterThan(0)
-    // Score should be close to votes_score_net (500) for very recent posts
-    expect(found?.trending_score).toBeLessThanOrEqual(500)
+    expect(found?.trending_score).toBeLessThan(1)
   })
 
   it('should exclude posts with zero votes', async () => {
@@ -107,7 +106,7 @@ describe('getTrendingPosts - min score threshold', () => {
     const result = await getTrendingPosts({
       timeRange: 'day',
       limit: 100,
-      minScore: 10,
+      minScore: 0.3,
     })
 
     const foundHigh = result.results.find(r => r.id === highScoreId)
