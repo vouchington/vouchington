@@ -36,7 +36,7 @@ import {
   insertPreservationHoldForTest,
   releasePreservationHoldForTest,
 } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
-import { cleanupSecuritySourcePage } from './cleanup-security-records.mts'
+import { cleanupSecurityRecords } from './cleanup-security-records.mts'
 import { cleanupSecuritySourcePageInTransaction } from './security-record-page.mts'
 import { SOURCES, sourcePlan } from './security-record-plans.mts'
 
@@ -276,7 +276,7 @@ describe('security record cleanup', () => {
     // fixtures owned by another parallel test.
     const now = new Date('1977-01-02T00:00:00.000Z')
     const pages = await Promise.all(
-      SOURCES.map(source => cleanupSecuritySourcePage(source, 1, now)),
+      SOURCES.map(source => cleanupSecurityRecords({ batchSize: 1, maxBatches: 1 }, now, [source])),
     )
     expect(pages).toEqual(SOURCES.map(() => ({ deleted: 0, hasMore: false })))
   })

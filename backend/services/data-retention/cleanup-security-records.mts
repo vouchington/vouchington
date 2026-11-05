@@ -10,6 +10,7 @@ type Page = { deleted: number; hasMore: boolean }
 export async function cleanupSecurityRecords(
   limits: DataRetentionLimits,
   now = new Date(),
+  sources: readonly Source[] = SOURCES,
 ): Promise<Page> {
   if (!Number.isSafeInteger(limits.maxBatches) || limits.maxBatches < 1) {
     throw new RangeError('Security cleanup requires a positive maxBatches')
@@ -18,13 +19,13 @@ export async function cleanupSecurityRecords(
     throw new RangeError('Security cleanup requires a positive batchSize')
   }
   // Rotate the first source daily: a small run cap cannot starve the later families.
-  const start = Math.floor(now.getTime() / 86_400_000) % SOURCES.length
-  return spendSecurityPageBudget(SOURCES, start, limits.maxBatches, source =>
+  const start = Math.floor(now.getTime() / 86_400_000) % sources.length
+  return spendSecurityPageBudget(sources, start, limits.maxBatches, source =>
     cleanupSecuritySourcePage(source, limits.batchSize, now),
   )
 }
 
-export async function cleanupSecuritySourcePage(
+async function cleanupSecuritySourcePage(
   source: Source,
   batchSize: number,
   now: Date,
