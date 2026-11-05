@@ -96,7 +96,7 @@ export async function checkRepoFilePolicy(
   checkSplitMarkdownCanonicalLinkGuard(ctx.repoRoot, trackedFiles, errors)
   await checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
   await checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
-  checkStaleSchemaAllowlistEntries(ctx.repoRoot, trackedFiles, schema, errors)
+  checkStaleSchemaAllowlistEntries(trackedFiles, schema, errors)
   checkRouteAdminSurfaceGuard(ctx.repoRoot, trackedFileSet, errors, options.remaining)
   checkFiniteEnumRippleGuard(ctx, errors, trackedFiles)
   checkSchemaDocDriftGuard(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
