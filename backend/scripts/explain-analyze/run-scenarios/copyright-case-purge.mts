@@ -125,6 +125,7 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
         noSort: true,
       },
       { kind: 'maxProcessedRows', relation: 'copyright_notice_email_intake_notice_links', max: 5 },
+      { kind: 'maxProcessedRows', relation: 'copyright_notice_email_intakes', max: 5 },
     ],
     seededRows: {
       copyright_notice_evidence_artifacts: PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS,
@@ -136,22 +137,10 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
     'copyright-case-purge-evidence-reads',
     async () => {
       await using transaction = await beginTransaction()
-      const artifacts = await eraseCopyrightCaseEvidencePage(
-        transaction,
-        dueId,
-        0,
-        null,
-        undefined,
-        10,
-      )
-      const emails = await eraseCopyrightCaseEvidencePage(
-        transaction,
-        dueId,
-        1,
-        null,
-        undefined,
-        10,
-      )
+      const evidencePage = (source: number) =>
+        eraseCopyrightCaseEvidencePage(transaction, dueId, source, null, undefined, 10)
+      const artifacts = await evidencePage(0)
+      const emails = await evidencePage(1)
       await transaction.rollback()
       // Each source holds one live registry object, so the page claims it and stays on the source.
       assert.equal(artifacts.nextSourceIndex, 0)
@@ -167,9 +156,15 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
     ([, path]) =>
       path.length === 2 && path[0]?.[0] === 'copyright_notice_email_intake_notice_links',
   )
-  const direct = COPYRIGHT_CASE_PURGE_PHASES.findIndex(([, path]) => path.length === 1)
+  const direct = COPYRIGHT_CASE_PURGE_PHASES.findIndex(
+    ([table, path]) => table === 'copyright_notice_email_intake_notice_links' && path.length === 1,
+  )
   assert.ok(nested >= 0 && direct >= 0, 'The purge needs a nested and a direct child path')
-  registerScenarioContract('copyright-case-purge-ancestor', { expectations: [] })
+  registerScenarioContract('copyright-case-purge-ancestor', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'copyright_notice_email_intake_notice_links', max: 5 },
+    ],
+  })
   await runAndCapture(
     'copyright-case-purge-ancestor',
     async () => {
@@ -181,18 +176,22 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
     'selectCopyrightCasePurgeAncestor',
   )
   registerScenarioContract('copyright-case-purge-child-verify', {
-    expectations: [],
-    crossPartition: {
-      copyright_notice_email_correspondence_reviews:
-        'The case key is not the partition key, and the notice id leads the index in every leaf.',
-    },
+    expectations: [
+      {
+        kind: 'maxProcessedRows',
+        relation: 'copyright_notice_email_intake_notice_links',
+        max: 2 * PAGE,
+      },
+    ],
+    seededRows: { copyright_notice_email_intake_notice_links: PURGE_EVIDENCE_SEEDED_ROWS },
   })
   await runAndCapture(
     'copyright-case-purge-child-verify',
     async () => {
       await using transaction = await beginTransaction()
-      await verifyCopyrightCaseChildPage(transaction, dueId, direct, undefined, PAGE)
+      const page = await verifyCopyrightCaseChildPage(transaction, dueId, direct, undefined, PAGE)
       await transaction.rollback()
+      assert.equal(page.processed, PAGE)
     },
     undefined,
     'verifyCopyrightCaseChildPage',

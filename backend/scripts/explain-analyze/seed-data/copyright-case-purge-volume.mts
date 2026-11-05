@@ -108,7 +108,10 @@ export async function seedDueCaseEvidenceVolume(
   )
 }
 
-/** Retain many small submissions beside the dominant one instead of seeding only one huge group. */
+/**
+ * Retain many small submissions beside the dominant one: without them, statistics make every
+ * submission look huge and the staff read plans a scan.
+ */
 async function seedSpreadSubmissions(dueId: string, mediaTypeId: string): Promise<void> {
   await write(
     `/* seedExplainCopyrightPurgeVolume:spreadObjects */
