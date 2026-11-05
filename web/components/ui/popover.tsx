@@ -18,7 +18,7 @@ function PopoverContent({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof PopoverPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof PopoverPrimitive.Content>>
 }) {
   return (
     <PopoverPrimitive.Portal>

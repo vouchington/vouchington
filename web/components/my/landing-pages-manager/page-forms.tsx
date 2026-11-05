@@ -12,7 +12,7 @@ interface CreatePageFormProps {
   newTitle: string
   newSlug: string
   newSubtitle: string
-  onSubmit: (event: React.FormEvent) => void
+  onSubmit: (event: React.SubmitEvent<HTMLFormElement>) => void
   setNewTitle: (value: string) => void
   setNewSlug: (value: string) => void
   setNewSubtitle: (value: string) => void
@@ -78,7 +78,7 @@ interface PageDetailsFormProps {
   title: string
   slug: string
   subtitle: string
-  onSubmit: (event: React.FormEvent) => void
+  onSubmit: (event: React.SubmitEvent<HTMLFormElement>) => void
   onSetDefault: () => void
   onDelete: () => void
   setTitle: (value: string) => void

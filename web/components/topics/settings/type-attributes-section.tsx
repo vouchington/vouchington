@@ -72,7 +72,7 @@ function TypeAttributesSectionForTopic({
     setOverrides(prev => ({ ...prev, [field]: id }))
   }
 
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     const data: Record<string, unknown> = {}

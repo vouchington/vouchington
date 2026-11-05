@@ -47,7 +47,7 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
     }
   }, [id])
 
-  const handlePrimaryHostnameSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePrimaryHostnameSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     dispatch({ primaryHostnameSaving: true })
     try {
@@ -71,7 +71,7 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
     }
   }
 
-  const handleAddHostname = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddHostname = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = e.currentTarget
     dispatch({ addingHostname: true })

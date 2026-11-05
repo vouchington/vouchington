@@ -104,7 +104,7 @@ export function useLandingPageEditorController(
     })
   }
 
-  async function handleSaveDetails(event: React.FormEvent) {
+  async function handleSaveDetails(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (loading) return
     setLoading(true)

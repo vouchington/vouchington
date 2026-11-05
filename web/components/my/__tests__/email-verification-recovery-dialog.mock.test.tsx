@@ -1,13 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { EmailVerificationRecoveryDialog } from '../email-verification-recovery-dialog'
 import { useFreshAuthenticationMock } from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
 
 type AddEmailFormMockProps = {
   newEmail: string
   onCancel: () => void
-  onRequestVerification: (event: FormEvent) => void
+  onRequestVerification: (event: SubmitEvent<HTMLFormElement>) => void
   setNewEmail: (email: string) => void
 }
 

@@ -37,7 +37,7 @@ export function PostImage({
       className={className}
       width={width}
       height={intrinsicHeight}
-      priority={priority}
+      preload={priority}
     />
   )
 }

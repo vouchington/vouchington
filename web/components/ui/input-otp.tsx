@@ -13,7 +13,7 @@ function InputOTP({
   ...props
 }: Omit<React.ComponentPropsWithoutRef<typeof OTPInput>, 'pattern'> & {
   pattern?: string | RegExp
-  ref?: React.Ref<React.ElementRef<typeof OTPInput>>
+  ref?: React.Ref<React.ComponentRef<typeof OTPInput>>
 }) {
   return (
     <OTPInput

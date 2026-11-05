@@ -29,7 +29,7 @@ export function CommunityAutomodActionForm({ community }: CommunityAutomodAction
   const [isNavigating, startNavigation] = useTransition()
   const isBusy = isSaving || isNavigating
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (isBusy) return
 

@@ -46,7 +46,7 @@ export default function MfaStep({ loginAttemptId, onSuccess, onBack }: Props) {
     setLoading(false)
   }
 
-  async function handleTotpSubmit(e: React.FormEvent) {
+  async function handleTotpSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (totpCode.length < 6) return
     setLoading(true)

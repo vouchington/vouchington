@@ -20,7 +20,7 @@ interface ReportDialogFormProps {
   inlineError: string | null
   submitting: boolean
   onCancel: () => void
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  onSubmit: (e: React.SubmitEvent<HTMLFormElement>) => void
 }
 
 export function ReportDialogForm({

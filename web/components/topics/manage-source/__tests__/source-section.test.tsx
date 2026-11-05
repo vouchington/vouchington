@@ -6,7 +6,7 @@ describe('SourceSection', () => {
   it('underlines the sources link at rest', () => {
     render(
       <SourceSection
-        onSubmit={vi.fn<(event: React.FormEvent<HTMLFormElement>) => void>()}
+        onSubmit={vi.fn<(event: React.SubmitEvent<HTMLFormElement>) => void>()}
         rssFeed={null}
         saving={false}
       />,

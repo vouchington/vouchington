@@ -57,7 +57,7 @@ const baseTopic: Record<string, unknown> = {
   should_allow_reviews: true,
 }
 
-function makeFormEvent(values: Record<string, string> = {}) {
+function makeSubmitEvent(values: Record<string, string> = {}) {
   const form = document.createElement('form')
   for (const [name, value] of Object.entries(values)) {
     const input = document.createElement('input')
@@ -68,7 +68,7 @@ function makeFormEvent(values: Record<string, string> = {}) {
   return {
     preventDefault: () => {},
     currentTarget: form,
-  } as unknown as React.FormEvent<HTMLFormElement>
+  } as unknown as React.SubmitEvent<HTMLFormElement>
 }
 
 const router = { replace: vi.fn<VitestLooseMock>() }
@@ -98,7 +98,7 @@ describe('useTopicEditPage error handling', () => {
 
     await act(async () => {
       await result.current.handlers.handleBasicSubmit(
-        makeFormEvent({ name: 'New Name', markdown: 'md' }),
+        makeSubmitEvent({ name: 'New Name', markdown: 'md' }),
       )
     })
 
@@ -132,7 +132,7 @@ describe('useTopicEditPage error handling', () => {
     )
 
     await act(async () => {
-      await result.current.handlers.handleTypeSubmit(makeFormEvent())
+      await result.current.handlers.handleTypeSubmit(makeSubmitEvent())
     })
 
     await waitFor(() => {
@@ -164,7 +164,7 @@ describe('useTopicEditPage error handling', () => {
     )
 
     await act(async () => {
-      await result.current.handlers.handleSpendingSubmit(makeFormEvent())
+      await result.current.handlers.handleSpendingSubmit(makeSubmitEvent())
     })
 
     await waitFor(() => {
@@ -184,7 +184,7 @@ describe('useTopicEditPage error handling', () => {
     )
 
     await act(async () => {
-      await result.current.handlers.handleTypeSubmit(makeFormEvent())
+      await result.current.handlers.handleTypeSubmit(makeSubmitEvent())
     })
 
     expect(toastMock.success).toHaveBeenCalledWith('Topic type updated')
@@ -213,7 +213,7 @@ describe('useTopicEditPage error handling', () => {
     )
 
     await act(async () => {
-      await result.current.handlers.handleSpendingSubmit(makeFormEvent())
+      await result.current.handlers.handleSpendingSubmit(makeSubmitEvent())
     })
 
     expect(toastMock.success).toHaveBeenCalledWith('Spending category updated')
@@ -241,7 +241,7 @@ describe('useTopicEditPage error handling', () => {
     })
 
     await act(async () => {
-      await result.current.handlers.handleFlagsSubmit(makeFormEvent())
+      await result.current.handlers.handleFlagsSubmit(makeSubmitEvent())
     })
 
     expect(mockUpdateTopic).toHaveBeenCalledWith('topic-1', {
@@ -259,7 +259,7 @@ describe('useTopicEditPage error handling', () => {
     )
 
     await act(async () => {
-      await result.current.handlers.handleFlagsSubmit(makeFormEvent())
+      await result.current.handlers.handleFlagsSubmit(makeSubmitEvent())
     })
 
     await waitFor(() => {
@@ -276,7 +276,7 @@ describe('useTopicEditPage error handling', () => {
     )
 
     await act(async () => {
-      await result.current.handlers.handleFlagsSubmit(makeFormEvent())
+      await result.current.handlers.handleFlagsSubmit(makeSubmitEvent())
     })
 
     expect(mockUpdateTopic).not.toHaveBeenCalled()

@@ -16,7 +16,7 @@ function HoverCardContent({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof HoverCardPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof HoverCardPrimitive.Content>>
 }) {
   return (
     <HoverCardPrimitive.Portal>

@@ -237,6 +237,20 @@ describe('native consumer usage manifest', () => {
     ).toThrow('unknown dotnet XAML message key "missing.key"')
   })
 
+  it('ignores references in invalid XAML', () => {
+    for (const invalidXaml of [
+      '<Label Text="{DynamicResource missing.key}">',
+      '<Label Text="{DynamicResource missing.key}" /><!DOCTYPE Label>',
+    ]) {
+      expect(() =>
+        validateNativeConsumerUsage(
+          [],
+          [source('dotnet-clients/src/Voucha.Client.App/Feature.xaml', invalidXaml)],
+        ),
+      ).not.toThrow()
+    }
+  })
+
   it('maps generated descriptor variants back to their manifest leaf', () => {
     expect(() =>
       validateNativeConsumerUsage(

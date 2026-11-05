@@ -62,7 +62,7 @@ const rssFeed: ManageSourceRssFeed = {
 
 const baseState = { ...initialManageSourceState, rssFeed, loading: false }
 
-function makeFormEvent(values: Record<string, string> = {}) {
+function makeSubmitEvent(values: Record<string, string> = {}) {
   const form = document.createElement('form')
   for (const [name, value] of Object.entries(values)) {
     const input = document.createElement('input')
@@ -73,7 +73,7 @@ function makeFormEvent(values: Record<string, string> = {}) {
   return {
     preventDefault: () => {},
     currentTarget: form,
-  } as unknown as React.FormEvent<HTMLFormElement>
+  } as unknown as React.SubmitEvent<HTMLFormElement>
 }
 
 describe('useSourceActions error handling', () => {
@@ -89,7 +89,7 @@ describe('useSourceActions error handling', () => {
 
     await act(async () => {
       await result.current.handleSubmit(
-        makeFormEvent({ title: 'My title', rss_feed_url: 'https://x.example/feed' }),
+        makeSubmitEvent({ title: 'My title', rss_feed_url: 'https://x.example/feed' }),
       )
     })
 

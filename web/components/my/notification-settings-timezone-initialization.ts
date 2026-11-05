@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react'
+import type { RefObject } from 'react'
 import type { UpdateNotificationSetting } from './notification-settings-types'
 import { isSupportedTimeZone } from './notification-settings-utils'
 
@@ -7,8 +7,8 @@ export function autoResolveModerationTimezone({
   resolving,
   updateNotificationSetting,
 }: {
-  resolved: MutableRefObject<boolean>
-  resolving: MutableRefObject<boolean>
+  resolved: RefObject<boolean>
+  resolving: RefObject<boolean>
   updateNotificationSetting: UpdateNotificationSetting
 }) {
   if (resolved.current || resolving.current) return

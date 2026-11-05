@@ -21,7 +21,7 @@ interface SetupFlowProps {
   setupVerificationProof: string | null
   setupData: TotpSetupData | null
   setupName: string
-  onStartSetup: (e: React.FormEvent) => void
+  onStartSetup: (e: React.SubmitEvent<HTMLFormElement>) => void
   onConfirmSetup: () => void
   onVerifySetup: (code: string) => void
   onCancelSetup: () => void

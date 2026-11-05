@@ -13,7 +13,7 @@ function ScrollBar({
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
   'orientation'
 > & {
-  ref?: React.Ref<React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>>
+  ref?: React.Ref<React.ComponentRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>>
 }) {
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
@@ -38,7 +38,7 @@ function ScrollArea({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
-  ref?: React.Ref<React.ElementRef<typeof ScrollAreaPrimitive.Root>>
+  ref?: React.Ref<React.ComponentRef<typeof ScrollAreaPrimitive.Root>>
 }) {
   return (
     <ScrollAreaPrimitive.Root

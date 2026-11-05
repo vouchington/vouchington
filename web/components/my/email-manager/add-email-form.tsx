@@ -9,7 +9,7 @@ interface AddEmailFormProps {
   loading: boolean
   newEmail: string
   onCancel: () => void
-  onRequestVerification: (event: React.FormEvent) => void
+  onRequestVerification: (event: React.SubmitEvent<HTMLFormElement>) => void
   setNewEmail: (email: string) => void
 }
 

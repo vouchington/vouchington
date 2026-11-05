@@ -30,7 +30,7 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
     }
   }, [])
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (loading) return
 

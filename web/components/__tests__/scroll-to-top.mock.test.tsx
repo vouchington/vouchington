@@ -52,16 +52,17 @@ describe('ScrollToTop', () => {
     })
     Object.defineProperty(document.body, 'scrollHeight', { configurable: true, value: 300 })
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 200 })
-    mockMatchMedia = vi.fn<(query: string) => MediaQueryList>(query => ({
-      matches: true,
-      media: query,
-      onchange: null,
-      addListener: vi.fn<() => void>(),
-      removeListener: vi.fn<() => void>(),
-      addEventListener: vi.fn<() => void>(),
-      removeEventListener: vi.fn<() => void>(),
-      dispatchEvent: vi.fn<() => boolean>(),
-    }))
+    mockMatchMedia = vi.fn<(query: string) => MediaQueryList>(
+      query =>
+        ({
+          matches: true,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn<() => void>(),
+          removeEventListener: vi.fn<() => void>(),
+          dispatchEvent: vi.fn<() => boolean>(),
+        }) as unknown as MediaQueryList,
+    )
     vi.stubGlobal('matchMedia', mockMatchMedia)
   })
 
@@ -110,12 +111,10 @@ describe('ScrollToTop', () => {
       matches: false,
       media: '(min-width: 768px)',
       onchange: null,
-      addListener: vi.fn<() => void>(),
-      removeListener: vi.fn<() => void>(),
       addEventListener: vi.fn<() => void>(),
       removeEventListener: vi.fn<() => void>(),
       dispatchEvent: vi.fn<() => boolean>(),
-    } as MediaQueryList)
+    } as unknown as MediaQueryList)
     const input = document.createElement('input')
     input.setAttribute('data-route-focus-target', 'primary')
     document.body.append(input)

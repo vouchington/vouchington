@@ -491,7 +491,7 @@
     "typescript/explicit-function-return-type": "off",
     "typescript/explicit-module-boundary-types": "off",
     "typescript/no-confusing-void-expression": "off",
-    "typescript/no-deprecated": "off",
+    "typescript/no-deprecated": "error",
     "typescript/no-duplicate-enum-values": "error",
     "typescript/no-dynamic-delete": "error",
     "typescript/no-empty-interface": "off",

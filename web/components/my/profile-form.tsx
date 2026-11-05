@@ -17,7 +17,7 @@ export function ProfileForm({ initialMarkdown }: Props) {
   const [markdown, setMarkdown] = useState(initialMarkdown)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
     try {

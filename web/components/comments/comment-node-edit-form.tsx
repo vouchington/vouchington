@@ -23,7 +23,7 @@ export function CommentNodeEditForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const textareaId = useId()
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!markdown.trim() || isSubmitting) return
     setIsSubmitting(true)

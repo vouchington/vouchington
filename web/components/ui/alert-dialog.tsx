@@ -17,7 +17,7 @@ function AlertDialogOverlay({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay> & {
-  ref?: React.Ref<React.ElementRef<typeof AlertDialogPrimitive.Overlay>>
+  ref?: React.Ref<React.ComponentRef<typeof AlertDialogPrimitive.Overlay>>
 }) {
   return (
     <AlertDialogPrimitive.Overlay
@@ -37,7 +37,7 @@ function AlertDialogContent({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof AlertDialogPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof AlertDialogPrimitive.Content>>
 }) {
   return (
     <AlertDialogPortal>
@@ -76,7 +76,7 @@ function AlertDialogTitle({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title> & {
-  ref?: React.Ref<React.ElementRef<typeof AlertDialogPrimitive.Title>>
+  ref?: React.Ref<React.ComponentRef<typeof AlertDialogPrimitive.Title>>
 }) {
   return (
     <AlertDialogPrimitive.Title
@@ -93,7 +93,7 @@ function AlertDialogDescription({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description> & {
-  ref?: React.Ref<React.ElementRef<typeof AlertDialogPrimitive.Description>>
+  ref?: React.Ref<React.ComponentRef<typeof AlertDialogPrimitive.Description>>
 }) {
   return (
     <AlertDialogPrimitive.Description
@@ -110,7 +110,7 @@ function AlertDialogAction({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action> & {
-  ref?: React.Ref<React.ElementRef<typeof AlertDialogPrimitive.Action>>
+  ref?: React.Ref<React.ComponentRef<typeof AlertDialogPrimitive.Action>>
 }) {
   return (
     <AlertDialogPrimitive.Action
@@ -127,7 +127,7 @@ function AlertDialogCancel({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel> & {
-  ref?: React.Ref<React.ElementRef<typeof AlertDialogPrimitive.Cancel>>
+  ref?: React.Ref<React.ComponentRef<typeof AlertDialogPrimitive.Cancel>>
 }) {
   return (
     <AlertDialogPrimitive.Cancel

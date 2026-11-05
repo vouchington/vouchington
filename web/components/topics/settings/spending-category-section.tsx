@@ -21,7 +21,7 @@ export function SpendingCategorySection({
   spendingSaving,
 }: {
   isForeignTransaction: boolean
-  onSpendingSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  onSpendingSubmit: (e: React.SubmitEvent<HTMLFormElement>) => void
   setIsForeignTransaction: (isForeignTransaction: boolean) => void
   setSpendingFrequency: (spendingFrequency: string) => void
   spendingFrequency: string

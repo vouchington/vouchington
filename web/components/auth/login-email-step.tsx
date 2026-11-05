@@ -1,7 +1,7 @@
 /* eslint-disable react-you-might-not-need-an-effect/no-event-handler */
 'use client'
 
-import { useRef, useEffect, type RefObject, type FormEvent } from 'react'
+import { useRef, useEffect, type RefObject, type SubmitEvent } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,7 +27,7 @@ interface LoginEmailStepProps {
   onEmailChange: (value: string) => void
   onOAuthToken: (token: OAuthLoginToken) => Promise<void>
   onPasskeySignIn: () => Promise<void>
-  onSubmit: (e: FormEvent) => Promise<void>
+  onSubmit: (e: SubmitEvent<HTMLFormElement>) => Promise<void>
   turnstileRef: (node: HTMLDivElement | null) => void
   turnstileToken: string | null
   turnstileAlwaysApprove?: boolean

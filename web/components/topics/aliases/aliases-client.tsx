@@ -1,6 +1,6 @@
 'use client'
 
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 import { useDidHydrate } from '@/hooks/use-did-hydrate'
 import { Button } from '@/components/ui/button'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
@@ -50,7 +50,7 @@ export function AliasesClient({
   const [adding, setAdding] = useState(false)
   const [deletingAlias, setDeletingAlias] = useState<string | null>(null)
 
-  const handleAddAliases = async (e: FormEvent<HTMLFormElement>) => {
+  const handleAddAliases = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = e.currentTarget
     setAdding(true)

@@ -40,10 +40,10 @@ describe('OAuth client and authorization validation', () => {
   })
 
   it('enforces product scope validation boundaries', () => {
-    expect(() => parseOAuthScopes(undefined)).toThrowError(
+    expect(() => parseOAuthScopes(undefined)).toThrow(
       expect.objectContaining({ code: 'invalid_scope' }),
     )
-    expect(() => assertScopeSubset(['mcp.user:write'], ['mcp.user:read'])).toThrowError(
+    expect(() => assertScopeSubset(['mcp.user:write'], ['mcp.user:read'])).toThrow(
       expect.objectContaining({ code: 'invalid_scope' }),
     )
   })

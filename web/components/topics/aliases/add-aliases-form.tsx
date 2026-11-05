@@ -1,6 +1,6 @@
 'use client'
 
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -11,7 +11,7 @@ export function AddAliasesForm({
   adding,
   mounted,
 }: {
-  onSubmit: (e: FormEvent<HTMLFormElement>) => void
+  onSubmit: (e: SubmitEvent<HTMLFormElement>) => void
   adding: boolean
   mounted: boolean
 }) {

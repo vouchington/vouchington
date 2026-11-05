@@ -46,7 +46,7 @@ export function ValidationRuleForm({
     return urls.length > 0 ? urls : null
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!hostname.trim() || !pathname.trim()) return
 
