@@ -1,6 +1,8 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved Vitest doubles preserve existing Testing Library icon selectors */
+import { configure } from '@testing-library/react'
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { vi } from 'vitest'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('next/image'), () => {
   const Img = 'img' as const
@@ -52,7 +54,7 @@ vi.mock(
 
 vi.mock(import('lucide-react'), () =>
   mockLucideReact({
-    Mic: () => <svg data-testid='mic-icon' />,
-    Lock: () => <svg data-testid='lock-icon' />,
+    Mic: () => <svg data-pw='mic-icon' />,
+    Lock: () => <svg data-pw='lock-icon' />,
   }),
 )

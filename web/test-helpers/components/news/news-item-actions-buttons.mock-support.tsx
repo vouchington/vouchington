@@ -1,4 +1,6 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+/* oxlint-disable no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+
+import { configure } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
@@ -7,6 +9,8 @@ import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigatio
 import type { RssFeedItem } from '@/types/rss-feed-items'
 // Imported after the mock helpers above so the lucide mock factory can reference them.
 import { Button } from '@/components/ui/button'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(
   import('next/navigation'),
@@ -43,18 +47,18 @@ interface FollowerShareActionsMockProps {
 
 vi.mock(import('@/components/votes/score-vote'), () => ({
   ScoreVote: ({ 'data-pw': dataPw }: { display?: string; 'data-pw'?: string }) => (
-    <div data-testid={dataPw ?? 'score-vote'} />
+    <div data-pw={dataPw ?? 'score-vote'} />
   ),
 }))
 
 vi.mock(import('@/components/news/news-discuss-menu'), () => ({
-  NewsDiscussMenu: () => <div data-testid='news-discuss-menu' />,
+  NewsDiscussMenu: () => <div data-pw='news-discuss-menu' />,
 }))
 
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: ({ active, initialActive, onActiveChange }: ToggleMockProps) => (
     <Button
-      data-testid='hide-button'
+      data-pw='hide-button'
       data-active={active ?? initialActive}
       type='button'
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
@@ -66,7 +70,7 @@ vi.mock(import('@/components/shared/hide-button'), () => ({
     <Button
       type='button'
       aria-label='Toggle hide menu item'
-      data-testid='hide-menu-item'
+      data-pw='hide-menu-item'
       data-active={active ?? initialActive}
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
     />
@@ -76,7 +80,7 @@ vi.mock(import('@/components/shared/hide-button'), () => ({
 vi.mock(import('@/components/shared/save-button'), () => ({
   SaveButton: ({ active, initialActive, onActiveChange }: ToggleMockProps) => (
     <Button
-      data-testid='save-button'
+      data-pw='save-button'
       data-active={active ?? initialActive}
       type='button'
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
@@ -88,7 +92,7 @@ vi.mock(import('@/components/shared/save-button'), () => ({
     <Button
       type='button'
       aria-label='Toggle save menu item'
-      data-testid='save-menu-item'
+      data-pw='save-menu-item'
       data-active={active ?? initialActive}
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
     />

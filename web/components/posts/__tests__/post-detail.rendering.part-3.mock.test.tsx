@@ -7,7 +7,7 @@ import {
 } from '@/test-helpers/components/posts/post-detail-rendering.mock-support'
 
 vi.mock(import('../post-detail-overflow-menu'), () => ({
-  PostDetailOverflowMenu: () => <div data-testid='post-detail-overflow-trigger' />,
+  PostDetailOverflowMenu: () => <div data-pw='post-detail-overflow-trigger' />,
 }))
 
 import { render, screen } from '@testing-library/react'

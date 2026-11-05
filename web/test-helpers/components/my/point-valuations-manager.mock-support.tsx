@@ -1,7 +1,9 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
+import { configure } from '@testing-library/react'
 import { vi } from 'vitest'
 import { Input } from '@/components/ui/input'
 import type { PointValuation } from '@/types/my'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('@/lib/on-error'), () => ({
   default: vi.fn<VitestLooseMock>(),
@@ -13,14 +15,14 @@ vi.mock(import('@/lib/on-error/on-success'), () => ({
 
 vi.mock(import('@/components/posts/topic-autocomplete'), () => ({
   TopicAutocomplete: ({ value, onChange, placeholder }: any) => (
-    <div data-testid='mock-topic-autocomplete'>
+    <div data-pw='mock-topic-autocomplete'>
       <Input
         type='text'
         placeholder={placeholder}
         aria-label={placeholder ?? 'Rewards program'}
         value={value ?? ''}
         onChange={event => onChange(event.target.value, 'Mocked Program')}
-        data-testid='mock-topic-autocomplete-input'
+        data-pw='mock-topic-autocomplete-input'
       />
     </div>
   ),

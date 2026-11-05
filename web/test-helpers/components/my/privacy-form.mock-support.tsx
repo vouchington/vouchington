@@ -1,8 +1,12 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- moved test support forwards the component data-pw props the privacy tests query */
+/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- moved test support forwards the component data-pw props the privacy tests query */
+
+import { configure } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import type { UserPrivacyAudience } from '@/types/user'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('@/components/ui/select'), () => {
   return {
@@ -18,7 +22,7 @@ vi.mock(import('@/components/ui/select'), () => {
     }) => (
       <Button
         type='button'
-        data-testid='select'
+        data-pw='select'
         data-value={value}
         onClick={() => onValueChange?.('followers')}
       >

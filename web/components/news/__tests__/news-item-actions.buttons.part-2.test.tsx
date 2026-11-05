@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { NewsItemActions } from '../news-item-actions'
 
-const leadingAction = <span data-testid='leading'>Show more</span>
+const leadingAction = <span data-pw='leading'>Show more</span>
 
 describe('NewsItemActions hide/save buttons and leading/trailing actions', () => {
   it('renders SaveButton when logged in', () => {

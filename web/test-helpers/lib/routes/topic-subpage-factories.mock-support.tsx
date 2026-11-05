@@ -1,6 +1,8 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
+import { configure } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const { mockGetDefaultTopicSubpage, mockGetTopic, mockNotFound, mockRedirect } = vi.hoisted(() => ({
   mockGetDefaultTopicSubpage: vi.fn<VitestLooseMock>(() => 'posts'),
@@ -77,7 +79,7 @@ vi.mock(
   import('@/components/topics/topic-posts-page'),
   () =>
     ({
-      TopicPostsPage: () => <div data-testid='topic-posts-page' />,
+      TopicPostsPage: () => <div data-pw='topic-posts-page' />,
     }) as unknown as typeof import('@/components/topics/topic-posts-page'),
 )
 
@@ -85,7 +87,7 @@ vi.mock(
   import('@/components/topics/topic-reviews-page'),
   () =>
     ({
-      TopicReviewsPage: () => <div data-testid='topic-reviews-page' />,
+      TopicReviewsPage: () => <div data-pw='topic-reviews-page' />,
     }) as unknown as typeof import('@/components/topics/topic-reviews-page'),
 )
 
@@ -93,7 +95,7 @@ vi.mock(
   import('@/components/topics/topic-data-points-page'),
   () =>
     ({
-      TopicDataPointsPage: () => <div data-testid='topic-data-points-page' />,
+      TopicDataPointsPage: () => <div data-pw='topic-data-points-page' />,
     }) as unknown as typeof import('@/components/topics/topic-data-points-page'),
 )
 
@@ -101,7 +103,7 @@ vi.mock(
   import('@/components/topics/topic-latest-page'),
   () =>
     ({
-      TopicLatestPage: () => <div data-testid='topic-latest-page' />,
+      TopicLatestPage: () => <div data-pw='topic-latest-page' />,
     }) as unknown as typeof import('@/components/topics/topic-latest-page'),
 )
 
@@ -109,7 +111,7 @@ vi.mock(
   import('@/components/topics/topic-news-page'),
   () =>
     ({
-      TopicNewsPage: () => <div data-testid='topic-news-page' />,
+      TopicNewsPage: () => <div data-pw='topic-news-page' />,
     }) as unknown as typeof import('@/components/topics/topic-news-page'),
 )
 

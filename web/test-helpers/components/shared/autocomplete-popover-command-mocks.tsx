@@ -1,8 +1,10 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
+import { configure } from '@testing-library/react'
 import { createContext, use } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('@/components/ui/popover'), () => {
   const PopoverContext = createContext(false)
@@ -50,7 +52,7 @@ vi.mock(
       ),
       CommandList: ({ children }: { children: React.ReactNode }) => <ul>{children}</ul>,
       CommandEmpty: ({ children }: { children: React.ReactNode }) => (
-        <li data-testid='command-empty'>{children}</li>
+        <li data-pw='command-empty'>{children}</li>
       ),
       CommandItem: ({
         children,

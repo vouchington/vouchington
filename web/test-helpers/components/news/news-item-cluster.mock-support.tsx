@@ -1,4 +1,6 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+/* oxlint-disable no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+
+import { configure } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
@@ -6,6 +8,8 @@ import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-respon
 import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { Post } from '@/types/posts'
 import type { RssFeedItem, Story } from '@/types/rss-feed-items'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const mockAuthState = vi.hoisted(() => ({ isAuthenticated: true }))
 export { mockAuthState }
@@ -52,7 +56,7 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/follower-share-actions'), () => ({
-  FollowerShareActions: () => <div data-testid='follower-share-actions' />,
+  FollowerShareActions: () => <div data-pw='follower-share-actions' />,
 }))
 
 vi.mock(import('@/components/shared/report-menu-item'), () => ({
@@ -79,7 +83,7 @@ vi.mock(import('@/lib/api/client/elections'), () => ({
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: () => (
     <Button
-      data-testid='hide-button'
+      data-pw='hide-button'
       type='button'
       aria-label='Hide news item'
     />
@@ -104,9 +108,9 @@ vi.mock(
         entityType?: string
         'data-pw'?: string
       }) => (
-        <div data-testid={dataPw ?? 'score-vote'}>
-          <span data-testid='existing-vote-choice'>{String(existingVoteChoice)}</span>
-          <span data-testid='entity-type'>{String(entityType)}</span>
+        <div data-pw={dataPw ?? 'score-vote'}>
+          <span data-pw='existing-vote-choice'>{String(existingVoteChoice)}</span>
+          <span data-pw='entity-type'>{String(entityType)}</span>
         </div>
       ),
     }) as unknown as typeof import('@/components/votes/score-vote'),

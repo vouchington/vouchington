@@ -1,8 +1,10 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
+import { configure } from '@testing-library/react'
 import { vi } from 'vitest'
 import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import CommunityModerationAnalyticsPage from '@/app/(communities)/communities/[slug]/settings/moderation/analytics/page'
 import type { ModerationAnalytics, ModerationTransparency } from '@/types/moderation-analytics'
+
+configure({ testIdAttribute: 'data-pw' })
 
 type HeaderBag = { get: (key: string) => string | null }
 
@@ -18,9 +20,9 @@ const {
   redirectMock,
   headersMock,
 } = vi.hoisted(() => ({
-  dashboardMock: vi.fn<VitestLooseMock>(() => <div data-testid='dashboard' />),
-  rangeFilterMock: vi.fn<VitestLooseMock>(() => <div data-testid='range-filter' />),
-  transparencyPanelMock: vi.fn<VitestLooseMock>(() => <div data-testid='transparency-panel' />),
+  dashboardMock: vi.fn<VitestLooseMock>(() => <div data-pw='dashboard' />),
+  rangeFilterMock: vi.fn<VitestLooseMock>(() => <div data-pw='range-filter' />),
+  transparencyPanelMock: vi.fn<VitestLooseMock>(() => <div data-pw='transparency-panel' />),
   getCommunityMock: vi.fn<VitestLooseMock>(),
   getCommunityModerationAnalyticsMock: vi.fn<VitestLooseMock>(),
   getCommunityModerationTransparencyMock: vi.fn<VitestLooseMock>(),

@@ -10,7 +10,7 @@ import { render, screen } from '@testing-library/react'
 import { UserProfileHeader } from '../user-profile-header'
 
 vi.mock(import('@/components/shared/follow-button'), () => ({
-  FollowButton: () => <div data-testid='follow-button' />,
+  FollowButton: () => <div data-pw='follow-button' />,
 }))
 
 describe('UserProfileHeader', () => {

@@ -54,7 +54,7 @@ describe('topic factory functions', () => {
       const Layout = createTopicLayout('topic')
       const result = await Layout({
         params: Promise.resolve({ id: 'topic-1' }),
-        children: <span data-testid='child' />,
+        children: <span data-pw='child' />,
       })
       render(result)
       expect(screen.getByTestId('child')).toBeDefined()

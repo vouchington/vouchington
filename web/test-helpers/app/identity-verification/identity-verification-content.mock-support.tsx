@@ -1,6 +1,8 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support forwards the select data-testid the identity verification tests query */
+import { configure } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
   mockOnError: vi.fn<VitestLooseMock>(),
@@ -34,7 +36,7 @@ vi.mock(
         // ast-grep-ignore: web-no-raw-form-elements -- test double forwards the select the identity verification tests query
         <select
           aria-label='name-display-select'
-          data-testid='name-display-select'
+          data-pw='name-display-select'
           value={value}
           onChange={event => onValueChange?.(event.target.value)}
         >
