@@ -47,7 +47,9 @@ describe('requirePrivateToolUser', () => {
     await runWithRequestContext(async () => {
       const user = await requirePrivateToolUser(principal)
       expect(user.roles).not.toContain('administrator')
-      expect(getRequestCurrentUser<{ roles: string[] }>()?.roles).not.toContain('administrator')
+      expect(
+        (getRequestCurrentUser() as { roles: string[] } | null | undefined)?.roles,
+      ).not.toContain('administrator')
       expect((await requireActiveToolUser(principal)).roles).not.toContain('administrator')
     })
   })

@@ -5,7 +5,7 @@ import createHttpError from 'http-errors'
 
 /** Transport authentication precedes body, quota and audit work; hydrate once per tools/call. */
 export async function requirePrivateToolUser(currentUser: BasicUser): Promise<PrivateUser> {
-  const stored = getRequestCurrentUser<PrivateUser>()
+  const stored = getRequestCurrentUser() as PrivateUser | null | undefined
   if (stored?.id === currentUser.id) {
     const authorized = withAuthenticatedRoles(stored, currentUser)
     if (authorized !== stored) setRequestCurrentUser(authorized)

@@ -1,9 +1,6 @@
 import type { TopicMetrics } from '@services/topics/types'
 
-type Query = <Row extends Record<string, unknown>>(
-  text: string,
-  values?: readonly unknown[],
-) => Promise<{ rows: Row[] }>
+type Query = import('@data-stores/psql').QueryExecutor
 
 interface SeedDependencies {
   core: typeof import('../../seed-data/core.mts')

@@ -25,7 +25,7 @@ describe('initSentry event scrubbing', () => {
   it('scrubs sensitive fields and drops the request body by default', async () => {
     process.env.NODE_ENV = 'test'
     initSentry({ lambdaName: 'test-lambda' })
-    const result = await getBeforeSend<BeforeSend>(vi.mocked(Sentry.init))(
+    const result = await (getBeforeSend(vi.mocked(Sentry.init)) as BeforeSend)(
       {
         user: { id: 'user-1', email: 'tests+person@voucha.ai' },
         request: {

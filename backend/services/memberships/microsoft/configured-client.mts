@@ -100,8 +100,8 @@ async function queryMicrosoftStorePages<T>(
     const response = await microsoftFetch(config, url, requestBody)
     // eslint-disable-next-line no-await-in-loop -- each page response yields the next continuation token.
     const payload = await response.json()
-    const parsed = parseMicrosoftStorePage<T>(payload, queryName)
-    items.push(...parsed.items)
+    const parsed = parseMicrosoftStorePage(payload, queryName)
+    items.push(...(parsed.items as T[]))
     if (parsed.continuationToken === null) return items
     if (continuationTokens.has(parsed.continuationToken))
       throw new Error(`Microsoft Store ${queryName} continuation token repeated`)
@@ -135,17 +135,17 @@ async function microsoftFetch(
   return response
 }
 
-function parseMicrosoftStorePage<T>(
+function parseMicrosoftStorePage(
   payload: unknown,
   queryName: string,
-): { items: T[]; continuationToken: string | null } {
+): { items: Record<string, unknown>[]; continuationToken: string | null } {
   if (!isRecord(payload) || !Array.isArray(payload.items) || !payload.items.every(isRecord))
     throw new Error(`Microsoft Store ${queryName} response is malformed`)
   if (payload.continuationToken === undefined)
-    return { items: payload.items as T[], continuationToken: null }
+    return { items: payload.items, continuationToken: null }
   if (typeof payload.continuationToken !== 'string' || !payload.continuationToken.trim())
     throw new Error(`Microsoft Store ${queryName} response is malformed`)
-  return { items: payload.items as T[], continuationToken: payload.continuationToken }
+  return { items: payload.items, continuationToken: payload.continuationToken }
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

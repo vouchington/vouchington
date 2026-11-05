@@ -18,7 +18,7 @@ export function redactCommunityReport<
   return redactedReport
 }
 
-export function redactCommunityBanEvasionContext<T extends CommunityBanEvasionContext>(context: T) {
+export function redactCommunityBanEvasionContext(context: CommunityBanEvasionContext) {
   return {
     community_id: context.community_id,
     community_slug: context.community_slug,

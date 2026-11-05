@@ -18,8 +18,8 @@ declare module 'cloudflare:workers' {
       ? InferredProps
       : never
   type IsExact<A, B> =
-    (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-      ? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
+    (<T>(value: T) => T extends A ? 1 : 2) extends <T>(value: T) => T extends B ? 1 : 2
+      ? (<T>(value: T) => T extends B ? 1 : 2) extends <T>(value: T) => T extends A ? 1 : 2
         ? true
         : false
       : false

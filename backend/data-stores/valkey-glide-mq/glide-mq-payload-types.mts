@@ -47,8 +47,8 @@ type SensitivePayloadKey =
 type NoSensitivePayloadKeys = Partial<Record<SensitivePayloadKey, never>>
 
 type IsSameType<TLeft, TRight> =
-  (<T>() => T extends TLeft ? 1 : 2) extends <T>() => T extends TRight ? 1 : 2
-    ? (<T>() => T extends TRight ? 1 : 2) extends <T>() => T extends TLeft ? 1 : 2
+  (<T>(value: T) => T extends TLeft ? 1 : 2) extends <T>(value: T) => T extends TRight ? 1 : 2
+    ? (<T>(value: T) => T extends TRight ? 1 : 2) extends <T>(value: T) => T extends TLeft ? 1 : 2
       ? true
       : false
     : false

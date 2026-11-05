@@ -45,10 +45,10 @@ export function hasRequestContext(): boolean {
  * The acting user loaded for this request.
  * `undefined` means there is no request store, or this request has not loaded the actor yet.
  */
-export function getRequestCurrentUser<T>(): T | null | undefined {
+export function getRequestCurrentUser(): unknown {
   const store = requestContext.getStore()
   if (!store || !Object.hasOwn(store, 'currentUser')) return undefined
-  return store.currentUser as T | null
+  return store.currentUser
 }
 
 export function setRequestCurrentUser(currentUser: unknown): void {

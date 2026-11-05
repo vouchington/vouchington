@@ -9,22 +9,12 @@ import { createCrawlerPathname } from '@/lib/links/entity-href'
 
 export const dynamic = 'force-dynamic'
 
-type Crawler = {
-  id: string
-  hostname_id: string
-  hostname: string
-  description: string
-  crawler_type: string
-  priority: number
-  created_at: string
-}
-
 export default async function CrawlersListPage() {
   const t = await getTranslations()
   await requireAdmin()
   const title = t('extracted.crawlers.page.crawlers_9bb7d6d4')
 
-  const data = await getCrawlers<Crawler>({ limit: 100 })
+  const data = await getCrawlers({ limit: 100 })
   const { results: crawlers } = data
   const columns = [
     t('extracted.crawlers.page.hostname_2db53355'),

@@ -78,10 +78,7 @@ describe('web SEO tests', () => {
       const result = await client.loadPage('/plans', 'seo-plans-structured-data')
       const schemas = getJsonLd(parseHtml(result.html, result.response.url))
 
-      const siteNavigationSchema = findSchema<{ name: string; hasPart: unknown[] }>(
-        schemas,
-        'SiteNavigationElement',
-      )
+      const siteNavigationSchema = findSchema(schemas, 'SiteNavigationElement')
       const breadcrumbSchema = findSchema(schemas, 'BreadcrumbList')
 
       expect(siteNavigationSchema).toBeTruthy()
@@ -107,23 +104,17 @@ describe('web SEO tests', () => {
       expect(getMetaContent(document, 'meta[name="description"]')).toBeTruthy()
       expect(getLinkHref(document, 'link[rel="canonical"]')).toContain('/user/')
 
-      const profileSchema = findSchema<{ mainEntity: Record<string, unknown>; url: string }>(
-        schemas,
-        'ProfilePage',
-      )
-      const breadcrumbSchema = findSchema<{ itemListElement: Array<{ name: string }> }>(
-        schemas,
-        'BreadcrumbList',
-      )
+      const profileSchema = findSchema(schemas, 'ProfilePage')
+      const breadcrumbSchema = findSchema(schemas, 'BreadcrumbList')
 
       expect(profileSchema).toBeTruthy()
       expect(profileSchema?.mainEntity).toEqual(expect.objectContaining({ '@type': 'Person' }))
       expect(profileSchema?.url).toContain('/user/')
       expect(breadcrumbSchema).toBeTruthy()
       expect(breadcrumbSchema?.itemListElement).toHaveLength(2)
-      expect(breadcrumbSchema?.itemListElement[0]).toEqual(
-        expect.objectContaining({ name: 'Home' }),
-      )
+      expect(
+        (breadcrumbSchema?.itemListElement as Array<{ name: string }> | undefined)?.[0],
+      ).toEqual(expect.objectContaining({ name: 'Home' }))
     })
 
     it('renders visible breadcrumbs and BreadcrumbList JSON-LD on representative pages', async () => {

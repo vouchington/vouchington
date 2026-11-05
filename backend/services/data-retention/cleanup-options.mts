@@ -14,9 +14,9 @@ export type OptionalRetentionLimits<T extends { maxBatches?: number }> = Omit<T,
 }
 
 /** Fills a cleanup's batch size and per-run cap from the run limits unless it overrides them. */
-export function applyRetentionLimits<T extends { batchSize?: number; maxBatches?: number }>(
+export function applyRetentionLimits(
   limits: DataRetentionLimits,
-  overrides: T | undefined,
+  overrides: { batchSize?: number; maxBatches?: number } | undefined,
 ) {
   return {
     ...overrides,

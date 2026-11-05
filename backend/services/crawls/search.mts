@@ -53,6 +53,7 @@ export async function searchCrawlsForUrl(
       language
     FROM crawls
     WHERE `,
+    read<Omit<UrlCrawlHistory, '__entity_type'>>,
   )
 }
 
@@ -76,6 +77,7 @@ export async function searchPublicUrlCrawlsForUrl(
       language
     FROM crawls
     WHERE `,
+    read<Omit<PaidSafeUrlCrawlHistory, '__entity_type'>>,
   )
 }
 
@@ -87,6 +89,7 @@ async function searchUrlCrawlPage<Row extends UrlCrawlIdRow>(
   urlId: string,
   options: SearchCrawlsForUrlOptions,
   selectFromWhere: SQLStatement,
+  readRows: (statement: SQLStatement) => Promise<{ rows: Row[] }>,
 ): Promise<{
   results: Array<Row & { __entity_type: 'crawl' }>
   page_info: PageInfo
@@ -114,7 +117,7 @@ async function searchUrlCrawlPage<Row extends UrlCrawlIdRow>(
     LIMIT ${safeLimit + 1}
   `)
 
-  const { rows } = await read<Row>(query)
+  const { rows } = await readRows(query)
   const crawls = rows.map(row => ({
     __entity_type: 'crawl' as const,
     ...row,

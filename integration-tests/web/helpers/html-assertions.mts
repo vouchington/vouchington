@@ -31,12 +31,9 @@ export function getJsonLd(document: Document): unknown[] {
   )
 }
 
-export function findSchema<T extends Record<string, unknown>>(
-  schemas: unknown[],
-  type: string,
-): T | undefined {
+export function findSchema(schemas: unknown[], type: string): Record<string, unknown> | undefined {
   return schemas.find(
-    (schema): schema is T =>
+    (schema): schema is Record<string, unknown> =>
       typeof schema === 'object' &&
       schema !== null &&
       (schema as Record<string, unknown>)['@type'] === type,

@@ -4,13 +4,23 @@ import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
 import { getUrl } from './urls'
 import type { AdminReviewQueueResponse } from '@/types/admin-review-queue'
 
+type Crawler = {
+  id: string
+  hostname_id: string
+  hostname: string
+  description: string
+  crawler_type: string
+  priority: number
+  created_at: string
+}
+
 export const getCrawlers = cache(
-  async <T = unknown>(options?: {
+  async (options?: {
     limit?: number
     after?: string
     headers?: Record<string, string>
   }): Promise<{
-    results: T[]
+    results: Crawler[]
     page_info: { has_next_page: boolean; end_cursor: string | null }
   }> => {
     return serverApi.get('/api/v1/crawlers', {

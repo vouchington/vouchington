@@ -13,7 +13,7 @@ export async function loadRequestPrivateUser(
   options?: QueryOptions,
 ): Promise<PrivateUser | null> {
   if (!options?.query && options?.readOnly !== false) {
-    const stored = getRequestCurrentUser<PrivateUser>()
+    const stored = getRequestCurrentUser() as PrivateUser | null | undefined
     if (stored?.id === userId) return stored
   }
   return getPrivateUserByAny(userId, options)
