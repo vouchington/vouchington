@@ -9,7 +9,7 @@ import { checkWorkflowOpsPolicy } from './check-workflow-ops-policy.mts'
 
 const exec = promisify(execFile)
 const checkerPath = join(import.meta.dirname, 'check-workflow-ops-policy.mts')
-const fixtureImage = `ghcr.io/vouchington/dependency-pgvector:pg18@sha256:${'b'.repeat(64)}`
+const fixtureImage = `ghcr.io/vouchington/dependency-pgvector:synthetic-tag@sha256:${'b'.repeat(64)}`
 const postgresArgs = '-c max_connections=300 -c log_min_messages=log'
 
 describe('static workflow ops scan', () => {

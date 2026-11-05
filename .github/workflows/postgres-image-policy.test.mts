@@ -27,7 +27,7 @@ function readWorkflow(name: string): string {
   return readFileSync(`${workflowDirectory}/${name}`, 'utf8')
 }
 
-const validPgvectorImage = `ghcr.io/vouchington/dependency-pgvector:pg18@sha256:${'a'.repeat(64)}`
+const validPgvectorImage = `ghcr.io/vouchington/dependency-pgvector:synthetic-tag@sha256:${'a'.repeat(64)}`
 const postgresPolicySources = {
   '.github/workflows/unit.yml': `
 jobs:
@@ -79,11 +79,11 @@ describe('PostgreSQL workflow image policy', () => {
         ...postgresPolicySources,
         '.github/workflows/unit.yml': postgresPolicySources['.github/workflows/unit.yml'].replace(
           validPgvectorImage,
-          'ghcr.io/vouchington/dependency-pgvector:pg18',
+          'ghcr.io/vouchington/dependency-pgvector:synthetic-tag',
         ),
       }),
     ).toEqual([
-      'Postgres workflow image is not digest pinned: ghcr.io/vouchington/dependency-pgvector:pg18',
+      'Postgres workflow image is not digest pinned: ghcr.io/vouchington/dependency-pgvector:synthetic-tag',
     ])
   })
 
