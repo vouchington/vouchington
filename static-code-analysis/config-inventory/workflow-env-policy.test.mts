@@ -113,6 +113,37 @@ describe('workflow env policy', () => {
     }
   })
 
+  it('retains extracted workflow and composite shell readers without accepting unrelated files', async () => {
+    const ctx = await makeRepoFixture({
+      '.github/workflows/ci.yml': [
+        'jobs:',
+        '  test:',
+        '    steps:',
+        '      - env:',
+        '          EXTRACTED_WORKFLOW_ENV: value',
+        '          EXTRACTED_ACTION_ENV: value',
+        '          STALE_SCRIPT_ENV: value',
+        '          LOOKALIKE_SCRIPT_ENV: value',
+        '        run: source .github/workflows/ci/run.sh',
+      ].join('\n'),
+      '.github/workflows/ci/run.sh': 'echo "$EXTRACTED_WORKFLOW_ENV"\n',
+      '.github/actions/example/run.sh': 'echo "$EXTRACTED_ACTION_ENV"\n',
+      '.github/workflows/ci/ignored.txt': 'echo "$LOOKALIKE_SCRIPT_ENV"\n',
+    })
+
+    const errors = (await checkConfigInventoryPolicy(ctx)).errors
+    for (const name of ['EXTRACTED_WORKFLOW_ENV', 'EXTRACTED_ACTION_ENV']) {
+      expect(errors).not.toEqual(
+        expect.arrayContaining([expect.stringContaining(`workflow env ${name} `)]),
+      )
+    }
+    for (const name of ['STALE_SCRIPT_ENV', 'LOOKALIKE_SCRIPT_ENV']) {
+      expect(errors).toContain(
+        `workflow env ${name} in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
+      )
+    }
+  })
+
   async function makeRepoFixture(files: Record<string, string>): Promise<SharedContext> {
     const dir = await mkdtemp(join(tmpdir(), 'voucha-workflow-env-policy-'))
     testDirs.push(dir)

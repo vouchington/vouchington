@@ -208,6 +208,20 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(storybookWorkflow).not.toContain('branches:\n      - main')
   })
 
+  it('checks out trusted workflow code before deployment dispatch scripts', () => {
+    const workflow = read('.github/workflows/dispatch-completed-deploy.yml')
+    const dispatch = jobSection(workflow, 'dispatch')
+    expect(dispatch).toContain('ref: ${{ github.workflow_sha }}')
+    expect(dispatch).toContain('persist-credentials: false')
+    expect(dispatch).toContain('      contents: read')
+    expect(dispatch).not.toContain('ref: ${{ github.event.workflow_run.head_sha }}')
+    expect(dispatch.indexOf('actions/checkout@')).toBeGreaterThan(-1)
+    expect(dispatch.indexOf('actions/checkout@')).toBeLessThan(dispatch.indexOf('id: intent'))
+    expect(dispatch).toContain('source .github/workflows/dispatch-completed-deploy/check-intent.sh')
+    expect(dispatch).toContain('source .github/workflows/dispatch-completed-deploy/map-source.sh')
+    expect(dispatch).toContain('SOURCE_REVISION: ${{ github.event.workflow_run.head_sha }}')
+  })
+
   it('keeps CI Node warning suppression out of workflow startup hooks', () => {
     for (const workflowPath of readdirSync('.github/workflows').filter(path =>
       path.endsWith('.yml'),
