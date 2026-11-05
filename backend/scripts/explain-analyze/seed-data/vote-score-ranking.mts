@@ -89,6 +89,7 @@ export async function seedVoteScoreHostnameFixture(): Promise<void> {
   // Active-topic triggers run for every row; bound each statement while preserving the full corpus.
   for (let first = 1; first <= HOSTNAME_FIXTURE_COUNT; first += HOSTNAME_SEED_BATCH_SIZE) {
     const last = Math.min(first + HOSTNAME_SEED_BATCH_SIZE - 1, HOSTNAME_FIXTURE_COUNT)
+    // no-mistakes-disable-next-line query-reached-per-item: bounded seed batches keep active-topic triggers below the statement deadline; one INSERT for the full corpus times out.
     await query(
       `/* seedVoteScoreHostnameFixture */
      INSERT INTO url_hostnames
