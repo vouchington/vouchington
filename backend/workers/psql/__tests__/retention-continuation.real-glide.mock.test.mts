@@ -137,46 +137,28 @@ describe('AI retention continuation delivery', () => {
       if (!fixture) throw new Error(`missing AI retention fixture for ${family}`)
       return cleanupAIRetentionFamily(family, { ...limits, ...fixture.options })
     })
-    const textResult = await processPsql('dataRetentionCleanup', undefined, undefined, undefined, {
-      retention: { families: ['textEmbeddingCache'], textEmbeddingCache: drained.options },
+    const result = await processPsql('dataRetentionCleanup', undefined, undefined, undefined, {
+      retention: {
+        families: ['textEmbeddingCache', 'terminalEmbeddingBatches', 'oldMediaDeliveryChanges'],
+        textEmbeddingCache: drained.options,
+        terminalEmbeddingBatches: { ...terminalBatches.options, lowerBoundDate: undefined },
+        oldMediaDeliveryChanges: { ...mediaChanges.options, lowerBoundDate: undefined },
+      },
     })
-    expect(textResult).toMatchObject({ textEmbeddingCache: { deleted: 0, hasMore: false } })
+    expect(result).toMatchObject({ textEmbeddingCache: { deleted: 0, hasMore: false } })
     expect(await psql.getJob(continuationJobId('textEmbeddingCache'))).toBeNull()
     expect(await drained.excludedState()).toBe(true)
-
-    const terminalResult = await processPsql(
-      'dataRetentionCleanup',
-      undefined,
-      undefined,
-      undefined,
-      {
-        retention: {
-          families: ['terminalEmbeddingBatches'],
-          terminalEmbeddingBatches: { ...terminalBatches.options, lowerBoundDate: undefined },
-        },
-      },
-    )
-    expect(terminalResult).toMatchObject({
+    expect(result).toMatchObject({
       terminalEmbeddingBatches: { deleted: 1, hasMore: true },
     })
     const terminalJob = await requireContinuationJob('terminalEmbeddingBatches')
     expect(terminalJob.id).toBe('ai_retention_continuation__terminalEmbeddingBatches')
     expect(await terminalBatches.excludedState()).toBe(true)
 
-    const mediaResult = await processPsql('dataRetentionCleanup', undefined, undefined, undefined, {
-      retention: {
-        families: ['oldMediaDeliveryChanges'],
-        oldMediaDeliveryChanges: { ...mediaChanges.options, lowerBoundDate: undefined },
-      },
-    })
-    expect(mediaResult).toMatchObject({ oldMediaDeliveryChanges: { deleted: 1, hasMore: true } })
+    expect(result).toMatchObject({ oldMediaDeliveryChanges: { deleted: 1, hasMore: true } })
     const mediaJob = await requireContinuationJob('oldMediaDeliveryChanges')
     expect(mediaJob.id).toBe('ai_retention_continuation__oldMediaDeliveryChanges')
     expect(await mediaChanges.excludedState()).toEqual([true, true, true, true])
-    expect([terminalJob.id, mediaJob.id]).toEqual([
-      'ai_retention_continuation__terminalEmbeddingBatches',
-      'ai_retention_continuation__oldMediaDeliveryChanges',
-    ])
     expect(await psql.getJob(continuationJobId('textEmbeddingCache'))).toBeNull()
     for (const family of ['terminalEmbeddingBatches', 'oldMediaDeliveryChanges'] as const) {
       const fixture = fixtures.get(family)
