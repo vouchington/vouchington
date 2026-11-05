@@ -36,7 +36,7 @@ describe('membership ineligible purchase reversal case schema', () => {
     )
   })
 
-  it('keeps each binding and operation associated with at most one reversal case', async () => {
+  it('keeps each lineage invoice and operation associated with at most one reversal case', async () => {
     const [first, second] = await Promise.all([
       createReversalCaseFixture(),
       createReversalCaseFixture(),
@@ -48,6 +48,15 @@ describe('membership ineligible purchase reversal case schema', () => {
         refundCapMinorUnits: 50,
       }),
     ).rejects.toMatchObject({ code: '23505' })
+    await expect(
+      insertTestReversalCase({
+        ...first,
+        originatingInvoiceId: `${first.originatingInvoiceId}-renewal`,
+        winningSourceKind: 'family',
+        periodStartedAt: new Date('2026-01-01T00:00:00Z'),
+        periodEndsAt: new Date('2026-01-01T00:00:00Z'),
+      }),
+    ).resolves.not.toBe(first.caseId)
     await expect(
       associateDuplicateTestReversalCaseOperation(second.caseId, first.operationId),
     ).rejects.toMatchObject({ code: '23514' })

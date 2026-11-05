@@ -9,6 +9,7 @@ import { membershipProjectionWithEntitlementEffects } from './entitlement-effect
 import { insertMembershipProjection, upsertMembershipSourceState } from './projections/create.mts'
 import { reconcileSourceProjection, type PriorMembership } from './reconcile-source-projection.mts'
 import { retireCurrentMembershipProjection } from './create/retire-current-projection.mts'
+import { recordDisplacedStripePurchaseCases } from './ineligible-stripe-purchase-reversal/case-producer.mts'
 import {
   getCurrentProviderProjection,
   getLatestProviderSourceProjection,
@@ -108,7 +109,19 @@ async function projectAdvancedProviderObservation(
   const prior = await getCurrentProviderProjection(options.userId, query)
   const project = !isTerminalMembershipStatus(observation.status) && observation.status !== 'paused'
   if (!project) return { membershipId: null, projected: false }
-  if (prior) await retireCurrentMembershipProjection(options.userId, query)
+  if (prior) {
+    if (observation.sourceKind === 'family' || observation.sourceIdentity.provider !== 'stripe')
+      await recordDisplacedStripePurchaseCases(
+        {
+          userId: options.userId,
+          winningSourceKind: observation.sourceKind,
+          winningPlan: observation.plan,
+          collisionAt: observation.effectiveAt,
+        },
+        query,
+      )
+    await retireCurrentMembershipProjection(options.userId, query)
+  }
   const membership = await insertMembershipProjection(
     options.userId,
     sourceId,
@@ -147,8 +160,19 @@ async function reconcileProviderSourceProjection(
 ): Promise<{ membershipId: string; projected: boolean }> {
   const entitles =
     !isTerminalMembershipStatus(observation.status) && observation.status !== 'paused'
-  if (entitles && prior.projection_ended_at !== null)
+  if (entitles && prior.projection_ended_at !== null) {
+    if (observation.sourceKind === 'family' || observation.sourceIdentity.provider !== 'stripe')
+      await recordDisplacedStripePurchaseCases(
+        {
+          userId: options.userId,
+          winningSourceKind: observation.sourceKind,
+          winningPlan: observation.plan,
+          collisionAt: observation.effectiveAt,
+        },
+        query,
+      )
     await retireCurrentMembershipProjection(options.userId, query)
+  }
   const membership = await reconcileSourceProjection(
     {
       prior,

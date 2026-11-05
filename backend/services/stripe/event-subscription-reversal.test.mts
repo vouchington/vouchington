@@ -5,7 +5,10 @@ import { handleInvoicePaymentPaid } from './event-subscription-handlers.mts'
 
 function stubStripeInvoices() {
   const list = vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false })
-  vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({ invoices: { list } } as never)
+  const retrieve = vi.fn<VitestLooseMock>().mockResolvedValue({ parent: null })
+  vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
+    invoices: { list, retrieve },
+  } as never)
   return list
 }
 

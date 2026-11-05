@@ -121,7 +121,6 @@ CREATE TRIGGER trigger_membership_provider_lineages_immutable BEFORE UPDATE OR D
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_lineage_bindings (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_lineage_id UUID NOT NULL REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT,
-  originating_invoice_id TEXT CONSTRAINT membership_lineage_bindings_originating_invoice_id_valid CHECK (originating_invoice_id IS NULL OR (char_length(originating_invoice_id) BETWEEN 1 AND 255 AND originating_invoice_id = TRIM(originating_invoice_id))),
   user_id UUID REFERENCES users(id) ON DELETE SET NULL, source_kind membership_source_kinds NOT NULL DEFAULT 'direct', bound_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, released_at TIMESTAMPTZ, release_reason TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (source_kind <> 'admin_grant'),
@@ -139,7 +138,6 @@ CREATE INDEX IF NOT EXISTS idx_membership_lineage_bindings__lineage_id ON member
 CREATE INDEX IF NOT EXISTS idx_membership_lineage_bindings__user_id ON membership_lineage_bindings (user_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_lineage_bindings__id_lineage_id ON membership_lineage_bindings (id, membership_provider_lineage_id);
-COMMENT ON COLUMN membership_lineage_bindings.originating_invoice_id IS 'Stripe invoice that established the bound provider lineage for deterministic reversal targeting.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_evidence_records (

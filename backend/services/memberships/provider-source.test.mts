@@ -127,19 +127,6 @@ describe('provider membership sources', () => {
     ).rejects.toThrow('Provider lineage account does not match the incoming evidence')
   })
 
-  it('reserves originating invoices for direct Stripe sources', async () => {
-    const user = await createTestUser()
-
-    await expect(
-      createTestProviderSource({
-        userId: user.id,
-        sourceKind: 'family',
-        sourceIdentity: makeAppleSourceIdentity(),
-        stripeOriginatingInvoiceId: `in_not_apple_${randomUUID()}`,
-      }),
-    ).rejects.toThrow('Only direct Stripe sources may bind an originating invoice')
-  })
-
   it.each(['direct', 'admin_grant'] as const)(
     'retains a family source without displacing a same-plan %s projection',
     async currentSourceKind => {

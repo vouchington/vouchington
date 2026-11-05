@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   membership_source_id UUID NOT NULL,
   membership_provider_lineage_id UUID NOT NULL,
   membership_lineage_binding_id UUID NOT NULL,
+  originating_invoice_id TEXT NOT NULL CONSTRAINT chk_mipr_cases__originating_invoice_id CHECK (char_length(originating_invoice_id) BETWEEN 1 AND 255 AND originating_invoice_id = TRIM(originating_invoice_id)),
   stripe_price_id TEXT NOT NULL,
   winning_source_kind membership_source_kinds NOT NULL,
   qualifying_amount_minor_units BIGINT NOT NULL CONSTRAINT chk_memb_ineli_purch_rever_cases__qualifying_amount_minor_units CHECK (qualifying_amount_minor_units BETWEEN 0 AND 9007199254740991),
@@ -15,13 +16,16 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT chk_membersh_ineligibl_purchase_reversal_cases__stripe_price_id CHECK (char_length(stripe_price_id) BETWEEN 1 AND 255 AND stripe_price_id = TRIM(stripe_price_id)),
   CHECK (refund_cap_minor_units <= qualifying_amount_minor_units),
-  CHECK (period_ends_at >= period_started_at),
-  CHECK (winning_source_kind <> 'family' OR period_ends_at > period_started_at)
+  CHECK (period_ends_at >= period_started_at)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__binding
-  ON membership_ineligible_purchase_reversal_cases (membership_lineage_binding_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__invoice
+  ON membership_ineligible_purchase_reversal_cases (membership_provider_lineage_id, originating_invoice_id);
+CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__binding
+  ON membership_ineligible_purchase_reversal_cases (membership_lineage_binding_id, membership_provider_lineage_id);
+CREATE INDEX IF NOT EXISTS idx_membership_reversal_cases__originating_invoice
+  ON membership_ineligible_purchase_reversal_cases (originating_invoice_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membershi_ineligibl_purchase_reversal_cases__source_lineage
   ON membership_ineligible_purchase_reversal_cases (membership_source_id, membership_provider_lineage_id);
@@ -34,9 +38,6 @@ CREATE INDEX IF NOT EXISTS idx_member_inelig_purchase_reversal_cases__collision_
 CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__currency
   ON membership_ineligible_purchase_reversal_cases (currency_code);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_membership_lineage_bindings__lineage_origin
-  ON membership_lineage_bindings (membership_provider_lineage_id, originating_invoice_id, id)
-  WHERE originating_invoice_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_case_operations (
@@ -127,6 +128,8 @@ COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.membership_provi
   'Provider lineage shared by the case source, binding, and reversal operations.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.membership_lineage_binding_id IS
   'Immutable lineage binding whose collision this case records.';
+COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.originating_invoice_id IS
+  'Stripe invoice identifying the qualifying purchase within its provider lineage.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.stripe_price_id IS
   'Stripe Price identifier for the ineligible qualifying purchase.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.winning_source_kind IS

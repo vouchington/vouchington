@@ -18,6 +18,19 @@ backend entitlement reconciliation are ready: native plan UI exposes no raw Stri
 Stripe Checkout or portal links, store purchase buttons, receipt validation, or cancellation and
 refund actions. Swift owns iOS/iPadOS presentation and .NET MAUI owns Windows presentation.
 
+## Overlapping paid memberships
+
+A Stripe membership purchase that overlaps entitlement from a winning Apple App Store, Google
+Play, Microsoft Store, or family membership is ineligible for the overlapping period. The Stripe
+purchase is cancelled and its qualifying payments are automatically refunded. The total refund
+cap is the qualifying amount multiplied by the fraction of the Stripe purchase period that
+overlaps the winning membership, rounded down to integer currency minor units:
+`floor(qualifying amount × (period end − max(collision time, period start)) / (period end − period start))`.
+If the user already had coverage when the Stripe purchase began, the cap is the full qualifying
+amount. A zero-length purchase period also uses the full qualifying amount. This applies whether
+the Stripe purchase is rejected because another source already wins or another source later wins
+coverage during an existing Stripe purchase period.
+
 ## Contents
 
 - <a id="refunds-renewal-notifications-admin-grants-feature-flag-and-agent-prompt-slots"></a>[Refunds, Renewal Notifications, Admin Grants, Feature Flag, and Agent Prompt Slots](reference-memberships-refunds.md)

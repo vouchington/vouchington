@@ -8,18 +8,20 @@ type ReversalCaseAmounts = {
   qualifyingAmountMinorUnits: number
   refundCapMinorUnits: number
 }
-type ReversalCaseContext = Pick<
-  TestReversalCaseFixture,
-  'bindingId' | 'membershipProviderLineageId' | 'sourceId' | 'stripePriceId'
->
 export type TestReversalCaseFixture = ReversalCaseAmounts & {
   bindingId: string
   caseId: string
   membershipProviderLineageId: string
+  originatingInvoiceId: string
   operationId: string
   sourceId: string
   stripePriceId: string
 }
+
+type ReversalCaseContext = Omit<
+  TestReversalCaseFixture,
+  'caseId' | 'operationId' | 'qualifyingAmountMinorUnits' | 'refundCapMinorUnits'
+>
 export function mutateTestReversalCase(caseId: string): Promise<QueryResult> {
   return write(sql`/* rejectReversalCaseMutation */ UPDATE membership_ineligible_purchase_reversal_cases
     SET refund_cap_minor_units = 0 WHERE id = ${caseId}`)
@@ -81,13 +83,17 @@ export async function createWrongKindTestReversalCaseOperation(
     FROM membership_operations WHERE id = ${operationId} RETURNING id`)
   return rows[0]!.id
 }
-type PersistedReversalCaseInput = ReversalCaseAmounts & {
+type ReversalCaseContextInput = Pick<
+  TestReversalCaseFixture,
+  'originatingInvoiceId' | 'stripePriceId'
+> & {
   userId: string
-  originatingInvoiceId: string
   providerApplicationId: string
   providerEnvironment: 'test' | 'production'
   subscriptionId: string
-  stripePriceId: string
+}
+
+interface PersistedReversalCaseInput extends ReversalCaseContextInput, ReversalCaseAmounts {
   currency: string
   winningSourceKind: 'admin_grant' | 'direct' | 'family'
   periodStartedAt: Date
@@ -138,15 +144,7 @@ export async function createTestReversalCaseFixture(
   return { ...fixture, caseId }
 }
 async function createTestReversalCaseContext(
-  input: Pick<
-    PersistedReversalCaseInput,
-    | 'userId'
-    | 'originatingInvoiceId'
-    | 'providerApplicationId'
-    | 'providerEnvironment'
-    | 'subscriptionId'
-    | 'stripePriceId'
-  >,
+  input: ReversalCaseContextInput,
   query: QueryExecutor = write,
 ): Promise<ReversalCaseContext> {
   const { rows } = await query(sql`/* createReversalCaseFixtureContext */
@@ -154,8 +152,8 @@ async function createTestReversalCaseContext(
       VALUES (fn_upsert_membership_provider_context_id('stripe', ${input.providerEnvironment}, ${input.providerApplicationId}),
         ${input.subscriptionId}) RETURNING id),
     binding AS (INSERT INTO membership_lineage_bindings (
-      membership_provider_lineage_id, user_id, source_kind, originating_invoice_id)
-      SELECT id, ${input.userId}, 'direct', ${input.originatingInvoiceId} FROM lineage
+      membership_provider_lineage_id, user_id, source_kind)
+      SELECT id, ${input.userId}, 'direct' FROM lineage
       RETURNING id, membership_provider_lineage_id),
     source AS (INSERT INTO membership_sources (user_id, source_kind, membership_provider_lineage_id)
       SELECT ${input.userId}, 'direct', id FROM lineage RETURNING id, membership_provider_lineage_id)
@@ -169,6 +167,7 @@ async function createTestReversalCaseContext(
   return {
     bindingId: context.binding_id,
     membershipProviderLineageId: context.membership_provider_lineage_id,
+    originatingInvoiceId: input.originatingInvoiceId,
     sourceId: context.source_id,
     stripePriceId: input.stripePriceId,
   }
@@ -186,11 +185,11 @@ export async function insertTestReversalCase(
 ): Promise<string> {
   const { rows } = await query(sql`/* insertReversalCase */
     INSERT INTO membership_ineligible_purchase_reversal_cases (membership_source_id,
-      membership_provider_lineage_id, membership_lineage_binding_id, stripe_price_id,
+      membership_provider_lineage_id, membership_lineage_binding_id, originating_invoice_id, stripe_price_id,
       winning_source_kind, qualifying_amount_minor_units, refund_cap_minor_units, currency_code,
       period_started_at, period_ends_at, collision_at)
     VALUES (${fixture.sourceId}, ${fixture.membershipProviderLineageId}, ${fixture.bindingId},
-      ${fixture.stripePriceId}, ${fixture.winningSourceKind ?? 'direct'},
+      ${fixture.originatingInvoiceId}, ${fixture.stripePriceId}, ${fixture.winningSourceKind ?? 'direct'},
       ${fixture.qualifyingAmountMinorUnits}, ${fixture.refundCapMinorUnits},
       ${fixture.currency ?? 'usd'},
       COALESCE(${fixture.periodStartedAt ?? null}::timestamptz, CURRENT_TIMESTAMP),

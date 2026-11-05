@@ -2,11 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { cleanupPaymentLedgers } from '@services/data-retention/cleanup-payment-ledgers'
 import { runPaymentLedgerRetentionBacklogScenarios } from './payment-ledger-retention-backlog.mts'
+import { runMembershipReversalCaseCreationScenario } from './membership-reversal-case-creation.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 
 /** No fiscal year is due yet: both ledger selectors must skip the current corpus by index. */
 export async function runPaymentLedgerRetentionScenarios(): Promise<void> {
+  await runMembershipReversalCaseCreationScenario()
   const applicationId = `explain-retention-${randomUUID()}`
   await write(
     `/* seedExplainPaymentLedgerOperations */
