@@ -5,7 +5,7 @@ import {
 } from './rewards-program-point-valuations-row.mts'
 export { getIndividualRewardsProgramPointValuations } from './rewards-program-point-valuations-list.mts'
 import { currentUserCanAccessUser } from '@services/users/authorization'
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
@@ -19,7 +19,7 @@ const duplicatePointValuationConstraintNames = new Set([
   'uq_individual_rewards_program_point_valuations__individual_rewa',
 ])
 
-export const isDuplicatePointValuationConstraint = (constraint: string | undefined) =>
+const isDuplicatePointValuationConstraint = (constraint: string | undefined) =>
   constraint !== undefined && duplicatePointValuationConstraintNames.has(constraint)
 
 type CreateIndividualRewardsProgramPointValuationData = {
@@ -70,6 +70,7 @@ export const createIndividualRewardsProgramPointValuation = async (
   user: PrivateUser,
   rewardsProgramId: string,
   data: CreateIndividualRewardsProgramPointValuationData,
+  options: QueryOptions = {},
 ) => {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
@@ -82,10 +83,10 @@ export const createIndividualRewardsProgramPointValuation = async (
     data.value_per_point,
     'value_per_point is required and must be valid scale-six money',
   )
-  const individual = await getOrCreateIndividual(user)
+  const individual = await getOrCreateIndividual(user, options)
   let rows: { id: string }[]
   try {
-    ;({ rows } = await withTopicReferenceAttachmentFences([rewardsProgramId], {}, query =>
+    ;({ rows } = await withTopicReferenceAttachmentFences([rewardsProgramId], options, query =>
       write<{ id: string }>(
         sql`/* createIndividualRewardsProgramPointValuation */
       INSERT INTO individual_rewards_program_point_valuations (
@@ -125,7 +126,7 @@ export const createIndividualRewardsProgramPointValuation = async (
     currentUser,
     user,
     rows[0].id,
-    { readOnly: false },
+    { ...options, readOnly: false },
     individual,
   )
 }
