@@ -22,10 +22,8 @@ import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts
 import { cleanupRetainedMediaBindings } from '../cleanup-retained-media-bindings.mts'
 import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
 import {
+  runDataRetentionCleanup,
   cleanupExpiredOAuthAuthorizationServerArtifacts,
-  cleanupOldReferralAttributions,
-  cleanupOrphanedOAuthAccounts,
-  cleanupSoftDeletedUsers,
 } from '../cleanup.mts'
 import {
   DATA_RETENTION_MAX_VALUES,
@@ -120,13 +118,25 @@ describe('data retention per-run caps', () => {
     }
 
     expect(getDataRetentionLimits()).toEqual({ batchSize: 1, maxBatches: 2 })
-    const first = await cleanupOldReferralAttributions({ ...options, ...getDataRetentionLimits() })
+    const first = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      {
+        families: ['oldReferralAttributions'],
+        oldReferralAttributions: { ...options, ...getDataRetentionLimits() },
+      },
+    ).then(result => result.oldReferralAttributions)
     expect(first).toEqual({ deleted: 2, hasMore: true })
     expect(
       (await Promise.all(ids.map(id => referralAttributionExistsById(id)))).filter(Boolean),
     ).toHaveLength(1)
 
-    const second = await cleanupOldReferralAttributions({ ...options, ...getDataRetentionLimits() })
+    const second = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      {
+        families: ['oldReferralAttributions'],
+        oldReferralAttributions: { ...options, ...getDataRetentionLimits() },
+      },
+    ).then(result => result.oldReferralAttributions)
     expect(second).toEqual({ deleted: 1, hasMore: false })
     expect(await Promise.all(ids.map(id => referralAttributionExistsById(id)))).toEqual([
       false,
@@ -143,13 +153,19 @@ describe('data retention per-run caps', () => {
       insertReferralAttributionAt(referrer.id, window.secondEligibleDate),
     ])
 
-    const result = await cleanupOldReferralAttributions({
-      batchSize: 1,
-      maxBatches: 10,
-      retentionDays: window.retentionDays,
-      lowerBoundDate: window.lowerBoundDate,
-      now: window.now,
-    })
+    const result = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      {
+        families: ['oldReferralAttributions'],
+        oldReferralAttributions: {
+          batchSize: 1,
+          maxBatches: 10,
+          retentionDays: window.retentionDays,
+          lowerBoundDate: window.lowerBoundDate,
+          now: window.now,
+        },
+      },
+    ).then(result => result.oldReferralAttributions)
 
     expect(result).toEqual({ deleted: 2, hasMore: false })
     expect(await Promise.all(ids.map(id => referralAttributionExistsById(id)))).toEqual([
@@ -159,9 +175,30 @@ describe('data retention per-run caps', () => {
   })
 
   it.each([
-    ['soft-deleted users', cleanupSoftDeletedUsers],
-    ['referral attributions', cleanupOldReferralAttributions],
-    ['orphaned OAuth accounts', cleanupOrphanedOAuthAccounts],
+    [
+      'soft-deleted users',
+      (options: { maxBatches: number }) =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: options },
+        ).then(result => result.softDeletedUsers),
+    ],
+    [
+      'referral attributions',
+      (options: { maxBatches: number }) =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['oldReferralAttributions'], oldReferralAttributions: options },
+        ).then(result => result.oldReferralAttributions),
+    ],
+    [
+      'orphaned OAuth accounts',
+      (options: { maxBatches: number }) =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['orphanedOAuthAccounts'], orphanedOAuthAccounts: options },
+        ).then(result => result.orphanedOAuthAccounts),
+    ],
     ['OAuth server artifacts', cleanupExpiredOAuthAuthorizationServerArtifacts],
   ])('rejects an uncapped or invalid maxBatches for %s', async (_name, cleanup) => {
     for (const maxBatches of [Infinity, 0, -1, 1.5]) {

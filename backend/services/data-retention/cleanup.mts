@@ -907,7 +907,7 @@ async function cleanupExpiredTopicImportAttempts(
   )
 }
 
-export async function cleanupSoftDeletedUsers(
+async function cleanupSoftDeletedUsers(
   options: CleanupOptions & { userIds?: readonly string[] },
 ): Promise<UserPurgeResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
@@ -934,9 +934,7 @@ export async function cleanupSoftDeletedUsers(
   return { deleted, hasMore }
 }
 
-export async function cleanupOldReferralAttributions(
-  options: CleanupOptions,
-): Promise<CleanupResult> {
+async function cleanupOldReferralAttributions(options: CleanupOptions): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 30)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
   return runBoundedBatches(options, async batchSize =>
@@ -950,9 +948,7 @@ export async function cleanupOldReferralAttributions(
   )
 }
 
-export async function cleanupOrphanedOAuthAccounts(
-  options: CleanupOptions,
-): Promise<CleanupResult> {
+async function cleanupOrphanedOAuthAccounts(options: CleanupOptions): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')

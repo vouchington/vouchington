@@ -16,7 +16,7 @@ import {
 import { v7 } from 'uuid'
 
 import * as cleanupUser from '../cleanup-soft-deleted-user.mts'
-import { cleanupSoftDeletedUsers } from '../cleanup.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 
 describe('cleanupSoftDeletedUsers transaction boundaries', () => {
   it('commits each selected user before a later user waits on post capture', async () => {
@@ -66,7 +66,13 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
         if (args[0] === firstUser.id) firstCommitted.resolve()
         return result
       })
-    const cleanup = cleanupSoftDeletedUsers({ ...window, batchSize: 4, maxBatches: 1 })
+    const cleanup = runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      {
+        families: ['softDeletedUsers'],
+        softDeletedUsers: { ...window, batchSize: 4, maxBatches: 1 },
+      },
+    ).then(result => result.softDeletedUsers)
     try {
       await firstCommitted.promise
       expect(await getTestUserRaw(firstUser.id)).toBeNull()

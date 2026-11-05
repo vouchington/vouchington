@@ -14,7 +14,7 @@ import {
   createTopHashtagAliasForTest,
   createRandomString,
 } from '@voucha/test-helpers'
-import { cleanupSoftDeletedUsers } from '../cleanup.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 
 describe('author deletion budget', () => {
   it('commits a capped author page and keeps its user until the remaining post preimages are captured', async () => {
@@ -32,14 +32,31 @@ describe('author deletion budget', () => {
     const window = createTestRetentionWindow()
     await softDeleteUserAt(user.id, window.firstEligibleDate)
     const options = { ...window, batchSize: 1, maxBatches: 1 }
-    await expect(cleanupSoftDeletedUsers(options)).resolves.toEqual({ deleted: 0, hasMore: true })
+    await expect(
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: options },
+      ).then(result => result.softDeletedUsers),
+    ).resolves.toEqual({ deleted: 0, hasMore: true })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
     await expect(countTestPostSourcesForContributor(user.id)).resolves.toBe(1)
-    await cleanupSoftDeletedUsers(options)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: options },
+    ).then(result => result.softDeletedUsers)
     await expect(countTestPostSourcesForContributor(user.id)).resolves.toBe(0)
-    await cleanupSoftDeletedUsers(options)
-    await cleanupSoftDeletedUsers(options)
-    await cleanupSoftDeletedUsers(options)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: options },
+    ).then(result => result.softDeletedUsers)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: options },
+    ).then(result => result.softDeletedUsers)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: options },
+    ).then(result => result.softDeletedUsers)
     expect(await getTestUserRaw(user.id)).toBeNull()
     expect(await listExistingTestPostIds([first.id, second.id])).toEqual(
       [first.id, second.id].toSorted(),
@@ -54,11 +71,19 @@ describe('author deletion budget', () => {
     await softDeleteUserAt(first.id, window.firstEligibleDate)
     await softDeleteUserAt(second.id, window.secondEligibleDate)
     const options = { ...window, batchSize: 2, maxBatches: 1 }
-    await expect(cleanupSoftDeletedUsers(options)).resolves.toEqual({ deleted: 0, hasMore: true })
+    await expect(
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: options },
+      ).then(result => result.softDeletedUsers),
+    ).resolves.toEqual({ deleted: 0, hasMore: true })
     expect(await countTestPostsCreatedBy(first.id)).toBe(0)
     expect(await countTestPostsCreatedBy(second.id)).toBe(2)
     expect(await getTestUserRaw(first.id)).not.toBeNull()
-    await cleanupSoftDeletedUsers(options)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: options },
+    ).then(result => result.softDeletedUsers)
     expect(await countTestPostsCreatedBy(second.id)).toBe(1)
     expect(await getTestUserRaw(first.id)).toBeNull()
   })

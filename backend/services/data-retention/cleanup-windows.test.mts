@@ -15,11 +15,7 @@ import {
   setOAuthAccountRetentionTime,
   softDeleteUserAt,
 } from '@voucha/test-helpers'
-import {
-  cleanupOldReferralAttributions,
-  cleanupOrphanedOAuthAccounts,
-  cleanupSoftDeletedUsers,
-} from './cleanup.mts'
+import { runDataRetentionCleanup } from './cleanup.mts'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import { cleanupSoftDeletedUser } from './cleanup-soft-deleted-user.mts'
 
@@ -63,7 +59,10 @@ describe('cleanup retention windows', () => {
     await softDeleteUserAt(atUpperBoundUser.id, window.upperBoundDate)
     await softDeleteUserAt(afterUpperBoundUser.id, window.afterUpperBoundDate)
 
-    const result = await cleanupSoftDeletedUsers(window)
+    const result = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
 
     expect(result).toEqual({ deleted: 2, hasMore: false })
     expect(await getTestUserRaw(beforeLowerBoundUser.id)).not.toBeNull()
@@ -94,7 +93,10 @@ describe('cleanup retention windows', () => {
       window.afterUpperBoundDate,
     )
 
-    const result = await cleanupOldReferralAttributions(window)
+    const result = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['oldReferralAttributions'], oldReferralAttributions: window },
+    ).then(result => result.oldReferralAttributions)
 
     expect(result).toEqual({ deleted: 2, hasMore: false })
     expect(await referralAttributionExistsById(beforeLowerBoundId)).toBe(true)
@@ -140,7 +142,10 @@ describe('cleanup retention windows', () => {
       window.afterUpperBoundDate,
     )
 
-    const result = await cleanupOrphanedOAuthAccounts(window)
+    const result = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['orphanedOAuthAccounts'], orphanedOAuthAccounts: window },
+    ).then(result => result.orphanedOAuthAccounts)
 
     expect(result).toEqual({ deleted: 2, hasMore: false })
     expect(await oauthAccountExistsByProviderUserId('github', beforeLowerBoundProviderUserId)).toBe(

@@ -15,7 +15,7 @@ import { createUserDeletionRequest } from '../../user-deletions/create.mts'
 import { getCommunityMember } from '../../communities/members/get.mts'
 import { listNotifications } from '../../notifications/list.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
-import { cleanupSoftDeletedUsers } from '../cleanup.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 import type { UserPurgeCursor } from '../user-purge-types.mts'
 import { dataRetentionConfig } from '../config.mts'
 
@@ -168,12 +168,22 @@ describe('bounded moderator scan continuation', () => {
     const window = createTestRetentionWindow()
     await softDeleteUserAt(user.id, new Date())
     await expect(
-      cleanupSoftDeletedUsers({
-        ...window,
-        batchSize: 1,
-        maxBatches: 1,
-        userPurge: { userId: user.id, communityId: community.id, afterModeratorId: community.id },
-      }),
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        {
+          families: ['softDeletedUsers'],
+          softDeletedUsers: {
+            ...window,
+            batchSize: 1,
+            maxBatches: 1,
+            userPurge: {
+              userId: user.id,
+              communityId: community.id,
+              afterModeratorId: community.id,
+            },
+          },
+        },
+      ).then(result => result.softDeletedUsers),
     ).resolves.toEqual({ deleted: 0, hasMore: true })
     await expect(getTestUserRaw(user.id)).resolves.not.toBeNull()
   })

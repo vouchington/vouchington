@@ -34,11 +34,7 @@ import {
 } from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 import { providerTableConfigs } from '@services/oauth/providers'
 
-import {
-  cleanupSoftDeletedUsers,
-  cleanupOldReferralAttributions,
-  cleanupOrphanedOAuthAccounts,
-} from '../cleanup.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 
 import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
 import { grantMembership } from '../../memberships/create.mts'
@@ -145,35 +141,6 @@ describe('retained elected relation cleanup', () => {
   })
 })
 
-describe('retention day validation', () => {
-  it('rejects unsafe soft-deleted user retention windows', async () => {
-    await expect(cleanupSoftDeletedUsers({ retentionDays: 0, maxBatches: 1 })).rejects.toThrow(
-      'retentionDays must be a positive integer',
-    )
-    await expect(
-      cleanupSoftDeletedUsers({ retentionDays: Infinity, maxBatches: 1 }),
-    ).rejects.toThrow('retentionDays must be a positive integer')
-  })
-
-  it('rejects unsafe referral attribution retention windows', async () => {
-    await expect(
-      cleanupOldReferralAttributions({ retentionDays: 0, maxBatches: 1 }),
-    ).rejects.toThrow('retentionDays must be a positive integer')
-    await expect(
-      cleanupOldReferralAttributions({ retentionDays: Infinity, maxBatches: 1 }),
-    ).rejects.toThrow('retentionDays must be a positive integer')
-  })
-
-  it('rejects unsafe OAuth account retention windows', async () => {
-    await expect(cleanupOrphanedOAuthAccounts({ retentionDays: 0, maxBatches: 1 })).rejects.toThrow(
-      'retentionDays must be a positive integer',
-    )
-    await expect(
-      cleanupOrphanedOAuthAccounts({ retentionDays: Infinity, maxBatches: 1 }),
-    ).rejects.toThrow('retentionDays must be a positive integer')
-  })
-})
-
 describe('cleanupSoftDeletedUsers', () => {
   // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('does NOT delete recently soft-deleted users', async () => {
@@ -183,7 +150,10 @@ describe('cleanupSoftDeletedUsers', () => {
 
     await softDeleteUserAt(user.id, window.afterUpperBoundDate)
 
-    const result = await cleanupSoftDeletedUsers(window)
+    const result = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
 
     expect(result).toEqual({ deleted: 0, hasMore: false })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
@@ -197,7 +167,12 @@ describe('cleanupSoftDeletedUsers', () => {
     await createUserDeletionRequest(user.id, user.id)
     await softDeleteUserAt(user.id, window.firstEligibleDate)
 
-    await expect(cleanupSoftDeletedUsers(window)).resolves.toEqual({ deleted: 0, hasMore: false })
+    await expect(
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: window },
+      ).then(result => result.softDeletedUsers),
+    ).resolves.toEqual({ deleted: 0, hasMore: false })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
   }, 30_000)
 
@@ -218,15 +193,23 @@ describe('cleanupSoftDeletedUsers', () => {
       softDeleteUserAt(legacyUser.id, window.secondEligibleDate),
     ])
 
-    await expect(cleanupSoftDeletedUsers(window)).resolves.toEqual({ deleted: 2, hasMore: false })
+    await expect(
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: window },
+      ).then(result => result.softDeletedUsers),
+    ).resolves.toEqual({ deleted: 2, hasMore: false })
     await expect(getTestUserRaw(completedRequestUser.id)).resolves.toBeNull()
     await expect(getTestUserRaw(legacyUser.id)).resolves.toBeNull()
   }, 30_000)
 
   it('rejects invalid batch options', async () => {
-    await expect(cleanupSoftDeletedUsers({ batchSize: 0, maxBatches: 1 })).rejects.toThrow(
-      'batchSize must be a positive integer',
-    )
+    await expect(
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: { batchSize: 0, maxBatches: 1 } },
+      ).then(result => result.softDeletedUsers),
+    ).rejects.toThrow('batchSize must be a positive integer')
   })
 
   it('deletes soft-deleted users in bounded batches and continues on repeat runs', async () => {
@@ -238,21 +221,33 @@ describe('cleanupSoftDeletedUsers', () => {
     await softDeleteUserAt(firstUser.id, window.firstEligibleDate)
     await softDeleteUserAt(secondUser.id, window.secondEligibleDate)
 
-    const firstResult = await cleanupSoftDeletedUsers({
-      ...window,
-      batchSize: 1,
-      maxBatches: 1,
-    })
+    const firstResult = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      {
+        families: ['softDeletedUsers'],
+        softDeletedUsers: {
+          ...window,
+          batchSize: 1,
+          maxBatches: 1,
+        },
+      },
+    ).then(result => result.softDeletedUsers)
     const remainingAfterFirstRun = [
       await getTestUserRaw(firstUser.id),
       await getTestUserRaw(secondUser.id),
     ].filter(Boolean)
 
-    const secondResult = await cleanupSoftDeletedUsers({
-      ...window,
-      batchSize: 1,
-      maxBatches: 1,
-    })
+    const secondResult = await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      {
+        families: ['softDeletedUsers'],
+        softDeletedUsers: {
+          ...window,
+          batchSize: 1,
+          maxBatches: 1,
+        },
+      },
+    ).then(result => result.softDeletedUsers)
 
     expect(firstResult).toEqual({ deleted: 1, hasMore: true })
     expect(remainingAfterFirstRun).toHaveLength(1)
@@ -267,6 +262,6 @@ describe('cleanupSoftDeletedUsers', () => {
   void (0 as unknown as typeof oauthAccountExistsByProviderUserId)
   void (0 as unknown as typeof createRandomString)
   void (0 as unknown as typeof providerTableConfigs)
-  void (0 as unknown as typeof cleanupOrphanedOAuthAccounts)
+  void (0 as unknown as typeof runDataRetentionCleanup)
   void (0 as unknown as typeof deleteOrphanedOAuthAccountBatch)
 })

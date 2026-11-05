@@ -11,7 +11,7 @@ import {
   softDeleteUserAt,
 } from '@voucha/test-helpers'
 import { DELETED_USER_ID } from '@services/users/constants'
-import { cleanupSoftDeletedUsers } from '../cleanup.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 
 describe('cleanupSoftDeletedUsers topic aliases', () => {
   it('preserves topics and aliases by reassigning purged creators', async () => {
@@ -28,7 +28,10 @@ describe('cleanupSoftDeletedUsers topic aliases', () => {
     await insertTopicAliasForTest(topicId, alias)
     await softDeleteUserAt(user.id, window.firstEligibleDate)
 
-    await cleanupSoftDeletedUsers(window)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
 
     expect(await getTestUserRaw(user.id)).toBeNull()
     expect(await getTestTopicCreatedById(topicId)).toBe(DELETED_USER_ID)

@@ -14,7 +14,7 @@ import {
 import { DELETED_USER_ID } from '@services/users/constants'
 import { v7 } from 'uuid'
 
-import { cleanupSoftDeletedUsers } from '../cleanup.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 import { lockEligibleSoftDeletedUserForFinalPurge } from '../cleanup-soft-deleted-user.mts'
 import { terminateRetainedMembershipGrants } from '../terminate-retained-membership-grants.mts'
 import { createMembership, grantMembership } from '../../memberships/create.mts'
@@ -57,7 +57,13 @@ describe('membership lineage retention', () => {
     ])
 
     await expect(
-      cleanupSoftDeletedUsers({ ...window, batchSize: 1, maxBatches: 1 }),
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        {
+          families: ['softDeletedUsers'],
+          softDeletedUsers: { ...window, batchSize: 1, maxBatches: 1 },
+        },
+      ).then(result => result.softDeletedUsers),
     ).resolves.toEqual({ deleted: 1, hasMore: true })
     expect(await getTestUserRaw(refundMember.id)).not.toBeNull()
     expect(await getTestUserRaw(eligibleMember.id)).toBeNull()
@@ -79,8 +85,14 @@ describe('membership lineage retention', () => {
 
     await softDeleteUserAt(member.id, window.firstEligibleDate)
     const cleanups = await Promise.all([
-      cleanupSoftDeletedUsers(window),
-      cleanupSoftDeletedUsers(window),
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: window },
+      ).then(result => result.softDeletedUsers),
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: window },
+      ).then(result => result.softDeletedUsers),
     ])
 
     expect(cleanups.reduce((count, result) => count + result.deleted, 0)).toBe(1)
@@ -106,7 +118,12 @@ describe('membership lineage retention', () => {
       activation_started_at: null,
       activation_ended_at: null,
     })
-    await expect(cleanupSoftDeletedUsers(window)).resolves.toEqual({
+    await expect(
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: window },
+      ).then(result => result.softDeletedUsers),
+    ).resolves.toEqual({
       deleted: 0,
       hasMore: false,
     })
@@ -137,7 +154,12 @@ describe('membership lineage retention', () => {
     await purgeQuery.commit()
 
     await expect(revocation).resolves.toMatchObject({ alreadyRevoked: true })
-    await expect(cleanupSoftDeletedUsers(window)).resolves.toEqual({
+    await expect(
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: window },
+      ).then(result => result.softDeletedUsers),
+    ).resolves.toEqual({
       deleted: 1,
       hasMore: false,
     })
@@ -156,7 +178,10 @@ describe('membership lineage retention', () => {
     const beforeCleanup = await getTestMembershipGrant(grant.grantId)
 
     await softDeleteUserAt(member.id, window.firstEligibleDate)
-    await cleanupSoftDeletedUsers(window)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
 
     expect(await getTestUserRaw(member.id)).toBeNull()
     await expect(getTestMembershipGrant(grant.grantId)).resolves.toMatchObject({
@@ -187,7 +212,10 @@ describe('membership lineage retention', () => {
     expect(beforeCleanup?.source_expired_at).toBeInstanceOf(Date)
 
     await softDeleteUserAt(member.id, window.firstEligibleDate)
-    await cleanupSoftDeletedUsers(window)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
 
     await expect(getTestMembershipGrant(grant.grantId)).resolves.toMatchObject({
       revoked_by_id: DELETED_USER_ID,
@@ -219,7 +247,10 @@ describe('membership lineage retention', () => {
     })
 
     await softDeleteUserAt(originalUser.id, window.afterUpperBoundDate)
-    await cleanupSoftDeletedUsers(window)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
     await expect(
       createMembership({
         userId: firstClaimant.id,
@@ -230,7 +261,10 @@ describe('membership lineage retention', () => {
     ).rejects.toThrow('Provider lineage is bound to another account')
 
     await softDeleteUserAt(originalUser.id, window.firstEligibleDate)
-    await cleanupSoftDeletedUsers(window)
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: window },
+    ).then(result => result.softDeletedUsers)
     expect(await getTestUserRaw(originalUser.id)).toBeNull()
 
     const claims = await Promise.allSettled(
