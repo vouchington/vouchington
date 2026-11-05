@@ -25,13 +25,10 @@ export async function attachProofRanges(query: (text: string) => Promise<unknown
 }
 
 export async function getPartitionLeaves(
-  query: <Row extends Record<string, unknown>>(
-    text: string,
-    values: readonly unknown[],
-  ) => Promise<{ rows: Row[] }>,
+  query: (text: string, values: readonly unknown[]) => Promise<{ rows: { name: string }[] }>,
   parent: string,
 ): Promise<string[]> {
-  const { rows } = await query<{ name: string }>(
+  const { rows } = await query(
     `/* getPartitionLeaves */ SELECT relid::regclass::text AS name
      FROM pg_partition_tree($1::regclass) WHERE isleaf ORDER BY relid::regclass::text`,
     [parent],

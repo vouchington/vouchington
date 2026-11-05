@@ -5,7 +5,7 @@ export async function processRetainedSweep<
   TData extends object,
   TResult extends { hasMore: boolean },
 >(
-  job: Pick<Job, 'updateData' | 'moveToDelayed'>,
+  job: Pick<Job<TData>, 'updateData' | 'moveToDelayed'>,
   run: (save: (data: TData) => Promise<void>) => Promise<TResult>,
   options: { resumeAt?: number } = {},
 ): Promise<TResult> {

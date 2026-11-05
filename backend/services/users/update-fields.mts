@@ -139,7 +139,7 @@ export async function updateUserFields(
   const previousUsername = await commitUsernameAwareUpdate(userId, update, validatedUsername)
   const updatedUser = await getPrivateUserByAny(userId, { readOnly: false })
   assert(updatedUser, 404, 'User not found')
-  if (getRequestCurrentUser<PrivateUser>()?.id === updatedUser.id)
+  if ((getRequestCurrentUser() as PrivateUser | null | undefined)?.id === updatedUser.id)
     setRequestCurrentUser(updatedUser)
 
   const bloomUpdate =

@@ -30,12 +30,12 @@ type ReleaseAgeOptions = {
   temporarySelectors?: string[]
 }
 
-function readYamlFile<T>(path: string): T {
-  return parseYaml(readFileSync(`${repoRoot}/${path}`, 'utf8')) as T
+function readYamlFile(path: string): unknown {
+  return parseYaml(readFileSync(`${repoRoot}/${path}`, 'utf8')) as unknown
 }
 
 function readDependabotUpdates(): Update[] {
-  return readYamlFile<{ updates?: Update[] }>('.github/dependabot.yml').updates ?? []
+  return (readYamlFile('.github/dependabot.yml') as { updates?: Update[] }).updates ?? []
 }
 
 const noMistakesConfig = (await resolveConfig({ root: repoRoot, view: 'declared' })) as {
@@ -78,7 +78,7 @@ function readTemporarySelectors(): string[] {
 
 function readWorkspaceReleaseAgeExclusions(): string[] {
   return (
-    readYamlFile<{ minimumReleaseAgeExclude?: string[] }>('pnpm-workspace.yaml')
+    (readYamlFile('pnpm-workspace.yaml') as { minimumReleaseAgeExclude?: string[] })
       .minimumReleaseAgeExclude ?? []
   )
 }

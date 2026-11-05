@@ -67,7 +67,7 @@ describe('generateJson against recorded Anthropic Messages responses', () => {
       method: 'POST',
       headers: { 'x-api-key': 'test-key' },
     })
-    const body = replay.requests[0]?.json<Record<string, unknown>>()
+    const body = replay.requests[0]?.json() as Record<string, unknown> | undefined
     expect(body).toMatchObject({
       model: 'claude-haiku-5-5',
       max_tokens: 200,

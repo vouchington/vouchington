@@ -43,10 +43,10 @@ export function sortRssFeedItemsByIdentityId<T extends { feedItem: { guid: strin
   return sorted
 }
 
-export function unchangedUnlinkedExistingRowsWithInsertedSources<
-  T extends { id: string },
-  S extends { rss_feed_item_id: string },
->(unchangedUnlinkedExistingRows: T[], insertedSourceRows: S[]): T[] {
+export function unchangedUnlinkedExistingRowsWithInsertedSources<T extends { id: string }>(
+  unchangedUnlinkedExistingRows: T[],
+  insertedSourceRows: { rss_feed_item_id: string }[],
+): T[] {
   const insertedIds = new Set<string>()
   for (const source of insertedSourceRows) insertedIds.add(source.rss_feed_item_id)
   const rows: T[] = []

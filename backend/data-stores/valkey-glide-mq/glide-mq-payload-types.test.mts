@@ -253,12 +253,22 @@ function assertSensitivePayloadTypesAtCompileTime(): void {
   // @ts-expect-error background bulk actual inputs cannot smuggle sensitive fields
   void enqueueBackgroundIds([widerBackgroundPayload])
 
-  void createEnqueueFunction<{ profile: { emailAddress: string } }, 'safe-user-created'>({
+  const sensitiveJob = createEnqueueFunction<
+    { profile: { emailAddress: string } },
+    'safe-user-created'
+  >({
     queue,
     queueName: 'queue',
     jobName: 'safe-user-created',
     sensitive: true,
   })({ profile: { emailAddress: 'user@example.test' } })
+  void sensitiveJob.then(job => {
+    if (!job) return
+    const emailAddress: string = job.data.profile.emailAddress
+    // @ts-expect-error admitted jobs retain the producer's payload type
+    const invalid: number = job.data.profile.emailAddress
+    void [emailAddress, invalid]
+  })
 
   void createBulkEnqueueFunction({
     queue,

@@ -21,14 +21,14 @@ export {
 
 type State = 'in_progress' | 'committed'
 
-export async function claimContributionAdmission<T>(
+export async function claimContributionAdmission(
   actorId: string,
   idempotencyKey: string,
   intent: unknown,
   audit: ContributionAdmissionAudit,
 ): Promise<
   | { kind: 'claimed'; reservationId: string; leaseToken: string }
-  | { kind: 'replay'; response: T }
+  | { kind: 'replay'; response: unknown }
   | { kind: 'in_progress'; retryAfterSeconds: number }
 > {
   const intentSha256 = hashAdmissionIntent(intent)
@@ -79,7 +79,7 @@ export async function claimContributionAdmission<T>(
   if (!row.expired && row.state === 'committed' && !row.finalization_pending) {
     await extendContributionAdmissionReplay(query, reservationId)
     await query.commit()
-    return { kind: 'replay', response: row.response as T }
+    return { kind: 'replay', response: row.response }
   }
   const liveClaim = await query<{ retry_after_seconds: string }>(
     sql`/* claimContributionAdmission.liveClaim */
@@ -99,7 +99,7 @@ export async function claimContributionAdmission<T>(
   if (!row.expired && row.state === 'committed') {
     await completeMarkerlessContributionAdmissionReplay(query, reservationId)
     await query.commit()
-    return { kind: 'replay', response: row.response as T }
+    return { kind: 'replay', response: row.response }
   }
   await query(sql`/* claimContributionAdmission.abandonExpiredAttempt */
     INSERT INTO post_admission_attempt_results (post_admission_attempt_id, abandoned_at)

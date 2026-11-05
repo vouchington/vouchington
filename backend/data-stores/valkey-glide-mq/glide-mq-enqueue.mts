@@ -10,7 +10,7 @@ import {
 import { enqueueBulkRows } from './glide-mq-paged-bulk-recovery.mts'
 import onError from '@modules/on-error'
 import { trackJobEnqueue } from '@data-stores/analytics/queue'
-import type { JobOptions } from 'glide-mq'
+import type { Job, JobOptions } from 'glide-mq'
 import { retryTransientEnqueue } from './glide-mq-retry.mts'
 import { assertQueuePriority, type QueuePriorityKind } from './queue-priority.mts'
 import type {
@@ -40,7 +40,11 @@ function withQueuePriority(
 
 const createEnqueueFunctionImpl = <TData, TName extends string, TCallContext = unknown>(
   options: CreateEnqueueFunctionOptions<TName, TCallContext>,
-) =>
+): ((
+  data: TData,
+  perCallOpts?: Partial<JobOptions>,
+  callContext?: TCallContext,
+) => Promise<Job<TData> | null>) =>
   createSharedEnqueueFunction<TData, TName, TCallContext>({
     ...options,
     retryFn: fn => retryTransientEnqueue(fn),

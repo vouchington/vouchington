@@ -192,7 +192,7 @@ export function useNotificationSettings(initialSettings: NotificationSettingsSta
   }
 }
 function copyLoadedField<K extends NotificationSettingsField>(
-  target: Partial<NotificationSettingsState>,
+  target: Partial<Pick<NotificationSettingsState, K>>,
   field: K,
   source: NotificationSettingsState,
 ) {

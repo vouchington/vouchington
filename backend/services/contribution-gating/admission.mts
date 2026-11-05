@@ -39,12 +39,13 @@ export async function runContributionAdmission<T>(
   input: ContributionAdmissionInput<T>,
 ): Promise<ContributionAdmissionResult<T>> {
   const audit = normalizeContributionAdmissionAudit(input)
-  const claim = await claimContributionAdmission<T>(
+  const claim = await claimContributionAdmission(
     input.actorId,
     input.idempotencyKey,
     input.intent,
     audit,
   )
+  if (claim.kind === 'replay') return { ...claim, response: claim.response as T }
   if (claim.kind !== 'claimed') return claim
   const leaseKeeper = startAdmissionLeaseKeeper(() =>
     renewContributionAdmissionLeaseFromWritePool(claim.reservationId, claim.leaseToken),

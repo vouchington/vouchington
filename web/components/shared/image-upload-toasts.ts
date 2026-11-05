@@ -2,9 +2,9 @@ import { ImageBlockedError, ImageProcessingTimeoutError } from '@/lib/api/client
 import { ApiError } from '@vouchington/api-client'
 import { toast } from 'sonner'
 
-export function countRejected<T extends new (...args: never[]) => Error>(
+export function countRejected(
   uploadResults: PromiseSettledResult<string>[],
-  ErrorClass: T,
+  ErrorClass: new (...args: never[]) => Error,
 ) {
   return uploadResults.filter(
     result => result.status === 'rejected' && result.reason instanceof ErrorClass,

@@ -35,7 +35,7 @@ describe('callAppealModel against a recorded Anthropic response', () => {
 
     const result = await callAppealModel(INPUT, 'appellant-hash', ANTHROPIC_HAIKU_CALL)
 
-    const body = replay.requests[0]?.json<Record<string, unknown>>()
+    const body = replay.requests[0]?.json() as Record<string, unknown> | undefined
     expect(body).toMatchObject({
       model: 'claude-haiku-5-5',
       max_tokens: 1500,

@@ -39,9 +39,11 @@ describe('callCopyrightEmailIntakeModel against a recorded Anthropic response', 
 
     const result = await callCopyrightEmailIntakeModel(INPUT, 'intake-hash', ANTHROPIC_HAIKU_CALL)
 
-    const body = replay.requests[0]?.json<{
-      output_config: { format: { schema: { properties: object; required: string[] } } }
-    }>()
+    const body = replay.requests[0]?.json() as
+      | {
+          output_config: { format: { schema: { properties: object; required: string[] } } }
+        }
+      | undefined
     expect(body).toMatchObject({
       model: 'claude-haiku-5-5',
       max_tokens: 4000,

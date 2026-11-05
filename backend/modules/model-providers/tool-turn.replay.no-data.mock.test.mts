@@ -48,7 +48,7 @@ describe('generateToolTurn against a recorded Anthropic tool_use response', () =
       { openaiTransport: 'openrouter' },
     )
 
-    expect(replay.requests[0]?.json<Record<string, unknown>>()).toMatchObject({
+    expect(replay.requests[0]?.json()).toMatchObject({
       model: 'claude-haiku-5-5',
       max_tokens: 300,
       tool_choice: { type: 'any' },

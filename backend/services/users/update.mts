@@ -6,7 +6,7 @@ import { currentUserCanUpdateUser } from './authorization.mts'
 import { updateUserFields } from './update-fields.mts'
 
 function actorForUpdate(currentUser: PrivateUser | null, idOrSlug: string): PrivateUser | null {
-  const stored = getRequestCurrentUser<PrivateUser>()
+  const stored = getRequestCurrentUser() as PrivateUser | null | undefined
   if (stored?.id === idOrSlug) return stored
   if (currentUser?.id === idOrSlug) return currentUser
   return null

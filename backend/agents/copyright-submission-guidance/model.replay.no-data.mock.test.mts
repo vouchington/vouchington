@@ -46,7 +46,9 @@ describe('callCopyrightSubmissionGuidanceModel against recorded Anthropic respon
       ANTHROPIC_HAIKU_CALL,
     )
 
-    const body = replay.requests[0]?.json<{ output_config: { format: { schema: Checklist } } }>()
+    const body = replay.requests[0]?.json() as
+      | { output_config: { format: { schema: Checklist } } }
+      | undefined
     expect(body).toMatchObject({
       model: 'claude-haiku-5-5',
       max_tokens: 2000,
@@ -92,7 +94,9 @@ describe('callCopyrightSubmissionGuidanceModel against recorded Anthropic respon
       ANTHROPIC_HAIKU_CALL,
     )
 
-    const body = replay.requests[0]?.json<{ output_config: { format: { schema: Checklist } } }>()
+    const body = replay.requests[0]?.json() as
+      | { output_config: { format: { schema: Checklist } } }
+      | undefined
     const schema = body?.output_config.format.schema
     expect(Object.keys(schema?.properties ?? {}).toSorted()).toEqual([
       'criteria',

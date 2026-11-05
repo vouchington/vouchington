@@ -156,7 +156,8 @@ export function runAgentModerationRetentionCleanupPage(
   continuation: AgentModerationCleanupContinuation,
   options: AgentModerationRetentionOptions = {},
 ): Promise<AgentModerationCleanupResult> {
-  return cleanupObsoleteAgentModerations(applyRetentionLimits(limits, { ...options, continuation }))
+  const overrides = { ...options, continuation }
+  return cleanupObsoleteAgentModerations(applyRetentionLimits(limits, overrides))
 }
 
 type CleanupOptions = {
@@ -490,9 +491,8 @@ export async function runDataRetentionCleanup(
 ): Promise<DataRetentionCleanupResult> {
   const active = (family: DataRetentionCleanupFamily) =>
     options.families === undefined || options.families.includes(family)
-  const withLimits = <T extends { batchSize?: number; maxBatches?: number }>(
-    overrides: T | undefined,
-  ) => applyRetentionLimits(limits, overrides)
+  const withLimits = (overrides: { batchSize?: number; maxBatches?: number } | undefined) =>
+    applyRetentionLimits(limits, overrides)
   // Topic-import attempts keep their own small batch (each row can retain a 4 MiB response), so the
   // shared batch size can only lower it.
   const topicImportLimits = {

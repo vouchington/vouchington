@@ -1,8 +1,10 @@
-export function makeStripeSubscriptionEvent<TEvent>(
+import type Stripe from 'stripe'
+
+export function makeStripeSubscriptionEvent(
   id: string,
   subscriptionId: string,
   livemode = true,
-): TEvent {
+): Stripe.Event {
   return {
     id,
     object: 'event',
@@ -13,5 +15,5 @@ export function makeStripeSubscriptionEvent<TEvent>(
     pending_webhooks: 1,
     request: null,
     type: 'customer.subscription.updated',
-  } as TEvent
+  } as Stripe.Event
 }

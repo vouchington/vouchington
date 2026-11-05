@@ -569,7 +569,7 @@
     "typescript/unbound-method": "off",
     "typescript/consistent-return": "off",
     "typescript/no-base-to-string": "error",
-    "typescript/no-unnecessary-type-parameters": "off",
+    "typescript/no-unnecessary-type-parameters": "error",
     "typescript/no-misused-spread": "error",
     "typescript/no-unnecessary-type-conversion": "error",
     "typescript/restrict-template-expressions": "off",

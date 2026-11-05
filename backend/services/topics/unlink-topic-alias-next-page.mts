@@ -8,10 +8,10 @@ const FINALIZE_CURSOR = 'finalize'
 
 type NextRow = { phase: string; page_cursor: string }
 
-export type TopicAliasUnlinkSql = <T extends Record<string, unknown>>(
+export type TopicAliasUnlinkSql = (
   sql: string,
   params?: readonly unknown[],
-) => Promise<{ rows: T[] }>
+) => Promise<{ rows: NextRow[] }>
 
 /**
  * The first remaining child, or finalize when every child page is drained.
@@ -22,7 +22,7 @@ export async function selectTopicAliasUnlinkNextPage(
   topicAliasId: string,
   preservesHashtag: boolean,
 ): Promise<TopicAliasUnlinkPage> {
-  const { rows } = await query<NextRow>(
+  const { rows } = await query(
     `/* selectTopicAliasUnlinkNextPage */
     SELECT candidate.phase, candidate.page_cursor
     FROM (

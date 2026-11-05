@@ -1,5 +1,5 @@
 import type { trackJobEnqueue } from '@data-stores/analytics/queue'
-import type { JobOptions, Queue } from 'glide-mq'
+import type { Job, JobOptions, Queue } from 'glide-mq'
 import type { HasSensitiveFields, NoSensitiveFields } from './glide-mq-payload-types.mts'
 import type { QueuePriorityKind } from './queue-priority.mts'
 
@@ -78,7 +78,7 @@ export type CreateEnqueueFunction = {
     data: TData,
     perCallOpts?: Partial<JobOptions>,
     callContext?: TCallContext,
-  ) => ReturnType<AddQueue['add']>
+  ) => Promise<Job<TData> | null>
   <TData, TName extends string, TCallContext = unknown>(
     options: CreateEnqueueFunctionOptions<TName, TCallContext> & { sensitive?: false },
   ): <TActual extends TData>(
@@ -93,7 +93,7 @@ export type CreateEnqueueFunction = {
               NoSensitiveFields<NoInfer<TActual>>),
     perCallOpts?: Partial<JobOptions>,
     callContext?: TCallContext,
-  ) => ReturnType<AddQueue['add']>
+  ) => Promise<Job<TData> | null>
 }
 
 type BulkFactoryOptions<

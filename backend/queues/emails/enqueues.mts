@@ -2,7 +2,7 @@ import {
   createBulkEnqueueFunction as createGlideMqBulkEnqueueFunction,
   createEnqueueFunction as createGlideMqEnqueueFunction,
 } from '@data-stores/valkey-glide-mq'
-import type { JobOptions } from 'glide-mq'
+import type { Job, JobOptions } from 'glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type {
   EmailJobs,
@@ -133,7 +133,12 @@ export function enqueueSendCopyrightNoticeEmail(intentId: string): EnqueueReturn
   )
 }
 
-function createEnqueueFunction<V extends Record<string, unknown>>(jobName: EmailJobs) {
+function createEnqueueFunction<V extends Record<string, unknown>>(
+  jobName: EmailJobs,
+): (
+  input: EmailJobInput,
+  variables: V,
+) => Promise<Job<{ input: EmailJobInput; variables: V }> | null> {
   const enqueue = createGlideMqEnqueueFunction<{ input: EmailJobInput; variables: V }, EmailJobs>({
     queue: emails,
     queueName: QUEUE_NAME,
@@ -141,7 +146,7 @@ function createEnqueueFunction<V extends Record<string, unknown>>(jobName: Email
     sensitive: true,
   })
 
-  return (input: EmailJobInput, variables: V): EnqueueReturnType => {
+  return (input: EmailJobInput, variables: V) => {
     return enqueue({ input, variables })
   }
 }

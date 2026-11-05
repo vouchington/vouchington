@@ -19,7 +19,7 @@ export type ReplayedRequest = {
   url: string
   headers: Record<string, string>
   body: Buffer | undefined
-  json: <T = unknown>() => T
+  json: () => unknown
 }
 
 export type ProviderReplay = {
@@ -142,7 +142,7 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
       url,
       headers: Object.fromEntries(headers.entries()),
       body: undefined,
-      json: <T,>() => JSON.parse(sent.body?.toString('utf8') ?? 'null') as T,
+      json: () => JSON.parse(sent.body?.toString('utf8') ?? 'null') as unknown,
     }
     requests.push(sent)
     const next = queue.shift()
