@@ -5,7 +5,6 @@ import { workerQueueConnection } from '@data-stores/valkey-core/glide-mq-client'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import {
-  activityPubInboxReservationKey,
   observeActivityPubInboxReservations,
   reserveActivityPubInboxDelivery,
 } from './activitypub-inbox-reservations.mts'
@@ -15,7 +14,7 @@ describe('ActivityPub inbox retained terminal cleanup', () => {
     const queueName = `inbox_expiry_${randomUUID()}`
     const prefix = `inbox_expiry_${randomUUID()}`
     const jobId = `activitypub-inbox__${randomUUID()}`
-    const reservationKey = activityPubInboxReservationKey(queueName, prefix)
+    const reservationKey = `${prefix}:{${queueName}}:activitypub-inbox-reservations`
     const jobKey = `${prefix}:{${queueName}}:job:${jobId}`
     const released = Promise.withResolvers<void>()
     let processorCalled = false
@@ -69,7 +68,7 @@ describe('ActivityPub inbox retained terminal cleanup', () => {
     const queueName = `inbox_revoked_${randomUUID()}`
     const prefix = `inbox_revoked_${randomUUID()}`
     const jobId = `activitypub-inbox__${randomUUID()}`
-    const reservationKey = activityPubInboxReservationKey(queueName, prefix)
+    const reservationKey = `${prefix}:{${queueName}}:activitypub-inbox-reservations`
     const released = Promise.withResolvers<void>()
     const queue = new Queue<{ secret: string }, void>(queueName, {
       connection: workerQueueConnection,

@@ -5,7 +5,6 @@ import { workerQueueConnection } from '@data-stores/valkey-core/glide-mq-client'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import {
-  activityPubInboxReservationKey,
   releaseActivityPubInboxDelivery,
   reserveActivityPubInboxDelivery,
 } from './activitypub-inbox-reservations.mts'
@@ -18,7 +17,7 @@ describe('ActivityPub inbox reservation recovery after a lost terminal event', (
       const prefix = `inbox_lost_${randomUUID()}`
       const jobId = `activitypub-inbox__${randomUUID()}`
       const nextId = `activitypub-inbox__${randomUUID()}`
-      const reservationKey = activityPubInboxReservationKey(queueName, prefix)
+      const reservationKey = `${prefix}:{${queueName}}:activitypub-inbox-reservations`
       const terminalIndexKey = `${prefix}:{${queueName}}:${outcome}`
       const settled = Promise.withResolvers<void>()
       const queue = new Queue<{ secret: string }, void>(queueName, {
@@ -80,7 +79,7 @@ describe('ActivityPub inbox reservation recovery after a lost terminal event', (
     const prefix = `inbox_unrelated_${randomUUID()}`
     const jobId = `activitypub-inbox__${randomUUID()}`
     const nextId = `activitypub-inbox__${randomUUID()}`
-    const reservationKey = activityPubInboxReservationKey(queueName, prefix)
+    const reservationKey = `${prefix}:{${queueName}}:activitypub-inbox-reservations`
     const jobKey = `${prefix}:{${queueName}}:job:${jobId}`
     const queue = new Queue<{ secret: string }, void>(queueName, {
       connection: workerQueueConnection,

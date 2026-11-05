@@ -5,7 +5,6 @@ import { workerQueueConnection } from '@data-stores/valkey-core/glide-mq-client'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import {
-  activityPubInboxReservationKey,
   observeActivityPubInboxReservations,
   releaseActivityPubInboxDelivery,
   reserveActivityPubInboxDelivery,
@@ -16,7 +15,7 @@ const ttlMs = 60_000
 function ownedReservationSet() {
   const queueName = `activitypub_inbox_test_${randomUUID()}`
   const prefix = `inbox_reservation_test_${randomUUID()}`
-  const key = activityPubInboxReservationKey(queueName, prefix)
+  const key = `${prefix}:{${queueName}}:activitypub-inbox-reservations`
   return {
     key,
     reserve: (jobId: string, cap: number) =>
@@ -80,7 +79,7 @@ describe('ActivityPub inbox reservations', () => {
   it('renews an expired reservation while its exact native job is still delayed', async () => {
     const queueName = `activitypub_inbox_live_${randomUUID()}`
     const prefix = `inbox_reservation_live_${randomUUID()}`
-    const key = activityPubInboxReservationKey(queueName, prefix)
+    const key = `${prefix}:{${queueName}}:activitypub-inbox-reservations`
     const queue = new Queue(queueName, { connection: workerQueueConnection, prefix })
     try {
       const liveId = `activitypub-inbox__${randomUUID()}`
@@ -112,7 +111,7 @@ describe('ActivityPub inbox reservations', () => {
   it('removes a retained terminal failure and releases a later completion', async () => {
     const queueName = `activitypub_inbox_terminal_${randomUUID()}`
     const prefix = `inbox_reservation_terminal_${randomUUID()}`
-    const key = activityPubInboxReservationKey(queueName, prefix)
+    const key = `${prefix}:{${queueName}}:activitypub-inbox-reservations`
     const jobId = `activitypub-inbox__${randomUUID()}`
     const nextId = `activitypub-inbox__${randomUUID()}`
     const released = Promise.withResolvers<void>()
@@ -190,7 +189,7 @@ describe('ActivityPub inbox reservations', () => {
   it('replays a terminal event emitted before the reservation observer starts', async () => {
     const queueName = `activitypub_inbox_replay_${randomUUID()}`
     const prefix = `inbox_reservation_replay_${randomUUID()}`
-    const key = activityPubInboxReservationKey(queueName, prefix)
+    const key = `${prefix}:{${queueName}}:activitypub-inbox-reservations`
     const jobId = `activitypub-inbox__${randomUUID()}`
     const failed = Promise.withResolvers<void>()
     const released = Promise.withResolvers<void>()
@@ -249,7 +248,7 @@ describe('ActivityPub inbox reservations', () => {
   it('releases a removed waiting job through the native observer', async () => {
     const queueName = `activitypub_inbox_removed_${randomUUID()}`
     const prefix = `inbox_reservation_removed_${randomUUID()}`
-    const key = activityPubInboxReservationKey(queueName, prefix)
+    const key = `${prefix}:{${queueName}}:activitypub-inbox-reservations`
     const jobId = `activitypub-inbox__${randomUUID()}`
     const released = Promise.withResolvers<void>()
     const queue = new Queue(queueName, { connection: workerQueueConnection, prefix })
