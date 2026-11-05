@@ -18,7 +18,7 @@ function expectFailedBeforeLoading(outcome: Outcome): void {
   expect(outcome.schedules).toEqual([])
 }
 
-/** Call from a literal `describe` in each worker entrypoint's it. */
+/** Call from a literal `describe` in each worker entrypoint's test. */
 export function registerWorkerQueueClassTests(options: {
   initializeEntrypoint: InitializeEntrypoint
   accepted: readonly QueueClass[]

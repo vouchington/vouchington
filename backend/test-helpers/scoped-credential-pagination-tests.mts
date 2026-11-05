@@ -6,7 +6,7 @@ import { encodeScopedUuidCursor } from '@modules/pagination'
 
 type InsertedCredential = { id: string }
 
-/** Shared passkey and TOTP list pagination. Call from a literal `describe` in the route it. */
+/** Shared passkey and TOTP list pagination. Call from a literal `describe` in the route test. */
 export function registerScopedCredentialPaginationTests(options: {
   path: string
   configureRuntimeLimits: () => void

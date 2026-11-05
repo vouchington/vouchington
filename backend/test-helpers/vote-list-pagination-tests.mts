@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { encodeScopedUuidCursor } from '@modules/pagination'
 
-/** Shared admin and owner vote-list cases. Call from a literal `describe` in the route it. */
+/** Shared admin and owner vote-list cases. Call from a literal `describe` in the route test. */
 export function registerVoteListPaginationTests(options: {
   segment: string
   createId: (adminId: string) => Promise<string>
