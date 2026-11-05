@@ -76,14 +76,13 @@ export async function releaseModerationTransparencyCohorts(
 }
 
 /** Paid transparency releases whole UTC daily cohorts, unlike raw rolling analytics. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed range switch is exhaustive; Oxlint misses its terminal flow.
 function getTransparencyRangeStart(range: ModerationAnalyticsRange, cutoff: Date): Date {
   const start = new Date(cutoff)
   start.setUTCHours(0, 0, 0, 0)
-  let switchResult: Date
   switch (range) {
     case 'today':
-      switchResult = start
-      break
+      return start
     case '7d':
       start.setUTCDate(start.getUTCDate() - 6)
       return start
@@ -96,7 +95,6 @@ function getTransparencyRangeStart(range: ModerationAnalyticsRange, cutoff: Date
     case 'all':
       return new Date(0)
   }
-  return switchResult
 }
 
 function getAllTimePeriodEnd(after: string, scope: string): Date {

@@ -53,12 +53,13 @@ export function ProviderBucket({ bucket }: { bucket: FediverseSearchBucket }) {
   )
 }
 
+const providerLabels: Record<FediverseProvider, string> = {
+  peertube: 'PeerTube',
+  mastodon: 'Mastodon',
+  lemmy: 'Lemmy',
+  bluesky: 'Bluesky',
+}
+
 function formatProvider(provider: FediverseProvider): string {
-  return {
-    __proto__: null,
-    peertube: 'PeerTube',
-    mastodon: 'Mastodon',
-    lemmy: 'Lemmy',
-    bluesky: 'Bluesky',
-  }[provider]
+  return providerLabels[provider]
 }

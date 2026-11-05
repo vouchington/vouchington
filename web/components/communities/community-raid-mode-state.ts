@@ -52,15 +52,14 @@ export const initialRaidModeState: RaidModeState = {
   isSaving: false,
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 export function raidModeReducer(state: RaidModeState, action: RaidModeAction): RaidModeState {
-  let switchResult: RaidModeState
   switch (action.type) {
     case 'toggleRestriction': {
       const selectedTypes = new Set(state.selectedTypes)
       if (action.checked) selectedTypes.add(action.restrictionType)
       else selectedTypes.delete(action.restrictionType)
-      switchResult = { ...state, selectedTypes }
-      break
+      return { ...state, selectedTypes }
     }
     case 'setDuration': {
       return { ...state, duration: action.duration }
@@ -78,7 +77,6 @@ export function raidModeReducer(state: RaidModeState, action: RaidModeAction): R
       return { ...state, isSaving: false, liftingId: null }
     }
   }
-  return switchResult
 }
 
 export function getActiveRestrictions(
@@ -100,14 +98,15 @@ export function getExpiresAt(duration: DurationValue): string | null {
   return new Date(Date.now() + option.hours * 60 * 60 * 1000).toISOString()
 }
 
+const restrictionTypeLabels: Record<CommunityRestrictionType, string> = {
+  require_post_approval: 'Require post approval',
+  no_new_member_posts: 'Block new member posts',
+  no_links: 'Block links',
+  approved_members_only: 'Approved members only',
+}
+
 export function formatRestrictionType(type: CommunityRestrictionType): string {
-  return {
-    __proto__: null,
-    require_post_approval: 'Require post approval',
-    no_new_member_posts: 'Block new member posts',
-    no_links: 'Block links',
-    approved_members_only: 'Approved members only',
-  }[type]
+  return restrictionTypeLabels[type]
 }
 
 export function formatRestrictionExpiry(expiresAt: string | null): string {

@@ -89,21 +89,16 @@ export function assertMatchingPurchaseIntent(row: PurchaseIntentRow, fingerprint
     throw createCodedError(409, 'Membership purchase is not eligible.', CONFLICT)
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed row.provider switch is exhaustive; Oxlint misses its terminal flow.
 function getNativeMembershipLaunch(
   row: Pick<
     PurchaseIntentRow,
     'id' | 'user_id' | 'provider' | 'provider_product_id' | 'base_plan_id' | 'offer_id' | 'sku_id'
   >,
 ): Exclude<MembershipPurchaseLaunch, { kind: 'stripe_checkout' }> {
-  let switchResult: Exclude<MembershipPurchaseLaunch, { kind: 'stripe_checkout' }>
   switch (row.provider) {
     case 'apple_app_store':
-      switchResult = {
-        kind: row.provider,
-        product_id: row.provider_product_id,
-        app_account_token: row.id,
-      }
-      break
+      return { kind: row.provider, product_id: row.provider_product_id, app_account_token: row.id }
     case 'google_play':
       return {
         kind: row.provider,
@@ -117,7 +112,6 @@ function getNativeMembershipLaunch(
     case 'stripe':
       throw new Error('Stripe purchase intents do not use a native launch payload')
   }
-  return switchResult
 }
 
 export function getMembershipManagementDestination(provider: MembershipPurchaseProvider) {

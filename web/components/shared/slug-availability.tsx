@@ -8,8 +8,8 @@ import { AvailabilityIndicator } from '@/components/ui/availability-indicator'
 import { topicHref, communityHref } from '@/lib/links/entity-href'
 import { getCanonicalPostPath } from '@/lib/post-helpers'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed conflict.kind switch is exhaustive; Oxlint misses its terminal flow.
 function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
-  let switchResult
   switch (conflict.kind) {
     case 'topic': {
       const href = topicHref({
@@ -17,7 +17,7 @@ function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
         slug: conflict.slug,
         id: conflict.id,
       })
-      switchResult = (
+      return (
         <Link
           href={href}
           className='underline underline-offset-2'
@@ -25,7 +25,6 @@ function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
           {conflict.name}
         </Link>
       )
-      break
     }
     case 'community': {
       const href = communityHref({ slug: conflict.slug })
@@ -50,18 +49,18 @@ function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
       )
     }
   }
-  return switchResult
+}
+
+const availabilityKindLabels: Record<AvailabilityKind, string> = {
+  'topic-slug': 'topic slug',
+  'topic-name': 'topic name',
+  'community-slug': 'community slug',
+  'post-slug': 'post slug',
+  username: 'username',
 }
 
 function labelForKind(kind: AvailabilityKind): string {
-  return {
-    __proto__: null,
-    'topic-slug': 'topic slug',
-    'topic-name': 'topic name',
-    'community-slug': 'community slug',
-    'post-slug': 'post slug',
-    username: 'username',
-  }[kind]
+  return availabilityKindLabels[kind]
 }
 
 interface Props {

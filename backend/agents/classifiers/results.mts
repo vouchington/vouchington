@@ -90,6 +90,7 @@ function choiceResults(
   return results
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed candidate.candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 function resultForCandidate(
   candidate: ClassifierDecisionCandidate,
   probability: number,
@@ -98,16 +99,14 @@ function resultForCandidate(
   if (!Number.isFinite(probability) || probability < 0 || probability > 1)
     throw new Error('Structured-decision answer produced an invalid probability')
   const shared = { probability, rawResponse }
-  let switchResult: ClassifierDecisionInputResult
   switch (candidate.candidateKind) {
     case 'topic':
-      switchResult = {
+      return {
         candidateKind: 'topic',
         topicId: candidate.topicId,
         storedCandidateId: candidate.storedCandidateId,
         ...shared,
       }
-      break
     case 'story':
       return {
         candidateKind: 'story',
@@ -130,5 +129,4 @@ function resultForCandidate(
         ...shared,
       }
   }
-  return switchResult
 }

@@ -187,6 +187,7 @@ describe('bookmark mutation authorization', () => {
   })
 })
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed entityType switch is exhaustive; Oxlint misses its terminal flow.
 async function createVisibleTarget(
   entityType:
     | 'post'
@@ -199,12 +200,9 @@ async function createVisibleTarget(
     | 'community',
   user: PrivateUser,
 ): Promise<{ entityType: string; entityId: string; predicate: string }> {
-  let switchResult:
-    | ReturnType<typeof createVisibleTarget>
-    | Awaited<ReturnType<typeof createVisibleTarget>>
   switch (entityType) {
     case 'post':
-      switchResult = {
+      return {
         entityType,
         entityId: await insertTestPost({
           title: `Bookmark target ${crypto.randomUUID()}`,
@@ -214,7 +212,6 @@ async function createVisibleTarget(
         }),
         predicate: 'save',
       }
-      break
     case 'topic':
       return { entityType, entityId: await createTopic(user), predicate: 'follow' }
     case 'user':
@@ -249,7 +246,6 @@ async function createVisibleTarget(
       return { entityType, entityId: community.id, predicate: 'save' }
     }
   }
-  return switchResult
 }
 
 async function createFeedItem(user: PrivateUser): Promise<string> {

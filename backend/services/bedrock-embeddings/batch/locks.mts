@@ -17,11 +17,12 @@ export async function isEntityLockedForBatch(
   return rows.length > 0
 }
 
+const singleLockColumns: Record<SingleBatchLockType, string> = {
+  post: 'post_id',
+  topic: 'topic_id',
+  rss_feed_item: 'rss_feed_item_id',
+}
+
 function lockColumnForSingleType(entityType: SingleBatchLockType): string {
-  return {
-    __proto__: null,
-    post: 'post_id',
-    topic: 'topic_id',
-    rss_feed_item: 'rss_feed_item_id',
-  }[entityType]
+  return singleLockColumns[entityType]
 }

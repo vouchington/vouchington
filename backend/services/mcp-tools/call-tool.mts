@@ -155,15 +155,14 @@ export async function callMcpTool(
   }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed resolution.status switch is exhaustive; Oxlint misses its terminal flow.
 function toMcpToolCallError(
   resolution: Exclude<McpToolCallResolution, { status: 'allowed' }>,
   toolName: string,
 ): McpError {
-  let switchResult: McpError
   switch (resolution.status) {
     case 'not_found':
-      switchResult = new McpError(ErrorCode.MethodNotFound, `Tool not found: ${toolName}`)
-      break
+      return new McpError(ErrorCode.MethodNotFound, `Tool not found: ${toolName}`)
     case 'suspended':
       return new McpError(ErrorCode.InvalidRequest, 'suspended')
     case 'role_denied':
@@ -178,5 +177,4 @@ function toMcpToolCallError(
         `Tool requires scopes ${resolution.requiredScopes.join(', ')}: ${toolName}`,
       )
   }
-  return switchResult
 }

@@ -24,6 +24,7 @@ type Props = OAuthButtonProps & {
   }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed provider switch is exhaustive; Oxlint misses its terminal flow.
 export function OAuthLoginButton({
   provider,
   onToken,
@@ -43,7 +44,6 @@ export function OAuthLoginButton({
     )
   }
   const buttonProps: OAuthButtonProps = { onToken, disabled, onAvailabilityChange }
-  let switchResult
   switch (provider) {
     case 'facebook': {
       return <FacebookLoginButton {...buttonProps} />
@@ -52,8 +52,7 @@ export function OAuthLoginButton({
       return <AppleLoginButton {...buttonProps} />
     }
     case 'google': {
-      switchResult = <GoogleLoginButton {...buttonProps} />
-      break
+      return <GoogleLoginButton {...buttonProps} />
     }
     case 'x': {
       return <XLoginButton {...buttonProps} />
@@ -68,5 +67,4 @@ export function OAuthLoginButton({
       return <GithubLoginButton {...buttonProps} />
     }
   }
-  return switchResult
 }

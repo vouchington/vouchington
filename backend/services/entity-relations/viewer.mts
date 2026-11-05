@@ -16,16 +16,14 @@ export type EntityRelationViewer =
 export const ANONYMOUS_ENTITY_RELATION_VIEWER: EntityRelationViewer = { kind: 'anonymous' }
 
 /** Post access for the viewer. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed viewer.kind switch is exhaustive; Oxlint misses its terminal flow.
 export function postEligibilityFor(viewer: EntityRelationViewer): DirectPostEligibilityOptions {
-  let switchResult: DirectPostEligibilityOptions
   switch (viewer.kind) {
     case 'anonymous':
-      switchResult = { currentUserId: null, isModerationStaff: false }
-      break
+      return { currentUserId: null, isModerationStaff: false }
     case 'user':
       return { currentUserId: viewer.userId, isModerationStaff: viewer.staffRole !== null }
   }
-  return switchResult
 }
 
 /**
@@ -36,13 +34,11 @@ export function postEligibilityFor(viewer: EntityRelationViewer): DirectPostElig
 export function anonymousAuthorMaskFor(
   viewer: EntityRelationViewer,
 ): { readonly viewerUserId: string | null } | undefined {
-  let switchResult: { readonly viewerUserId: string | null } | undefined
   switch (viewer.kind) {
     case 'anonymous':
-      switchResult = { viewerUserId: null }
-      break
+      return { viewerUserId: null }
     case 'user':
       return viewer.staffRole === 'administrator' ? undefined : { viewerUserId: viewer.userId }
   }
-  return switchResult
+  return undefined
 }

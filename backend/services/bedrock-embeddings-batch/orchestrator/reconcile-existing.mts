@@ -125,15 +125,5 @@ export async function copyExistingEmbeddings(
 }
 
 function copyExistingLockClause(tableName: ReconciliationTable): string {
-  let switchResult: string
-  switch (tableName) {
-    case 'topics':
-      switchResult = `AND NOT ${lockExistsClause('topics', 'topics.id')}`
-      break
-    case 'posts':
-      return `AND NOT ${lockExistsClause('posts', 'posts.id')}`
-    case 'rss_feed_items':
-      return `AND NOT ${lockExistsClause('rss_feed_items', 'rss_feed_items.id')}`
-  }
-  return switchResult
+  return `AND NOT ${lockExistsClause(tableName, `${tableName}.id`)}`
 }

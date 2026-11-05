@@ -3,12 +3,11 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { createTransactionLockOnce } from '@vouchington/postgres'
 import type { PostPublicationScope } from './types.mts'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed scope.type switch is exhaustive; Oxlint misses its terminal flow.
 export function postPublicationScopeIdentifier(scope: PostPublicationScope): string {
-  let switchResult: string
   switch (scope.type) {
     case 'post':
-      switchResult = scope.postId
-      break
+      return scope.postId
     case 'author':
       return scope.authorUserId
     case 'community':
@@ -22,7 +21,6 @@ export function postPublicationScopeIdentifier(scope: PostPublicationScope): str
     case 'topic':
       return scope.topicId
   }
-  return switchResult
 }
 
 export function postPublicationScopeLockKey(scope: PostPublicationScope): string {

@@ -26,15 +26,14 @@ export const initialDisputesClientState: DisputesClientState = {
   openId: null,
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 export function disputesClientReducer(
   state: DisputesClientState,
   action: DisputesClientAction,
 ): DisputesClientState {
-  let switchResult: DisputesClientState
   switch (action.type) {
     case 'set_loading': {
-      switchResult = { ...state, loadingId: action.id }
-      break
+      return { ...state, loadingId: action.id }
     }
     case 'update_dispute': {
       return {
@@ -56,7 +55,6 @@ export function disputesClientReducer(
       return { ...state, draftEdits: { ...state.draftEdits, [action.id]: action.text } }
     }
   }
-  return switchResult
 }
 
 export function uniqueDisputes(disputes: ReviewDisputeSummary[]): ReviewDisputeSummary[] {

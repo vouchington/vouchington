@@ -67,6 +67,7 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
   })
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed tableName switch is exhaustive; Oxlint misses its terminal flow.
 function topicAttributeUpsertQuery(
   tableName: TopicAttributeTableName,
   columns: string,
@@ -78,11 +79,9 @@ function topicAttributeUpsertQuery(
     ON CONFLICT (topic_id) DO UPDATE
     SET ${updateSets}
     RETURNING *`
-  let switchResult: string
   switch (tableName) {
     case 'card_topics':
-      switchResult = `/* upsertTopicAttributes:cards */ INSERT INTO card_topics ${suffix}`
-      break
+      return `/* upsertTopicAttributes:cards */ INSERT INTO card_topics ${suffix}`
     case 'referral_program_topics':
       return `/* upsertTopicAttributes:referralPrograms */ INSERT INTO referral_program_topics ${suffix}`
     case 'retailer_topics':
@@ -94,5 +93,4 @@ function topicAttributeUpsertQuery(
     case 'spending_category_topics':
       return `/* upsertTopicAttributes:spendingCategories */ INSERT INTO spending_category_topics ${suffix}`
   }
-  return switchResult
 }

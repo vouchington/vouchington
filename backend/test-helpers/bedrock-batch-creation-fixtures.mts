@@ -16,23 +16,20 @@ import {
   insertTestTopic,
 } from './entities/index.mts'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed jobType switch is exhaustive; Oxlint misses its terminal flow.
 export async function createLockedEntityId(
   jobType: BatchJobType,
   userId: string,
   orderIndex = 0,
 ): Promise<string> {
   const suffix = randomUUID().slice(0, 8)
-  let switchResult:
-    | ReturnType<typeof createLockedEntityId>
-    | Awaited<ReturnType<typeof createLockedEntityId>>
   switch (jobType) {
     case 'topics':
-      switchResult = insertTestTopic({
+      return insertTestTopic({
         name: `Batch Lock ${suffix}`,
         slug: `batch-lock-${suffix}`,
         createdById: userId,
       })
-      break
     case 'posts':
       return insertTestPost({
         title: `Batch Lock ${suffix}`,
@@ -71,7 +68,6 @@ export async function createLockedEntityId(
     case 'images':
       return insertTestImage(userId)
   }
-  return switchResult
 }
 
 /** Each owned file is removed even when submission rejects before its normal cleanup. */

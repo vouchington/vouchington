@@ -4,13 +4,13 @@ import { getRetentionCutoffDate } from './cleanup-options.mts'
 import type { HistoryKind } from './cleanup-histories-candidates.mts'
 
 /** Mutate only candidate ids; per-key probes stop at the owner-approved rank. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed kind switch is exhaustive; Oxlint misses its terminal flow.
 export async function mutatePage(
   query: TransactionQuery,
   kind: HistoryKind,
   ids: string[],
   cutoff: Date,
 ): Promise<number> {
-  let switchResult: Promise<number> | number
   switch (kind) {
     case 'dynamic_configuration_revisions': {
       const result = await query(
@@ -24,8 +24,7 @@ export async function mutatePage(
            ) AS fixed_probe) = 50`,
         [ids],
       )
-      switchResult = result.rowCount ?? 0
-      break
+      return result.rowCount ?? 0
     }
     case 'rss_feed_setting_changes': {
       const result = await query(
@@ -113,5 +112,4 @@ export async function mutatePage(
       return result.rowCount ?? 0
     }
   }
-  return switchResult
 }

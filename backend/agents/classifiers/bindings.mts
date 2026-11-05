@@ -38,14 +38,13 @@ export function candidatesForBinding(
 }
 
 /** The concrete entity a candidate or its result names, whichever kind it is. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed candidate.candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 export function classifierCandidateEntityId(
   candidate: ClassifierDecisionCandidate | ClassifierDecisionInputResult,
 ): string {
-  let switchResult: string
   switch (candidate.candidateKind) {
     case 'topic':
-      switchResult = candidate.topicId
-      break
+      return candidate.topicId
     case 'story':
       return candidate.storyId
     case 'rss_feed_item':
@@ -53,7 +52,6 @@ export function classifierCandidateEntityId(
     case 'community_prompt':
       return candidate.communityPromptId
   }
-  return switchResult
 }
 
 /** The persisted classifier candidate kind a concrete candidate belongs to. */

@@ -72,6 +72,14 @@ export function parseCreateModerationReportInput(raw: {
   }
 }
 
+const reportValidationMessages: Record<ReportValidationError['code'], string> = {
+  invalid_target_type: 'Invalid entity type',
+  invalid_target_identifier: 'Invalid entity ID',
+  invalid_reason: 'Invalid reason',
+  invalid_note: 'Invalid note',
+  note_too_long: 'Note must be 1000 characters or fewer',
+}
+
 function reportValidationMessage(error: ReportValidationError): string {
   if (
     error.code === 'invalid_reason' &&
@@ -80,19 +88,5 @@ function reportValidationMessage(error: ReportValidationError): string {
     return error.message
   }
 
-  let switchResult: string
-  switch (error.code) {
-    case 'invalid_target_type':
-      return 'Invalid entity type'
-    case 'invalid_target_identifier':
-      return 'Invalid entity ID'
-    case 'invalid_reason':
-      return 'Invalid reason'
-    case 'invalid_note':
-      switchResult = 'Invalid note'
-      break
-    case 'note_too_long':
-      return 'Note must be 1000 characters or fewer'
-  }
-  return switchResult
+  return reportValidationMessages[error.code]
 }

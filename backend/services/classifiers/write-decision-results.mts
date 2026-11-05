@@ -12,6 +12,7 @@ import { insertCommunityPromptResults } from './write-community-prompt-results.m
 import { buildColumnArrays, type PersistedInputRow } from './write-decision-result-columns.mts'
 import type { ClassifierDecisionInputResult, PersistedClassifierDecisionCall } from './types.mts'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 export async function insertClassifierDecisionResults(
   query: OwnedTransaction,
   input: NormalizedClassifierDecisionInput,
@@ -34,19 +35,14 @@ export async function insertClassifierDecisionResults(
   if (rows.some(row => !row.decisionCallId)) {
     throw new Error('Classifier decision call is missing its persisted shard')
   }
-  let switchResult:
-    | ReturnType<typeof insertClassifierDecisionResults>
-    | Awaited<ReturnType<typeof insertClassifierDecisionResults>>
   switch (candidateKind) {
     case 'topic':
-      switchResult = insertTopicResults(query, input, rows)
-      break
+      return insertTopicResults(query, input, rows)
     case 'story':
       return insertStoryResults(query, input, rows)
     case 'community_prompt':
       return insertCommunityPromptResults(query, input, rows)
   }
-  return switchResult
 }
 
 function toPersistedInputRow(

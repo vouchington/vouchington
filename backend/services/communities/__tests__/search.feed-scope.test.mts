@@ -80,16 +80,15 @@ function requireCommunity(communities: ReadonlyMap<string, Community>, key: stri
   return community
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed membership switch is exhaustive; Oxlint misses its terminal flow.
 function membershipWrites(
   viewerId: string,
   communityId: string,
   membership: MineFeedMembership,
 ): Promise<unknown>[] {
-  let switchResult: Promise<unknown>[]
   switch (membership) {
     case 'member':
-      switchResult = [insertTestCommunityMember({ communityId, userId: viewerId })]
-      break
+      return [insertTestCommunityMember({ communityId, userId: viewerId })]
     case 'proxy-follow':
       return [insertTestProxyFollowCommunity(viewerId, communityId)]
     case 'proxy-mute':
@@ -102,15 +101,13 @@ function membershipWrites(
     case 'none':
       return []
   }
-  return switchResult
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed itemType switch is exhaustive; Oxlint misses its terminal flow.
 function listItemEntityId(itemType: MineFeedListItem, fixtures: MineFeedFixtures): string {
-  let switchResult: string
   switch (itemType) {
     case 'topic':
-      switchResult = fixtures.topicId
-      break
+      return fixtures.topicId
     case 'rss_feed': {
       if (fixtures.feedId === undefined) {
         throw new Error('rss_feed list item requires an RSS feed fixture')
@@ -124,7 +121,6 @@ function listItemEntityId(itemType: MineFeedListItem, fixtures: MineFeedFixtures
       return fixtures.postId
     }
   }
-  return switchResult
 }
 
 async function insertScenarioCommunities(

@@ -36,12 +36,12 @@ export type SourcePlan = {
   cutoffAt: Date
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed source switch is exhaustive; Oxlint misses its terminal flow.
 export function sourcePlan(source: Source, now: Date): SourcePlan {
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000)
-  let switchResult: SourcePlan
   switch (source) {
     case 'oauth_native_mints':
-      switchResult = {
+      return {
         table: 'oauth_native_session_token_mints',
         keyAt: 'target.occurred_at',
         cutoffAt: calendarYearsAgo(now, 1),
@@ -52,7 +52,6 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
             AND preservation_hold.released_at IS NULL
         )`,
       }
-      break
     case 'oauth_events':
       return {
         table: 'oauth_authorization_server_events',
@@ -175,5 +174,4 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         deletePredicateUsesCutoff: true,
       }
   }
-  return switchResult
 }

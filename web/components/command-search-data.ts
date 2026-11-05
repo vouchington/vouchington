@@ -62,18 +62,17 @@ export const EMPTY_RESULTS: SearchResults = {
   fediverse: [],
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed tab switch is exhaustive; Oxlint misses its terminal flow.
 export async function searchByTab(
   q: string,
   tab: SearchTab,
   signal: AbortSignal,
 ): Promise<SearchResults> {
-  let switchResult: Promise<SearchResults> | SearchResults
   switch (tab) {
     case 'topics':
       return searchTopicsOnly(q, signal)
     case 'communities':
-      switchResult = searchCommunitiesOnly(q, signal)
-      break
+      return searchCommunitiesOnly(q, signal)
     case 'posts':
       return searchPostsOnly(q, signal)
     case 'news':
@@ -86,7 +85,6 @@ export async function searchByTab(
     case 'all':
       return EMPTY_RESULTS
   }
-  return switchResult
 }
 
 export function getPostRoute(postType: string): string {

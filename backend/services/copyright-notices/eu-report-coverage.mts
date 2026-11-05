@@ -38,16 +38,15 @@ export async function readEuCopyrightReportCoveragePage(
   if (!notice) return { covered: false, hasMore: false, nextId: null, lastLegalActivityAt: null }
 
   const cursor = afterId === null ? sql`` : sql` AND fact.id > ${afterId}::uuid`
+  // oxlint-disable-next-line typescript/consistent-return -- Typed family switch is exhaustive; Oxlint misses its terminal flow.
   const source = (() => {
-    let switchResult: ReturnType<typeof sql>
     switch (family) {
       case 'receipts':
-        switchResult = sql`SELECT fact.id, fact.received_at AS occurred_at
+        return sql`SELECT fact.id, fact.received_at AS occurred_at
           FROM copyright_territorial_notice_receipts fact
           WHERE fact.copyright_notice_id = ${noticeId}::uuid AND fact.jurisdiction = 'eu_dsa'`.append(
           cursor,
         )
-        break
       case 'decisions':
         return sql`SELECT fact.id, fact.decided_at AS occurred_at
           FROM copyright_territorial_decisions fact
@@ -78,7 +77,6 @@ export async function readEuCopyrightReportCoveragePage(
           cursor,
         )
     }
-    return switchResult
   })()
   const page = sql`/* readEuCopyrightReportCoveragePage.facts */
     SELECT fact.id, EXISTS (

@@ -55,12 +55,11 @@ function visibilityEntries(
   ]
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed column switch is exhaustive; Oxlint misses its terminal flow.
 function visibilityAssignment(column: (typeof visibilityFieldNames)[number], value: string) {
-  let switchResult
   switch (column) {
     case 'cards_visibility':
-      switchResult = sql`cards_visibility = ${value}`
-      break
+      return sql`cards_visibility = ${value}`
     case 'community_memberships_visibility':
       return sql`community_memberships_visibility = ${value}`
     case 'direct_messages_audience':
@@ -80,7 +79,6 @@ function visibilityAssignment(column: (typeof visibilityFieldNames)[number], val
     case 'topic_follows_visibility':
       return sql`topic_follows_visibility = ${value}`
   }
-  return switchResult
 }
 
 const visibilityFieldNames = [

@@ -28,13 +28,13 @@ import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state
 type PageResult = { data: CopyrightCasePurgeJobData; hasMore: boolean; deferred?: boolean }
 type EligibleNotice = { id: string; jurisdiction: string; last_legal_activity_at: Date }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed data.phase switch is exhaustive; Oxlint misses its terminal flow.
 export async function runLockedPage(
   query: TransactionQuery,
   data: CopyrightCasePurgeJobData,
   notice: EligibleNotice,
   pageSize: number,
 ): Promise<PageResult> {
-  let switchResult: Promise<PageResult> | PageResult
   switch (data.phase) {
     case 'parties': {
       if (data.phaseIndex >= COPYRIGHT_CASE_PARTY_SOURCE_COUNT)
@@ -49,7 +49,7 @@ export async function runLockedPage(
         data.afterId,
         pageSize,
       )
-      switchResult = {
+      return {
         data: {
           ...data,
           phaseIndex: page.hasMore ? data.phaseIndex : data.phaseIndex + 1,
@@ -57,7 +57,6 @@ export async function runLockedPage(
         },
         hasMore: true,
       }
-      break
     }
     case 'verify_parties': {
       const page = await verifyCopyrightCasePartyPage(query, data.noticeId, data.afterId, pageSize)
@@ -181,5 +180,4 @@ export async function runLockedPage(
     case 'residual_parties':
       throw new Error('Residual case parties are handled after the live notice is gone')
   }
-  return switchResult
 }

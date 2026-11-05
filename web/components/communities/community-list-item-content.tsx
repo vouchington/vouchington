@@ -17,9 +17,9 @@ type CommunityListItemContentProps = {
   data: CommunityListPageData
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed itemType switch is exhaustive; Oxlint misses its terminal flow.
 export function CommunityListItemContent({ item, itemType, data }: CommunityListItemContentProps) {
   const t = useTranslations()
-  let switchResult
   switch (itemType) {
     case 'topic': {
       const topic = data.topics?.[item.entity_id]
@@ -29,7 +29,7 @@ export function CommunityListItemContent({ item, itemType, data }: CommunityList
             {t('extracted.communities.communityListItemCard.topicNotFound_a53e8c70')}
           </span>
         )
-      switchResult = (
+      return (
         <Link
           href={topicHref(topic)}
           prefetch={false}
@@ -38,7 +38,6 @@ export function CommunityListItemContent({ item, itemType, data }: CommunityList
           {topic.name}
         </Link>
       )
-      break
     }
     case 'rss_feed': {
       const feed = data.rss_feeds?.[item.entity_id]
@@ -141,5 +140,4 @@ export function CommunityListItemContent({ item, itemType, data }: CommunityList
       )
     }
   }
-  return switchResult
 }

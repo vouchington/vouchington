@@ -31,18 +31,16 @@ type SyncConfig = {
   | { jobName: 'syncGithubFriends'; idField: 'githubAccountId' }
 )
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed field switch is exhaustive; Oxlint misses its terminal flow.
 function buildSyncData(field: SyncConfig['idField'], id: string) {
-  let switchResult
   switch (field) {
     case 'facebookAccountId':
-      switchResult = { facebookAccountId: id }
-      break
+      return { facebookAccountId: id }
     case 'xAccountId':
       return { xAccountId: id }
     case 'githubAccountId':
       return { githubAccountId: id }
   }
-  return switchResult
 }
 
 function buildJobOptions(

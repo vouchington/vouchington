@@ -41,14 +41,13 @@ export function expectedCandidates<C>(
   )
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed result.candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 export function resultKey(
   result: ClassifierDecisionInputResult | PersistedClassifierDecisionResult,
 ): string {
-  let switchResult: string
   switch (result.candidateKind) {
     case 'topic':
-      switchResult = `topic:${result.topicId}:${result.storedCandidateId ?? ''}`
-      break
+      return `topic:${result.topicId}:${result.storedCandidateId ?? ''}`
     case 'story':
       return `story:${result.storyId}`
     case 'rss_feed_item':
@@ -56,7 +55,6 @@ export function resultKey(
     case 'community_prompt':
       return `community_prompt:${result.communityPromptId}`
   }
-  return switchResult
 }
 
 export function matchesExpectedThresholds(

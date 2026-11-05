@@ -33,11 +33,11 @@ export function reserveAIRetentionContinuationJobs() {
  * fixture's leftover row as an extra page. Cursor-backed families also keep a rollback-scoped
  * cursor.
  */
+// oxlint-disable-next-line typescript/consistent-return -- Typed family switch is exhaustive; Oxlint misses its terminal flow.
 export async function createAIRetentionContinuationFixture(
   family: AIRetentionFamily,
   query: TransactionQuery,
 ) {
-  let switchResult
   switch (family) {
     case 'textEmbeddingCache': {
       const { aged, ...window } = createExactRetentionWindow(TEXT_EMBEDDING_RETENTION_DAYS)
@@ -50,7 +50,7 @@ export async function createAIRetentionContinuationFixture(
         new Date(aged.getTime() - 1),
       )
       await setup.commit()
-      switchResult = {
+      return {
         options: { ...window, batchSize: 1, maxBatches: 1 },
         excludedState: async () => {
           await using reader = await beginTransaction()
@@ -65,7 +65,6 @@ export async function createAIRetentionContinuationFixture(
           )
         },
       }
-      break
     }
     case 'terminalEmbeddingBatches': {
       const { aged, ...window } = createExactRetentionWindow(EMBEDDING_BATCH_RETENTION_DAYS)
@@ -111,5 +110,4 @@ export async function createAIRetentionContinuationFixture(
       }
     }
   }
-  return switchResult
 }

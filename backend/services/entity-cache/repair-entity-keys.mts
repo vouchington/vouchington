@@ -16,12 +16,11 @@ export async function repairEntityBloomKeys(
   if (keys.length > 0) await addEntityBloomKeys(entityType, keys)
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed entityType switch is exhaustive; Oxlint misses its terminal flow.
 function entityKeysQuery(entityType: EntityBloomFilterType, id: string) {
-  let switchResult
   switch (entityType) {
     case 'users':
-      switchResult = sql`/* repairEntityBloomKeys */ SELECT id, username AS lookup_key FROM users WHERE id = ${id} AND deleted_at IS NULL`
-      break
+      return sql`/* repairEntityBloomKeys */ SELECT id, username AS lookup_key FROM users WHERE id = ${id} AND deleted_at IS NULL`
     case 'topics':
       return sql`/* repairEntityBloomKeys */
         SELECT id, slug AS lookup_key FROM topics
@@ -41,7 +40,6 @@ function entityKeysQuery(entityType: EntityBloomFilterType, id: string) {
     case 'rss_feed_items':
       return sql`/* repairEntityBloomKeys */ SELECT id, NULL::text AS lookup_key FROM rss_feed_items WHERE id = ${id} AND deleted_at IS NULL`
   }
-  return switchResult
 }
 
 export async function repairPostSlugBloomKey(postId: string, slug: string): Promise<void> {

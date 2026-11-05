@@ -34,6 +34,7 @@ const defaultTemplates: EmailDigestTemplates = {
  * Runs one digest job by its local name. The payload is a trust boundary: a name and payload that
  * do not match the job's enqueue contract fail before any processor runs.
  */
+// oxlint-disable-next-line typescript/consistent-return -- Typed parsed.kind switch is exhaustive; Oxlint misses its terminal flow.
 export async function processEmailDigestJob(
   name: string,
   data: unknown,
@@ -41,33 +42,28 @@ export async function processEmailDigestJob(
   templates: EmailDigestTemplates = defaultTemplates,
 ): Promise<unknown> {
   const parsed = parseEmailDigestJob(name, data)
-  let switchResult: unknown
   switch (parsed.kind) {
     case 'api-key-expiry':
-      switchResult = processSendApiKeyExpiryReminder(parsed.apiKeyId)
-      break
+      return processSendApiKeyExpiryReminder(parsed.apiKeyId)
     case 'dispatcher':
       return runDispatcher(parsed.name, dispatchers, parsed.data)
     case 'template':
       return templates[parsed.name](parsed.input, parsed.variables as never)
   }
-  return switchResult
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed name switch is exhaustive; Oxlint misses its terminal flow.
 function runDispatcher(
   name: keyof EmailDigestDispatchers,
   dispatchers: EmailDigestDispatchers,
   data: { afterId?: string },
 ): Promise<unknown> {
-  let switchResult: Promise<unknown>
   switch (name) {
     case 'dispatchApiKeyExpiryReminders':
-      switchResult = dispatchers.dispatchApiKeyExpiryReminders(data)
-      break
+      return dispatchers.dispatchApiKeyExpiryReminders(data)
     case 'dispatchEngagementEmails':
       return dispatchers.dispatchEngagementEmails()
     case 'dispatchCommunityModerationSummaryEmails':
       return dispatchers.dispatchCommunityModerationSummaryEmails()
   }
-  return switchResult
 }

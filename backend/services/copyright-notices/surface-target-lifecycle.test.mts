@@ -29,12 +29,11 @@ import { completeCopyrightMandatoryHumanReview, processCopyrightActionIntent } f
 
 type SurfaceFixture = Awaited<ReturnType<typeof createTestCopyrightImageFixture>>
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed fixture.ownerKind switch is exhaustive; Oxlint misses its terminal flow.
 function ownerCache(fixture: SurfaceFixture) {
-  let switchResult
   switch (fixture.ownerKind) {
     case 'post':
-      switchResult = caches.posts
-      break
+      return caches.posts
     case 'user':
       return caches.users_public
     case 'topic':
@@ -42,7 +41,6 @@ function ownerCache(fixture: SurfaceFixture) {
     case 'community':
       return null // Community pages use edge Cache-Tag purges, not a Valkey entity cache.
   }
-  return switchResult
 }
 
 async function warmOwnerCache(fixture: SurfaceFixture): Promise<void> {
@@ -136,18 +134,15 @@ async function seedOwnerCache(fixture: SurfaceFixture): Promise<void> {
   }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed fixture.selector.surfaceKind switch is exhaustive; Oxlint misses its terminal flow.
 async function publicImageIsProjected(fixture: SurfaceFixture): Promise<boolean> {
-  let switchResult:
-    | ReturnType<typeof publicImageIsProjected>
-    | Awaited<ReturnType<typeof publicImageIsProjected>>
   switch (fixture.selector.surfaceKind) {
     case 'post-image':
-      switchResult = Boolean(
+      return Boolean(
         (await getPostByAny(fixture.ownerId))?.images?.some(
           image => image.image_id === fixture.imageId,
         ),
       )
-      break
     case 'user-profile-image':
       return (
         (await getPublicUserByAny(fixture.ownerId))?.profile_image_placement?.image_id ===
@@ -176,7 +171,6 @@ async function publicImageIsProjected(fixture: SurfaceFixture): Promise<boolean>
         (await getCommunity(fixture.ownerId))?.banner_image_placement?.image_id === fixture.imageId
       )
   }
-  return switchResult
 }
 
 async function communityPurgeWasQueued(id: string): Promise<boolean> {

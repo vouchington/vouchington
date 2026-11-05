@@ -9,18 +9,16 @@ export type HardDeleteChildRow = {
 }
 
 /** Static lock queries let PostgreSQL and the lock-order checker see every FK child path. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed phase switch is exhaustive; Oxlint misses its terminal flow.
 export async function lockHardDeleteRssFeedChildRows(
   query: TransactionQuery,
   feedId: string,
   phase: RssFeedHardDeleteChildPhase,
   limit: number,
 ): Promise<HardDeleteChildRow[]> {
-  let switchResult:
-    | ReturnType<typeof lockHardDeleteRssFeedChildRows>
-    | Awaited<ReturnType<typeof lockHardDeleteRssFeedChildRows>>
   switch (phase) {
     case 'setting_changes':
-      switchResult = (
+      return (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:settingChanges */
         SELECT id, NULL::uuid AS topic_id, NULL::uuid AS community_id, NULL::uuid AS user_id
@@ -29,7 +27,6 @@ export async function lockHardDeleteRssFeedChildRows(
           [feedId, limit],
         )
       ).rows
-      break
     case 'crawls':
       return (
         await query<HardDeleteChildRow>(
@@ -101,5 +98,4 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
   }
-  return switchResult
 }

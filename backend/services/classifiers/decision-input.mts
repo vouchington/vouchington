@@ -93,12 +93,11 @@ export function flattenClassifierDecisionResults(
 }
 
 /** The topic, story, standalone RSS feed item or community prompt a result scores. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed result.candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 export function classifierDecisionEntityId(result: ClassifierDecisionInputResult): string {
-  let switchResult: string
   switch (result.candidateKind) {
     case 'topic':
-      switchResult = result.topicId
-      break
+      return result.topicId
     case 'story':
       return result.storyId
     case 'rss_feed_item':
@@ -106,7 +105,6 @@ export function classifierDecisionEntityId(result: ClassifierDecisionInputResult
     case 'community_prompt':
       return result.communityPromptId
   }
-  return switchResult
 }
 
 export function classifierDecisionResultKey(result: ClassifierDecisionInputResult): string {

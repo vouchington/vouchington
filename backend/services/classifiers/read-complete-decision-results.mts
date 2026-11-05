@@ -24,24 +24,20 @@ type ResultRow = {
   threshold_id: string | null
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 export async function readResults(
   query: QueryExecutor,
   batchId: string,
   candidateKind: ClassifierCandidateKind,
 ): Promise<PersistedClassifierDecision['results']> {
-  let switchResult:
-    | Promise<PersistedClassifierDecision['results']>
-    | PersistedClassifierDecision['results']
   switch (candidateKind) {
     case 'topic':
-      switchResult = readTopicResults(query, batchId)
-      break
+      return readTopicResults(query, batchId)
     case 'story':
       return readStoryResults(query, batchId)
     case 'community_prompt':
       return readCommunityPromptResults(query, batchId)
   }
-  return switchResult
 }
 
 async function readTopicResults(
@@ -106,6 +102,7 @@ async function readCommunityPromptResults(
   return rows.map(row => toPersistedResult(row, 'community_prompt'))
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 function toPersistedResult(
   row: ResultRow & { entity_id?: string },
   candidateKind: ClassifierDecisionInputResult['candidateKind'],
@@ -128,11 +125,9 @@ function toPersistedResult(
     rawResponse: row.raw_response,
     scope: toScope(row.scope_category, row.scope_community_id),
   }
-  let switchResult: PersistedClassifierDecisionResult
   switch (candidateKind) {
     case 'topic':
-      switchResult = { ...shared, candidateKind, topicId: entityId }
-      break
+      return { ...shared, candidateKind, topicId: entityId }
     case 'story':
       return { ...shared, candidateKind, storyId: entityId }
     case 'rss_feed_item': {
@@ -149,7 +144,6 @@ function toPersistedResult(
         thresholdId: null,
       }
   }
-  return switchResult
 }
 
 export function toScope(

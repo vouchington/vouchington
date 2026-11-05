@@ -32,12 +32,11 @@ type Action =
   | { type: 'set_error'; message: string | null }
   | { type: 'set_copied'; value: boolean }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 function reducer(state: State, action: Action): State {
-  let switchResult: State
   switch (action.type) {
     case 'set_token': {
-      switchResult = { ...state, token: action.token }
-      break
+      return { ...state, token: action.token }
     }
     case 'set_evidence': {
       return { ...state, evidence: action.text }
@@ -52,7 +51,6 @@ function reducer(state: State, action: Action): State {
       return { ...state, copied: action.value }
     }
   }
-  return switchResult
 }
 
 interface DomainVerificationPanelProps {

@@ -50,15 +50,14 @@ export function validateApiKeyCreationScopeSet(
   return { valid: true, permissions: result.permissions }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed result.code switch is exhaustive; Oxlint misses its terminal flow.
 function apiKeyScopeValidationError(
   type: ApiKeyType,
   result: Exclude<ApiKeyScopeSetValidationResult, { valid: true }>,
 ): string {
-  let switchResult: string
   switch (result.code) {
     case 'duplicate-scope':
-      switchResult = 'api key scopes must not contain duplicates'
-      break
+      return 'api key scopes must not contain duplicates'
     case 'empty-scope-set':
       return 'api key scopes must not be empty'
     case 'missing-prerequisite':
@@ -72,5 +71,4 @@ function apiKeyScopeValidationError(
     case 'unsupported-surface':
       return `scope is not supported for API keys: ${result.scope}`
   }
-  return switchResult
 }

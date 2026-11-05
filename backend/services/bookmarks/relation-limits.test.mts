@@ -27,12 +27,11 @@ describe('follow and subscription limits', () => {
       await relationLimitsConfig.waitForInitialization()
       onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { [field]: 1 }))
       const user = await createTestUser()
+      // oxlint-disable-next-line typescript/consistent-return -- Typed objectType switch is exhaustive; Oxlint misses its terminal flow.
       const createObject = async () => {
-        let switchResult
         switch (objectType) {
           case 'user':
-            switchResult = createTestUser()
-            break
+            return createTestUser()
           case 'topic':
             return createTestTopic()
           case 'post':
@@ -40,7 +39,6 @@ describe('follow and subscription limits', () => {
           case 'rss_feed':
             return insertTestRssFeedDirect({})
         }
-        return switchResult
       }
       const [first, second] = await Promise.all([createObject(), createObject()])
       const relation = getEntityRelationMetadataOrThrow({

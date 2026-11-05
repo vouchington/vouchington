@@ -7,12 +7,13 @@ export function getTrustTier(scoreNet: number, countUp: number, countDown: numbe
   return 'neutral'
 }
 
+const trustLabels: Record<TrustTier, string> = {
+  trusted: 'Trusted',
+  neutral: 'Neutral',
+  distrusted: 'Distrusted',
+  unrated: 'Unrated',
+}
+
 export function getTrustLabel(tier: TrustTier): string {
-  return {
-    __proto__: null,
-    trusted: 'Trusted',
-    neutral: 'Neutral',
-    distrusted: 'Distrusted',
-    unrated: 'Unrated',
-  }[tier]
+  return trustLabels[tier]
 }

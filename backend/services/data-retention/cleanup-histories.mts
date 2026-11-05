@@ -11,6 +11,7 @@ import {
   type HistoryKind,
 } from './cleanup-histories-candidates.mts'
 import { mutatePage } from './cleanup-histories-queries.mts'
+
 export type { HistoryKind } from './cleanup-histories-candidates.mts'
 export type HistoryCleanupResult = { scanned: number; changed: number; hasMore: boolean }
 export type HistoryCleanupOptions = {
@@ -73,25 +74,24 @@ async function cleanupHistory(kind: HistoryKind, options: HistoryCleanupOptions)
   return { scanned, changed, hasMore }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed kind switch is exhaustive; Oxlint misses its terminal flow.
 function cutoffFor(kind: HistoryKind, now: Date): Date {
-  let switchResult: Date
   switch (kind) {
     case 'dynamic_configuration_revisions':
     case 'fediverse_instance_integration_changes':
-      switchResult = subtractUtcMonths(now, 12)
-      break
+      return subtractUtcMonths(now, 12)
     case 'rss_feed_setting_changes':
     case 'referral_attribution_scrub':
       return getRetentionCutoffDate(90, now)
     case 'followed_user_import_requests':
-    case 'community_agent_prompt_revisions':
       return now
     case 'pending_user_import_requests':
       return getRetentionCutoffDate(180, now)
     case 'referral_attribution_expiry':
       return subtractUtcMonths(now, 24)
+    case 'community_agent_prompt_revisions':
+      return now
   }
-  return switchResult
 }
 
 function subtractUtcMonths(now: Date, months: number): Date {

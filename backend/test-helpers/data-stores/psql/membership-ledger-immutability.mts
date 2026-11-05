@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createLocalTestUser } from './users.mts'
+
 type QueryResult = { rowCount: number | null }
 type MembershipOperationTransition =
   | 'changeBinding'
@@ -17,6 +18,7 @@ type MembershipRefundOperationTransition =
   | 'fail'
   | 'providerRefund'
   | 'remainingRefundable'
+
 export async function createTestImmutableMembershipGrant(): Promise<string> {
   const { rows: products } = await read<{ id: string }>(
     sql`/* getImmutableTestGrantProduct */ SELECT id FROM membership_products WHERE plan = 'plus' AND billing_interval = 'monthly'`,
@@ -27,17 +29,16 @@ export async function createTestImmutableMembershipGrant(): Promise<string> {
     SELECT id, user_id, ${products[0]!.id}, 30, 'Test issuer' FROM source RETURNING id`)
   return rows[0]!.id
 }
+// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestMembershipGrantMutation(
   grantId: string,
   transition: 'changeCalendarDays' | 'delete' | 'revoke' | 'rewriteReason' | 'rewriteRevoker',
 ): Promise<QueryResult> {
-  let switchResult: Promise<QueryResult>
   switch (transition) {
     case 'changeCalendarDays':
-      switchResult = write(
+      return write(
         sql`/* rejectTestMembershipGrantMutation */ UPDATE membership_grants SET calendar_days = 31 WHERE id = ${grantId}`,
       )
-      break
     case 'delete':
       return write(
         sql`/* deleteTestMembershipGrant */ DELETE FROM membership_grants WHERE id = ${grantId}`,
@@ -55,7 +56,6 @@ export function attemptTestMembershipGrantMutation(
         sql`/* rewriteTestMembershipGrantRevoker */ WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id) UPDATE membership_grants SET revoked_by_id = (SELECT id FROM actor) WHERE id = ${grantId}`,
       )
   }
-  return switchResult
 }
 export async function createTestImmutableMembershipOperation(
   idempotencyKey: string,
@@ -91,6 +91,7 @@ async function createTestMembershipOperation(
     FROM source INNER JOIN binding ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id RETURNING id`)
   return rows[0]!.id
 }
+
 export function claimTestMembershipOperation(
   operationId: string,
   claimToken = randomUUID(),
@@ -99,17 +100,16 @@ export function claimTestMembershipOperation(
     sql`/* claimImmutableTestOperation */ UPDATE membership_operation_execution_work_items SET lease_token = ${claimToken}, leased_at = clock_timestamp(), lease_expires_at = clock_timestamp() + INTERVAL '5 minutes', attempt_count = attempt_count + 1 WHERE membership_operation_id = ${operationId}`,
   )
 }
+// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestMembershipOperationTransition(
   operationId: string,
   transition: MembershipOperationTransition,
 ): Promise<QueryResult> {
-  let switchResult: Promise<QueryResult>
   switch (transition) {
     case 'changeIdempotencyKey':
-      switchResult = write(
+      return write(
         sql`/* rejectTestMembershipOperationIdempotencyMutation */ UPDATE membership_operations SET idempotency_key = 'changed' WHERE id = ${operationId}`,
       )
-      break
     case 'changeBinding':
       return write(
         sql`/* rejectTestMembershipOperationBindingMutation */ UPDATE membership_operations SET membership_lineage_binding_id = ${randomUUID()} WHERE id = ${operationId}`,
@@ -135,20 +135,18 @@ export function attemptTestMembershipOperationTransition(
         sql`/* failTestMembershipOperationWithMessage */ UPDATE membership_operations SET failed_at = CURRENT_TIMESTAMP, failure_message = 'provider request failed' WHERE id = ${operationId}`,
       )
   }
-  return switchResult
 }
+// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestRefundMembershipOperationTransition(
   operationId: string,
   transition: MembershipRefundOperationTransition,
   providerRefundId = `re_${randomUUID()}`,
 ): Promise<QueryResult> {
-  let switchResult: Promise<QueryResult>
   switch (transition) {
     case 'claimWithoutTimestamp':
-      switchResult = write(
+      return write(
         sql`/* rejectTestRefundOperationClaim */ UPDATE membership_operation_execution_work_items SET lease_token = ${randomUUID()} WHERE membership_operation_id = ${operationId}`,
       )
-      break
     case 'providerRefund':
       return write(
         sql`/* setTestProviderRefundId */ UPDATE membership_operations SET provider_refund_id = ${providerRefundId} WHERE id = ${operationId}`,
@@ -162,7 +160,6 @@ export function attemptTestRefundMembershipOperationTransition(
         sql`/* setTestRemainingRefundable */ UPDATE membership_operations SET remaining_refundable_minor_units = 50 WHERE id = ${operationId}`,
       )
   }
-  return switchResult
 }
 
 export async function createTestImmutableMembershipChange(): Promise<string> {

@@ -94,6 +94,7 @@ export async function sweepClassifierChildPageWithQuery(
   return { scanned: page.length, deleted, hasMore }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed sweep switch is exhaustive; Oxlint misses its terminal flow.
 function childPageStatement(
   sweep: ChildSweep,
   lowerBoundId: string,
@@ -102,7 +103,6 @@ function childPageStatement(
   cursor: string | null,
   stored: { cursor_ordinal: number | null; cursor_child_id: string | null },
 ): SQLStatement {
-  let switchResult: SQLStatement
   switch (sweep) {
     case 'run_candidates': {
       const statement = sql`/* listClassifierRunCandidatePage */
@@ -113,8 +113,7 @@ function childPageStatement(
           sql` AND (run_id, ordinal) > (${cursor}::uuid, ${stored.cursor_ordinal}::integer)`,
         )
       }
-      switchResult = statement.append(sql` ORDER BY run_id, ordinal LIMIT ${batchSize + 1}`)
-      break
+      return statement.append(sql` ORDER BY run_id, ordinal LIMIT ${batchSize + 1}`)
     }
     case 'agent_topics': {
       const statement = sql`/* listClassifierAgentTopicPage */
@@ -135,9 +134,9 @@ function childPageStatement(
       return statement.append(sql` ORDER BY run_id LIMIT ${batchSize + 1}`)
     }
   }
-  return switchResult
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed sweep switch is exhaustive; Oxlint misses its terminal flow.
 async function deleteTerminalChildren(
   query: OwnedTransaction,
   sweep: ChildSweep,
@@ -146,9 +145,6 @@ async function deleteTerminalChildren(
   const ids = page.map(row => row.run_id)
   const terminal = sql`(run.completed_at IS NOT NULL OR run.superseded_at IS NOT NULL
     OR run.terminal_failed_at IS NOT NULL)`
-  let switchResult:
-    | ReturnType<typeof deleteTerminalChildren>
-    | Awaited<ReturnType<typeof deleteTerminalChildren>>
   switch (sweep) {
     case 'run_candidates': {
       const ordinals = page.map(row => row.ordinal!)
@@ -159,8 +155,7 @@ async function deleteTerminalChildren(
         WHERE target.run_id = selected.run_id AND target.ordinal = selected.ordinal
           AND run.id = target.run_id AND `.append(terminal),
       )
-      switchResult = rowCount ?? 0
-      break
+      return rowCount ?? 0
     }
     case 'agent_topics': {
       const topics = page.map(row => row.topic_id!)
@@ -183,5 +178,4 @@ async function deleteTerminalChildren(
       return rowCount ?? 0
     }
   }
-  return switchResult
 }

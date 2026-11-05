@@ -6,20 +6,15 @@ import {
   insertRssFeedItemManualSendNotifications,
 } from './rss-feed-item-target-rows.mts'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed distribution.action switch is exhaustive; Oxlint misses its terminal flow.
 export async function processTargetRows(
   distribution: DistributionRow,
   recipientIds: string[],
   query: TransactionQuery,
 ): Promise<ProcessTargetRowsResult> {
-  let switchResult:
-    | ReturnType<typeof processTargetRows>
-    | Awaited<ReturnType<typeof processTargetRows>>
   switch (distribution.action) {
     case 'post_share':
-      switchResult = emptyTargetRowsResult(
-        await insertPostFeedShares(distribution, recipientIds, query),
-      )
-      break
+      return emptyTargetRowsResult(await insertPostFeedShares(distribution, recipientIds, query))
     case 'post_send':
       return insertPostManualSendNotifications(distribution, recipientIds, query)
     case 'rss_feed_item_share':
@@ -29,7 +24,6 @@ export async function processTargetRows(
     case 'rss_feed_item_send':
       return insertRssFeedItemManualSendNotifications(distribution, recipientIds, query)
   }
-  return switchResult
 }
 
 function emptyTargetRowsResult(succeeded: boolean): ProcessTargetRowsResult {

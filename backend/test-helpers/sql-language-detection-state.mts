@@ -70,12 +70,11 @@ export async function setRssFeedItemLanguageInputShaForTest(
   `)
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed table switch is exhaustive; Oxlint misses its terminal flow.
 function sqlTableForLanguageDetection(table: LanguageDetectionEntityTable): SQLStatement {
-  let switchResult: SQLStatement
   switch (table) {
     case 'posts':
-      switchResult = sql`posts`
-      break
+      return sql`posts`
     case 'communities':
       return sql`communities`
     case 'crawls':
@@ -87,7 +86,6 @@ function sqlTableForLanguageDetection(table: LanguageDetectionEntityTable): SQLS
     case 'rss_feed_items':
       return sql`rss_feed_items`
   }
-  return switchResult
 }
 
 export type LanguageDetectionResultForTest = LanguageDetectionStateForTest & {

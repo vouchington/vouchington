@@ -30,12 +30,11 @@ type Action =
   | { type: 'set_submitted' }
   | { type: 'reset' }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 function reducer(state: State, action: Action): State {
-  let switchResult: State
   switch (action.type) {
     case 'set_reason': {
-      switchResult = { ...state, reason: action.value }
-      break
+      return { ...state, reason: action.value }
     }
     case 'set_claim_text': {
       return { ...state, claimText: action.value }
@@ -53,7 +52,6 @@ function reducer(state: State, action: Action): State {
       return { reason: '', claimText: '', loading: false, error: null, submitted: false }
     }
   }
-  return switchResult
 }
 
 interface DisputeReviewDialogProps {

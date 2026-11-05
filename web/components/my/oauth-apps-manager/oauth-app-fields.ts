@@ -16,11 +16,11 @@ export function parseRedirectUris(text: string): string[] {
     .filter(line => line !== '')
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed code switch is exhaustive; Oxlint misses its terminal flow.
 export function redirectUriValidationMessage(
   t: Translator,
   code: OAuthRedirectUriValidationCode,
 ): string {
-  let switchResult: string
   switch (code) {
     case 'invalid_count':
       return t('settings.oauthApps.redirectUriErrors.invalidCount')
@@ -33,10 +33,8 @@ export function redirectUriValidationMessage(
     case 'invalid_scheme':
       return t('settings.oauthApps.redirectUriErrors.invalidScheme')
     case 'duplicate':
-      switchResult = t('settings.oauthApps.redirectUriErrors.duplicate')
-      break
+      return t('settings.oauthApps.redirectUriErrors.duplicate')
   }
-  return switchResult
 }
 
 export function hasValidOAuthAppDetails(name: string, redirectUris: readonly string[]): boolean {

@@ -64,14 +64,13 @@ export async function getModerationAnalytics(
   }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed range switch is exhaustive; Oxlint misses its terminal flow.
 function getRangeStart(range: ModerationAnalyticsRange, now: Date): Date {
   const d = new Date(now)
-  let switchResult: Date
   switch (range) {
     case 'today': {
       d.setUTCHours(0, 0, 0, 0)
-      switchResult = d
-      break
+      return d
     }
     case '7d': {
       d.setUTCDate(d.getUTCDate() - 7)
@@ -92,7 +91,6 @@ function getRangeStart(range: ModerationAnalyticsRange, now: Date): Date {
       return d
     }
   }
-  return switchResult
 }
 
 async function getQueueVolume(

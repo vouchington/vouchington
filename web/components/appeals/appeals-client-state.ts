@@ -24,15 +24,14 @@ export const initialAppealsClientState: State = {
   openId: null,
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 export function appealsClientReducer(state: State, action: Action): State {
-  let switchResult: State
   switch (action.type) {
     case 'update_appeal': {
-      switchResult = {
+      return {
         ...state,
         appealOverrides: { ...state.appealOverrides, [action.appeal.id]: action.appeal },
       }
-      break
     }
     case 'open_appeal': {
       return {
@@ -58,7 +57,6 @@ export function appealsClientReducer(state: State, action: Action): State {
       return { ...state, draftEdits: { ...state.draftEdits, [action.id]: action.text } }
     }
   }
-  return switchResult
 }
 
 /** A row stands for the full appeal once staff opened or changed it. */

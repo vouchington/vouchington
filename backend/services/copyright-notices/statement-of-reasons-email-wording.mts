@@ -4,36 +4,24 @@ import { copyrightUsIntakeRoutesText } from './statement-of-reasons-redress-word
 export const copyrightNeedsInformationText =
   'We need more information before we can evaluate your copyright notice.'
 
+const copyrightEmailSubjects: Record<CopyrightDeliveryKind, string> = {
+  email_intake_rejected: 'We could not accept your copyright notice',
+  email_intake_needs_information: 'More information is needed for your copyright notice',
+  staff_information_request: 'More information is needed for your copyright notice',
+  email_intake_received: 'We received your copyright notice',
+  claimant_receipt: 'We received your copyright notice',
+  poster_review_notice: 'Review of your copyright restriction',
+  poster_restoration_notice: 'Your copyright restriction has ended',
+  owner_information_notice: 'Copyright notice affecting your community image',
+  claimant_decision_notice: 'Decision on your copyright notice',
+  redress_decision_notice: 'Decision on your copyright complaint',
+  poster_restriction_notice: 'Your image was restricted after a copyright notice',
+  counter_notice_forwarding: 'Counter-notice for your copyright claim',
+  status_update: 'Update to your copyright case',
+}
+
 export function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
-  let switchResult: string
-  switch (kind) {
-    case 'email_intake_rejected':
-      switchResult = 'We could not accept your copyright notice'
-      break
-    case 'email_intake_needs_information':
-    case 'staff_information_request':
-      return 'More information is needed for your copyright notice'
-    case 'email_intake_received':
-    case 'claimant_receipt':
-      return 'We received your copyright notice'
-    case 'poster_review_notice':
-      return 'Review of your copyright restriction'
-    case 'poster_restoration_notice':
-      return 'Your copyright restriction has ended'
-    case 'owner_information_notice':
-      return 'Copyright notice affecting your community image'
-    case 'claimant_decision_notice':
-      return 'Decision on your copyright notice'
-    case 'redress_decision_notice':
-      return 'Decision on your copyright complaint'
-    case 'poster_restriction_notice':
-      return 'Your image was restricted after a copyright notice'
-    case 'counter_notice_forwarding':
-      return 'Counter-notice for your copyright claim'
-    case 'status_update':
-      return 'Update to your copyright case'
-  }
-  return switchResult
+  return copyrightEmailSubjects[kind]
 }
 
 /** Unpromoted intake has neither a copyright case nor an established legal ground. */

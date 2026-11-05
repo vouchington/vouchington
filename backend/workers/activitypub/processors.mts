@@ -59,6 +59,7 @@ export async function processDistributeActivityJob(
   return result
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed data.activityType switch is exhaustive; Oxlint misses its terminal flow.
 function nextDistributionPage(
   data: DistributeActivityData,
   cursor: string | undefined,
@@ -69,11 +70,9 @@ function nextDistributionPage(
     cursor,
     ...(data.recovery ? { recovery: true as const } : {}),
   }
-  let switchResult: DistributeActivityData
   switch (data.activityType) {
     case 'Follow':
-      switchResult = { ...base, activityType: 'Follow', targetUserId: data.targetUserId }
-      break
+      return { ...base, activityType: 'Follow', targetUserId: data.targetUserId }
     case 'UndoFollow':
       return {
         ...base,
@@ -91,7 +90,6 @@ function nextDistributionPage(
         originalActivityId: data.originalActivityId,
       }
   }
-  return switchResult
 }
 
 export async function processDeliverActivityJob(

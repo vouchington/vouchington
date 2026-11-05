@@ -31,12 +31,11 @@ export const initialModQueueState: ModQueueState = {
   resolvedReportIds: new Set(),
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 export function modQueueReducer(state: ModQueueState, action: ModQueueAction): ModQueueState {
-  let switchResult: ModQueueState
   switch (action.type) {
     case 'fail': {
-      switchResult = { ...state, error: action.message, loading: null }
-      break
+      return { ...state, error: action.message, loading: null }
     }
     case 'reject-cancelled': {
       return { ...state, activeAction: null, rejectionReason: '' }
@@ -70,5 +69,4 @@ export function modQueueReducer(state: ModQueueState, action: ModQueueAction): M
       return { ...state, loading: null }
     }
   }
-  return switchResult
 }

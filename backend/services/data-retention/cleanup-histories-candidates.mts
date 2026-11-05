@@ -24,6 +24,7 @@ export function hasMonotonicEligibility(kind: HistoryKind): boolean {
 type Candidate = { id: string }
 
 /** Read at most limit raw UUIDv7 rows; eligibility is checked only within this page. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed kind switch is exhaustive; Oxlint misses its terminal flow.
 export async function listRawCandidates(
   query: TransactionQuery,
   kind: HistoryKind,
@@ -33,9 +34,6 @@ export async function listRawCandidates(
   limit: number,
 ): Promise<Candidate[]> {
   const params = [cursorId, cutoffId, lowerBoundId, limit]
-  let switchResult:
-    | ReturnType<typeof listRawCandidates>
-    | Awaited<ReturnType<typeof listRawCandidates>>
   switch (kind) {
     case 'dynamic_configuration_revisions': {
       const { rows } = await query<Candidate>(
@@ -47,8 +45,7 @@ export async function listRawCandidates(
          ORDER BY id LIMIT $4 FOR UPDATE SKIP LOCKED`,
         params,
       )
-      switchResult = rows
-      break
+      return rows
     }
     case 'rss_feed_setting_changes': {
       const { rows } = await query<Candidate>(
@@ -137,7 +134,6 @@ export async function listRawCandidates(
       return rows
     }
   }
-  return switchResult
 }
 
 /** One unresolved row behind the checkpoint catches late commits without rereading cleared rows. */

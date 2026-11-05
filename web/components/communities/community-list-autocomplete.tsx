@@ -31,23 +31,20 @@ interface Props {
   disabled?: boolean
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed itemType switch is exhaustive; Oxlint misses its terminal flow.
 async function searchByItemType(
   itemType: CommunityListItemType,
   q: string,
   signal: AbortSignal,
   untitledPost: string,
 ): Promise<SearchResult[]> {
-  let switchResult:
-    | ReturnType<typeof searchByItemType>
-    | Awaited<ReturnType<typeof searchByItemType>>
   switch (itemType) {
     case 'topic': {
       const res = await fetchTopics({ q, limit: 10, signal })
-      switchResult = res.results.flatMap(r => {
+      return res.results.flatMap(r => {
         const topic = res.topics?.[r.id]
         return topic ? [{ id: topic.id, displayName: topic.name, kind: 'ui-text' as const }] : []
       })
-      break
     }
     case 'rss_feed': {
       const feeds = await searchRssFeedsClient(q, signal)
@@ -96,7 +93,6 @@ async function searchByItemType(
       })
     }
   }
-  return switchResult
 }
 
 export function CommunityListAutocomplete({ itemType, onSelect, disabled }: Props) {

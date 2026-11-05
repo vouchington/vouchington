@@ -48,28 +48,20 @@ function registerTopicRoutes(registerCases: () => void): void {
   })
 }
 
-function suiteRegistrar(
-  segment: CommunityListItemRouteCase['segment'],
-): (registerCases: () => void) => void {
-  let switchResult: (registerCases: () => void) => void
-  switch (segment) {
-    case 'domains':
-      switchResult = registerDomainRoutes
-      break
-    case 'urls':
-      return registerUrlRoutes
-    case 'posts':
-      return registerPostRoutes
-    case 'topics':
-      return registerTopicRoutes
-  }
-  return switchResult
+const suiteRegistrars: Record<
+  CommunityListItemRouteCase['segment'],
+  (registerCases: () => void) => void
+> = {
+  domains: registerDomainRoutes,
+  urls: registerUrlRoutes,
+  posts: registerPostRoutes,
+  topics: registerTopicRoutes,
 }
 
 /** Shared community list-item mutation cases. Extra reads register through `registerAdditional`. */
 export function describeCommunityListItemRoutes(options: CommunityListItemRouteCase): void {
   const { segment, itemType, bodyKey, createEntityId, registerAdditional } = options
-  suiteRegistrar(segment)(() => {
+  suiteRegistrars[segment](() => {
     let owner: CommunityListItemRouteContext['owner']
     let member: CommunityListItemRouteContext['member']
     let community: CommunityListItemRouteContext['community']
