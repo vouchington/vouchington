@@ -53,24 +53,25 @@ export async function loadActorCategoryVoteInputs(
       SELECT topic_id FROM post_explicit_topic_categories WHERE post_id = ${postId}
       UNION
       SELECT topic_id FROM post_data_point_topics WHERE post_id = ${postId}
-    ), inputs AS (
-      SELECT ARRAY(SELECT id FROM removed_alias_relations) AS removed_alias_relation_ids,
-        ARRAY(SELECT topic_id FROM topic_ids) AS topic_ids
     )
-    SELECT aliases.topic_alias_id, aliases.id, inputs.removed_alias_relation_ids, inputs.topic_ids
-    FROM inputs LEFT JOIN actor_alias_relations aliases ON true`)
+    SELECT COALESCE((
+      SELECT jsonb_agg(jsonb_build_object('topic_alias_id', topic_alias_id, 'id', id))
+      FROM actor_alias_relations
+    ), '[]'::jsonb) AS actor_alias_relations,
+      ARRAY(SELECT id FROM removed_alias_relations) AS removed_alias_relation_ids,
+      ARRAY(SELECT topic_id FROM topic_ids) AS topic_ids`)
   const { rows } = await write<{
-    topic_alias_id: string | null
-    id: string | null
+    actor_alias_relations: Array<{ topic_alias_id: string; id: string | null }>
     removed_alias_relation_ids: string[]
     topic_ids: string[]
   }>(statement, { query })
+  const aliases = rows[0]!.actor_alias_relations
   const inputs = {
     removedAliasRelations: rows[0]!.removed_alias_relation_ids.map(id => ({ id })),
     topicIds: rows[0]!.topic_ids,
   }
-  const missing = rows.flatMap(row => (!row.id && row.topic_alias_id ? [row.topic_alias_id] : []))
-  const existing = rows.flatMap(row => (row.id ? [{ id: row.id }] : []))
+  const missing = aliases.flatMap(row => (row.id ? [] : [row.topic_alias_id]))
+  const existing = aliases.flatMap(row => (row.id ? [{ id: row.id }] : []))
   if (missing.length === 0) return { ...inputs, activeAliasRelations: existing }
   const inserted = await upsertEntityRelation(
     actor,
