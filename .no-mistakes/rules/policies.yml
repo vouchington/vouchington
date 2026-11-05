@@ -928,13 +928,21 @@
   message: >-
     New SSE routes must join the reviewed route inventory before calling startSSE.
   exclude:
-    - 'backend/api/**/__tests__/**'
-    - 'backend/api/**/*.test.mts'
+    # Direct startSSE lifecycle and cycle-budget tests, not production SSE route implementations.
+    - 'backend/api/__tests__/sse-helpers-start.test.mts'
+    # Test-only /events response exercises startSSE's listener budget and pipeline teardown.
+    - 'backend/api/__tests__/sse-listener-budget.test.mts'
+    # Admin article-sync job status on GET /api/v1/admin/article-syncs/:jobId/stream.
     - 'backend/api/v1/admin/article-syncs.mts'
+    # Shared authenticated snapshot stream for the admin PostgreSQL and Valkey stream endpoints.
     - 'backend/api/v1/admin/index-routes/snapshot-stream.mts'
+    # Authorized image-processing state on GET /api/v1/images/:id/state/stream.
     - 'backend/api/v1/images/index-routes/images-by-imageid-state-stream-get.mts'
+    # Staff queue statistics on GET /api/v1/mq/stream.
     - 'backend/api/v1/mq/index-routes/mq-stream-get.mts'
+    # Authorized batch-import progress on GET /api/v1/imports/:batchId/stream.
     - 'backend/api/v1/my/imports/stream.mts'
+    # Authorized user data-export progress on GET /api/v1/users/:idOrSlug/data-request/stream.
     - 'backend/api/v1/users/data-request.mts'
   options:
     roots:
@@ -2025,10 +2033,6 @@
       - .sql
       - .rs
       - .css
-    intentionallyEmpty:
-      - backend/modules/rss-feed-cover-art/index.mts
-      - backend/queues/openai-embeddings/setup.mts
-      - backend/queues/openai-moderation/setup.mts
 
 - name: TypeScript extension policy
   rule: file-extension-policy
@@ -2407,11 +2411,15 @@
     sourceExtensions:
       - .tsx
     excludeBasenames:
-      - _button-tooltip.tsx
+      # Colocated availability-state Vitest suite; sourceDirs sees it, but __tests__ companions do not.
       - availability-indicator.test.tsx
+      # Colocated breadcrumb/Next Link mock suite, not a UI component requiring a story.
       - breadcrumb.mock.test.tsx
+      # Colocated Embla keyboard/mock suite, outside the __tests__ companion globs.
       - carousel.mock.test.tsx
+      # Colocated checkbox interaction suite, not a story-bearing source component.
       - checkbox-card.test.tsx
+      # Colocated error-boundary recovery suite, outside the __tests__ companion globs.
       - error-boundary.test.tsx
     companionGlobs:
       - web/storybook/**/*.stories.ts
@@ -3580,7 +3588,8 @@
       # Healthy maximum was 347 seconds across 555 GitHub-hosted successes in #2260.
       - job: '.github/workflows/storybook.yml#storybook'
         maxMinutes: 30
-      # Existing backend-credentialed budget; no #2260 change.
+      # Backend setup, prepared PostgreSQL download/restore and optional AWS role acquisition
+      # precede the credentialed-test watchdog; the job cap also bounds reports and failure logs.
       - job: '.github/workflows/tests-backend-credentialed.yml#backend-credentialed-tests'
         maxMinutes: 20
       # Preparation owns SQL safety and fresh staging bootstrap; retain the 15m job cap.
@@ -3590,7 +3599,8 @@
       # GitHub-hosted successes in #2260.
       - job: '.github/workflows/tests-backend-modules.yml#backend-modules'
         maxMinutes: 25
-      # Existing backend-unit budget; no #2260 change.
+      # Each shard restores the prepared database and initializes backend before its Vitest watchdog.
+      # Reporting and full LCOV persistence include a bounded upload retry within the whole-job cap.
       - job: '.github/workflows/tests-backend-unit.yml#backend-tests'
         maxMinutes: 29
       # Steps sum to 19m; cap 18m is below it; healthy maximum was 87 seconds across 37
@@ -4801,7 +4811,6 @@
       - '**/test-helpers/**/*.{ts,mts}'
     unanalyzable: advise
 
-# Source: #3160. Fix React compiler and hook findings in web source instead of suppressing them.
 - name: production exports are not kept only for tests
   rule: production-exports-only-used-by-tests
   scope: repository
@@ -4828,6 +4837,7 @@
       - ts-shared/test-helpers
       - email-templates/test-helpers
     unanalyzable: advise
+# Source: #3160. Fix React compiler and hook findings in web source instead of suppressing them.
 - name: React compiler and hook rules are never suppressed in web source
   rule: forbidden-lint-suppressions
   scope: repository
