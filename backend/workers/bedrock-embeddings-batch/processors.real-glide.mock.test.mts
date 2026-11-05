@@ -68,6 +68,29 @@ describe('bounded shared Bedrock single backlog through real GlideMQ', () => {
     expect(await isSingleEmbeddingBackedUp(queue, 2, 2, 4_000)).toBe(false)
   })
 
+  it('evicts a failed native queue scan before the next call at the same clock', async () => {
+    queue = new Queue(`single_backlog_closed_${randomUUID()}`, connection)
+    const closedQueue = queue
+    await closedQueue.close()
+    queue = undefined
+    const getJobs = vi.spyOn(closedQueue, 'getJobs')
+    try {
+      await expect(getSingleEmbeddingBacklogSnapshot(closedQueue, 2, 0)).rejects.toBeInstanceOf(
+        Error,
+      )
+      expect(getJobs).toHaveBeenCalledTimes(3)
+      await expect(getSingleEmbeddingBacklogSnapshot(closedQueue, 2, 0)).rejects.toBeInstanceOf(
+        Error,
+      )
+      expect(getJobs).toHaveBeenCalledTimes(6)
+      expect(getJobs.mock.calls.filter(([state]) => state === 'waiting')).toHaveLength(2)
+      expect(getJobs.mock.calls.filter(([state]) => state === 'active')).toHaveLength(2)
+      expect(getJobs.mock.calls.filter(([state]) => state === 'delayed')).toHaveLength(2)
+    } finally {
+      getJobs.mockRestore()
+    }
+  })
+
   it('keeps a missing post eligible for the scheduled creation path under unrelated saturation', async () => {
     queue = new Queue(`single_recovery_${randomUUID()}`, connection)
     await Promise.all(
