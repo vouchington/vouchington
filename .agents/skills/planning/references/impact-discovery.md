@@ -122,7 +122,7 @@ The inline validator rejects empty or malformed `why.json` and appends its diagn
 
 `plan.json` selects Vitest tests only. The static gates CI also runs (repository rules such as
 test-source correspondence, `scc` complexity, knip production exports) are listed by
-`impacted-checks` from the `checks.commands` entries in `.no-mistakes.yml`
+`impacted-checks` from the `checks.commands` entries in [`.no-mistakes/checks/default.yml`](../../../../.no-mistakes/checks/default.yml)
 ([#3015](https://github.com/vouchington/vouchington/issues/3015)). List them from the same manifest
 and run the commands that apply to the change:
 
@@ -131,7 +131,7 @@ pnpm exec no-mistakes impacted-checks --generic-only --changed-files "$impact_di
   --format md >"$impact_dir/checks.md" 2>"$impact_dir/checks.stderr"
 ```
 
-Apply the same summary caps to `checks.md`. The declared gates are the `checks.commands` entries in `.no-mistakes.yml`.
+Apply the same summary caps to `checks.md`. The declared gates are the `checks.commands` entries in [`.no-mistakes/checks/default.yml`](../../../../.no-mistakes/checks/default.yml).
 
 ## Cleanup
 

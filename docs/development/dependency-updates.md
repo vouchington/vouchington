@@ -34,7 +34,7 @@ which single-document lockfile readers and GitHub's dependency graph
 byte for byte. When a bump changes the generated catalog, `tests-postgres-schema.yml` fails until a
 maintainer comments `/postgresql-snapshot-update` on the PR, which commits the regenerated catalog. See
 [schema snapshot](postgresql/schema-snapshot/README.md#no-mistakes-catalog). Its executor options
-(`importSpecifier`) are explicit in `.no-mistakes.yml` and every `.oxlintrc.json`, so a release that
+(`importSpecifier`) are explicit in the [rules policy](../../.no-mistakes/rules/policies.yml) and every `.oxlintrc.json`, so a release that
 tightens executor selection reports a configuration error instead of skipping checks.
 
 Dependabot groups only verified package families and release trains; catch-all version and security

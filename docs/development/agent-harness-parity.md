@@ -29,7 +29,7 @@ when creating a worktree in the desktop app; see [Codex local environments](http
 
 Local adapters under `.agents/skills` are overlays, not standalone workflows; the current list is
 in [`.agents/catalog/README.md`](../../.agents/catalog/README.md) and its bijection with
-`.claude/skills` is enforced by `finite-set-consistency` (`.no-mistakes.yml`). Claude Code and Codex
+`.claude/skills` is enforced by `finite-set-consistency` in [the rules policy](../../.no-mistakes/rules/policies.yml). Claude Code and Codex
 load each canonical source from the `vouchington-workflow`, `vouchington-testing`, or
 `vouchington-database` plugin; Grok, Cursor, and OpenCode load it from
 `node_modules/vouchington-tooling/skills/<name>/SKILL.md`. Every adapter stops if its harness's

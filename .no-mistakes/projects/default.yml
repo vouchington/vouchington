@@ -1,0 +1,51 @@
+web:
+  type: nextjs
+  root: web
+
+web-app:
+  type: nextjs
+  root: web/app
+
+web-components:
+  type: library
+  root: web/components
+
+web-lib:
+  type: library
+  root: web/lib
+
+backend:
+  type: server
+  root: backend
+  routes:
+    - api/**
+    - sitemap/**
+    - md/**
+  queues:
+    enqueues:
+      - queues/*/enqueues.mts
+      - queues/*/enqueues/*.mts
+    workers:
+      - workers/*/**
+
+cloudflare-worker:
+  type: cloudflare-workers
+  root: cloudflare-worker
+
+ci-playwright:
+  type: tests
+  root: ci/playwright
+
+ci-transient-retry:
+  type: tests
+  root: ci/transient-retry
+
+github-actions:
+  type: tests
+  root: .github
+
+dev-initialize:
+  type: tests
+  root: dev
+  include:
+    - initialize*

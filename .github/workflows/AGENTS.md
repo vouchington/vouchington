@@ -5,7 +5,7 @@
 - Update `fix-main.yml` when unrestricted or direct-main `push` triggers change; its subscription regression test must pass.
 - Preserve exactly these required `Main` gates: `static`, `backend`, `web`, `cloudflare-worker`, `lambdas`, `tooling`, `gitleaks`. Each area gate keeps its area name, runs with `!cancelled()`, and passes when its area is skipped. Other scans are report-only unless they feed a gate.
 - Area DAGs are `changes` → optional `static-<area>` → parallel suites → `coverage` (pull requests only), `codecov`, and gate. Suites never depend on sibling suites; `changes` output selects areas instead of trigger `paths:`. `static.yml` has no `changes` job; `nightly.yml` calls every area. Preserve `area-workflows.test.mts` and `area-coverage.test.mts` contracts.
-- The `workflow-topology-policy` rule in [`.no-mistakes.yml`](../../.no-mistakes.yml) owns the job inventory, required jobs and edges,
+- The `workflow-topology-policy` rule in [`.no-mistakes/rules/policies.yml`](../../.no-mistakes/rules/policies.yml) owns the job inventory, required jobs and edges,
   reusable callers, unlocked-workflow reasons, concurrency intent, and group collisions; update its
   data with the workflow. `if:` entailment, permission comparison, and secret-readiness checks run
   through `vouchington-tooling/workflow-policy`. A stepless caller that only forwards an

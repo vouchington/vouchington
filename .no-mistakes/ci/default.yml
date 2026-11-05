@@ -1,0 +1,5 @@
+actionDirs:
+  - .github/actions
+workflowDirs:
+  - .github/workflows
+  - ci/no-mistakes-workflows

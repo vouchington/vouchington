@@ -13,7 +13,7 @@
 - Expose each skill to Claude with
   `pnpm exec vouchington link-skill <name> --source-root .agents/skills --target-root .claude/skills`.
   Do not create symlinks manually. The tracked one-to-one mapping is enforced by
-  [`finite-set-consistency`](../../.no-mistakes.yml).
+  [`finite-set-consistency`](../../.no-mistakes/rules/policies.yml).
 - Codex, Grok, Cursor, and OpenCode discover `.agents/skills` directly. Add no extra agent adapter
   or `agents/openai.yaml` unless the skill is a dispatchable specialist.
 - Register skills in [the catalog](../catalog/README.md). Verify local and canonical links,
