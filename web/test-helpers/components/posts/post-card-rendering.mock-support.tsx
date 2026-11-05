@@ -1,6 +1,7 @@
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 /* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals, no-mistakes/playwright-defaults, no-mistakes/playwright-unique -- moved test support preserves the original post-card doubles, including the shared follower-share-actions id */
 import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
 import type { User } from '@/types/user'
 
 const mockPostCardUser: { current: User | null } = { current: null }
@@ -16,13 +17,12 @@ vi.mock(
           return () => <div data-testid='follower-share-actions' />
         if (src.includes('report-menu-item'))
           return ({ 'data-pw': dataPw }: { 'data-pw'?: string }) => (
-            // ast-grep-ignore: web-no-raw-form-elements -- test double replaces the report menu with a button the post card tests query
-            <button
+            <Button
               type='button'
               data-pw={dataPw}
             >
               Report
-            </button>
+            </Button>
           )
         return () => null
       },
@@ -34,10 +34,7 @@ vi.mock(import('@/components/admin/admin-moderation-button'), () => ({
 }))
 
 vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
-  EntityBookmarkButton: () => (
-    // ast-grep-ignore: web-no-raw-form-elements -- test double replaces the bookmark button with a button the post card tests query
-    <button type='button'>Save</button>
-  ),
+  EntityBookmarkButton: () => <Button type='button'>Save</Button>,
 }))
 
 vi.mock(import('@/components/shared/post-image'), () => {

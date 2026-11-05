@@ -1,6 +1,7 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
 import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { Post } from '@/types/posts'
@@ -77,8 +78,7 @@ vi.mock(import('@/lib/api/client/elections'), () => ({
 
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: () => (
-    // ast-grep-ignore: web-no-raw-form-elements -- test double replaces HideButton with a native button the cluster tests query by label
-    <button
+    <Button
       data-testid='hide-button'
       type='button'
       aria-label='Hide news item'

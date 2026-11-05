@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
 
 const { mockGetRssFeeds, mockGetListSearchErrorMessage } = vi.hoisted(() => ({
   mockGetRssFeeds: vi.fn<VitestLooseMock>(),
@@ -68,10 +69,7 @@ vi.mock(import('@/components/shared/list-search-error'), () => ({
 }))
 
 vi.mock(import('@/components/sources/add-source-button'), () => ({
-  AddSourceButton: () => (
-    // ast-grep-ignore: web-no-raw-form-elements -- test double replaces AddSourceButton with a button the source listing tests query
-    <button type='button'>mock-add-source</button>
-  ),
+  AddSourceButton: () => <Button type='button'>mock-add-source</Button>,
 }))
 
 export { mockGetListSearchErrorMessage, mockGetRssFeeds }

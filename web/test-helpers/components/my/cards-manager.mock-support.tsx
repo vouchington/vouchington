@@ -1,6 +1,7 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import React from 'react'
 import { vi } from 'vitest'
+import { Input } from '@/components/ui/input'
 
 import { CardsManager } from '@/components/my/cards-manager'
 import { createMyCard, deleteMyCard, updateMyCard } from '@/lib/api/client'
@@ -34,8 +35,7 @@ vi.mock(import('@/lib/on-error'), () => ({
 
 vi.mock(import('@/components/posts/topic-autocomplete'), () => ({
   TopicAutocomplete: ({ value, onChange, placeholder }: any) => (
-    // ast-grep-ignore: web-no-raw-form-elements -- test mock intentionally replaces the autocomplete with a native text input
-    <input
+    <Input
       type='text'
       placeholder={placeholder}
       aria-label={placeholder ?? 'Topic'}
@@ -94,23 +94,20 @@ vi.mock(import('@/components/ui/select'), () => {
   } as unknown as typeof import('@/components/ui/select')
 })
 
-vi.mock(
-  import('@/components/ui/checkbox'),
-  () =>
-    ({
-      Checkbox: ({ checked, onCheckedChange, id }: any) => (
-        // ast-grep-ignore: web-no-raw-form-elements -- test mock intentionally replaces the UI Checkbox with a native checkbox
-        <input
-          type='checkbox'
-          id={id}
-          checked={checked}
-          aria-label='Authorized user'
-          onChange={e => onCheckedChange(e.target.checked)}
-          data-testid='mock-checkbox'
-        />
-      ),
-    }) as unknown as typeof import('@/components/ui/checkbox'),
-)
+vi.mock(import('@/components/ui/checkbox'), () => {
+  return {
+    Checkbox: ({ checked, onCheckedChange, id }: any) => (
+      <Input
+        type='checkbox'
+        id={id}
+        checked={checked}
+        aria-label='Authorized user'
+        onChange={e => onCheckedChange(e.target.checked)}
+        data-testid='mock-checkbox'
+      />
+    ),
+  } as unknown as typeof import('@/components/ui/checkbox')
+})
 
 vi.mock(import('@/lib/api/client'), () => ({
   createMyCard: vi.fn<VitestLooseMock>(),

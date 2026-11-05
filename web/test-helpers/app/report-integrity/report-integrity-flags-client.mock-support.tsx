@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { ReportIntegrityFlagsClient } from '@/app/(report-integrity)/report-integrity/flags/report-integrity-flags-client'
 import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
 
 const mockNav = createNavMock()
 
@@ -28,22 +29,20 @@ vi.mock(
         children: ReactNode
       }) => {
         const setResolved = (
-          // ast-grep-ignore: web-no-raw-form-elements -- test double replaces Select with a button the flag tests click by name
-          <button
+          <Button
             type='button'
             onClick={() => onValueChange('resolved')}
           >
             set resolved
-          </button>
+          </Button>
         )
         const setAll = (
-          // ast-grep-ignore: web-no-raw-form-elements -- test double replaces Select with a button the flag tests click by name
-          <button
+          <Button
             type='button'
             onClick={() => onValueChange('all')}
           >
             set all
-          </button>
+          </Button>
         )
         return (
           <div>
