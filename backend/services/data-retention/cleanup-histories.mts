@@ -11,10 +11,10 @@ import {
   type HistoryKind,
 } from './cleanup-histories-candidates.mts'
 import { mutatePage } from './cleanup-histories-queries.mts'
-
 export type { HistoryKind } from './cleanup-histories-candidates.mts'
 export type HistoryCleanupResult = { scanned: number; changed: number; hasMore: boolean }
 export type HistoryCleanupOptions = {
+  kinds?: readonly HistoryKind[]
   batchSize?: number
   maxBatches: number
   now?: Date
@@ -31,16 +31,17 @@ export async function cleanupHistories(
 ): Promise<Record<HistoryKind, HistoryCleanupResult>> {
   const results = {} as Record<HistoryKind, HistoryCleanupResult>
   for (const kind of HISTORY_KINDS) {
+    if (options.kinds !== undefined && !options.kinds.includes(kind)) {
+      results[kind] = { scanned: 0, changed: 0, hasMore: false }
+      continue
+    }
     // no-mistakes-disable-next-line query-reached-per-item: fixed eight-family sweep, each with its own persisted cursor and bounded page budget.
     results[kind] = await cleanupHistory(kind, options) // oxlint-disable-line no-await-in-loop -- independent bounded passes share the daily retention budget
   }
   return results
 }
 
-export async function cleanupHistory(
-  kind: HistoryKind,
-  options: HistoryCleanupOptions,
-): Promise<HistoryCleanupResult> {
+async function cleanupHistory(kind: HistoryKind, options: HistoryCleanupOptions) {
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
   const now = options.now ?? new Date()

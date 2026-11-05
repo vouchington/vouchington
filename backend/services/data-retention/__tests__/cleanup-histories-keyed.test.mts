@@ -30,7 +30,7 @@ import {
   restoreHistoryCursorForTest,
   snapshotHistoryCursorForTest,
 } from '@voucha/test-helpers/history-retention-reads'
-import { cleanupHistory } from '../cleanup-histories.mts'
+import { cleanupHistories } from '../cleanup-histories.mts'
 
 function afterUtcMonths(base: Date, months: number, milliseconds = 0): Date {
   return new Date(
@@ -67,7 +67,9 @@ describe('bounded per-key history retention', () => {
         persistentCursorForTest: true,
       }
 
-      expect(await cleanupHistory(kind, pageOptions)).toEqual({
+      expect(
+        await cleanupHistories({ ...pageOptions, kinds: [kind] }).then(result => result[kind]),
+      ).toEqual({
         scanned: 1,
         changed: 0,
         hasMore: true,
@@ -79,7 +81,9 @@ describe('bounded per-key history retention', () => {
       const lateId = await insertConfigHistoryAt(key, new Date(oldBase.getTime() + 11))
       ids.push(lateId)
       const laterOptions = { ...pageOptions, now: afterUtcMonths(oldBase, 12, 100) }
-      expect(await cleanupHistory(kind, laterOptions)).toEqual({
+      expect(
+        await cleanupHistories({ ...laterOptions, kinds: [kind] }).then(result => result[kind]),
+      ).toEqual({
         scanned: 1,
         changed: 0,
         hasMore: true,
@@ -88,7 +92,9 @@ describe('bounded per-key history retention', () => {
         cursor_id: ids[1],
         sweep_cutoff_id: firstCursor?.sweep_cutoff_id,
       })
-      expect(await cleanupHistory(kind, laterOptions)).toEqual({
+      expect(
+        await cleanupHistories({ ...laterOptions, kinds: [kind] }).then(result => result[kind]),
+      ).toEqual({
         scanned: 1,
         changed: 0,
         hasMore: false,
@@ -98,10 +104,9 @@ describe('bounded per-key history retention', () => {
         sweep_cutoff_id: null,
       })
       expect(
-        await cleanupHistory(kind, {
-          ...laterOptions,
-          batchSize: 10,
-        }),
+        await cleanupHistories({ kinds: [kind], ...laterOptions, batchSize: 10 }).then(
+          result => result[kind],
+        ),
       ).toEqual({ scanned: 4, changed: 0, hasMore: false })
     } finally {
       try {
@@ -128,19 +133,21 @@ describe('bounded per-key history retention', () => {
     await expect(attemptDirectConfigHistoryUpdate(ids[0]!)).rejects.toThrow('append-only')
     await expect(attemptFlaggedConfigHistoryUpdate(ids[0]!)).rejects.toThrow('append-only')
 
-    const capped = await cleanupHistory('dynamic_configuration_revisions', {
+    const capped = await cleanupHistories({
+      kinds: ['dynamic_configuration_revisions'],
       ...options,
       batchSize: 7,
       maxBatches: 1,
       now: afterUtcMonths(base, 12, 52),
-    })
+    }).then(result => result.dynamic_configuration_revisions)
     expect(capped).toEqual({ scanned: 7, changed: 1, hasMore: true })
-    const remainder = await cleanupHistory('dynamic_configuration_revisions', {
+    const remainder = await cleanupHistories({
+      kinds: ['dynamic_configuration_revisions'],
       ...options,
       batchSize: 7,
       maxBatches: 8,
       now: afterUtcMonths(base, 12, 52),
-    })
+    }).then(result => result.dynamic_configuration_revisions)
     expect(remainder).toEqual({ scanned: 50, changed: 0, hasMore: false })
     expect(await readRemainingHistoryIds('dynamic_configuration_revisions', ids)).toEqual(
       ids.slice(1),
@@ -165,10 +172,11 @@ describe('bounded per-key history retention', () => {
     ]
     ownedIds.push(...ids)
 
-    const result = await cleanupHistory('rss_feed_setting_changes', {
+    const result = await cleanupHistories({
+      kinds: ['rss_feed_setting_changes'],
       ...options,
       now: new Date(base.getTime() + 90 * 24 * 60 * 60 * 1000 + 4),
-    })
+    }).then(result => result.rss_feed_setting_changes)
     expect(result).toEqual({ scanned: 4, changed: 2, hasMore: false })
     expect(await readRemainingHistoryIds('rss_feed_setting_changes', ids)).toEqual(ids.slice(2))
   })
@@ -205,10 +213,11 @@ describe('bounded per-key history retention', () => {
     ]
     ownedIds.push(...ids)
 
-    const result = await cleanupHistory('fediverse_instance_integration_changes', {
+    const result = await cleanupHistories({
+      kinds: ['fediverse_instance_integration_changes'],
       ...options,
       now: afterUtcMonths(base, 12, 3),
-    })
+    }).then(result => result.fediverse_instance_integration_changes)
     expect(result).toEqual({ scanned: 3, changed: 2, hasMore: false })
     expect(await readRemainingHistoryIds('fediverse_instance_integration_changes', ids)).toEqual([
       ids[2],
@@ -228,10 +237,11 @@ describe('bounded per-key history retention', () => {
     const ids = await insertPromptHistoryBatch(community.id, prompt.id, base, 201)
     ownedIds.push(...ids)
 
-    const result = await cleanupHistory('community_agent_prompt_revisions', {
+    const result = await cleanupHistories({
+      kinds: ['community_agent_prompt_revisions'],
       ...options,
       now: new Date(base.getTime() + 201),
-    })
+    }).then(result => result.community_agent_prompt_revisions)
     expect(result).toEqual({ scanned: 201, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('community_agent_prompt_revisions', ids)).toEqual(
       ids.slice(1),
