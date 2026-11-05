@@ -70,7 +70,7 @@ mutation limits, revalidation, and no-op reporting. These markers are consumed b
 
 - Add new prompts as standalone Markdown files in [scheduled/](scheduled/).
 - Link every prompt from the table above so the rotation set stays reviewable.
-- Keep the table in sync with `docs/prompts/scheduled/*.md`; `automation-prompts-scheduled.test.mts`
+- Keep the table in sync with `docs/prompts/scheduled/*.md`; `ci/check-scheduled-prompt-index-policy.mts`
   checks that every prompt appears exactly once and every link resolves.
 - Match linked source-of-truth terminology: use the same words the linked requirement or
   architecture doc uses for a concept, and the exact literal name for a field, route, env var, or

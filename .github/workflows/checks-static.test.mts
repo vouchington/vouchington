@@ -192,7 +192,7 @@ fi\n`,
     const job = jobSection('static-web')
     expect(job).toContain('uses: ./.github/actions/build-web-targets')
     expect(job).toContain('artifact-suffix: static-web')
-    // build-web-targets-timeouts.test.mts sizes this step's timeout-minutes from the composite's
+    // ci/check-build-web-targets-contract-policy.mts sizes this step's timeout-minutes from the composite's
     // build deadline for every caller; restating the value here would duplicate it.
   })
 

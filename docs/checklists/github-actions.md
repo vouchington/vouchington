@@ -8,7 +8,7 @@ Enforced rules name their check; the check owns the detail. Judgment calls stay 
 
 ### Enforced
 
-- **Runner labels** — a closed label set keeps hosted-runner demand and architecture deliberate. `.github/runner-policy.json` is checked by the released `vouchington runner-policy` command in static CI; `build-web-targets-runner-parity.test.mts` separately protects shared web build architecture.
+- **Runner labels** — a closed label set keeps hosted-runner demand and architecture deliberate. `.github/runner-policy.json` is checked by the released `vouchington runner-policy` command in static CI; `ci/check-build-web-targets-contract-policy.mts` separately protects shared web build architecture.
 - **Pinned actions** — a commit SHA stops a re-pointed tag from silently changing what runs. no-mistakes `github-actions-pinned-hash`.
 - **Script expressions** — free-form event text interpolated into a script is code injection, so it travels through `env:`. The enabled no-mistakes `github-actions-script-expressions` rule owns this check.
 - **Checkout credentials** — a write-capable token must not stay in `.git` for later steps. The enabled no-mistakes `github-actions-checkout-credentials` rule owns this check.
