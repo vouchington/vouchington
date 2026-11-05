@@ -2,7 +2,7 @@
 
 [Back to Tests and Checks](tests.md#linters-and-static-analysis)
 
-`pnpm run lint` fans out to every static tool; the list lives in `package.json` and `.no-mistakes.yml`, and rule placement is in the [static-analysis guide](quality/static-code-analysis/README.md). Swift, .NET, and native-client guard validation belong to `vouchington/vouchington-clients`; this repository keeps only the shared producer contracts those clients consume.
+`pnpm run lint` fans out to every static tool; the list lives in `package.json` and [`.no-mistakes/checks/default.yml`](../../.no-mistakes/checks/default.yml), and rule placement is in the [static-analysis guide](quality/static-code-analysis/README.md). Swift, .NET, and native-client guard validation belong to `vouchington/vouchington-clients`; this repository keeps only the shared producer contracts those clients consume.
 
 Gotchas that the tools do not explain themselves:
 

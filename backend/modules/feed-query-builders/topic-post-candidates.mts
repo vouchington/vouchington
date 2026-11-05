@@ -91,7 +91,7 @@ export function buildUniversalTopicPostCandidatePairsSelect(topicIds: string[]):
  * a correlated `EXISTS (… UNION ALL …)`: Postgres cannot pull a `UNION ALL` body into a semijoin,
  * so the old shape materialized the full candidate set once per outer row instead of once per
  * query. The anti-pattern this avoids is `no-mistakes`' `postgres-sql-shape-policy` rule
- * (`correlated-exists-set-operation`, jonathanong/no-mistakes#850, `.no-mistakes.yml`); as of
+ * (`correlated-exists-set-operation`, jonathanong/no-mistakes#850, `.no-mistakes/rules/policies.yml`); as of
  * no-mistakes 0.57.1 that rule does not yet trace SQL composed across function boundaries like
  * this one, so it would not have caught the shape this replaces. See #11082.
  */

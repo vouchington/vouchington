@@ -24,5 +24,5 @@ alone.
   migration, query, and fresh-bootstrap requirements.
 - Follow the [one-current-contract rule](../../../AGENTS.md): change canonical creators and current
   callers together; do not add backfills, compatibility paths, or upgrade-only migrations.
-- Consult the PostgreSQL guard entries in [`.no-mistakes.yml`](../../../.no-mistakes.yml) when
+- Consult the PostgreSQL guard entries in [`.no-mistakes/rules/policies.yml`](../../../.no-mistakes/rules/policies.yml) when
   changing or reviewing schema enforcement.

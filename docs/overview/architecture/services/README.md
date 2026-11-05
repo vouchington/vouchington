@@ -214,7 +214,7 @@ moderation findings while their identifying details are time-limited by the priv
 - **Dependency-inversion registries.** A service that needs a handler owned by another service
   exposes `register*()`/`getRegistered*()` instead of importing it, so the workspace dependency
   graph stays acyclic. Because a missing registration is a runtime failure, every process
-  entrypoint imports `backend/service-registrations` once; `.no-mistakes.yml` enforces both halves.
+  entrypoint imports `backend/service-registrations` once; [the rules policy](../../../../.no-mistakes/rules/policies.yml) enforces both halves.
 - **Dedupe expensive work by content hash.** Moderation and embeddings reuse a result for
   byte-identical input rather than paying the provider twice.
 - **Human approval gates AI drafts.** Dispute and appeal responses are drafted by an agent but are

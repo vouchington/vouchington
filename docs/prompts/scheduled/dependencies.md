@@ -8,7 +8,7 @@ evidence. Do not duplicate or weaken that policy here.
 
 1. Audit temporary pnpm release-age exemptions before considering other work:
    - Run `pnpm run no-mistakes`.
-   - Read grouped `temporaryGroups` under `pnpm-release-age-policy` in `.no-mistakes.yml`. For every exact selector, obtain its
+   - Read grouped `temporaryGroups` under `pnpm-release-age-policy` in [`.no-mistakes/rules/policies.yml`](../../../.no-mistakes/rules/policies.yml). For every exact selector, obtain its
      npm registry publication timestamp. Read `minimumReleaseAge` from `pnpm-workspace.yaml` in
      minutes; each group's `eligibleForRemovalAt` must equal the whole-second ceiling of its latest
      selector publication plus that delay.

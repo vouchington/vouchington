@@ -1,6 +1,6 @@
 Review released upstream changes against local workarounds and local copies of package features. Pick at most one concrete, bounded removal or adoption that is safe to ship in one PR.
 
-`pnpm-release-age-policy.permanentPackages` in [.no-mistakes.yml](../../../.no-mistakes.yml) lists the
+`pnpm-release-age-policy.permanentPackages` in [`.no-mistakes/rules/policies.yml`](../../../.no-mistakes/rules/policies.yml) lists the
 first-party packages; the owning repository of each is the `repository` field of its published
 `package.json` (`npm view <package> repository.url`). [Dependency Updates](../../development/dependency-updates.md)
 owns installs, lockfiles, release delays and version policy. The

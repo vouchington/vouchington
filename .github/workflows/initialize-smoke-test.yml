@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     # Chains three full ./dev/initialize passes (monorepo, backend, web) plus
     # PostgreSQL provisioning, each individually allowed up to 5 minutes below.
-    # See the .no-mistakes.yml github-actions-job-timeouts allow-list entry for
+    # See the .no-mistakes/rules/policies.yml github-actions-job-timeouts allow-list entry for
     # this job (repository default cap is 10m) for the step-budget accounting
     # behind this value.
     timeout-minutes: 23

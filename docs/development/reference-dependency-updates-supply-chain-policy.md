@@ -19,7 +19,7 @@ gate, and pnpm does not change Dependabot's scheduling.
 For a reviewed urgent pnpm release, add only the exact `package@version` selector to
 `minimumReleaseAgeExclude` in `pnpm-workspace.yaml`; scoped packages use
 `@scope/package@version`. Add the same selector to a `temporaryGroups` entry under
-`pnpm-release-age-policy` in `.no-mistakes.yml`. That checked-in configuration is the audit trail: it records the selector set, rationale, and
+`pnpm-release-age-policy` in [the rules policy](../../.no-mistakes/rules/policies.yml). That checked-in configuration is the audit trail: it records the selector set, rationale, and
 `eligibleForRemovalAt` timestamp.
 
 Ranges, tags, and globs are forbidden for temporary exemptions. `no-mistakes` retains
@@ -61,4 +61,4 @@ exemption procedure above only if the delay is itself the problem.
 
 Every workspace dependency must resolve from the npm registry; git, URL, file, link, and portal
 specifiers and non-registry lockfile resolutions are blocked by the `package-json-registry-only`
-rule in `.no-mistakes.yml`. `npm:` aliases are allowed only to registry specifiers.
+rule in [the rules policy](../../.no-mistakes/rules/policies.yml). `npm:` aliases are allowed only to registry specifiers.

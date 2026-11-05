@@ -2,7 +2,7 @@
  * dependency-cruiser configuration for backend/
  *
  * Backend source must stay acyclic so entrypoints remain easy to reason about.
- * Entrypoint npm-module restrictions live in .no-mistakes.yml
+ * Entrypoint npm-module restrictions live in .no-mistakes/rules/policies.yml
  * (forbidden-dependencies / forbidden-workspace-closure) because pnpm store
  * realpaths defeat node_modules-path regexes here.
  *
@@ -16,7 +16,7 @@
  * `<pkg>/node_modules/...`, breaking the `^backend/...` path regexes in
  * package-boundaries.cjs and data-stores-*.cjs and fragmenting the
  * `no-circular` graph. That invariant is instead enforced by the
- * `production-dependency-declarations` rule in .no-mistakes.yml, which
+ * `production-dependency-declarations` rule in .no-mistakes/rules/policies.yml, which
  * resolves declarations directly against each package's package.json.
  *
  * `no-circular`, `not-to-unresolvable`, and `no-non-package-json` are copied

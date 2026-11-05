@@ -14,5 +14,5 @@ package's boundaries live in its nearest `AGENTS.md`, starting from [AGENTS.md](
 - The pnpm workspace graph is the single source of truth for dependencies. `knip` and per-workspace
   typechecking enforce that declared dependencies stay resolvable and used. Per-entrypoint deploy
   closures and heavy-module isolation are enforced by the `forbidden-dependencies` and
-  `forbidden-workspace-closure` rules in [`.no-mistakes.yml`](../../.no-mistakes.yml).
+  `forbidden-workspace-closure` rules in [`.no-mistakes/rules/policies.yml`](../../.no-mistakes/rules/policies.yml).
 - Local commands: [tests.md](tests.md). CI: [ci.md](ci.md).
