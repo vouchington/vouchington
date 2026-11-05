@@ -1,10 +1,13 @@
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { v7 } from 'uuid'
 
 import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 
 import { createDeviceAndSessionTokens, isSessionRevoked } from '@services/jwt-session'
+import { sessionValkeyClient } from '@data-stores/valkey/clients'
+import { getJwtRevokedKey } from '@services/jwt-session/constants'
+import { sentryCaptureExceptionMock } from '../../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { useRouteRateLimitConfigSnapshot } from '@voucha/test-helpers/api/route-rate-limit-config-snapshot'
@@ -67,6 +70,43 @@ describe('/api/v1/session - request contract validation', () => {
   })
 
   describe('DELETE /api/v1/session', () => {
+    it('clears cookies and reports a failed revocation marker while preserving durable logout', async () => {
+      const { id: userId } = await createTestUserDirect()
+      const sid = v7()
+      const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
+        uid: userId,
+        did: v7(),
+        sid,
+      })
+      const failure = new Error('session revocation marker unavailable')
+      const originalSet = sessionValkeyClient.set
+      const set = vi
+        .spyOn(sessionValkeyClient, 'set')
+        .mockImplementation((...args) =>
+          args[0] === getJwtRevokedKey(sid)
+            ? Promise.reject(failure)
+            : originalSet.call(sessionValkeyClient, ...args),
+        )
+      try {
+        const response = await createRequest()
+          .delete('/api/v1/session')
+          .set('Cookie', [`dt=${deviceToken.token}`, `st=${sessionToken.token}`])
+          .send({ invalid: true })
+          .expect(422)
+
+        expect(response.headers['set-cookie']).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining('dt=;'),
+            expect.stringContaining('st=;'),
+          ]),
+        )
+        expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(failure, expect.any(Object))
+        await expect(isSessionRevoked(sid, { userId })).resolves.toBe(true)
+      } finally {
+        set.mockRestore()
+      }
+    })
+
     it('revokes both cookie and body credentials when a selected body is rejected', async () => {
       const { id: userId } = await createTestUserDirect()
       const cookiePair = await createDeviceAndSessionTokens({ uid: userId, did: v7(), sid: v7() })
