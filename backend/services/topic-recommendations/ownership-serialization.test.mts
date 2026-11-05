@@ -13,7 +13,7 @@ import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TopicRecommendationPost } from './types.mts'
 import { prepareTopicRecommendation } from './create-topic-recommendation.mts'
-import { approveTopicRecommendation } from './approve-topic-recommendation.mts'
+import { approveTopicRecommendationInTransaction } from './approve-topic-recommendation.mts'
 import {
   addAdditionalHostname,
   removeAdditionalHostname,
@@ -68,9 +68,12 @@ describe('hostname ownership serialization against approval', () => {
     async operation => {
       if (operation === 'remove') await addAdditionalHostname(otherTopic.id, hostname, admin.id)
       await using holder = await beginTransaction()
-      const approved = await approveTopicRecommendation(admin, WEB_PROVENANCE, recommendation, {
-        query: holder,
-      })
+      const approved = await approveTopicRecommendationInTransaction(
+        admin,
+        WEB_PROVENANCE,
+        recommendation.id,
+        { query: holder },
+      )
       const settled = await withApprovalHostnameWait(holder, hostnameId, () =>
         (operation === 'add'
           ? addAdditionalHostname(otherTopic.id, hostname, admin.id)
@@ -86,7 +89,7 @@ describe('hostname ownership serialization against approval', () => {
       )
       const relations = await getEntityRelations(
         'topic',
-        approved.topic_id,
+        approved.topic.id,
         'landing_page',
         'url',
         { viewer: { kind: 'anonymous' } },
@@ -99,9 +102,12 @@ describe('hostname ownership serialization against approval', () => {
     'serializes %s linking and preserves coexistence',
     async kind => {
       await using holder = await beginTransaction()
-      const approved = await approveTopicRecommendation(admin, WEB_PROVENANCE, recommendation, {
-        query: holder,
-      })
+      const approved = await approveTopicRecommendationInTransaction(
+        admin,
+        WEB_PROVENANCE,
+        recommendation.id,
+        { query: holder },
+      )
       const link = kind === 'primary' ? setTopicHostnameLink : linkHostnameToSourceTopic
       await withApprovalHostnameWait(holder, hostnameId, () => link(otherTopic.id, hostnameId))
       expect((await getTopicByAny(otherTopic.id))?.hostname_id).toBe(hostnameId)
@@ -110,7 +116,7 @@ describe('hostname ownership serialization against approval', () => {
       )
       expect(
         (
-          await getEntityRelations('topic', approved.topic_id, 'landing_page', 'url', {
+          await getEntityRelations('topic', approved.topic.id, 'landing_page', 'url', {
             viewer: { kind: 'anonymous' },
           })
         ).map(row => row.object_id),
@@ -120,9 +126,12 @@ describe('hostname ownership serialization against approval', () => {
 
   it('serializes existing-id public promotion without changing the landing-page claim', async () => {
     await using holder = await beginTransaction()
-    const approved = await approveTopicRecommendation(admin, WEB_PROVENANCE, recommendation, {
-      query: holder,
-    })
+    const approved = await approveTopicRecommendationInTransaction(
+      admin,
+      WEB_PROVENANCE,
+      recommendation.id,
+      { query: holder },
+    )
     const pending = await withApprovalHostnameWait(holder, hostnameId, () =>
       upsertUrlHostnames(admin.id, [hostname]),
     )
@@ -130,7 +139,7 @@ describe('hostname ownership serialization against approval', () => {
     expect((await getUrlHostnameByAny(hostname))?.publicly_introduced_at).toBeInstanceOf(Date)
     expect(
       (
-        await getEntityRelations('topic', approved.topic_id, 'landing_page', 'url', {
+        await getEntityRelations('topic', approved.topic.id, 'landing_page', 'url', {
           viewer: { kind: 'anonymous' },
         })
       ).map(row => row.object_id),
@@ -150,14 +159,14 @@ describe('hostname ownership serialization against approval', () => {
         await softDeleteEntityRelation(admin, landing, otherTopic, [{ id: urlId }])
       }
       await using holder = await beginTransaction()
-      const approved = await approveTopicRecommendation(admin, WEB_PROVENANCE, recommendation, {
-        query: holder,
-      })
+      const approved = await approveTopicRecommendationInTransaction(
+        admin,
+        WEB_PROVENANCE,
+        recommendation.id,
+        { query: holder },
+      )
       const pid = await getTestPostgresBackendProcessId(holder)
-      const subject =
-        operation === 'delete'
-          ? (await getTopicByAny(approved.topic_id, { query: holder }))!
-          : otherTopic
+      const subject = operation === 'delete' ? approved.topic : otherTopic
       const pending =
         operation === 'delete'
           ? await withTestOwnedPostgresWait(

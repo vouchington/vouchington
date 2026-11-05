@@ -17,7 +17,7 @@ import { getTopicByAny } from '@services/topics/get'
 import { createSourceWithRetry } from '../rss-feeds/create-source-helpers.mts'
 import { createInstanceInTransaction } from '../fediverse-instances/create-instance-helpers.mts'
 import { prepareTopicRecommendation } from './create-topic-recommendation.mts'
-import { approveTopicRecommendation } from './approve-topic-recommendation.mts'
+import { approveTopicRecommendationInTransaction } from './approve-topic-recommendation.mts'
 
 describe('source creation serializes hostname ownership before aliases', () => {
   it.each(['rss', 'fediverse'] as const)(
@@ -43,9 +43,12 @@ describe('source creation serializes hostname ownership before aliases', () => {
         },
       )
       await using holder = await beginTransaction()
-      const approved = await approveTopicRecommendation(admin, WEB_PROVENANCE, recommendation, {
-        query: holder,
-      })
+      const approved = await approveTopicRecommendationInTransaction(
+        admin,
+        WEB_PROVENANCE,
+        recommendation.id,
+        { query: holder },
+      )
       const pid = await getTestPostgresBackendProcessId(holder)
       const lockKey = await getFirstTestHostnameOwnershipLockKey(holder, hostnameId)
       const result = await withTestOwnedPostgresWait(
@@ -87,7 +90,7 @@ describe('source creation serializes hostname ownership before aliases', () => {
       expect(result).not.toBeNull()
       if (!result) throw new Error('Source creation failed')
       expect(await getTopicByAny(result.topicId)).toMatchObject({ hostname_id: hostnameId })
-      expect(await getActiveLandingPageHostnameClaims([hostnameId])).toContain(approved.topic_id)
+      expect(await getActiveLandingPageHostnameClaims([hostnameId])).toContain(approved.topic.id)
     },
   )
 })
