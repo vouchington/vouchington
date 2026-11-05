@@ -1,3 +1,4 @@
+import { seedCommunityAgentPromptPages } from './community-agent-prompt-pages.mts'
 import { seedCommunityMembershipCaps } from './community-membership-caps.mts'
 import { seedPrivateSearchCommunity } from './community-search-exclusions.mts'
 import {
@@ -18,6 +19,7 @@ import { seedModerationSummaryRecipient } from './view-driven-reads.mts'
 
 export async function seedCommunitySearchFixtures() {
   await seedCommunityMembershipCaps()
+  await seedCommunityAgentPromptPages()
   await seedCommunities(5, 200)
   await seedRemovedCommunityMemberNoise()
   await seedModerationSummaryRecipient()

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunityAgentPromptsPanel } from '@/components/communities/community-agent-prompts-panel'
+import type { CommunityAgentPromptsResponseBody } from '@/types/api-responses'
 import type { CommunityAgentPrompt } from '@/lib/api/client/community-agent-prompts'
 import {
   clearStoryMutationFixture,
@@ -9,6 +10,8 @@ import {
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { StoryFrame } from '@/storybook/story-frame'
+
+const pageInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
 
 const meta = {
   title: 'Communities/Community Agent Prompts Panel',
@@ -43,9 +46,11 @@ const prompt: CommunityAgentPrompt = {
 function PromptPanelPreview({
   communitySlug,
   prompts: initialPrompts,
+  pageInfo,
 }: {
   communitySlug: string
   prompts: CommunityAgentPrompt[]
+  pageInfo: CommunityAgentPromptsResponseBody['page_info']
 }) {
   const [prompts, setPrompts] = useState(initialPrompts)
   return (
@@ -53,6 +58,7 @@ function PromptPanelPreview({
       <CommunityAgentPromptsPanel
         communitySlug={communitySlug}
         prompts={prompts}
+        pageInfo={pageInfo}
         onPromptCreated={created => {
           setPrompts(current =>
             current.some(item => item.id === created.id) ? current : [...current, created],
@@ -71,11 +77,20 @@ function PromptPanelPreview({
 }
 
 export const WithPrompt: Story = {
-  args: { communitySlug: communities[0]!.slug, prompts: [prompt] },
+  args: { pageInfo, communitySlug: communities[0]!.slug, prompts: [prompt] },
   render: args => <PromptPanelPreview {...args} />,
 }
 
 export const Empty: Story = {
-  args: { communitySlug: communities[0]!.slug, prompts: [] },
+  args: { pageInfo, communitySlug: communities[0]!.slug, prompts: [] },
+  render: args => <PromptPanelPreview {...args} />,
+}
+
+export const WithContinuation: Story = {
+  args: {
+    communitySlug: communities[0]!.slug,
+    prompts: [prompt],
+    pageInfo: { has_next_page: true, start_cursor: 'first-start', end_cursor: 'first-end' },
+  },
   render: args => <PromptPanelPreview {...args} />,
 }

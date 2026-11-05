@@ -3059,7 +3059,7 @@
     },
     "web.communities.agent-prompts.default": {
       "fixtureIds": ["web.communities.agent-prompts.default"],
-      "hash": "c0e19de0a1437c59a37da07c982d6ba344c1c4a726914e80f1834756b0811ec7"
+      "hash": "cc11a752b66e690b87936920bb452445b372f413005164c23c7f1126912a8a08"
     },
     "web.communities.agent-prompts.history.default": {
       "fixtureIds": ["web.communities.agent-prompts.history.default"],

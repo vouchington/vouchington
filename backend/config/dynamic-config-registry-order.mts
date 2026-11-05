@@ -11,6 +11,7 @@ export const REGISTRY_ORDER = [
   'post-content-limits-config',
   'community-membership-limits-config',
   'landing-page-limits-config',
+  'community-agent-prompts-config',
   'post-related-url-display-config',
   'story-related-items-config',
   'rate-limit-thresholds',

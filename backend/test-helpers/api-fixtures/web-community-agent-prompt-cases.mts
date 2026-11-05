@@ -1,4 +1,4 @@
-import { community, communityAiAgent, timestamp, user } from './web-community-data.mts'
+import { community, communityAiAgent, pageInfo, timestamp, user } from './web-community-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 export const webCommunityAgentPromptApiFixtureCases: ApiFixtureCase[] = [
@@ -45,6 +45,7 @@ export const webCommunityAgentPromptApiFixtureCases: ApiFixtureCase[] = [
           updated_at: timestamp,
         },
       ],
+      page_info: pageInfo,
       slot_info: {
         limit: 3,
         limits_by_plan: { plus: 3, pro: 10 },

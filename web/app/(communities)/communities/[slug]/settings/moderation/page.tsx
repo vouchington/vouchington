@@ -194,7 +194,8 @@ export default async function CommunityModerationPage({ params, searchParams }: 
       )}
       {agentPrompts ? (
         <CommunityAgentPromptsPanel
-          key={community.slug}
+          key={`${community.slug}:${JSON.stringify(agentPrompts)}`}
+          pageInfo={agentPrompts.page_info}
           prompts={agentPrompts.community_agent_prompts}
           communitySlug={community.slug}
         />

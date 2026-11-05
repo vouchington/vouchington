@@ -3,8 +3,16 @@ import {
   getFollowTopicsRecipients,
   getPostReferralLinkRecipients,
 } from '@services/engagement-emails/dispatch-engagement-emails'
+import {
+  COMMUNITY_AGENT_PROMPT_CREATOR_COUNT,
+  COMMUNITY_AGENT_PROMPT_TOTAL_ROWS,
+} from '../community-agent-prompt-page-ids.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+
+const COMMUNITY_AGENT_PROMPT_FIXTURE_USERS =
+  COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + COMMUNITY_AGENT_PROMPT_CREATOR_COUNT
+const GLOBAL_ENGAGEMENT_USER_SCAN_BOUND = 20_100 + COMMUNITY_AGENT_PROMPT_FIXTURE_USERS
 
 export async function runEngagementEmailRecipientScenarios(): Promise<void> {
   const startedAt = new Date()
@@ -18,10 +26,17 @@ export async function runEngagementEmailRecipientScenarios(): Promise<void> {
       // Fairness ranks all eligible users by their last claim; this is a global recipient page.
       expectations: [
         { kind: 'queryBinds', token: 'claimed_at' },
-        { kind: 'maxProcessedRows', relation: 'users', max: 20_100 },
+        {
+          kind: 'maxProcessedRows',
+          relation: 'users',
+          max: GLOBAL_ENGAGEMENT_USER_SCAN_BOUND,
+        },
         { kind: 'maxProcessedRows', relation: 'user_email_addresses', max: 20_100 },
       ],
-      seededRows: { users: 20_100, user_email_addresses: 40_000 },
+      seededRows: {
+        users: GLOBAL_ENGAGEMENT_USER_SCAN_BOUND,
+        user_email_addresses: 40_000,
+      },
     })
     // no-mistakes-disable-next-line query-reached-per-item: three fixed recipient selectors need independent production SQL captures.
     await runAndCapture(id, async () => {

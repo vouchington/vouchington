@@ -1,3 +1,4 @@
+import { assertCommunityAgentPromptCapacity } from './limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -41,6 +42,7 @@ export async function createCommunityAgentPrompt(
   const username = `${community.slug}-agent-${promptId.replace(/-/g, '').slice(-12)}`
 
   await using query = await beginTransaction()
+  await assertCommunityAgentPromptCapacity(currentUserId, communityId, query)
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const { id: userId } = await createAgentSystemUser(username, { query })
   const { id: agentId } = await createSystemAgent(userId, 'moderator', currentUserId, { query })

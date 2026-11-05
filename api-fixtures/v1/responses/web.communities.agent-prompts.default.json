@@ -17,6 +17,11 @@
       "updated_at": "2026-01-01T00:00:00Z"
     }
   ],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
   "slot_info": {
     "limit": 3,
     "limits_by_plan": {

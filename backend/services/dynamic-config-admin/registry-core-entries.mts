@@ -1,3 +1,4 @@
+import { communityAgentPromptsRegistryEntry } from './registry-community-agent-prompts-entry.mts'
 import { appAttestationConfig } from '@services/app-attestation/config'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import { turnstileConfig } from '@services/captcha/config'
@@ -17,6 +18,7 @@ import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { validateRequestSigningModeConfig } from './product-config-validators.mts'
 export const coreDynamicConfigRegistryEntries = [
   communityMembershipLimitsRegistryEntry,
+  communityAgentPromptsRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'request-client-info',
     label: 'Request Client Information',
@@ -40,8 +42,7 @@ export const coreDynamicConfigRegistryEntries = [
           'Require a verified App Attest assertion to bypass Turnstile on gated endpoints. When false, attestation is accepted but not required.',
       },
       allow_development_attestation: {
-        description:
-          'Accept attestations created in the DCAppAttestService development environment (debug/TestFlight builds). Disable in production.',
+        description: 'Accept debug/TestFlight App Attest attestations. Disable in production.',
       },
       request_signing_mode: {
         description:

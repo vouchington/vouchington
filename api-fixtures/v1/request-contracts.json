@@ -13574,6 +13574,41 @@
       ],
       "type": "object"
     },
+    "CommunityAgentPromptsPage": {
+      "additionalProperties": false,
+      "properties": {
+        "community_agent_prompts": {
+          "items": {
+            "$ref": "#/components/schemas/CommunityAgentPrompt"
+          },
+          "type": "array"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
+        "slot_info": {
+          "additionalProperties": false,
+          "properties": {
+            "limit": {
+              "type": "number"
+            },
+            "limits_by_plan": {
+              "$ref": "#/components/schemas/Record_MembershipPlanSlug_number"
+            },
+            "remaining": {
+              "type": "number"
+            },
+            "used": {
+              "type": "number"
+            }
+          },
+          "required": ["limit", "limits_by_plan", "remaining", "used"],
+          "type": "object"
+        }
+      },
+      "required": ["community_agent_prompts", "page_info", "slot_info"],
+      "type": "object"
+    },
     "CommunityAiAgentEntitlement": {
       "additionalProperties": false,
       "properties": {
@@ -42492,6 +42527,20 @@
         },
         "required": ["idOrSlug"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/communities/:idOrSlug/agent-prompts/:promptId": {
@@ -51875,6 +51924,9 @@
     },
     "GET:/api/v1/communities": {
       "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/agent-prompts": {
+      "$ref": "#/components/schemas/CommunityAgentPromptsPage"
     },
     "GET:/api/v1/communities/:idOrSlug/agent-prompts/history": {
       "$ref": "#/components/schemas/ListCommunityAgentPromptHistoryResult"

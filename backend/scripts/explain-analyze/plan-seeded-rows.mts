@@ -1,23 +1,19 @@
+import * as prompt from './community-agent-prompt-page-ids.mts'
 import { UPLOAD_CLEANUP_TOTAL_ROWS } from './seed-data/upload-cleanup-cohort.mts'
 import { LANDING_PAGE_REVIEW_COUNT } from './seed-data/landing-page-candidates.mts'
 import { FOLLOWER_DISTRIBUTION_SEED_COUNT } from './seed-data/common.mts'
 import { REPORT_CONTEXT_SEED_ROW_COUNT } from './seed-data/moderation-report-context-counts.mts'
-import {
-  INGESTION_ACCOUNT_ROW_COUNT,
-  INGESTION_BEDROCK_ROW_COUNT,
-} from './seed-data/ingestion-raw-pages.mts'
-import {
-  AGENT_MODERATION_RETENTION_RELEASED_NOISE,
-  AGENT_MODERATION_RETENTION_ROWS,
-} from './seed-data/agent-moderation-retention.mts'
+import * as ingestion from './seed-data/ingestion-raw-pages.mts'
+import * as retention from './seed-data/agent-moderation-retention.mts'
 import { PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS } from './seed-data/copyright-case-purge-volume.mts'
 import * as claimantMisuse from './seed-data/claimant-misuse-windows.mts'
 
-// Ancillary relations have no dedicated EXPLAIN seed count; refresh this bound if fixtures grow.
+// Seed counts include conservative bounds for ancillary fixtures.
 const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   url_hostname_cache_invalidation_work_items: 20_000,
-  users: 20_005,
+  users:
+    20_005 + prompt.COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + prompt.COMMUNITY_AGENT_PROMPT_CREATOR_COUNT,
   follower_distributions: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   user_email_addresses: 40_000,
@@ -28,9 +24,9 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   spending_entries: 20_000,
   individual_rewards_program_statuses: 10_000,
   posts: 102_021 + LANDING_PAGE_REVIEW_COUNT,
-  agent_moderations: AGENT_MODERATION_RETENTION_ROWS,
+  agent_moderations: retention.AGENT_MODERATION_RETENTION_ROWS,
   moderation_transparency_released_daily_rollups:
-    AGENT_MODERATION_RETENTION_RELEASED_NOISE + ANCILLARY_SEED_ROW_UPPER_BOUND,
+    retention.AGENT_MODERATION_RETENTION_RELEASED_NOISE + ANCILLARY_SEED_ROW_UPPER_BOUND,
   post_feed_shares: 4_064,
   user_topic_import_attempts: 25_001,
   url_hostnames: 4_017, // Existing 2000 hosts, 11 policy flags and 2006 crawl-sweep hosts.
@@ -59,19 +55,22 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   topic_aliases: 2_757,
   user_profile_links: 3_000,
   community_post_reviews: 2_050,
-  community_agent_prompts: 4,
-  agent_prompts: 4,
+  community_agent_prompts: prompt.COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + 4,
+  agent_prompts: prompt.COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + 4,
   user_lists: 3,
   user_list_posts: 1_080,
   oauth_authorizations: 3,
-  communities: 21_261,
+  communities: 21_261 + 1 + prompt.COMMUNITY_AGENT_PROMPT_NOISE_COMMUNITIES,
   community_search_counts: 21_261,
   community_list_topics: 1,
-  community_members: 13_199,
-  facebook_accounts: INGESTION_ACCOUNT_ROW_COUNT + 2,
-  x_accounts: INGESTION_ACCOUNT_ROW_COUNT,
-  github_accounts: INGESTION_ACCOUNT_ROW_COUNT,
-  bedrock_embedding_batches: INGESTION_BEDROCK_ROW_COUNT,
+  community_members:
+    13_199 +
+    prompt.COMMUNITY_AGENT_PROMPT_CREATOR_COUNT +
+    prompt.COMMUNITY_AGENT_PROMPT_NOISE_COMMUNITIES,
+  facebook_accounts: ingestion.INGESTION_ACCOUNT_ROW_COUNT + 2,
+  x_accounts: ingestion.INGESTION_ACCOUNT_ROW_COUNT,
+  github_accounts: ingestion.INGESTION_ACCOUNT_ROW_COUNT,
+  bedrock_embedding_batches: ingestion.INGESTION_BEDROCK_ROW_COUNT,
   facebook_friends: 1,
   hostname_votes: 1,
   households: 100,
@@ -95,7 +94,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   topic_metrics: 5_000,
   user_phone_numbers: 0,
   user_referral_program_links: 1,
-  agents: ANCILLARY_SEED_ROW_UPPER_BOUND,
+  agents: ANCILLARY_SEED_ROW_UPPER_BOUND + prompt.COMMUNITY_AGENT_PROMPT_TOTAL_ROWS,
   apple_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   bluesky_linked_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   classifier_decision_batches: 6_000,
