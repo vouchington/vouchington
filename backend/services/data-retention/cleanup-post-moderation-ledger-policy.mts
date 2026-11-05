@@ -9,6 +9,7 @@ export async function reconsiderPostModerationPolicyRevision(
   batchSize: number,
   currentRevision = POST_MODERATION_POLICY_REVISION,
   postIds?: readonly string[],
+  startAfterId?: string,
 ): Promise<{ hasMore: boolean; processed: boolean }> {
   await query(
     `/* ensurePostModerationPolicyRetentionCursor */
@@ -44,7 +45,8 @@ export async function reconsiderPostModerationPolicyRevision(
   const changed = cursor.observed_policy_revision !== currentRevision
   if (!changed && cursor.policy_sweep_completed_at !== null)
     return { hasMore: false, processed: false }
-  const afterId = changed ? ZERO_UUID : (cursor.cursor_policy_version_record_id ?? ZERO_UUID)
+  const afterId =
+    startAfterId ?? (changed ? ZERO_UUID : (cursor.cursor_policy_version_record_id ?? ZERO_UUID))
   const page = await reconsiderPostModerationPolicyRevisionPage(query, batchSize, afterId, postIds)
   await query(
     `/* checkpointPostModerationPolicyRetentionCursor */
@@ -65,7 +67,7 @@ export async function reconsiderPostModerationPolicyRevision(
 }
 
 /** The same bounded revision page used by the durable dispatcher. */
-export async function reconsiderPostModerationPolicyRevisionPage(
+async function reconsiderPostModerationPolicyRevisionPage(
   query: QueryExecutor,
   batchSize: number,
   afterId: string,

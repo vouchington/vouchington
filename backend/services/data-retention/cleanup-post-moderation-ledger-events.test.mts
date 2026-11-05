@@ -19,7 +19,7 @@ import {
 } from '@voucha/test-helpers/post-moderation-retention-progress'
 import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
-import { reconsiderChangedPostModerationPostById } from './cleanup-post-moderation-ledger-hash-work.mts'
+import { reconsiderChangedPostModerationPost } from './cleanup-post-moderation-ledger-hash-work.mts'
 
 async function createPost() {
   const user = await createTestUser()
@@ -72,7 +72,9 @@ describe('post moderation ledger retention events', () => {
       await using query = await beginTransaction()
       await setTestPostModerationRetentionHash(postId, successorHash, query)
       expect(await getTestPostModerationPostWork(postId, query)).not.toBeNull()
-      expect(await reconsiderChangedPostModerationPostById(query, postId, 2)).toMatchObject({
+      expect(
+        await reconsiderChangedPostModerationPost(query, 2, undefined, [postId]),
+      ).toMatchObject({
         processed: true,
       })
       expect((await getTestPostModerationVersionMarkers(oldId, query))?.dueAt).toEqual(at(91))
@@ -123,7 +125,7 @@ describe('post moderation ledger retention events', () => {
     {
       await using query = await beginTransaction()
       await setTestPostModerationRetentionHash(postId, versionHash, query)
-      await reconsiderChangedPostModerationPostById(query, postId, 2)
+      await reconsiderChangedPostModerationPost(query, 2, undefined, [postId])
       expect(await getTestPostModerationDispositionDueAt(dispositionId, query)).toEqual(at(94))
       await query.commit()
     }
@@ -172,18 +174,18 @@ describe('post moderation ledger retention events', () => {
     })
     await using query = await beginTransaction()
     await setTestPostModerationRetentionHash(postId, versionHash, query)
-    expect(await reconsiderChangedPostModerationPostById(query, postId, 1)).toMatchObject({
+    expect(await reconsiderChangedPostModerationPost(query, 1, undefined, [postId])).toMatchObject({
       processed: true,
       hasMore: true,
     })
     expect((await getTestPostModerationPostWork(postId, query))?.cursorDispositionId).toBe(
       dispositionIds[0],
     )
-    expect(await reconsiderChangedPostModerationPostById(query, postId, 1)).toMatchObject({
+    expect(await reconsiderChangedPostModerationPost(query, 1, undefined, [postId])).toMatchObject({
       processed: true,
       hasMore: true,
     })
-    expect(await reconsiderChangedPostModerationPostById(query, postId, 1)).toMatchObject({
+    expect(await reconsiderChangedPostModerationPost(query, 1, undefined, [postId])).toMatchObject({
       processed: true,
     })
     expect(await getTestPostModerationPostWork(postId, query)).toBeNull()

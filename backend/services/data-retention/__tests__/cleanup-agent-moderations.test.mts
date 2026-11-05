@@ -28,7 +28,7 @@ import {
 } from '@voucha/test-helpers/entities/moderation-transparency-rollups'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { reconsiderChangedPostById } from '../cleanup-agent-moderation-hash-work.mts'
+import { reconsiderChangedPost } from '../cleanup-agent-moderation-hash-work.mts'
 import {
   cleanupObsoleteAgentModerations,
   type AgentModerationCleanupContinuation,
@@ -75,7 +75,7 @@ describe('agent moderation retention', () => {
     await setTestPostCurrentModerationInputHashFromResult(fixture.postId, newest)
     {
       await using transaction = await beginTransaction()
-      await reconsiderChangedPostById(transaction, fixture.postId, 10)
+      await reconsiderChangedPost(transaction, 10, [fixture.postId])
       await transaction.commit()
     }
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ deleted: 1 })

@@ -17,7 +17,7 @@ export async function reconsiderChangedPost(
 }
 
 /** Process one owned post's transactional hash-work page. */
-export async function reconsiderChangedPostById(
+async function reconsiderChangedPostById(
   query: QueryExecutor,
   postId: string,
   batchSize: number,

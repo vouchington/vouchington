@@ -26,7 +26,7 @@ export async function reconsiderChangedPostModerationPost(
 }
 
 /** One post and one bounded disposition subpage, under the caller's transaction. */
-export async function reconsiderChangedPostModerationPostById(
+async function reconsiderChangedPostModerationPostById(
   query: QueryExecutor,
   postId: string,
   batchSize: number,
