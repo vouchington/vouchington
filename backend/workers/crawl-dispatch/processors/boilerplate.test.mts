@@ -1,4 +1,3 @@
-/* oxlint-disable vitest/require-top-level-describe -- the shared temp-directory cleanup applies to every focused helper suite in this file. */
 import { afterEach, describe, expect, it } from 'vitest'
 import { extractDomRemovals } from '@jongleberry/vurst-html'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -18,87 +17,89 @@ const INVALID_UTF8_HTML = Buffer.from([0x3c, 0x70, 0x3e, 0xe2, 0x80, 0x3c, 0x2f,
 
 const tempDirs: string[] = []
 
-afterEach(async () => {
-  await Promise.all(
-    tempDirs.splice(0).map(tempDir => rm(tempDir, { recursive: true, force: true })),
-  )
-})
+describe('boilerplate HTML helpers', () => {
+  afterEach(async () => {
+    await Promise.all(
+      tempDirs.splice(0).map(tempDir => rm(tempDir, { recursive: true, force: true })),
+    )
+  })
 
-describe('filterValidUtf8HtmlFiles', () => {
-  it('propagates an unreadable file instead of treating it as malformed UTF-8', async () => {
-    const [file] = await createArtifacts([VALID_HTML_A])
-    await rm(file!.filePath)
+  describe('filterValidUtf8HtmlFiles', () => {
+    it('propagates an unreadable file instead of treating it as malformed UTF-8', async () => {
+      const [file] = await createArtifacts([VALID_HTML_A])
+      await rm(file!.filePath)
 
-    await expect(filterValidUtf8HtmlFiles([file!])).rejects.toMatchObject({
-      code: 'ENOENT',
-      path: file!.filePath,
+      await expect(filterValidUtf8HtmlFiles([file!])).rejects.toMatchObject({
+        code: 'ENOENT',
+        path: file!.filePath,
+      })
+    })
+
+    it('keeps only files that are valid UTF-8', async () => {
+      const files = await createArtifacts([VALID_HTML_A, INVALID_UTF8_HTML, VALID_HTML_B])
+      expect(await filterValidUtf8HtmlFiles(files)).toEqual([files[0], files[2]])
+    })
+
+    it('returns an empty array when every file is invalid', async () => {
+      expect(await filterValidUtf8HtmlFiles(await createArtifacts([INVALID_UTF8_HTML]))).toEqual([])
+    })
+
+    it('handles a valid multi-byte sequence split across read chunks', async () => {
+      const prefix = Buffer.alloc(64 * 1024 - 1, 'a')
+      const files = await createArtifacts([Buffer.concat([prefix, Buffer.from('é')])])
+      expect(await filterValidUtf8HtmlFiles(files)).toEqual(files)
     })
   })
 
-  it('keeps only files that are valid UTF-8', async () => {
-    const files = await createArtifacts([VALID_HTML_A, INVALID_UTF8_HTML, VALID_HTML_B])
-    expect(await filterValidUtf8HtmlFiles(files)).toEqual([files[0], files[2]])
+  describe('extractDomRemovals invalid-UTF-8 regression (BACKEND-KG)', () => {
+    it('succeeds once filterValidUtf8HtmlFiles removes the invalid page first', async () => {
+      const filtered = await filterValidUtf8HtmlFiles(
+        await createArtifacts([VALID_HTML_A, INVALID_UTF8_HTML, VALID_HTML_B]),
+      )
+      const pages = await Promise.all(filtered.map(file => readFile(file.filePath)))
+      await expect(extractDomRemovals(pages)).resolves.toEqual(
+        expect.objectContaining({
+          cssSelectorsToRemove: expect.any(Array),
+          htmlToRemove: expect.any(Array),
+        }),
+      )
+    })
   })
 
-  it('returns an empty array when every file is invalid', async () => {
-    expect(await filterValidUtf8HtmlFiles(await createArtifacts([INVALID_UTF8_HTML]))).toEqual([])
+  describe('selectHtmlFilesWithinByteBudget', () => {
+    it('keeps every page when the total is within budget', () => {
+      const files = [createArtifact(10), createArtifact(20)]
+      expect(selectHtmlFilesWithinByteBudget(files, 100)).toEqual([files[0], files[1]])
+    })
+
+    it('drops the largest pages first to stay within budget, smallest first', () => {
+      const small = createArtifact(10)
+      const medium = createArtifact(20)
+      const large = createArtifact(80)
+      expect(selectHtmlFilesWithinByteBudget([large, small, medium], 30)).toEqual([small, medium])
+    })
+
+    it('returns an empty array when even the smallest page exceeds budget', () => {
+      expect(selectHtmlFilesWithinByteBudget([createArtifact(50)], 10)).toEqual([])
+    })
   })
 
-  it('handles a valid multi-byte sequence split across read chunks', async () => {
-    const prefix = Buffer.alloc(64 * 1024 - 1, 'a')
-    const files = await createArtifacts([Buffer.concat([prefix, Buffer.from('é')])])
-    expect(await filterValidUtf8HtmlFiles(files)).toEqual(files)
-  })
-})
+  describe('extractDomRemovals oversized-combined-input regression (BACKEND-KA)', () => {
+    it('selectHtmlFilesWithinByteBudget trims the batch so the combined size fits', () => {
+      const oversized = [createArtifact(6 * 1024 * 1024), createArtifact(6 * 1024 * 1024)]
+      const budgeted = selectHtmlFilesWithinByteBudget(oversized)
 
-describe('extractDomRemovals invalid-UTF-8 regression (BACKEND-KG)', () => {
-  it('succeeds once filterValidUtf8HtmlFiles removes the invalid page first', async () => {
-    const filtered = await filterValidUtf8HtmlFiles(
-      await createArtifacts([VALID_HTML_A, INVALID_UTF8_HTML, VALID_HTML_B]),
-    )
-    const pages = await Promise.all(filtered.map(file => readFile(file.filePath)))
-    await expect(extractDomRemovals(pages)).resolves.toEqual(
-      expect.objectContaining({
-        cssSelectorsToRemove: expect.any(Array),
-        htmlToRemove: expect.any(Array),
-      }),
-    )
-  })
-})
+      expect(budgeted).toHaveLength(1)
+      expect(budgeted[0]).toBe(oversized[0])
+    })
 
-describe('selectHtmlFilesWithinByteBudget', () => {
-  it('keeps every page when the total is within budget', () => {
-    const files = [createArtifact(10), createArtifact(20)]
-    expect(selectHtmlFilesWithinByteBudget(files, 100)).toEqual([files[0], files[1]])
-  })
-
-  it('drops the largest pages first to stay within budget, smallest first', () => {
-    const small = createArtifact(10)
-    const medium = createArtifact(20)
-    const large = createArtifact(80)
-    expect(selectHtmlFilesWithinByteBudget([large, small, medium], 30)).toEqual([small, medium])
-  })
-
-  it('returns an empty array when even the smallest page exceeds budget', () => {
-    expect(selectHtmlFilesWithinByteBudget([createArtifact(50)], 10)).toEqual([])
-  })
-})
-
-describe('extractDomRemovals oversized-combined-input regression (BACKEND-KA)', () => {
-  it('selectHtmlFilesWithinByteBudget trims the batch so the combined size fits', () => {
-    const oversized = [createArtifact(6 * 1024 * 1024), createArtifact(6 * 1024 * 1024)]
-    const budgeted = selectHtmlFilesWithinByteBudget(oversized)
-
-    expect(budgeted).toHaveLength(1)
-    expect(budgeted[0]).toBe(oversized[0])
-  })
-
-  it('succeeds once the trimmed batch still has at least 2 pages', async () => {
-    const withinBudget = [createArtifact(3), createArtifact(3), createArtifact(6)]
-    const budgeted = selectHtmlFilesWithinByteBudget(withinBudget, 10)
-    expect(budgeted).toHaveLength(2)
-    expect(budgeted[0]).toBe(withinBudget[0])
-    expect(budgeted[1]).toBe(withinBudget[1])
+    it('succeeds once the trimmed batch still has at least 2 pages', async () => {
+      const withinBudget = [createArtifact(3), createArtifact(3), createArtifact(6)]
+      const budgeted = selectHtmlFilesWithinByteBudget(withinBudget, 10)
+      expect(budgeted).toHaveLength(2)
+      expect(budgeted[0]).toBe(withinBudget[0])
+      expect(budgeted[1]).toBe(withinBudget[1])
+    })
   })
 })
 
