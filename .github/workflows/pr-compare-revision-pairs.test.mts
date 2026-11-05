@@ -1,3 +1,4 @@
+import { gitSubcommandPattern, shellLogicalLines } from '../../ci/workflow-shell-policy.mts'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -6,9 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   assertNoWorkflowViolations,
-  gitSubcommandPattern,
   requiredNamedStep,
-  shellLogicalLines,
   type WorkflowJob,
   type WorkflowStep,
 } from '../test-helpers/workflow-fixtures.mts'

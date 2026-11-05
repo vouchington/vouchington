@@ -1,3 +1,4 @@
+import { shellLogicalLines, workflowHasTrigger } from '../../ci/workflow-shell-policy.mts'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -9,9 +10,7 @@ import {
   requiredNamedStep,
   requiredStepIf,
   requiredStepRun,
-  shellLogicalLines,
   workflowHasMainPushTrigger,
-  workflowHasTrigger,
   workflowPushMatchesBranch,
   workflowRunSubscriptions,
   workflowTriggerNames,
