@@ -3,7 +3,12 @@ import { parse } from 'yaml'
 import { describe, expect, it } from 'vitest'
 import { privilegedWorkflowViolations } from '../../ci/workflow-safety-policy.mts'
 
-type Step = { uses?: string; run?: string; with?: Record<string, unknown> }
+type Step = {
+  uses?: string
+  run?: string
+  with?: Record<string, unknown>
+  'timeout-minutes'?: number
+}
 type Job = {
   if?: string
   env?: Record<string, string>
@@ -53,14 +58,24 @@ describe('merge-queue ejection workflow', () => {
     )
   })
 
-  it('never checks out, installs, or executes pull-request content', () => {
-    const checkouts = jobs.flatMap(([, job]) =>
-      (job.steps ?? []).filter(step => step.uses?.startsWith('actions/checkout@')),
+  it('checks out only trusted workflow content and never executes pull-request content', () => {
+    const checkouts = jobs.flatMap(([name, job]) =>
+      (job.steps ?? [])
+        .filter(step => step.uses?.startsWith('actions/checkout@'))
+        .map(step => ({ name, step })),
     )
     expect(checkouts).not.toHaveLength(0)
-    for (const step of checkouts) {
-      expect(step.with).toEqual({ ref: '${{ github.sha }}', 'persist-credentials': false })
+    for (const { step } of checkouts) {
+      expect(step.with).toEqual({
+        ref: '${{ github.sha }}',
+        'persist-credentials': false,
+      })
     }
+    const escalateCheckout = checkouts.find(({ name }) => name === 'escalate')?.step
+    expect(workflow.jobs.escalate?.steps?.at(0)).toBe(escalateCheckout)
+    expect(workflow.jobs.escalate?.steps?.at(-1)?.run).toBe(
+      'source .github/workflows/merge-queue-ejection/escalate.sh',
+    )
     expect(text).not.toMatch(/github\.event\.pull_request\.head\.(?:ref|repo)/u)
     expect(text).not.toMatch(/github\.head_ref|refs\/pull\//u)
   })
@@ -78,7 +93,7 @@ describe('merge-queue ejection workflow', () => {
     for (const [name, job] of jobs) {
       const expected =
         name === 'escalate'
-          ? { actions: 'read', 'pull-requests': 'write' }
+          ? { actions: 'read', contents: 'read', 'pull-requests': 'write' }
           : name === 'comment-session'
             ? { contents: 'read', issues: 'write', 'pull-requests': 'write' }
             : { contents: 'read' }
