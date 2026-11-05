@@ -6,6 +6,8 @@ import { insertTestPost, createTestUser } from '../../../backend/test-helpers/in
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 
 let postId: string
+let cardSlug = ''
+let cardQuery = ''
 let suffix = ''
 
 function waitForPostSaveResponse(page: Page) {
@@ -23,6 +25,15 @@ test.beforeAll(async () => {
     slug: `pw-post-save-${suffix}`,
     createdById: TEST_USER_ID,
     markdown: 'Post save feature test content.',
+    postType: 'discussion',
+  })
+  cardQuery = `savecard${randomSuffix()}`
+  cardSlug = `pw-post-save-card-${cardQuery}`
+  await insertTestPost({
+    title: `Post save card ${cardQuery}`,
+    slug: cardSlug,
+    createdById: TEST_USER_ID,
+    markdown: 'Post save card visibility fixture.',
     postType: 'discussion',
   })
 })
@@ -54,12 +65,17 @@ test.describe('Post Save', () => {
   })
 
   test('card Save button visible for signed-in users, absent for signed-out', async ({ page }) => {
-    await navigateTo(page, '/discussions')
-    await expect(page.getByTestId('post-card-save-button')).toHaveCount(0)
+    const route = `/discussions?sort=new&q=${encodeURIComponent(cardQuery)}`
+    const card = page
+      .getByTestId('post-card-root')
+      .and(page.locator(`[data-post-slug="${cardSlug}"]`))
+    await navigateTo(page, route)
+    await expect(card).toBeVisible()
+    await expect(card.getByTestId('post-card-save-button')).toHaveCount(0)
 
     await loginAsTestUser(page)
-    await navigateTo(page, '/discussions')
-    await expect(page.getByTestId('post-card-save-button').first()).toBeVisible()
+    await navigateTo(page, route)
+    await expect(card.getByTestId('post-card-save-button')).toBeVisible()
   })
 
   test('signed-in user can unsave a post and reload to confirm inactive', async ({ page }) => {

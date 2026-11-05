@@ -3,10 +3,32 @@ import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts
 
 export const POST_SHARE_SPARSE_TARGET_COUNT = 8
 export const POST_SHARE_DENSE_TARGET_COUNT = 1000
-const POST_SHARE_SPARSE_DELIVERIES_PER_TARGET = 8
-const POST_SHARE_DENSE_DELIVERIES_PER_TARGET = 4
+export const POST_SHARE_SPARSE_DELIVERIES_PER_TARGET = 16
+export const POST_SHARE_DENSE_DELIVERIES_PER_TARGET = 4
 export const POST_SHARE_EMPTY_USER_INDEX = 19_999
-const FIRST_TARGET_POST_INDEX = 60_000
+const FIRST_TARGET_POST_INDEX = 0
+const HEAVY_FOLLOW_FIRST_POST_INDEX = 2
+const HEAVY_FOLLOW_POST_COUNT = 1_000
+
+/** Keep repeated share targets in the recent window with positive support for hot ranking. */
+export async function seedPostFeedHotStats(): Promise<void> {
+  const heavyFollowPostIds = Array.from({ length: HEAVY_FOLLOW_POST_COUNT }, (_, index) =>
+    seedUuid(HEAVY_FOLLOW_FIRST_POST_INDEX + index, '05'),
+  )
+  const sharedPostIds = Array.from({ length: POST_SHARE_DENSE_TARGET_COUNT }, (_, index) =>
+    seedUuid(FIRST_TARGET_POST_INDEX + index, '05'),
+  )
+  await using transaction = await beginTransaction()
+  await transaction(
+    `/* seedPostFeedHotStats */
+     UPDATE posts
+     SET votes_score_up = 2, votes_count_up = 2
+     WHERE id = ANY($1::uuid[]) OR id = ANY($2::uuid[])`,
+    [heavyFollowPostIds, sharedPostIds],
+  )
+  await transaction(`/* seedPostFeedHotStats:analyze */ ANALYZE posts`)
+  await transaction.commit()
+}
 
 type PostShareSeedIdentities = {
   recipientIds: readonly [string, string]
@@ -47,6 +69,7 @@ export async function seedPostFeedShares(
   },
 ): Promise<void> {
   console.log('Seeding repeated post feed share targets...')
+  await seedPostFeedHotStats()
   await using transaction = await beginTransaction()
   for (const [recipientIndex, targetCount, deliveriesPerTarget] of [
     [0, POST_SHARE_SPARSE_TARGET_COUNT, POST_SHARE_SPARSE_DELIVERIES_PER_TARGET],
@@ -59,7 +82,10 @@ export async function seedPostFeedShares(
        SELECT $1::uuid, delivery.id, $2::uuid, delivery.post_id, delivery.sort_at
        FROM UNNEST($3::uuid[], $4::uuid[], $5::timestamptz[])
          AS delivery(id, post_id, sort_at)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (recipient_user_id, id) DO UPDATE
+         SET shared_by_id = EXCLUDED.shared_by_id,
+             post_id = EXCLUDED.post_id,
+             sort_at = EXCLUDED.sort_at`,
       [
         identities.recipientIds[recipientIndex],
         identities.sharedById,

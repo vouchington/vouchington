@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
 const HOSTNAME_FIXTURE_COUNT = 500_000
+const HOSTNAME_SEED_BATCH_SIZE = 5_000
 const VOTED_HOSTNAME_COUNT = 5_000
 const PUBLISHER_RELATION_FIXTURE_COUNT = 200_000
 
@@ -85,8 +86,11 @@ export async function seedVoteScoreHostnameFixture(): Promise<void> {
   const seedParentTopicId = seedUuid(500, '04')
   await using transaction = await beginTransaction()
   const query = transaction
-  await query(
-    `/* seedVoteScoreHostnameFixture */
+  // Active-topic triggers run for every row; bound each statement while preserving the full corpus.
+  for (let first = 1; first <= HOSTNAME_FIXTURE_COUNT; first += HOSTNAME_SEED_BATCH_SIZE) {
+    const last = Math.min(first + HOSTNAME_SEED_BATCH_SIZE - 1, HOSTNAME_FIXTURE_COUNT)
+    await query(
+      `/* seedVoteScoreHostnameFixture */
      INSERT INTO url_hostnames
        (id, hostname, publicly_introduced_at, topic_id, votes_score_up, votes_count_up)
      SELECT
@@ -96,10 +100,11 @@ export async function seedVoteScoreHostnameFixture(): Promise<void> {
        CASE WHEN row_number <= $1 THEN $2::uuid ELSE $3::uuid END,
        CASE WHEN row_number <= $1 THEN 1 ELSE 0 END,
        CASE WHEN row_number <= $1 THEN 1 ELSE 0 END
-     FROM generate_series(1, $4::integer) AS rows(row_number)
+     FROM generate_series($4::integer, $5::integer) AS rows(row_number)
      ON CONFLICT DO NOTHING`,
-    [VOTED_HOSTNAME_COUNT, seedTopicId, seedParentTopicId, HOSTNAME_FIXTURE_COUNT],
-  )
+      [VOTED_HOSTNAME_COUNT, seedTopicId, seedParentTopicId, first, last],
+    )
+  }
   await query(`/* seedVoteScoreHostnameFixture:analyze */ ANALYZE url_hostnames`)
   await transaction.commit()
 }
