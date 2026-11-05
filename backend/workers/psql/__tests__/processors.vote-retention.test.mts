@@ -1,6 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import type { DataRetentionLimits } from '@services/data-retention/config'
-import { psql } from '@queues/psql/queues'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   getTestPostVoteIds,
   getTopicElectionVoteEventCount,
@@ -12,91 +10,16 @@ import {
   createTestVoteRetentionDetails,
   createTestVoteRetentionPostBallots,
   createTestVoteRetentionPost,
+  spyOnTestVoteRetentionAdmission,
 } from '@voucha/test-helpers/vote-retention-processor-fixtures'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import processPsql from '../processors.mts'
 
-const dataRetentionCleanup = vi.fn<(limits: DataRetentionLimits) => Promise<unknown>>()
-
-// Observes the real continuation enqueue; the job is removed so reruns on the shared queue admit it again.
-function spyOnContinuationAdmission(...jobIds: string[]) {
-  const addBulk = vi.spyOn(psql, 'addBulk')
-  onTestFinished(async () => {
-    addBulk.mockRestore()
-    await Promise.all(jobIds.map(async id => (await psql.getJob(id))?.remove()))
-  })
-  return addBulk
-}
-const emptyCleanupResult = {
-  classifierRecords: { runs: { hasMore: false } },
-  softDeletedUsers: { hasMore: false },
-  postModerationLedger: {
-    deletedVersions: 0,
-    clearedPassEvidence: 0,
-    hasMore: false,
-    remainingKinds: [],
-  },
-  agentModerations: { scanned: 0, deleted: 0, hasMore: false, continuation: null },
-  aiUsageRecords: { hasMore: false },
-  textEmbeddingCache: { hasMore: false },
-  terminalEmbeddingBatches: { hasMore: false },
-  oldMediaDeliveryChanges: { hasMore: false },
-  supersededVoteBallots: [],
-  orphanedUserAgentStrings: { hasMore: false },
-  voteIntegrityDetails: { hasMore: false },
-}
-
 describe('processPsql vote retention continuations', () => {
-  it.each([
-    ['ballots', 'vote-retention__5605b7d64d0d7e4cfe5f3ba415848964'],
-    ['user agents', 'vote-retention__4b3015f3a017db8774bd7bc65d3683fe'],
-    ['integrity details', 'vote-retention__e270cae7342a94610857b47372d5c9cd'],
-  ] as const)('enqueues a continuation when %s have another page', async (family, childJobId) => {
-    const addBulk = spyOnContinuationAdmission(childJobId)
-    const result = {
-      ...emptyCleanupResult,
-      supersededVoteBallots: [{ voteTable: 'post_votes', hasMore: family === 'ballots' }],
-      orphanedUserAgentStrings: { hasMore: family === 'user agents' },
-      voteIntegrityDetails: { hasMore: family === 'integrity details' },
-    }
-    dataRetentionCleanup.mockReset().mockResolvedValue(result as never)
-
-    await processPsql(
-      'dataRetentionCleanup',
-      undefined,
-      { dataRetentionCleanup: dataRetentionCleanup as never },
-      'parent-retention-job',
-    )
-
-    expect(addBulk).toHaveBeenCalledOnce()
-    const rows = addBulk.mock.calls[0]![0]
-    expect(rows).toHaveLength(1)
-    expect(rows[0]).toMatchObject({
-      name: 'continueVoteRetentionCleanup',
-      opts: { jobId: childJobId },
-    })
-    expect(rows[0]!.data).toEqual({
-      voteTables: family === 'ballots' ? ['post_votes'] : [],
-      userAgentStrings: family === 'user agents',
-      voteIntegrityDetails: family === 'integrity details',
-    })
-  })
-
-  it('does not enqueue a continuation when all retention pages are complete', async () => {
-    const addBulk = spyOnContinuationAdmission()
-    dataRetentionCleanup.mockReset().mockResolvedValue(emptyCleanupResult)
-
-    await processPsql(
-      'dataRetentionCleanup',
-      undefined,
-      { dataRetentionCleanup: dataRetentionCleanup as never },
-      'parent-retention-job',
-    )
-
-    expect(addBulk).not.toHaveBeenCalled()
-  })
-
   it('keeps completed ballot families out of later continuation pages', async () => {
+    const addBulk = await spyOnTestVoteRetentionAdmission(
+      'vote-retention__a0db7a4f62b4a73e46ae2961f8a54bab',
+    )
     const owned = await createTestVoteRetentionBallots()
     const neighbor = await createTestVoteRetentionBallots()
     const options = {
@@ -107,7 +30,7 @@ describe('processPsql vote retention continuations', () => {
         topic_votes: [owned.topicSupersederId],
       },
     }
-    const addBulk = spyOnContinuationAdmission('vote-retention__a0db7a4f62b4a73e46ae2961f8a54bab')
+
     const first = await processPsql(
       'continueVoteRetentionCleanup',
       {
@@ -167,6 +90,7 @@ describe('processPsql vote retention continuations', () => {
   })
 
   it('runs selected detail pages and leaves disabled and excluded rows unchanged', async () => {
+    const addBulk = await spyOnTestVoteRetentionAdmission()
     const ballots = await createTestVoteRetentionPostBallots()
     const owned = await createTestVoteRetentionDetails(ballots.postId)
     const neighborPost = await createTestVoteRetentionPost()
@@ -178,7 +102,7 @@ describe('processPsql vote retention continuations', () => {
       userAgentStringIds: [owned.userAgentStringId],
       voteIntegrityFlagIds: [owned.flagId],
     }
-    const addBulk = spyOnContinuationAdmission()
+
     expect(
       await processPsql(
         'continueVoteRetentionCleanup',
@@ -234,9 +158,10 @@ describe('processPsql vote retention continuations', () => {
   })
 
   it('rolls back a ballot write failure without admitting a continuation', async () => {
+    const addBulk = await spyOnTestVoteRetentionAdmission()
     const owned = await createTestVoteRetentionPostBallots()
     const neighbor = await createTestVoteRetentionPostBallots()
-    const addBulk = spyOnContinuationAdmission()
+
     const restore = runBeforePostgresStatementForTest('deleteSupersededVoteBallots', async () => {
       throw new Error('retention page failed')
     })

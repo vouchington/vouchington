@@ -35,3 +35,19 @@ export async function withClassifierRetentionSweepLock<T>(fn: () => Promise<T>):
     }
   }
 }
+
+/** Serialize an owned, bounded sweep without changing any shared cursor state. */
+export async function withClassifierRetentionSweepLockWithoutReset<T>(
+  fn: () => Promise<T>,
+): Promise<T> {
+  const lock = await acquireTestPostgresAdvisoryLock({
+    namespace: LOCK_NAMESPACE,
+    key: LOCK_KEY,
+    timeout: LOCK_TIMEOUT,
+  })
+  try {
+    return await fn()
+  } finally {
+    await lock.release()
+  }
+}

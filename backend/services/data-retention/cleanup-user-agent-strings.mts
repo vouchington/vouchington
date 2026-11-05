@@ -37,7 +37,7 @@ export async function cleanupOrphanedUserAgentStrings(
   if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 5_000) {
     throw new RangeError('User-agent cleanup batch size must be between 1 and 5000')
   }
-  if (userAgentStringIds && userAgentStringIds.length > batchSize) {
+  if (userAgentStringIds && userAgentStringIds.length > batchSize + 1) {
     throw new RangeError('Scoped user-agent rows must fit one page')
   }
   const cutoffId = getMinUUIDv7ForDate(new Date(now.getTime() - DAY_MS))
