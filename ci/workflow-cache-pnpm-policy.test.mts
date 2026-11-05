@@ -2,11 +2,32 @@ import { describe, expect, it } from 'vitest'
 
 import { cachePathsAreAllowed, workflowCachePnpmViolations } from './workflow-cache-pnpm-policy.mts'
 
-import { action, base, changed, setup, workflow } from './workflow-cache-pnpm-fixtures.mts'
+import {
+  action,
+  base,
+  changed,
+  setup,
+  workflow,
+} from './test-helpers/workflow-cache-pnpm-fixtures.mts'
 
 describe('workflow cache and pnpm policies', () => {
   it('accepts a complete finite workflow fixture', () => {
     expect(workflowCachePnpmViolations(base)).toEqual([])
+  })
+
+  it('requires a setup-node call site in a workflow', () => {
+    const expected = 'Expected at least one actions/setup-node workflow call site'
+    expect(workflowCachePnpmViolations(base)).not.toContain(expected)
+
+    const source = base
+      .get(`${workflow}test.yml`)!
+      .replace(`- uses: actions/setup-node@${'a'.repeat(40)} # v6`, '- name: No setup-node')
+    const withoutWorkflowSetup = changed(`${workflow}test.yml`, source)
+    withoutWorkflowSetup.set(
+      `${action}build-web-targets/action.yml`,
+      `${base.get(`${action}build-web-targets/action.yml`)}    - uses: actions/setup-node@${'a'.repeat(40)} # v6\n`,
+    )
+    expect(workflowCachePnpmViolations(withoutWorkflowSetup)).toContain(expected)
   })
 
   it.each([
