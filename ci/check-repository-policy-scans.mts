@@ -5,10 +5,12 @@ import { checkPostgresOrderingPolicy } from './check-postgres-ordering-policy.mt
 import { checkPrShepherdGuidance } from './check-pr-shepherd-guidance.mts'
 import { checkThinRouteCoverage } from './check-thin-route-coverage.mts'
 import { checkWorkerSecretExemptPaths } from './check-worker-secret-exempt-paths.mts'
+import { checkWorkflowArtifactPolicy } from './check-workflow-artifact-policy.mts'
 
 /** Run live repository policies once in the dedicated static CI job. */
 export async function checkRepositoryPolicyScans(root: string): Promise<void> {
   checkKnipDependencyPolicy(root)
+  checkWorkflowArtifactPolicy(root)
   await checkPostgresOrderingPolicy(root)
 
   const violations = [

@@ -1,13 +1,10 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { isExplicitlyClassified } from '../../ci/cleanup-artifacts-patterns.mts'
 import {
   artifactNameFromBlock,
+  artifactPolicyViolations,
   invalidRetentionBlocks,
   uploadArtifactBlocks,
-} from '../test-helpers/artifact-retention-policy.fixtures.mts'
-import { assertNoWorkflowViolations } from '../test-helpers/workflow-fixtures.mts'
+} from '../../ci/workflow-artifact-policy.mts'
 
 // Generated at runtime (not embedded as a literal) so this fixture ref does not trip
 // no-test-git-sha / test-no-dependency-pins.
@@ -15,28 +12,21 @@ const SYNTHETIC_SHA = '0'.repeat(40)
 const SYNTHETIC_UPLOAD_ARTIFACT_REF = `actions/upload-artifact@${SYNTHETIC_SHA}`
 const SYNTHETIC_WRAPPER_ACTION_REF = `some-org/wrapper-action@${SYNTHETIC_SHA}`
 
-const yamlPaths = [
-  ...readdirSync('.github/workflows').map(file => join('.github/workflows', file)),
-  ...readdirSync('.github/actions', { withFileTypes: true }).flatMap(entry => {
-    if (!entry.isDirectory()) return []
-    const dir = join('.github/actions', entry.name)
-    return readdirSync(dir).flatMap(file => (/^action\.ya?ml$/.test(file) ? [join(dir, file)] : []))
-  }),
-].filter(path => /\.ya?ml$/.test(path))
-
 describe('Artifact retention policy', () => {
-  it('requests one-day retention for every uploaded artifact', () => {
-    const invalid = yamlPaths.flatMap(path =>
-      invalidRetentionBlocks(readFileSync(path, 'utf8')).map(
-        block =>
-          `${path}: invalid retention-days value ${JSON.stringify(block.retentionValue)}\n${block.stepSource}`,
-      ),
-    )
+  it('accepts a classified one-day overwrite upload', () => {
+    const source = `steps:\n  - uses: ${SYNTHETIC_UPLOAD_ARTIFACT_REF}\n    with:\n      name: web-test-report-shard-1\n      overwrite: true\n      retention-days: 1\n`
+    expect(artifactPolicyViolations([{ path: 'fixture.yml', source }])).toEqual([])
+  })
 
-    assertNoWorkflowViolations(
-      invalid,
-      'actions/upload-artifact steps without literal retention-days: 1:',
-    )
+  it('rejects invalid retention from an owned source', () => {
+    expect(
+      artifactPolicyViolations([
+        {
+          path: 'fixture.yml',
+          source: `steps:\n  - uses: ${SYNTHETIC_UPLOAD_ARTIFACT_REF}\n    with:\n      name: web-test-report-shard-1\n      overwrite: true\n      retention-days: 2\n`,
+        },
+      ]).map(violation => violation.split('\n')[0]),
+    ).toEqual(['fixture.yml: invalid retention-days value 2'])
   })
 
   it.each([
@@ -270,29 +260,15 @@ steps: *upload-steps
     expect(invalidRetentionBlocks(source)).toHaveLength(0)
   })
 
-  it('overwrites artifact uploads so full workflow reruns do not collide with stale artifacts', () => {
-    const blocks = yamlPaths.flatMap(path =>
-      uploadArtifactBlocks(readFileSync(path, 'utf8')).map(block => ({ path, block })),
-    )
-
-    expect(blocks.length).toBeGreaterThan(0)
-    const violations = blocks.filter(
-      ({ block }) => block.requiresOverwrite && String(block.overwriteValue) !== 'true',
-    )
-    assertNoWorkflowViolations(
-      violations.map(({ path, block }) => `${path}\n${block.stepSource}`),
-      'actions/upload-artifact steps without overwrite: true:',
-    )
-  })
-
-  it('classifies every uploaded artifact name via the cleanup-artifacts KEEP/DELETE patterns', () => {
-    const names = yamlPaths.flatMap(path =>
-      uploadArtifactBlocks(readFileSync(path, 'utf8')).map(artifactNameFromBlock),
-    )
-
-    expect(names.length).toBeGreaterThan(0)
-    for (const name of names) {
-      expect(isExplicitlyClassified(name)).toBe(true)
-    }
+  it('requires overwrite and an explicit cleanup classification', () => {
+    const source = `steps:\n  - uses: ${SYNTHETIC_UPLOAD_ARTIFACT_REF}\n    with:\n      name: unknown-artifact\n      retention-days: 1\n`
+    expect(
+      artifactPolicyViolations([{ path: 'fixture.yml', source }]).map(
+        violation => violation.split('\n')[0],
+      ),
+    ).toEqual([
+      'fixture.yml: actions/upload-artifact step without overwrite: true',
+      'fixture.yml: unclassified artifact name unknown-artifact',
+    ])
   })
 })
