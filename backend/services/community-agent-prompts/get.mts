@@ -72,8 +72,13 @@ export async function searchCommunityAgentPrompts(
     WHERE cap.community_id = ${communityId}
       AND cap.deleted_at IS NULL
     `
+  // Keep the first page on the same composite seek as continuations.
   if (afterId)
     statement.append(sql`AND (cap.community_id, cap.id) < (${communityId}::uuid, ${afterId}::uuid)`)
+  else
+    statement.append(sql`AND (cap.community_id, cap.id) <= (
+      ${communityId}::uuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid
+    )`)
   statement.append(sql` ORDER BY cap.id DESC LIMIT ${limit + 1}`)
   const { rows } = await read<CommunityAgentPrompt>(statement)
   const results = rows.slice(0, limit)
