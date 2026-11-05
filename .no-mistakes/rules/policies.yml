@@ -4747,6 +4747,13 @@
       - '^matrix\.shard$'
       - '^(?:needs|steps)\.[A-Za-z0-9_-]+\.outputs\.shard-total$'
 
+- name: Actions inline scripts stay short
+  rule: github-actions-max-inline-script-lines
+  scope: repository
+  severity: advisory
+  options:
+    maxLines: 3
+
 - name: no-mistakes globs match tracked files
   rule: no-mistakes-config
   scope: repository
