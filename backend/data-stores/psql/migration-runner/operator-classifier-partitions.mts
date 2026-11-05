@@ -76,7 +76,7 @@ export async function guardAndCreateClassifierResultRange(
   if (range.toDate > nextUtcDay) {
     throw new Error('Classifier result ranges cannot be created ahead of observed data')
   }
-  // ast-grep-ignore: no-three-sequential-awaits -- parent locks consume the local lock budget; the child catalog read consumes their stabilized partition attachment state
+  // ast-grep-ignore: no-three-sequential-awaits -- set transaction lock budget before parent/FK locks; those locks stabilize child attachments for the catalog read
   await query(`/* createClassifierResultRange:lockBudget */ SET LOCAL lock_timeout = '2000ms'`)
   await lockClassifierRangeParentRelations(query)
   const children = await readClassifierChildren(query, range.nameSuffix)

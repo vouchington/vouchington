@@ -70,7 +70,7 @@ async function requestEmailToken(ctx: Context, routeKey: string, native: boolean
   ctx.assert(emailAddress, 422, 'emailAddress is required')
   const rawUiLocale = body.uiLocale ?? body.ui_locale
 
-  // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
+  // ast-grep-ignore: no-three-sequential-awaits -- captcha or attestation rejection must prevent session recovery credential rotation and login-token creation
   await verifyCaptchaOrAttestation(ctx, body, {
     actionTag: 'auth.email-address-tokens',
     fieldNames: ['cf_turnstile_response', 'cfTurnstileResponse'],

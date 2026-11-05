@@ -115,7 +115,7 @@ describe('setup-web-integration', () => {
     expect(webBuildEnv().NEXT_TEST_BUILD).toBe('1')
   })
 
-  it('builds the Cloudflare Worker, then Storybook, before starting the Next build', async () => {
+  it('builds the Cloudflare Worker and Storybook together before starting the Next build', async () => {
     const fs = await import('node:fs')
     const { resolve } = await import('node:path')
     const modulePath = './setup-web-integration.mts?sequential-builds'
@@ -123,8 +123,8 @@ describe('setup-web-integration', () => {
 
     expect(buildEvents).toEqual([
       'start:--dir cloudflare-worker build',
-      'exit:--dir cloudflare-worker build',
       'start:--dir web exec storybook build --output-dir storybook-static --disable-telemetry',
+      'exit:--dir cloudflare-worker build',
       'exit:--dir web exec storybook build --output-dir storybook-static --disable-telemetry',
       'start:--dir web build',
       'exit:--dir web build',

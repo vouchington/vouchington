@@ -85,13 +85,12 @@ async function applyMigrationsInSession(
   await platform.withMigrationSession(async client => {
     const writer: NonNullable<RunConfigDrivenOptions['writer']> = (input, values) =>
       platform.write(input, values, { client })
-    // ast-grep-ignore: no-three-sequential-awaits -- config SQL consumes the migrated tables and types; views consume those configured functions and rows
     await platform.runMigrations(path.resolve(rootDir, 'migrations'), {
       client,
       logger,
     })
     await runConfigDrivenFromFolder(rootDir, { logger, writer })
-    await runPlatformViews({ folder: path.resolve(rootDir, 'views'), forced, logger, writer })
+    return runPlatformViews({ folder: path.resolve(rootDir, 'views'), forced, logger, writer })
   })
 }
 

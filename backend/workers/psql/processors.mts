@@ -150,7 +150,7 @@ export default async function processPsql(
       return processAgentModerationRetentionContinuation(data, options?.agentModeration)
     case 'continueVoteRetentionCleanup': {
       const selection = requireVoteRetentionSelection(data)
-      // ast-grep-ignore: no-three-sequential-awaits -- the cleanup consumes initialized retention limits; its committed page result supplies the continuation cursor.
+      // ast-grep-ignore: no-three-sequential-awaits -- initialization publishes batch_size and max_batches_per_run read by getDataRetentionLimits; the bounded page result supplies the continuation cursor
       await dataRetentionConfig.waitForInitialization()
       const result = await runVoteRetentionCleanupPage(
         getDataRetentionLimits(),

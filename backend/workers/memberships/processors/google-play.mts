@@ -23,17 +23,15 @@ export async function processGooglePlayNotification(data: { evidenceId: string }
 }
 
 export async function recoverGooglePlayNotifications(): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- the durable recovery cursor advances only after the awaited bulk fan-out succeeds
   const batch = await findRecoverableGooglePlayNotificationJobs()
   await enqueueBulkProcessGooglePlayNotifications(batch.notifications)
-  await advanceGooglePlayNotificationRecoveryCursor(batch)
+  return advanceGooglePlayNotificationRecoveryCursor(batch)
 }
 
 export async function recoverGooglePlayActiveSources(): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- the durable recovery cursor advances only after the awaited bulk fan-out succeeds
   const batch = await findRecoverableGooglePlayActiveSourceJobs()
   await enqueueBulkReconcileGooglePlayActiveSources(batch.sourceIds.map(sourceId => ({ sourceId })))
-  await advanceGooglePlayActiveSourceRecoveryCursor(batch)
+  return advanceGooglePlayActiveSourceRecoveryCursor(batch)
 }
 
 export async function processGooglePlayActiveSource(data: { sourceId: string }): Promise<void> {
@@ -51,10 +49,9 @@ export async function processGooglePlayAcknowledgement(data: {
 }
 
 export async function recoverGooglePlayAcknowledgements(): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- the durable recovery cursor advances only after the awaited bulk fan-out succeeds
   const batch = await findDueGooglePlayAcknowledgementIds()
   await enqueueBulkAcknowledgeGooglePlayPurchases(
     batch.acknowledgementIds.map(acknowledgementId => ({ acknowledgementId })),
   )
-  await advanceGooglePlayAcknowledgementRecoveryCursor(batch)
+  return advanceGooglePlayAcknowledgementRecoveryCursor(batch)
 }

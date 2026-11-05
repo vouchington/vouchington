@@ -64,7 +64,7 @@ export async function checkHashtagSearchRssContracts(): Promise<void> {
     visibility: 'public',
   })
   for (let index = 0; index < 3; index++) {
-    // ast-grep-ignore: no-three-sequential-awaits -- each pending post requires its author before review and hashtag source writes
+    // ast-grep-ignore: no-three-sequential-awaits -- the contributor id supplies the post; the post id and author id supply the pending review row
     const contributor = await createTestUser()
     const post = await createTestPost({
       user: contributor!,

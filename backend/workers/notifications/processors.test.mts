@@ -8,6 +8,7 @@ import {
   processReconcileNotificationPushIntents,
   processFollowNotification,
   processMarkAllNotificationsRead,
+  processReferralSignupNotification,
 } from './processors.mts'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { upsertRssFeedItems } from '../../services/rss-feed-items/upsert.mts'
@@ -27,6 +28,7 @@ import {
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { listNotifications } from '@services/notifications/list'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { holdQueueBulkAdmissions } from '@voucha/test-helpers/queue-admission-hold'
 import { background } from '@queues/background/queues'
 import { NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB } from '@queues/background/enqueues/notifications-jobs'
 
@@ -55,6 +57,55 @@ describe('notification read processor ownership', () => {
       last_page_id: owned!.id,
     })
     expect((await listNotifications(neighbor.id)).notifications[foreign!.id]?.read_at).toBeNull()
+  })
+})
+
+describe('processReferralSignupNotification', () => {
+  it('persists the referral and waits for admission of its notification push', async () => {
+    const referrer = await createTestUserDirect()
+    const newUser = await createTestUserDirect()
+    const admission = holdQueueBulkAdmissions(background, [
+      {
+        jobName: NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB.name,
+        matchesData: data =>
+          typeof data === 'object' &&
+          data !== null &&
+          'userId' in data &&
+          data.userId === referrer.id,
+      },
+    ])
+    const hold = admission.holds[0]!
+    let settled = false
+    const operation = processReferralSignupNotification({
+      referrerId: referrer.id,
+      newUserId: newUser.id,
+    }).then(result => {
+      settled = true
+      return result
+    })
+    void operation.catch(() => undefined)
+    try {
+      await hold.entered
+      const page = await listNotifications(referrer.id)
+      const notificationId = page.results[0]!.id
+      expect(page.notifications[notificationId]).toMatchObject({
+        entity_type: 'referral_signup',
+        actor_user_id: newUser.id,
+      })
+      expect(settled).toBe(false)
+      hold.release()
+      await expect(operation).resolves.toBeUndefined()
+      const jobs = await hold.admitted
+      expect(jobs.map(job => job.data)).toContainEqual({
+        userId: referrer.id,
+        notificationId,
+      })
+    } finally {
+      hold.release()
+      await operation.catch(() => undefined)
+      await Promise.all((await hold.admitted.catch(() => [])).map(job => job.remove()))
+      admission.restore()
+    }
   })
 })
 
