@@ -44,13 +44,14 @@ export async function drainOwnedTestAction<T>(
   } finally {
     await finish()
   }
+  // oxlint-disable-next-line react-doctor/async-defer-await -- Settlement must be observed before a cleanup failure is propagated.
+  const [settled] = settlement ? await settlement : []
   if (cleanupErrors.length)
     throw new AggregateError(
       failed ? [primary, ...cleanupErrors] : cleanupErrors,
       'Action and settlement failed',
       { cause: failed ? primary : cleanupErrors[0] },
     )
-  const [settled] = settlement ? await settlement : []
   if (failed || !settled || settled.status === 'rejected') {
     const failure = Promise.withResolvers<T>()
     failure.reject(settled?.status === 'rejected' && !failed ? settled.reason : primary)
