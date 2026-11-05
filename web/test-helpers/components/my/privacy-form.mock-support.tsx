@@ -1,10 +1,10 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- moved test support forwards the component data-pw props the privacy tests query */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
 import type { UserPrivacyAudience } from '@/types/user'
 
-vi.mock(import('@/components/ui/select'), async () => {
-  const { Button } = await import('@/components/ui/button')
+vi.mock(import('@/components/ui/select'), () => {
   return {
     Select: ({
       children,

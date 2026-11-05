@@ -1,6 +1,7 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
 import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { Post } from '@/types/posts'
@@ -75,18 +76,15 @@ vi.mock(import('@/lib/api/client/elections'), () => ({
   submitRssFeedItemVote: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
 }))
 
-vi.mock(import('@/components/shared/hide-button'), async () => {
-  const { Button } = await import('@/components/ui/button')
-  return {
-    HideButton: () => (
-      <Button
-        data-testid='hide-button'
-        type='button'
-        aria-label='Hide news item'
-      />
-    ),
-  }
-})
+vi.mock(import('@/components/shared/hide-button'), () => ({
+  HideButton: () => (
+    <Button
+      data-testid='hide-button'
+      type='button'
+      aria-label='Hide news item'
+    />
+  ),
+}))
 
 vi.mock(
   import('@/components/votes/score-vote'),

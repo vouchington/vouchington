@@ -1,6 +1,7 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import React from 'react'
 import { vi } from 'vitest'
+import { Input } from '@/components/ui/input'
 
 import { CardsManager } from '@/components/my/cards-manager'
 import { createMyCard, deleteMyCard, updateMyCard } from '@/lib/api/client'
@@ -32,21 +33,18 @@ vi.mock(import('@/lib/on-error'), () => ({
   },
 }))
 
-vi.mock(import('@/components/posts/topic-autocomplete'), async () => {
-  const { Input } = await import('@/components/ui/input')
-  return {
-    TopicAutocomplete: ({ value, onChange, placeholder }: any) => (
-      <Input
-        type='text'
-        placeholder={placeholder}
-        aria-label={placeholder ?? 'Topic'}
-        value={value ?? ''}
-        onChange={e => onChange(e.target.value, 'Mocked Card')}
-        data-testid='mock-topic-autocomplete-input'
-      />
-    ),
-  }
-})
+vi.mock(import('@/components/posts/topic-autocomplete'), () => ({
+  TopicAutocomplete: ({ value, onChange, placeholder }: any) => (
+    <Input
+      type='text'
+      placeholder={placeholder}
+      aria-label={placeholder ?? 'Topic'}
+      value={value ?? ''}
+      onChange={e => onChange(e.target.value, 'Mocked Card')}
+      data-testid='mock-topic-autocomplete-input'
+    />
+  ),
+}))
 
 // Render the select UI as a plain <select> so tests drive it with change events
 vi.mock(import('@/components/ui/select'), () => {
@@ -96,8 +94,7 @@ vi.mock(import('@/components/ui/select'), () => {
   } as unknown as typeof import('@/components/ui/select')
 })
 
-vi.mock(import('@/components/ui/checkbox'), async () => {
-  const { Input } = await import('@/components/ui/input')
+vi.mock(import('@/components/ui/checkbox'), () => {
   return {
     Checkbox: ({ checked, onCheckedChange, id }: any) => (
       <Input

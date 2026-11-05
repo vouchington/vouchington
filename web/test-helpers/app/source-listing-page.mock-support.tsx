@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
 
 const { mockGetRssFeeds, mockGetListSearchErrorMessage } = vi.hoisted(() => ({
   mockGetRssFeeds: vi.fn<VitestLooseMock>(),
@@ -67,11 +68,8 @@ vi.mock(import('@/components/shared/list-search-error'), () => ({
   ListSearchError: ({ message }: { message: string }) => <p data-pw='search-error'>{message}</p>,
 }))
 
-vi.mock(import('@/components/sources/add-source-button'), async () => {
-  const { Button } = await import('@/components/ui/button')
-  return {
-    AddSourceButton: () => <Button type='button'>mock-add-source</Button>,
-  }
-})
+vi.mock(import('@/components/sources/add-source-button'), () => ({
+  AddSourceButton: () => <Button type='button'>mock-add-source</Button>,
+}))
 
 export { mockGetListSearchErrorMessage, mockGetRssFeeds }
