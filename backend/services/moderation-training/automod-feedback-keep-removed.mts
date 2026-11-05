@@ -3,7 +3,7 @@ import { recordModeratorAction } from '@services/moderator-actions'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { getAutomodFeedbackContext } from './automod-feedback-context.mts'
 import { parseAutomodActionSourceKey } from './recent-actions.mts'
-import type { RecordAutomodActionFeedbackInput } from './automod-feedback.mts'
+import type { RecordAutomodActionFeedbackInput } from './automod-feedback-input.mts'
 
 type AutomodFeedbackContext = NonNullable<Awaited<ReturnType<typeof getAutomodFeedbackContext>>>
 type ParsedAutomodSource = NonNullable<ReturnType<typeof parseAutomodActionSourceKey>>

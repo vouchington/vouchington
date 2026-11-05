@@ -13,19 +13,7 @@ import { recordModerationTrainingFeedback } from './feedback.mts'
 import { parseAutomodActionSourceKey } from './recent-actions.mts'
 import { applyAutomodReinstate } from './automod-feedback-reinstate.mts'
 import { applyAutomodKeepRemoved } from './automod-feedback-keep-removed.mts'
-
-export type AutomodFeedbackOutcome = 'false_positive' | 'true_positive'
-export type AutomodFeedbackAction = 'reinstate' | 'keep_removed' | 'label_only'
-
-export type RecordAutomodActionFeedbackInput = {
-  communityId: string
-  sourceKey: string
-  actorUserId: string
-  outcome: AutomodFeedbackOutcome
-  action: AutomodFeedbackAction
-  reasonCode?: string | null
-  note?: string | null
-}
+import type { RecordAutomodActionFeedbackInput } from './automod-feedback-input.mts'
 
 export async function recordAutomodActionFeedback(input: RecordAutomodActionFeedbackInput) {
   const parsed = parseAutomodActionSourceKey(input.sourceKey)
