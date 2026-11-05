@@ -91,6 +91,7 @@ async function runCopyrightCaseChildPage(
   const order = cursorColumns.join(', ')
   const reverseOrder = cursorColumns.map(column => `${column} DESC`).join(', ')
   const blocker = COPYRIGHT_CASE_CHILD_BLOCKERS[phase[0]] ?? 'false'
+  // A unique-key probe per page row keeps generic plans from scanning the whole child table.
   const statement = verifyOnly
     ? `/* verifyCopyrightCaseChildPage */
     WITH page AS MATERIALIZED (
@@ -98,8 +99,11 @@ async function runCopyrightCaseChildPage(
       WHERE ${where}${after.clause}
       ORDER BY ${order} LIMIT $${values.length + after.values.length + 1}
     ), checked AS MATERIALIZED (
-      SELECT (${blocker}) AS blocked FROM ${identifier(edge[0])} child
-      JOIN page ON ${join}
+      SELECT checked_row.blocked FROM page
+      CROSS JOIN LATERAL (
+        SELECT (${blocker}) AS blocked FROM ${identifier(edge[0])} child
+        WHERE ${join} LIMIT 1
+      ) checked_row
     ) SELECT (SELECT count(*)::integer FROM page) AS processed,
       COALESCE((SELECT bool_or(blocked) FROM checked), false) AS blocked,
       (SELECT row_to_json(last_row) FROM (
