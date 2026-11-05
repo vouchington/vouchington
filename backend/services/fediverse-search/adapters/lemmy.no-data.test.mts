@@ -1,4 +1,3 @@
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- The .no-data.mock suffix routes this file to backend-no-data-mocks. lemmy-no-data-fixtures.mts registers the undici fetch mock, so this file has no in-file vi.mock. */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Import the fixture before the adapter so its undici mock is installed first.
 import {

@@ -25,6 +25,16 @@ const backendDataStoreTestDefaults = {
   hookTimeout: 5_000,
 }
 
+// These tests use the backend-mocks Sentry setup and data-store bootstrap, but they
+// stub with vi.fn/vi.spyOn rather than vi.mock. The mock-test filename rule forbids
+// a .mock.test suffix, so they are listed explicitly.
+const backendSentrySetupTestFiles = [
+  'backend/services/entity-relations/post-related-url-display-config.test.mts',
+  'backend/services/mcp-tools/call-tool.test.mts',
+  'backend/services/post-content-limits/config.test.mts',
+  'backend/services/recaptcha/assess.test.mts',
+]
+
 const backendMocksProject = {
   extends: true,
   test: {
@@ -35,6 +45,7 @@ const backendMocksProject = {
     runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
     include: [
       'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',
+      ...backendSentrySetupTestFiles,
     ],
     exclude: [
       '**/node_modules/**',
@@ -87,6 +98,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         '**/*.mock.test.mts',
         '**/*.real-glide.test.mts',
         ...backendNoDataUnitTestFiles,
+        ...backendSentrySetupTestFiles,
         '**/*.eval.test.mts',
         '**/*.anthropic*.test.mts',
         '**/*.openai*.test.mts',

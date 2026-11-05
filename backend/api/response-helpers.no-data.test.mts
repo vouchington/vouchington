@@ -1,6 +1,3 @@
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- This test only fakes a local Context
-   object (vi.fn), it does not mock a module; the .no-data.mock suffix is load-bearing because it
-   routes the test to the DB/Valkey-free project (validateRequestContract needs neither). */
 import { describe, expect, it, vi } from 'vitest'
 import { parseJsonBody, validateRequestContract } from './response-helpers.mts'
 

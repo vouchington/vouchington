@@ -1,4 +1,3 @@
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- This checked-in contract test has no external dependency to mock; the .no-data.mock suffix is load-bearing because it routes the test to the DB/Valkey-free project. */
 import { describe, expect, it } from 'vitest'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
 
