@@ -9,10 +9,7 @@ import {
   copyrightTimelineEventTypesFor,
   type CopyrightTimelineAudience,
 } from './timeline-visibility.mts'
-export type {
-  CopyrightParticipantNoticeDetail,
-  CopyrightPublicNoticeDetail,
-} from './read-models-notice-types.mts'
+export type { CopyrightPublicNoticeDetail } from './read-models-notice-types.mts'
 
 export type CopyrightAcceptedNoticeCursorRow = CopyrightPublicNotice & {
   cursor_accepted_at: string

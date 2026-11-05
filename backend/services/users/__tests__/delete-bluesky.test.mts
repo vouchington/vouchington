@@ -27,7 +27,7 @@ import {
   drainUserDeletionForTest,
 } from '@voucha/test-helpers/services/users/delete-test-support'
 import { getPrivateUserByAny } from '../get.mts'
-import { cleanupExpiredBlueskyLinkCompletions } from '../../data-retention/cleanup.mts'
+import { cleanupExpiredBlueskyLinkCompletions } from '../../data-retention/cleanup-bluesky.mts'
 
 describe('deleteUser Bluesky cleanup', () => {
   it('preserves another user attached to a DID referenced by a stale completion', async () => {

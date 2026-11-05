@@ -1,19 +1,5 @@
 /* oxlint-disable react-doctor/async-parallel -- retention phases stay in dependent cleanup order. */
 import {
-  cleanupAbandonedBlueskyLinkSessions,
-  cleanupExpiredBlueskyLinkCompletions,
-} from './cleanup-bluesky.mts'
-import { cleanupExpiredOAuthAuthorizations } from './cleanup-oauth-authorizations.mts'
-import { cleanupExpiredOAuthAuthorizationServerArtifacts } from './cleanup-oauth-authorization-server.mts'
-import {
-  cleanupOldPendingNotificationPushIntents,
-  cleanupTerminalNotificationPushIntents,
-} from './cleanup-notification-push-intents.mts'
-import {
-  cleanupOldModerationMediaReveals,
-  cleanupOldModerationQueueClaims,
-} from './cleanup-moderation-operations.mts'
-import {
   cleanupObsoleteAgentModerations,
   type AgentModerationCleanupContinuation,
   type AgentModerationCleanupResult,
@@ -30,12 +16,6 @@ import { cleanupClassifierVoteFamilies } from './cleanup-classifier-vote-familie
 import { cleanupTerminalRetentionFamilies } from './cleanup-terminal-retention-families.mts'
 import { cleanupHackerNewsReferences } from './cleanup-hacker-news.mts'
 
-export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
-export { cleanupExpiredOAuthAuthorizations }
-export { cleanupExpiredOAuthAuthorizationServerArtifacts }
-export { cleanupTerminalNotificationPushIntents }
-export { cleanupOldPendingNotificationPushIntents }
-export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
 export { cleanupObsoleteAgentModerations }
 export type { AgentModerationRetentionOptions }
 

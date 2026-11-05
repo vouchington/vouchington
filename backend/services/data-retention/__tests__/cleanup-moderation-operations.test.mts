@@ -11,7 +11,10 @@ import {
   moderationRetentionRowExists,
   setTestModerationRetentionActivity,
 } from '@voucha/test-helpers'
-import { cleanupOldModerationMediaReveals, cleanupOldModerationQueueClaims } from '../cleanup.mts'
+import {
+  cleanupOldModerationMediaReveals,
+  cleanupOldModerationQueueClaims,
+} from '../cleanup-moderation-operations.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
 

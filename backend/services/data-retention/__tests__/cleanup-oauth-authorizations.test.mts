@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
-import { cleanupExpiredOAuthAuthorizations } from '../cleanup.mts'
+import { cleanupExpiredOAuthAuthorizations } from '../cleanup-oauth-authorizations.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import { upsertOAuthAccount } from '@services/oauth-accounts'
 import { deleteTestOAuthAccount } from '@voucha/test-helpers/entities/oauth-accounts'

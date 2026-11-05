@@ -16,8 +16,8 @@ import { reserveTestAiUsageRetentionSweep } from '@voucha/test-helpers/entities/
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
-  runDataRetentionCleanup,
-} from '../cleanup.mts'
+} from '../cleanup-bluesky.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
