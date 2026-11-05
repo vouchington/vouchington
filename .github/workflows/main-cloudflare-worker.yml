@@ -7,6 +7,7 @@ on:
       - '.github/workflows/main-cloudflare-worker.yml'
       - '.github/workflows/tests-cloudflare-worker.yml'
       - '.github/workflows/checks-static.yml'
+      - '.github/workflows/checks-static-*.sh'
       - '.github/actions/**'
       - 'cloudflare-worker/**'
       - 'backend/config/**'

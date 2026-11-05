@@ -6,6 +6,10 @@ import runnerPolicy from '../runner-policy.json' with { type: 'json' }
 // Read the configured ARM label instead of pinning a second literal.
 const armLabel = runnerPolicy.exactLabelJobs.find(({ label }) => label.endsWith('-arm'))?.label
 const workflow = readFileSync('.github/workflows/tests-web.yml', 'utf8')
+const pagesRouterScript = readFileSync(
+  '.github/workflows/checks-static-no-next-pages-router.sh',
+  'utf8',
+)
 const parsedWorkflow = load(workflow) as {
   permissions?: Record<string, string>
   jobs?: Record<string, { permissions?: Record<string, string> }>
@@ -79,6 +83,14 @@ describe('Web Tests workflow', () => {
     expect(workflow).not.toContain('pnpm exec next typegen && pnpm exec tsc --noEmit --incremental')
     expect(workflow).not.toContain('pnpm run build')
     expect(workflow).not.toContain('smoke-test-web.sh')
+  })
+
+  it('preserves the pages-router guard in the extracted static check script', () => {
+    expect(pagesRouterScript).toContain('[ -d web/pages ] || [ -d web/src/pages ]')
+    expect(pagesRouterScript).toContain(
+      'Pages Router directory found (Next.js pages router not allowed)',
+    )
+    expect(pagesRouterScript).toContain('No pages router directory found')
   })
 
   it('preserves shard-specific JUnit and full LCOV with required upload retries', () => {

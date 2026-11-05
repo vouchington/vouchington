@@ -58,35 +58,11 @@ jobs:
         run: pnpm exec depcruise --config backend/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content backend ts-shared
         timeout-minutes: 2
       - name: Check PostgreSQL contracts, API fixtures, and MCP catalog
-        run: |
-          pnpm run backend-row-contracts:check
-          pnpm run api-fixtures:check
-          export NODE_ENV=test
-          export S3_BUCKET_IMAGES=test-images
-          export S3_BUCKET_IMAGE_UPLOADS=test-image-uploads
-          export S3_BUCKET_SITEMAPS=test-sitemaps
-          export S3_BUCKET_RENDERS=test-renders
-          export S3_BUCKET_ASSETS=test-assets
-          export S3_BUCKET_CRAWLS=test-crawls
-          export S3_BUCKET_USER_EXPORTS=test-user-exports
-          export S3_BUCKET_QUARANTINE=test-quarantine
-          node ci/check-live-mcp-catalog.mjs
-          node ci/check-topic-merge-foreign-keys.mts
-          node ci/validate-generated-ddl-inserts.mts
-          node ci/check-scheduled-job-schedules.mts
-          node ci/check-seed-topic-csvs.mts
-          pnpm run mcp:catalog -- --check
+        run: source .github/workflows/checks-static-backend-contracts.sh
         timeout-minutes: 8
       - name: Check canonical API snapshot git state
         shell: bash
-        run: |
-          git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json
-          untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json)"
-          if [ -n "$untracked_generated_files" ]; then
-            echo "::error::Generated API fixture files are untracked:"
-            printf '%s\n' "$untracked_generated_files"
-            exit 1
-          fi
+        run: source .github/workflows/checks-static-api-snapshot-git-state.sh
         timeout-minutes: 1
       - if: failure()
         uses: ./.github/actions/valkey-logs
@@ -112,12 +88,7 @@ jobs:
           deadline-seconds: '270'
       - name: Next.js pages-router check
         timeout-minutes: 1
-        run: |
-          if [ -d web/pages ] || [ -d web/src/pages ]; then
-            echo "::error::Pages Router directory found (Next.js pages router not allowed)"
-            exit 1
-          fi
-          echo "No pages router directory found"
+        run: source .github/workflows/checks-static-no-next-pages-router.sh
       - name: Check web dependencies
         run: pnpm exec depcruise --config web/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content web
         timeout-minutes: 2

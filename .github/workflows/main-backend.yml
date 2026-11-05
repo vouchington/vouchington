@@ -18,6 +18,8 @@ on:
       - '.github/workflows/tests-postgres-schema.yml'
       - '.github/worker-io-automation.env'
       - '.github/workflows/checks-static.yml'
+      - '.github/workflows/checks-static-*.sh'
+      - '.github/workflows/checks-backend-smoke-*.sh'
       - '.github/actions/**'
       - '.squawk.toml'
       - '.trivyignore.yaml'

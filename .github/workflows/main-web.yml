@@ -19,6 +19,7 @@ on:
       - '.github/workflows/tests-playwright.yml'
       - '.github/workflows/tests-playwright-credentialed.yml'
       - '.github/workflows/checks-static.yml'
+      - '.github/workflows/checks-static-*.sh'
       - '.github/actions/**'
       - 'ci/curl-to.sh'
       - 'ci/exec-vouchington-gha.sh'

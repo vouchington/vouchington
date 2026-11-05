@@ -73,6 +73,42 @@ describe('detect-changes path filters', () => {
     expect(filterMatches(mainStorybook.on?.push?.paths, projectPath)).toBe(true)
   })
 
+  it('routes extracted checks scripts through their main deployment workflows', () => {
+    const staticScripts = [
+      '.github/workflows/checks-static-api-snapshot-git-state.sh',
+      '.github/workflows/checks-static-backend-contracts.sh',
+      '.github/workflows/checks-static-no-next-pages-router.sh',
+    ]
+    const backendSmokeScripts = [
+      '.github/workflows/checks-backend-smoke-allocate-port.sh',
+      '.github/workflows/checks-backend-smoke-compile-bun.sh',
+    ]
+    const pathsByWorkflow: Record<string, string[] | undefined> = {}
+    for (const name of [
+      'main-backend.yml',
+      'main-web.yml',
+      'main-cloudflare-worker.yml',
+      'main-lambdas.yml',
+    ]) {
+      const mainWorkflow = load(readFileSync(`.github/workflows/${name}`, 'utf8')) as {
+        on?: { push?: { paths?: string[] } }
+      }
+      pathsByWorkflow[name] = mainWorkflow.on?.push?.paths
+    }
+
+    for (const script of staticScripts) {
+      for (const paths of Object.values(pathsByWorkflow)) {
+        expect(filterMatches(paths, script)).toBe(true)
+      }
+    }
+    for (const script of backendSmokeScripts) {
+      expect(filterMatches(pathsByWorkflow['main-backend.yml'], script)).toBe(true)
+      for (const name of ['main-web.yml', 'main-cloudflare-worker.yml', 'main-lambdas.yml']) {
+        expect(filterMatches(pathsByWorkflow[name], script)).toBe(false)
+      }
+    }
+  })
+
   it('fails open for filter changes and routes CI control workflows through topology', () => {
     const filterPaths = ['.github/ci-path-filters.yml']
     const areaPaths = ['backend', 'web', 'cloudflare-worker', 'lambdas', 'tooling', 'static'].map(

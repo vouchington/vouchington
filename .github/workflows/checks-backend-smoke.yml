@@ -93,27 +93,10 @@ jobs:
         env:
           # renovate: datasource=npm depName=bun
           BUN_VERSION: 1.4.4
-        run: |
-          set -euo pipefail
-          npm install -g "bun@$BUN_VERSION"
-          OUT_DIR="$RUNNER_TEMP/bun-executables-$BUN_VERSION"
-          bun backend/scripts/build/compile-backend-binaries.mts "$OUT_DIR"
-          {
-            echo "API_EXECUTABLE=$OUT_DIR/api"
-            echo "WORKER_IO_EXECUTABLE=$OUT_DIR/worker-io"
-            echo "LD_LIBRARY_PATH=$OUT_DIR/lib"
-            cat .github/actions/build-backend-images/s3-test-buckets.env
-          } >> "$GITHUB_ENV"
+        run: source .github/workflows/checks-backend-smoke-compile-bun.sh
       - name: Allocate backend port
         timeout-minutes: 1
-        run: |
-          set -euo pipefail
-          PORT=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 1)
-          if lsof -ti:"$PORT" >/dev/null 2>&1; then
-            echo "::error::Port $PORT is already in use after allocation; deterministic allocation will not retry"
-            exit 1
-          fi
-          echo "PORT=$PORT" >> "$GITHUB_ENV"
+        run: source .github/workflows/checks-backend-smoke-allocate-port.sh
       - name: Smoke test backend
         timeout-minutes: 3
         working-directory: backend
