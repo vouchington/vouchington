@@ -154,6 +154,8 @@ jobs:
           CI_PROJECT: backend-unit
           VITEST_CI_REPORTERS: run
           VITEST_DIAGNOSTICS: ${{ (inputs.diagnostics || vars.VITEST_DIAGNOSTICS == '1') && '1' || '0' }}
+          REQUEST_QUERY_PROFILE_DIAGNOSTICS: '1'
+          REQUEST_QUERY_PROFILE_HITS_FILE: backend-query-profile-hits-shard-${{ matrix.shard }}.json
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: test-report.junit.xml
           VITEST_FILE_PROGRESS_FILE: ${{ github.workspace }}/backend-unit-file-progress.log
@@ -189,6 +191,15 @@ jobs:
           path: backend-unit-file-progress.log
           retention-days: 1
           if-no-files-found: ignore
+      - name: Upload backend-shard-${{ matrix.shard }} query-profile hits
+        timeout-minutes: 1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: backend-query-profile-hits-shard-${{ matrix.shard }}
+          path: backend-query-profile-hits-shard-${{ matrix.shard }}.json
+          retention-days: 1
+          if-no-files-found: error
       - name: Preserve full backend-shard-${{ matrix.shard }} LCOV
         timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
@@ -224,3 +235,57 @@ jobs:
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
+
+  check-query-profile-baseline:
+    needs: [prep, backend-tests]
+    if: ${{ !cancelled() && needs.backend-tests.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+      - uses: ./.github/actions/start-valkey
+        timeout-minutes: 2
+      - uses: ./.github/actions/setup-backend
+        timeout-minutes: 6
+      - name: Download complete backend-unit query-profile hits
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        timeout-minutes: 3
+        with:
+          pattern: backend-query-profile-hits-shard-*
+          path: backend-query-profile-hits
+          merge-multiple: true
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+      - name: Check query-profile baseline freshness
+        timeout-minutes: 1
+        env:
+          DATABASE_URL: postgres://localhost/voucha-query-profile-check
+          EXPECTED_SHARDS: ${{ needs.prep.outputs.shard-total }}
+        shell: bash
+        run: |
+          expected_shards="$EXPECTED_SHARDS"
+          if ! [[ "$expected_shards" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Invalid backend-unit shard count: $expected_shards" >&2
+            exit 2
+          fi
+          shopt -s nullglob
+          files=(backend-query-profile-hits/backend-query-profile-hits-shard-*.json)
+          if [ "${#files[@]}" -ne "$expected_shards" ]; then
+            echo "::error::Expected $expected_shards query-profile hit manifests, found ${#files[@]}" >&2
+            exit 2
+          fi
+          manifests=()
+          for ((shard = 1; shard <= expected_shards; shard++)); do
+            manifest="backend-query-profile-hits/backend-query-profile-hits-shard-${shard}.json"
+            if [ ! -s "$manifest" ]; then
+              echo "::error::Missing backend-unit query-profile hit manifest: $manifest" >&2
+              exit 2
+            fi
+            manifests+=("$manifest")
+          done
+          node backend/test-helpers/api/request-query-profile-stale.mts --manifests "${manifests[@]}"
