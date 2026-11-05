@@ -22,7 +22,7 @@ const action = `runs:
 `
 const producer = `jobs:
   static-web:
-    runs-on: ubuntu-24.04-arm
+    runs-on: label-one
     steps:
       - uses: ./.github/actions/build-web-targets
         timeout-minutes: 9
@@ -31,7 +31,7 @@ const producer = `jobs:
 `
 const consumer = `jobs:
   test:
-    runs-on: ubuntu-24.04-arm
+    runs-on: label-one
     steps:
       - uses: ./.github/actions/build-web-targets
         timeout-minutes: 9
@@ -64,9 +64,9 @@ describe('build-web-targets contracts', () => {
 
   it('rejects a mismatched runner in a finite workflow', () => {
     const broken = new Map(sources)
-    broken.set('.github/workflows/test.yml', consumer.replace('ubuntu-24.04-arm', 'ubuntu-latest'))
+    broken.set('.github/workflows/test.yml', consumer.replace('label-one', 'label-two'))
     expect(buildWebTargetsContractViolations(broken)).toEqual([
-      'build-web-targets jobs span more than one runner label (ubuntu-24.04-arm: checks-static.yml#static-web; ubuntu-latest: test.yml#test)',
+      'build-web-targets jobs span more than one runner label (label-one: checks-static.yml#static-web; label-two: test.yml#test)',
     ])
   })
 
