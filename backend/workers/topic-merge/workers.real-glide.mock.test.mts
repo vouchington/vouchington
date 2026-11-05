@@ -6,7 +6,6 @@ import {
   TOPIC_MERGE_PAGE_JOB,
   type TopicMergePageData,
 } from '@queues/background/enqueues/topic-merge-jobs'
-import { topicMergePageJobId } from '@queues/background/enqueues/topic-merge-enqueues'
 import { processTopicMergeOperationPage } from '@services/topics/merge-operation-page'
 import { dispatchStalledTopicMergePage } from '@services/topics/merge-recovery'
 import { topicMergeWorkConfig } from '@services/topics/merge-work-limits'
@@ -60,7 +59,7 @@ describe('topic merge operation pages through native GlideMQ', () => {
   }
 
   function pageId(operationId: string, generation: number): string {
-    return topicMergePageJobId({ operationId, generation })
+    return `topic_merge_page_${operationId}_${generation}`
   }
 
   it('chains one-row native pages, then completes the same durable operation through PostgreSQL pages', async () => {
@@ -200,7 +199,10 @@ describe('topic merge operation pages through native GlideMQ', () => {
           inputs.map(data => ({
             name: TOPIC_MERGE_PAGE_JOB.name,
             data,
-            opts: { ...TOPIC_MERGE_PAGE_JOB.options, jobId: topicMergePageJobId(data) },
+            opts: {
+              ...TOPIC_MERGE_PAGE_JOB.options,
+              jobId: `topic_merge_page_${data.operationId}_${data.generation}`,
+            },
           })),
         )
       },
@@ -251,13 +253,16 @@ describe('topic merge operation pages through native GlideMQ', () => {
       enqueueBulkReactivatingFinished({
         queue: harness!.queue,
         inputs,
-        jobIdOf: topicMergePageJobId,
+        jobIdOf: data => `topic_merge_page_${data.operationId}_${data.generation}`,
         enqueueBulk: pages =>
           harness!.queue.addBulk(
             pages.map(data => ({
               name: TOPIC_MERGE_PAGE_JOB.name,
               data,
-              opts: { ...TOPIC_MERGE_PAGE_JOB.options, jobId: topicMergePageJobId(data) },
+              opts: {
+                ...TOPIC_MERGE_PAGE_JOB.options,
+                jobId: `topic_merge_page_${data.operationId}_${data.generation}`,
+              },
             })),
           ),
       })

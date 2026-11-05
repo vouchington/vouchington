@@ -20,7 +20,7 @@ const enqueueExportRequestJob = createBackgroundEnqueue(ACCOUNT_LIFECYCLE_EXPORT
   },
 })
 
-export const enqueueBulkExportRequests = createBackgroundBulkEnqueue(
+const enqueueBulkExportRequests = createBackgroundBulkEnqueue(
   ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
   (data: ExportRequestData) => {
     const jobId = exportRequestJobId(data)

@@ -3,13 +3,14 @@ import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Queue, type Job } from 'glide-mq'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
-  readSingleEmbeddingBacklogSnapshot,
-  shouldDeferSingleEmbedding,
+  getSingleEmbeddingBacklogSnapshot,
+  isSingleEmbeddingBackedUp,
 } from '@queues/bedrock-embeddings/enqueues/single-backlog'
 import { streamPendingPosts } from '@services/bedrock-embeddings-batch/entities/posts'
 import { createTestUserDirect, deleteTestPost, insertTestPost } from '@voucha/test-helpers'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { getMinUUIDv7ForDate } from '../../modules/utils/ids.mts'
+import { uuidAfter } from '@voucha/test-helpers/uuid-before'
 import { backgroundCpu } from '../../queues/background-cpu/queues.mts'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import {
@@ -52,19 +53,42 @@ describe('bounded shared Bedrock single backlog through real GlideMQ', () => {
       queue.add('content-analysis.post', { id: randomUUID() }, { priority: 10 }),
       queue.add('bedrock-embeddings.post', { id: randomUUID() }, { priority: 10 }),
     ])
-    const exact = await readSingleEmbeddingBacklogSnapshot(queue, 10)
+    const exact = await getSingleEmbeddingBacklogSnapshot(queue, 10, 0)
     expect(exact).toEqual({ depth: 1, uncertain: false })
-    expect(shouldDeferSingleEmbedding(exact, 2)).toBe(false)
-    expect(shouldDeferSingleEmbedding(exact, 1)).toBe(true)
+    expect(await isSingleEmbeddingBackedUp(queue, 10, 2, 0)).toBe(false)
+    expect(await isSingleEmbeddingBackedUp(queue, 10, 1, 0)).toBe(true)
 
-    const saturated = await readSingleEmbeddingBacklogSnapshot(queue, 2)
+    const saturated = await getSingleEmbeddingBacklogSnapshot(queue, 2, 2_000)
     expect(saturated.uncertain).toBe(true)
-    expect(shouldDeferSingleEmbedding(saturated, 2)).toBe(false)
+    expect(await isSingleEmbeddingBackedUp(queue, 2, 2, 2_000)).toBe(false)
 
     await queue.obliterate({ force: true })
-    const drained = await readSingleEmbeddingBacklogSnapshot(queue, 2)
+    const drained = await getSingleEmbeddingBacklogSnapshot(queue, 2, 4_000)
     expect(drained).toEqual({ depth: 0, uncertain: false })
-    expect(shouldDeferSingleEmbedding(drained, 2)).toBe(false)
+    expect(await isSingleEmbeddingBackedUp(queue, 2, 2, 4_000)).toBe(false)
+  })
+
+  it('evicts a failed native queue scan before the next call at the same clock', async () => {
+    queue = new Queue(`single_backlog_closed_${randomUUID()}`, connection)
+    const closedQueue = queue
+    await closedQueue.close()
+    queue = undefined
+    const getJobs = vi.spyOn(closedQueue, 'getJobs')
+    try {
+      await expect(getSingleEmbeddingBacklogSnapshot(closedQueue, 2, 0)).rejects.toBeInstanceOf(
+        Error,
+      )
+      expect(getJobs).toHaveBeenCalledTimes(3)
+      await expect(getSingleEmbeddingBacklogSnapshot(closedQueue, 2, 0)).rejects.toBeInstanceOf(
+        Error,
+      )
+      expect(getJobs).toHaveBeenCalledTimes(6)
+      expect(getJobs.mock.calls.filter(([state]) => state === 'waiting')).toHaveLength(2)
+      expect(getJobs.mock.calls.filter(([state]) => state === 'active')).toHaveLength(2)
+      expect(getJobs.mock.calls.filter(([state]) => state === 'delayed')).toHaveLength(2)
+    } finally {
+      getJobs.mockRestore()
+    }
   })
 
   it('keeps a missing post eligible for the scheduled creation path under unrelated saturation', async () => {
@@ -74,9 +98,9 @@ describe('bounded shared Bedrock single backlog through real GlideMQ', () => {
         queue!.add('crawl.crawl_url', { id: randomUUID() }, { priority: 10 }),
       ),
     )
-    const snapshot = await readSingleEmbeddingBacklogSnapshot(queue, 2)
+    const snapshot = await getSingleEmbeddingBacklogSnapshot(queue, 2, 0)
     expect(snapshot.uncertain).toBe(true)
-    expect(shouldDeferSingleEmbedding(snapshot, 1)).toBe(false)
+    expect(await isSingleEmbeddingBackedUp(queue, 2, 1, 0)).toBe(false)
 
     const user = await createTestUserDirect()
     const createdAt = new Date(Date.now() + 3_600_000)
@@ -90,7 +114,7 @@ describe('bounded shared Bedrock single backlog through real GlideMQ', () => {
     onTestFinished(() => deleteTestPost(postId))
     const sweepStartedAt = new Date(createdAt.getTime() + 3_600_000).toISOString()
     const pending = streamPendingPosts({
-      cursor: { sweepStartedAt },
+      cursor: { sweepStartedAt, afterId: uuidAfter(postId) },
       limits: { batchSize: 1, maxRows: 1 },
     })
     const first = await pending.next()

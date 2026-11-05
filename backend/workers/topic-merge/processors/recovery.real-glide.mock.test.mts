@@ -6,7 +6,6 @@ import {
   type TopicMergePageData,
   type TopicMergeRecoveryData,
 } from '@queues/background/enqueues/topic-merge-jobs'
-import { topicMergePageJobId } from '@queues/background/enqueues/topic-merge-enqueues'
 import { dispatchStalledTopicMergePage } from '@services/topics/merge-recovery'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import {
@@ -47,7 +46,7 @@ describe('topic merge recovery through native GlideMQ', () => {
           data,
           opts: {
             ...TOPIC_MERGE_PAGE_JOB.options,
-            jobId: topicMergePageJobId(data),
+            jobId: `topic_merge_page_${data.operationId}_${data.generation}`,
             delay: 60_000,
           },
         })),
@@ -97,12 +96,7 @@ describe('topic merge recovery through native GlideMQ', () => {
     })
     expect(await getTopicMergeNativeCheckpoint(ownedOperationId)).toEqual(checkpoint)
     expect(
-      await harness.queue.getJob(
-        topicMergePageJobId({
-          operationId: ownedOperationId,
-          generation: checkpoint.generation,
-        }),
-      ),
+      await harness.queue.getJob(`topic_merge_page_${ownedOperationId}_${checkpoint.generation}`),
     ).toBeNull()
     expect(harness.stalledJobIds).toEqual([])
   })
