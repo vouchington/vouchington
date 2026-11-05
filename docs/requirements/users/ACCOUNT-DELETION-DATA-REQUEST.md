@@ -103,7 +103,7 @@ continue to block final account deletion and are never eligible for this cleanup
    audit metadata and timestamps, and deletes the fully recomputed relation-impact worklist. A
    completed relation-effect pointer may then become `NULL`; pending effects require their typed
    same-request impact pointer. A separate bounded retention sweep reclaims unreferenced retained
-   relation identities without expiring request or audit history.
+   relation identities. Request and audit history follow their respective retention windows.
 
 Stripe customer anonymization uses a request-derived provider idempotency key. The per-provider
 egress flag selects the direct or HTTP CONNECT transport without changing the operation or retrying
@@ -138,10 +138,11 @@ A preservation hold preserves what remains of an account while the owner decides
 advice, what a subpoena requires (see the
 [§512(h) runbook](../../runbooks/copyright-notices.md#dmca-512h-subpoenas)). It stores who
 placed it, when, an encrypted short matter reference, and who released it and when. It has no
-duration or scope, because the owner decides both. Release writes the release columns once and the
-row is never deleted, so the history persists. All three user references target
+duration or scope, because the owner decides both. Release writes the release columns once; the
+history then follows its legal-record retention window. All three user references target
 `retained_user_identities` with `ON DELETE RESTRICT`: the history survives the account's hard
-delete, a released hold never blocks it, and the hold cannot be removed by deleting the user.
+delete while retained, a released hold never blocks it, and an open hold cannot be removed by
+deleting the user.
 An administrator can place or release a hold while the `users` row is soft-deleted. The administrator
 uses `/user/<id>/admin`, which renders only the account id and preservation-hold controls for such an
 account. Once the final purge removes the `users` row, hold changes are refused with `404`. An open
