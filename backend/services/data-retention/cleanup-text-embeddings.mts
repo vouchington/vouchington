@@ -31,8 +31,9 @@ async function deleteTextEmbeddingCachePage(
 ): Promise<PersistedPage<never>> {
   await using query = await beginTransaction()
   const lowerBoundPredicate = options.lowerBoundDate ? 'AND updated_at >= $3::timestamptz' : ''
+  const hashesPlaceholder = options.lowerBoundDate ? '$4' : '$3'
   const contentHashesPredicate = options.contentHashes
-    ? ` AND cache.content_sha256 = ANY(SELECT decode(hash, 'hex') FROM unnest($${options.lowerBoundDate ? 4 : 3}::text[]) hash)`
+    ? ` AND cache.content_sha256 = ANY(SELECT decode(hash, 'hex') FROM unnest(${hashesPlaceholder}::text[]) hash)`
     : ''
   const { rows: candidates } = await query<{
     content_sha256: string
