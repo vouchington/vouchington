@@ -15,7 +15,7 @@ export async function getDominantPublisherTypeSlug(
       AND relations.votes_score_net > 0
       AND topics.deleted_at IS NULL
       AND topics.slug = ANY(${PUBLISHER_TYPE_SLUGS})
-    ORDER BY relations.votes_score_sort DESC, relations.id ASC
+    ORDER BY relations.votes_score_sort DESC, relations.created_at DESC, relations.object_id DESC
     LIMIT 1
   `)
   return (rows[0]?.slug as PublisherTypeSlug | undefined) ?? null
