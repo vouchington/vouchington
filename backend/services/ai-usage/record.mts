@@ -50,7 +50,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void
       return insertAiUsage(options, options.query, tierId)
     }
     await using transaction = await beginTransaction()
-    // ast-grep-ignore: no-three-sequential-awaits -- FK parent locks must precede partition DDL, and the INSERT must follow creation before commit.
+    // ast-grep-ignore: no-three-sequential-awaits -- FK-parent/table locks must precede monthly partition DDL; the usage INSERT consumes the created partition and registered tier id.
     const tierId = await lockAiUsageForeignKeyParents(transaction, options)
     await ensureAiUsageMonthForWrite(transaction, options.createdAt)
     await insertAiUsage(options, transaction, tierId)

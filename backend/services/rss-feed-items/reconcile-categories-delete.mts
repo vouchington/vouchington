@@ -22,7 +22,7 @@ export async function deleteStaleCategoriesAndRetractVotes(
     snapshot.categories.map(() => snapshot.rss_feed_item_id),
   )
   const categoryTexts = snapshots.flatMap(snapshot => snapshot.categories)
-  // ast-grep-ignore: no-three-sequential-awaits -- discover alias scopes, lock them, then lock their RSS items before deletion
+  // ast-grep-ignore: no-three-sequential-awaits -- Discovered alias ids select publication-scope locks, which must precede RSS-item row locks before stale category deletion.
   const staleTopicAliasIds = await getStaleCategoryTopicAliasIds(
     query,
     itemIds,

@@ -31,7 +31,7 @@ export async function reconcileReviewSuccessionsForPostIds(
   ): Promise<ReviewSuccessionReconciliationResult> => {
     const groups = await listReviewSuccessionGroups(transaction, ids)
     if (groups.length === 0) return { changedPostIds: [] }
-    // ast-grep-ignore: no-three-sequential-awaits -- group, publication-scope, and row locks have a required global order before the locked reread
+    // ast-grep-ignore: no-three-sequential-awaits -- Group locks must precede publication-scope and candidate-row locks; only the fresh locked candidate reread may drive succession mutations.
     await lockReviewSuccessionGroups(transaction, groups)
     await lockReviewSuccessionCandidates(transaction, groups, limit)
     const candidates = await listLockedReviewSuccessionCandidates(transaction, groups, limit)

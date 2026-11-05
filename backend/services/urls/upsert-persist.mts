@@ -53,7 +53,7 @@ async function persistInTransaction(
     preserveHttp: _preserveHttp,
     ...queryOptions
   } = options
-  // ast-grep-ignore: no-three-sequential-awaits -- resolve ids before ownership locks, then reread local policy to observe the previous lock holder's commit.
+  // ast-grep-ignore: no-three-sequential-awaits -- Resolved hostname ids select ownership locks; the fresh local-policy recheck must reject blocked hostnames before URL persistence.
   const resolved = await prepareUrlHostnamesForOwnedMutation(
     userId,
     uniqueUrls.map(url => url.hostname),

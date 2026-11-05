@@ -68,7 +68,7 @@ export async function activateOldestQueuedGrant(
       }
     | undefined
   if (!grant) return false
-  // ast-grep-ignore: no-three-sequential-awaits -- projection retirement, replacement, and its durable audit/outbox write are transactionally ordered
+  // ast-grep-ignore: no-three-sequential-awaits -- Retirement removes the old row from the unique live-user projection index so replacement INSERT can succeed; its returned id feeds the audit/outbox.
   await query(sql`/* activateOldestQueuedGrant: retire closed projection */
     UPDATE memberships SET projection_ended_at = CURRENT_TIMESTAMP
     WHERE id = ${closedMembership.id} AND projection_ended_at IS NULL`)

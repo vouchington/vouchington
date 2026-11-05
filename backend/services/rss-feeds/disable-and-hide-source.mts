@@ -40,7 +40,7 @@ async function hideSource(rssFeedId: string, query: TransactionQuery): Promise<v
   )
   const topicIds = sourceRows.map(row => row.topic_id)
   await lockTopicHostnameOwnership(query, topicIds, [])
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
+  // ast-grep-ignore: no-three-sequential-awaits -- The RSS-feed publication lock must follow topic ownership and precede enablement/discoverability writes and their publication capture.
   await lockPostPublicationRssFeedScopes(query, [rssFeedId])
   await query(
     `/* disableAndHideSource:rss_feed */

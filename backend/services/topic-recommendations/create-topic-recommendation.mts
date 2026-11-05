@@ -120,7 +120,7 @@ async function createTopicRecommendationInStore(
     images: [],
   }).content_sha256
 
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
+  // ast-grep-ignore: no-three-sequential-awaits -- The inserted post id creates its recommendation extension; that extension is the FK parent consumed by post_topic_recommendation_hostnames.
   const postId = await insertTopicRecommendationPost(
     currentUser,
     provenance,

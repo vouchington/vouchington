@@ -43,7 +43,7 @@ export async function createCommunityAgentPrompt(
 
   await using query = await beginTransaction()
   await assertCommunityAgentPromptCapacity(currentUserId, communityId, query)
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
+  // ast-grep-ignore: no-three-sequential-awaits -- createAgentSystemUser returns userId for createSystemAgent, whose agentId is the FK parent consumed by the agent prompt INSERT.
   const { id: userId } = await createAgentSystemUser(username, { query })
   const { id: agentId } = await createSystemAgent(userId, 'moderator', currentUserId, { query })
 
