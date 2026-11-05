@@ -26,7 +26,10 @@ export type AllowlistEntries = ReadonlyMap<string, string> | readonly (readonly 
 
 // Keep this registry aligned with every tracked schema allowlist module. Evaluated exports
 // include entries composed with spreads, which source-text extraction cannot see.
-export const schemaAllowlistModules: ReadonlyMap<string, readonly AllowlistEntries[]> = new Map([
+export const schemaAllowlistModules: ReadonlyMap<string, readonly AllowlistEntries[]> = new Map<
+  string,
+  readonly AllowlistEntries[]
+>([
   [
     'backend/test-helpers/data-stores/psql/schema-static-analysis/ai-retention-uuid-allowlists.mts',
     Object.values(aiRetentionUuidAllowlists),
