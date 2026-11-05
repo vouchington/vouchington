@@ -61,7 +61,7 @@ describe('startApiServer', () => {
     const error = new Error('visibility config unavailable')
     const deps = makeStartupDeps({ waitForVisibilityConfig: () => Promise.reject(error) })
     await startApiServer(server, 4321, deps)
-    expect(deps.reportError).toHaveBeenCalledWith(error)
+    expect(deps.reportFatalError).toHaveBeenCalledWith(error)
     expect(server.listen).not.toHaveBeenCalled()
   })
 
