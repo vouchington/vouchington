@@ -54,7 +54,7 @@ function gitCompareLines(script: string): string[] {
   )
 }
 
-const extractedCiScripts = new Map(
+const extractedCiScripts = new Map<string, string>(
   ['merge-queue-range', 'docs-check', 'trusted-context', 'areas'].map(name => {
     const path = `.github/workflows/ci-detect-changes/${name}.sh`
     return [`source ${path}`, path] as const
