@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { beginTransaction, insertTestAgentModeration } from '@voucha/test-helpers'
 import {
   attachTestAgentModerationAuditReference,
@@ -17,8 +17,9 @@ import {
   getTestReleasedModerationTransparencyRollupCount,
 } from '@voucha/test-helpers/entities/moderation-transparency-rollups'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { cleanupObsoleteAgentModerations } from '../cleanup-agent-moderations.mts'
-import { reconsiderChangedPostById } from '../cleanup-agent-moderation-hash-work.mts'
+import { reconsiderChangedPost } from '../cleanup-agent-moderation-hash-work.mts'
 
 describe('agent moderation retention wake-ups', () => {
   it('does not revisit old keeper rows on an unchanged daily run', async () => {
@@ -44,8 +45,16 @@ describe('agent moderation retention wake-ups', () => {
       }),
     ).toMatchObject({ scanned: 0, deleted: 0 })
     expect(await testAgentModerationExists(fixture.postId, oldKeeper)).toBe(true)
+    await insertTestAgentModerationRetentionPostWork([fixture.postId], now)
+    onTestFinished(
+      runBeforePostgresStatementForTest('lockChangedAgentModerationRetentionPost', async () => {
+        await using competing = await beginTransaction()
+        await reconsiderChangedPost(competing, 1, [fixture.postId])
+        await competing.commit()
+      }),
+    )
     await using transaction = await beginTransaction()
-    expect(await reconsiderChangedPostById(transaction, fixture.postId, 1)).toEqual({
+    expect(await reconsiderChangedPost(transaction, 1, [fixture.postId])).toEqual({
       processed: false,
       hasMore: true,
     })
@@ -98,7 +107,7 @@ describe('agent moderation retention wake-ups', () => {
     await setTestPostCurrentModerationInputHashFromResult(fixture.postId, old)
     {
       await using transaction = await beginTransaction()
-      await reconsiderChangedPostById(transaction, fixture.postId, 2)
+      await reconsiderChangedPost(transaction, 2, [fixture.postId])
       await transaction.commit()
     }
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ deleted: 0 })
@@ -107,16 +116,22 @@ describe('agent moderation retention wake-ups', () => {
       (await createTestAgentModerationRetentionFixture()).postId,
       (await createTestAgentModerationRetentionFixture()).postId,
     ]
+    onTestFinished(
+      runBeforePostgresStatementForTest('lockChangedAgentModerationRetentionPost', transaction =>
+        insertTestAgentModerationRetentionPostWork(
+          unrelatedPostIds,
+          new Date('2000-01-01T00:00:00.000Z'),
+          transaction,
+        ),
+      ),
+    )
     try {
       {
         await using transaction = await beginTransaction()
         await setTestPostCurrentModerationInputHashFromResult(fixture.postId, newest, transaction)
-        await insertTestAgentModerationRetentionPostWork(
-          unrelatedPostIds,
-          new Date('2000-01-01T00:00:00.000Z'),
-          transaction,
-        )
-        expect(await reconsiderChangedPostById(transaction, fixture.postId, 2)).toMatchObject({
+        expect(
+          await reconsiderChangedPost(transaction, 2, [fixture.postId, ...unrelatedPostIds]),
+        ).toMatchObject({
           processed: true,
           hasMore: true,
         })
@@ -130,7 +145,7 @@ describe('agent moderation retention wake-ups', () => {
     } finally {
       for (const postId of unrelatedPostIds) {
         await using transaction = await beginTransaction()
-        await reconsiderChangedPostById(transaction, postId, 2)
+        await reconsiderChangedPost(transaction, 2, [postId])
         await transaction.commit()
       }
     }
@@ -153,7 +168,7 @@ describe('agent moderation retention wake-ups', () => {
       )
       await setTestPostCurrentModerationInputHashFromResult(fixture.postId, keeper, transaction)
       expect(await testAgentModerationRetentionPostHasWork(fixture.postId, transaction)).toBe(true)
-      expect(await reconsiderChangedPostById(transaction, fixture.postId, 1)).toMatchObject({
+      expect(await reconsiderChangedPost(transaction, 1, [fixture.postId])).toMatchObject({
         processed: true,
         hasMore: true,
       })
@@ -163,7 +178,7 @@ describe('agent moderation retention wake-ups', () => {
       expect(
         await getTestAgentModerationRetentionHashBlockedIds(fixture.postId, transaction),
       ).toEqual([keeper, obsolete])
-      expect(await reconsiderChangedPostById(transaction, fixture.postId, 1)).toMatchObject({
+      expect(await reconsiderChangedPost(transaction, 1, [fixture.postId])).toMatchObject({
         processed: true,
       })
       expect(

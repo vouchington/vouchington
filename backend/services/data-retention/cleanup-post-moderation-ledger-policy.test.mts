@@ -11,18 +11,22 @@ import {
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 import {
   getTestPostModerationPolicyRevisionCursor,
+  getTestPostModerationPostWork,
   getTestPostModerationVersionMarkers,
   setTestPostModerationPolicyRevisionCursor,
   setTestPostModerationRetentionHash,
 } from '@voucha/test-helpers/post-moderation-retention-progress'
+import {
+  blockPostModerationRetentionFixtureVersions,
+  reservePostModerationRetentionPolicyCursor,
+  setPostModerationRetentionPolicyCursor,
+} from '@voucha/test-helpers/post-moderation-retention-continuation'
+import { deleteTestPostRow } from '@voucha/test-helpers/publication-test-queries'
 import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 import { processPostModerationCandidatePage } from './cleanup-post-moderation-ledger-candidates.mts'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
-import { reconsiderChangedPostModerationPostById } from './cleanup-post-moderation-ledger-hash-work.mts'
-import {
-  reconsiderPostModerationPolicyRevision,
-  reconsiderPostModerationPolicyRevisionPage,
-} from './cleanup-post-moderation-ledger-policy.mts'
+import { reconsiderChangedPostModerationPost } from './cleanup-post-moderation-ledger-hash-work.mts'
+import { reconsiderPostModerationPolicyRevision } from './cleanup-post-moderation-ledger-policy.mts'
 
 const NEXT_REVISION = 'test-policy-revision-after-bump'
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000'
@@ -71,9 +75,15 @@ describe('post moderation retention policy revisions', () => {
     // Rollback restores the shared singleton and source rows for parallel test forks.
     await using query = await beginTransaction()
     const lowerId = uuidv7({ msecs: at(96).getTime() })
-    const page = await reconsiderPostModerationPolicyRevisionPage(query, 1, lowerId)
+    const page = await reconsiderPostModerationPolicyRevision(
+      query,
+      1,
+      NEXT_REVISION,
+      [postId],
+      lowerId,
+    )
     expect(page.processed).toBe(true)
-    await reconsiderChangedPostModerationPostById(query, postId, 2, NEXT_REVISION)
+    await reconsiderChangedPostModerationPost(query, 2, NEXT_REVISION, [postId])
     const markers = await getTestPostModerationVersionMarkers(oldId, query)
     expect(markers?.dueAt).toEqual(at(91))
     const changed = await processPostModerationCandidatePage(
@@ -95,5 +105,53 @@ describe('post moderation retention policy revisions', () => {
       NEXT_REVISION,
     )
     // Disposal rolls back this simulated code revision and its temporary delete.
+  })
+
+  it('initializes a null policy revision without admitting an eligible owned version', async () => {
+    const lock = await acquirePostModerationLedgerRetentionTestLock()
+    try {
+      const restoreCursor = await reservePostModerationRetentionPolicyCursor()
+      try {
+        const { at } = createIsolatedRetentionWindow()
+        const user = await createTestUser()
+        const postId = await insertTestPost({
+          createdById: user.id,
+          slug: `policy-initialization-${randomUUID()}`,
+          title: 'Policy initialization',
+          markdown: 'body',
+          clearanceStatus: 'pending',
+        })
+        try {
+          const versionId = uuidv7({ msecs: at(95).getTime() })
+          await insertTestPostModerationVersionAt({
+            id: versionId,
+            postId,
+            contentSha256: randomBytes(32),
+            policyRevision: 'test-policy-initialization',
+          })
+          await blockPostModerationRetentionFixtureVersions([versionId])
+          await setPostModerationRetentionPolicyCursor(null)
+          expect(await getTestPostModerationPostWork(postId)).toBeNull()
+          await using query = await beginTransaction()
+          expect(
+            await reconsiderPostModerationPolicyRevision(query, 1, 'test-policy-initialization', [
+              postId,
+            ]),
+          ).toEqual({ hasMore: false, processed: false })
+          expect(await getTestPostModerationPolicyRevisionCursor(query)).toMatchObject({
+            observedRevision: 'test-policy-initialization',
+          })
+          expect(await getTestPostModerationPostWork(postId, query)).toBeNull()
+        } finally {
+          await using cleanup = await beginTransaction()
+          await deleteTestPostRow(cleanup, postId)
+          await cleanup.commit()
+        }
+      } finally {
+        await restoreCursor()
+      }
+    } finally {
+      await lock.release()
+    }
   })
 })
