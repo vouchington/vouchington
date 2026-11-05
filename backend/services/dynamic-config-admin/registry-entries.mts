@@ -26,6 +26,7 @@ import { operationalDynamicConfigRegistryEntries } from './registry-operational-
 import { policyDynamicConfigRegistryEntries } from './registry-policy-entries.mts'
 import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-entries.mts'
 import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
+import { orderDynamicConfigRegistryEntries } from './registry-order.mts'
 
 const unorderedRegistryEntries = [
   relationLimitsRegistryEntry,
@@ -55,34 +56,7 @@ const unorderedRegistryEntries = [
   ...aiUsageDynamicConfigRegistryEntries,
 ] satisfies DynamicConfigRegistryEntry[]
 
-assertRegistryOrderIncludesEntries(unorderedRegistryEntries, REGISTRY_ORDER)
-
-const entriesByNamespace = new Map(unorderedRegistryEntries.map(entry => [entry.namespace, entry]))
-
-export const dynamicConfigRegistryEntries = REGISTRY_ORDER.map(namespace =>
-  requireRegistryEntry(namespace),
+export const dynamicConfigRegistryEntries = orderDynamicConfigRegistryEntries(
+  unorderedRegistryEntries,
+  REGISTRY_ORDER,
 ) satisfies DynamicConfigRegistryEntry[]
-
-export function assertRegistryOrderIncludesEntries(
-  entries: readonly Pick<DynamicConfigRegistryEntry, 'namespace'>[],
-  registryOrder: readonly string[],
-): void {
-  const orderedNamespaces = new Set(registryOrder)
-  const omittedNamespaces: string[] = []
-
-  for (const entry of entries) {
-    if (!orderedNamespaces.has(entry.namespace)) omittedNamespaces.push(entry.namespace)
-  }
-
-  if (omittedNamespaces.length > 0) {
-    throw new Error(
-      `Dynamic config registry entries missing from REGISTRY_ORDER: ${omittedNamespaces.join(', ')}`,
-    )
-  }
-}
-
-function requireRegistryEntry(namespace: string): DynamicConfigRegistryEntry {
-  const entry = entriesByNamespace.get(namespace)
-  if (!entry) throw new Error(`Missing dynamic config registry entry for ${namespace}`)
-  return entry
-}
