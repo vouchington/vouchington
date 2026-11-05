@@ -2,31 +2,6 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { cleanupHackerNewsReferences } from '../services/data-retention/cleanup-hacker-news.mts'
 import { createTestUrlWithHostname } from './entities/urls.mts'
 
-/** Preserve the real retention query and lock behavior while restricting candidates to owned rows. */
-function scopeHackerNewsRetentionQuery(query: TransactionQuery, ids: readonly string[]) {
-  return new Proxy(query, {
-    apply(target, thisArgument, args: Parameters<TransactionQuery>) {
-      const [statement, values] = args
-      if (
-        typeof statement === 'string' &&
-        statement.includes('/* selectExpiredHackerNewsReferences */')
-      ) {
-        if (
-          !statement.includes('FROM url_hacker_news_totals') ||
-          !statement.includes('ORDER BY looked_up_at, url_id LIMIT $2')
-        ) {
-          throw new Error('Hacker News retention selector lost its reviewed table/order/limit')
-        }
-        return Reflect.apply(target, thisArgument, [
-          statement.replace('ORDER BY', 'AND url_id = ANY($3::uuid[]) ORDER BY'),
-          [...(values ?? []), ids],
-        ])
-      }
-      return Reflect.apply(target, thisArgument, args)
-    },
-  })
-}
-
 /** All reference facts and cleanup passes share one rollback-only transaction. */
 export async function createHackerNewsRetentionFixtureForTest() {
   const [expired, expiredZero, liveZero] = await Promise.all([
@@ -68,13 +43,16 @@ export async function createHackerNewsRetentionFixtureForTest() {
     await query[Symbol.asyncDispose]()
     throw err
   }
-  const scoped = scopeHackerNewsRetentionQuery(query, ids)
   return {
     expired: expired!,
     expiredZero: expiredZero!,
     liveZero: liveZero!,
     cleanup: () =>
-      cleanupHackerNewsReferences({ now: new Date('2026-07-31T00:00:00.000Z'), query: scoped }),
+      cleanupHackerNewsReferences({
+        now: new Date('2026-07-31T00:00:00.000Z'),
+        query,
+        urlIds: ids,
+      }),
     read: () => readHackerNewsRetentionFacts(query, ids),
     [Symbol.asyncDispose]: () => query[Symbol.asyncDispose](),
   }

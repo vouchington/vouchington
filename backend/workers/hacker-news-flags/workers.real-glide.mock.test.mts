@@ -45,7 +45,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => origina
 
 describe('Hacker News flag queue', () => {
   beforeAll(async () => {
-    hackerNewsFlags = await createHackerNewsFlagsWorker()
+    hackerNewsFlags = await createHackerNewsFlagsWorker({ promotionInterval: 1 })
   })
 
   afterAll(async () => {

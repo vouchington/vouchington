@@ -12,7 +12,7 @@ import { repairHackerNewsFlags } from '@services/hacker-news-flags/repair-page'
 import type { Job } from 'glide-mq'
 
 /** Lane caps are loaded before worker startup and shared by every process. */
-export async function createHackerNewsFlagsWorker() {
+export async function createHackerNewsFlagsWorker(options: { promotionInterval?: number } = {}) {
   await hackerNewsFlagsConfig.waitForInitialization()
   const concurrency =
     getHackerNewsFlagsLimit('url_concurrency') + getHackerNewsFlagsLimit('repair_concurrency')
@@ -37,6 +37,7 @@ export async function createHackerNewsFlagsWorker() {
       dedicatedCommandClient: true,
       concurrency,
       globalConcurrency: concurrency,
+      ...options,
     },
   )
 }
