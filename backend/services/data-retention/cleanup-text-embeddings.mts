@@ -8,7 +8,6 @@ type Options = {
   maxBatches: number
   now?: Date
   lowerBoundDate?: Date
-  contentHashes?: readonly string[]
 }
 
 export async function cleanupTextEmbeddingCache(options: Options): Promise<PersistedPage<never>> {
@@ -31,10 +30,6 @@ async function deleteTextEmbeddingCachePage(
 ): Promise<PersistedPage<never>> {
   await using query = await beginTransaction()
   const lowerBoundPredicate = options.lowerBoundDate ? 'AND updated_at >= $3::timestamptz' : ''
-  const hashesPlaceholder = options.lowerBoundDate ? '$4' : '$3'
-  const contentHashesPredicate = options.contentHashes
-    ? ` AND cache.content_sha256 = ANY(SELECT decode(hash, 'hex') FROM unnest(${hashesPlaceholder}::text[]) hash)`
-    : ''
   const { rows: candidates } = await query<{
     content_sha256: string
   }>(
@@ -42,15 +37,10 @@ async function deleteTextEmbeddingCachePage(
     SELECT encode(content_sha256, 'hex') AS content_sha256
     FROM bedrock_nova_multimodal_v1_embeddings cache
     WHERE updated_at < $1::timestamptz
-      ${lowerBoundPredicate}${contentHashesPredicate}
+      ${lowerBoundPredicate}
     ORDER BY cache.updated_at, encode(cache.content_sha256, 'hex')
     LIMIT $2 FOR UPDATE`,
-    [
-      cutoff,
-      batchSize + 1,
-      ...(options.lowerBoundDate ? [options.lowerBoundDate] : []),
-      ...(options.contentHashes ? [options.contentHashes] : []),
-    ],
+    [cutoff, batchSize + 1, ...(options.lowerBoundDate ? [options.lowerBoundDate] : [])],
   )
   const page = candidates.slice(0, batchSize)
   const hashes = page.map(row => row.content_sha256)

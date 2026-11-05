@@ -26,8 +26,9 @@ export function reserveAIRetentionContinuationJobs() {
 }
 
 /**
- * Each fixture ages its rows inside a private far-future window and passes its explicit owned ids
- * to the cleanup. The cache and batch families use a one-millisecond window because
+ * Each fixture ages its rows inside a private far-future window. The text cache scopes by its
+ * exact window; other families pass explicit owned ids. The cache and batch families use a
+ * one-millisecond window because
  * their committed rows stay in the shared database and a wider window can sweep another
  * fixture's leftover row as an extra page. Cursor-backed families also keep a rollback-scoped
  * cursor.
@@ -39,16 +40,17 @@ export async function createAIRetentionContinuationFixture(
   switch (family) {
     case 'textEmbeddingCache': {
       const { aged, ...window } = createExactRetentionWindow(TEXT_EMBEDDING_RETENTION_DAYS)
-      const ownedAt = new Date(aged.getTime() + 1)
-      const ownedNow = new Date(window.now.getTime() + 1)
       await using setup = await beginTransaction()
       const contentHashes = await Promise.all(
-        [ownedAt, ownedAt, ownedNow].map(at => insertTextEmbeddingForRetentionTest(setup, at)),
+        [aged, aged, window.now].map(at => insertTextEmbeddingForRetentionTest(setup, at)),
       )
-      const excludedHash = await insertTextEmbeddingForRetentionTest(setup, aged)
+      const excludedHash = await insertTextEmbeddingForRetentionTest(
+        setup,
+        new Date(aged.getTime() - 1),
+      )
       await setup.commit()
       return {
-        options: { ...window, now: ownedNow, batchSize: 1, maxBatches: 1, contentHashes },
+        options: { ...window, batchSize: 1, maxBatches: 1 },
         excludedState: async () => {
           await using reader = await beginTransaction()
           return await textEmbeddingExistsForRetentionTest(reader, excludedHash)

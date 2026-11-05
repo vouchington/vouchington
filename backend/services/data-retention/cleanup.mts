@@ -252,9 +252,7 @@ export type DataRetentionCleanupOptions = {
     upperBoundDate?: Date
     continuation?: AgentModerationCleanupContinuation
   }>
-  textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions> & {
-    contentHashes?: readonly string[]
-  }
+  textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions>
   terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions> & {
     batchIds?: readonly string[]
   }
