@@ -4,6 +4,7 @@ import type { Readable } from 'node:stream'
 import { gunzipSync } from 'node:zlib'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { generateSitemapPage } from './generation-page.mts'
+import { sitemapSourcePage } from './sitemap-source-page.mts'
 import type { GenerationPageDependencies } from './generation-page-types.mts'
 import type { SitemapGenerationProgress } from './generation-storage.mts'
 import { applyStoragePrefix } from './storage-prefix.mts'
@@ -58,7 +59,7 @@ describe('bounded sitemap publication', () => {
               entry.id < options.afterId ||
               (entry.id === options.afterId && entry.path > (options.afterPath ?? ''))),
         )
-        return eligible.slice(0, options.limit)
+        return sitemapSourcePage(eligible.slice(0, options.limit), options.limit)
       },
       pageStorageKey: (generationId, page) => `families/topics/${generationId}/${page}.xml`,
       pageRoutePath: (generationId, page) => `sitemaps/topics/${generationId}/${page}.xml`,
@@ -108,6 +109,41 @@ describe('bounded sitemap publication', () => {
     expect(retired.at(-1)?.pageCount).toBe(1)
     expect(retired.at(-1)?.generationId).not.toBe(final.manifest?.generation_id)
   })
+  it('continues past a raw page that publishes no eligible urls', async () => {
+    const state: { progress: SitemapGenerationProgress | null } = { progress: null }
+    const dependencies: GenerationPageDependencies<SitemapFamilyEntry> = {
+      getProgress: async () => state.progress,
+      getManifest: async () => null,
+      putProgress: async value => {
+        state.progress = value
+      },
+      deleteProgress: async () => {
+        state.progress = null
+      },
+      readPage: async () => ({
+        entries: [],
+        exhausted: false,
+        afterId: '0199a000-0000-7000-8000-000000000002',
+        afterPath: null,
+        boundId: '0199a000-0000-7000-8000-000000000003',
+      }),
+      pageStorageKey: (generationId, page) => `families/topics/${generationId}/${page}.xml`,
+      pageRoutePath: (generationId, page) => `sitemaps/topics/${generationId}/${page}.xml`,
+      indexStorageKey: 'sitemaps/families/topics.xml',
+      retireGeneration: async () => {},
+      toUrl: entry => ({ loc: `https://test.com${entry.path}`, lastmod: '2026-04-01' }),
+    }
+
+    const result = await generateSitemapPage(1, dependencies)
+    expect(result).toMatchObject({ manifest: null, hasMore: true })
+    expect(result.continuationId).toBe(
+      `${state.progress?.generation_id}-scan-0199a000-0000-7000-8000-000000000002`,
+    )
+    expect(state.progress?.page_count).toBe(0)
+    expect(state.progress?.finished).toBe(false)
+    expect(state.progress?.after_id).toBe('0199a000-0000-7000-8000-000000000002')
+  })
+
   it('no-ops a continuation whose generation is gone or replaced instead of starting one', async () => {
     let progress: SitemapGenerationProgress | null = null
     const started: SitemapGenerationProgress[] = []
@@ -121,7 +157,7 @@ describe('bounded sitemap publication', () => {
       deleteProgress: async () => {
         progress = null
       },
-      readPage: async () => [],
+      readPage: async options => sitemapSourcePage([], options.limit),
       pageStorageKey: (generationId, page) => `families/topics/${generationId}/${page}.xml`,
       pageRoutePath: (generationId, page) => `sitemaps/topics/${generationId}/${page}.xml`,
       indexStorageKey: 'sitemaps/families/topics.xml',

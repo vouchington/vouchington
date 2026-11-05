@@ -6,6 +6,7 @@ import type { RelationTableName } from './profile-collection-tables.mts'
 export type RssFeedRelationRow = {
   object_id: string
   created_us: number
+  kept: boolean
 }
 
 export async function getRssFeedRelationRows(
@@ -20,12 +21,13 @@ export async function getRssFeedRelationRows(
 ): Promise<RssFeedRelationRow[]> {
   const params: unknown[] = [userId, safeLimit]
   const conditions: string[] = ['rel.subject_id = $1', 'rel.deleted_at IS NULL']
+  const feedConditions = ['rf.deleted_at IS NULL']
   let paramIdx = 2
 
   if (filters.feedType) {
     paramIdx++
     params.push(filters.feedType)
-    conditions.push(`rf.feed_type = $${paramIdx}`)
+    feedConditions.push(`rf.feed_type = $${paramIdx}`)
   }
 
   if (filters.after) {
@@ -38,17 +40,26 @@ export async function getRssFeedRelationRows(
     )
   }
 
-  const whereClause = conditions.join('\n      AND ')
-
-  const { rows } = await read<{ object_id: string; created_us: string }>(
+  const { rows } = await read<{ object_id: string; created_us: string; kept: boolean }>(
     `/* getRssFeedRelationRows */
-    SELECT rel.object_id,
-           (EXTRACT(EPOCH FROM rel.created_at) * 1000000)::bigint AS created_us
-    FROM ${tableName} rel
-    JOIN rss_feeds rf ON rf.id = rel.object_id AND rf.deleted_at IS NULL
-    WHERE ${whereClause}
-    ORDER BY rel.created_at DESC, rel.object_id DESC
-    LIMIT $2`,
+    WITH relation_page AS MATERIALIZED (
+      SELECT rel.object_id, rel.created_at
+      FROM ${tableName} rel
+      WHERE ${conditions.join('\n        AND ')}
+      ORDER BY rel.created_at DESC, rel.object_id DESC
+      LIMIT $2
+    )
+    SELECT page.object_id,
+           (EXTRACT(EPOCH FROM page.created_at) * 1000000)::bigint AS created_us,
+           (rf.id IS NOT NULL) AS kept
+    FROM relation_page page
+    LEFT JOIN LATERAL (
+      SELECT rf.id
+      FROM rss_feeds rf
+      WHERE rf.id = page.object_id AND ${feedConditions.join(' AND ')}
+      LIMIT 1
+    ) rf ON TRUE
+    ORDER BY page.created_at DESC, page.object_id DESC`,
     params,
     options,
   )
@@ -56,12 +67,14 @@ export async function getRssFeedRelationRows(
   return rows.map(row => ({
     object_id: row.object_id,
     created_us: Number(row.created_us),
+    kept: row.kept,
   }))
 }
 
 export type RssFeedItemRelationRow = {
   entity_id: string
   created_us: number
+  kept: boolean
 }
 
 export async function getRssFeedItemRelationRows(
@@ -76,12 +89,13 @@ export async function getRssFeedItemRelationRows(
 ): Promise<RssFeedItemRelationRow[]> {
   const params: unknown[] = [userId, safeLimit]
   const conditions: string[] = ['rel.subject_id = $1', 'rel.deleted_at IS NULL']
+  const itemConditions = ['rfi.deleted_at IS NULL']
   let paramIdx = 2
 
   if (filters.mediaType) {
     paramIdx++
     params.push(filters.mediaType)
-    conditions.push(`rfi.media_type = $${paramIdx}`)
+    itemConditions.push(`rfi.media_type = $${paramIdx}`)
   }
 
   if (filters.after) {
@@ -94,17 +108,26 @@ export async function getRssFeedItemRelationRows(
     )
   }
 
-  const whereClause = conditions.join('\n      AND ')
-
-  const { rows } = await read<{ entity_id: string; created_us: string }>(
+  const { rows } = await read<{ entity_id: string; created_us: string; kept: boolean }>(
     `/* getRssFeedItemRelationRows */
-    SELECT rel.object_id AS entity_id,
-           (EXTRACT(EPOCH FROM rel.created_at) * 1000000)::bigint AS created_us
-    FROM ${tableName} rel
-    JOIN rss_feed_items rfi ON rfi.id = rel.object_id AND rfi.deleted_at IS NULL
-    WHERE ${whereClause}
-    ORDER BY rel.created_at DESC, rel.object_id DESC
-    LIMIT $2`,
+    WITH relation_page AS MATERIALIZED (
+      SELECT rel.object_id, rel.created_at
+      FROM ${tableName} rel
+      WHERE ${conditions.join('\n        AND ')}
+      ORDER BY rel.created_at DESC, rel.object_id DESC
+      LIMIT $2
+    )
+    SELECT page.object_id AS entity_id,
+           (EXTRACT(EPOCH FROM page.created_at) * 1000000)::bigint AS created_us,
+           (rfi.id IS NOT NULL) AS kept
+    FROM relation_page page
+    LEFT JOIN LATERAL (
+      SELECT rfi.id
+      FROM rss_feed_items rfi
+      WHERE rfi.id = page.object_id AND ${itemConditions.join(' AND ')}
+      LIMIT 1
+    ) rfi ON TRUE
+    ORDER BY page.created_at DESC, page.object_id DESC`,
     params,
     options,
   )
@@ -112,6 +135,7 @@ export async function getRssFeedItemRelationRows(
   return rows.map(row => ({
     entity_id: row.entity_id,
     created_us: Number(row.created_us),
+    kept: row.kept,
   }))
 }
 

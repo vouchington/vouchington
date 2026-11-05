@@ -1,46 +1,55 @@
 import sql from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
 
-export function buildLandingPagesQuery(options?: {
+export function buildLandingPageSourceQuery(options?: {
   highWaterId?: string
   afterId?: string
   limit: number
 }) {
   const query = sql`/* buildSitemapLandingPagesQuery */
-    SELECT ulp.id,
+    WITH landing_page AS MATERIALIZED (
+      SELECT ulp.id, ulp.user_id, ulp.is_default, ulp.slug, ulp.updated_at
+      FROM user_landing_pages ulp
+      WHERE TRUE
+  `
+  if (options?.highWaterId) query.append(sql` AND ulp.id <= ${options.highWaterId}`)
+  if (options?.afterId) query.append(sql` AND ulp.id < ${options.afterId}`)
+  if (options) query.append(sql` ORDER BY ulp.id DESC LIMIT ${options.limit}`)
+  query.append(sql`)
+    SELECT landing_page.id,
       CASE
-        WHEN ulp.is_default THEN CONCAT('/@', u.username)
-        ELSE CONCAT('/@', u.username, '/', ulp.slug)
+        WHEN landing_page.is_default THEN CONCAT('/@', u.username)
+        ELSE CONCAT('/@', u.username, '/', landing_page.slug)
       END AS path,
       GREATEST(
-        ulp.updated_at,
+        landing_page.updated_at,
         u.updated_at,
         COALESCE((
           SELECT MAX(ulpi_lastmod.updated_at)
           FROM user_landing_page_items ulpi_lastmod
-          WHERE ulpi_lastmod.landing_page_id = ulp.id
-        ), ulp.updated_at),
+          WHERE ulpi_lastmod.landing_page_id = landing_page.id
+        ), landing_page.updated_at),
         COALESCE((
           SELECT MAX(ulpgm_lastmod.updated_at)
           FROM user_landing_page_items ulpi_lastmod
           JOIN user_landing_page_group_members ulpgm_lastmod
             ON ulpgm_lastmod.landing_page_item_id = ulpi_lastmod.id
-          WHERE ulpi_lastmod.landing_page_id = ulp.id
-        ), ulp.updated_at),
+          WHERE ulpi_lastmod.landing_page_id = landing_page.id
+        ), landing_page.updated_at),
         COALESCE((
           SELECT MAX(upl_lastmod.updated_at)
           FROM user_landing_page_items ulpi_lastmod
           JOIN user_profile_links upl_lastmod ON upl_lastmod.id = ulpi_lastmod.profile_link_id
-          WHERE ulpi_lastmod.landing_page_id = ulp.id
-        ), ulp.updated_at),
+          WHERE ulpi_lastmod.landing_page_id = landing_page.id
+        ), landing_page.updated_at),
         COALESCE((
           SELECT MAX(review_lastmod.updated_at)
           FROM user_landing_page_items ulpi_lastmod
           JOIN posts review_lastmod ON review_lastmod.id = ulpi_lastmod.review_post_id
           JOIN view_public_post_eligibility review_lastmod_eligibility
             ON review_lastmod_eligibility.post_id = review_lastmod.id
-          WHERE ulpi_lastmod.landing_page_id = ulp.id
-        ), ulp.updated_at),
+          WHERE ulpi_lastmod.landing_page_id = landing_page.id
+        ), landing_page.updated_at),
         COALESCE((
           SELECT MAX(group_review_lastmod.updated_at)
           FROM user_landing_page_items ulpi_lastmod
@@ -49,15 +58,15 @@ export function buildLandingPagesQuery(options?: {
           JOIN posts group_review_lastmod ON group_review_lastmod.id = ulpgm_lastmod.review_post_id
           JOIN view_public_post_eligibility group_review_lastmod_eligibility
             ON group_review_lastmod_eligibility.post_id = group_review_lastmod.id
-          WHERE ulpi_lastmod.landing_page_id = ulp.id
-        ), ulp.updated_at),
+          WHERE ulpi_lastmod.landing_page_id = landing_page.id
+        ), landing_page.updated_at),
         COALESCE((
           SELECT MAX(referral_lastmod.updated_at)
           FROM user_landing_page_items ulpi_lastmod
           JOIN user_referral_program_links referral_lastmod
             ON referral_lastmod.id = ulpi_lastmod.referral_link_id
-          WHERE ulpi_lastmod.landing_page_id = ulp.id
-        ), ulp.updated_at),
+          WHERE ulpi_lastmod.landing_page_id = landing_page.id
+        ), landing_page.updated_at),
         COALESCE((
           SELECT MAX(group_referral_lastmod.updated_at)
           FROM user_landing_page_items ulpi_lastmod
@@ -65,23 +74,13 @@ export function buildLandingPagesQuery(options?: {
             ON ulpgm_lastmod.landing_page_item_id = ulpi_lastmod.id
           JOIN user_referral_program_links group_referral_lastmod
             ON group_referral_lastmod.id = ulpgm_lastmod.referral_link_id
-          WHERE ulpi_lastmod.landing_page_id = ulp.id
-        ), ulp.updated_at)
-      ) AS updated_at
-    FROM user_landing_pages ulp
-    JOIN users u ON u.id = ulp.user_id
-    WHERE u.deleted_at IS NULL
-      AND u.username IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1
-        FROM user_suspensions us
-        WHERE us.user_id = u.id
-          AND us.lifted_at IS NULL
-      )
-      AND EXISTS (
+          WHERE ulpi_lastmod.landing_page_id = landing_page.id
+        ), landing_page.updated_at)
+      ) AS updated_at,
+      (u.id IS NOT NULL AND EXISTS (
         SELECT 1
         FROM user_landing_page_items ulpi
-        WHERE ulpi.landing_page_id = ulp.id
+        WHERE ulpi.landing_page_id = landing_page.id
           AND (
             EXISTS (
               SELECT 1
@@ -112,7 +111,7 @@ export function buildLandingPagesQuery(options?: {
                   SELECT 1
                   FROM posts root_post
                   WHERE root_post.id = COALESCE(p.root_post_id, p.id)
-                    AND `
+                    AND `)
   query.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
                 )
             )
@@ -157,10 +156,31 @@ export function buildLandingPagesQuery(options?: {
                 AND (group_review.id IS NOT NULL OR group_link.id IS NOT NULL)
             )
           )
-      )
+      )) AS kept
+    FROM landing_page
+    LEFT JOIN LATERAL (
+      SELECT u.*
+      FROM users u
+      WHERE u.id = landing_page.user_id
+        AND u.deleted_at IS NULL
+        AND u.username IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM user_suspensions us
+          WHERE us.user_id = u.id AND us.lifted_at IS NULL
+        )
+      LIMIT 1
+    ) u ON TRUE
   `)
-  if (options?.highWaterId) query.append(sql` AND ulp.id <= ${options.highWaterId}`)
-  if (options?.afterId) query.append(sql` AND ulp.id < ${options.afterId}`)
-  if (options) query.append(sql` ORDER BY ulp.id DESC LIMIT ${options.limit}`)
+  return query
+}
+
+export function buildLandingPagesQuery(options?: {
+  highWaterId?: string
+  afterId?: string
+  limit: number
+}) {
+  const query = sql`SELECT id, path, updated_at FROM (`
+  query.append(buildLandingPageSourceQuery(options))
+  query.append(sql`) landing_source WHERE kept`)
   return query
 }

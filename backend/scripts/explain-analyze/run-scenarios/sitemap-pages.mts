@@ -1,5 +1,8 @@
 import { readPostsForDayPage } from '@services/sitemaps/daily-queries'
-import { readSitemapFamilyPage } from '@services/sitemaps/family-queries'
+import {
+  readLandingSitemapSourcePage,
+  readSitemapFamilyPage,
+} from '@services/sitemaps/family-queries'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { postSeedTimestampMs, seedUuid } from '../seed-data/common.mts'
@@ -37,6 +40,16 @@ export async function runSitemapPageScenarios(): Promise<void> {
     })
     if (page.length !== 11) throw new Error('Missing bounded sitemap topic source page')
   })
+
+  registerScenarioContract('sitemap-landing-pages-page', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'user_landing_pages', max: 30 },
+      { kind: 'maxProcessedRows', relation: 'users', max: 40 },
+    ],
+  })
+  await runAndCapture('sitemap-landing-pages-page', () =>
+    readLandingSitemapSourcePage({ limit: 11 }),
+  )
 
   registerScenarioContract('sitemap-post-day-page', {
     expectations: [{ kind: 'maxProcessedRows', relation: 'posts', max: 5000 }],

@@ -42,29 +42,40 @@ export async function reconcilePostModerationWork(
     source: AutomatedPostModerationSource
   }>(
     `/* reconcilePostModerationWork */
-      WITH candidates AS MATERIALIZED (
-        SELECT version.id AS version_id, source.source::post_moderation_sources AS source,
-          version.post_id, version.deadline_at,
+      WITH version_page AS MATERIALIZED (
+        SELECT version.id AS version_id, version.post_id, version.content_sha256, version.deadline_at,
           COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond')) AS through_id
         FROM post_moderation_versions version
-        JOIN posts post ON post.id = version.post_id
-          AND post.llm_moderation_content_sha256 = version.content_sha256
-          AND post.deleted_at IS NULL
-        CROSS JOIN unnest($7::text[]) AS source(source)
         WHERE version.policy_revision = $2
           AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
-          AND ($4::uuid IS NULL OR (version.id, source.source::post_moderation_sources)
+          AND ($4::uuid IS NULL OR version.id > $4::uuid OR version.id = $4::uuid)
+          AND ($3::uuid[] IS NULL OR version.post_id = ANY($3::uuid[]))
+        ORDER BY version.id
+        LIMIT $1 + 1
+      ), expanded AS MATERIALIZED (
+        SELECT version_page.version_id, source.source::post_moderation_sources AS source,
+          version_page.post_id, version_page.deadline_at, version_page.through_id
+        FROM version_page
+        JOIN LATERAL (
+          SELECT post.id
+          FROM posts post
+          WHERE post.id = version_page.post_id
+            AND post.llm_moderation_content_sha256 = version_page.content_sha256
+            AND post.deleted_at IS NULL
+          LIMIT 1
+        ) post ON TRUE
+        CROSS JOIN unnest($7::text[]) AS source(source)
+        WHERE ($4::uuid IS NULL OR (version_page.version_id, source.source::post_moderation_sources)
             > ($4::uuid, $5::post_moderation_sources))
-          AND ($3::uuid[] IS NULL OR post.id = ANY($3::uuid[]))
           AND NOT EXISTS (
             SELECT 1 FROM post_moderation_dispositions disposition
-            WHERE disposition.version_id = version.id
+            WHERE disposition.version_id = version_page.version_id
               AND disposition.source = source.source::post_moderation_sources
           )
-        ORDER BY version.id, source.source::post_moderation_sources
-        LIMIT $1 + 1
+      ), ordered_sources AS MATERIALIZED (
+        SELECT * FROM expanded ORDER BY version_id, source
       ), selected AS MATERIALIZED (
-        SELECT * FROM candidates ORDER BY version_id, source LIMIT $1
+        SELECT * FROM ordered_sources LIMIT $1
       ), exhausted_dispositions AS (
         INSERT INTO post_moderation_dispositions (
           version_id, source, attempt_id, disposition, reason_code, evidence
@@ -79,8 +90,35 @@ export async function reconcilePostModerationWork(
         ON CONFLICT (attempt_id) DO NOTHING
         RETURNING version_id, source
       ), continuation AS (
-        SELECT * FROM selected WHERE (SELECT count(*) FROM candidates) > $1
-        ORDER BY version_id DESC, source DESC LIMIT 1
+        (
+          SELECT version_id, source, post_id, through_id FROM selected
+          WHERE (SELECT count(*) FROM ordered_sources) > $1
+            OR (
+              (SELECT count(*) FROM selected) > 0
+              AND (SELECT count(*) FROM version_page) > $1
+              AND (SELECT count(*) FROM ordered_sources) <= $1
+            )
+          ORDER BY version_id DESC, source DESC
+          LIMIT 1
+        )
+        UNION ALL
+        (
+          SELECT numbered.version_id,
+            (
+              SELECT source.source::post_moderation_sources
+              FROM unnest($7::text[]) AS source(source)
+              ORDER BY source.source::post_moderation_sources DESC
+              LIMIT 1
+            ),
+            numbered.post_id, numbered.through_id
+          FROM (
+            SELECT version_page.*, row_number() OVER (ORDER BY version_id) AS n
+            FROM version_page
+          ) numbered
+          WHERE (SELECT count(*) FROM selected) = 0
+            AND (SELECT count(*) FROM version_page) > $1
+            AND numbered.n = $1
+        )
       )
       SELECT 'exhausted'::text AS row_kind, selected.post_id, selected.version_id, selected.source,
         selected.through_id

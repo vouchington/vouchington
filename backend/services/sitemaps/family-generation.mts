@@ -1,5 +1,6 @@
-import { readSitemapFamilyPage } from './family-queries.mts'
+import { readLandingSitemapSourcePage, readSitemapFamilyPage } from './family-queries.mts'
 import { generateSitemapPage, type GenerationPageResult } from './generation-page.mts'
+import { sitemapSourcePage } from './sitemap-source-page.mts'
 import {
   buildFamilyIndexRoutePath,
   buildFamilyIndexStorageKey,
@@ -28,7 +29,10 @@ export async function generateSitemapFamilyFiles(
       getManifest: () => getSitemapFamilyManifest(family),
       putProgress: progress => putSitemapFamilyProgress(family, progress),
       deleteProgress: () => deleteSitemapFamilyProgress(family),
-      readPage: options => readSitemapFamilyPage(family, options),
+      readPage: async options =>
+        family === 'landing-pages'
+          ? readLandingSitemapSourcePage(options)
+          : sitemapSourcePage(await readSitemapFamilyPage(family, options), options.limit),
       pageStorageKey: (generationId, page) => buildFamilyPageStorageKey(family, generationId, page),
       pageRoutePath: (generationId, page) => buildFamilyPageRoutePath(family, generationId, page),
       indexStorageKey: buildFamilyIndexStorageKey(family),

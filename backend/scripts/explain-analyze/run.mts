@@ -4,6 +4,7 @@ import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projectio
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
 import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
 import { runSitemapPageScenarios } from './run-scenarios/sitemap-pages.mts'
+import { runDeletedParentPageScenarios } from './run-scenarios/deleted-parent-pages.mts'
 import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
 import { runPublicationScopePageScenarios } from './run-scenarios/publication-scope-pages.mts'
 import { runNotificationVisibilityScenarios } from './run-scenarios/notification-visibility.mts'
@@ -97,6 +98,7 @@ async function main() {
     assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
     await assertSeedAnchorMatches()
     await runStep(runSitemapPageScenarios.name, runSitemapPageScenarios)
+    await runStep(runDeletedParentPageScenarios.name, runDeletedParentPageScenarios)
     await runStep(runStoryProjectionWorkScenarios.name, runStoryProjectionWorkScenarios)
     await runStep(runImageQuarantineScenarios.name, runImageQuarantineScenarios)
     await runStep(runBloomReconciliationScenarios.name, runBloomReconciliationScenarios)

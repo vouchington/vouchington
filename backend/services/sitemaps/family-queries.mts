@@ -1,7 +1,11 @@
 import { read } from '@data-stores/psql'
 import { getTopicTypeSlug, topicTypes } from '@voucha/types/entities/topic'
 import sql from 'sql-template-strings'
-import { buildLandingPagesQuery } from './family-landing-pages-query.mts'
+import {
+  buildLandingPageSourceQuery,
+  buildLandingPagesQuery,
+} from './family-landing-pages-query.mts'
+import type { SitemapSourcePage } from './generation-page-types.mts'
 import type { SitemapFamilyEntry, SitemapFamilyType } from './types.mts'
 
 type FamilyPageOptions = {
@@ -18,6 +22,27 @@ function buildTopicSlugCaseSql() {
   }
   caseSql.append(sql` ELSE topic_type::text END`)
   return caseSql
+}
+
+export async function readLandingSitemapSourcePage(
+  options: FamilyPageOptions,
+): Promise<SitemapSourcePage<SitemapFamilyEntry>> {
+  const { rows } = await read<SitemapFamilyEntry & { kept: boolean }>(
+    buildLandingPageSourceQuery(options),
+  )
+  if (rows.length > options.limit) throw new Error('Sitemap source exceeded its query limit')
+  const exhausted = rows.length < options.limit
+  const inspected = exhausted ? rows : rows.slice(0, options.limit - 1)
+  const last = inspected.at(-1)
+  return {
+    entries: inspected.flatMap(row =>
+      row.kept && row.path ? [{ id: row.id, path: row.path, updated_at: row.updated_at }] : [],
+    ),
+    exhausted,
+    afterId: last?.id ?? null,
+    afterPath: null,
+    boundId: rows[0]?.id ?? null,
+  }
 }
 
 export async function readSitemapFamilyPage(

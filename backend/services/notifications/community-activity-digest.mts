@@ -21,13 +21,13 @@ export async function createCommunityActivityDigestBatch(input: {
 }> {
   const batchSize =
     input.batchSize ?? getNotificationsWorkLimit('community_digest_recipient_batch_size')
-  const { rows: recipientRows, page } = await listCommunityActivityDigestRecipientPage(
+  const { page, hasMore, nextUserId } = await listCommunityActivityDigestRecipientPage(
     input.afterUserId,
     input.throughUserId,
     input.userIds,
     batchSize,
   )
-  if (page.length === 0) return { created: [], nextUserId: null }
+  if (page.length === 0) return { created: [], nextUserId: hasMore ? nextUserId : null }
   const digestRows = await aggregateCommunityActivityDigestBatch({
     recipientIds: page.map(row => row.user_id),
     windowStart: input.windowStart,
@@ -62,8 +62,5 @@ export async function createCommunityActivityDigestBatch(input: {
   `)
   const created = rows.map(row => ({ userId: row.user_id, notificationId: row.id }))
   await ensureNotificationPushIntents(created)
-  return {
-    created,
-    nextUserId: recipientRows.length > batchSize ? (page.at(-1)?.user_id ?? null) : null,
-  }
+  return { created, nextUserId }
 }

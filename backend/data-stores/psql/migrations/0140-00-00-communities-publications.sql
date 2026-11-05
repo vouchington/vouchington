@@ -208,6 +208,10 @@ CREATE INDEX IF NOT EXISTS idx_community_members__active_community_id_id
 CREATE INDEX IF NOT EXISTS idx_community_members__active_moderators
   ON community_members (community_id, user_id)
   WHERE removed_at IS NULL AND role IN ('owner', 'moderator');
+-- Digest recipient pages walk moderators by user and must not read regular members.
+CREATE INDEX IF NOT EXISTS idx_community_members__active_moderator_user_id
+  ON community_members (user_id, community_id)
+  WHERE removed_at IS NULL AND role IN ('owner', 'moderator');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__user_id_desc
   ON community_members (user_id, id DESC)

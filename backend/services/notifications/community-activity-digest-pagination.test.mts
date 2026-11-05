@@ -3,6 +3,7 @@ import {
   createTestUserDirect,
   insertTestCommunity,
   insertTestCommunityMember,
+  softDeleteUser,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { notificationsWorkConfig } from './work-limits.mts'
@@ -31,12 +32,47 @@ describe('community activity digest recipient pagination', () => {
     const ids = [first.id, second.id]
     const page = await listCommunityActivityDigestRecipientPage(undefined, undefined, ids, 1)
     expect(page).toEqual({
-      rows: [{ user_id: first.id }, { user_id: second.id }],
       page: [{ user_id: first.id }],
+      hasMore: true,
+      nextUserId: first.id,
     })
     const next = await listCommunityActivityDigestRecipientPage(first.id, undefined, ids, 1)
-    expect(next).toEqual({ rows: [{ user_id: second.id }], page: [{ user_id: second.id }] })
+    expect(next).toEqual({
+      page: [{ user_id: second.id }],
+      hasMore: false,
+      nextUserId: null,
+    })
     const done = await listCommunityActivityDigestRecipientPage(second.id, undefined, ids, 1)
-    expect(done).toEqual({ rows: [], page: [] })
+    expect(done).toEqual({ page: [], hasMore: false, nextUserId: null })
+  })
+
+  it('advances past a deleted moderator without dropping the next live recipient', async () => {
+    const liveBefore = await createTestUserDirect()
+    const deleted = await createTestUserDirect()
+    const liveAfter = await createTestUserDirect()
+    const community = await insertTestCommunity({ createdById: liveBefore.id })
+    for (const user of [liveBefore, deleted, liveAfter]) {
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: user.id,
+        role: 'moderator',
+      })
+    }
+    await softDeleteUser(deleted.id)
+    const ids = [liveBefore.id, deleted.id, liveAfter.id].toSorted()
+
+    const seen: string[] = []
+    let after: string | undefined
+    let emptyContinuation = false
+    for (let step = 0; step < 6; step++) {
+      const page = await listCommunityActivityDigestRecipientPage(after, undefined, ids, 1)
+      seen.push(...page.page.map(row => row.user_id))
+      if (page.page.length === 0 && page.hasMore) emptyContinuation = true
+      if (!page.hasMore) break
+      after = page.nextUserId ?? undefined
+    }
+
+    expect(seen).toEqual([liveBefore.id, liveAfter.id].toSorted())
+    expect(emptyContinuation).toBe(true)
   })
 })

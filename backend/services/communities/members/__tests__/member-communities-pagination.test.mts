@@ -8,7 +8,7 @@ import { updateUserFields } from '@services/users/update-fields'
 import { countUserMemberCommunities, listUserMemberCommunities } from '../member-communities.mts'
 
 describe('listUserMemberCommunities pagination', () => {
-  it('applies community and roster visibility before the page limit', async () => {
+  it('returns every visible community across short pages when hidden communities sit between them', async () => {
     const target = await createTestUser()
     await updateUserFields(target.id, { community_memberships_visibility: 'everyone' })
 
@@ -29,19 +29,20 @@ describe('listUserMemberCommunities pagination', () => {
       })
     }
 
-    const first = await listUserMemberCommunities(target.id, null, { limit: 2 })
-    const second = await listUserMemberCommunities(target.id, null, {
-      limit: 2,
-      after: first.page_info.end_cursor ?? undefined,
-    })
+    const seen: string[] = []
+    let after: string | undefined
+    let shortPage = false
+    for (let step = 0; step < 8; step++) {
+      const page = await listUserMemberCommunities(target.id, null, { limit: 2, after })
+      seen.push(...page.results.map(member => member.community_id))
+      if (page.results.length < 2 && page.page_info.has_next_page) shortPage = true
+      if (!page.page_info.has_next_page) break
+      expect(page.page_info.end_cursor).toBeTruthy()
+      after = page.page_info.end_cursor ?? undefined
+    }
 
-    expect(first.results).toHaveLength(2)
-    expect(first.page_info.has_next_page).toBe(true)
-    expect(second.results).toHaveLength(1)
-    expect(second.page_info.has_next_page).toBe(false)
-    expect([...first.results, ...second.results].map(member => member.community_id)).toEqual(
-      visibleIds,
-    )
+    expect(seen).toEqual(visibleIds)
+    expect(shortPage).toBe(true)
   })
 
   it('keeps list and count visibility aligned for anonymous, user, member, and admin viewers', async () => {
