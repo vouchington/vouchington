@@ -131,7 +131,7 @@ export async function createMembershipWithQuery(
     await pauseOpenGrantActivations(options.userId, sourceEffectiveAt, query)
   if (prior && !directStatusDoesNotEntitle)
     await retireCurrentMembershipProjection(options.userId, query)
-  // ast-grep-ignore: no-three-sequential-awaits -- projection creates provider fact context; accepted evidence must update it before its audit
+  // ast-grep-ignore: no-three-sequential-awaits -- insertMembershipProjection returns created, which acceptMembershipProviderEvidence consumes; recordMembershipChange consumes the accepted membership and evidence id
   const created = await insertMembershipProjection(
     options.userId,
     source.id,

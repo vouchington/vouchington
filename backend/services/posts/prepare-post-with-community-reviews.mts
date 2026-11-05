@@ -128,7 +128,7 @@ export const preparePostWithCommunityReviews = async (
       await validatePostCategories(creator, membershipPlan, updates, { queryOptions: options })
     }
     const scopeInput = { creator, defaults, options, updates }
-    // ast-grep-ignore: no-three-sequential-awaits -- scope validation, insert and source URL relation depend on each other inside the same transaction
+    // ast-grep-ignore: no-three-sequential-awaits -- resolvePostScope returns scope consumed by insertPost; persistPostSourceUrlRelation consumes the insertedPost.id before side effects read that source relation
     const scope = await resolvePostScope({
       ...scopeInput,
       communityLockHeld: delegated,

@@ -74,7 +74,6 @@ export async function linkValidationToReferralProgram(
 ): Promise<void> {
   assert(currentUser, 401, 'Unauthorized')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   await assertReferralProgramAndLinkValidationExist(referralProgramId, validationId, options)
   await withReferralLinkEligibilityMutationLock(options ?? {}, async query => {
     await lockTopicRssFeedAttachmentLifecycle(query, referralProgramId)

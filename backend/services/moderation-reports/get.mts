@@ -166,7 +166,7 @@ export async function listModerationReports(options: ListModerationReportsOption
     ? (rows as PendingModerationReport[]).slice(0, limit)
     : (rows as PendingModerationReport[])
   if (cursorDirection === 'before') pageRows = pageRows.toReversed()
-  // ast-grep-ignore: no-three-sequential-awaits -- each enrichment step depends on the previous result
+  // ast-grep-ignore: no-three-sequential-awaits -- attachJudgements returns withJudgements consumed by attachPostModerationContext, whose withContext rows feed attachBanEvasionContext
   const withJudgements = await attachJudgements(pageRows.map(applyDeletedTargetLabel))
   const withContext = await attachPostModerationContext(withJudgements, 'staff')
   const reports = await attachBanEvasionContext(withContext)

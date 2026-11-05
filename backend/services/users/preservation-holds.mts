@@ -90,7 +90,6 @@ export async function placeUserPreservationHold(
   const ciphertext = encryptSecret(plaintext, referencePurpose(holdId))
 
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- lock, insert, and audit must run in order on one transaction client.
   const account = await lockPreservationHoldUser(query, userId)
   if (!account) {
     throw createHttpError(404, 'User not found')
@@ -131,7 +130,6 @@ export async function releaseUserPreservationHold(
   assertAdmin(currentUser)
 
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- lock, release, and audit must run in order on one transaction client.
   if (!(await lockPreservationHoldUser(query, userId))) {
     throw createHttpError(404, 'User not found')
   }
@@ -186,7 +184,6 @@ export async function getUserPreservationHoldState(
 ): Promise<UserPreservationHoldState> {
   assertAdmin(currentUser)
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- the lifecycle lock must cover the existence and history reads.
   const account = await lockPreservationHoldUser(query, userId)
   if (!account) throw createHttpError(404, 'User not found')
   const holds = await queryUserPreservationHolds(query, userId)

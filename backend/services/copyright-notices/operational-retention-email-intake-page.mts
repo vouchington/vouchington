@@ -41,7 +41,6 @@ export async function eraseIntakePage(
   ) {
     return { complete: true, erased: false }
   }
-  // ast-grep-ignore: no-three-sequential-awaits -- the transaction-local erasure gate precedes the receipt marker and irreversible object deletion.
   await transaction(sql`/* enableUnlinkedCopyrightEmailRetention */
     SELECT set_config('app.copyright_retention_erasure', 'on', true),
       set_config('app.copyright_operational_retention', 'on', true)`)

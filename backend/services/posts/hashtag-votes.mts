@@ -8,11 +8,10 @@ import type { PrivateUser } from '@services/users/types'
 import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
 import {
   ensureTopicCategoryRelations,
-  loadActorAliasRelations,
+  loadActorCategoryVoteInputs,
   writeCategoryVotes,
 } from './category-vote-cast.mts'
 import { refreshPostCategoryVoteStatsInTransaction } from './category-vote-stats.mts'
-import { getRemovedPositivePostHashtagRelations } from './hashtag-vote-removals.mts'
 
 /** Casts the post author's current category votes and updates score rows in the caller's tx. */
 export async function castPostCategoryVotesInTransaction(
@@ -32,15 +31,8 @@ export async function castPostCategoryVotesInTransaction(
     objectType: 'topic',
     predicate: 'category',
   })
-  // ast-grep-ignore: no-three-sequential-awaits -- category reads and writes are ordered on one transaction to preserve deterministic vote replacement
-  const activeAliasRelations = await loadActorAliasRelations(query, aliasRelation, actor, postId)
-  const removedAliasRelations = await getRemovedPositivePostHashtagRelations(
-    actor.id,
-    aliasRelation,
-    postId,
-    { query },
-  )
-  const topicIds = await getPersistedPostTopicIds(query, postId)
+  const { activeAliasRelations, removedAliasRelations, topicIds } =
+    await loadActorCategoryVoteInputs(query, aliasRelation, actor, postId)
   const retainedTopicRelations = await ensureTopicCategoryRelations(
     query,
     actor,
@@ -90,21 +82,6 @@ async function isActiveUser(query: TransactionQuery, userId: string): Promise<bo
   const { rows } = await query<{ id: string }>(sql`/* postCategoryVotes.activeOwner */
     SELECT id FROM users WHERE id = ${userId} AND deleted_at IS NULL`)
   return rows.length > 0
-}
-
-async function getPersistedPostTopicIds(
-  query: TransactionQuery,
-  postId: string,
-): Promise<string[]> {
-  const { rows } = await write<{ topic_id: string }>(
-    `/* getPersistedPostTopicIds */
-      SELECT topic_id FROM post_explicit_topic_categories WHERE post_id = $1
-      UNION
-      SELECT topic_id FROM post_data_point_topics WHERE post_id = $1`,
-    [postId],
-    { query },
-  )
-  return rows.map(row => row.topic_id)
 }
 
 async function getRemovedPositiveTopicRelations(

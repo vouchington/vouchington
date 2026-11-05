@@ -515,7 +515,6 @@ export async function runDataRetentionCleanup(
         withLimits(options.expiredOAuthServerArtifacts),
       )
     : { deleted: 0, hasMore: false }
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const softDeletedUsers = active('softDeletedUsers')
     ? await cleanupSoftDeletedUsers(withLimits(options.softDeletedUsers))
     : { deleted: 0, hasMore: false }
@@ -621,7 +620,6 @@ export async function runDataRetentionCleanup(
     : { deleted: 0, hasMore: false, continuation: null }
   // Receipts for surviving intents retain their subscription generation. Each page checks them
   // again under the subscription row lock, even after the push-intent cleanup above has run.
-  // ast-grep-ignore: no-three-sequential-awaits -- tombstone deletion follows push-intent cleanup before later retention phases
   const webPushSubscriptionTombstones = active('webPushSubscriptionTombstones')
     ? await cleanupWebPushSubscriptionTombstones(withLimits(options.webPushSubscriptionTombstones))
     : { deleted: 0, hasMore: false, continuation: null }
@@ -720,7 +718,6 @@ export async function runDataRetentionCleanup(
         ? cleanupModerationEmailSends(withLimits(options.moderationEmailSends))
         : { deleted: 0, hasMore: false, continuation: null },
     ])
-  // ast-grep-ignore: no-three-sequential-awaits -- retention families run serially to cap concurrent database work
   const federationRetention = active('federationRetention')
     ? await cleanupFederationRetention({
         ...limits,
@@ -753,7 +750,6 @@ export async function runDataRetentionCleanup(
         options.voteIntegrityFlagIds,
       )
     : { scanned: 0, redacted: 0, hasMore: false }
-  // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const copyright = await runCopyrightOperationalRetentionCleanup({
     limits,
     formScreeningAttemptIds: options.copyrightFormScreeningAttemptIds,
@@ -817,7 +813,6 @@ export async function runDataRetentionCleanup(
   const legalRecords = active('legalRecords')
     ? await cleanupLegalRecords(limits, options.legalRecords?.now, options.legalRecords?.recordIds)
     : []
-  // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const retainedIdentityRoots = active('retainedIdentityRoots')
     ? await cleanupRetainedIdentityRoots(retainedPageSize, options.retainedIdentityRootIds)
     : []
