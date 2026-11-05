@@ -2,9 +2,14 @@ import { existsSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
+vi.mock<typeof import('@vouchington/localization-compiler')>(
+  import('@vouchington/localization-compiler'),
+  { spy: true },
+)
 import { DEFAULT_LOCALIZATION_BOUNDS, type CatalogMessage } from '@vouchington/localization'
+import { openLocalizationDatabase } from '@vouchington/localization-compiler'
 import { headerValue } from './index.mts'
-import { localizationSqlitePath } from './database.mts'
+import { getLocalizationDatabase } from './database.mts'
 
 import { queryValues } from './query.mts'
 
@@ -107,7 +112,12 @@ describe('localization service', () => {
     expect(headerValue('etag')).toBe('etag')
     expect(headerValue(['a', 'b'])).toBe('a,b')
     vi.stubEnv('LOCALIZATION_SQLITE_PATH', undefined)
-    expect(localizationSqlitePath()).toBe('/app/localization/catalog.sqlite')
+    const error = new Error('stop before opening the default catalog')
+    const open = vi.mocked(openLocalizationDatabase).mockImplementationOnce(() => {
+      throw error
+    })
+    expect(thrownBy(getLocalizationDatabase)).toBe(error)
+    expect(open).toHaveBeenLastCalledWith('/app/localization/catalog.sqlite')
   })
 })
 
