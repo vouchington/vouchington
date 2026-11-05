@@ -42,7 +42,7 @@ describe('processBatchSettled', () => {
     const error = await captureBatchError(() =>
       processBatchSettled([fakeJob('string'), fakeJob('sync')], job => {
         if (job.name === 'sync') throw new Error('sync failure')
-        // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- The worker must wrap arbitrary rejection values.
+        // oxlint-disable-next-line prefer-promise-reject-errors, typescript/prefer-promise-reject-errors -- The worker must wrap arbitrary rejection values.
         return Promise.reject('plain string')
       }),
     )

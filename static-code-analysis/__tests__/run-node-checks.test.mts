@@ -91,7 +91,7 @@ describe('run-node-checks', () => {
       exit: code => exits.push(code),
       isMain: true,
       log: () => undefined,
-      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- verifies CLI formatting of non-Error rejections
+      // oxlint-disable-next-line prefer-promise-reject-errors, typescript/prefer-promise-reject-errors -- verifies CLI formatting of non-Error rejections
       run: () => Promise.reject('primitive failure'),
     })
     expect(errors).toEqual(['primitive failure'])

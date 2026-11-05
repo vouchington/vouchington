@@ -460,9 +460,7 @@
     "prefer-numeric-literals": "error",
     "prefer-object-has-own": "error",
     "prefer-object-spread": "error",
-    // 17 findings / 13 files on 2026-08-19, mostly tests including intentional non-Error
-    // rejects in error-handler sanitization coverage. Do not enable without per-site review.
-    "prefer-promise-reject-errors": "off",
+    "prefer-promise-reject-errors": "error",
     "prefer-rest-params": "error",
     "prefer-spread": "error",
     "prefer-template": "error",
