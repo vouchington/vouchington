@@ -1,7 +1,6 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { render, screen } from '@testing-library/react'
 import type { ReactElement } from 'react'
-import { expect, test, type Mock } from 'vitest'
+import { expect, it, type Mock } from 'vitest'
 
 type PageSearchParams = Record<string, string | string[] | undefined>
 
@@ -55,7 +54,7 @@ export function registerAppealsDisputesPageCases(options: AppealsDisputesPageCas
     return render(await Page({ searchParams: Promise.resolve(searchParams) }))
   }
 
-  test('renders staff description for an administrator user', async () => {
+  it('renders staff description for an administrator user', async () => {
     getCurrentUser.mockResolvedValue({ roles: ['administrator'] })
     fetchList.mockResolvedValueOnce(baseResponse)
 
@@ -65,7 +64,7 @@ export function registerAppealsDisputesPageCases(options: AppealsDisputesPageCas
     expect(screen.getByText(staffCopy)).toBeVisible()
   })
 
-  test('renders member description for a non-staff user', async () => {
+  it('renders member description for a non-staff user', async () => {
     getCurrentUser.mockResolvedValue({ roles: [] })
     fetchList.mockResolvedValueOnce(baseResponse)
 
@@ -74,7 +73,7 @@ export function registerAppealsDisputesPageCases(options: AppealsDisputesPageCas
     expect(screen.getByText(memberCopy)).toBeVisible()
   })
 
-  test('renders staff description for a moderator user', async () => {
+  it('renders staff description for a moderator user', async () => {
     getCurrentUser.mockResolvedValue({ roles: ['moderator'] })
     fetchList.mockResolvedValueOnce(baseResponse)
 
@@ -84,7 +83,7 @@ export function registerAppealsDisputesPageCases(options: AppealsDisputesPageCas
   })
 
   // oxlint-disable-next-line vitest/valid-title, jest/valid-title -- each page file owns its fetch case title
-  test(fetchCaseName, async () => {
+  it(fetchCaseName, async () => {
     getCurrentUser.mockResolvedValue({ roles: [] })
     fetchList.mockResolvedValueOnce(baseResponse)
 
@@ -94,7 +93,7 @@ export function registerAppealsDisputesPageCases(options: AppealsDisputesPageCas
   })
 
   // oxlint-disable-next-line vitest/valid-title, jest/valid-title -- each page file owns its client case title
-  test(clientCaseName, async () => {
+  it(clientCaseName, async () => {
     getCurrentUser.mockResolvedValue({ roles: [] })
     fetchList.mockResolvedValueOnce(baseResponse)
 

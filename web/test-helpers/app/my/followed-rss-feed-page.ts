@@ -1,7 +1,6 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import type { ReactElement } from 'react'
 import { render, screen } from '@testing-library/react'
-import { beforeEach, expect, test, type Mock } from 'vitest'
+import { beforeEach, expect, it, type Mock } from 'vitest'
 
 const baseUser = { id: 'user-1', username: 'alice' }
 
@@ -23,19 +22,19 @@ export function registerFollowedRssFeedPageTests(options: {
     })
   })
 
-  test('redirects to /login when not authenticated', async () => {
+  it('redirects to /login when not authenticated', async () => {
     requireCurrentUser.mockRejectedValue(new Error('redirect:/login'))
     await expect(loadPage()).rejects.toThrow('redirect:/login')
     expect(requireCurrentUser).toHaveBeenCalled()
   })
 
-  test('renders the page heading when authenticated', async () => {
+  it('renders the page heading when authenticated', async () => {
     requireCurrentUser.mockResolvedValue(baseUser)
     render(await loadPage())
     expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
   })
 
-  test('renders RssFeedListItem for each result when results are non-empty', async () => {
+  it('renders RssFeedListItem for each result when results are non-empty', async () => {
     requireCurrentUser.mockResolvedValue(baseUser)
     getUserRssFeedsCollection.mockResolvedValue({
       results: [

@@ -1,6 +1,5 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { fileURLToPath } from 'node:url'
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import type { EmailRenderResultPromise } from '@vouchington/email'
 import { omitReactEmailPreviewPadding } from './omit-react-email-preview-padding.mts'
 
@@ -56,7 +55,7 @@ export function registerRecommendationEmailRenderTests<TProps extends Recommenda
     omittedValues,
   } = options
 
-  test('renders the expected subject and snapshots', async () => {
+  it('renders the expected subject and snapshots', async () => {
     const result = await render(previewProps)
 
     expect(result.subject).toBe(subject)
@@ -68,7 +67,7 @@ export function registerRecommendationEmailRenderTests<TProps extends Recommenda
     )
   })
 
-  test('includes the supplied copy in both formats', async () => {
+  it('includes the supplied copy in both formats', async () => {
     const result = await render(withRecommendationEmailShell(includedCopy.props))
 
     for (const fragment of includedCopy.fragments) {
@@ -77,7 +76,7 @@ export function registerRecommendationEmailRenderTests<TProps extends Recommenda
     }
   })
 
-  test('falls back to locale copy when optional values are omitted', async () => {
+  it('falls back to locale copy when optional values are omitted', async () => {
     for (const [uiLocale, ...textFragments] of omittedValues.rows) {
       const result = await render(withRecommendationEmailShell(omittedValues.props(uiLocale)))
 

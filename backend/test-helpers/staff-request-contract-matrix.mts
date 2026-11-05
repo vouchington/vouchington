@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside *.test.* because jest/no-export forbids exporting them from test files, and oxfmt rewrites it() to test() there */
-import { beforeAll, expect, test } from 'vitest'
+import { beforeAll, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from './api/server.mts'
 import type { PrivateUser } from '../services/users/types.mts'
@@ -49,7 +48,7 @@ export function registerStaffRequestContractTests(
     body: unknown,
   ) => (body === undefined ? request[method](url) : request[method](url).send(body as object))
 
-  test.each(cases)(
+  it.each(cases)(
     '%s: 401 without a schema diagnostic for anonymous',
     async (_l, method, url, body) => {
       const response = await send(createRequest(), method, url, body)
@@ -59,7 +58,7 @@ export function registerStaffRequestContractTests(
     },
   )
 
-  test.each(cases)(
+  it.each(cases)(
     '%s: 403 without a schema diagnostic for a caller without the role',
     async (_l, method, url, body) => {
       const request = createRequest()
@@ -71,7 +70,7 @@ export function registerStaffRequestContractTests(
     },
   )
 
-  test.each(cases)(`%s: ${status} for a permitted caller`, async (_l, method, url, body) => {
+  it.each(cases)(`%s: ${status} for a permitted caller`, async (_l, method, url, body) => {
     const request = createRequest()
     await request.authenticateAs(staff)
 

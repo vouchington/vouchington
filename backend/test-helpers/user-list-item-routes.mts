@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
-import { beforeAll, test } from 'vitest'
+import { beforeAll, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createRandomString, createTestUser } from '@voucha/test-helpers'
 import type { Test } from 'supertest'
@@ -95,32 +94,32 @@ function registerAddCases(
   ) => Promise<{ sent: Test }>,
   entityId: () => string,
 ): void {
-  test('returns 401 without auth', async () => {
+  it('returns 401 without auth', async () => {
     const { sent } = await postAs(undefined, { [bodyKey]: entityId() })
     await sent.expect(401)
   })
 
-  test('is idempotent on duplicate add', async () => {
+  it('is idempotent on duplicate add', async () => {
     const { sent } = await postAs(owner(), { [bodyKey]: entityId() })
     await sent.expect(201)
   })
 
-  test('returns 403 for non-owner', async () => {
+  it('returns 403 for non-owner', async () => {
     const { sent } = await postAs(await createTestUser(), { [bodyKey]: entityId() })
     await sent.expect(403)
   })
 
-  test(`returns 422 when ${bodyKey} is missing`, async () => {
+  it(`returns 422 when ${bodyKey} is missing`, async () => {
     const { sent } = await postAs(owner(), {})
     await sent.expect(422)
   })
 
-  test(`returns 404 when ${bodyKey} does not exist`, async () => {
+  it(`returns 404 when ${bodyKey} does not exist`, async () => {
     const { sent } = await postAs(owner(), { [bodyKey]: UNKNOWN_ENTITY_ID })
     await sent.expect(404)
   })
 
-  test(`returns 422 when ${bodyKey} is not a valid UUID`, async () => {
+  it(`returns 422 when ${bodyKey} is not a valid UUID`, async () => {
     const { sent } = await postAs(owner(), { [bodyKey]: 'not-a-uuid' })
     await sent.expect(422)
   })
@@ -138,22 +137,22 @@ function registerRemoveCases(
     return { sent: request.delete(path) }
   }
 
-  test('returns 401 without auth', async () => {
+  it('returns 401 without auth', async () => {
     const { sent } = await deleteAs(undefined, `${collectionPath()}/${entityId()}`)
     await sent.expect(401)
   })
 
-  test('returns 403 for non-owner', async () => {
+  it('returns 403 for non-owner', async () => {
     const { sent } = await deleteAs(await createTestUser(), `${collectionPath()}/${entityId()}`)
     await sent.expect(403)
   })
 
-  test(`removes ${entityLabel} from the list`, async () => {
+  it(`removes ${entityLabel} from the list`, async () => {
     const { sent } = await deleteAs(owner(), `${collectionPath()}/${entityId()}`)
     await sent.expect(204)
   })
 
-  test('returns 422 for invalid UUID entityId', async () => {
+  it('returns 422 for invalid UUID entityId', async () => {
     const { sent } = await deleteAs(owner(), `${collectionPath()}/not-a-uuid`)
     await sent.expect(422)
   })

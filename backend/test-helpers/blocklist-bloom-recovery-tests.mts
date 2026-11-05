@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import { bloomValkeyClient } from '@data-stores/valkey'
 import type {
   BlocklistBloomAddTarget,
@@ -17,7 +16,7 @@ export function registerOwnedBlocklistBloomRecoveryTests(options: {
   wasRebuildEnqueued: () => boolean
   settleRebuildEnqueues: () => Promise<void>
 }): void {
-  test('check returns null when the ready marker is not readable', async () => {
+  it('check returns null when the ready marker is not readable', async () => {
     await withOwnedBlocklistBloomFilter(options.filter, async ({ readyKey, readTarget }) => {
       await bloomValkeyClient.customCommand(['LPUSH', readyKey, 'not-a-string-marker'])
 
@@ -29,7 +28,7 @@ export function registerOwnedBlocklistBloomRecoveryTests(options: {
     })
   })
 
-  test('check keeps the ready marker valid when missing-filter repair runs', async () => {
+  it('check keeps the ready marker valid when missing-filter repair runs', async () => {
     await withOwnedBlocklistBloomFilter(options.filter, async ({ readyKey, readTarget }) => {
       await bloomValkeyClient.set(readyKey, '1')
 
@@ -43,7 +42,7 @@ export function registerOwnedBlocklistBloomRecoveryTests(options: {
     })
   })
 
-  test('check keeps the ready marker valid when corrupted-filter repair runs', async () => {
+  it('check keeps the ready marker valid when corrupted-filter repair runs', async () => {
     await withOwnedBlocklistBloomFilter(
       options.filter,
       async ({ bloomFilter, readyKey, readTarget }) => {
@@ -61,7 +60,7 @@ export function registerOwnedBlocklistBloomRecoveryTests(options: {
     )
   })
 
-  test('add swallows unreadable ready marker recovery errors', async () => {
+  it('add swallows unreadable ready marker recovery errors', async () => {
     await withOwnedBlocklistBloomFilter(
       options.filter,
       async ({ bloomFilter, readyKey, addTarget }) => {

@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 
 type ChangeRecord = Record<string, unknown>
 
@@ -42,7 +41,7 @@ function registerDeletedAtChange(
   compute: ComputeRevisionChanges,
   deletedAt: DeletedAtChange,
 ): void {
-  test.each([deletedAt])('$label', ({ stableField, stableValue }) => {
+  it.each([deletedAt])('$label', ({ stableField, stableValue }) => {
     const before = { [stableField]: stableValue, deleted_at: null }
     const after = {
       [stableField]: stableValue,
@@ -58,11 +57,11 @@ function registerRevisionChangePrefix(
   compute: ComputeRevisionChanges,
   cases: RevisionChangeCases,
 ): void {
-  test('returns empty object when before and after are identical', () => {
+  it('returns empty object when before and after are identical', () => {
     expect(compute(cases.identical, cases.identical)).toEqual({})
   })
 
-  test.each(cases.singleFieldChanges)('$label', change => {
+  it.each(cases.singleFieldChanges)('$label', change => {
     const changes = compute(change.before, change.after)
     expect(changes[change.field]).toEqual({
       before: change.before[change.field],
@@ -71,14 +70,14 @@ function registerRevisionChangePrefix(
     expect(changes[change.unchangedField]).toBeUndefined()
   })
 
-  test('treats null and missing fields as null (create from scratch)', () => {
+  it('treats null and missing fields as null (create from scratch)', () => {
     const changes = compute(null, cases.created)
     for (const field of Object.keys(cases.created)) {
       expect(changes[field]).toEqual({ before: null, after: cases.created[field] })
     }
   })
 
-  test('detects multiple changed fields', () => {
+  it('detects multiple changed fields', () => {
     const { before, after, count, samples } = cases.multiple
     const changes = compute(before, after)
     expect(Object.keys(changes)).toHaveLength(count)
@@ -87,7 +86,7 @@ function registerRevisionChangePrefix(
     }
   })
 
-  test('ignores fields not in tracked list', () => {
+  it('ignores fields not in tracked list', () => {
     const before = { [cases.stableField]: cases.stableValue, [cases.untrackedField]: 'old' }
     const after = { [cases.stableField]: cases.stableValue, [cases.untrackedField]: 'new' }
     const changes = compute(before, after)
@@ -174,7 +173,7 @@ const postNullBefore = {
 /** Call from a literal `describe`. Post field values stay in this registrar. */
 export function registerPostRevisionChangeDetection(compute: ComputeRevisionChanges): void {
   registerRevisionChangePrefix(compute, postRevisionChangeCases)
-  test('handles null before (create revision)', () => {
+  it('handles null before (create revision)', () => {
     const changes = compute(null, postNullBefore.after)
     for (const field of postNullBefore.fields) {
       expect(changes[field]).toEqual({ before: null, after: postNullBefore.after[field] })

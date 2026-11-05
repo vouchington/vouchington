@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
-import { describe, expect, test } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 
@@ -89,7 +88,7 @@ export function registerTopicProgramAttributeRouteTests(
 
 function registerGetTests(spec: TopicProgramSpec, longPublicCacheControl: string): void {
   describe(`GET /api/v1/topics/:idOrSlug/${spec.route}`, () => {
-    test(`should return ${spec.kind} program attributes`, async () => {
+    it(`should return ${spec.kind} program attributes`, async () => {
       const admin = await createTestUser({ administrator: true })
       const random = randomToken()
       const topicId = await insertProgramTopic(
@@ -116,7 +115,7 @@ function registerGetTests(spec: TopicProgramSpec, longPublicCacheControl: string
       expect(response.headers['cache-control']).toBe(longPublicCacheControl)
     })
 
-    test(`should return 400 for non-${spec.kind}-program topic`, async () => {
+    it(`should return 400 for non-${spec.kind}-program topic`, async () => {
       const user = await createTestUser()
       const random = randomToken()
       const topicId = await insertTestTopic({
@@ -128,7 +127,7 @@ function registerGetTests(spec: TopicProgramSpec, longPublicCacheControl: string
       await request.get(programRoute(spec, topicId)).expect(400)
     })
 
-    test(`should return 404 when ${spec.kind} program attributes are missing`, async () => {
+    it(`should return 404 when ${spec.kind} program attributes are missing`, async () => {
       const user = await createTestUser()
       const random = randomToken()
       const topicId = await insertProgramTopic(
@@ -145,7 +144,7 @@ function registerGetTests(spec: TopicProgramSpec, longPublicCacheControl: string
 
 function registerPatchTests(spec: TopicProgramSpec): void {
   describe(`PATCH /api/v1/topics/:idOrSlug/${spec.route}`, () => {
-    test(`should update ${spec.kind} program attributes when authenticated`, async () => {
+    it(`should update ${spec.kind} program attributes when authenticated`, async () => {
       const admin = await createTestUser({ administrator: true })
       const random = randomToken()
       const topicId = await insertProgramTopic(
@@ -170,7 +169,7 @@ function registerPatchTests(spec: TopicProgramSpec): void {
       expect(companyIdFromBody(response.body, spec)).toBe(companyId)
     })
 
-    test('should return 401 when not authenticated', async () => {
+    it('should return 401 when not authenticated', async () => {
       const user = await createTestUser()
       const random = randomToken()
       const topicId = await insertProgramTopic(
@@ -183,7 +182,7 @@ function registerPatchTests(spec: TopicProgramSpec): void {
       await request.patch(programRoute(spec, topicId)).send({ company_topic_id: null }).expect(401)
     })
 
-    test('should return 403 when user is not admin', async () => {
+    it('should return 403 when user is not admin', async () => {
       const user = await createTestUser()
       const random = randomToken()
       const topicId = await insertProgramTopic(

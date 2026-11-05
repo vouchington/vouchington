@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 
 import { WorkerQueueClassError } from '@vouchington/worker-runtime'
 import { workerQueuePolicy } from '../worker-runtime/index.mts'
@@ -37,7 +36,7 @@ export function registerWorkerQueueClassTests(options: {
   const { initializeEntrypoint } = options
   const fullSchedules = options.expectedSchedules[options.fullClass] ?? []
 
-  test.each(options.accepted)(
+  it.each(options.accepted)(
     'WORKER_QUEUE_CLASS=%s loads exactly the policy queues, including SQS consumers and explicit-inclusion queues',
     async queueClass => {
       const outcome = await runEntrypoint(initializeEntrypoint, { WORKER_QUEUE_CLASS: queueClass })
@@ -52,7 +51,7 @@ export function registerWorkerQueueClassTests(options: {
     },
   )
 
-  test.each(options.accepted)(
+  it.each(options.accepted)(
     'WORKER_QUEUE_CLASS=%s registers only that class of schedules, plus the always-run ones',
     async queueClass => {
       const outcome = await runEntrypoint(initializeEntrypoint, { WORKER_QUEUE_CLASS: queueClass })
@@ -64,7 +63,7 @@ export function registerWorkerQueueClassTests(options: {
     },
   )
 
-  test.each(options.rejected)(
+  it.each(options.rejected)(
     'rejects WORKER_QUEUE_CLASS=%s before loading anything',
     async value => {
       const outcome = await runEntrypoint(initializeEntrypoint, { WORKER_QUEUE_CLASS: value })
@@ -74,7 +73,7 @@ export function registerWorkerQueueClassTests(options: {
     },
   )
 
-  test('rejects setting WORKER_QUEUE_CLASS together with QUEUES', async () => {
+  it('rejects setting WORKER_QUEUE_CLASS together with QUEUES', async () => {
     const outcome = await runEntrypoint(initializeEntrypoint, {
       WORKER_QUEUE_CLASS: options.fullClass,
       QUEUES: 'emails',
@@ -84,7 +83,7 @@ export function registerWorkerQueueClassTests(options: {
     expect(outcome.failure).toMatchObject({ code: 'CONFLICTING_QUEUE_SELECTORS' })
   })
 
-  test('leaves QUEUES-only selection unchanged: unset skips explicit-inclusion queues', async () => {
+  it('leaves QUEUES-only selection unchanged: unset skips explicit-inclusion queues', async () => {
     const outcome = await runEntrypoint(initializeEntrypoint, {})
 
     expect(outcome.failure).toBeUndefined()
@@ -97,7 +96,7 @@ export function registerWorkerQueueClassTests(options: {
     expect(outcome.schedules.toSorted()).toEqual(fullSchedules.toSorted())
   })
 
-  test('leaves QUEUES-only selection unchanged: include lists select by name', async () => {
+  it('leaves QUEUES-only selection unchanged: include lists select by name', async () => {
     const outcome = await runEntrypoint(initializeEntrypoint, {
       QUEUES: [...options.explicitInclusionQueues, 'emails', 'bedrock-batch-sqs'].join(','),
     })
@@ -119,7 +118,7 @@ export function registerWorkerQueueClassTests(options: {
     )
   })
 
-  test('leaves QUEUES-only selection unchanged: exclude lists drop only the named queues', async () => {
+  it('leaves QUEUES-only selection unchanged: exclude lists drop only the named queues', async () => {
     const outcome = await runEntrypoint(initializeEntrypoint, {
       QUEUES: '-emails,-bedrock-batch-sqs',
     })
@@ -140,7 +139,7 @@ export function registerWorkerQueueClassTests(options: {
     )
   })
 
-  test.each([
+  it.each([
     ['an included name', 'emails,retired-queue'],
     ['an excluded name', '-emails,-retired-queue'],
   ])(
@@ -153,7 +152,7 @@ export function registerWorkerQueueClassTests(options: {
     },
   )
 
-  test.each(['heartbeat', '-heartbeat'])(
+  it.each(['heartbeat', '-heartbeat'])(
     'accepts QUEUES=%s: the universal worker is a known queue that bypasses selection',
     async queues => {
       const outcome = await runEntrypoint(initializeEntrypoint, { QUEUES: queues })

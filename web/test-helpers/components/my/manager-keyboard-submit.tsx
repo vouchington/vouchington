@@ -1,6 +1,5 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, expect, test, vi, type Mock } from 'vitest'
+import { beforeEach, expect, it, vi, type Mock } from 'vitest'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
 
 type ManagerKeyboardSubmitOptions = {
@@ -38,14 +37,14 @@ export function registerManagerKeyboardTests(options: ManagerKeyboardSubmitOptio
     prepareMocks()
   })
 
-  test('Enter on the value input submits the add form', () => {
+  it('Enter on the value input submits the add form', () => {
     renderManager()
     const valueInput = fillAddForm() as HTMLInputElement
     fireEvent.change(valueInput, { target: { value: addValue } })
     void expectInputEnterSubmits({ input: valueInput, onSubmit: onCreate })
   })
 
-  test('Cmd+Enter on add form note textarea submits', () => {
+  it('Cmd+Enter on add form note textarea submits', () => {
     renderManager()
     fireEvent.change(fillAddForm(), { target: { value: addValue } })
     const noteTextarea = screen.getByLabelText('Note (optional)') as HTMLTextAreaElement
@@ -54,7 +53,7 @@ export function registerManagerKeyboardTests(options: ManagerKeyboardSubmitOptio
     expect(onCreate).toHaveBeenCalled()
   })
 
-  test('Ctrl+Enter on add form note textarea submits', () => {
+  it('Ctrl+Enter on add form note textarea submits', () => {
     renderManager()
     fireEvent.change(fillAddForm(), { target: { value: addValue } })
     const noteTextarea = screen.getByLabelText('Note (optional)') as HTMLTextAreaElement
@@ -63,7 +62,7 @@ export function registerManagerKeyboardTests(options: ManagerKeyboardSubmitOptio
     expect(onCreate).toHaveBeenCalled()
   })
 
-  test('plain Enter on add form note textarea does not submit', () => {
+  it('plain Enter on add form note textarea does not submit', () => {
     renderManager()
     fireEvent.change(fillAddForm(), { target: { value: addValue } })
     const noteTextarea = screen.getByLabelText('Note (optional)') as HTMLTextAreaElement
@@ -72,7 +71,7 @@ export function registerManagerKeyboardTests(options: ManagerKeyboardSubmitOptio
     expect(onCreate).not.toHaveBeenCalled()
   })
 
-  test('edit form has a submit button wired to the save handler', async () => {
+  it('edit form has a submit button wired to the save handler', async () => {
     renderManager()
     fireEvent.click(screen.getByRole('button', { name: /Edit/i }))
     const valueInput = screen.getAllByLabelText(valueLabel)[0] as HTMLInputElement
@@ -85,7 +84,7 @@ export function registerManagerKeyboardTests(options: ManagerKeyboardSubmitOptio
     await waitFor(() => expect(onUpdate).toHaveBeenCalled())
   })
 
-  test('Cmd+Enter on the edit note textarea submits the edit form', async () => {
+  it('Cmd+Enter on the edit note textarea submits the edit form', async () => {
     renderManager()
     fireEvent.click(screen.getByRole('button', { name: /Edit/i }))
     const valueInput = screen.getAllByLabelText(valueLabel)[0] as HTMLInputElement

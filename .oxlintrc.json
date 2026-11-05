@@ -604,7 +604,12 @@
     "oxc/no-map-spread": "off",
     "oxc/no-optional-chaining": "off",
     "oxc/no-rest-spread-properties": "off",
-    "jest/consistent-test-it": "error",
+    "jest/consistent-test-it": [
+      "error",
+      {
+        "fn": "it"
+      }
+    ],
     // assertFunctionNames enumerates this repo's real custom assertion-delegate helpers (each
     // one is the sole statement in at least one test body) rather than a blanket wildcard, so a
     // genuinely assertion-less future test named `assertFoo`/`expectFoo` still gets caught. The

@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createRandomString,
@@ -27,7 +26,7 @@ type CommunityListGetAuthCase =
 export function registerCommunityListGetAuthTests(options: CommunityListGetAuthCase): void {
   const listPath = (slug: string): string => `/api/v1/communities/${slug}/${options.resource}`
 
-  test('returns 401 without auth', async () => {
+  it('returns 401 without auth', async () => {
     const user = await createTestUser()
     const random = createRandomString(8)
     const community = await insertTestCommunity({
@@ -39,7 +38,7 @@ export function registerCommunityListGetAuthTests(options: CommunityListGetAuthC
     await request.get(listPath(community.slug)).expect(401)
   })
 
-  test('returns 403 as non-mod', async () => {
+  it('returns 403 as non-mod', async () => {
     const [owner, regular] = await Promise.all([createTestUser(), createTestUser()])
     const random = createRandomString(8)
     const community = await insertTestCommunity({
@@ -58,7 +57,7 @@ export function registerCommunityListGetAuthTests(options: CommunityListGetAuthC
     await request.get(listPath(community.slug)).expect(403)
   })
 
-  test('returns 200 with results as mod', async () => {
+  it('returns 200 with results as mod', async () => {
     const user = await createTestUser()
     const random = createRandomString(8)
     const community = await insertOkCommunity(options, user.id, random)

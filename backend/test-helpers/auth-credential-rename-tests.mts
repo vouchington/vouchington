@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
-import { expect, test } from 'vitest'
+import { expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import type { PrivateUser } from '../services/users/types.mts'
@@ -64,11 +63,11 @@ async function renamedCredential(options: {
 function registerPasskeyRenameTests(options: PasskeyRenameTests): void {
   const { getUser, pathPrefix, insertCredential, suffix, renamedName } = options
 
-  test('returns 401 without auth', async () => {
+  it('returns 401 without auth', async () => {
     await createRequest().patch(`${pathPrefix}/${v7()}`).send({ name: 'New Name' }).expect(401)
   })
 
-  test('returns 415 for non-JSON content type', async () => {
+  it('returns 415 for non-JSON content type', async () => {
     await (
       await authedRequest(getUser())
     )
@@ -78,13 +77,13 @@ function registerPasskeyRenameTests(options: PasskeyRenameTests): void {
       .expect(415)
   })
 
-  test('returns 422 for invalid name', async () => {
+  it('returns 422 for invalid name', async () => {
     const { emptyName, tooLong } = await invalidNameResponses(pathPrefix, getUser())
     expect(emptyName.body.message).toContain(NAME_LENGTH_MESSAGE)
     expect(tooLong.body.message).toContain(NAME_LENGTH_MESSAGE)
   })
 
-  test('returns 404 for non-existent passkey', async () => {
+  it('returns 404 for non-existent passkey', async () => {
     await (
       await authedRequest(getUser())
     )
@@ -93,7 +92,7 @@ function registerPasskeyRenameTests(options: PasskeyRenameTests): void {
       .expect(404)
   })
 
-  test('renames a passkey and returns 204', async () => {
+  it('renames a passkey and returns 204', async () => {
     const user = getUser()
     expect(
       await renamedCredential({
@@ -110,11 +109,11 @@ function registerPasskeyRenameTests(options: PasskeyRenameTests): void {
 function registerTotpRenameTests(options: TotpRenameTests): void {
   const { getUser, pathPrefix, insertCredential, suffix, renamedName } = options
 
-  test('returns 401 without auth', async () => {
+  it('returns 401 without auth', async () => {
     await createRequest().patch(`${pathPrefix}/${v7()}`).send({ name: 'New Name' }).expect(401)
   })
 
-  test('returns 415 without JSON content-type', async () => {
+  it('returns 415 without JSON content-type', async () => {
     await (
       await authedRequest(getUser())
     )
@@ -124,13 +123,13 @@ function registerTotpRenameTests(options: TotpRenameTests): void {
       .expect(415)
   })
 
-  test('returns 422 for empty or too-long name', async () => {
+  it('returns 422 for empty or too-long name', async () => {
     const { emptyName, tooLong } = await invalidNameResponses(pathPrefix, getUser())
     expect(emptyName.body.message).toContain(NAME_LENGTH_MESSAGE)
     expect(tooLong.body.message).toContain(NAME_LENGTH_MESSAGE)
   })
 
-  test('returns 404 for non-existent authenticator', async () => {
+  it('returns 404 for non-existent authenticator', async () => {
     await (
       await authedRequest(getUser())
     )
@@ -139,7 +138,7 @@ function registerTotpRenameTests(options: TotpRenameTests): void {
       .expect(404)
   })
 
-  test('renames the authenticator and returns 204', async () => {
+  it('renames the authenticator and returns 204', async () => {
     const user = getUser()
     expect(
       await renamedCredential({

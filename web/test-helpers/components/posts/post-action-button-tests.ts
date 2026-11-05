@@ -1,6 +1,5 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { beforeEach, expect, test, type Mock } from 'vitest'
+import { beforeEach, expect, it, type Mock } from 'vitest'
 import { createNavMock } from 'vouchington-tooling/next-navigation-mock'
 
 const mockNav = createNavMock()
@@ -64,7 +63,7 @@ export function registerPostActionButtonTests(options: PostActionButtonTests): v
     reset()
   })
 
-  test(`renders ${inactiveLabel} and refreshes after the action succeeds`, async () => {
+  it(`renders ${inactiveLabel} and refreshes after the action succeeds`, async () => {
     prepareActivate()
     renderAt(null)
     const button = screen.getByRole('button', { name: inactiveLabel })
@@ -77,7 +76,7 @@ export function registerPostActionButtonTests(options: PostActionButtonTests): v
     })
   })
 
-  test(`renders ${activeLabel} and refreshes after the action succeeds`, async () => {
+  it(`renders ${activeLabel} and refreshes after the action succeeds`, async () => {
     prepareDeactivate()
     renderAt(activeAt)
     const button = screen.getByRole('button', { name: activeLabel })
@@ -90,7 +89,7 @@ export function registerPostActionButtonTests(options: PostActionButtonTests): v
     })
   })
 
-  test(`rolls back the optimistic ${inactiveLabel} toggle when the action fails`, async () => {
+  it(`rolls back the optimistic ${inactiveLabel} toggle when the action fails`, async () => {
     prepareActivateFailure()
     renderAt(null)
     const button = screen.getByRole('button', { name: inactiveLabel })

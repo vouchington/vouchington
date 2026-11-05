@@ -1,7 +1,6 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { expect, test, type Mock } from 'vitest'
+import { expect, it, type Mock } from 'vitest'
 
 export const createPostPageUser = { id: 'user-1', roles: [] as string[] }
 
@@ -40,7 +39,7 @@ export function registerCreatePostPageCases(options: {
     mockPostForm,
   } = options
 
-  test('redirects to /login when unauthenticated', async () => {
+  it('redirects to /login when unauthenticated', async () => {
     mockGetCurrentUser.mockResolvedValue(null)
     mockGetMyContributionStatus.mockResolvedValue(createPostPageAllowedStatus)
     await expect(Page({ searchParams: createPostPageEmptySearchParams })).rejects.toThrow(
@@ -48,7 +47,7 @@ export function registerCreatePostPageCases(options: {
     )
   })
 
-  test('renders post form when contribution is allowed', async () => {
+  it('renders post form when contribution is allowed', async () => {
     mockGetCurrentUser.mockResolvedValue(createPostPageUser)
     mockGetMyContributionStatus.mockResolvedValue(createPostPageAllowedStatus)
     const result = await Page({ searchParams: createPostPageEmptySearchParams })
@@ -57,7 +56,7 @@ export function registerCreatePostPageCases(options: {
     expect(screen.queryByTestId('contribution-gated-cta')).toBeNull()
   })
 
-  test('passes eligible community options and initial community slug to the post form', async () => {
+  it('passes eligible community options and initial community slug to the post form', async () => {
     mockGetCurrentUser.mockResolvedValue(createPostPageUser)
     mockGetMyContributionStatus.mockResolvedValue(createPostPageAllowedStatus)
     mockGetEligibleCommunityPostOptions.mockResolvedValue({
@@ -80,7 +79,7 @@ export function registerCreatePostPageCases(options: {
     )
   })
 
-  test('renders CTA and hides form when account_too_new', async () => {
+  it('renders CTA and hides form when account_too_new', async () => {
     mockGetCurrentUser.mockResolvedValue(createPostPageUser)
     mockGetMyContributionStatus.mockResolvedValue(gatedStatus)
     const result = await Page({ searchParams: createPostPageEmptySearchParams })
@@ -90,7 +89,7 @@ export function registerCreatePostPageCases(options: {
     expect(screen.getByText(actionNoun)).toBeDefined()
   })
 
-  test('renders CTA and hides form when email_verification_required', async () => {
+  it('renders CTA and hides form when email_verification_required', async () => {
     mockGetCurrentUser.mockResolvedValue(createPostPageUser)
     mockGetMyContributionStatus.mockResolvedValue({
       contribution_status: { allowed: false, reason: 'email_verification_required' },
@@ -102,7 +101,7 @@ export function registerCreatePostPageCases(options: {
     expect(screen.queryByTestId('post-form')).toBeNull()
   })
 
-  test('renders form when getMyContributionStatus fails', async () => {
+  it('renders form when getMyContributionStatus fails', async () => {
     mockGetCurrentUser.mockResolvedValue(createPostPageUser)
     mockGetMyContributionStatus.mockRejectedValue(new Error('API error'))
     const result = await Page({ searchParams: createPostPageEmptySearchParams })

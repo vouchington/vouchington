@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside *.test.* because jest/no-export forbids exporting them from test files, and oxfmt rewrites it() to test() there */
-import { beforeAll, expect, test } from 'vitest'
+import { beforeAll, expect, it } from 'vitest'
 import { createHash } from 'node:crypto'
 import { createTestUser, makeRandomEmbedding, seedSearchEmbeddingCache } from '@voucha/test-helpers'
 import type { PrivateUser } from '../services/users/types.mts'
@@ -26,7 +25,7 @@ export function registerSimilaritySearchTests(options: {
     user = await createTestUser()
   })
 
-  test('pages similarity results without throwing', async () => {
+  it('pages similarity results without throwing', async () => {
     const sharedEmbedding = makeRandomEmbedding()
     const inputSha256 = createHash('sha256').update(options.similarHash).digest()
     const sourceId = await options.insert(user.id, 'source')
@@ -58,14 +57,14 @@ export function registerSimilaritySearchTests(options: {
     expect(found.has(siblingIds[2]!)).toBe(true)
   })
 
-  test('returns empty results when the source has no embedding', async () => {
+  it('returns empty results when the source has no embedding', async () => {
     const bareSource = await options.insert(user.id, 'bare-source')
     const result = await options.searchBare(user, bareSource)
     expect(result.results).toHaveLength(0)
     expect(result.page_info.has_next_page).toBe(false)
   })
 
-  test('finds a matching row from a cache-seeded semantic query', async () => {
+  it('finds a matching row from a cache-seeded semantic query', async () => {
     const sharedEmbedding = makeRandomEmbedding()
     const inputSha256 = createHash('sha256').update(options.semanticHash).digest()
     const testQuery = `${options.semanticHash}-${Date.now()}-${Math.random()}`

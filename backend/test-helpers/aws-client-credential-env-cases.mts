@@ -1,5 +1,4 @@
-/* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside *.test.* because jest/no-export forbids exporting them from test files, and oxfmt rewrites it() to test() there */
-import { afterAll, afterEach, beforeEach, expect, test } from 'vitest'
+import { afterAll, afterEach, beforeEach, expect, it } from 'vitest'
 
 type ClientCredentials = {
   accessKeyId: string
@@ -65,7 +64,7 @@ export function registerClientCredentialEnvCases(options: ClientCredentialEnvCas
     restoreEnv(envKeys, originalEnv)
   })
 
-  test(`uses deterministic credentials for test ${serviceName} clients when no AWS env exists`, () => {
+  it(`uses deterministic credentials for test ${serviceName} clients when no AWS env exists`, () => {
     process.env.NODE_ENV = 'test'
 
     expect(readCredentials()).toEqual({
@@ -74,7 +73,7 @@ export function registerClientCredentialEnvCases(options: ClientCredentialEnvCas
     })
   })
 
-  test('uses deterministic credentials in Vitest even when NODE_ENV is stubbed', () => {
+  it('uses deterministic credentials in Vitest even when NODE_ENV is stubbed', () => {
     process.env.NODE_ENV = 'development'
     process.env.VITEST = 'true'
 
@@ -84,7 +83,7 @@ export function registerClientCredentialEnvCases(options: ClientCredentialEnvCas
     })
   })
 
-  test(`still prefers configured ${serviceName} credentials in test mode`, () => {
+  it(`still prefers configured ${serviceName} credentials in test mode`, () => {
     process.env.NODE_ENV = 'test'
     process.env[accessKeyEnv] = configuredAccessKeyId
     process.env[secretAccessKeyEnv] = configuredSecretAccessKey
@@ -95,7 +94,7 @@ export function registerClientCredentialEnvCases(options: ClientCredentialEnvCas
     })
   })
 
-  test(`requires configured ${serviceName} credentials outside test mode`, () => {
+  it(`requires configured ${serviceName} credentials outside test mode`, () => {
     process.env.NODE_ENV = 'development'
 
     expect(() => readCredentials()).toThrow(
@@ -106,7 +105,7 @@ export function registerClientCredentialEnvCases(options: ClientCredentialEnvCas
     )
   })
 
-  test('falls back to IAM task role credentials in deployed environments', () => {
+  it('falls back to IAM task role credentials in deployed environments', () => {
     expect(readCredentials({ ENVIRONMENT: 'staging', NODE_ENV: 'production' })).toBeUndefined()
   })
 }
