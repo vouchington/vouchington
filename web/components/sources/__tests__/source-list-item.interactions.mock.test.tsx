@@ -46,13 +46,16 @@ vi.mock(import('@/components/shared/follow-button'), () => ({
   FollowButton: ({
     'data-pw': dataPw,
     inactiveLabel,
+    isFollowing,
   }: {
     'data-pw'?: string
     inactiveLabel?: string
+    isFollowing?: boolean
   }) => (
     <button
       type='button'
       data-testid={dataPw ?? 'follow-button'}
+      data-active={isFollowing ? 'true' : 'false'}
       aria-label={inactiveLabel ?? 'Follow'}
     />
   ),
@@ -232,7 +235,7 @@ describe('SourceListItem voting and subscribe interactions', () => {
       />,
     )
 
-    // Real FollowButton passes isFollowingTopic → initialActive to EntityBookmarkButton mock
+    // FollowButton records isFollowing, which SourceListItem sets from isFollowingTopic.
     const topicBtn = await findByTestId('source-list-follow-topic-button')
     expect(topicBtn.getAttribute('data-active')).toBe('true')
   })
