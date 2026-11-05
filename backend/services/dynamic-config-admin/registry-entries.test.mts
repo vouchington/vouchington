@@ -1,7 +1,7 @@
 import { paginationConfig, paginationMaxima, getPaginationLimit } from '@services/pagination/config'
 import { dynamicConfigRegistry } from './registry.mts'
 import { describe, expect, it } from 'vitest'
-import { assertRegistryOrderIncludesEntries } from './registry-entries.mts'
+import { orderDynamicConfigRegistryEntries } from './registry-order.mts'
 
 describe('dynamic config registry entry ordering', () => {
   it('registers the bounded bot challenge clearance window', () => {
@@ -34,12 +34,27 @@ describe('dynamic config registry entry ordering', () => {
 
   it('rejects registry entries omitted from the registry order', () => {
     expect(() =>
-      assertRegistryOrderIncludesEntries(
+      orderDynamicConfigRegistryEntries(
         [{ namespace: 'feature-flags' }, { namespace: 'new-config' }],
         ['feature-flags'],
       ),
     ).toThrow('Dynamic config registry entries missing from REGISTRY_ORDER: new-config')
   })
+  it('orders original entry objects by the registry order', () => {
+    const first = { namespace: 'first' }
+    const second = { namespace: 'second' }
+    const result = orderDynamicConfigRegistryEntries([first, second], ['second', 'first'])
+    expect(result).toEqual([second, first])
+    expect(result[0]).toBe(second)
+    expect(result[1]).toBe(first)
+  })
+
+  it('rejects an order entry with no corresponding registry entry', () => {
+    expect(() => orderDynamicConfigRegistryEntries([], ['missing'])).toThrow(
+      'Missing dynamic config registry entry for missing',
+    )
+  })
+
   it.each([
     'api-keys-work-config',
     'account-data-requests-work-config',
