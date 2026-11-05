@@ -11,7 +11,7 @@ export const emails = createWorker(QUEUE_NAME, (job: Job) => processEmailJob(job
   concurrency: getWorkerConcurrency('emails', { baseline: 5 }),
 })
 
-export async function processEmailJob(job: Job): Promise<unknown> {
+async function processEmailJob(job: Job): Promise<unknown> {
   const parsed = parseEmailJob(job.name, job.data)
   switch (parsed.kind) {
     case 'copyright':
