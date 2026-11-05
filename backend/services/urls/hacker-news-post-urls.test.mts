@@ -1,4 +1,3 @@
-import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { describe, expect, it } from 'vitest'
 import {
   createTestPost,
@@ -32,13 +31,12 @@ describe('Hacker News post URL selection', () => {
     expect(selected[post.id]).toEqual(best.toReversed())
     expect(selected[otherPost.id]).toEqual([urls[14]])
     await insertHackerNewsReferencesForTest({ url_id: urls[10]!, story_count: 1, comment_count: 0 })
-    await setHackerNewsReferenceFlagsForTest([post.id], [])
     const filtered = await getPostIds(undefined, {
       user_id: user!.id,
       time_range: 'all',
       has_hacker_news_references: true,
     })
-    expect(filtered.results.map(row => row.id)).toContain(post.id)
+    expect(filtered.results.map(row => row.id)).not.toContain(post.id)
     expect((await getPostHackerNewsSummaries([post.id]))[post.id]).toBeUndefined()
   })
 

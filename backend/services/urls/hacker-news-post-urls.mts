@@ -7,8 +7,8 @@ import {
 
 /**
  * The post's link URL followed by at most ten live, positively voted related URLs, best first.
- * Each per-post lateral probe stops through the subject/best index. The search filter accepts
- * any positive related URL, so a lower-ranked referenced URL can match without a card label.
+ * Each per-post lateral probe stops through the positive subject/best index. The filter
+ * uses this same URL selection, so it matches references visible on the card.
  */
 export async function getHackerNewsUrlIdsByPostIds(
   postIds: readonly string[],
@@ -21,25 +21,12 @@ export async function getHackerNewsUrlIdsByPostIds(
     const { rows } = await read<{ post_id: string; url_id: string }>( // oxlint-disable-line no-await-in-loop -- bounded chunks avoid concurrent database fan-out.
       `/* getHackerNewsUrlIdsByPostIds */
       SELECT post_id, url_id FROM (
-        SELECT id AS post_id, url_id, 0 AS source_order,
-               NULL::double precision AS votes_score_sort, NULL::timestamptz AS created_at
-        FROM posts
-        WHERE id = ANY($1::uuid[]) AND post_type = 'link' AND url_id IS NOT NULL
-        UNION ALL
-        SELECT requested.post_id, related.url_id, 1 AS source_order,
-               related.votes_score_sort, related.created_at
+        SELECT requested.post_id, selected_url.*
         FROM unnest($1::uuid[]) AS requested(post_id)
-        CROSS JOIN LATERAL (
-          SELECT rel.object_id AS url_id, rel.votes_score_sort, rel.created_at
-          FROM "relation__post__related__url" rel
-          WHERE rel.subject_id = requested.post_id
-            AND rel.deleted_at IS NULL AND rel.votes_score_net > 0
-          ORDER BY rel.votes_score_sort DESC, rel.created_at DESC, rel.object_id DESC
-          LIMIT $2
-        ) related
+        CROSS JOIN LATERAL (${buildHackerNewsPostUrlsSql('requested.post_id')}) selected_url
       ) selected
       ORDER BY post_id, source_order, votes_score_sort DESC, created_at DESC, url_id DESC`,
-      [ids.slice(start, start + HACKER_NEWS_URL_BATCH_MAX), HACKER_NEWS_RELATED_URLS_PER_POST_MAX],
+      [ids.slice(start, start + HACKER_NEWS_URL_BATCH_MAX)],
       options,
     )
     for (const row of rows) {
@@ -49,4 +36,21 @@ export async function getHackerNewsUrlIdsByPostIds(
     }
   }
   return urlIdsByPostId
+}
+
+/** Shared card and filter selection. Expressions are fixed call-site identifiers, never user input. */
+export function buildHackerNewsPostUrlsSql(postId: 'requested.post_id' | 'candidate.id'): string {
+  return `
+    SELECT own.url_id, 0 AS source_order, NULL::double precision AS votes_score_sort,
+      NULL::timestamptz AS created_at
+    FROM posts own WHERE own.id = ${postId} AND own.post_type = 'link' AND own.url_id IS NOT NULL
+    UNION ALL
+    SELECT related.url_id, 1 AS source_order, related.votes_score_sort, related.created_at
+    FROM LATERAL (
+      SELECT rel.object_id AS url_id, rel.votes_score_sort, rel.created_at
+      FROM "relation__post__related__url" rel
+      WHERE rel.subject_id = ${postId} AND rel.deleted_at IS NULL AND rel.votes_score_net > 0
+      ORDER BY rel.votes_score_sort DESC, rel.created_at DESC, rel.object_id DESC
+      LIMIT ${HACKER_NEWS_RELATED_URLS_PER_POST_MAX}
+    ) related`
 }
