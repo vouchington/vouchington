@@ -12,6 +12,7 @@ Not partitioned — growth: bounded.
 | `membership_source_id`           | `uuid`                     | no       |                              |          |           |           | Membership source whose collision created this immutable reversal case.          |
 | `membership_provider_lineage_id` | `uuid`                     | no       |                              |          |           |           | Provider lineage shared by the case source, binding, and reversal operations.    |
 | `membership_lineage_binding_id`  | `uuid`                     | no       |                              |          |           |           | Immutable lineage binding whose collision this case records.                     |
+| `originating_invoice_id`         | `text`                     | no       |                              |          |           |           | Stripe invoice identifying the qualifying purchase within its provider lineage.  |
 | `stripe_price_id`                | `text`                     | no       |                              |          |           |           | Stripe Price identifier for the ineligible qualifying purchase.                  |
 | `winning_source_kind`            | `membership_source_kinds`  | no       |                              |          |           |           | Source kind that won the collision and made the qualifying purchase ineligible.  |
 | `qualifying_amount_minor_units`  | `bigint`                   | no       |                              |          |           |           | Original qualifying purchase amount in currency minor units.                     |
@@ -32,9 +33,9 @@ _none_
 - `chk_memb_ineli_purch_rever_cases__qualifying_amount_minor_units`: `CHECK (((qualifying_amount_minor_units >= 0) AND (qualifying_amount_minor_units <= '9007199254740991'::bigint)))`
 - `chk_member_inelig_purchas_reversa_cases__refund_cap_minor_units`: `CHECK (((refund_cap_minor_units >= 0) AND (refund_cap_minor_units <= '9007199254740991'::bigint)))`
 - `chk_membersh_ineligibl_purchase_reversal_cases__stripe_price_id`: `CHECK ((((char_length(stripe_price_id) >= 1) AND (char_length(stripe_price_id) <= 255)) AND (stripe_price_id = TRIM(BOTH FROM stripe_price_id))))`
+- `chk_mipr_cases__originating_invoice_id`: `CHECK ((((char_length(originating_invoice_id) >= 1) AND (char_length(originating_invoice_id) <= 255)) AND (originating_invoice_id = TRIM(BOTH FROM originating_invoice_id))))`
 - `membership_ineligible_purchase_reversal_cases_check`: `CHECK ((refund_cap_minor_units <= qualifying_amount_minor_units))`
 - `membership_ineligible_purchase_reversal_cases_check1`: `CHECK ((period_ends_at >= period_started_at))`
-- `membership_ineligible_purchase_reversal_cases_check2`: `CHECK (((winning_source_kind <> 'family'::membership_source_kinds) OR (period_ends_at > period_started_at)))`
 
 **Foreign keys:**
 
@@ -46,8 +47,10 @@ _none_
 
 - `idx_member_inelig_purchase_reversal_cases__collision_at_id`: `CREATE INDEX idx_member_inelig_purchase_reversal_cases__collision_at_id ON public.membership_ineligible_purchase_reversal_cases USING btree (collision_at, id)`
 - `idx_membershi_ineligibl_purchase_reversal_cases__source_lineage`: `CREATE INDEX idx_membershi_ineligibl_purchase_reversal_cases__source_lineage ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_source_id, membership_provider_lineage_id)`
-- `idx_membership_ineligible_purchase_reversal_cases__binding`: `CREATE UNIQUE INDEX idx_membership_ineligible_purchase_reversal_cases__binding ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_lineage_binding_id)`
+- `idx_membership_ineligible_purchase_reversal_cases__binding`: `CREATE INDEX idx_membership_ineligible_purchase_reversal_cases__binding ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_lineage_binding_id, membership_provider_lineage_id)`
 - `idx_membership_ineligible_purchase_reversal_cases__currency`: `CREATE INDEX idx_membership_ineligible_purchase_reversal_cases__currency ON public.membership_ineligible_purchase_reversal_cases USING btree (currency_code)`
+- `idx_membership_ineligible_purchase_reversal_cases__invoice`: `CREATE UNIQUE INDEX idx_membership_ineligible_purchase_reversal_cases__invoice ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_provider_lineage_id, originating_invoice_id)`
+- `idx_membership_reversal_cases__originating_invoice`: `CREATE INDEX idx_membership_reversal_cases__originating_invoice ON public.membership_ineligible_purchase_reversal_cases USING btree (originating_invoice_id)`
 - `pk_mipr_cases`: `CREATE UNIQUE INDEX pk_mipr_cases ON public.membership_ineligible_purchase_reversal_cases USING btree (id)`
 
 **Triggers:**
