@@ -117,7 +117,6 @@ describe('no-mistakes config freshness', () => {
     expect(agentCoverage?.options).not.toHaveProperty('excludeDirs')
     expect(storyCoverage?.options).toMatchObject({
       excludeBasenames: [
-        '_button-tooltip.tsx',
         'availability-indicator.test.tsx',
         'breadcrumb.mock.test.tsx',
         'carousel.mock.test.tsx',
