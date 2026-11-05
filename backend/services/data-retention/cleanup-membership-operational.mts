@@ -5,6 +5,7 @@ import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 
 export type MembershipOperationalCleanupOptions = {
+  recordIds?: readonly string[]
   batchSize?: number
   maxBatches: number
   retentionDays?: number
@@ -65,6 +66,7 @@ async function runMembershipOperationalPages(
       cutoff,
       batchSize,
       options.lowerBoundDate,
+      options.recordIds,
     )
     deleted += page.deleted
     hasMore = page.hasMore
@@ -79,6 +81,7 @@ async function deleteMembershipOperationalPage(
   cutoff: Date,
   batchSize: number,
   lowerBoundDate?: Date,
+  recordIds?: readonly string[],
 ): Promise<{ deleted: number; hasMore: boolean }> {
   await using transaction = await beginTransaction()
   const { rows: cursorRows } = await transaction<CursorRow>(sql`
@@ -93,7 +96,7 @@ async function deleteMembershipOperationalPage(
   const lower = lowerBoundDate ?? null
   let rows: Candidate[]
   if (kind === 'entitlement_effects') {
-    ;({ rows } = await transaction<Candidate>(sql`
+    const statement = sql`
       /* deleteMembershipOperationalPage.entitlementCandidates */
       SELECT id, delivered_at AS due_at FROM membership_entitlement_effects
       WHERE delivered_at IS NOT NULL AND delivered_at < ${cutoff}
@@ -102,10 +105,13 @@ async function deleteMembershipOperationalPage(
           COALESCE(${afterAt}::timestamptz, '-infinity'::timestamptz),
           COALESCE(${afterId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
         )
-      ORDER BY delivered_at, id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED
-    `))
+    `
+    if (recordIds !== undefined) statement.append(sql` AND id = ANY(${[...recordIds]}::uuid[])`)
+    statement.append(sql`  ORDER BY delivered_at, id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED
+    `)
+    ;({ rows } = await transaction<Candidate>(statement))
   } else if (kind === 'renewal_notices') {
-    ;({ rows } = await transaction<Candidate>(sql`
+    const statement = sql`
       /* deleteMembershipOperationalPage.renewalCandidates */
       SELECT membership_id AS id, projection_ended_at AS due_at
       FROM membership_renewal_price_increase_notification_work_items
@@ -115,8 +121,12 @@ async function deleteMembershipOperationalPage(
           COALESCE(${afterAt}::timestamptz, '-infinity'::timestamptz),
           COALESCE(${afterId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
         )
-      ORDER BY projection_ended_at, membership_id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED
-    `))
+    `
+    if (recordIds !== undefined)
+      statement.append(sql` AND membership_id = ANY(${[...recordIds]}::uuid[])`)
+    statement.append(sql`  ORDER BY projection_ended_at, membership_id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED
+    `)
+    ;({ rows } = await transaction<Candidate>(statement))
   } else {
     ;({ rows } = await transaction<Candidate>(sql`
       /* deleteMembershipOperationalPage.googleCandidates */

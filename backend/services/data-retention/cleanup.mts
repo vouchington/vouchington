@@ -187,6 +187,8 @@ export type DataRetentionCleanupFamily = keyof DataRetentionCleanupResult | 'ana
 export type DataRetentionCleanupOptions = {
   /** Omitted runs every family; selected families keep their normal ordering and page limits. */
   families?: readonly DataRetentionCleanupFamily[]
+  copyrightFormScreeningAttemptIds?: readonly string[]
+  copyrightNow?: Date
   /** Continuations name the membership families that exceeded the previous run's cap. */
   activeMembershipFamilies?: readonly string[]
   includeAgentModerations?: boolean
@@ -257,6 +259,9 @@ export type DataRetentionCleanupOptions = {
   expiredUserDataRequestAttempts?: OptionalRetentionLimits<CleanupOptions>
   oldMediaDeliveryChanges?: OptionalRetentionLimits<CleanupOptions>
   classifierRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>> & {
+    runIds?: readonly string[]
+    requestIds?: readonly string[]
+    topicResultBatchIds?: readonly string[]
     activeSweeps?: readonly string[]
   }
   sesBounceEvents?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
@@ -728,6 +733,8 @@ export async function runDataRetentionCleanup(
   // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const copyright = await runCopyrightOperationalRetentionCleanup({
     limits,
+    formScreeningAttemptIds: options.copyrightFormScreeningAttemptIds,
+    now: options.copyrightNow,
     activeFamilies:
       options.activeCopyrightFamilies?.filter(active) ??
       options.families?.filter((family): family is CopyrightRetentionFamily =>

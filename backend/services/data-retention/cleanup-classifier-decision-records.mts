@@ -14,6 +14,7 @@ export async function cleanupClassifierDecisionRecords(
   batchSize: number,
   maxBatches: number,
   activeSweeps?: readonly string[],
+  topicResultBatchIds?: readonly string[],
 ): Promise<{
   topicResults: CleanupCount
   storyResults: CleanupCount
@@ -32,6 +33,7 @@ export async function cleanupClassifierDecisionRecords(
           lowerBoundId,
           batchSize,
           maxBatches,
+          topicResultBatchIds,
         )
       : skip,
     active('storyResults')
