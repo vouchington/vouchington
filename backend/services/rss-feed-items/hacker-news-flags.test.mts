@@ -74,11 +74,24 @@ describe('RSS Hacker News flags', () => {
       'UPDATE rss_feed_items SET data = data || \'{"title":"Changed"}\'::jsonb WHERE id = $1',
       [items[0]],
     )
-    const contentUpdate = await write<{ advanced: boolean }>(
-      'SELECT updated_at > $2::timestamptz AS advanced FROM rss_feed_items WHERE id = $1',
+    const contentUpdate = await write<{ advanced: boolean; updated_at: string }>(
+      'SELECT updated_at::text, updated_at > $2::timestamptz AS advanced FROM rss_feed_items WHERE id = $1',
       [items[0], before.rows[0]!.updated_at],
     )
     expect(contentUpdate.rows[0]!.advanced).toBe(true)
+    const noop = await write<{ advanced: boolean; updated_at: string }>(
+      `UPDATE rss_feed_items SET data = data WHERE id = $1
+       RETURNING updated_at::text, updated_at > $2::timestamptz AS advanced`,
+      [items[0], contentUpdate.rows[0]!.updated_at],
+    )
+    expect(noop.rows[0]!.advanced).toBe(true)
+    const mixed = await write<{ advanced: boolean }>(
+      `UPDATE rss_feed_items SET data = data, has_hacker_news_references = false WHERE id = $1
+       RETURNING updated_at > $2::timestamptz AS advanced`,
+      [items[0], noop.rows[0]!.updated_at],
+    )
+    expect(mixed.rows[0]!.advanced).toBe(true)
+    await recomputeRssFeedItemHackerNewsFlags(items)
     expect(await getRssHackerNewsFlagStateForTest(items[0]!)).toEqual({
       stored: true,
       expected: true,
