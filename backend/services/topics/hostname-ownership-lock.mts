@@ -18,12 +18,12 @@ export async function lockTopicHostnameOwnership(
   }>(sql`/* getTopicHostnameOwnershipIds */
     SELECT hostname_id FROM topics WHERE id = ANY(${[...new Set(topicIds)]}::uuid[])
     UNION
-    -- no-mistakes-disable-next-line postgres-bounded-statements: hostname rows are added manually, so no cap.
+    -- no-mistakes-disable-next-line postgres-bounded-statements: topic mutation must lock every hostname currently owned by its topic IDs before changing ownership; per-topic hostname ownership has no cardinality cap.
     SELECT id FROM url_hostnames WHERE topic_id = ANY(${[...new Set(topicIds)]}::uuid[])
     UNION
-    -- no-mistakes-disable-next-line postgres-bounded-statements: landing-page relations are added manually, so no cap.
+    -- no-mistakes-disable-next-line postgres-bounded-statements: topic mutation must lock the hostnames of every live landing-page relation for its topic IDs; omitting a relation leaves an ownership race, and relation count is uncapped.
     SELECT urls.hostname_id FROM relation__topic__landing_page__url relation
-    -- no-mistakes-disable-next-line postgres-bounded-statements: urls are reached only through the manually added landing-page relations, so no cap.
+    -- no-mistakes-disable-next-line postgres-bounded-statements: the URL primary-key join adds at most one hostname per live landing-page relation; every relation must contribute its ownership lock.
     JOIN urls ON urls.id = relation.object_id
     WHERE relation.subject_id = ANY(${[...new Set(topicIds)]}::uuid[])
       AND relation.deleted_at IS NULL

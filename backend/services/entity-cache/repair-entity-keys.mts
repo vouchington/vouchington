@@ -25,7 +25,6 @@ function entityKeysQuery(entityType: EntityBloomFilterType, id: string) {
         SELECT id, slug AS lookup_key FROM topics
         WHERE id = ${id} AND deleted_at IS NULL AND merged_into_topic_id IS NULL
         UNION ALL
-        -- no-mistakes-disable-next-line postgres-required-predicates: retain merged source IDs for live destination redirect lookups, matching the full Bloom rebuild
         SELECT source.id, NULL::text FROM topics source
         JOIN topics destination ON destination.id = source.merged_into_topic_id
         WHERE source.id = ${id} AND source.deleted_at IS NULL AND source.merged_into_topic_id IS NOT NULL

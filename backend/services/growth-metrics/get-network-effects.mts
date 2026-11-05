@@ -27,7 +27,7 @@ export async function getNetworkEffects(
              COALESCE(tm.ratings__count__5, 0)) >= 5
           )::INT AS covered,
           COUNT(*)::INT AS total
-        -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+        -- no-mistakes-disable-next-line postgres-required-predicates: merge combines source topic_metrics into the destination and deletes source metrics; coverage counts still exclude deleted topics
         FROM topic_metrics tm
         JOIN topics t ON t.id = tm.topic_id
         WHERE t.deleted_at IS NULL

@@ -73,7 +73,7 @@ export async function createFeedCategoryRelations(rssFeedId: string): Promise<vo
 async function getRssFeedTopicId(rssFeedId: string): Promise<string | null> {
   const { rows } = await read(
     `/* getRssFeedTopicId */
-     -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+     -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints rss_feeds.topic_id to the destination; feed category ownership lookup still excludes deleted topics
      SELECT rf.topic_id FROM rss_feeds rf
      JOIN topics t ON t.id = rf.topic_id AND t.deleted_at IS NULL
      WHERE rf.id = $1 AND rf.deleted_at IS NULL`,

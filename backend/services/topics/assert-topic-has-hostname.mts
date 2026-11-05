@@ -10,7 +10,6 @@ export async function assertTopicHasHostname(
   assert(isUUID(topicId), 422, 'topic_id must be a valid UUID')
   const { rows } = await read<{ hostname_id: string | null }>(
     `/* assertTopicHasHostname */
-    -- no-mistakes-disable-next-line postgres-required-predicates: exact write target validation must reject merged topic IDs.
     SELECT hostname_id
     FROM topics
     WHERE id = $1::uuid

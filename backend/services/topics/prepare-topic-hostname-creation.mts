@@ -17,7 +17,6 @@ export async function prepareTopicHostnameCreation(
   // A revival can clear its old primary link; stabilize that identity before hostname locks.
   const { rows: revivalRows } = updates.source_topic_alias_id
     ? await options.query<{ id: string }>(sql`/* getTopicRevivalHostnameOwner */
-        -- no-mistakes-disable-next-line postgres-required-predicates: capture potential revival identity including active, deleted, and merged owners.
         SELECT topic.id FROM topic_aliases source_alias
         JOIN topics topic ON topic.id = source_alias.topic_id
         WHERE source_alias.id = ${updates.source_topic_alias_id}

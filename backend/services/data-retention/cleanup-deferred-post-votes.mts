@@ -46,7 +46,6 @@ async function cleanupDeferredPostVotePage(
   const { rows: due } = await query<{ post_id: string; id: string }>(
     `/* listDeferredPostVoteSources */
      /* no-mistakes: deadlock-safe -- each capped due page locks rows in ID order before its delete or marker update; the delivered and expired lanes run sequentially. */
-     -- no-mistakes-disable-next-line postgres-required-predicates: the unscoped due-source page spans every post partition; partial ID indexes and LIMIT cap raw reads, while scoped calls constrain an owned ID set
      SELECT post_id, id FROM post_votes
      WHERE ballot_retention_deferred_at IS NOT NULL
        AND ${cutoffId === null ? 'outbound_activitypub_distributed_at IS NOT NULL' : 'id < $1::uuid'}

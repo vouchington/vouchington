@@ -56,6 +56,23 @@ describe('additional-hostnames', () => {
     expect(list.find(h => h.hostname === additionalHostname)).toBeDefined()
   })
 
+  it.each(['deleted', 'merged'] as const)(
+    'getAdditionalHostnames excludes a %s topic with retained hostname ownership',
+    async state => {
+      const random = Math.random().toString(36).slice(2, 15)
+      const topic = await createTestTopic({ hostname: `inactive-primary-${random}.example.com` })
+      await addAdditionalHostname(topic.id, `inactive-extra-${random}.example.com`, user.id)
+      if (state === 'deleted') {
+        await softDeleteTopic(topic.id, user.id)
+      } else {
+        const destination = await createTestTopic()
+        await mergeTopicForTest(topic.id, destination.id, user.id)
+      }
+
+      expect(await getAdditionalHostnames(topic.id)).toEqual({ results: [], hasNextPage: false })
+    },
+  )
+
   it('addAdditionalHostname is idempotent', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({ hostname: `idem-primary-${random}.example.com` })

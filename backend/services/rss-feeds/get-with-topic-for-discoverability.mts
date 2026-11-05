@@ -17,7 +17,7 @@ export async function getRssFeedWithTopicForDiscoverability(
       rss_feeds.topic_id,
       rss_feeds.deleted_at,
       topics.votes_score_net AS topic_votes_score_net
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints rss_feeds.topic_id to the destination; discoverability scoring still excludes deleted topics
     FROM rss_feeds
     JOIN topics ON topics.id = rss_feeds.topic_id
     WHERE rss_feeds.id = ${rssFeedId}

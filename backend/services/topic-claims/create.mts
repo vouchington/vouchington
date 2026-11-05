@@ -107,7 +107,6 @@ async function resolveClaimTopic(topicId: string): Promise<ClaimTopic | undefine
 
 async function resolveClaimTopicByUuid(topicId: string): Promise<ClaimTopic | undefined> {
   const { rows } = await read<ClaimTopic>(sql`/* resolveClaimTopicByUuid */
-    -- no-mistakes-disable-next-line postgres-required-predicates: claim creation resolves merged source topic IDs to an active destination topic
     WITH candidates AS (
       SELECT t.id, t.hostname_id, 0 AS priority
       FROM topics t
@@ -134,7 +133,6 @@ async function resolveClaimTopicByUuid(topicId: string): Promise<ClaimTopic | un
 
 async function resolveClaimTopicBySlug(topicId: string): Promise<ClaimTopic | undefined> {
   const { rows } = await read<ClaimTopic>(sql`/* resolveClaimTopicBySlug */
-    -- no-mistakes-disable-next-line postgres-required-predicates: claim creation resolves merged source topic slugs to an active destination topic
     WITH candidates AS (
       SELECT t.id, t.hostname_id, 0 AS priority
       FROM topics t

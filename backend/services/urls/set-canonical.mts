@@ -85,7 +85,7 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
     // Flatten back-references: any URL pointing to urlId should now point to finalCanonicalId
     await query(
       `/* flattenCanonicalChain */
-      -- no-mistakes-disable-next-line postgres-bounded-statements: stays in the setCanonicalUrl transaction; re-pointing is rare, and flattening keeps one-hop readers correct.
+      -- no-mistakes-disable-next-line postgres-bounded-statements: every direct back-reference must be repointed in this transaction to preserve one-hop canonical resolution at commit; the number of referencing URLs is uncapped, so a LIMIT would leave stale canonical chains.
       UPDATE urls SET canonical_url_id = $1 WHERE canonical_url_id = $2 AND id != $3`,
       [finalCanonicalId, urlId, urlId],
     )

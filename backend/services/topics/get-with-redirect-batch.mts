@@ -54,7 +54,7 @@ export async function getTopicsByAnyWithRedirectBatch(
         AND destination.deleted_at IS NULL AND destination.merged_into_topic_id IS NULL
       UNION ALL
       SELECT topic.id, input.input_order, 2, NULL::uuid, NULL::text, NULL::text
-      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints topic_aliases.topic_id to the destination; batch alias resolution still excludes deleted topics
       FROM slug_input input JOIN topic_aliases alias ON alias.alias = input.value
       JOIN topics topic ON topic.id = alias.topic_id
       WHERE topic.deleted_at IS NULL

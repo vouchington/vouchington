@@ -21,7 +21,6 @@ user_contributions AS (
     BOOL_OR(p.post_type = 'data_point') AS has_data_point,
     BOOL_OR(p.post_type = 'review') AS has_review,
     MAX(p.votes_score_net) AS best_score
-  -- no-mistakes-disable-next-line postgres-required-predicates: posts are selected by author with no time window; an author id does not bound post ids (seeded posts predate their seeded author, and author deletion reassigns created_by_id), so every id partition is read through idx_posts__created_by_id
   FROM posts p
   JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
   WHERE p.deleted_at IS NULL
@@ -48,7 +47,6 @@ user_reviews AS (
       WHERE prt.post_id = p.id
         AND prt.topic_id IN (SELECT id FROM linked_topic_ids)
     ) AS review_avg_rating
-  -- no-mistakes-disable-next-line postgres-required-predicates: posts are selected by author with no time window; an author id does not bound post ids (seeded posts predate their seeded author, and author deletion reassigns created_by_id), so every id partition is read through idx_posts__created_by_id
   FROM posts p
   JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
   WHERE p.deleted_at IS NULL

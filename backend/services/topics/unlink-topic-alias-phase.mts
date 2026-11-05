@@ -115,7 +115,6 @@ async function deletePostRelations(
     `/* deletePostRelations remove */
     DELETE FROM relation__post__category__topic_alias AS relation
     USING unnest($2::uuid[], $3::uuid[]) AS locked(subject_id, id)
-    -- no-mistakes-disable-next-line postgres-required-predicates: paired subject and relation ids are the locked page
     WHERE relation.object_id = $1::uuid
       AND relation.subject_id = locked.subject_id
       AND relation.id = locked.id`,
@@ -166,7 +165,6 @@ async function deleteRssItemRelations(
   const { rows } = await query<{ subject_id: string; id: string }>(
     `/* deleteRssItemRelations */
     SELECT subject_id, id
-    -- no-mistakes-disable-next-line postgres-required-predicates: unlink drains soft-deleted alias edges before the alias row can go
     FROM relation__rss_feed_item__category__topic_alias
     WHERE object_id = $1::uuid
     ORDER BY subject_id, id
@@ -179,7 +177,6 @@ async function deleteRssItemRelations(
     `/* deleteRssItemRelations remove */
     DELETE FROM relation__rss_feed_item__category__topic_alias AS relation
     USING unnest($2::uuid[], $3::uuid[]) AS locked(subject_id, id)
-    -- no-mistakes-disable-next-line postgres-required-predicates: paired subject and relation ids are the locked page
     WHERE relation.object_id = $1::uuid
       AND relation.subject_id = locked.subject_id
       AND relation.id = locked.id`,

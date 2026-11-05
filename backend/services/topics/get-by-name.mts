@@ -7,7 +7,7 @@ import type { Topic } from './types.mts'
  */
 export async function topicSlugExists(slug: string): Promise<boolean> {
   const { rows } = await read(
-    // no-mistakes-disable-next-line postgres-required-predicates: any lifecycle state is intentional, see doc comment above
+    // no-mistakes-disable-next-line postgres-required-predicates: the nonpartial unique slug index reserves deleted and merged topic slugs, so availability must inspect every lifecycle state
     `/* topicSlugExists */ SELECT 1 FROM topics WHERE slug = $1 LIMIT 1`,
     [slug.toLowerCase().trim()],
   )
@@ -21,7 +21,7 @@ export async function topicSlugExists(slug: string): Promise<boolean> {
  */
 export async function topicNameExists(name: string): Promise<boolean> {
   const { rows } = await read(
-    // no-mistakes-disable-next-line postgres-required-predicates: any lifecycle state is intentional, see doc comment above
+    // no-mistakes-disable-next-line postgres-required-predicates: the nonpartial unique name index reserves deleted and merged topic names, so availability must inspect every lifecycle state
     `/* topicNameExists */ SELECT 1 FROM topics WHERE LOWER(name) = LOWER($1) LIMIT 1`,
     [name.trim()],
   )

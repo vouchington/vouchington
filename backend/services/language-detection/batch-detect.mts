@@ -61,7 +61,7 @@ export async function detectRssFeedItemLanguageBatch(ids: string[]): Promise<{ u
            rfi.lingua_rs_input_sha256,
            (
              SELECT rf.declared_language
-             -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+             -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints source feeds through rss_feeds.topic_id; batch declared-language selection still excludes deleted topics
              FROM rss_feed_item_sources rfis
              JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
              JOIN topics t ON t.id = rf.topic_id

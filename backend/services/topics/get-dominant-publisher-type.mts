@@ -7,7 +7,7 @@ export async function getDominantPublisherTypeSlug(
 ): Promise<PublisherTypeSlug | null> {
   const { rows } = await read(sql`/* getDominantPublisherTypeSlug */
     SELECT topics.slug
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge moves publisher-type relation object_id to the destination with collision handling; publisher-type ranking still excludes deleted topics
     FROM relation__topic__publisher_type__topic relations
     JOIN topics ON topics.id = relations.object_id
     WHERE relations.subject_id = ${topicId}

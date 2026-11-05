@@ -67,7 +67,6 @@ export const getTopicCacheKeys = async (...keys: unknown[]): Promise<string[]> =
   }
   const { rows } = await read(
     `/* getTopicCacheKeys */
-    -- no-mistakes-disable-next-line postgres-required-predicates: cache invalidation must resolve merged source-topic keys
     WITH matched_topics AS (
       SELECT DISTINCT t.id, t.slug
       FROM topics t

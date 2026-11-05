@@ -21,7 +21,7 @@ export type ApprovedFediverseInstanceHostname = {
 export async function listApprovedFediverseInstanceHostnames(): Promise<
   ApprovedFediverseInstanceHostname[]
 > {
-  // no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
+  // no-mistakes-disable-next-line postgres-required-predicates: merge creates the destination fediverse_instance_topics row and removes the source subtype; approved-instance lookup still excludes deleted topics
   const { rows } = await read<ApprovedFediverseInstanceHostname>(sql`
     /* listApprovedFediverseInstanceHostnames */
     SELECT uh.hostname
