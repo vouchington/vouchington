@@ -27,6 +27,7 @@ _none_
 
 **Indexes:**
 
+- `idx_rss_feed_item_category_rejections__created_by_id`: `CREATE INDEX idx_rss_feed_item_category_rejections__created_by_id ON public.rss_feed_item_category_rejections USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
 - `rss_feed_item_category_rejections_pkey`: `CREATE UNIQUE INDEX rss_feed_item_category_rejections_pkey ON public.rss_feed_item_category_rejections USING btree (category_identity_id)`
 
 **Triggers:**

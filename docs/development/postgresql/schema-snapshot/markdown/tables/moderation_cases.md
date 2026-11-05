@@ -44,6 +44,7 @@ _none_
 - `idx_moderation_cases__one_open_user`: `CREATE UNIQUE INDEX idx_moderation_cases__one_open_user ON public.moderation_cases USING btree (reported_user_id) WHERE ((reported_user_id IS NOT NULL) AND (resolved_at IS NULL))`
 - `idx_moderation_cases__post_id`: `CREATE INDEX idx_moderation_cases__post_id ON public.moderation_cases USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_moderation_cases__reported_user_id`: `CREATE INDEX idx_moderation_cases__reported_user_id ON public.moderation_cases USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)`
+- `idx_moderation_cases__resolved_by_id`: `CREATE INDEX idx_moderation_cases__resolved_by_id ON public.moderation_cases USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)`
 - `idx_moderation_cases__rss_feed_item_id`: `CREATE INDEX idx_moderation_cases__rss_feed_item_id ON public.moderation_cases USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
 - `moderation_cases_pkey`: `CREATE UNIQUE INDEX moderation_cases_pkey ON public.moderation_cases USING btree (id)`
 

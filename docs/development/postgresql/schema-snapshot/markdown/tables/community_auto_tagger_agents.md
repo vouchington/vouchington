@@ -36,7 +36,9 @@ _none_
 
 - `community_auto_tagger_agents_pkey`: `CREATE UNIQUE INDEX community_auto_tagger_agents_pkey ON public.community_auto_tagger_agents USING btree (community_id, agent_id)`
 - `idx_community_auto_tagger_agents__agent_id`: `CREATE INDEX idx_community_auto_tagger_agents__agent_id ON public.community_auto_tagger_agents USING btree (agent_id)`
+- `idx_community_auto_tagger_agents__disabled_by_id`: `CREATE INDEX idx_community_auto_tagger_agents__disabled_by_id ON public.community_auto_tagger_agents USING btree (disabled_by_id) WHERE (disabled_by_id IS NOT NULL)`
 - `idx_community_auto_tagger_agents__enabled`: `CREATE INDEX idx_community_auto_tagger_agents__enabled ON public.community_auto_tagger_agents USING btree (community_id) WHERE (disabled_at IS NULL)`
+- `idx_community_auto_tagger_agents__enabled_by_id`: `CREATE INDEX idx_community_auto_tagger_agents__enabled_by_id ON public.community_auto_tagger_agents USING btree (enabled_by_id) WHERE (enabled_by_id IS NOT NULL)`
 
 **Triggers:**
 

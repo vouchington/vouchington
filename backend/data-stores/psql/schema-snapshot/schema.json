@@ -4833,6 +4833,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_agent_moderations__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderations__deleted_by_id ON ONLY public.agent_moderations USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_agent_moderations__flagged_agent": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -5524,6 +5544,66 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_agent_prompts__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_prompts__created_by_id ON public.agent_prompts USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_agent_prompts__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_prompts__deleted_by_id ON public.agent_prompts USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_agent_prompts__updated_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_prompts__updated_by_id ON public.agent_prompts USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_by_id",
+              "descending": false,
+              "expression": "updated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(updated_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": null,
@@ -5774,6 +5854,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_agents__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agents__created_by_id ON public.agents USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_agents__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agents__deleted_by_id ON public.agents USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_agents__system_user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -5789,6 +5909,26 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_agents__updated_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agents__updated_by_id ON public.agents USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_by_id",
+              "descending": false,
+              "expression": "updated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(updated_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -17029,6 +17169,26 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_community_agent_prompt_revisions__revised_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_agent_prompt_revisions__revised_by_id ON public.community_agent_prompt_revisions USING btree (revised_by_id) WHERE (revised_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revised_by_id",
+              "descending": false,
+              "expression": "revised_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revised_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": null,
@@ -17341,6 +17501,26 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_agent_prompts__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_agent_prompts__deleted_by_id ON public.community_agent_prompts USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -18028,6 +18208,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_community_applications__reviewed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_applications__reviewed_by_id ON public.community_applications USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reviewed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_applications__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -18238,6 +18438,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_community_auto_tagger_agents__disabled_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_auto_tagger_agents__disabled_by_id ON public.community_auto_tagger_agents USING btree (disabled_by_id) WHERE (disabled_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "disabled_by_id",
+              "descending": false,
+              "expression": "disabled_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(disabled_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_auto_tagger_agents__enabled": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -18253,6 +18473,26 @@
             }
           ],
           "predicate": "(disabled_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_auto_tagger_agents__enabled_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_auto_tagger_agents__enabled_by_id ON public.community_auto_tagger_agents USING btree (enabled_by_id) WHERE (enabled_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "enabled_by_id",
+              "descending": false,
+              "expression": "enabled_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(enabled_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -18466,6 +18706,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_community_bans__banned_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_bans__banned_by_id ON public.community_bans USING btree (banned_by_id) WHERE (banned_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "banned_by_id",
+              "descending": false,
+              "expression": "banned_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(banned_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_bans__case_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -18501,6 +18761,26 @@
             }
           ],
           "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_bans__lifted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_bans__lifted_by_id ON public.community_bans USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lifted_by_id",
+              "descending": false,
+              "expression": "lifted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lifted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -19091,6 +19371,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_community_list_posts__added_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_posts__added_by_id ON public.community_list_posts USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "added_by_id",
+              "descending": false,
+              "expression": "added_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(added_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_list_posts__community": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -19126,6 +19426,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_posts__removed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_posts__removed_by_id ON public.community_list_posts USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "removed_by_id",
+              "descending": false,
+              "expression": "removed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -19324,6 +19644,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_community_list_rss_feeds__added_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_rss_feeds__added_by_id ON public.community_list_rss_feeds USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "added_by_id",
+              "descending": false,
+              "expression": "added_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(added_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_list_rss_feeds__community": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -19339,6 +19679,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_rss_feeds__removed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_rss_feeds__removed_by_id ON public.community_list_rss_feeds USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "removed_by_id",
+              "descending": false,
+              "expression": "removed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -19565,6 +19925,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_community_list_topics__added_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_topics__added_by_id ON public.community_list_topics USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "added_by_id",
+              "descending": false,
+              "expression": "added_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(added_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_list_topics__community": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -19580,6 +19960,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_topics__removed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_topics__removed_by_id ON public.community_list_topics USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "removed_by_id",
+              "descending": false,
+              "expression": "removed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -19799,6 +20199,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_community_list_url_hostnames__added_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_url_hostnames__added_by_id ON public.community_list_url_hostnames USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "added_by_id",
+              "descending": false,
+              "expression": "added_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(added_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_list_url_hostnames__community": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -19814,6 +20234,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_url_hostnames__removed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_url_hostnames__removed_by_id ON public.community_list_url_hostnames USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "removed_by_id",
+              "descending": false,
+              "expression": "removed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -20032,6 +20472,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_community_list_urls__added_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_urls__added_by_id ON public.community_list_urls USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "added_by_id",
+              "descending": false,
+              "expression": "added_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(added_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_list_urls__community": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -20047,6 +20507,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_urls__removed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_urls__removed_by_id ON public.community_list_urls USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "removed_by_id",
+              "descending": false,
+              "expression": "removed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -20567,6 +21047,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_community_members__approved_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__approved_by_id ON public.community_members USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "approved_by_id",
+              "descending": false,
+              "expression": "approved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(approved_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_members__community_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -20663,6 +21163,46 @@
             }
           ],
           "predicate": "((role = 'owner'::community_member_roles) AND (removed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_members__removed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__removed_by_id ON public.community_members USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "removed_by_id",
+              "descending": false,
+              "expression": "removed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_members__suspected_ban_evader_dismissed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__suspected_ban_evader_dismissed_by_id ON public.community_members USING btree (suspected_ban_evader_dismissed_by_id) WHERE (suspected_ban_evader_dismissed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "suspected_ban_evader_dismissed_by_id",
+              "descending": false,
+              "expression": "suspected_ban_evader_dismissed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(suspected_ban_evader_dismissed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -21830,6 +22370,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_community_post_reviews__automod_dismissed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_post_reviews__automod_dismissed_by_id ON public.community_post_reviews USING btree (automod_dismissed_by_id) WHERE (automod_dismissed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "automod_dismissed_by_id",
+              "descending": false,
+              "expression": "automod_dismissed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(automod_dismissed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_post_reviews__escalated_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_post_reviews__escalated_by_id ON public.community_post_reviews USING btree (escalated_by_id) WHERE (escalated_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "escalated_by_id",
+              "descending": false,
+              "expression": "escalated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(escalated_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_post_reviews__platform_override_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -21845,6 +22425,66 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_post_reviews__reviewed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_post_reviews__reviewed_by_id ON public.community_post_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reviewed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_post_reviews__submitted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_post_reviews__submitted_by_id ON public.community_post_reviews USING btree (submitted_by_id) WHERE (submitted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "submitted_by_id",
+              "descending": false,
+              "expression": "submitted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(submitted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_post_reviews__unpublished_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_post_reviews__unpublished_by_id ON public.community_post_reviews USING btree (unpublished_by_id) WHERE (unpublished_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "unpublished_by_id",
+              "descending": false,
+              "expression": "unpublished_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(unpublished_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -22421,6 +23061,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_community_restrictions__activated_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_restrictions__activated_by_id ON public.community_restrictions USING btree (activated_by_id) WHERE (activated_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "activated_by_id",
+              "descending": false,
+              "expression": "activated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(activated_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_restrictions__active_lookup": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -22470,6 +23130,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_restrictions__lifted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_restrictions__lifted_by_id ON public.community_restrictions USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lifted_by_id",
+              "descending": false,
+              "expression": "lifted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lifted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -22728,6 +23408,46 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_community_saved_replies__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_saved_replies__created_by_id ON public.community_saved_replies USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_saved_replies__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_saved_replies__deleted_by_id ON public.community_saved_replies USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },
@@ -23368,6 +24088,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_conversation_messages__approved_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_conversation_messages__approved_by_id ON ONLY public.conversation_messages USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "approved_by_id",
+              "descending": false,
+              "expression": "approved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(approved_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_conversation_messages__created_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -23408,6 +24148,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_conversation_messages__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_conversation_messages__deleted_by_id ON ONLY public.conversation_messages USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_conversation_messages__edited_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_conversation_messages__edited_by_id ON ONLY public.conversation_messages USING btree (edited_by_id) WHERE (edited_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "edited_by_id",
+              "descending": false,
+              "expression": "edited_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(edited_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_conversation_messages__email_message_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -23423,6 +24203,26 @@
             }
           ],
           "predicate": "(email_message_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_conversation_messages__updated_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_conversation_messages__updated_by_id ON ONLY public.conversation_messages USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_by_id",
+              "descending": false,
+              "expression": "updated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(updated_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -23630,6 +24430,26 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_conversation_participants__removed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_conversation_participants__removed_by_id ON public.conversation_participants USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "removed_by_id",
+              "descending": false,
+              "expression": "removed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_conversation_participants__user_id": {
@@ -48352,6 +49172,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_curated_aside_items__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_curated_aside_items__created_by_id ON public.curated_aside_items USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_curated_aside_items__rss_feed_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -48811,6 +49651,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_dynamic_configuration_revisions__revised_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_dynamic_configuration_revisions__revised_by_id ON public.dynamic_configuration_revisions USING btree (revised_by_id) WHERE (revised_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revised_by_id",
+              "descending": false,
+              "expression": "revised_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revised_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -52450,6 +53310,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_hostname_crawler_configurations__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_hostname_crawler_configurations__deleted_by_id ON public.hostname_crawler_configurations USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_hostname_crawler_configurations__hostname_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -52485,6 +53365,26 @@
             }
           ],
           "predicate": "(referral_program_topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_hostname_crawler_configurations__updated_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_hostname_crawler_configurations__updated_by_id ON public.hostname_crawler_configurations USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_by_id",
+              "descending": false,
+              "expression": "updated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(updated_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -55592,6 +56492,26 @@
             }
           ],
           "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_images__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_images__deleted_by_id ON public.images USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -70840,6 +71760,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_moderation_appeals__approved_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_appeals__approved_by_id ON public.moderation_appeals USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "approved_by_id",
+              "descending": false,
+              "expression": "approved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(approved_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderation_appeals__case_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -70915,6 +71855,26 @@
             }
           ],
           "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_appeals__edited_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_appeals__edited_by_id ON public.moderation_appeals USING btree (edited_by_id) WHERE (edited_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "edited_by_id",
+              "descending": false,
+              "expression": "edited_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(edited_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -71090,6 +72050,26 @@
             }
           ],
           "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_appeals__resolved_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_appeals__resolved_by_id ON public.moderation_appeals USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "resolved_by_id",
+              "descending": false,
+              "expression": "resolved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(resolved_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -71518,6 +72498,26 @@
             }
           ],
           "predicate": "(reported_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_cases__resolved_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_cases__resolved_by_id ON public.moderation_cases USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "resolved_by_id",
+              "descending": false,
+              "expression": "resolved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(resolved_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -72702,6 +73702,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_moderation_report_judgements__rerun_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_judgements__rerun_by_id ON public.moderation_report_judgements USING btree (rerun_by_id) WHERE (rerun_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rerun_by_id",
+              "descending": false,
+              "expression": "rerun_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rerun_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderation_report_judgements__rss_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -73374,6 +74394,26 @@
             }
           ],
           "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__escalated_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__escalated_by_id ON public.moderation_reports USING btree (escalated_by_id) WHERE (escalated_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "escalated_by_id",
+              "descending": false,
+              "expression": "escalated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(escalated_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -84972,6 +86012,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_post_dispute_annotations__removed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_dispute_annotations__removed_by_id ON public.post_dispute_annotations USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "removed_by_id",
+              "descending": false,
+              "expression": "removed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_dispute_annotations__review_dispute_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -85712,6 +86772,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_post_locks__lifted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_locks__lifted_by_id ON public.post_locks USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lifted_by_id",
+              "descending": false,
+              "expression": "lifted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lifted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_locks__locked_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_locks__locked_by_id ON public.post_locks USING btree (locked_by_id) WHERE (locked_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "locked_by_id",
+              "descending": false,
+              "expression": "locked_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(locked_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_locks__post": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -87487,6 +88587,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_revisions__revised_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_revisions__revised_by_id ON ONLY public.post_revisions USING btree (revised_by_id) WHERE (revised_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revised_by_id",
+              "descending": false,
+              "expression": "revised_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revised_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -114742,6 +115862,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_remote_actors__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_remote_actors__deleted_by_id ON public.remote_actors USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_remote_actors__hostname_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -115021,6 +116161,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_report_abuse_penalties__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_report_abuse_penalties__created_by_id ON public.report_abuse_penalties USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_report_abuse_penalties__flag": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -115083,6 +116243,26 @@
             }
           ],
           "predicate": "(reviewed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_report_abuse_penalties__revoked_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_report_abuse_penalties__revoked_by_id ON public.report_abuse_penalties USING btree (revoked_by_id) WHERE (revoked_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revoked_by_id",
+              "descending": false,
+              "expression": "revoked_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revoked_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -115616,6 +116796,26 @@
             }
           ],
           "predicate": "(reported_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_report_integrity_flags__resolved_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_report_integrity_flags__resolved_by_id ON public.report_integrity_flags USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "resolved_by_id",
+              "descending": false,
+              "expression": "resolved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(resolved_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -118813,6 +120013,26 @@
       },
       "growth": "bounded",
       "indexes": {
+        "idx_review_disputes__approved_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_disputes__approved_by_id ON public.review_disputes USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "approved_by_id",
+              "descending": false,
+              "expression": "approved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(approved_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_review_disputes__disputant": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -118835,6 +120055,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_review_disputes__edited_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_disputes__edited_by_id ON public.review_disputes USING btree (edited_by_id) WHERE (edited_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "edited_by_id",
+              "descending": false,
+              "expression": "edited_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(edited_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -118909,6 +120149,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_review_disputes__resolved_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_disputes__resolved_by_id ON public.review_disputes USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "resolved_by_id",
+              "descending": false,
+              "expression": "resolved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(resolved_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -120523,6 +121783,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_rss_feed_item_category_rejections__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_item_category_rejections__created_by_id ON public.rss_feed_item_category_rejections USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "rss_feed_item_category_rejections_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -123382,6 +124662,26 @@
             }
           ],
           "predicate": "(canonical_rss_feed_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feeds__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feeds__created_by_id ON public.rss_feeds USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -134600,6 +135900,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_topic_revisions__revised_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_revisions__revised_by_id ON ONLY public.topic_revisions USING btree (revised_by_id) WHERE (revised_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revised_by_id",
+              "descending": false,
+              "expression": "revised_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revised_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_topic_revisions__topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -136777,6 +138097,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_url_hostname_blocks__blocked_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_blocks__blocked_by_id ON public.url_hostname_blocks USING btree (blocked_by_id) WHERE (blocked_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "blocked_by_id",
+              "descending": false,
+              "expression": "blocked_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(blocked_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostname_blocks__domain_blocklist_source_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -136839,6 +138179,26 @@
             }
           ],
           "predicate": "(lifted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostname_blocks__lifted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_blocks__lifted_by_id ON public.url_hostname_blocks USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lifted_by_id",
+              "descending": false,
+              "expression": "lifted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lifted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -137783,6 +139143,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_url_hostnames__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__created_by_id ON public.url_hostnames USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostnames__dns_disabled_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -138356,6 +139736,26 @@
             }
           ],
           "predicate": "(canonical_url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_urls__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_urls__created_by_id ON public.urls USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -146167,6 +147567,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_user_referral_program_links__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_referral_program_links__created_by_id ON public.user_referral_program_links USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_referral_program_links__created_via_oauth_client_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -146182,6 +147602,26 @@
             }
           ],
           "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_referral_program_links__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_referral_program_links__deleted_by_id ON public.user_referral_program_links USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -148247,6 +149687,46 @@
       },
       "growth": "bounded",
       "indexes": {
+        "idx_user_suspensions__lifted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_suspensions__lifted_by_id ON public.user_suspensions USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lifted_by_id",
+              "descending": false,
+              "expression": "lifted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lifted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_suspensions__suspended_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_suspensions__suspended_by_id ON public.user_suspensions USING btree (suspended_by_id) WHERE (suspended_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "suspended_by_id",
+              "descending": false,
+              "expression": "suspended_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(suspended_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_suspensions__user": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -149281,6 +150761,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_user_warnings__issued_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_warnings__issued_by_id ON public.user_warnings USING btree (issued_by_id) WHERE (issued_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "issued_by_id",
+              "descending": false,
+              "expression": "issued_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(issued_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_warnings__report_id_unique": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -149299,6 +150799,26 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_user_warnings__revoked_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_warnings__revoked_by_id ON public.user_warnings USING btree (revoked_by_id) WHERE (revoked_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revoked_by_id",
+              "descending": false,
+              "expression": "revoked_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revoked_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_user_warnings__user_id": {
@@ -150185,6 +151705,26 @@
             }
           ],
           "predicate": "(deleted_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_users__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_users__deleted_by_id ON public.users USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -152204,6 +153744,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_vote_integrity_flags__resolved_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_vote_integrity_flags__resolved_by_id ON public.vote_integrity_flags USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "resolved_by_id",
+              "descending": false,
+              "expression": "resolved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(resolved_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_vote_integrity_flags__rss_feed_item__category__topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -153580,6 +155140,26 @@
             }
           ],
           "predicate": "(reviewed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_vote_weight_penalties__revoked_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_vote_weight_penalties__revoked_by_id ON public.vote_weight_penalties USING btree (revoked_by_id) WHERE (revoked_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revoked_by_id",
+              "descending": false,
+              "expression": "revoked_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revoked_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

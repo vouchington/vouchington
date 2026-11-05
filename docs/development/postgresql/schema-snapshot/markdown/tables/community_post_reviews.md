@@ -72,7 +72,12 @@ _none_
 - `idx_comm_post_reviews__community`: `CREATE INDEX idx_comm_post_reviews__community ON public.community_post_reviews USING btree (community_id, post_id)`
 - `idx_comm_post_reviews__pending`: `CREATE INDEX idx_comm_post_reviews__pending ON public.community_post_reviews USING btree (community_id) WHERE ((approved_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_comm_post_reviews__user_removed`: `CREATE INDEX idx_comm_post_reviews__user_removed ON public.community_post_reviews USING btree (submitted_by_id, unpublished_at DESC, post_id DESC) WHERE (unpublished_at IS NOT NULL)`
+- `idx_community_post_reviews__automod_dismissed_by_id`: `CREATE INDEX idx_community_post_reviews__automod_dismissed_by_id ON public.community_post_reviews USING btree (automod_dismissed_by_id) WHERE (automod_dismissed_by_id IS NOT NULL)`
+- `idx_community_post_reviews__escalated_by_id`: `CREATE INDEX idx_community_post_reviews__escalated_by_id ON public.community_post_reviews USING btree (escalated_by_id) WHERE (escalated_by_id IS NOT NULL)`
 - `idx_community_post_reviews__platform_override_by_id`: `CREATE INDEX idx_community_post_reviews__platform_override_by_id ON public.community_post_reviews USING btree (platform_override_by_id)`
+- `idx_community_post_reviews__reviewed_by_id`: `CREATE INDEX idx_community_post_reviews__reviewed_by_id ON public.community_post_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
+- `idx_community_post_reviews__submitted_by_id`: `CREATE INDEX idx_community_post_reviews__submitted_by_id ON public.community_post_reviews USING btree (submitted_by_id) WHERE (submitted_by_id IS NOT NULL)`
+- `idx_community_post_reviews__unpublished_by_id`: `CREATE INDEX idx_community_post_reviews__unpublished_by_id ON public.community_post_reviews USING btree (unpublished_by_id) WHERE (unpublished_by_id IS NOT NULL)`
 
 **Triggers:**
 _none_

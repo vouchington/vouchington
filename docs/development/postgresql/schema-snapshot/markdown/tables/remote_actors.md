@@ -37,6 +37,7 @@ _none_
 **Indexes:**
 
 - `idx_remote_actors__cache_retention`: `CREATE INDEX idx_remote_actors__cache_retention ON public.remote_actors USING btree (fetched_at, id) WHERE (deleted_at IS NULL)`
+- `idx_remote_actors__deleted_by_id`: `CREATE INDEX idx_remote_actors__deleted_by_id ON public.remote_actors USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_remote_actors__hostname_id`: `CREATE INDEX idx_remote_actors__hostname_id ON public.remote_actors USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
 - `idx_remote_actors__key_id`: `CREATE UNIQUE INDEX idx_remote_actors__key_id ON public.remote_actors USING btree (key_id) WHERE (deleted_at IS NULL)`
 - `remote_actors_pkey`: `CREATE UNIQUE INDEX remote_actors_pkey ON public.remote_actors USING btree (id)`

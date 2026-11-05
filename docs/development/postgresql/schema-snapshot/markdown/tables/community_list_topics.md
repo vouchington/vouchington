@@ -35,7 +35,9 @@ _none_
 **Indexes:**
 
 - `community_list_topics_pkey`: `CREATE UNIQUE INDEX community_list_topics_pkey ON public.community_list_topics USING btree (id)`
+- `idx_community_list_topics__added_by_id`: `CREATE INDEX idx_community_list_topics__added_by_id ON public.community_list_topics USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)`
 - `idx_community_list_topics__community`: `CREATE INDEX idx_community_list_topics__community ON public.community_list_topics USING btree (community_id)`
+- `idx_community_list_topics__removed_by_id`: `CREATE INDEX idx_community_list_topics__removed_by_id ON public.community_list_topics USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)`
 - `idx_community_list_topics__topic`: `CREATE INDEX idx_community_list_topics__topic ON public.community_list_topics USING btree (topic_id)`
 - `idx_community_list_topics__unique`: `CREATE UNIQUE INDEX idx_community_list_topics__unique ON public.community_list_topics USING btree (community_id, topic_id) WHERE (removed_at IS NULL)`
 

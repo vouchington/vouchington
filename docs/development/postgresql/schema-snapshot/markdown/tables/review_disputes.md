@@ -60,10 +60,13 @@ Not partitioned — growth: bounded.
 
 **Indexes:**
 
+- `idx_review_disputes__approved_by_id`: `CREATE INDEX idx_review_disputes__approved_by_id ON public.review_disputes USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)`
 - `idx_review_disputes__disputant`: `CREATE INDEX idx_review_disputes__disputant ON public.review_disputes USING btree (disputant_user_id, id DESC)`
+- `idx_review_disputes__edited_by_id`: `CREATE INDEX idx_review_disputes__edited_by_id ON public.review_disputes USING btree (edited_by_id) WHERE (edited_by_id IS NOT NULL)`
 - `idx_review_disputes__latest_lifecycle_change_id`: `CREATE INDEX idx_review_disputes__latest_lifecycle_change_id ON public.review_disputes USING btree (latest_lifecycle_change_id) WHERE (latest_lifecycle_change_id IS NOT NULL)`
 - `idx_review_disputes__one_open_per_disputant_topic`: `CREATE UNIQUE INDEX idx_review_disputes__one_open_per_disputant_topic ON public.review_disputes USING btree (disputant_user_id, post_id, topic_id) WHERE (resolved_at IS NULL)`
 - `idx_review_disputes__post_id`: `CREATE INDEX idx_review_disputes__post_id ON public.review_disputes USING btree (post_id)`
+- `idx_review_disputes__resolved_by_id`: `CREATE INDEX idx_review_disputes__resolved_by_id ON public.review_disputes USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)`
 - `idx_review_disputes__status_created`: `CREATE INDEX idx_review_disputes__status_created ON public.review_disputes USING btree (resolved_at, id DESC)`
 - `idx_review_disputes__topic_id`: `CREATE INDEX idx_review_disputes__topic_id ON public.review_disputes USING btree (topic_id)`
 - `review_disputes_ai_draft_request_token_key`: `CREATE UNIQUE INDEX review_disputes_ai_draft_request_token_key ON public.review_disputes USING btree (ai_draft_request_token)`

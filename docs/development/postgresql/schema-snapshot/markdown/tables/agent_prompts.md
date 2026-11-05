@@ -43,6 +43,9 @@ _none_
 - `agent_prompts_pkey`: `CREATE UNIQUE INDEX agent_prompts_pkey ON public.agent_prompts USING btree (id)`
 - `idx_agent_prompts__agent_id`: `CREATE INDEX idx_agent_prompts__agent_id ON public.agent_prompts USING btree (agent_id, activated_at DESC) INCLUDE (prompt, model_name, model_provider) WHERE (deleted_at IS NULL)`
 - `idx_agent_prompts__agent_id_bare`: `CREATE INDEX idx_agent_prompts__agent_id_bare ON public.agent_prompts USING btree (agent_id)`
+- `idx_agent_prompts__created_by_id`: `CREATE INDEX idx_agent_prompts__created_by_id ON public.agent_prompts USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_agent_prompts__deleted_by_id`: `CREATE INDEX idx_agent_prompts__deleted_by_id ON public.agent_prompts USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
+- `idx_agent_prompts__updated_by_id`: `CREATE INDEX idx_agent_prompts__updated_by_id ON public.agent_prompts USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)`
 
 **Triggers:**
 

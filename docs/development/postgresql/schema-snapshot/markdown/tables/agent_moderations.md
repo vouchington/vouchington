@@ -63,6 +63,7 @@ _none_
 
 - `agent_moderations_pkey`: `CREATE UNIQUE INDEX agent_moderations_pkey ON ONLY public.agent_moderations USING btree (post_id, input_sha256, prompt_id)`
 - `idx_agent_moderations__agent_id`: `CREATE INDEX idx_agent_moderations__agent_id ON ONLY public.agent_moderations USING btree (agent_id, post_id DESC)`
+- `idx_agent_moderations__deleted_by_id`: `CREATE INDEX idx_agent_moderations__deleted_by_id ON ONLY public.agent_moderations USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_agent_moderations__flagged_agent`: `CREATE INDEX idx_agent_moderations__flagged_agent ON ONLY public.agent_moderations USING btree (agent_id, is_flagged, post_id DESC) WHERE ((deleted_at IS NULL) AND (is_flagged = true))`
 - `idx_agent_moderations__flagged_prompt`: `CREATE INDEX idx_agent_moderations__flagged_prompt ON ONLY public.agent_moderations USING btree (prompt_id, post_id DESC) WHERE ((deleted_at IS NULL) AND (is_flagged = true))`
 - `idx_agent_moderations__id`: `CREATE INDEX idx_agent_moderations__id ON ONLY public.agent_moderations USING btree (id) WHERE (deleted_at IS NULL)`
