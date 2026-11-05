@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -209,15 +209,6 @@ describe('secret-backed workflow context gates (permissions and security)', () =
   })
 
   it('keeps CI Node warning suppression out of workflow startup hooks', () => {
-    for (const workflowPath of readdirSync('.github/workflows').filter(path =>
-      path.endsWith('.yml'),
-    )) {
-      const workflow = read(`.github/workflows/${workflowPath}`)
-      expect(workflow).not.toMatch(
-        /^\s+BASH_ENV:(?!(?:\s*(?:\/dev\/null|["']\/dev\/null["'])\s*(?:#.*)?$))/m,
-      )
-      expect(workflow).not.toContain('NODE_OPTIONS: --disable-warning=DEP0205')
-    }
     expect(nodeTestOptions).toContain('${NODE_OPTIONS:+$NODE_OPTIONS }--disable-warning=DEP0205')
     expect(nodeTestOptions).toContain('*" --disable-warning=DEP0205 "*)')
   })
@@ -240,12 +231,6 @@ describe('secret-backed workflow context gates (permissions and security)', () =
       '.github/workflows/tests-web-integration.yml',
     ]) {
       expect(read(path)).not.toContain('VITEST_MAX_WORKERS')
-    }
-    for (const path of readdirSync('.github/workflows').filter(path => path.endsWith('.yml'))) {
-      const workflow = read(`.github/workflows/${path}`)
-      expect(workflow).not.toContain('load-runner-env')
-      expect(workflow).not.toContain('vars.VITEST_MAX_WORKERS')
-      expect(workflow).not.toContain('vars.PLAYWRIGHT_MAX_WORKERS')
     }
   })
 

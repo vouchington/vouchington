@@ -1,3 +1,4 @@
+import { shellLogicalLines } from '../../ci/workflow-shell-policy.mts'
 import picomatch from 'picomatch'
 
 export type WorkflowStep = {
@@ -39,23 +40,11 @@ function stringList(value: unknown): string[] {
   return value.filter((entry): entry is string => typeof entry === 'string')
 }
 
-export function gitSubcommandPattern(subcommand: string): RegExp {
-  return new RegExp(
-    String.raw`\bgit\b(?:\s+(?:-\S+(?:\s+\S+)?|--\S+(?:\s+\S+)?))*\s+` +
-      subcommand +
-      String.raw`\b`,
-  )
-}
-
 export function workflowTriggerNames(trigger: unknown): string[] {
   if (typeof trigger === 'string') return [trigger]
   if (Array.isArray(trigger)) return stringList(trigger)
   if (!isWorkflowTriggerObject(trigger)) return []
   return Object.keys(trigger)
-}
-
-export function workflowHasTrigger(trigger: unknown, name: string): boolean {
-  return workflowTriggerNames(trigger).includes(name)
 }
 
 function workflowTriggerField(trigger: unknown, field: string): unknown {
@@ -130,26 +119,6 @@ export function workflowRunSubscriptions(trigger: unknown): string[] {
   const workflowRun = workflowTriggerField(trigger, 'workflow_run')
   if (workflowRun == null) return []
   return stringList(workflowTriggerField(workflowRun, 'workflows'))
-}
-
-export function shellLogicalLines(script: string): string[] {
-  const lines: string[] = []
-  let current = ''
-
-  for (const rawLine of script.split('\n')) {
-    const line = rawLine.trimEnd()
-    const trailingBackslashes = line.match(/\\+$/)
-    const continues = trailingBackslashes ? trailingBackslashes[0].length % 2 === 1 : false
-    if (continues) {
-      current += `${line.slice(0, -1)} `
-      continue
-    }
-    lines.push(current + line)
-    current = ''
-  }
-
-  if (current) lines.push(current)
-  return lines
 }
 
 export function requiredNamedStep(job: WorkflowJob | undefined, name: string): WorkflowStep {

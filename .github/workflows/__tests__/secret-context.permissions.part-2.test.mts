@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 
-import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import { workflowCallSecretViolations } from '../../../ci/workflow-safety-policy.mts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 
@@ -12,58 +12,6 @@ function jobSection(workflow: string, jobName: string): string {
   const rest = workflow.slice(start + 1)
   const next = rest.search(/\n {2}[a-z][a-z0-9-]*:\n/)
   return next === -1 ? rest : rest.slice(0, next)
-}
-
-type WorkflowSecret = { required?: boolean }
-
-type WorkflowJob = {
-  uses?: string
-  secrets?: string | Record<string, unknown>
-}
-
-type WorkflowDocument = {
-  on?: { workflow_call?: { secrets?: Record<string, WorkflowSecret> } }
-  jobs?: Record<string, WorkflowJob>
-}
-
-function localWorkflowPaths(): string[] {
-  return readdirSync('.github/workflows').flatMap(file =>
-    file.endsWith('.yml') || file.endsWith('.yaml') ? [`.github/workflows/${file}`] : [],
-  )
-}
-
-function workflowDocuments(): Record<string, WorkflowDocument> {
-  return Object.fromEntries(
-    localWorkflowPaths().map(path => [path, load(read(path)) as WorkflowDocument]),
-  )
-}
-
-function localCalleePath(uses: string | undefined): string | undefined {
-  if (!uses?.startsWith('./.github/workflows/')) return undefined
-  return uses.slice('./'.length)
-}
-
-function workflowCallSecretViolations(workflows: Record<string, WorkflowDocument>): string[] {
-  return Object.entries(workflows).flatMap(([path, workflow]) =>
-    Object.entries(workflow.jobs ?? {}).flatMap(([jobId, job]) => {
-      const label = `${path}#${jobId}`
-      if (job.secrets === 'inherit') {
-        return [`${label}: pass the callee declared secrets explicitly`]
-      }
-      const calleePath = localCalleePath(job.uses)
-      if (!calleePath) return []
-      const declared = workflows[calleePath]?.on?.workflow_call?.secrets ?? {}
-      const passed = job.secrets == null ? [] : Object.keys(job.secrets)
-      return [
-        ...passed
-          .filter(name => !Object.hasOwn(declared, name))
-          .map(name => `${label}: ${name} is not declared by ${calleePath}`),
-        ...Object.entries(declared)
-          .filter(([name, spec]) => spec?.required === true && !passed.includes(name))
-          .map(([name]) => `${label}: pass required secret ${name} from ${calleePath}`),
-      ]
-    }),
-  )
 }
 
 function pathFilterSection(workflow: string, filterName: string): string {
@@ -250,6 +198,11 @@ describe('secret-backed workflow context gates (permissions and security)', () =
       'caller.yml#extra: OTHER is not declared by .github/workflows/publish.yml',
       'caller.yml#missing: pass required secret TOKEN from .github/workflows/publish.yml',
     ])
-    expect(workflowCallSecretViolations(workflowDocuments())).toEqual([])
+    expect(
+      workflowCallSecretViolations({
+        [callee]: workflows[callee],
+        'caller.yml': { jobs: { explicit: workflows['caller.yml'].jobs.explicit } },
+      }),
+    ).toEqual([])
   })
 })

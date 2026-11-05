@@ -1,3 +1,4 @@
+import { checkWorkflowSafetyPolicy } from './check-workflow-safety-policy.mts'
 import { checkTransientRetryPolicy } from './check-transient-retry-policy.mts'
 import { checkAgentWorkflowDocs } from './check-agent-workflow-doc-policy.mts'
 import { checkKnipDependencyPolicy } from './check-knip-dependency-policy.mts'
@@ -14,6 +15,7 @@ export async function checkRepositoryPolicyScans(root: string): Promise<void> {
   await checkPostgresOrderingPolicy(root)
 
   const violations = [
+    ...checkWorkflowSafetyPolicy(root),
     ...(await checkTransientRetryPolicy(root)),
     ...checkAgentWorkflowDocs(root),
     ...checkPrShepherdGuidance(root),

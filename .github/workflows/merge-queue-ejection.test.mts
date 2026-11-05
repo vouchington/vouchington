@@ -1,8 +1,7 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
 import { parse } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { workflowHasTrigger } from '../test-helpers/workflow-fixtures.mts'
+import { privilegedWorkflowViolations } from '../../ci/workflow-safety-policy.mts'
 
 type Step = { uses?: string; run?: string; with?: Record<string, unknown> }
 type Job = {
@@ -30,13 +29,19 @@ describe('merge-queue ejection workflow', () => {
   })
 
   it('shares pull_request_target only with the dequeued-run canceller', () => {
-    const privileged = readdirSync('.github/workflows')
-      .filter(file => /\.ya?ml$/u.test(file))
-      .filter(file => {
-        const parsed = parse(readFileSync(join('.github/workflows', file), 'utf8')) as Workflow
-        return workflowHasTrigger(parsed.on, 'pull_request_target')
-      })
-    expect(privileged).toEqual(['cancel-dequeued-merge-group-runs.yml', 'merge-queue-ejection.yml'])
+    expect(
+      privilegedWorkflowViolations({
+        '.github/workflows/cancel-dequeued-merge-group-runs.yml': { on: 'pull_request_target' },
+        '.github/workflows/merge-queue-ejection.yml': { on: { pull_request_target: {} } },
+      }),
+    ).toEqual([])
+    expect(
+      privilegedWorkflowViolations({
+        '.github/workflows/unsafe.yml': { on: ['pull_request_target'] },
+      }),
+    ).toEqual([
+      'Privileged workflows must be cancel-dequeued-merge-group-runs.yml, merge-queue-ejection.yml; found unsafe.yml',
+    ])
   })
 
   it('gates dispatch on both harness variables and a CI ejection reason', () => {
