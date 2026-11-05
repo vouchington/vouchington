@@ -3,7 +3,7 @@ import { getPrivateUserByAny } from '@services/users/get'
 import { describe, expect, it } from 'vitest'
 import { getTopicBySlug } from '@services/topics/get'
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
-import { seedTopicsFromRows } from '../seed-csvs.mts'
+import { seedTopicsFromCsvs } from '../seed-csvs.mts'
 
 describe('seed second-pass recovery', () => {
   it('returns a second-pass row failure while retaining the first-pass topic', async () => {
@@ -15,7 +15,10 @@ describe('seed second-pass recovery', () => {
     const { result, error } = await withPostgresQueryFailureForTest(
       '/* updateTopicInStore */',
       () =>
-        seedTopicsFromRows(actor, [{ slug, name, parent_slugs: `seed-recovery-parent-${suffix}` }]),
+        seedTopicsFromCsvs({
+          actor,
+          rows: [{ slug, name, parent_slugs: `seed-recovery-parent-${suffix}` }],
+        }),
       { command: 'UPDATE' },
     )
 
