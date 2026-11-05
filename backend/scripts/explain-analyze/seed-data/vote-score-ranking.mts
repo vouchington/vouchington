@@ -5,6 +5,7 @@ const HOSTNAME_FIXTURE_COUNT = 500_000
 const HOSTNAME_SEED_BATCH_SIZE = 5_000
 const VOTED_HOSTNAME_COUNT = 5_000
 const PUBLISHER_RELATION_FIXTURE_COUNT = 200_000
+const PUBLISHER_RELATION_SEED_BATCH_SIZE = 5_000
 
 /** Seed the publisher and post projection corpus before the separate hostname burst. */
 export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
@@ -15,8 +16,18 @@ export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
   await using transaction = await beginTransaction()
   const query = transaction
 
-  await query(
-    `/* seedVoteScoreRankingFixture:publisher-relations */
+  for (
+    let first = 1;
+    first <= PUBLISHER_RELATION_FIXTURE_COUNT;
+    first += PUBLISHER_RELATION_SEED_BATCH_SIZE
+  ) {
+    const last = Math.min(
+      first + PUBLISHER_RELATION_SEED_BATCH_SIZE - 1,
+      PUBLISHER_RELATION_FIXTURE_COUNT,
+    )
+    // no-mistakes-disable-next-line query-reached-per-item: bounded seed batches preserve topic foreign-key checks below the statement deadline; one INSERT for the full corpus times out.
+    await query(
+      `/* seedVoteScoreRankingFixture:publisher-relations */
      INSERT INTO relation__topic__publisher_type__topic
        (subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
      SELECT
@@ -25,10 +36,11 @@ export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
        $1::uuid,
        1,
        1
-     FROM generate_series(1, $2::integer) AS rows(row_number)
+     FROM generate_series($2::integer, $3::integer) AS rows(row_number)
      ON CONFLICT (subject_id, object_id) DO NOTHING`,
-    [seedUserId, PUBLISHER_RELATION_FIXTURE_COUNT],
-  )
+      [seedUserId, first, last],
+    )
+  }
   const { rows: publisherTopics } = await query<{ id: string }>(
     `/* seedVoteScoreRankingFixture:publisher-topic */
      SELECT id FROM topics WHERE slug = 'blog' AND deleted_at IS NULL LIMIT 1`,

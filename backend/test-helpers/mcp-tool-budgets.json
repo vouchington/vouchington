@@ -145,8 +145,8 @@
       },
       "read_hostnames": {
         "measured": {
-          "list": 3060,
-          "core": 1741
+          "list": 3092,
+          "core": 1773
         },
         "max": {
           "list": 4000,
