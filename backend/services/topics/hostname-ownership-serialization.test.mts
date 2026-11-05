@@ -17,7 +17,7 @@ import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { blockHostnameInTransaction } from '../hostname-blocking/block-hostname.mts'
 import { prepareTopicRecommendation } from '../topic-recommendations/create-topic-recommendation.mts'
-import { approveTopicRecommendationInTransaction } from '../topic-recommendations/approve-topic-recommendation.mts'
+import { approveTopicRecommendation } from '../topic-recommendations/approve-topic-recommendation.mts'
 import { disableAndHideSource } from '../rss-feeds/disable-and-hide-source.mts'
 import { setTopicHostnameLink, linkHostnameToSourceTopic } from './hostname-link.mts'
 import { getTopicByAny } from './get.mts'
@@ -127,12 +127,9 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
         binding: { index: 0, value: [hostnames.get(child)!.toLowerCase()] },
       },
     })
-    const pending = approveTopicRecommendationInTransaction(
-      admin,
-      WEB_PROVENANCE,
-      recommendation.id,
-      { query: waiter.query },
-    )
+    const pending = approveTopicRecommendation(admin, WEB_PROVENANCE, recommendation, {
+      query: waiter.query,
+    })
     const rejection = pending.then(
       () => null,
       (err: unknown) => err,
@@ -176,12 +173,9 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
       },
     )
     await using holder = await beginTransaction()
-    const approved = await approveTopicRecommendationInTransaction(
-      admin,
-      WEB_PROVENANCE,
-      recommendation.id,
-      { query: holder },
-    )
+    const approved = await approveTopicRecommendation(admin, WEB_PROVENANCE, recommendation, {
+      query: holder,
+    })
     const heldHostnameKey = await getFirstTestHostnameOwnershipLockKey(holder, hostnameId)
     await using waiter = await createTestPostgresLockWaiter({
       holder,
@@ -200,6 +194,6 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
     await expect(pending).resolves.toBeUndefined()
     await waiter.query.commit()
     expect(await getTopicByAny(source.id)).toBeNull()
-    expect(await getActiveLandingPageHostnameClaims([hostnameId])).toContain(approved.topic.id)
+    expect(await getActiveLandingPageHostnameClaims([hostnameId])).toContain(approved.topic_id)
   })
 })

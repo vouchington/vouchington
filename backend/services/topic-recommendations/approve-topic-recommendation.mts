@@ -1,7 +1,12 @@
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TopicRecommendationPost } from './types.mts'
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import {
+  beginTransaction,
+  registerPostCommitAction,
+  withTransactionOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import { createTopic } from '@services/topics/create'
 import { updateTopic } from '@services/topics/update'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
@@ -17,9 +22,8 @@ import { markTopicRecommendationApproved } from './mark-topic-recommendation-app
 import { setTopicRecommendationApprovalError } from './set-topic-recommendation-approval-error.mts'
 import { runApprovedTopicRecommendationSideEffects } from './approve-topic-recommendation-side-effects.mts'
 import type { TopicRecommendationApprovalTransactionResult } from './approve-topic-recommendation-types.mts'
-export type { TopicRecommendationApprovalTransactionResult } from './approve-topic-recommendation-types.mts'
 
-export async function approveTopicRecommendationInTransaction(
+async function approveTopicRecommendationInTransaction(
   currentUser: PrivateUser,
   provenance: ContentProvenance,
   recommendationId: string,
@@ -113,6 +117,7 @@ export async function approveTopicRecommendation(
   currentUser: PrivateUser,
   provenance: ContentProvenance,
   recommendation: TopicRecommendationPost,
+  options: { query?: TransactionQuery } = {},
 ): Promise<{
   recommendation: TopicRecommendationPost
   topic_id: string
@@ -125,6 +130,33 @@ export async function approveTopicRecommendation(
     422,
     'Recommendation is already reviewed',
   )
+
+  if (options.query) {
+    return withTransactionOptions({ query: options.query }, async query => {
+      const transactionResult = await approveTopicRecommendationInTransaction(
+        currentUser,
+        provenance,
+        recommendation.id,
+        { query },
+      )
+      const refreshed = (await getPostByAny(recommendation.id, {
+        query,
+      })) as TopicRecommendationPost
+      registerPostCommitAction(query, () =>
+        runApprovedTopicRecommendationSideEffects(
+          currentUser,
+          recommendation.id,
+          transactionResult,
+        ),
+      )
+      return {
+        recommendation: refreshed,
+        topic_id: transactionResult.topic.id,
+        topic_slug: transactionResult.topic.slug,
+        topic_type: transactionResult.topic_type,
+      }
+    })
+  }
 
   try {
     await using query = await beginTransaction()
