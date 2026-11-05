@@ -15,7 +15,7 @@ import {
 } from '@voucha/test-helpers'
 import { upsertOAuthAccount } from '../oauth-accounts/upsert.mts'
 import { disconnectOAuthAccount } from './oauth-account.mts'
-import { cleanupOAuthFriendEdgePage } from '../data-retention/cleanup-oauth-friend-edges.mts'
+import { cleanupOAuthFriendEdgeWork } from '../data-retention/cleanup-oauth-friend-edges.mts'
 import { deleteOrphanedOAuthAccountBatch } from '../data-retention/cleanup-batches.mts'
 
 describe('disconnectOAuthAccount', () => {
@@ -95,31 +95,27 @@ describe('disconnectOAuthAccount', () => {
     ).toBe(0)
     expect(await oauthAccountExistsByProviderUserId('github', providerUserId)).toBe(true)
     expect(
-      await cleanupOAuthFriendEdgePage(
-        'github',
-        'erase',
-        1,
-        new Date('2100-01-01'),
-        account.account_id,
-      ),
+      await cleanupOAuthFriendEdgeWork({ batchSize: 1, maxBatches: 1 }, new Date('2100-01-01'), {
+        provider: 'github',
+        phase: 'erase',
+        accountId: account.account_id,
+      }),
     ).toMatchObject({
       deleted: 1,
-      worked: true,
+      resolved: 0,
       hasMore: true,
     })
     expect(await testGithubFriendExists(ownEdge)).toBe(false)
     expect(await testGithubFriendExists(incomingEdge)).toBe(true)
     expect(
-      await cleanupOAuthFriendEdgePage(
-        'github',
-        'erase',
-        1,
-        new Date('2100-01-01'),
-        account.account_id,
-      ),
+      await cleanupOAuthFriendEdgeWork({ batchSize: 1, maxBatches: 1 }, new Date('2100-01-01'), {
+        provider: 'github',
+        phase: 'erase',
+        accountId: account.account_id,
+      }),
     ).toMatchObject({
       deleted: 1,
-      worked: true,
+      resolved: 0,
       hasMore: false,
     })
     expect(await testGithubFriendExists(incomingEdge)).toBe(false)

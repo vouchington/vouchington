@@ -8,17 +8,26 @@ type Phase = 'erase' | 'resolve'
 type Page = { deleted: number; resolved: number; worked: boolean; hasMore: boolean }
 
 /** Account markers are the durable cursor; each transaction touches at most one edge page. */
-export async function cleanupOAuthFriendEdgeWork(limits: DataRetentionLimits, now = new Date()) {
+export async function cleanupOAuthFriendEdgeWork(
+  limits: DataRetentionLimits,
+  now = new Date(),
+  scope: { provider?: FriendProvider; phase?: Phase; accountId?: string } = {},
+) {
   if (!Number.isSafeInteger(limits.batchSize) || limits.batchSize < 1) {
     throw new RangeError('Friend edge cleanup requires a positive batchSize')
   }
   if (!Number.isSafeInteger(limits.maxBatches) || limits.maxBatches < 1) {
     throw new RangeError('Friend edge cleanup requires a positive maxBatches')
   }
-  const buckets = providers.flatMap(provider => [
-    { provider, phase: 'erase' as const },
-    { provider, phase: 'resolve' as const },
-  ])
+  const buckets = providers.flatMap(provider => {
+    if (scope.provider && provider !== scope.provider) return []
+    return scope.phase
+      ? [{ provider, phase: scope.phase }]
+      : [
+          { provider, phase: 'erase' as const },
+          { provider, phase: 'resolve' as const },
+        ]
+  })
   const start = Math.floor(now.getTime() / 86_400_000) % buckets.length
   let deleted = 0
   let resolved = 0
@@ -32,16 +41,17 @@ export async function cleanupOAuthFriendEdgeWork(limits: DataRetentionLimits, no
       bucket.phase,
       limits.batchSize,
       now,
+      scope.accountId,
     )
     deleted += page.deleted
     resolved += page.resolved
     empty = page.worked ? 0 : empty + 1
   }
   /* oxlint-enable no-await-in-loop */
-  return { deleted, resolved, hasMore: await hasPendingOAuthFriendEdgeWork(now) }
+  return { deleted, resolved, hasMore: await hasPendingOAuthFriendEdgeWork(now, scope) }
 }
 
-export async function cleanupOAuthFriendEdgePage(
+async function cleanupOAuthFriendEdgePage(
   provider: FriendProvider,
   phase: Phase,
   batchSize: number,
@@ -144,16 +154,25 @@ export async function cleanupOAuthFriendEdgePage(
   return { deleted: 0, resolved: page.resolved, worked: true, hasMore: page.hasMore }
 }
 
-async function hasPendingOAuthFriendEdgeWork(now: Date): Promise<boolean> {
+async function hasPendingOAuthFriendEdgeWork(
+  now: Date,
+  scope: Parameters<typeof cleanupOAuthFriendEdgeWork>[2] = {},
+): Promise<boolean> {
+  const accountFilter = scope.accountId ? ' AND id = $2::uuid' : ''
+  const eraseFilter = scope.phase === 'resolve' ? ' AND FALSE' : ''
+  const resolveFilter = scope.phase === 'erase' ? ' AND FALSE' : ''
+  const selectedProviders = providers.filter(
+    provider => !scope.provider || provider === scope.provider,
+  )
   const pendingFor = (provider: FriendProvider) => `
     EXISTS (SELECT 1 FROM ${provider}_accounts
-            WHERE friend_edges_invalidated_at < $1::timestamptz
+            WHERE friend_edges_invalidated_at < $1::timestamptz${eraseFilter}${accountFilter}
               AND friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at)
     OR EXISTS (SELECT 1 FROM ${provider}_accounts
-               WHERE user_id IS NOT NULL AND friend_references_resolve_pending_at < $1::timestamptz)`
+               WHERE user_id IS NOT NULL AND friend_references_resolve_pending_at < $1::timestamptz${resolveFilter}${accountFilter})`
   const { rows } = await read<{ pending: boolean }>(
-    `/* hasPendingOAuthFriendEdgeWork */ SELECT (${providers.map(pendingFor).join(' OR ')}) AS pending`,
-    [now],
+    `/* hasPendingOAuthFriendEdgeWork */ SELECT (${selectedProviders.map(pendingFor).join(' OR ')}) AS pending`,
+    scope.accountId ? [now, scope.accountId] : [now],
   )
   return rows[0]?.pending ?? false
 }
