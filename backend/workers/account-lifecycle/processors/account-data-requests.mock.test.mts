@@ -1,5 +1,6 @@
-import { readdir } from 'node:fs/promises'
+import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   afterEach,
   beforeEach,
@@ -54,9 +55,10 @@ describe('processExportRequest', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
-
   it('uploads the zip to the export bucket, marks the request ready, and emails the subject', async () => {
     const { subject, request } = await startRequest()
+    const tempRoot = await mkdtemp(join(tmpdir(), 'voucha-export-test-'))
+    onTestFinished(() => rm(tempRoot, { recursive: true, force: true }))
     await updateTestUserUiLocale(subject.id, 'fr')
     let uploadedZip: Buffer | undefined
     s3Send.mockImplementation(async command => {
@@ -69,7 +71,8 @@ describe('processExportRequest', () => {
       return {}
     })
 
-    await processExportRequest(request.id, subject.id, request.processing_attempt_id)
+    const attemptId = request.processing_attempt_id
+    await processExportRequest(request.id, subject.id, attemptId, true, tempRoot)
 
     if (!uploadedZip) throw new Error('Expected the export zip to be uploaded')
     const files = readZipEntries(uploadedZip)
@@ -89,7 +92,7 @@ describe('processExportRequest', () => {
       input: { userId: subject.id, uiLocale: 'fr' },
       variables: { requestId: request.id },
     })
-    expect(await leftoverTempDirs(request.id)).toEqual([])
+    expect(await readdir(tempRoot)).toEqual([])
   })
 
   it('emails a subject without a UI locale with a null locale', async () => {
@@ -142,10 +145,12 @@ describe('processExportRequest', () => {
 
   it('marks the request failed, publishes the failure, and cleans up after an upload error', async () => {
     const { subject, request } = await startRequest()
+    const tempRoot = await mkdtemp(join(tmpdir(), 'voucha-export-test-'))
+    onTestFinished(() => rm(tempRoot, { recursive: true, force: true }))
     s3Send.mockRejectedValue(new Error('S3 upload failed'))
 
     await expect(
-      processExportRequest(request.id, subject.id, request.processing_attempt_id),
+      processExportRequest(request.id, subject.id, request.processing_attempt_id, true, tempRoot),
     ).rejects.toThrow(`Export failed for request ${request.id}`)
 
     expect(await getDataRequestById(subject.id, subject.id, request.id)).toMatchObject({
@@ -156,7 +161,7 @@ describe('processExportRequest', () => {
     expect(
       (await getTestDataRequestAttemptFence(request.id))?.upload_lease_expires_at,
     ).not.toBeNull()
-    expect(await leftoverTempDirs(request.id)).toEqual([])
+    expect(await readdir(tempRoot)).toEqual([])
   })
 
   it('leaves a retryable failure unpublished before the final attempt', async () => {
@@ -287,14 +292,9 @@ describe('processExportRequest', () => {
 function commandName(command: unknown): string {
   return (command as SentCommand).constructor.name
 }
-
 async function startRequest(options: { administrator?: boolean } = {}) {
   const subject = await createTestUser()
   const requester = options.administrator ? await createTestUser({ administrator: true }) : subject
   const request = await createDataRequest(subject.id, requester.id)
   return { subject, requester, request }
-}
-
-async function leftoverTempDirs(requestId: string): Promise<string[]> {
-  return (await readdir(tmpdir())).filter(name => name.startsWith(`voucha-export-${requestId}-`))
 }
