@@ -4,8 +4,8 @@ set -euo pipefail
 printf '%s' "$REGISTRY_PASSWORD" |
   docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
 
-local_image="$IMAGE_REPOSITORY/web:$IMAGE_TAG"
-remote_image="$GHCR_NAMESPACE/web:$IMAGE_TAG"
+local_image="${IMAGE_REPOSITORY}/web:$IMAGE_TAG"
+remote_image="${GHCR_NAMESPACE}/web:$IMAGE_TAG"
 docker tag "$local_image" "$remote_image"
 
 # GHCR intermittently rejects a push with "unknown blob". Re-pushing the same local image

@@ -17,8 +17,8 @@ printf '%s' "$REGISTRY_PASSWORD" |
 } >> "$GITHUB_STEP_SUMMARY"
 
 for target in $targets; do
-  local_image="$IMAGE_REPOSITORY/$target:$IMAGE_TAG"
-  remote_image="$GHCR_NAMESPACE/$target:$IMAGE_TAG"
+  local_image="${IMAGE_REPOSITORY}/$target:$IMAGE_TAG"
+  remote_image="${GHCR_NAMESPACE}/$target:$IMAGE_TAG"
   docker tag "$local_image" "$remote_image"
 
   # GHCR intermittently rejects a push with "unknown blob". Re-pushing the same local image
