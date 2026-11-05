@@ -131995,7 +131995,7 @@
           "definition": "CREATE TRIGGER trigger_register_retained_rss_feed_item_identity BEFORE INSERT ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('rss_feed_item')"
         },
         "trigger_rss_feed_items_updated_at": {
-          "definition": "CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE OF id, votes_score_up, votes_score_none, votes_score_down, votes_count_up, votes_count_none, votes_count_down, url_id, data, bedrock_nova_multimodal_v1_content_sha256, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count, search_vector, deleted_at, updated_at, media_type, enclosure_url, enclosure_media_type_id, enclosure_length, duration_seconds, thumbnail_url, video_id, video_platform, lingua_rs_detected_language, lingua_rs_content_sha256, lingua_rs_input_sha256, lingua_rs_results, lingua_rs_detected_at, story_id, story_locked_at, votes_snapshot_xmax, votes_snapshot_xip_count ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+          "definition": "CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
         "trigger_sync_rss_feed_items_search_vector": {
           "definition": "CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_items_search_vector()"

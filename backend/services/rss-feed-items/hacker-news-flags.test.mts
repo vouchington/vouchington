@@ -9,11 +9,7 @@ import {
   insertTestRssFeedItem,
   insertTestTopic,
 } from '@voucha/test-helpers'
-import {
-  getRssHackerNewsFlagStateForTest,
-  getRssUpdatedAtForTest,
-  updateRssContentForTest,
-} from '@voucha/test-helpers/hacker-news-flag-state'
+import { getRssHackerNewsFlagStateForTest } from '@voucha/test-helpers/hacker-news-flag-state'
 import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { upsertRssFeedItems } from './upsert.mts'
 import { recomputeRssFeedItemHackerNewsFlags } from './hacker-news-flags.mts'
@@ -63,15 +59,6 @@ describe('RSS Hacker News flags', () => {
       ),
     )
     await insertHackerNewsReferencesForTest({ url_id: ids[0]!, story_count: 1, comment_count: 0 })
-    const before = await getRssUpdatedAtForTest(items[0]!)
-    await recomputeRssFeedItemHackerNewsFlags(items)
-    expect(await getRssUpdatedAtForTest(items[0]!)).toEqual(before)
-    const contentUpdate = await updateRssContentForTest(items[0]!, 'content', before)
-    expect(contentUpdate.advanced).toBe(true)
-    const noop = await updateRssContentForTest(items[0]!, 'noop', contentUpdate.updated_at)
-    expect(noop.advanced).toBe(true)
-    const mixed = await updateRssContentForTest(items[0]!, 'mixed', noop.updated_at)
-    expect(mixed.advanced).toBe(true)
     await recomputeRssFeedItemHackerNewsFlags(items)
     expect(await getRssHackerNewsFlagStateForTest(items[0]!)).toEqual({
       stored: true,

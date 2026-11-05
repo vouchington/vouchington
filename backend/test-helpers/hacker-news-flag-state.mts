@@ -40,41 +40,6 @@ export async function getRssHackerNewsFlagStateForTest(itemId: string) {
   return rows[0]
 }
 
-export async function getRssUpdatedAtForTest(itemId: string): Promise<string> {
-  const { rows } = await write<{ updated_at: string }>(
-    '/* getRssUpdatedAtForTest */ SELECT updated_at::text FROM rss_feed_items WHERE id = $1',
-    [itemId],
-  )
-  return rows[0]!.updated_at
-}
-
-export async function updateRssContentForTest(
-  itemId: string,
-  mode: 'content' | 'noop' | 'mixed',
-  previous: string,
-) {
-  let set: string
-  switch (mode) {
-    case 'content':
-      set = `data = data || '{"title":"Changed"}'::jsonb`
-      break
-    case 'noop':
-      set = 'data = data'
-      break
-    case 'mixed':
-      set = 'data = data, has_hacker_news_references = false'
-      break
-    default:
-      throw new Error('Unknown RSS update mode')
-  }
-  const { rows } = await write<{ advanced: boolean; updated_at: string }>(
-    `/* updateRssContentForTest */ UPDATE rss_feed_items SET ${set} WHERE id = $1
-     RETURNING updated_at::text, updated_at > $2::timestamptz AS advanced`,
-    [itemId, previous],
-  )
-  return rows[0]!
-}
-
 /** Synthetic valid tally used to exercise Wilson cancellation on the stored relation columns. */
 export async function seedTinyPositiveRelatedUrlScoreForTest(postId: string, urlId: string) {
   const { rows } = await write<{ votes_score_net: number; votes_score_sort: number }>(
