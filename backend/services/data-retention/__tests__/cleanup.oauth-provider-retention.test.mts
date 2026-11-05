@@ -78,6 +78,13 @@ describe('orphaned OAuth account cleanup', () => {
     const window = createTestRetentionWindow()
     const activeProviderId = `retained-facebook-${createRandomString(12)}`
     const unrelatedProviderId = `unrelated-facebook-${createRandomString(12)}`
+    const authorizationId = v7()
+    onTestFinished(async () => {
+      await deleteTestOAuthAuthorizationFixtures({
+        authorizationIds: [authorizationId],
+        facebookUserIds: [activeProviderId, unrelatedProviderId],
+      })
+    })
     await insertTestOAuthAccount('facebook', activeProviderId)
     await insertTestOAuthAccount('facebook', unrelatedProviderId)
     const activeAccountId = await setOAuthAccountRetentionTime(
@@ -87,13 +94,6 @@ describe('orphaned OAuth account cleanup', () => {
     )
     await setOAuthAccountRetentionTime('facebook', unrelatedProviderId, window.secondEligibleDate)
     if (!activeAccountId) throw new Error('Retained Facebook account fixture is missing')
-    const authorizationId = v7()
-    onTestFinished(async () => {
-      await deleteTestOAuthAuthorizationFixtures({
-        authorizationIds: [authorizationId],
-        facebookUserIds: [activeProviderId, unrelatedProviderId],
-      })
-    })
     const now = new Date()
     await insertTestOAuthAuthorization({
       id: authorizationId,
@@ -130,6 +130,13 @@ describe('orphaned OAuth account cleanup', () => {
     const window = createTestRetentionWindow()
     const activeProviderId = `retained-microsoft-${createRandomString(12)}`
     const unrelatedProviderId = `unrelated-microsoft-${createRandomString(12)}`
+    const authorizationId = v7()
+    onTestFinished(async () => {
+      await deleteTestOAuthAuthorizationFixtures({
+        authorizationIds: [authorizationId],
+        microsoftUserIds: [activeProviderId, unrelatedProviderId],
+      })
+    })
     const activeAccount = await insertTestMicrosoftOAuthAccount(
       activeProviderId,
       v7({ msecs: window.firstEligibleDate.getTime() }),
@@ -147,13 +154,6 @@ describe('orphaned OAuth account cleanup', () => {
     if (!activeAccount.account_id || !unrelatedAccount.account_id) {
       throw new Error('Microsoft test accounts must return their internal IDs')
     }
-    const authorizationId = v7()
-    onTestFinished(async () => {
-      await deleteTestOAuthAuthorizationFixtures({
-        authorizationIds: [authorizationId],
-        microsoftUserIds: [activeProviderId, unrelatedProviderId],
-      })
-    })
 
     const now = new Date()
     await insertTestOAuthAuthorization({
