@@ -1,9 +1,4 @@
-import {
-  beginTransaction,
-  registerPostCommitAction,
-  withTransactionOptions,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { recordInboxActivity } from './record-activity.mts'
 import {
   dispatchInboundActivity,
@@ -27,27 +22,12 @@ export type InboxActivityResult = {
 export async function recordAndDispatchInboundActivity(
   remoteActor: RemoteActorRow,
   activity: InboundActivity & { signedAt: Date },
-  options: { query?: TransactionQuery; now?: Date } = {},
+  options: { now?: Date } = {},
 ): Promise<InboxActivityResult> {
   // This check precedes the inbox identity lookup, including after its retention row expires.
   const ageMs = (options.now?.getTime() ?? Date.now()) - activity.signedAt.getTime()
   if (!Number.isFinite(ageMs) || ageMs > getMaximumActivityAgeDays() * 24 * 60 * 60 * 1_000) {
     throw createHttpError(401, 'Activity signature date is too old')
-  }
-  if (options.query) {
-    return withTransactionOptions({ query: options.query }, async borrowedQuery => {
-      const { duplicate, postCommitAction } = await recordAndDispatchInboundActivityInTransaction(
-        borrowedQuery,
-        remoteActor,
-        activity,
-      )
-      if (postCommitAction) {
-        registerPostCommitAction(borrowedQuery, async () => {
-          await dispatchInboundPostCommitAction(postCommitAction)
-        })
-      }
-      return { duplicate }
-    })
   }
   await using query = await beginTransaction()
   const result = await recordAndDispatchInboundActivityInTransaction(query, remoteActor, activity)
@@ -60,7 +40,7 @@ export async function recordAndDispatchInboundActivity(
   }
 }
 
-async function recordAndDispatchInboundActivityInTransaction(
+export async function recordAndDispatchInboundActivityInTransaction(
   query: TransactionQuery,
   remoteActor: RemoteActorRow,
   activity: InboundActivity & { signedAt: Date },
