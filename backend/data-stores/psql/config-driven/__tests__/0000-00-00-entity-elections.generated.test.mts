@@ -187,7 +187,7 @@ describe('0000-00-00-entity-elections', () => {
 
     // url_hostnames has no deleted_at column and must not gain the filter.
     expect(sql).toContain(
-      'CREATE INDEX IF NOT EXISTS idx_url_hostnames__votes_score_sort__positive__id\nON url_hostnames (votes_score_sort DESC, id)\nWHERE votes_score_net > 0;',
+      'CREATE INDEX IF NOT EXISTS idx_url_hostnames__votes_score_sort__positive__id\nON url_hostnames (votes_score_sort DESC, id DESC)\nWHERE votes_score_net > 0;',
     )
     expect(sql).not.toContain(
       'idx_url_hostnames__votes_score_sort__id\nON url_hostnames (votes_score_sort DESC, id)\nWHERE deleted_at IS NULL',

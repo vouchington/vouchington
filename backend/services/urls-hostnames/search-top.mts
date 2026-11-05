@@ -33,9 +33,7 @@ export async function searchTopHostnames(
     )
     const scoreIdx = values.push(cursor.score)
     const idIdx = values.push(cursor.id)
-    filters.push(
-      `(votes_score_net < $${scoreIdx} OR (votes_score_net = $${scoreIdx} AND id < $${idIdx}))`,
-    )
+    filters.push(`(votes_score_sort, id) < ($${scoreIdx}, $${idIdx})`)
   }
 
   return readHostnameCandidatePage({ filters, values, limit, order: 'score' })

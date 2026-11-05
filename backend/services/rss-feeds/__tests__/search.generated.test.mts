@@ -223,8 +223,8 @@ describe('search.generated', () => {
       topic_id: topic.id,
       title: `Dominant Filter Feed ${random}`,
     })
-    await addRssFeedTopicPublisherTypeWithScore(topic.id, dominantType.id, 2)
-    await addRssFeedTopicPublisherTypeWithScore(topic.id, secondaryType.id, 1)
+    await addRssFeedTopicPublisherTypeWithScore(topic.id, dominantType.id, 5)
+    await addRssFeedTopicPublisherTypeWithScore(topic.id, secondaryType.id, 100, 90)
 
     const dominantResults = await searchRssFeeds({ publisher_type_id: dominantType.id })
     expect(dominantResults.find(r => r.id === feed.id)).toBeDefined()

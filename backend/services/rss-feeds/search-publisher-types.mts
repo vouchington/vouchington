@@ -15,7 +15,7 @@ export function publisherTypeCandidateJoin(publisherTypeIds: readonly string[]) 
         AND relation.deleted_at IS NULL
         AND relation.votes_score_net > 0
         AND publisher_type.deleted_at IS NULL
-      ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id ASC
+      ORDER BY relation.votes_score_sort DESC, relation.id ASC
       LIMIT 1
     ) dominant ON dominant.object_id = requested.object_id
     WHERE requested.object_id = ANY(${publisherTypeIds})
@@ -41,7 +41,7 @@ export function mutedPublisherTypeFilter(userId: string) {
         AND relation.deleted_at IS NULL
         AND relation.votes_score_net > 0
         AND publisher_type.deleted_at IS NULL
-      ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id ASC
+      ORDER BY relation.votes_score_sort DESC, relation.id ASC
       LIMIT 1
     ) dominant ON dominant.object_id = requested.object_id
     WHERE mute.subject_id = ${userId}

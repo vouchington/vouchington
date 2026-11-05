@@ -32,7 +32,7 @@ describe('searchTopHostnames', () => {
     await setUrlHostnameVotes(blockedHostnameId, 1000, 5)
   })
 
-  it('returns hostnames ordered by votes_score_net DESC', async () => {
+  it('returns hostnames ordered by vote confidence', async () => {
     const { results } = await searchTopHostnames({ limit: 100 })
     const ids = results.map(r => r.id)
     const highIdx = ids.indexOf(highTrustHostnameId)
@@ -70,8 +70,7 @@ describe('searchTopHostnames', () => {
     const second = await searchTopHostnames({ limit: 1, after: first.page_info.end_cursor! })
     expect(second.results).toHaveLength(1)
     expect(second.results[0].id).not.toBe(first.results[0].id)
-    // Second page should have lower or equal score
-    expect(second.results[0].votes_score_net).toBeLessThanOrEqual(first.results[0].votes_score_net)
+    expect(second.results[0]).not.toHaveProperty('cursor_score')
   })
 
   it('returns vote columns in results', async () => {

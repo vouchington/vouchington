@@ -62,6 +62,7 @@ export const VOTE_SCHEMA_CONFIGS: VoteSchemaConfig[] = [
     voteTable: 'hostname_votes',
     entityIdColumn: 'hostname_id',
     entityKeyColumns: ['id'],
+    entitySortColumns: ['id DESC'],
     voteScoreConstraint: 'CHECK (score IS NULL OR score BETWEEN -2 AND 2)',
     tracksNeutralScore: true,
     tracksSemanticScore: true,

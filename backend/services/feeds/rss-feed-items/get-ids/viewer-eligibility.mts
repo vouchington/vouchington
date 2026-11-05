@@ -17,7 +17,7 @@ export function buildRssFeedItemSourceMuteFilter(): SQLStatement {
                 AND publisher_type_relation.deleted_at IS NULL
                 AND publisher_type_relation.votes_score_net > 0
                 AND publisher_type.deleted_at IS NULL
-              ORDER BY publisher_type_relation.votes_score_net DESC NULLS LAST,
+              ORDER BY publisher_type_relation.votes_score_sort DESC,
                 publisher_type_relation.id ASC
               LIMIT 1
             )

@@ -12,17 +12,17 @@ export const searchUrlHostnames = async (
 ): Promise<{ results: ViewHostname[]; page_info: PageInfo }> => {
   const { effectiveLimit, searchQuery } = buildSearchUrlHostnamesQuery(options)
   const { rows } = await read(searchQuery)
-  const all = rows as ViewHostname[]
+  const all = rows as (ViewHostname & { cursor_score: number })[]
   const hasNextPage = all.length > effectiveLimit
   const results = all.slice(0, effectiveLimit)
 
   return {
-    results,
+    results: results.map(({ cursor_score: _cursorScore, ...hostname }) => hostname),
     page_info: buildPageInfo(results, {
       hasNextPage,
       getCursor:
         options.sort === 'trust'
-          ? h => ({ score: h.votes_score_net ?? 0, id: h.id })
+          ? h => ({ score: h.cursor_score, id: h.id })
           : h => ({ name: h.hostname, id: h.id }),
     }),
   }

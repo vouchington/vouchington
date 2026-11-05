@@ -30,7 +30,7 @@ export async function detectRssFeedItemLanguage(itemId: string): Promise<void> {
       ORDER BY
         rf2.is_enabled DESC,
         rf2.is_discoverable DESC,
-        t.votes_score_net DESC NULLS LAST,
+        t.votes_score_sort DESC,
         rfis.created_at ASC
       LIMIT 1
     )
