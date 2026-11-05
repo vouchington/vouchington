@@ -75,4 +75,43 @@ describe('getPostIds default time range', () => {
       await deleteTestPost(oldId)
     }
   })
+
+  it('keeps the 30-day bound when drafts is not the author listing their own posts', async () => {
+    const author = await createTestUserDirect()
+    const other = await createTestUserDirect()
+    if (!author || !other) throw new Error('Failed to create time-range test users')
+    const suffix = createRandomString(10)
+    const insert = (label: string, ageDays: number) =>
+      insertTestPost({
+        createdAt: new Date(Date.now() - ageDays * DAY_MS),
+        title: `${label} ${suffix}`,
+        slug: `${label}-${suffix}`,
+        createdById: author.id,
+        markdown: `${label} ${suffix}`,
+        postType: 'topic_recommendation',
+      })
+    const [recentId, oldId] = await Promise.all([
+      insert('recent-drafts', 2),
+      insert('old-drafts', 40),
+    ])
+    try {
+      const base = {
+        user_id: author.id,
+        include_topic_recommendations: true,
+        post_types: ['topic_recommendation' as const],
+        drafts: true,
+        limit: 10,
+      }
+      const ids = async (viewer: typeof author | undefined, options: PostSearchOptions = base) =>
+        (await getPostIds(viewer, options)).results.map(result => result.id).toSorted()
+      const both = [oldId, recentId].toSorted()
+
+      expect(await ids(undefined)).toEqual([recentId])
+      expect(await ids(other)).toEqual([recentId])
+      expect(await ids(author)).toEqual(both)
+      expect(await ids(undefined, { ...base, time_range: 'all' })).toEqual(both)
+    } finally {
+      await Promise.all([deleteTestPost(recentId), deleteTestPost(oldId)])
+    }
+  })
 })

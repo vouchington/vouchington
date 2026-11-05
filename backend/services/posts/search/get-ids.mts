@@ -47,10 +47,11 @@ export async function getPostIds(
     sort,
     hasRankingScore,
   )
-  // Post search is always time-bounded; callers needing the full history pass 'all'. A user's own
-  // drafts are paged by limit and keep their full history.
+  // Post search is always time-bounded; callers needing the full history pass 'all'. Only an
+  // author's own drafts listing (their user id plus drafts) keeps that full history.
   const effectiveTimeRange =
-    options.time_range ?? (options.drafts ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
+    options.time_range ??
+    (isOwnDraftsListing(currentUser, options) ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
   // Build query - pass decoded cursor values and use limit + 1
   const queryOptions: PostSearchOptions = {
     ...options,
@@ -76,4 +77,13 @@ export async function getPostIds(
     results,
     page_info: buildPostSearchPageInfo(resultRows, hasNextPage, sort, hasRankingScore),
   }
+}
+
+function isOwnDraftsListing(
+  currentUser: BasicUser | undefined,
+  options: PostSearchOptions,
+): boolean {
+  return (
+    options.drafts === true && currentUser?.id !== undefined && currentUser.id === options.user_id
+  )
 }

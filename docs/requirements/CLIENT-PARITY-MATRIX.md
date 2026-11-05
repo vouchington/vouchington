@@ -481,7 +481,10 @@ contract.
 
 `GET /api/v1/posts` and `GET /api/v1/communities/:idOrSlug/posts` (MCP post search and
 `read_community` option `posts`) accept a `time_range` code. Omitted, both return the last 30 days instead of
-full history; `all` restores it, and draft listings default to `all`. Swift and .NET must send the
+full history; `all` restores it. On post search, a drafts listing defaults to full history only when
+the signed-in author filters to their own posts. Every other drafts request keeps the 30-day window
+unless `time_range` is set. Community post lists do not treat drafts as a time-range opt-out; they
+keep the same default window. Swift and .NET must send the
 code from a time dropdown, reusing the web options, and must page with the returned cursor under
 the same range. Client work is dependent (vouchington-clients#537) and does not gate this
 repository.

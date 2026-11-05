@@ -95,7 +95,7 @@ The `hot` sort uses the same three-day decay expression as post feeds and trendi
 
 ## Time bound
 
-Post search is always bounded by time, so a request reads a recent window of the newest-first id index rather than the whole table, and callers opt into longer history explicitly. The personal Feed is a separate default. Exact lookups and counts (RSS XML, pickers, facets, URL-id lookups) must not lose rows, so they opt out of the default instead of inheriting it.
+Post search is always bounded by time, so a request reads a recent window of the newest-first id index rather than the whole table, and callers opt into longer history explicitly. The personal Feed is a separate default. Exact lookups and counts (RSS XML, pickers, facets, URL-id lookups) must not lose rows, so they opt out of the default instead of inheriting it. A drafts listing keeps the full history only when the author is viewing their own posts; the drafts flag does not widen any other search, including anonymous and cached ones.
 
 ## Visibility & Moderation Filtering
 
