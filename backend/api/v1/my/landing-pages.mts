@@ -1,3 +1,7 @@
+import { createPaginationParser } from '@modules/pagination'
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+import { apiQuery } from '../../api-query-contract.mts'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -8,6 +12,7 @@ import {
   deleteMyLandingPage,
   getMyLandingPage,
   getMyLandingPageCandidates,
+  getLandingPageItemLimit,
   listLandingPagesForUser,
   replaceMyLandingPageItems,
   setMyLandingPageDefault,
@@ -37,11 +42,25 @@ type LandingPageItemRequest =
 
 type ReplaceLandingPageItemsRequest = { items: LandingPageItemRequest[] }
 
+const candidatePagination = createPaginationParser({
+  cursor: { type: 'tier' },
+  limit: { min: 1, max: 100, default: 25 },
+})
+
 async function handleGetLandingPageCandidates(ctx: Context) {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/landing-pages/candidates')
 
-  const candidates = await getMyLandingPageCandidates(currentUser.id)
-  ctx.json({ candidates })
+  apiQuery('GET:/api/v1/my/landing-pages/candidates', candidatePagination)
+  const pagination = parseRuntimePagination(candidatePagination, ctx.query)
+  const query = prepareQueryForValidation(ctx.query, candidatePagination.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = pagination.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/landing-pages/candidates', { query })
+  ctx.json(
+    await getMyLandingPageCandidates(currentUser.id, {
+      limit: pagination.limit,
+      after: pagination.after,
+    }),
+  )
 }
 
 async function handleListMyLandingPages(ctx: Context) {
@@ -59,7 +78,7 @@ async function handleCreateMyLandingPage(ctx: Context) {
   const landingPage = await createMyLandingPage(currentUser.id, body)
 
   ctx.setStatus(201)
-  ctx.json({ landing_page: landingPage })
+  ctx.json({ landing_page: landingPage, item_limit: getLandingPageItemLimit() })
 }
 
 async function handleReplaceMyLandingPageItems(ctx: Context) {
@@ -80,7 +99,7 @@ async function handleReplaceMyLandingPageItems(ctx: Context) {
     page,
   )
 
-  ctx.json({ landing_page: landingPage })
+  ctx.json({ landing_page: landingPage, item_limit: getLandingPageItemLimit() })
 }
 
 async function handleGetMyLandingPage(ctx: Context) {
@@ -88,7 +107,7 @@ async function handleGetMyLandingPage(ctx: Context) {
   validateRequestContract(ctx, 'GET:/api/v1/my/landing-pages/:pageId', { path: ctx.params })
 
   const landingPage = await getMyLandingPage(currentUser.id, ctx.params.pageId!)
-  ctx.json({ landing_page: landingPage })
+  ctx.json({ landing_page: landingPage, item_limit: getLandingPageItemLimit() })
 }
 
 async function handleUpdateMyLandingPage(ctx: Context) {
@@ -107,7 +126,7 @@ async function handleUpdateMyLandingPage(ctx: Context) {
       ? await setMyLandingPageDefault(currentUser.id, ctx.params.pageId!)
       : await updateMyLandingPage(currentUser.id, ctx.params.pageId!, body, page)
 
-  ctx.json({ landing_page: landingPage })
+  ctx.json({ landing_page: landingPage, item_limit: getLandingPageItemLimit() })
 }
 
 async function handleDeleteMyLandingPage(ctx: Context) {

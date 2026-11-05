@@ -32,8 +32,9 @@ export default async function LandingPageEditorPage({ params }: PageProps) {
 
   return (
     <LandingPageEditor
+      key={`${pageDetail.landing_page.user_id}:${pageDetail.landing_page.id}`}
       initialPage={pageDetail.landing_page}
-      candidates={candidatesData.candidates}
+      candidatesData={candidatesData}
       username={currentUser.username}
     />
   )

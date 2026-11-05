@@ -6348,6 +6348,9 @@ importers:
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../moderation-reports
+      '@services/my':
+        specifier: workspace:^
+        version: link:../my
       '@services/notifications':
         specifier: workspace:^
         version: link:../notifications
@@ -8589,6 +8592,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -8625,6 +8631,9 @@ importers:
       '@services/oauth-accounts':
         specifier: workspace:^
         version: link:../oauth-accounts
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -8634,12 +8643,18 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@vouchington/sentry':
+        specifier: ^0.5.0
+        version: 0.5.0(@sentry/browser@11.10.0)(@sentry/core@11.10.0)(@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@queues/background':
         specifier: workspace:^

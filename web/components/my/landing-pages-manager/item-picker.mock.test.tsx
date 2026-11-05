@@ -34,10 +34,17 @@ function renderEditor(overrides: {
   linkLabel?: string
   linkUrl?: string
   selectedGroupReviewIds?: string[]
+  itemLimit?: number
+  draftItems?: import('@/types/landing-pages').LandingPageItem[]
 }) {
   return render(
     <LandingPageItemEditor
       loading={false}
+      itemLimit={overrides.itemLimit ?? 100}
+      hasNextPage={false}
+      loadingCandidates={false}
+      candidatesError={false}
+      onLoadMore={noop}
       addType={overrides.addType}
       selectedCandidateId={overrides.selectedCandidateId ?? ''}
       selectedTopicId={overrides.selectedTopicId ?? ''}
@@ -55,7 +62,7 @@ function renderEditor(overrides: {
       setLinkUrl={noop}
       onAddItem={noop}
       onSaveItems={noop}
-      draftItems={[]}
+      draftItems={overrides.draftItems ?? []}
       moveItem={noop}
       removeItem={noop}
       moveGroupEntry={noop}
@@ -73,6 +80,49 @@ function emptyHint(container: HTMLElement): Element | null {
 }
 
 describe('LandingPageItemEditor add-item gating', () => {
+  it('blocks additions at the item limit while allowing existing items to be saved', () => {
+    const { container } = renderEditor({
+      addType: 'link',
+      linkLabel: 'New',
+      linkUrl: 'https://example.com',
+      itemLimit: 1,
+      draftItems: [{ id: 'existing', type: 'link', label: 'Existing', url: 'https://example.com' }],
+    })
+    expect(addButton(container).disabled).toBe(true)
+    expect(
+      (container.querySelector('[data-pw="landing-page-save-content"]') as HTMLButtonElement)
+        .disabled,
+    ).toBe(false)
+  })
+
+  it('counts a topic group and each of its entries toward the limit', () => {
+    const review = {
+      id: 'review',
+      title: 'Review',
+      declared_language: null,
+      lingua_rs_detected_language: null,
+      slug: null,
+      markdown: '',
+      created_at: '',
+      review_topic_ratings: [],
+    }
+    const { container } = renderEditor({
+      addType: 'link',
+      linkLabel: 'New',
+      linkUrl: 'https://example.com',
+      itemLimit: 2,
+      draftItems: [
+        {
+          id: 'group',
+          type: 'topic_group',
+          topic: { id: 'topic', name: 'Topic', slug: 'topic', topic_type: 'topic' },
+          entries: [{ id: 'entry', type: 'review', review }],
+        },
+      ],
+    })
+    expect(addButton(container).disabled).toBe(true)
+  })
+
   it('disables Add and shows hint for empty profile_link pool', () => {
     const { container } = renderEditor({ addType: 'profile_link' })
     expect(addButton(container).disabled).toBe(true)

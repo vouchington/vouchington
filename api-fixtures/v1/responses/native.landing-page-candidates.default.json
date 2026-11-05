@@ -72,5 +72,11 @@
         "title": "Travel Card Benefits"
       }
     ]
+  },
+  "item_limit": 100,
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "opaque-landing-candidates-start"
   }
 }

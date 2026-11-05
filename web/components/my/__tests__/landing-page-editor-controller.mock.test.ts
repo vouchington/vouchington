@@ -1,3 +1,4 @@
+import { makeLandingPageCandidatesResponse } from '@/test-helpers/api-responses/landing-pages'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useLandingPageEditorController } from '../landing-page-editor-controller'
@@ -18,6 +19,7 @@ vi.mock(import('@/lib/on-error'), () => ({
   onSuccess: vi.fn<VitestLooseMock>(),
 }))
 vi.mock(import('@/lib/api/client'), () => ({
+  getMyLandingPageCandidatesClient: vi.fn<VitestLooseMock>(),
   deleteMyLandingPage: vi.fn<VitestLooseMock>(),
   replaceMyLandingPageItems: vi.fn<VitestLooseMock>(),
   setDefaultMyLandingPage: vi.fn<VitestLooseMock>(),
@@ -42,13 +44,41 @@ const page: LandingPageWithItems = {
 }
 
 const candidates: LandingPageCandidates = { profile_links: [], reviews: [], referral_links: [] }
+const candidatesData = makeLandingPageCandidatesResponse({ candidates })
 
 function setup() {
-  return renderHook(() => useLandingPageEditorController(page, candidates))
+  return renderHook(() => useLandingPageEditorController(page, candidatesData))
 }
 
 describe('useLandingPageEditorController', () => {
   beforeEach(() => vi.clearAllMocks())
+
+  it('keeps hydrated reviews in the draft without offering ineligible ones to add again', () => {
+    const review = {
+      id: 'private-review',
+      title: 'Saved review',
+      declared_language: null,
+      lingua_rs_detected_language: null,
+      slug: null,
+      markdown: '',
+      created_at: '',
+      review_topic_ratings: [
+        { topic_id: 'topic', topic_name: 'Topic', topic_slug: 'topic', rating: 5, order_index: 0 },
+      ],
+    }
+    const saved: LandingPageItem = { id: 'saved', type: 'review', review }
+    const { result } = renderHook(() =>
+      useLandingPageEditorController({ ...page, items: [saved] }, candidatesData),
+    )
+    expect(result.current.draftItems).toEqual([saved])
+    act(() => result.current.removeItem(0))
+    expect(result.current.itemOptions.availableReviews).toEqual([])
+    expect(result.current.itemOptions.topicOptions).toEqual([])
+    act(() => result.current.handleSetAddType('review'))
+    act(() => result.current.setSelectedCandidateId(review.id))
+    act(() => result.current.handleAddItem())
+    expect(result.current.draftItems).toEqual([])
+  })
 
   it('clears selection state when the add type changes', () => {
     const { result } = setup()

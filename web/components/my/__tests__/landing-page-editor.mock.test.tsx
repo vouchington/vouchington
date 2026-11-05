@@ -1,3 +1,4 @@
+import { makeLandingPageCandidatesResponse } from '@/test-helpers/api-responses/landing-pages'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { LandingPageEditor } from '../landing-page-editor'
@@ -23,6 +24,7 @@ vi.mock(import('@/lib/on-error'), () => ({
 }))
 
 vi.mock(import('@/lib/api/client'), () => ({
+  getMyLandingPageCandidatesClient: vi.fn<VitestLooseMock>(),
   deleteMyLandingPage: vi.fn<VitestLooseMock>(),
   replaceMyLandingPageItems: vi.fn<VitestLooseMock>(),
   setDefaultMyLandingPage: vi.fn<VitestLooseMock>(),
@@ -69,6 +71,7 @@ function makePage(overrides?: Partial<LandingPageWithItems>): LandingPageWithIte
 }
 
 const candidates: LandingPageCandidates = { profile_links: [], reviews: [], referral_links: [] }
+const candidatesData = makeLandingPageCandidatesResponse({ candidates })
 
 function pw(container: HTMLElement, name: string): HTMLElement {
   const el = container.querySelector(`[data-pw="${name}"]`)
@@ -80,7 +83,7 @@ describe('LandingPageEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUpdate.mockResolvedValue({ landing_page: makePage() } as never)
-    mockReplace.mockResolvedValue({ landing_page: makePage() } as never)
+    mockReplace.mockResolvedValue({ landing_page: makePage(), item_limit: 100 } as never)
     mockSetDefault.mockResolvedValue({ landing_page: makePage({ is_default: true }) } as never)
     mockDelete.mockResolvedValue(undefined as never)
   })
@@ -89,7 +92,7 @@ describe('LandingPageEditor', () => {
     const { container } = render(
       <LandingPageEditor
         initialPage={makePage()}
-        candidates={candidates}
+        candidatesData={candidatesData}
         username='tester'
       />,
     )
@@ -103,7 +106,7 @@ describe('LandingPageEditor', () => {
     const { container } = render(
       <LandingPageEditor
         initialPage={makePage({ is_default: true })}
-        candidates={candidates}
+        candidatesData={candidatesData}
         username='tester'
       />,
     )
@@ -114,7 +117,7 @@ describe('LandingPageEditor', () => {
     const { container } = render(
       <LandingPageEditor
         initialPage={makePage({ items: [] })}
-        candidates={candidates}
+        candidatesData={candidatesData}
         username='tester'
       />,
     )
@@ -139,7 +142,7 @@ describe('LandingPageEditor', () => {
     const { container } = render(
       <LandingPageEditor
         initialPage={makePage({ items: [] })}
-        candidates={candidates}
+        candidatesData={candidatesData}
         username='tester'
       />,
     )
@@ -155,7 +158,7 @@ describe('LandingPageEditor', () => {
     const { container } = render(
       <LandingPageEditor
         initialPage={makePage()}
-        candidates={candidates}
+        candidatesData={candidatesData}
         username='tester'
       />,
     )
@@ -171,7 +174,7 @@ describe('LandingPageEditor', () => {
     render(
       <LandingPageEditor
         initialPage={makePage()}
-        candidates={candidates}
+        candidatesData={candidatesData}
         username='tester'
       />,
     )
@@ -183,7 +186,7 @@ describe('LandingPageEditor', () => {
     render(
       <LandingPageEditor
         initialPage={makePage()}
-        candidates={candidates}
+        candidatesData={candidatesData}
         username='tester'
       />,
     )
@@ -196,7 +199,7 @@ describe('LandingPageEditor', () => {
     render(
       <LandingPageEditor
         initialPage={makePage()}
-        candidates={candidates}
+        candidatesData={candidatesData}
         username='tester'
       />,
     )
@@ -210,7 +213,7 @@ describe('LandingPageEditor', () => {
     const { container } = render(
       <LandingPageEditor
         initialPage={makePage()}
-        candidates={candidates}
+        candidatesData={candidatesData}
         username='tester'
       />,
     )

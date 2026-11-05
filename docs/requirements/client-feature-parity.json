@@ -1970,7 +1970,7 @@
           "behaviorTests": []
         },
         "swift": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": [
             "swift-clients/ui/Sources/VouchaFeatures/LandingPages/LandingPageContentSection.swift"
           ],
@@ -1982,7 +1982,7 @@
           "apiEvidence": ["swift-clients/core/Sources/VouchaAPI/Endpoint+LandingPages.swift"]
         },
         "dotnet": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/LandingPagesPage.xaml"],
           "behaviorTests": [
             "dotnet-clients/tests/Voucha.Client.App.Tests/LandingPagesPageTests.cs",
@@ -1993,6 +1993,10 @@
             "dotnet-clients/src/Voucha.Client.Core/LandingPages/ApiLandingPagesService.cs"
           ]
         }
+      },
+      "gap": {
+        "summary": "Swift and .NET must consume candidate cursor pages, preserve drafts while loading more, and enforce the effective landing-page item cap including nested group entries.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/541"
       }
     },
     {

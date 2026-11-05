@@ -1,9 +1,10 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { CandidatePagination } from './candidate-pagination'
 import type { LandingPageItem } from '@/types/landing-pages'
 import type { LandingPageAddType, LandingPageItemOptions } from './options'
-import { isHttpUrlWithoutFragment } from '@/lib/url/valid-url'
+import { emptyCandidateMessage, isAddItemDisabled } from './item-picker-validation'
 import { DraftItemsList } from './draft-items-list'
 import { CandidateSelect, TopicGroupOptions, TopicSelect } from './item-picker-fields'
 import { AddTypeSelect, LinkFields } from './item-picker-add-type'
@@ -11,6 +12,11 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface ItemPickerProps {
   loading: boolean
+  itemLimit: number
+  hasNextPage: boolean
+  loadingCandidates: boolean
+  candidatesError: boolean
+  onLoadMore: () => void
   addType: LandingPageAddType
   selectedCandidateId: string
   selectedTopicId: string
@@ -35,45 +41,13 @@ interface ItemPickerProps {
   removeGroupEntry: (itemIndex: number, entryIndex: number) => void
 }
 
-function isAddItemDisabled(
-  addType: LandingPageAddType,
-  selectedCandidateId: string,
-  selectedTopicId: string,
-  linkLabel: string,
-  linkUrl: string,
-  options: LandingPageItemOptions,
-  selectedGroupReviewIds: string[],
-  selectedGroupReferralIds: string[],
-): boolean {
-  if (addType === 'link') return !linkLabel.trim() || !isHttpUrlWithoutFragment(linkUrl)
-  if (addType === 'topic_group')
-    return (
-      !selectedTopicId ||
-      (selectedGroupReviewIds.length === 0 && selectedGroupReferralIds.length === 0)
-    )
-  if (addType === 'profile_link')
-    return !selectedCandidateId || options.availableProfileLinks.length === 0
-  if (addType === 'review') return !selectedCandidateId || options.availableReviews.length === 0
-  return !selectedCandidateId || options.availableReferralLinks.length === 0
-}
-
-function emptyCandidateMessage(
-  addType: LandingPageAddType,
-  options: LandingPageItemOptions,
-): string | null {
-  if (addType === 'profile_link' && options.availableProfileLinks.length === 0)
-    return 'No profile links available. Add one in Profile settings.'
-  if (addType === 'review' && options.availableReviews.length === 0)
-    return 'No public reviews available. Publish a review first.'
-  if (addType === 'referral_link' && options.availableReferralLinks.length === 0)
-    return 'No active referral links available. Activate one in Referrals.'
-  if (addType === 'topic_group' && options.topicOptions.length === 0)
-    return 'No topics available. Add a review or referral link to a topic first.'
-  return null
-}
-
 export function LandingPageItemEditor({
   loading,
+  itemLimit,
+  hasNextPage,
+  loadingCandidates,
+  candidatesError,
+  onLoadMore,
   addType,
   selectedCandidateId,
   selectedTopicId,
@@ -98,8 +72,18 @@ export function LandingPageItemEditor({
   removeGroupEntry,
 }: ItemPickerProps) {
   const t = useTranslations()
+  const itemCount = draftItems.reduce(
+    (count, item) => count + 1 + (item.type === 'topic_group' ? item.entries.length : 0),
+    0,
+  )
+  const addedCount =
+    addType === 'topic_group'
+      ? 1 + selectedGroupReviewIds.length + selectedGroupReferralIds.length
+      : 1
+  const exceedsLimit = itemCount + addedCount > itemLimit
   const addDisabled =
     loading ||
+    exceedsLimit ||
     isAddItemDisabled(
       addType,
       selectedCandidateId,
@@ -110,7 +94,7 @@ export function LandingPageItemEditor({
       selectedGroupReviewIds,
       selectedGroupReferralIds,
     )
-  const emptyMessage = emptyCandidateMessage(addType, options)
+  const emptyMessage = hasNextPage ? null : emptyCandidateMessage(addType, options)
 
   return (
     <div className='space-y-4 rounded-lg border p-4'>
@@ -163,6 +147,18 @@ export function LandingPageItemEditor({
             setSelectedGroupReviewIds={setSelectedGroupReviewIds}
             setSelectedGroupReferralIds={setSelectedGroupReferralIds}
           />
+        ) : null}
+        {hasNextPage && addType !== 'link' ? (
+          <CandidatePagination
+            loading={loadingCandidates}
+            error={candidatesError}
+            onLoadMore={onLoadMore}
+          />
+        ) : null}
+        {exceedsLimit ? (
+          <output className='block text-xs text-muted-foreground'>
+            {t('extracted.landingPagesManager.itemPicker.itemLimitReached', { limit: itemLimit })}
+          </output>
         ) : null}
         {emptyMessage ? (
           <p

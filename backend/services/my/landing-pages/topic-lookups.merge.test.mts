@@ -1,3 +1,4 @@
+import { getMyLandingPageCandidates } from './candidates.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestReferralProgramLink,
@@ -7,11 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { getTopicByAny } from '../../topics/get.mts'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
-import {
-  getLandingPageReferralLinksByIds,
-  getLandingPageTopicsByIds,
-  getOwnedLandingPageReferralLinks,
-} from './topic-lookups.mts'
+import { getLandingPageReferralLinksByIds, getLandingPageTopicsByIds } from './topic-lookups.mts'
 
 describe('landing page topic lookup after merges', () => {
   it('reads canonical persisted referral owners and excludes merged IDs from direct topic lookups', async () => {
@@ -44,7 +41,7 @@ describe('landing page topic lookup after merges', () => {
     await mergeTopicAliases(user, source, destination)
     const [selected, owned, topics] = await Promise.all([
       getLandingPageReferralLinksByIds(user.id, [linkId], false),
-      getOwnedLandingPageReferralLinks(user.id),
+      getMyLandingPageCandidates(user.id).then(page => page.candidates.referral_links),
       getLandingPageTopicsByIds([sourceId, destinationId]),
     ])
     expect(selected.get(linkId)).toMatchObject({

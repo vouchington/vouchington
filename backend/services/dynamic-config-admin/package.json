@@ -74,6 +74,7 @@
     "@services/moderation-ai-config": "workspace:^",
     "@services/moderation-analytics": "workspace:^",
     "@services/moderation-reports": "workspace:^",
+    "@services/my": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/oauth": "workspace:^",
     "@services/oauth-accounts": "workspace:^",

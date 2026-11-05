@@ -8,17 +8,18 @@ import { PageDetailsForm } from '@/components/my/landing-pages-manager/page-form
 import { landingPageHref, landingPageNamedHref } from '@/lib/links/entity-href'
 import { useLandingPageEditorController } from './landing-page-editor-controller'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import type { LandingPageCandidates, LandingPageWithItems } from '@/types/landing-pages'
+import type { LandingPageWithItems } from '@/types/landing-pages'
+import type { LandingPageCandidatesResponseBody } from '@/types/api-responses'
 
 interface Props {
   initialPage: LandingPageWithItems
-  candidates: LandingPageCandidates
+  candidatesData: LandingPageCandidatesResponseBody
   username: string
 }
 
-export function LandingPageEditor({ initialPage, candidates, username }: Props) {
+export function LandingPageEditor({ initialPage, candidatesData, username }: Props) {
   const t = useTranslations()
-  const ctrl = useLandingPageEditorController(initialPage, candidates)
+  const ctrl = useLandingPageEditorController(initialPage, candidatesData)
   const publicUrl = ctrl.page.is_default
     ? landingPageHref(username)
     : landingPageNamedHref(username, ctrl.page.slug)
@@ -76,6 +77,11 @@ export function LandingPageEditor({ initialPage, candidates, username }: Props) 
 
       <LandingPageItemEditor
         loading={ctrl.loading}
+        itemLimit={ctrl.itemLimit}
+        hasNextPage={ctrl.hasNextPage}
+        loadingCandidates={ctrl.loadingCandidates}
+        candidatesError={ctrl.candidatesError}
+        onLoadMore={ctrl.handleLoadMoreCandidates}
         addType={ctrl.addType}
         selectedCandidateId={ctrl.selectedCandidateId}
         selectedTopicId={ctrl.selectedTopicId}

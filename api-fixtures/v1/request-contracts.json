@@ -44769,6 +44769,22 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/my/landing-pages/candidates": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/my/landing-pages/:pageId": {
       "path": {
         "properties": {

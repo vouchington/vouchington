@@ -5,7 +5,7 @@ import assert from 'http-assert'
 import type { LandingPage, LandingPageItemRow } from './types.mts'
 import { lockUserLandingPages, validateLandingPageSlug } from './shared.mts'
 import { getPublicUserByAny } from '@services/users'
-import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
+import type { QueryExecutor, TransactionQuery, QueryOptions } from '@data-stores/psql/types'
 
 export async function getLockedLandingPageRowForUser(
   userId: string,
@@ -67,8 +67,12 @@ export async function getLandingPageCanonicalIdentityById(
   return rows[0] as { owner_user_id: string; owner_username: string; page_slug: string }
 }
 
-export async function getLandingPageItemRows(pageId: string): Promise<LandingPageItemRow[]> {
-  const { rows } = await read(sql`/* getLandingPageItemRows */
+export async function getLandingPageItemRows(
+  pageId: string,
+  options?: QueryOptions,
+): Promise<LandingPageItemRow[]> {
+  const { rows } = await read(
+    sql`/* getLandingPageItemRows */
     SELECT item.id, item.item_type, item.profile_link_id, item.review_post_id, item.referral_link_id,
       item.topic_id, item.link_label, item.url_id,
       CASE WHEN NOT hostname.is_blocked THEN link.url END AS url
@@ -77,7 +81,9 @@ export async function getLandingPageItemRows(pageId: string): Promise<LandingPag
     LEFT JOIN url_hostnames hostname ON hostname.id = link.hostname_id
     WHERE item.landing_page_id = ${pageId}
     ORDER BY item.sort_order ASC, item.id ASC
-  `)
+  `,
+    options,
+  )
   return rows as LandingPageItemRow[]
 }
 

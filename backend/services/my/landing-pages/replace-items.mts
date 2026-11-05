@@ -1,10 +1,11 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import { isHttpUrlWithoutFragment, validateUUID } from '@modules/utils'
-import { getMyLandingPageCandidates } from './candidates.mts'
-import { getMyLandingPage } from './get.mts'
-import { assertNoDuplicateSelection, uniqueTopicMapFromCandidates } from './shared.mts'
-import { getLandingPageRowForUser } from './reads.mts'
+import { getSelectedLandingPageCandidates } from './selected-candidates.mts'
+import { assertLandingPageItemLimit } from './limits.mts'
+import { resolveLandingPageWithItems } from './resolve-items.mts'
+import { assertNoDuplicateSelection } from './shared.mts'
+import { getLandingPageRowForUser, getLockedLandingPageRowForUser } from './reads.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import type { LandingPage, LandingPageItemInput, LandingPageWithItems } from './types.mts'
 import { buildLandingPageInsertRows } from './replace-item-rows.mts'
@@ -58,11 +59,9 @@ export async function replaceMyLandingPageItems(
   } else {
     await getLandingPageRowForUser(userId, pageId)
   }
-  const candidates = await getMyLandingPageCandidates(userId)
-  const profileLinksById = new Map(candidates.profile_links.map(link => [link.id, link]))
-  const reviewsById = new Map(candidates.reviews.map(review => [review.id, review]))
-  const referralLinksById = new Map(candidates.referral_links.map(link => [link.id, link]))
-  const topicsById = uniqueTopicMapFromCandidates(candidates.reviews, candidates.referral_links)
+  assertLandingPageItemLimit(items)
+  const { profileLinksById, reviewsById, referralLinksById, topicsById } =
+    await getSelectedLandingPageCandidates(userId, items)
   const seenSelections = new Set<string>()
 
   for (const item of items) {
@@ -123,13 +122,18 @@ export async function replaceMyLandingPageItems(
     }
   }
   await using query = await beginTransaction()
+  const page = await getLockedLandingPageRowForUser(userId, pageId, query)
   const urls = await registerLandingPageLinkUrls(userId, items, query)
   const { groupMemberRows, itemRows } = buildLandingPageInsertRows(items, urls.idsByInput)
   await replaceLandingPageItemRows(query, pageId, itemRows, groupMemberRows)
+  const result = await resolveLandingPageWithItems(page, {
+    query,
+    selections: { profileLinksById, reviewsById, referralLinksById },
+  })
   await query.commit()
   // Public landing-page GET responses are edge-cached and tagged user:<username> (see
   // ts-shared/cache/cache-tags.mts), so a reorder/replace of items must purge that tag.
   await invalidate.urls(...urls.records.flatMap(url => [url.id, url.url]))
   await invalidate.users(userId)
-  return await getMyLandingPage(userId, pageId)
+  return result
 }

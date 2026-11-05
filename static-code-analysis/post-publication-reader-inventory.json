@@ -75,11 +75,11 @@
       "classification": "public-view"
     },
     {
-      "path": "backend/services/my/landing-pages/resolve-items.mts",
+      "path": "backend/services/my/landing-pages/item-lookups.mts",
       "classification": "public-view"
     },
     {
-      "path": "backend/services/my/landing-pages/candidates.mts",
+      "path": "backend/services/my/landing-pages/candidate-ids.mts",
       "classification": "public-view"
     },
     {

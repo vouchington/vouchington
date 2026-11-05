@@ -2,6 +2,8 @@
 /* oxlint-disable max-lines -- landing page editor controller keeps detail, item, and ordering handlers colocated for shared draft state */
 
 import { useState } from 'react'
+import { useCandidatePages } from './landing-pages-manager/use-candidate-pages'
+import type { LandingPageCandidatesResponseBody } from '@/types/api-responses'
 import { useRouter } from 'next/navigation'
 import {
   deleteMyLandingPage,
@@ -26,17 +28,15 @@ import {
   removeDraftGroupEntry,
 } from '@/components/my/landing-pages-manager/draft-item-actions'
 import { myLandingPageHref } from '@/lib/links/entity-href'
-import type {
-  LandingPageCandidates,
-  LandingPageItem,
-  LandingPageWithItems,
-} from '@/types/landing-pages'
+import type { LandingPageItem, LandingPageWithItems } from '@/types/landing-pages'
 
 export function useLandingPageEditorController(
   initialPage: LandingPageWithItems,
-  candidates: LandingPageCandidates,
+  initialCandidates: LandingPageCandidatesResponseBody,
 ) {
   const router = useRouter()
+  const candidatePages = useCandidatePages(initialCandidates)
+  const candidates = candidatePages.data.candidates
   const [page, setPage] = useState(initialPage)
   const [draftItems, setDraftItems] = useState<LandingPageItem[]>(initialPage.items)
   const [loading, setLoading] = useState(false)
@@ -65,7 +65,17 @@ export function useLandingPageEditorController(
     setSelectedGroupReviewIds([])
     setSelectedGroupReferralIds([])
   }
+  const itemLimit = candidatePages.data.item_limit
+  const itemCount = draftItems.reduce(
+    (count, item) => count + 1 + (item.type === 'topic_group' ? item.entries.length : 0),
+    0,
+  )
+  const addedCount =
+    addType === 'topic_group'
+      ? 1 + selectedGroupReviewIds.length + selectedGroupReferralIds.length
+      : 1
   function addItem() {
+    if (itemCount + addedCount > itemLimit) return
     if (addType === 'link') {
       const added = addFreeformLinkItem({ label: linkLabel, url: linkUrl, setDraftItems })
       if (added) {
@@ -122,9 +132,10 @@ export function useLandingPageEditorController(
     if (loading) return
     setLoading(true)
     try {
-      const { landing_page } = await replaceMyLandingPageItems(page.id, {
+      const { landing_page, item_limit } = await replaceMyLandingPageItems(page.id, {
         items: draftItems.map(toLandingPageItemInput),
       })
+      candidatePages.setItemLimit(item_limit)
       setPage(landing_page)
       setDraftItems(landing_page.items)
       onSuccess('Landing page content saved')
@@ -180,6 +191,11 @@ export function useLandingPageEditorController(
     linkLabel,
     linkUrl,
     itemOptions,
+    itemLimit,
+    hasNextPage: candidatePages.data.page_info.has_next_page,
+    loadingCandidates: candidatePages.loading,
+    candidatesError: candidatePages.error,
+    handleLoadMoreCandidates: candidatePages.loadMore,
     setTitle,
     setSubtitle,
     setSlug,

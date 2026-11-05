@@ -2,6 +2,7 @@ import {
   nativeLandingGroupReferralLink,
   nativeLandingGroupReview,
   nativeLandingPageDetail,
+  nativeLandingPageAnalytics,
   nativeLandingPageSummary,
   nativeLandingPageTravelSummary,
   nativeLandingProfileLink,
@@ -9,22 +10,6 @@ import {
   nativeLandingReview,
 } from './native-landing-data.mts'
 import type { ApiFixtureCase } from './types.mts'
-
-const nativeLandingPageAnalytics = {
-  total_visits: 12,
-  total_clicks: 4,
-  unique_visitors: 9,
-  ctr: 0.3333333333,
-  item_clicks: [{ item_id: 'landing-item-1', item_type: 'link', click_count: 4 }],
-  daily_stats: [{ date: '2026-06-29', visits: 12, clicks: 4, unique_visitors: 9 }],
-  utm_sources: [{ utm_source: 'direct', visits: 12 }],
-  conversion_funnel: {
-    total_visits: 12,
-    total_clicks: 4,
-    total_signups: 2,
-    visit_to_click_rate: 0.3333333333,
-  },
-}
 
 export const nativeLandingPageApiFixtureCases: ApiFixtureCase[] = [
   {
@@ -50,7 +35,7 @@ export const nativeLandingPageApiFixtureCases: ApiFixtureCase[] = [
     },
     auth: 'fixture-user',
     status: 200,
-    body: { landing_page: nativeLandingPageDetail },
+    body: { landing_page: nativeLandingPageDetail, item_limit: 100 },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['web/lib/api/client/my.ts'],
   },
@@ -128,6 +113,12 @@ export const nativeLandingPageApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: {
+      item_limit: 100,
+      page_info: {
+        has_next_page: false,
+        start_cursor: 'opaque-landing-candidates-start',
+        end_cursor: null,
+      },
       candidates: {
         can_create_landing_pages: true,
         profile_links: [nativeLandingProfileLink],
@@ -164,7 +155,7 @@ export const nativeLandingPageApiFixtureCases: ApiFixtureCase[] = [
     },
     auth: 'fixture-user',
     status: 200,
-    body: { landing_page: nativeLandingPageDetail },
+    body: { landing_page: nativeLandingPageDetail, item_limit: 100 },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['web/lib/api/client/my.ts'],
   },
@@ -180,6 +171,7 @@ export const nativeLandingPageApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: {
+      item_limit: 100,
       landing_page: {
         id: 'landing-page-1',
         user_id: 'user-abc',

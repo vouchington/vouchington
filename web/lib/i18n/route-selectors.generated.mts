@@ -205,7 +205,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/my/household", selectorId: "web.route.e2f822599ce44122.499b47078131c935", hasMembership: true },
   { pattern: "/my/identity", selectorId: "web.route.040cfd375f74a043.49cee65d7c114170", hasMembership: true },
   { pattern: "/my/identity-verification", selectorId: "web.route.3fb2cb5869f8593d.70be8089e933beb4", hasMembership: true },
-  { pattern: "/my/landing-page/[slug]", selectorId: "web.route.10215e7b127df690.8da980c352943cc2", hasMembership: true },
+  { pattern: "/my/landing-page/[slug]", selectorId: "web.route.10215e7b127df690.18392704b83fc2c2", hasMembership: true },
   { pattern: "/my/landing-page/[slug]/analytics", selectorId: "web.route.a65ef95358e6ac23.7f7f577e1884df86", hasMembership: true },
   { pattern: "/my/landing-pages", selectorId: "web.route.21b8154ffc4f2bd9.0be3d54a7f04b3d2", hasMembership: true },
   { pattern: "/my/language", selectorId: "web.route.e87ff79ee4ab6203.ea6636fed02194b2", hasMembership: true },

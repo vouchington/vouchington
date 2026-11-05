@@ -70,11 +70,12 @@ export async function createTestLandingPageGroupedReviewItem(
 export async function createTestLandingPageProfileLinkItem(
   userId: string,
   landingPageId: string,
+  requestedProfileLinkId?: string,
 ): Promise<{ profileLinkId: string; landingPageItemId: string }> {
   const { rows: linkRows } = await write(
     sql`/* createTestLandingPageProfileLinkItem:profileLink */
-    INSERT INTO user_profile_links (user_id, link_type, name)
-    VALUES (${userId}, 'url', ${'Test Profile Link'})
+    INSERT INTO user_profile_links (id, user_id, link_type, name)
+    VALUES (COALESCE(${requestedProfileLinkId ?? null}::uuid, uuidv7()), ${userId}, 'url', ${'Test Profile Link'})
     RETURNING id
   `,
   )
