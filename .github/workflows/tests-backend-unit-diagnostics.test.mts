@@ -1,3 +1,4 @@
+import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -16,7 +17,7 @@ describe('backend-unit sampler opt-in', () => {
       step => step.name === 'Run backend tests',
     )?.run
     const samplerBlock = /if \[ "\$VITEST_DIAGNOSTICS" = 1 \]; then\n[\s\S]*?\nfi/u.exec(
-      runScript ?? '',
+      workflowStepScript(runScript),
     )?.[0]
     expect(samplerBlock).toBeDefined()
     const script = `start_sampler() { printf '%s\\n' "$1"; }\n${samplerBlock}\nexit 17`
@@ -52,7 +53,7 @@ describe('backend-unit deadline dump', () => {
     const runScript = steps.find(candidate => candidate.name === 'Run backend tests') as
       | { run?: string }
       | undefined
-    const definitions = (runScript?.run ?? '').split('trap stop_samplers EXIT')[0]
+    const definitions = workflowStepScript(runScript?.run).split('trap stop_samplers EXIT')[0]
     const dir = mkdtempSync(path.join(tmpdir(), 'deadline-'))
     const progress = path.join(dir, 'progress.log')
     writeFileSync(
@@ -97,7 +98,7 @@ describe('backend-unit deadline dump', () => {
     const runScript = steps.find(candidate => candidate.name === 'Run backend tests') as
       | { run?: string }
       | undefined
-    const definitions = (runScript?.run ?? '').split('trap stop_samplers EXIT')[0]
+    const definitions = workflowStepScript(runScript?.run).split('trap stop_samplers EXIT')[0]
     const racePoint = 'sleep "$DEADLINE_DUMP_AFTER_SECONDS" &\n    sleep_pid=$!'
     expect(definitions).toContain(racePoint)
     const interrupted = definitions.replace(

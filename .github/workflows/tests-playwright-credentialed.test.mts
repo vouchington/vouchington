@@ -1,3 +1,4 @@
+import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
 import {
   chmodSync,
   existsSync,
@@ -67,7 +68,7 @@ describe('credentialed Playwright command', () => {
         chmodSync(join(directory, 'date'), 0o755)
         chmodSync(join(directory, 'python3'), 0o755)
         chmodSync(join(directory, 'pnpm'), 0o755)
-        const result = spawnSync('bash', ['-c', step.run!], {
+        const result = spawnSync('bash', ['-c', workflowStepScript(step.run)], {
           cwd: directory,
           encoding: 'utf8',
           timeout: 5000,

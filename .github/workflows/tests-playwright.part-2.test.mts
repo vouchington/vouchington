@@ -1,3 +1,4 @@
+import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
 import {
   chmodSync,
   existsSync,
@@ -29,7 +30,7 @@ const runPlaywrightTestsScript = parsedWorkflow.jobs?.['playwright-tests']?.step
 // only exercises the shell script, not the shard arithmetic itself.
 function playwrightRunScript(): string {
   expect(runPlaywrightTestsScript).toBeTypeOf('string')
-  return (runPlaywrightTestsScript ?? '').replaceAll(/\$\{\{[^}]*\}\}/g, '1')
+  return workflowStepScript(runPlaywrightTestsScript).replaceAll(/\$\{\{[^}]*\}\}/g, '1')
 }
 
 // Stubs `pnpm` on PATH to capture the argv it would have received (NUL-delimited) instead

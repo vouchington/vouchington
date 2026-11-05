@@ -1,3 +1,4 @@
+import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
 import {
   existsSync,
   chmodSync,
@@ -38,7 +39,7 @@ const runStep = jobName
 
 function runScript(): string {
   expect(runStep?.run).toBeTypeOf('string')
-  return (runStep?.run ?? '').replaceAll(/\$\{\{[^}]*\}\}/g, '1')
+  return workflowStepScript(runStep?.run).replaceAll(/\$\{\{[^}]*\}\}/g, '1')
 }
 
 // Runs "Run Playwright credentialed tests" for real (against a stubbed pnpm) so the

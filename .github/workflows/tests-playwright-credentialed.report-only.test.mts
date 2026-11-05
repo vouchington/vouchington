@@ -1,3 +1,4 @@
+import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -72,8 +73,8 @@ describe('web area wiring for the credentialed Playwright job', () => {
     expect(report.if).toBe(
       "${{ failure() && steps.run-playwright-credentialed.outcome == 'failure' }}",
     )
-    expect(report.run).toContain('::warning title=')
-    expect(report.run).toContain('>> "$GITHUB_STEP_SUMMARY"')
+    expect(workflowStepScript(report.run)).toContain('::warning title=')
+    expect(workflowStepScript(report.run)).toContain('>> "$GITHUB_STEP_SUMMARY"')
     // The test step stays a hard failure: a red job keeps the check and the Nightly alert visible.
     expect(stepNamed('Run Playwright credentialed tests')).not.toHaveProperty('continue-on-error')
   })

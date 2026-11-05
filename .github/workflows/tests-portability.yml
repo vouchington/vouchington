@@ -41,11 +41,7 @@ jobs:
         timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
-        run: |
-          if [ -f coverage/lcov.info ]; then
-            mkdir -p coverage-full
-            cp coverage/lcov.info coverage-full/lcov.info
-          fi
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-portability-preserve-full-portability-linux-lcov.sh"
       - name: Upload full portability-linux LCOV to GitHub (attempt 1)
         id: full-lcov-2
         if: ${{ inputs.publish_coverage }}

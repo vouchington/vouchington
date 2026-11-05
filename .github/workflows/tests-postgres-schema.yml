@@ -56,12 +56,9 @@ jobs:
         timeout-minutes: 2
       - name: Set service connections
         timeout-minutes: 1
-        run: |
-          postgres_url="postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres"
-          {
-            echo "DATABASE_URL=${postgres_url}"
-            echo "READ_DATABASE_URL=${postgres_url}"
-          } >> "$GITHUB_ENV"
+        env:
+          POSTGRES_PORT: ${{ job.services.postgres.ports['5432'] }}
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-postgres-schema-set-service-connections.sh"
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 5
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
@@ -132,13 +129,7 @@ jobs:
       - name: Convert native materialized-view coverage
         if: ${{ inputs.publish_coverage }}
         timeout-minutes: 1
-        run: >-
-          pnpm exec coverage-check native-v8-to-lcov
-          --v8-dir "$RUNNER_TEMP/native-mv-v8"
-          --source-root "$GITHUB_WORKSPACE"
-          --output "$RUNNER_TEMP/native-mv-coverage/lcov.info"
-          --include 'backend/{api,data-stores,modules,queues,services,workers}/**/*.mts'
-          --exclude '**/*.test.mts'
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-postgres-schema-convert-native-materialized-view-coverage.sh"
       - name: Preserve full native materialized-view LCOV
         if: ${{ inputs.publish_coverage }}
         timeout-minutes: 1

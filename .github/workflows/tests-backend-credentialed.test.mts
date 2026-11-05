@@ -1,3 +1,4 @@
+import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -66,8 +67,9 @@ describe('backend credentialed test workflow', () => {
     // `failure()` is required: without a status function the condition adds an implicit `success()`
     // and the step would be skipped on exactly the failure it reports.
     expect(report).toContain('if: ${{ failure() && (')
-    expect(report).toContain('::warning title=Live provider smoke check failed::')
-    expect(report).toContain('>> "$GITHUB_STEP_SUMMARY"')
+    const reportScript = workflowStepScript((load(report) as Array<{ run?: string }>)[0]?.run)
+    expect(reportScript).toContain('::warning title=Live provider smoke check failed::')
+    expect(reportScript).toContain('>> "$GITHUB_STEP_SUMMARY"')
     // The test step stays a hard failure: a red job keeps the Nightly alert and the check visible.
     expect(stepSection(credentialedJob, 'Run backend credentialed tests')).not.toContain(
       'continue-on-error',
