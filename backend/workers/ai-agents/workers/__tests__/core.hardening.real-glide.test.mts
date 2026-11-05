@@ -1,3 +1,4 @@
+import '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { describe, expect, it, vi } from 'vitest'
 import { DelayedError } from 'glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
@@ -10,8 +11,18 @@ import {
   uniqueSpendCapDay,
 } from '@voucha/test-helpers/ai-agents-spend-cap'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
-import { delayForSpendCap } from '../processors/spend-cap-delay.mts'
-import { processAIAgentWorkerJob } from './core.mts'
+import { delayForSpendCap } from '../../processors/spend-cap-delay.mts'
+import { startAIAgentWorkerForTest } from '@voucha/test-helpers/ai-agent-worker-lifecycle'
+import {
+  createAIAgentReportFixture,
+  installAIAgentProviderFixtures,
+} from '@voucha/test-helpers/ai-agent-worker-fixtures'
+
+vi.hoisted(() => {
+  const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
+  url.pathname = String(crypto.getRandomValues(new Uint32Array(1))[0] || 1)
+  vi.stubEnv('VALKEY_WORKER_QUEUE_URL', url.toString())
+})
 
 function aiAgentJob() {
   return spendCapDelayableJob('report-judgement', {} as AIAgentJobData)
@@ -23,17 +34,17 @@ async function recheckDelays(day: string): Promise<unknown[]> {
 
 describe('AI spend-cap registration timing', () => {
   it('registers the current UTC generation before moving the job to its day end', async () => {
+    installAIAgentProviderFixtures()
+    const fixture = await createAIAgentReportFixture()
     await withReservedAiUsageDay(0, async day => {
       cleanUpSpendCapDay(day)
       vi.setSystemTime(new Date(`${day}T23:59:30.000Z`))
-      const job = aiAgentJob()
-
-      await expect(
-        processAIAgentWorkerJob(job, { processAIAgent: vi.fn<() => Promise<unknown>>() }),
-      ).rejects.toThrow(DelayedError)
-
-      expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
+      const runtime = await startAIAgentWorkerForTest()
+      const outcome = await runtime.run('report-judgement', fixture.data)
+      expect(outcome.kind).toBe('delayed')
+      expect(outcome.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
       await expect(recheckDelays(day)).resolves.toEqual([30_000])
+      await runtime.close()
     })
   })
 

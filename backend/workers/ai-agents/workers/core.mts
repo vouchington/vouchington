@@ -25,23 +25,7 @@ import {
   recoverJobBackgroundResponses,
 } from '../processors/background-response-job.mts'
 
-type AIAgentsWorkerDeps = {
-  /** Stands in for the provider-backed processors, so a test never reaches a paid model. */
-  processAIAgent: typeof processAIAgent
-  /** Lets a test see the breach context the worker reports, which only reaches a throttled Sentry message. */
-  recordSpendCapBreach: typeof recordSpendCapBreach
-}
-
-const defaultDeps: AIAgentsWorkerDeps = {
-  processAIAgent,
-  recordSpendCapBreach,
-}
-
-export async function processAIAgentWorkerJob(
-  job: Job<AIAgentJobData>,
-  deps: Partial<AIAgentsWorkerDeps> = {},
-): Promise<unknown> {
-  const dependencies = { ...defaultDeps, ...deps }
+async function processAIAgentWorkerJob(job: Job<AIAgentJobData>): Promise<unknown> {
   const responseContext = createBackgroundResponseJobContext(job)
   try {
     if (await recoverJobBackgroundResponses(job, responseContext)) return undefined
@@ -56,7 +40,7 @@ export async function processAIAgentWorkerJob(
   if (jobProducesSpend(job)) {
     const breach = await evaluateSpendCapBreach()
     if (breach && (await jobWouldIncurSpend(job))) {
-      dependencies.recordSpendCapBreach({
+      recordSpendCapBreach({
         agentJobName: job.name,
         dailyTotalMicrounits: breach.totalMicrounits,
         dailyCapMicrounits: breach.dailyCapMicrounits,
@@ -70,7 +54,7 @@ export async function processAIAgentWorkerJob(
     // recordAgentResponseUsage feeds every billed call into this job's tokenLimiter total.
     return await runWithBackgroundResponseJob(responseContext, () =>
       runWithJobTokenAccumulator(
-        () => dependencies.processAIAgent(job),
+        () => processAIAgent(job),
         totalTokens => job.reportTokens(totalTokens),
       ),
     )
