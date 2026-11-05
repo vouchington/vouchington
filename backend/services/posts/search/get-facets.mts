@@ -45,7 +45,7 @@ export async function getPostFacets(
   }
 }
 
-export type UserPostTypeFacets = Record<'review' | 'discussion' | 'comment', number>
+type UserPostTypeFacets = Record<'review' | 'discussion' | 'comment', number>
 
 export type UserPostTypeFacetResult = {
   public: UserPostTypeFacets
