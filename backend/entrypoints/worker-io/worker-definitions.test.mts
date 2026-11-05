@@ -17,6 +17,7 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     const expectedDefinitions = [
       ['background', 'background', 'createBackgroundWorker'],
       ['hacker-news', 'hacker-news', 'hackerNews'],
+      ['hacker-news-flags', 'hacker-news-flags', 'createHackerNewsFlagsWorker'],
       ['find-your-friends', 'find-your-friends', 'findYourFriends'],
       ['rss-feed-maintenance', 'rss-feed-maintenance', 'rssFeedMaintenance'],
       ['crawl_embeds', 'crawl-embeds', 'crawlEmbeds'],

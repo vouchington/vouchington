@@ -11,7 +11,7 @@ export type HackerNewsLookupTarget = {
 }
 
 /**
- * Resolve complete canonical chains, including two-hop links left by concurrent updates.
+ * Resolve canonical chains, including two-hop links.
  * Lateral point probes keep recursive cardinality estimates from scanning the whole URL store.
  */
 export async function getHackerNewsLookupTargets(

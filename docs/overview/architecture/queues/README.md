@@ -74,6 +74,13 @@ flowchart LR
 
 ## Why queues are shaped this way
 
+Hacker News flag maintenance runs independently of external lookups so provider throttling and
+visibility controls do not delay convergence of stored filter state. URL changes admit bounded
+pages of affected posts and feed items; a scheduled keyset repair revisits older entities when
+queue delivery or a transition admission is lost. Workers apply the configured global concurrency
+when they start, so a limit change takes effect after they restart. Entity-listener reconciliation only covers a
+recent change window and cannot recover an old entity whose referenced URL changed independently.
+
 Hacker News lookups have a dedicated external-service rate limit, isolating a flood of new URLs
 from other background work. Detail reads re-admit missing or stale results after a lost or terminal
 job; unread URLs may remain without references until a detail read occurs.

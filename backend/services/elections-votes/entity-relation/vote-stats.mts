@@ -31,6 +31,8 @@ type UpdatedEntityRelationVoteStats = {
   subject_id: string
   object_id: string
   prior_votes_score_net: number
+  prior_votes_score_sort: number
+  next_votes_score_sort: number
 }
 
 type EntityRelationVoteStats = {
@@ -54,7 +56,7 @@ async function updateEntityRelationVoteStatsIfChanged(
   )
   const query = sql`/* updateEntityRelationVoteStatsIfChanged */
     WITH current AS (
-      SELECT id, votes_score_net AS prior_votes_score_net
+      SELECT id, votes_score_net AS prior_votes_score_net, votes_score_sort AS prior_votes_score_sort
       FROM `
     .append(table)
     .append(sql`
@@ -80,7 +82,8 @@ async function updateEntityRelationVoteStatsIfChanged(
           votes_count_none IS DISTINCT FROM ${stats.votes_count_none} OR
           votes_count_down IS DISTINCT FROM ${stats.votes_count_down}
         )
-      RETURNING subject_id, object_id, current.prior_votes_score_net
+      RETURNING subject_id, object_id, current.prior_votes_score_net,
+        current.prior_votes_score_sort, relation.votes_score_sort AS next_votes_score_sort
     ) SELECT * FROM updated`)
   const { rows } = await queryExecutor<UpdatedEntityRelationVoteStats>(query)
   return rows[0]
@@ -96,7 +99,12 @@ async function persistEntityRelationVoteStats(
   ])
   const updated = await updateEntityRelationVoteStatsIfChanged(target, stats, query)
   const nextVotesScoreNet = stats.votes_score_up - stats.votes_score_down
-  if (updated && updated.prior_votes_score_net > 0 !== nextVotesScoreNet > 0) {
+  if (
+    updated &&
+    (updated.prior_votes_score_net > 0 !== nextVotesScoreNet > 0 ||
+      (target.relationTable === 'relation__post__related__url' &&
+        updated.prior_votes_score_sort !== updated.next_votes_score_sort))
+  ) {
     await recordPostTopicRelationPublicationChanges(query, target.relationTable, [updated])
   }
   const result = updated

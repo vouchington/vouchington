@@ -47,9 +47,8 @@ export type HackerNewsCanonicalTotals = HackerNewsReferenceCounts & { canonical_
 /**
  * Totals for URLs whose canonical row Hacker News links at least once, keyed by the caller's
  * url id. References are stored on the canonical row, which `urls.canonical_url_id` reaches
- * after the fact, so each id resolves through `urls` first. Resolution follows two hops, the
- * same bound as the list filter: `setCanonicalUrl` flattens chains and a concurrent call can
- * leave one extra hop. One read per chunk of url ids.
+ * after the fact, so each id resolves through `urls` first. Resolution tolerates two hops,
+ * matching the card and filter reads. One read per chunk of url ids.
  */
 export async function getHackerNewsTotalsByUrlIds(
   urlIds: readonly string[],

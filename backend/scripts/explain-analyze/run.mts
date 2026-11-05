@@ -1,4 +1,5 @@
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
+import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
 import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
@@ -161,6 +162,7 @@ async function main() {
     await runStep(runPublicationScopePageScenarios.name, runPublicationScopePageScenarios())
     await runStep(runDenseTopicViewerCountsScenario.name, runDenseTopicViewerCountsScenario())
     await runStep(runTopicAliasCategoryWorkScenarios.name, runTopicAliasCategoryWorkScenarios())
+    await runStep(runHackerNewsFilterScenarios.name, runHackerNewsFilterScenarios())
     await runStep(runRetentionStagePageScenarios.name, runRetentionStagePageScenarios())
     await runStep(runEmbeddingReconciliationScenarios.name, runEmbeddingReconciliationScenarios())
     await runStep(runStripeEventRecoveryScenario.name, runStripeEventRecoveryScenario())

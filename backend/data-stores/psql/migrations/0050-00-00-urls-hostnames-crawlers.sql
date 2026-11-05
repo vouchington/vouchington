@@ -778,8 +778,8 @@ CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__created_by_id
   WHERE created_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_urls__canonical_url_id
-  ON urls (canonical_url_id)
+CREATE INDEX IF NOT EXISTS idx_urls__canonical_url_id__id
+  ON urls (canonical_url_id, id)
   WHERE canonical_url_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

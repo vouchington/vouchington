@@ -16,6 +16,8 @@ export async function createUpdatePostRevision(
 
 function getPostRevisionChanges(post: Post, changes: UpdatePostChanges): PostRevisionChanges {
   const revisionChanges: PostRevisionChanges = {}
+  if (changes.url_id !== undefined && changes.url_id !== post.url_id)
+    revisionChanges.url_id = { before: post.url_id ?? null, after: changes.url_id }
   if (changes.title !== undefined && changes.title !== post.title)
     revisionChanges.title = { before: post.title, after: changes.title }
   if (changes.markdown !== undefined && changes.markdown !== post.markdown)

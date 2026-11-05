@@ -38,6 +38,7 @@ const SCHEDULED_JOB_API_ORDER = [
   'imports-recover-stalled',
   'topic-merge-recover-stalled',
   'dispatchFindYourFriends',
+  'repairHackerNewsFlags',
   'membershipEntitlementEffects',
   'membershipGrantExpiry',
   'appleNotificationRecovery',

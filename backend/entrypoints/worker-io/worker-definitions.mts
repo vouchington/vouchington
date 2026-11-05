@@ -16,6 +16,13 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/hacker-news/workers').then(module => module.hackerNews),
   },
   {
+    queueName: 'hacker-news-flags',
+    load: () =>
+      import('@workers/hacker-news-flags/workers').then(module =>
+        module.createHackerNewsFlagsWorker(),
+      ),
+  },
+  {
     queueName: 'find-your-friends',
     load: () => import('@workers/find-your-friends/workers').then(module => module.findYourFriends),
   },

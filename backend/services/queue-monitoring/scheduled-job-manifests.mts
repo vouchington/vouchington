@@ -11,6 +11,7 @@ import { scheduledJobManifest as crawlReferralLinks } from '@queues/crawl-referr
 import { scheduledJobManifest as emailDigests } from '@queues/email-digests/enqueues/schedules'
 import { scheduledJobManifest as entityListeners } from '@queues/entity-listeners/enqueues/schedules'
 import { scheduledJobManifest as findYourFriends } from '@queues/find-your-friends/enqueues/schedules'
+import { scheduledJobManifest as hackerNewsFlags } from '@queues/hacker-news-flags/enqueues/schedules'
 import { scheduledJobManifest as hackerNews } from '@queues/hacker-news/enqueues/schedules'
 import { scheduledJobManifest as heartbeat } from '@queues/heartbeat/enqueues/schedules'
 import { scheduledJobManifest as contentAnalysis } from '@queues/content-analysis/enqueues/schedules'
@@ -73,6 +74,7 @@ export const SCHEDULED_JOB_MANIFESTS = [
   emails,
   findYourFriends,
   hackerNews,
+  hackerNewsFlags,
   heartbeat,
   imageUploads,
   memberships,

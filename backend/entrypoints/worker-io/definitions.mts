@@ -64,6 +64,11 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/hacker-news/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
+    queueName: 'hacker-news-flags',
+    load: () =>
+      import('@queues/hacker-news-flags/enqueues/schedules').then(module => module.upsertSchedules),
+  },
+  {
     queueName: 'memberships',
     load: () =>
       import('@queues/memberships/enqueues/schedules').then(module => module.upsertSchedules),

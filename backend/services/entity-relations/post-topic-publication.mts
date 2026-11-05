@@ -1,3 +1,4 @@
+import { recomputeRegisteredPostHackerNewsFlags } from './post-hacker-news-flag-registry.mts'
 import { getEntityRelationsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -142,6 +143,7 @@ export async function recordPostRelatedUrlPublicationChanges(
   query: TransactionQuery,
   postIds: readonly string[],
 ): Promise<void> {
+  await recomputeRegisteredPostHackerNewsFlags(postIds, { query })
   await recordPostPublicationChanges(
     query,
     'post_related_urls_changed',

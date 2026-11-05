@@ -1,4 +1,10 @@
-import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
+import { enqueueHackerNewsFlagsBestEffort } from '@queues/hacker-news-flags/enqueues'
+import {
+  beginTransaction,
+  registerPostCommitAction,
+  withTransactionOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import {
   getHackerNewsWorkLimit,
   hackerNewsWorkConfig,
@@ -11,7 +17,7 @@ import { runBoundedBatches } from './run-bounded-batches.mts'
 
 /** Refetchable facts expire by lookup time; deletion of URL identities never drives retention. */
 export async function cleanupHackerNewsReferences(
-  options: { now?: Date; query?: TransactionQuery } = {},
+  options: { now?: Date; query?: TransactionQuery; urlIds?: readonly string[] } = {},
 ) {
   await hackerNewsWorkConfig.waitForInitialization()
   const cutoff = new Date(
@@ -25,11 +31,16 @@ export async function cleanupHackerNewsReferences(
     async batchSize => {
       if (options.query) {
         return withTransactionOptions({ query: options.query }, query =>
-          cleanupHackerNewsReferenceBatch(query, cutoff, batchSize),
+          cleanupHackerNewsReferenceBatch(query, cutoff, batchSize, options.urlIds),
         )
       }
       await using query = await beginTransaction()
-      const deleted = await cleanupHackerNewsReferenceBatch(query, cutoff, batchSize)
+      const deleted = await cleanupHackerNewsReferenceBatch(
+        query,
+        cutoff,
+        batchSize,
+        options.urlIds,
+      )
       await query.commit()
       return deleted
     },
@@ -40,15 +51,16 @@ async function cleanupHackerNewsReferenceBatch(
   query: TransactionQuery,
   cutoff: Date,
   batchSize: number,
+  urlIds?: readonly string[],
 ) {
   // This lock is also taken by the writer before touching children. A refresh that wins
   // first moves its row beyond the cutoff; one that waits recreates a complete fresh snapshot.
-  const page = await query<{ url_id: string }>(
+  const page = await query<{ url_id: string; present: boolean }>(
     `/* selectExpiredHackerNewsReferences */
-      SELECT url_id FROM url_hacker_news_totals
-      WHERE looked_up_at < $1
+      SELECT url_id, (story_count > 0 OR comment_count > 0) AS present FROM url_hacker_news_totals
+      WHERE looked_up_at < $1 AND ($3::uuid[] IS NULL OR url_id = ANY($3::uuid[]))
       ORDER BY looked_up_at, url_id LIMIT $2 FOR UPDATE SKIP LOCKED`,
-    [cutoff, batchSize],
+    [cutoff, batchSize, urlIds ?? null],
   )
   const ids = page.rows.map(row => row.url_id)
   if (ids.length === 0) return 0
@@ -82,6 +94,11 @@ async function cleanupHackerNewsReferenceBatch(
       DELETE FROM url_hacker_news_totals WHERE url_id = ANY($1::uuid[])`,
     [ids],
   )
+  const changedIds = page.rows.flatMap(row => (row.present ? [row.url_id] : []))
+  if (changedIds.length)
+    registerPostCommitAction(query, async () => {
+      await enqueueHackerNewsFlagsBestEffort(changedIds)
+    })
   // Deleted rows are the persisted progress: the next tick starts at the oldest survivor.
   return ids.length
 }

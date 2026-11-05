@@ -144,6 +144,7 @@
     "@services/follower-distributions": "workspace:^",
     "@services/friend-recommendations": "workspace:^",
     "@services/growth-metrics": "workspace:^",
+    "@services/hacker-news-flags": "workspace:^",
     "@services/honeypot": "workspace:^",
     "@services/hostname-blocking": "workspace:^",
     "@services/identity-verification": "workspace:^",

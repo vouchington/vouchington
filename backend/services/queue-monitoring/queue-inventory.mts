@@ -6,6 +6,7 @@ import { emails } from '@queues/emails/queues'
 import { psql } from '@queues/psql/queues'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
+import { hackerNewsFlagsQueue } from '@queues/hacker-news-flags/queues'
 import { hackerNewsQueue } from '@queues/hacker-news/queues'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { memberships } from '@queues/memberships/queues'
@@ -23,6 +24,7 @@ const allQueues = [
   bloomFilters,
   findYourFriendsQueue,
   hackerNewsQueue,
+  hackerNewsFlagsQueue,
   imageUploadsQueue,
   memberships,
   aiAgentsQueue,

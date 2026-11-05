@@ -1,5 +1,6 @@
 import { enqueueMissingHackerNewsLookups } from './hacker-news-lookup-enqueue.mts'
-import { write, beginTransaction } from '@data-stores/psql'
+import { enqueueHackerNewsFlagsBestEffort } from '@queues/hacker-news-flags/enqueues'
+import { write, beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import {
   HACKER_NEWS_COMMENT_CAP_PER_URL,
@@ -35,6 +36,12 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
   }
 
   await using query = await beginTransaction()
+
+  // Canonical rewrites can otherwise observe uncommitted chains and create cycles or chains
+  // beyond the readers' two-hop bound. Serialize only this short database transaction.
+  await query(
+    `/* lockCanonicalUrlRewrites */ SELECT pg_advisory_xact_lock(hashtextextended('url-canonicalization', 0))`,
+  )
 
   // Check for circular reference using recursive CTE
   // Pattern from: /backend/services/posts/search/query-builder.mts:58-79
@@ -122,10 +129,13 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
       [urlId, HACKER_NEWS_COMMENT_CAP_PER_URL],
     )
   }
+  registerPostCommitAction(query, async () => {
+    await enqueueHackerNewsFlagsBestEffort([urlId, canonicalUrlId, finalCanonicalId])
+  })
   await query.commit()
 
-  // A concurrent canonical update can leave a two-hop chain after flattening. Read the primary
-  // after commit; lookup workers must resolve once more when they execute a queued lookup.
+  // Another canonical rewrite can retarget this URL after commit. Read the primary, and let
+  // lookup workers resolve again when they execute a queued lookup.
   const resolvedId = await resolveCanonicalTarget(urlId, write)
   await enqueueMissingHackerNewsLookups([resolvedId])
   return resolvedId

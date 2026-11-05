@@ -1,0 +1,77 @@
+import type { PrivateUser } from '@voucha/types/entities/user'
+import type { QueryOptions } from '@data-stores/psql/types'
+import { assertCommunityNoLinksAllowed } from '@services/communities/restrictions/enforce'
+import assert from 'http-assert'
+import { isUUID } from '@modules/utils'
+import type { TransactionQuery } from '@data-stores/psql'
+import { assessUrls } from '@services/urls/upsert'
+import { persistAssessedUrls } from '@services/urls/upsert-persist'
+import { getUrlById } from '@services/urls/get'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
+import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
+import type { Post, UpdatePostChanges } from '../types.mts'
+
+/** Assess external URL policy without holding the post transaction. */
+export async function assessPostLinkEdit(post: Post, changes: UpdatePostChanges) {
+  if (changes.url === undefined && changes.url_id === undefined) return { changes }
+  assert(post.post_type === 'link', 422, 'url and url_id are only allowed for link posts')
+  if (changes.url !== undefined)
+    assert(/^https:\/\//i.test(changes.url), 422, 'url must be a valid https URL')
+  if (changes.url_id !== undefined) {
+    assert(isUUID(changes.url_id), 422, 'url_id must be a valid UUID')
+    const url = await getUrlById(changes.url_id, { readOnly: false })
+    assert(url, 422, 'url_id does not exist')
+    return { changes: { ...changes, url_id: url.canonical_url_id ?? url.id } }
+  }
+  const urls = await assessUrls([changes.url!])
+  assert(urls.length > 0, 422, 'URL is blocked or not allowed')
+  return { changes, urls }
+}
+
+/** Persist assessed URLs with hostname locks before post mutation locks. */
+export async function persistPostLinkEdit(
+  query: TransactionQuery,
+  userId: string,
+  changes: UpdatePostChanges,
+  urls: Awaited<ReturnType<typeof assessUrls>>,
+): Promise<UpdatePostChanges> {
+  await prepareAndLockPostLinkHostnames(query, userId, urls)
+  const [url] = await persistAssessedUrls(userId, urls, { query })
+  assert(url, 422, 'URL is blocked or not allowed')
+  return { ...changes, url_id: url.canonical_url_id ?? url.id }
+}
+
+/** Apply the community link policy to a content edit before it is persisted. */
+export async function assertCommunityLinkEditAllowed(
+  creator: PrivateUser,
+  post: Post,
+  changes: UpdatePostChanges,
+  options: QueryOptions,
+): Promise<void> {
+  if (!post.community_id) return
+  await assertCommunityNoLinksAllowed({
+    communityId: post.community_id,
+    currentUser: creator,
+    options,
+    updates: {
+      title: changes.title,
+      markdown: changes.markdown,
+      structured_data: changes.structured_data,
+      url: changes.url,
+      url_id: changes.url_id,
+    },
+  })
+}
+
+async function prepareAndLockPostLinkHostnames(
+  query: TransactionQuery,
+  userId: string,
+  urls: Awaited<ReturnType<typeof assessUrls>>,
+): Promise<void> {
+  const resolved = await prepareUrlHostnamesForOwnedMutation(
+    userId,
+    urls.map(url => url.hostname),
+    query,
+  )
+  await lockHostnameOwnership(query, [...resolved.values()])
+}

@@ -7,7 +7,6 @@ settings:
 packageExtensionsChecksum: sha256-bbmVVRGKsBKLHaY0nkyFIslfKkPA9e0ePZh1EFdkZzU=
 
 importers:
-
   .:
     devDependencies:
       '@ast-grep/cli':
@@ -699,6 +698,9 @@ importers:
 
   backend/api:
     dependencies:
+      '@services/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../services/hacker-news-flags
       '@agents/community-moderation':
         specifier: workspace:^
         version: link:../agents/community-moderation
@@ -1585,6 +1587,9 @@ importers:
 
   backend/entrypoints/api:
     dependencies:
+      '@services/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../services/hacker-news-flags
       '@backend/md':
         specifier: workspace:^
         version: link:../../md
@@ -1794,6 +1799,12 @@ importers:
 
   backend/entrypoints/worker-io:
     dependencies:
+      '@workers/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../workers/hacker-news-flags
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@backend/service-registrations':
         specifier: workspace:^
         version: link:../../service-registrations
@@ -3221,6 +3232,21 @@ importers:
         version: link:../../test-helpers
 
   backend/queues/hacker-news:
+    dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
+
+  backend/queues/hacker-news-flags:
     dependencies:
       '@data-stores/valkey':
         specifier: workspace:^
@@ -6115,6 +6141,9 @@ importers:
 
   backend/services/data-retention:
     dependencies:
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@data-stores/analytics':
         specifier: workspace:^
         version: link:../../data-stores/analytics
@@ -6240,6 +6269,9 @@ importers:
 
   backend/services/dynamic-config-admin:
     dependencies:
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -7403,6 +7435,24 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+
+  backend/services/hacker-news-flags:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../posts
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../rss-feed-items
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
 
   backend/services/honeypot:
     dependencies:
@@ -9930,6 +9980,9 @@ importers:
 
   backend/services/queue-monitoring:
     dependencies:
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -11730,6 +11783,9 @@ importers:
 
   backend/services/urls:
     dependencies:
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -14280,6 +14336,34 @@ importers:
       '@workers/heartbeat':
         specifier: workspace:^
         version: link:../heartbeat
+
+  backend/workers/hacker-news-flags:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
+      '@services/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../services/hacker-news-flags
+      glide-mq:
+        specifier: ^0.20.0
+        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../../services/rss-feed-items
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../../services/urls
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/heartbeat:
     dependencies:

@@ -108,5 +108,4 @@ export async function getHackerNewsRowVersionsForTest(urlId: string): Promise<st
     [urlId],
   )
   return result.rows.map(row => row.version as string)
-
 }

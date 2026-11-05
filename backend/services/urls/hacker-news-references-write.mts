@@ -1,4 +1,5 @@
-import { beginTransaction } from '@data-stores/psql'
+import { enqueueHackerNewsFlagsBestEffort } from '@queues/hacker-news-flags/enqueues'
+import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import { getHackerNewsWorkLimit, hackerNewsWorkConfig } from './hacker-news-work-limits.mts'
 import {
   HACKER_NEWS_COMMENT_CAP_PER_URL,
@@ -44,12 +45,31 @@ async function replaceHackerNewsReferenceChunk(
   const locked = await query<{ id: string }>(
     `/* lockHackerNewsRefreshUrls */
     SELECT id FROM urls WHERE id = ANY($1::uuid[]) AND canonical_url_id IS NULL
-    ORDER BY id FOR UPDATE`,
+    ORDER BY id FOR NO KEY UPDATE`,
     [sorted.map(item => item.urlId)],
   )
   const canonicalIds = new Set(locked.rows.map(row => row.id))
   const accepted = sorted.filter(item => canonicalIds.has(item.urlId))
   if (accepted.length === 0) return
+
+  // Retention takes the same totals locks, so compare presence under that lock.
+  const previous = await query<{ url_id: string; present: boolean }>(
+    `/* lockPreviousHackerNewsPresence */ SELECT url_id,
+      (story_count > 0 OR comment_count > 0) AS present
+      FROM url_hacker_news_totals WHERE url_id = ANY($1::uuid[])
+      ORDER BY url_id FOR UPDATE`,
+    [accepted.map(item => item.urlId)],
+  )
+  const presence = new Map(previous.rows.map(row => [row.url_id, row.present]))
+  const changedIds = accepted.flatMap(item =>
+    (presence.get(item.urlId) ?? false) !== (item.storyCount > 0 || item.commentCount > 0)
+      ? [item.urlId]
+      : [],
+  )
+  if (changedIds.length)
+    registerPostCommitAction(query, async () => {
+      await enqueueHackerNewsFlagsBestEffort(changedIds)
+    })
 
   const payload = JSON.stringify(
     accepted.map(item => ({

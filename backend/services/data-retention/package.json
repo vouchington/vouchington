@@ -25,6 +25,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/hacker-news-flags": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
     "@services/classifier-run-revival": "workspace:^",
     "@services/communities": "workspace:^",

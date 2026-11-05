@@ -23,6 +23,8 @@ export type UpdatedEntityRelationVoteStats = {
   object_id: string
   prior_votes_score_net: number
   next_votes_score_net: number
+  prior_votes_score_sort: number
+  next_votes_score_sort: number
 }
 
 export async function recomputeEntityRelationVoteStats(
@@ -84,7 +86,8 @@ export async function recomputeEntityRelationVoteStats(
     if (index > 0) statement.append(sql`, `)
     statement.append(`current_${index} AS (SELECT
       relation.id, relation.subject_id, relation.object_id,
-      relation.votes_score_net AS prior_votes_score_net
+      relation.votes_score_net AS prior_votes_score_net,
+      relation.votes_score_sort AS prior_votes_score_sort
       FROM `)
     statement.append(assertWhitelistedSqlIdentifier(table, electionTables, 'entityRelationTable'))
     statement.append(sql` relation
@@ -119,14 +122,17 @@ export async function recomputeEntityRelationVoteStats(
         `)
     statement.append(`current_${index}`)
     statement.append(sql`.prior_votes_score_net,
-        relation.votes_score_net AS next_votes_score_net
+        relation.votes_score_net AS next_votes_score_net,
+        `)
+    statement.append(`current_${index}`)
+    statement.append(sql`.prior_votes_score_sort, relation.votes_score_sort AS next_votes_score_sort
     )`)
   })
   statement.append(sql` `)
   tables.forEach((table, index) => {
     if (index > 0) statement.append(sql` UNION ALL `)
     statement.append(sql`SELECT ${table}::text AS entity_relation, subject_id, object_id,
-      prior_votes_score_net, next_votes_score_net FROM `)
+      prior_votes_score_net, next_votes_score_net, prior_votes_score_sort, next_votes_score_sort FROM `)
     statement.append(`updated_${index}`)
   })
   return (await query<UpdatedEntityRelationVoteStats>(statement)).rows
@@ -138,7 +144,14 @@ export async function recordUserDeletionRelationPublicationChanges(
 ): Promise<void> {
   const changesByTable = new Map<string, UpdatedEntityRelationVoteStats[]>()
   for (const change of changes) {
-    if (change.prior_votes_score_net > 0 === change.next_votes_score_net > 0) continue
+    if (
+      change.prior_votes_score_net > 0 === change.next_votes_score_net > 0 &&
+      !(
+        change.entity_relation === 'relation__post__related__url' &&
+        change.prior_votes_score_sort !== change.next_votes_score_sort
+      )
+    )
+      continue
     if (!isPostPublicationRelationTable(change.entity_relation)) continue
     const tableChanges = changesByTable.get(change.entity_relation) ?? []
     tableChanges.push(change)

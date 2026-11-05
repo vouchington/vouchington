@@ -1,3 +1,4 @@
+import { recomputePostHackerNewsFlag } from './hacker-news-flags.mts'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from './types.mts'
@@ -159,6 +160,7 @@ export const preparePostWithCommunityReviews = async (
       scope.communityId,
       insertedPost.root_post_id,
     )
+    await recomputePostHackerNewsFlag(insertedPost.id, options)
     return getPostByAny(insertedPost.id, options)
   }
   async function createInOwnedTransaction() {
