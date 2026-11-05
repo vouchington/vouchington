@@ -76,7 +76,7 @@ async function streamImageStateUntilTerminal(
           applyState(state)
           if (!settled && source && stream.isCurrentSource(source)) stream.recoverClosed(source)
         })
-        .catch(err => {
+        .catch((err: unknown) => {
           if (settled) return
           if (err instanceof ApiError && err.status < 500 && err.status !== 429) {
             settle(() => reject(err))

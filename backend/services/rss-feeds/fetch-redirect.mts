@@ -59,10 +59,12 @@ export async function handleRssFeedRedirect(params: {
   }
 
   const isHttpRedirect = new URL(resolvedUrl).protocol === 'http:'
-  const targetUrl = await addUrl(null, resolvedUrl, { preserveHttp: isHttpRedirect }).catch(err => {
-    if (isHttpError(err) && err.status === 400) return null
-    throw err
-  })
+  const targetUrl = await addUrl(null, resolvedUrl, { preserveHttp: isHttpRedirect }).catch(
+    (err: unknown) => {
+      if (isHttpError(err) && err.status === 400) return null
+      throw err
+    },
+  )
   if (!targetUrl) {
     // Blocked host: record redirect status without following
     await persistFetchResult({ responseCode: data.responseCode, headers: data.headers })

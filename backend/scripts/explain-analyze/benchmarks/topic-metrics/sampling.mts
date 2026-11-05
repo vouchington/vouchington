@@ -40,7 +40,7 @@ export async function measureBurst(
             resolve()
           }
         })
-        .catch(err => {
+        .catch((err: unknown) => {
           if (timer) clearInterval(timer)
           reject(
             err instanceof Error ? err : new Error('Topic metrics sampling failed', { cause: err }),

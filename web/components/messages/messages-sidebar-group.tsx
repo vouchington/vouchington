@@ -36,7 +36,7 @@ export function MessagesSidebarGroup() {
         .then(result => {
           if (!cancelled) replaceLoadedFirstPage(result.results, result.page_info)
         })
-        .catch(err => {
+        .catch((err: unknown) => {
           if (!cancelled) {
             if (attempt < FIRST_PAGE_MAX_ATTEMPTS) {
               retryTimer = scheduleFirstPageRetry(() => fetchFirstPage(attempt + 1), attempt)

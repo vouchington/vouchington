@@ -45,7 +45,7 @@ export default async function SourcesPage({ searchParams }: PageProps) {
         enabled: true,
         apply_mutes: true,
       },
-    }).catch(err => {
+    }).catch((err: unknown) => {
       const message = getListSearchErrorMessage(err)
       if (!message) throw err
       return { error: message }

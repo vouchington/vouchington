@@ -52,7 +52,7 @@ export async function CommunityNewsPage({ filter, params, searchParams }: Commun
   const nextPageParams = { limit: 25, feed_type: filter.feedType, ...(q ? { q } : {}) }
   const [currentUser, newsDataResult] = await Promise.all([
     getCurrentUser(),
-    getCommunityNews(slug, { searchParams: nextPageParams }).catch(err => {
+    getCommunityNews(slug, { searchParams: nextPageParams }).catch((err: unknown) => {
       const message = getListSearchErrorMessage(err)
       if (!message) throw err
       return { error: message }

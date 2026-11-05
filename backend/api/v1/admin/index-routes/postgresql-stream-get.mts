@@ -15,7 +15,7 @@ const postgresqlPubSub = createChannelPubSub<PostgresqlSnapshot>('admin:postgres
 function publishPostgresqlSnapshot(publish: (value: PostgresqlSnapshot) => Promise<void>): void {
   getMigrationStatus()
     .then(snapshot => publish(snapshot))
-    .catch(err => {
+    .catch((err: unknown) => {
       const error = err instanceof Error ? err.message : 'Failed to load PostgreSQL status'
       void publish({ error }).catch(onError)
       onError(err instanceof Error ? err : new Error(String(err)))

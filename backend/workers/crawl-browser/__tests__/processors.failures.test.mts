@@ -103,7 +103,7 @@ describe('browser crawl failed reservations', () => {
       const operation = processBrowserCrawl(item.url, item.linkId, item.crawler)
       const outcome = await operation.then(
         () => undefined,
-        err => err,
+        (err: unknown) => err,
       )
       expect(outcome).toBe(throws ? error : undefined)
       expect(await getBrowserCrawlReservations(item.url.id)).toEqual([
@@ -168,9 +168,10 @@ describe('browser crawl failed reservations', () => {
       )
       try {
         const failure = await processBrowserCrawl(item.url, item.linkId, item.crawler).catch(
-          err => err,
+          (err: unknown) => err,
         )
         expect(failure).toBeInstanceOf(AggregateError)
+        if (!(failure instanceof AggregateError)) throw new Error('Expected AggregateError')
         expect(failure.cause).toBe(providerError)
         expect(failure.errors).toEqual(expect.arrayContaining([providerError, databaseError]))
         expect((await getReferralLinkCrawlStatus(item.linkId)).consecutive_crawl_failures).toBe(0)
@@ -192,9 +193,10 @@ describe('browser crawl failed reservations', () => {
       )
       try {
         const failure = await processBrowserCrawl(item.url, item.linkId, item.crawler).catch(
-          err => err,
+          (err: unknown) => err,
         )
         expect(failure).toBeInstanceOf(AggregateError)
+        if (!(failure instanceof AggregateError)) throw new Error('Expected AggregateError')
         expect(failure.cause).toBe(crawlError)
         expect(failure.errors).toEqual(expect.arrayContaining([crawlError, databaseError]))
         expect((await getReferralLinkCrawlStatus(item.linkId)).consecutive_crawl_failures).toBe(1)

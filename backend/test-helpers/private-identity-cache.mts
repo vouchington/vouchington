@@ -61,7 +61,7 @@ export async function withPrivateIdentityCacheFill<T>(
           })
         })
         started.push(command)
-        void command.catch(err => terminal.reject(err))
+        void command.catch((err: unknown) => terminal.reject(err))
         return command
       })
     restore = () => spy.mockRestore()

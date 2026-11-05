@@ -15,9 +15,9 @@ describe('transformImage', () => {
         lossless: false,
         progressive: false,
         format: 'jpeg',
-      }).catch(err => err)
+      }).catch((err: unknown) => err)
       expect(errTransform).toBeInstanceOf(TransformError)
-      expect(errTransform.statusCode).toBe(500)
+      expect(errTransform).toHaveProperty('statusCode', 500)
     })
   })
 })

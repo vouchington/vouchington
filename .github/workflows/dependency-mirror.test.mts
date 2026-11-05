@@ -105,11 +105,19 @@ process.exit(19)
     },
   }).then(
     value => ({ code: 0, ...value }),
-    (err: Error & { code: number; stdout: string; stderr: string }) => ({
-      code: err.code,
-      stdout: err.stdout,
-      stderr: err.stderr,
-    }),
+    (err: unknown) => {
+      if (
+        !(err instanceof Error) ||
+        !('code' in err) ||
+        typeof err.code !== 'number' ||
+        !('stdout' in err) ||
+        typeof err.stdout !== 'string' ||
+        !('stderr' in err) ||
+        typeof err.stderr !== 'string'
+      )
+        throw err
+      return { code: err.code, stdout: err.stdout, stderr: err.stderr }
+    },
   )
   const callLog = (await readFile(calls, 'utf8').catch(() => '')).trim()
   const recorded = callLog ? callLog.split('\n').map(line => JSON.parse(line) as string[]) : []

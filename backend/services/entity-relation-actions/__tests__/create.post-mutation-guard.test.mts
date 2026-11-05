@@ -68,7 +68,7 @@ describe('createEntityRelationAction post mutation guard', () => {
             grantedScopes: ['entity-relations:read', 'entity-relations:write'],
           },
           input,
-        ).catch(err => err),
+        ).catch((err: unknown) => err),
       )
       await expect(creating).resolves.toMatchObject({ statusCode: 403 })
       await expect(
@@ -106,7 +106,7 @@ describe('createEntityRelationAction post mutation guard', () => {
           objectType: 'post',
           objectId: object.id,
         },
-      ).catch(err => err),
+      ).catch((err: unknown) => err),
     )
 
     await expect(creating).resolves.toMatchObject({ statusCode: 403 })
@@ -168,7 +168,7 @@ describe('createEntityRelationAction post mutation guard', () => {
           objectType: 'topic',
           objectId: topicId,
         },
-      ).catch(err => err),
+      ).catch((err: unknown) => err),
     )
     await expect(creating).resolves.toMatchObject({ statusCode: 404 })
     await expect(getEntityRelation(relation.table_name, reply.id, topicId)).resolves.toEqual([])

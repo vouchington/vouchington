@@ -102,7 +102,7 @@ async function runCleanup(cwd: string, binDir: string, env: Record<string, strin
       PATH: `${binDir}:${process.env.PATH}`,
     },
   })
-  return readFile(logPath, 'utf8').catch(err => {
+  return readFile(logPath, 'utf8').catch((err: unknown) => {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
       return ''
     }

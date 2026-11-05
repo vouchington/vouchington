@@ -106,7 +106,7 @@ describe('OAuth authorization provider exchange processing', () => {
     vi.mocked(dependencies.releaseClaim).mockRejectedValue(releaseFailure)
     const outcome = await processOAuthAuthorizationExchange('flow-id', dependencies, {
       persist: vi.fn<OAuthExchangeOwnership['persist']>().mockRejectedValue(failure),
-    }).catch(err => err)
+    }).catch((err: unknown) => err)
     expect(outcome).toBeInstanceOf(AggregateError)
     if (!(outcome instanceof AggregateError)) throw new Error('Expected ordered cleanup failures')
     expect(outcome.errors).toEqual([failure, releaseFailure])
@@ -158,7 +158,7 @@ describe('OAuth authorization provider exchange processing', () => {
     vi.mocked(dependencies.rejectExhausted).mockRejectedValue(nativeFailure)
     const outcome = await processOAuthAuthorizationExchange('flow-id', dependencies, {
       persist: vi.fn<OAuthExchangeOwnership['persist']>().mockRejectedValue(failure),
-    }).catch(err => err)
+    }).catch((err: unknown) => err)
     expect(outcome).toBeInstanceOf(AggregateError)
     if (!(outcome instanceof AggregateError)) throw new Error('Expected ordered cleanup errors')
     expect(outcome.errors).toEqual([failure, nativeFailure])
@@ -273,7 +273,7 @@ describe('OAuth authorization provider exchange processing', () => {
     vi.mocked(dependencies.releaseClaim).mockRejectedValue(releaseFailure)
 
     const error = await processOAuthAuthorizationExchange('flow-id', dependencies).catch(
-      err => err as AggregateError,
+      (err: unknown) => err as AggregateError,
     )
 
     expect(error).toBeInstanceOf(AggregateError)

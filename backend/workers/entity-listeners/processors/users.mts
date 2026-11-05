@@ -40,7 +40,7 @@ export const processAutoFollowReferrer = async ({
   // A signup retry or reconciliation replay must not resurrect a follow the user already removed.
   await upsertEntityRelation(creator, followRelation, { id: newUserId }, [{ id: referrerId }], {
     skipIfDeleted: true,
-  }).catch(err => {
+  }).catch((err: unknown) => {
     if (!isRelationLimitError(err)) throw err
   })
 }

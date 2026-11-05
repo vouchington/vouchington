@@ -49,7 +49,7 @@ export async function exercisePolicyWithdrawalReservation(
     await withdrawalTransaction.commit()
     return value
   })()
-  void production.catch(err => {
+  void production.catch((err: unknown) => {
     locked.reject(err)
     insertIssued.reject(err)
   })

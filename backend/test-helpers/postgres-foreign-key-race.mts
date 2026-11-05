@@ -32,7 +32,7 @@ export async function deleteForeignKeyTargetDuringInsertForTest<Result>(input: {
         await query.commit()
         return operation.then(
           value => ({ value }),
-          err => ({ error: err }),
+          (err: unknown) => ({ error: err }),
         )
       },
     )

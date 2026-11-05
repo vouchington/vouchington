@@ -185,7 +185,7 @@ describe('applyAllMigrations', () => {
     // Observe rejection immediately, while the fixed phase is deliberately gated.
     const settled = operation.then(
       () => ({ status: 'fulfilled' as const }),
-      err => ({ status: 'rejected' as const, reason: err }),
+      (err: unknown) => ({ status: 'rejected' as const, reason: err }),
     )
     let primary: unknown
     let failed = false

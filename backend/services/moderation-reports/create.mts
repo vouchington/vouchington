@@ -169,14 +169,17 @@ function enqueueReportJudgementIfContextChanged(
       await enqueueReportJudgement(entityType, entityId, reportId, null, context.contextHash)
     })
     /* v8 ignore start -- fire-and-forget error handler; covered by process-level onError integration */
-    .catch((err: Error) =>
+    .catch((err: unknown) =>
       onError(
-        decorateModerationEnqueueError(err, {
-          stage: 'report-judgement',
-          reportId,
-          entityType,
-          entityId,
-        }),
+        decorateModerationEnqueueError(
+          err instanceof Error ? err : new Error(String(err), { cause: err }),
+          {
+            stage: 'report-judgement',
+            reportId,
+            entityType,
+            entityId,
+          },
+        ),
       ),
     )
   /* v8 ignore stop */

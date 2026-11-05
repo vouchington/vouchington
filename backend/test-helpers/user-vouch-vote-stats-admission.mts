@@ -46,7 +46,7 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
         else if (state === 'completed') terminal(job, false)
         return undefined
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         failures.push(err)
       })
     stateReads.add(reading)
@@ -77,7 +77,7 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
           signal.removeEventListener('abort', expired)
           resolve(value)
         },
-        err => {
+        (err: unknown) => {
           signal.removeEventListener('abort', expired)
           reject(
             err instanceof Error ? err : new Error('Native observation failed', { cause: err }),

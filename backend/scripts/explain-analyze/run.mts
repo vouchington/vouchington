@@ -194,7 +194,7 @@ async function run(): Promise<void> {
     await gracefulShutdown()
   }
 }
-run().catch(err => {
+run().catch((err: unknown) => {
   console.error(err)
   process.exitCode = 1
 })

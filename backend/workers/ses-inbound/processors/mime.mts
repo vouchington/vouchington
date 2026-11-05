@@ -87,7 +87,7 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
     })
     headerLimiter.once('error', error => parser.destroy(error))
     rawMime.pipe(headerLimiter).pipe(parser)
-  }).catch(err => {
+  }).catch((err: unknown) => {
     if (err === sourceStreamError) throw err
     throw new SesInboundTerminalError('Raw SES object is not valid MIME', { cause: err })
   })

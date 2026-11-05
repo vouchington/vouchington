@@ -67,7 +67,7 @@ export async function admitCopyrightEmailWithConcurrentRecommendation(
       () => {
         if (!held) noticeHeld.reject(new Error('Recommendation never locked the notice'))
       },
-      err => noticeHeld.reject(err),
+      (err: unknown) => noticeHeld.reject(err),
     )
     let admission: ReturnType<typeof admitCopyrightEmailCorrespondence> | undefined
     try {
@@ -78,7 +78,7 @@ export async function admitCopyrightEmailWithConcurrentRecommendation(
           if (!requested)
             admissionAtNotice.reject(new Error('Admission never requested the notice lock'))
         },
-        err => admissionAtNotice.reject(err),
+        (err: unknown) => admissionAtNotice.reject(err),
       )
       const [result, stored] = await Promise.all([admission, recommendation])
       return { admission: result, recommendationStored: stored }

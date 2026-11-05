@@ -28,7 +28,7 @@ const failures = createOwnedWorkerFailures()
 const deliver = (message: object) => {
   const delivery = send(message)
   deliveries.push(delivery)
-  void delivery.catch(err => stop.reject(err))
+  void delivery.catch((err: unknown) => stop.reject(err))
 }
 process.once('disconnect', () => stop.reject(new Error('Owned worker parent disconnected')))
 process.on('message', message => {

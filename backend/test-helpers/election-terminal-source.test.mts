@@ -27,7 +27,7 @@ describe('public TestQueue exact terminal source', () => {
       const foreignJob = await other.add('foreign', {}, { jobId: 'foreign-terminal' })
       const job = await queue.add('owned', {})
       if (!job || !foreignJob) throw new Error('Expected actual public jobs')
-      const unrelated = observer.wait(foreignJob.id).catch(err => err)
+      const unrelated = observer.wait(foreignJob.id).catch((err: unknown) => err)
       const result = await observer.wait(job.id)
       expect(result).toEqual({ id: job.id, failed: false })
       await job.remove()
@@ -102,7 +102,7 @@ describe('public TestQueue exact terminal source', () => {
       const source = createTestQueueTerminalSource(queue, undefined)
       observer = observeElectionTerminalSource(source)
       const baseline = queue.listenerCount('completed') - 1
-      const waiting = observer.wait('never-admitted').catch(err => err)
+      const waiting = observer.wait('never-admitted').catch((err: unknown) => err)
       await observer.close()
       expect(await waiting).toMatchObject({ message: 'Owned election observer is closed' })
       expect(queue.listenerCount('completed')).toBe(baseline)

@@ -31,7 +31,7 @@ describe('format validation', () => {
   })
 
   it('error includes email address', async () => {
-    const err = await validateEmailAddress('invalid-format').catch(err => err)
+    const err = await validateEmailAddress('invalid-format').catch((err: unknown) => err)
     expect(err).toBeInstanceOf(EmailFormatInvalidError)
     expect((err as EmailFormatInvalidError).message).toContain('invalid-format')
   })
@@ -75,7 +75,9 @@ describe('domain validation', () => {
   installEmailDomainDnsMock()
 
   it('error includes domain for domain errors', async () => {
-    const err = await validateEmailAddress('user2@invalid-domain-12345.test').catch(err => err)
+    const err = await validateEmailAddress('user2@invalid-domain-12345.test').catch(
+      (err: unknown) => err,
+    )
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).domain).toBe('invalid-domain-12345.test')
   })

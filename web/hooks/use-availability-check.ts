@@ -47,7 +47,7 @@ export function useAvailabilityCheck(kind: AvailabilityKind): {
             conflict: result.conflict,
           })
         })
-        .catch(err => {
+        .catch((err: unknown) => {
           if (controller.signal.aborted) return
           if (
             typeof err === 'object' &&

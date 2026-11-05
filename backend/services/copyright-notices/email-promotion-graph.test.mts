@@ -111,7 +111,7 @@ describe('copyright email promotion graph bound', () => {
     try {
       const promotion = promoteCopyrightEmailIntake(input).then(
         () => new Error('Promotion unexpectedly succeeded during a graph change'),
-        err => err,
+        (err: unknown) => err,
       )
       await reachedGraphRead
       await ingestion.commit()

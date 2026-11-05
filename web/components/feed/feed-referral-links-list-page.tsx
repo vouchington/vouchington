@@ -21,7 +21,7 @@ export async function FeedReferralLinksListPage({ config }: FeedReferralLinksLis
   const queryParams = { limit: FEED_PAGE_LIMIT }
   const dataResult = await getReferralLinksFeed(config.feedType, {
     searchParams: queryParams,
-  }).catch(err => {
+  }).catch((err: unknown) => {
     const message = getListSearchErrorMessage(err)
     if (!message) throw err
     return { error: message }

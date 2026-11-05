@@ -128,7 +128,7 @@ export function createOwnedEmbeddingQueue(
     /** A zero-delay continuation may already be promoted; require its actual completion. */
     promoteContinuation: (job: Pick<Job, 'promote'>, completed: Promise<void>) =>
       start(() =>
-        job.promote().catch(async err => {
+        job.promote().catch(async (err: unknown) => {
           if (!(err instanceof Error) || err.message !== 'Cannot promote: not_delayed') throw err
           await completed
         }),

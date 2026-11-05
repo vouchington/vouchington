@@ -67,7 +67,7 @@ export async function MediaItemListingPage(config: MediaItemListingPageConfig) {
     getCurrentUser(),
     getRssFeedItems({
       searchParams: queryParams,
-    }).catch(err => {
+    }).catch((err: unknown) => {
       const message = getListSearchErrorMessage(err)
       if (!message) throw err
       return { error: message }

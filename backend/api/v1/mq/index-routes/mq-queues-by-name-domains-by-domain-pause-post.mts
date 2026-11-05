@@ -20,7 +20,7 @@ app.route('/api/v1/mq/queues/:name/domains/:domain/pause').post(async (ctx: Cont
     'POST:/api/v1/mq/queues/:name/domains/:domain/pause',
   )
   // The note is optional, so an empty body pauses without one.
-  const body = (await parseJsonBody(ctx, '10kb').catch(err => {
+  const body = (await parseJsonBody(ctx, '10kb').catch((err: unknown) => {
     if (isHttpError(err) && err.status === 422) throw err
     return {}
   })) as PauseQueueDomainRequest

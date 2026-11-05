@@ -162,7 +162,7 @@ async function cleanup(subjectId: string, userIds: readonly string[]): Promise<v
 }
 
 if (import.meta.main) {
-  main().catch(err => {
+  main().catch((err: unknown) => {
     console.error(err)
     process.exitCode = 1
   })

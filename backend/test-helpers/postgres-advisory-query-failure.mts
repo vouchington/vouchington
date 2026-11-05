@@ -48,9 +48,11 @@ export async function withPostgresAdvisoryLockQueryFailureForTest<Result>(
         if (args.length !== 2 || !Array.isArray(args[1]))
           throw new Error('Advisory target requires the original string-and-values Promise query')
         fired = true
-        clientEnd = once(client, 'end', { signal: AbortSignal.timeout(5_000) }).catch(err => {
-          endError = err
-        })
+        clientEnd = once(client, 'end', { signal: AbortSignal.timeout(5_000) }).catch(
+          (err: unknown) => {
+            endError = err
+          },
+        )
         return failActualStatement(args)
       }) as PoolClient['query']
 

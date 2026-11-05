@@ -122,7 +122,7 @@ describe('upload cleanup effect checkpoints', () => {
         saved.push(next)
       }).then(
         () => null,
-        err => err as Error,
+        (err: unknown) => err as Error,
       )
       restore()
       const expectedError = expect.objectContaining({ message })

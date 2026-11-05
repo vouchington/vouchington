@@ -110,7 +110,7 @@ export function usePostgreSQLAdminState() {
     // Initial REST load so the page is never blank if SSE fails or is slow.
     fetchMigrations()
       .then(data => setStatus(prev => prev ?? data))
-      .catch(err => {
+      .catch((err: unknown) => {
         if (streamSnapshotAppliedRef.current) return
         setError(err instanceof Error ? err.message : 'Failed to load PostgreSQL status')
       })

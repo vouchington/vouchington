@@ -26,7 +26,7 @@ const queueInstances = new Map<string, Queue>()
 // Register cleanup on graceful shutdown
 addGracefulShutdownCallback(async () => {
   const closurePromises = Array.from(queueInstances.values()).map(queue =>
-    queue.close().catch(err => {
+    queue.close().catch((err: unknown) => {
       const localErr = err as Error & { extra?: Record<string, unknown> }
       localErr.extra = { operation: 'closeQueueInstance', queueName: queue.name }
       onError(localErr)

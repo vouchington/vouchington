@@ -84,9 +84,9 @@ describe('suspendUser', () => {
     const user = await createTestUser({ username: safeUsername('suspend-already') })
     await suspendTestUser(user.id)
 
-    const err = await suspendUser(admin, user.id, 'allow').catch(err => err)
-    expect(err.status).toBe(409)
-    expect(err.code).toBe(CONFLICT)
+    const err = await suspendUser(admin, user.id, 'allow').catch((err: unknown) => err)
+    expect(err).toHaveProperty('status', 409)
+    expect(err).toHaveProperty('code', CONFLICT)
   })
 })
 
@@ -132,9 +132,9 @@ describe('unsuspendUser', () => {
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUser({ username: safeUsername('unsuspend-notsuspended') })
 
-    const err = await unsuspendUser(admin, user.id).catch(err => err)
-    expect(err.status).toBe(409)
-    expect(err.code).toBe(CONFLICT)
+    const err = await unsuspendUser(admin, user.id).catch((err: unknown) => err)
+    expect(err).toHaveProperty('status', 409)
+    expect(err).toHaveProperty('code', CONFLICT)
   })
 })
 

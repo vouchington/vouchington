@@ -123,13 +123,14 @@ async function runModerationAppealScenario(
       { strategy: 'server-response' },
     )
   }
-  if (input.action.type !== 'inspect-actions') {
+  if (input.action.type !== 'inspect-actions')
     throw new Error(`Unknown backend moderation lifecycle action: ${input.action.type}`)
-  }
   if (input.preconditions.viewerRole === 'moderator') {
     const status = await resolveModerationAppealAccept(moderator.id, appeal.id, 'staff_or_user')
       .then(() => null)
-      .catch((err: { status?: number }) => err.status)
+      .catch((err: unknown) =>
+        typeof err === 'object' && err !== null && 'status' in err ? err.status : undefined,
+      )
     if (status !== 403)
       throw new Error(`Expected moderator suspension acceptance to fail with 403, got ${status}`)
     const persisted = await getModerationAppealByIdFromPrimary(appeal.id)
@@ -247,9 +248,8 @@ async function runIntegrityAuthorityScenario(
       { strategy: 'exact-read', authority: 'primary' },
     )
   }
-  if (input.action.type !== 'revoke-vote-penalty') {
+  if (input.action.type !== 'revoke-vote-penalty')
     throw new Error(`Unknown backend integrity lifecycle action: ${input.action.type}`)
-  }
   const penaltyId = await insertTestVoteWeightPenaltyRecord({
     userId: subject.id,
     createdById: administrator.id,

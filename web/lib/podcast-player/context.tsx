@@ -42,12 +42,12 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           ? reportPlaybackPosition(episode.episodeId, {
               position_seconds: positionSeconds,
               completed,
-            }).catch(err => {
+            }).catch((err: unknown) => {
               Sentry.captureException(err)
             })
           : Promise.resolve()
       const nextReport = reportChainRef.current.then(report, report)
-      reportChainRef.current = nextReport.catch(err => {
+      reportChainRef.current = nextReport.catch((err: unknown) => {
         Sentry.captureException(err)
       })
       return nextReport

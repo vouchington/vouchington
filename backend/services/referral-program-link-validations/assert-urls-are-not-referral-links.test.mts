@@ -50,8 +50,8 @@ describe('assertUrlsAreNotReferralLinks', () => {
       hostnameId,
     })
 
-    const error = await assertUrlsAreNotReferralLinks([urlId]).catch(err => err)
-    expect(error.status).toBe(422)
+    const error = await assertUrlsAreNotReferralLinks([urlId]).catch((err: unknown) => err)
+    expect(error).toHaveProperty('status', 422)
     expect(() => {
       throw error
     }).toThrow(/referral/i)
@@ -80,8 +80,10 @@ describe('assertUrlsAreNotReferralLinks', () => {
       hostnameId: refHostnameId,
     })
 
-    const error = await assertUrlsAreNotReferralLinks([okUrlId, refUrlId]).catch(err => err)
-    expect(error.status).toBe(422)
+    const error = await assertUrlsAreNotReferralLinks([okUrlId, refUrlId]).catch(
+      (err: unknown) => err,
+    )
+    expect(error).toHaveProperty('status', 422)
     expect(() => {
       throw error
     }).toThrow(/referral/i)
@@ -104,8 +106,8 @@ describe('assertUrlsAreNotReferralLinks', () => {
       hostnameId,
     })
 
-    const error = await assertUrlsAreNotReferralLinks([urlId], user.id).catch(err => err)
-    expect(error.status).toBe(422)
+    const error = await assertUrlsAreNotReferralLinks([urlId], user.id).catch((err: unknown) => err)
+    expect(error).toHaveProperty('status', 422)
 
     const penalties = await getTestPenaltiesByUserId(user.id)
     const attemptPenalty = penalties.find(p => p.reason === 'blocked_hostname_attempt')
@@ -131,8 +133,8 @@ describe('assertUrlsAreNotReferralLinks', () => {
     })
     // No userId passed — should still reject the URL but not penalize anyone.
     // Verify against a real user who would have been penalized had userId been passed.
-    const error = await assertUrlsAreNotReferralLinks([urlId]).catch(err => err)
-    expect(error.status).toBe(422)
+    const error = await assertUrlsAreNotReferralLinks([urlId]).catch((err: unknown) => err)
+    expect(error).toHaveProperty('status', 422)
 
     const penalties = await getTestPenaltiesByUserId(submitter.id)
     expect(penalties.find(p => p.reason === 'blocked_hostname_attempt')).toBeUndefined()

@@ -176,7 +176,7 @@ if (import.meta.main) {
   runForkLeakPreflight()
     .then(() => runToolingTestsWatched(process.argv.slice(2)))
     .then(propagateVitestChildCompletion)
-    .catch(err => {
+    .catch((err: unknown) => {
       process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
       process.exitCode = 1
     })

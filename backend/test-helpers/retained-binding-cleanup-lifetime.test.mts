@@ -166,7 +166,7 @@ function rejectRaw(reason: unknown): Promise<never> {
 }
 
 async function cleanupError(pending: Promise<void>): Promise<AggregateError> {
-  const error: unknown = await pending.catch(err => err)
+  const error: unknown = await pending.catch((err: unknown) => err)
   if (!(error instanceof AggregateError)) throw new Error('Expected owned cleanup failure')
   return error
 }

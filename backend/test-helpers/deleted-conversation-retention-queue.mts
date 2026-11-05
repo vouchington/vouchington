@@ -65,7 +65,7 @@ export async function openDeletedConversationRetentionQueueForTest(
       .then(state => {
         if (state === 'failed') pending.get(job.id)?.resolve('failed')
       })
-      .catch(err => errors.push(err))
+      .catch((err: unknown) => errors.push(err))
   })
   let closePromise: Promise<void> | undefined
   const close = () =>

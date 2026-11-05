@@ -48,7 +48,7 @@ export async function FeedPostListPage({ config, searchParams }: FeedPostListPag
     ...(query ? { q: query } : {}),
   }
   const dataResult = await getPostFeed(config.feedType, { searchParams: queryParams }).catch(
-    err => {
+    (err: unknown) => {
       const message = getListSearchErrorMessage(err)
       if (!message) throw err
       return { error: message }

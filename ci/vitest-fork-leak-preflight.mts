@@ -125,7 +125,7 @@ it('sees runnable work settled before the next test', async () => {
         timeout: 25_000,
       }).then(
         ({ stdout, stderr }) => ({ exitCode: 0, output: `${stdout}\n${stderr}` }),
-        err => {
+        (err: unknown) => {
           const failed = err as { code?: number; stdout?: string; stderr?: string }
           if (
             typeof failed.code !== 'number' ||

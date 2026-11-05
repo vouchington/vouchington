@@ -100,7 +100,7 @@ export function createPostDetailPage(postType: PostType, slug: string) {
       if (!postCommunity || !user) return null
       return returnNullForMissingEntity(getCommunity(postCommunity.slug), {
         nullStatusCodes: [403, 404],
-      }).catch(err => {
+      }).catch((err: unknown) => {
         // Community data is auxiliary for pin eligibility — log 5xx but don't fail the page
         Sentry.captureException(err, { tags: { context: 'community-data-for-pin' } })
         return null
@@ -110,7 +110,7 @@ export function createPostDetailPage(postType: PostType, slug: string) {
       if (!postCommunity || !user) return null
       return returnNullForMissingEntity(getCommunityPinnedPosts(postCommunity.slug), {
         nullStatusCodes: [403, 404],
-      }).catch(err => {
+      }).catch((err: unknown) => {
         // Pin state is auxiliary — log unexpected errors (5xx, network) but don't fail the page
         Sentry.captureException(err, { tags: { context: 'community-pinned-posts' } })
         return null

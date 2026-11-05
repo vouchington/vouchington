@@ -93,11 +93,11 @@ export async function processEmbeddingCreationJob(
     }
   })().then(
     value => ({ status: 'fulfilled' as const, value }),
-    err => ({ status: 'rejected' as const, reason: err as unknown }),
+    (err: unknown) => ({ status: 'rejected' as const, reason: err as unknown }),
   )
   const released = await lease.release().then(
     () => ({ status: 'fulfilled' as const }),
-    err => ({ status: 'rejected' as const, reason: err as unknown }),
+    (err: unknown) => ({ status: 'rejected' as const, reason: err as unknown }),
   )
   if (work.status === 'rejected') {
     if (released.status === 'rejected')

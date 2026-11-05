@@ -103,7 +103,7 @@ async function updateExistingPost(
       throw new PostSavedWithRatingError(saved, err)
     }
   }
-  await syncImages(saved, post, uploadedImages).catch(err => {
+  await syncImages(saved, post, uploadedImages).catch((err: unknown) => {
     toast.error(
       err instanceof ApiError
         ? `Post saved, but images failed: ${err.message}`

@@ -157,7 +157,7 @@ describe('votes-upsert', () => {
         failures.push(err)
       } finally {
         // The pool helper has released its held clients before this actual action drain.
-        if (upsert) await upsert.catch(err => failures.push(err))
+        if (upsert) await upsert.catch((err: unknown) => failures.push(err))
       }
       if (failures.length === 1) throw failures[0]
       if (failures.length > 1) throw new AggregateError(failures, 'Vote and cleanup failed')

@@ -161,19 +161,21 @@ export async function setPostImages(
     await query.commit()
     return result
   }
-  const { savedImages, rollback } = await savePostImagesInTransaction().catch(async err => {
-    if (deliveryPrepared) {
-      await repairFailedImageDeliveryMutation({
-        postIds: [post.id],
-        imageIds: images.map(image => image.image_id),
-      }).catch(onError)
-    }
-    if ((err as { code?: string }).code === '23503') {
-      /* v8 ignore next -- defensive race fallback; validation covers normal incomplete/missing images */
-      throw createHttpError(400, 'Image not found or not complete')
-    }
-    throw err
-  })
+  const { savedImages, rollback } = await savePostImagesInTransaction().catch(
+    async (err: unknown) => {
+      if (deliveryPrepared) {
+        await repairFailedImageDeliveryMutation({
+          postIds: [post.id],
+          imageIds: images.map(image => image.image_id),
+        }).catch(onError)
+      }
+      if ((err as { code?: string }).code === '23503') {
+        /* v8 ignore next -- defensive race fallback; validation covers normal incomplete/missing images */
+        throw createHttpError(400, 'Image not found or not complete')
+      }
+      throw err
+    },
+  )
   await completePostImageUpdate({
     postId: post.id,
     imageIds: images.map(image => image.image_id),

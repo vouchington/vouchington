@@ -68,7 +68,7 @@ export async function handleCrawlRedirect(params: {
     hopCount + 1,
     visitedUrls,
     options,
-  ).catch(err => {
+  ).catch((err: unknown) => {
     throw markRedirectStatusRecorded(err)
   })
   return {

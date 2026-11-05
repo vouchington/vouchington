@@ -40,17 +40,19 @@ function markdownForPublishedRaw(path: string, markdown: string): string {
 }
 
 async function readSchemaSnapshotFile(path: string): Promise<string> {
-  return readFile(path, 'utf8').catch((err: NodeJS.ErrnoException) => {
-    throw new Error(`Cannot read PostgreSQL schema snapshot at ${path}: ${err.message}`)
+  return readFile(path, 'utf8').catch((err: unknown) => {
+    throw new Error(
+      `Cannot read PostgreSQL schema snapshot at ${path}: ${err instanceof Error ? err.message : String(err)}`,
+    )
   })
 }
 
 async function schemaMarkdownFiles(schemaDir: string): Promise<Map<string, string>> {
   const markdownRoot = join(schemaDir, 'markdown')
   const entries = await readdir(markdownRoot, { recursive: true, withFileTypes: true }).catch(
-    (err: NodeJS.ErrnoException) => {
+    (err: unknown) => {
       throw new Error(
-        `Cannot read PostgreSQL schema Markdown directory at ${markdownRoot}: ${err.message}`,
+        `Cannot read PostgreSQL schema Markdown directory at ${markdownRoot}: ${err instanceof Error ? err.message : String(err)}`,
       )
     },
   )

@@ -8,7 +8,7 @@ import { UNSUBSCRIBE_MEDIA_TYPES } from './unsubscribe-media-types.mts'
 app.route('/api/v1/email-unsubscribe').post(
   async (ctx: Context) => {
     await ctx.applyRouteRateLimit('POST:/api/v1/email-unsubscribe')
-    const body = (await parseJsonBody(ctx, '10kb').catch(err => {
+    const body = (await parseJsonBody(ctx, '10kb').catch((err: unknown) => {
       if (isHttpError(err) && err.status === 422) throw err
       return {}
     })) as { token?: unknown }

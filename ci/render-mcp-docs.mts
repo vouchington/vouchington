@@ -85,10 +85,13 @@ export function catalogMarkdown(catalog: Catalog): string {
 }
 
 async function readCatalog(catalogPath: string): Promise<{ raw: string; catalog: Catalog }> {
-  const raw = await readFile(catalogPath, 'utf8').catch((err: NodeJS.ErrnoException) => {
-    throw new Error(`Cannot read MCP catalog at ${catalogPath}: ${err.message}`, {
-      cause: err,
-    })
+  const raw = await readFile(catalogPath, 'utf8').catch((err: unknown) => {
+    throw new Error(
+      `Cannot read MCP catalog at ${catalogPath}: ${err instanceof Error ? err.message : String(err)}`,
+      {
+        cause: err,
+      },
+    )
   })
   let catalog: Partial<Catalog>
   try {

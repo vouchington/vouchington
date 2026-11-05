@@ -37,9 +37,11 @@ describe('fetchImageFromS3', () => {
       }),
     } as unknown as S3Client
 
-    const err1 = await fetchImageFromS3(mockClient, 'test-bucket', 'missing-key').catch(err => err)
+    const err1 = await fetchImageFromS3(mockClient, 'test-bucket', 'missing-key').catch(
+      (err: unknown) => err,
+    )
     expect(err1).toBeInstanceOf(S3OperationError)
-    expect(err1.statusCode).toBe(404)
+    expect(err1).toHaveProperty('statusCode', 404)
   })
 
   it('should throw 404 error for 404 status code', async () => {
@@ -50,9 +52,11 @@ describe('fetchImageFromS3', () => {
       }),
     } as unknown as S3Client
 
-    const err2 = await fetchImageFromS3(mockClient, 'test-bucket', 'missing-key').catch(err => err)
+    const err2 = await fetchImageFromS3(mockClient, 'test-bucket', 'missing-key').catch(
+      (err: unknown) => err,
+    )
     expect(err2).toBeInstanceOf(S3OperationError)
-    expect(err2.statusCode).toBe(404)
+    expect(err2).toHaveProperty('statusCode', 404)
   })
 
   it('should throw 500 error for other S3 errors', async () => {
@@ -63,9 +67,11 @@ describe('fetchImageFromS3', () => {
       }),
     } as unknown as S3Client
 
-    const err3 = await fetchImageFromS3(mockClient, 'test-bucket', 'test-key').catch(err => err)
+    const err3 = await fetchImageFromS3(mockClient, 'test-bucket', 'test-key').catch(
+      (err: unknown) => err,
+    )
     expect(err3).toBeInstanceOf(S3OperationError)
-    expect(err3.statusCode).toBe(500)
+    expect(err3).toHaveProperty('statusCode', 500)
   })
 
   it('should throw error if no body in response', async () => {

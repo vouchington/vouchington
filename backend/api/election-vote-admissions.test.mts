@@ -133,9 +133,10 @@ describe('owned vote-route admission settlement', () => {
         () => {
           throw new Error('Expected actual route settlement failure')
         },
-        err => err,
+        (err: unknown) => err,
       )
       expect(result).toBeInstanceOf(AggregateError)
+      if (!(result instanceof AggregateError)) throw new Error('Expected AggregateError')
       expect(result.errors).toEqual([primary, secondary])
       expect(Object.hasOwn(result, 'cause')).toBe(true)
       expect(result.cause).toBe(primary)

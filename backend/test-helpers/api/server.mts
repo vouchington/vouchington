@@ -143,7 +143,7 @@ function sharedApiTestServerAddress(): Promise<ApiTestServerAddress> {
   // A rejected addressPromise (e.g. transient bind failure) would otherwise stay cached forever,
   // permanently failing every subsequent test in this fork. Clear the cached state on rejection
   // so the next call retries with a fresh listen attempt.
-  return state[API_TEST_SERVER_STATE_KEY].addressPromise.catch(err => {
+  return state[API_TEST_SERVER_STATE_KEY].addressPromise.catch((err: unknown) => {
     state[API_TEST_SERVER_STATE_KEY] = undefined
     throw err
   })

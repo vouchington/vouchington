@@ -120,7 +120,7 @@ describe('recorded ineligible Stripe purchase reconciliation concurrency', () =>
       },
     }).then(
       () => null,
-      (err: Error) => err,
+      (err: unknown) => err,
     )
 
     await siblingsInFlight

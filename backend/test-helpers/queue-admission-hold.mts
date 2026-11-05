@@ -15,7 +15,7 @@ function createAdmissionHold<T>() {
           admitted.resolve(result)
           return result
         },
-        err => {
+        (err: unknown) => {
           admitted.reject(err)
           throw err
         },

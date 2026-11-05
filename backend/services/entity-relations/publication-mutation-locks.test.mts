@@ -190,7 +190,7 @@ async function expectPublisherTypeRevalidationFailure({
           releaseLock,
         ),
       },
-    ).catch(err => err)
+    ).catch((err: unknown) => err)
     await reachedLock.promise
     await mutate({ sourceTopicId, publisherTypeTopicId, userId: user.id })
     releaseLock.resolve()

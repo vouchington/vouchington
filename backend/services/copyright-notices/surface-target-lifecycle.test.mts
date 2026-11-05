@@ -85,7 +85,7 @@ async function waitForOwnerCacheWarm(fixture: SurfaceFixture): Promise<void> {
       startedWrites.push(pending)
       void pending.then(
         () => write.resolve({ status: 'fulfilled', value: undefined }),
-        err => write.resolve({ status: 'rejected', reason: err }),
+        (err: unknown) => write.resolve({ status: 'rejected', reason: err }),
       )
     }
     return pending

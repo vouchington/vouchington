@@ -56,7 +56,7 @@ export default async function PodcastCategoryPage({ params, searchParams }: Page
         enabled: true,
         limit: 50,
       },
-    }).catch(err => {
+    }).catch((err: unknown) => {
       const message = getListSearchErrorMessage(err)
       if (!message) throw err
       return { error: message }

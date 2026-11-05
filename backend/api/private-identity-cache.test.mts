@@ -52,7 +52,7 @@ describe('owned private identity cache fill', () => {
         () => {
           throw new Error(`Cache operation finished before ${phase}`)
         },
-        err => {
+        (err: unknown) => {
           throw err
         },
       )

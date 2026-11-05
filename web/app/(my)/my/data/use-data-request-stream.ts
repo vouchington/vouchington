@@ -157,7 +157,7 @@ export function useDataRequestStream({
           applyCurrentRequest(updated)
           stream.close()
         })
-        .catch(err => {
+        .catch((err: unknown) => {
           if (!isCurrent() || !stream.isCurrentSource(source)) return
           if (
             probeRetry.handleFailure(err, source, () => {

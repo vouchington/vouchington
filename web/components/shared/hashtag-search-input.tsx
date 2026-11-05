@@ -67,7 +67,7 @@ export function HashtagSearchInput({
           )
           setSuggestions({ query: activeToken.query, topics: orderedTopics, activeIndex: 0 })
         })
-        .catch(err => {
+        .catch((err: unknown) => {
           if ((err as { name?: string }).name !== 'AbortError') {
             setSuggestions({ query: activeToken.query, topics: [], activeIndex: 0 })
           }

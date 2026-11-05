@@ -71,7 +71,7 @@ function createResponseReadable(body: ReadableStream<Uint8Array>): Readable {
           }
           this.push(result.value)
         },
-        err => this.destroy(err instanceof Error ? err : new Error(String(err))),
+        (err: unknown) => this.destroy(err instanceof Error ? err : new Error(String(err))),
       )
     },
     destroy(error, callback) {

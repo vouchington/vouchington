@@ -43,7 +43,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
         setShowBreakPrompt(res.exposure.in_cooldown)
         revealBlockedRef.current = res.exposure.in_cooldown
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         if (
           requestRevision !== exposureRequestRevisionRef.current ||
           observedRevealOutcomeRevision !== revealOutcomeRevisionRef.current
@@ -93,7 +93,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
           setShowBreakPrompt(res.exposure.in_cooldown)
           revealBlockedRef.current = res.exposure.in_cooldown
         })
-        .catch(err => {
+        .catch((err: unknown) => {
           if (
             cancelled ||
             requestRevision !== exposureRequestRevisionRef.current ||
@@ -162,7 +162,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
         setShowBreakPrompt(res.exposure.in_cooldown)
         revealBlockedRef.current = res.exposure.in_cooldown
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         ++revealOutcomeRevisionRef.current
         setExposureStateIsStale(true)
         revealBlockedRef.current = true

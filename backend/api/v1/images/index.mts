@@ -48,7 +48,7 @@ app.route('/api/v1/images/:id/completions').post(async (ctx: Context) => {
     await recordCopyrightStaydownExactMatch({
       imageId: image.id,
       uploadedById: currentUser.id,
-    }).catch(err => onError(err instanceof Error ? err : new Error(String(err))))
+    }).catch((err: unknown) => onError(err instanceof Error ? err : new Error(String(err))))
   }
 
   ctx.json({ image: toCompleteImageUploadResponse(image) })

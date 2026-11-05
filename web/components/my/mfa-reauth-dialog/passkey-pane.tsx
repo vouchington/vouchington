@@ -28,7 +28,7 @@ export function PasskeyReAuthPane(props: Props) {
       result => {
         if (current) setPage(result)
       },
-      err => {
+      (err: unknown) => {
         if (current) setError(err instanceof Error ? err : new Error(String(err)))
       },
     )
