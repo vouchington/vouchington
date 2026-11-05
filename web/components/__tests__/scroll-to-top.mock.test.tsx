@@ -6,6 +6,7 @@ import {
   consumePreservedScrollPosition,
   preserveScrollForInternalHrefClick,
 } from '@/lib/navigation/scroll-preservation'
+import { createMediaQueryListStub } from '@/test-helpers/match-media'
 
 vi.mock(
   import('next/navigation'),
@@ -21,7 +22,9 @@ describe('ScrollToTop', () => {
   let bodyScrollHeight: PropertyDescriptor | undefined
   let innerHeight: PropertyDescriptor | undefined
   let scrollY: PropertyDescriptor | undefined
-  let mockMatchMedia: ReturnType<typeof vi.fn<(query: string) => MediaQueryList>>
+  let mockMatchMedia: ReturnType<
+    typeof vi.fn<(query: string) => ReturnType<typeof createMediaQueryListStub>>
+  >
 
   beforeEach(() => {
     mockNav.setPathname('/initial')
@@ -52,16 +55,8 @@ describe('ScrollToTop', () => {
     })
     Object.defineProperty(document.body, 'scrollHeight', { configurable: true, value: 300 })
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 200 })
-    mockMatchMedia = vi.fn<(query: string) => MediaQueryList>(
-      query =>
-        ({
-          matches: true,
-          media: query,
-          onchange: null,
-          addEventListener: vi.fn<() => void>(),
-          removeEventListener: vi.fn<() => void>(),
-          dispatchEvent: vi.fn<() => boolean>(),
-        }) as unknown as MediaQueryList,
+    mockMatchMedia = vi.fn<(query: string) => ReturnType<typeof createMediaQueryListStub>>(query =>
+      createMediaQueryListStub(query, true),
     )
     vi.stubGlobal('matchMedia', mockMatchMedia)
   })
@@ -107,14 +102,7 @@ describe('ScrollToTop', () => {
 
   it('does not focus the primary route target on mobile pathname changes', () => {
     vi.useFakeTimers()
-    mockMatchMedia.mockReturnValue({
-      matches: false,
-      media: '(min-width: 768px)',
-      onchange: null,
-      addEventListener: vi.fn<() => void>(),
-      removeEventListener: vi.fn<() => void>(),
-      dispatchEvent: vi.fn<() => boolean>(),
-    } as unknown as MediaQueryList)
+    mockMatchMedia.mockReturnValue(createMediaQueryListStub('(min-width: 768px)', false))
     const input = document.createElement('input')
     input.setAttribute('data-route-focus-target', 'primary')
     document.body.append(input)

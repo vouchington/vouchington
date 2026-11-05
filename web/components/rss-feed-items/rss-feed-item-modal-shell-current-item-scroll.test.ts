@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useScrollCurrentRssItemIntoView } from './rss-feed-item-modal-shell-current-item-scroll'
+import { createMediaQueryListStub } from '@/test-helpers/match-media'
 
 function rssItemElement(id: string, top: number, height: number) {
   const element = document.createElement('article')
@@ -27,16 +28,8 @@ function rssItemElement(id: string, top: number, height: number) {
 function mockReducedMotion(matches: boolean) {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
-    value: vi.fn<(query: string) => MediaQueryList>(
-      query =>
-        ({
-          matches,
-          media: query,
-          onchange: null,
-          addEventListener: vi.fn<(type: string, listener: EventListener) => void>(),
-          removeEventListener: vi.fn<(type: string, listener: EventListener) => void>(),
-          dispatchEvent: vi.fn<(event: Event) => boolean>(() => true),
-        }) as unknown as MediaQueryList,
+    value: vi.fn<(query: string) => ReturnType<typeof createMediaQueryListStub>>(query =>
+      createMediaQueryListStub(query, matches),
     ),
   })
 }
