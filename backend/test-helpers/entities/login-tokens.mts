@@ -14,6 +14,24 @@ export async function setTestEmailAddressLoginTokenId(
   return rowCount ?? 0
 }
 
+export async function getTestEmailLoginTokenState(
+  emailAddress: string,
+  token: string,
+): Promise<{
+  invalidated: boolean
+  consumed: boolean
+} | null> {
+  const tokenHash = hashToken('email-address-login-token', token.toUpperCase())
+  const { rows } = await read<{ invalidated: boolean; consumed: boolean }>(sql`
+    /* getTestEmailLoginTokenState */ SELECT
+      invalidated_at IS NOT NULL AS invalidated, consumed_at IS NOT NULL AS consumed
+    FROM email_address_login_tokens
+    WHERE email_address = ${emailAddress} AND token = ${tokenHash} AND purpose = 'login'
+    LIMIT 1
+  `)
+  return rows[0] ?? null
+}
+
 export async function getTestEmailReAuthTokenState(
   sessionId: string,
   code: string,
