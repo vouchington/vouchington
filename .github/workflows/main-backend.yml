@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/main-backend.yml'
       - '.github/workflows/publish-backend-images.yml'
+      - '.github/workflows/publish-backend-images.sh'
       - '.github/ci-path-filters.yml'
       - '.github/actions/build-backend-images/**'
       - '.dockerignore'

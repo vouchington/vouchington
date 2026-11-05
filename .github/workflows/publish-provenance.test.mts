@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
 
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -62,8 +63,8 @@ describe.each(cases)('$path image provenance', config => {
   it('exports each push digest and attests it after the push', () => {
     const publish = steps[publishIndex]
     expect(publish?.if).toContain('success()')
-    expect(publish?.run).toContain('GITHUB_OUTPUT')
-    for (const output of config.outputs) expect(publish?.run).toContain(output)
+    expect(workflowStepScript(publish?.run)).toContain('GITHUB_OUTPUT')
+    for (const output of config.outputs) expect(workflowStepScript(publish?.run)).toContain(output)
 
     const attestations = steps.filter(step => step.uses?.startsWith('actions/attest@'))
     expect(attestations).toHaveLength(config.subjects.length)

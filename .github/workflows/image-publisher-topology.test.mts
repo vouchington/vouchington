@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
 
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -62,7 +63,9 @@ describe('backend main fallback', () => {
     expect(publish.env?.['MISSING_TARGETS']).toBe(
       '${{ needs.resolve-main-images.outputs.missing_targets }}',
     )
-    expect(publish.run).toContain(`targets=$(jq -r '.[]' <<<"$MISSING_TARGETS")`)
-    expect(publish.run).toContain('targets="api $ACTIVE_WORKER_IMAGES"')
+    expect(workflowStepScript(publish.run)).toContain(
+      `targets=$(jq -r '.[]' <<<"$MISSING_TARGETS")`,
+    )
+    expect(workflowStepScript(publish.run)).toContain('targets="api $ACTIVE_WORKER_IMAGES"')
   })
 })

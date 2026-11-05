@@ -9,6 +9,7 @@ on:
       - 'ci/cleanup-artifacts-patterns.json'
       - '.github/workflows/main-web.yml'
       - '.github/workflows/publish-web-images.yml'
+      - '.github/workflows/publish-web-images.sh'
       - '.github/ci-path-filters.yml'
       - '.github/actions/build-web-images/**'
       - '.dockerignore'

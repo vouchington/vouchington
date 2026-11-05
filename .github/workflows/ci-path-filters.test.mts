@@ -73,6 +73,27 @@ describe('detect-changes path filters', () => {
     expect(filterMatches(mainStorybook.on?.push?.paths, projectPath)).toBe(true)
   })
 
+  it.each(['backend', 'web'] as const)(
+    'routes %s publisher script changes through image validation and main publication',
+    area => {
+      const publisherPath = `.github/workflows/publish-${area}-images.sh`
+      const main = load(readFileSync(`.github/workflows/main-${area}.yml`, 'utf8')) as {
+        on?: { push?: { paths?: string[] } }
+      }
+      const otherArea = area === 'backend' ? 'web' : 'backend'
+
+      expect(filterMatches(loadDetectChangesFilters()[`build-${area}`], publisherPath)).toBe(true)
+      expect(filterMatches(loadRuntimeFilters()[`build-${area}`], publisherPath, true)).toBe(true)
+      expect(filterMatches(main.on?.push?.paths, publisherPath)).toBe(true)
+      expect(filterMatches(loadDetectChangesFilters()[`build-${otherArea}`], publisherPath)).toBe(
+        false,
+      )
+      expect(filterMatches(loadRuntimeFilters()[`build-${otherArea}`], publisherPath, true)).toBe(
+        false,
+      )
+    },
+  )
+
   it('fails open for filter changes and routes CI control workflows through topology', () => {
     const filterPaths = ['.github/ci-path-filters.yml']
     const areaPaths = ['backend', 'web', 'cloudflare-worker', 'lambdas', 'tooling', 'static'].map(
