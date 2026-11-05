@@ -114,6 +114,7 @@ describe('ineligible Stripe purchase detection', () => {
     'records the purchase when sync rejects it against %s',
     async (winner, plan, sourceKind) => {
       const fixture = await setupPurchase(start, end, winner, plan)
+      const secondInvoiceId = fixture.addInvoice()
       const sourceIdentity = getStripeMembershipSourceIdentity({
         stripeSubscriptionId: fixture.subscriptionId,
         providerApplicationId: fixture.lookup.providerApplicationId,
@@ -146,6 +147,16 @@ describe('ineligible Stripe purchase detection', () => {
       await expect(
         getLockedIneligiblePurchaseReversalCase(
           { ...fixture.lookup, subscriptionId: fixture.subscriptionId },
+          query,
+        ),
+      ).resolves.toMatchObject({ refundCapMinorUnits: 1001, winningSourceKind: sourceKind })
+      await expect(
+        getLockedIneligiblePurchaseReversalCase(
+          {
+            ...fixture.lookup,
+            originatingInvoiceId: secondInvoiceId,
+            subscriptionId: fixture.subscriptionId,
+          },
           query,
         ),
       ).resolves.toMatchObject({ refundCapMinorUnits: 1001, winningSourceKind: sourceKind })

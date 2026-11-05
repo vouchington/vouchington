@@ -100,11 +100,18 @@ export async function setupPurchase(
     items: { data: [{ price: { id: priceId } }] },
     metadata: { membership_purchase_intent_id: undefined as string | undefined },
   }
+  const invoices = [invoice]
+  const invoiceLines = new Map([[invoice.id, lines]])
   vi.spyOn(stripeClient, 'getStripeClient').mockReturnValue({
     invoices: {
       retrieve: vi.fn<VitestLooseMock>().mockResolvedValue(invoice),
-      list: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [invoice], has_more: false }),
-      listLineItems: vi.fn<VitestLooseMock>().mockResolvedValue({ data: lines, has_more: false }),
+      list: vi
+        .fn<VitestLooseMock>()
+        .mockImplementation(async () => ({ data: invoices, has_more: false })),
+      listLineItems: vi.fn<VitestLooseMock>().mockImplementation(async (id: string) => ({
+        data: invoiceLines.get(id) ?? lines,
+        has_more: false,
+      })),
     },
     subscriptions: {
       retrieve: vi.fn<VitestLooseMock>().mockResolvedValue(subscription),
@@ -127,6 +134,15 @@ export async function setupPurchase(
     priceId,
     subscriptionId,
     subscription,
+    addInvoice: () => {
+      const id = `in_${randomUUID()}`
+      invoices.push({ ...invoice, id })
+      invoiceLines.set(
+        id,
+        lines.map(line => ({ ...line })),
+      )
+      return id
+    },
     createIntent: async () => {
       const { rows } = await write<{ id: string }>(sql`/* createReversalDetectionPurchaseIntent */
         INSERT INTO membership_purchase_intents (user_id, idempotency_key, request_fingerprint,

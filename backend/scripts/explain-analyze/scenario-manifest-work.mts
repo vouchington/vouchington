@@ -56,6 +56,8 @@ export const BOUNDED_WORK_SCENARIOS = [
   'membership-reversal-case-creation',
   'membership-reversal-case-read',
   'membership-reversal-case-locked-read',
+  'membership-reversal-bind-provider-lineage',
+  'membership-reversal-lock-provider-binding',
   'membership-reversal-displaced-source',
   'membership-reversal-winner-effective',
   'membership-reversal-winning-membership',

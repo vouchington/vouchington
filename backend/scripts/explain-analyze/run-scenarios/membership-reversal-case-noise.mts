@@ -28,14 +28,7 @@ export async function seedMembershipReversalPlanNoise(prefix: string): Promise<v
   await write(`/* seedMembershipReversalPlanProducts */
     INSERT INTO membership_products (plan, billing_interval, retired_at)
     SELECT 'plus', 'monthly', CURRENT_TIMESTAMP FROM generate_series(1, 2000)`)
-  await Promise.all(
-    [
-      'users',
-      'memberships',
-      'membership_sources',
-      'membership_products',
-      'membership_provider_lineages',
-      'membership_provider_contexts',
-    ].map(relation => write(`/* analyzeMembershipReversalPlanNoise */ ANALYZE ${relation}`)),
-  )
+  await write(`/* analyzeMembershipReversalPlanNoise */ ANALYZE
+    users, memberships, membership_sources, membership_products,
+    membership_provider_lineages, membership_provider_contexts`)
 }

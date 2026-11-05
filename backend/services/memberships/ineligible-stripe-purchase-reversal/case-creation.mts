@@ -85,6 +85,7 @@ export async function recordIneligibleStripePurchaseCasesForCollision(
       qualifying_amount_minor_units, refund_cap_minor_units, currency_code,
       period_started_at, period_ends_at, collision_at)
     WHERE TRUE
+    ORDER BY input.originating_invoice_id
     ON CONFLICT (membership_provider_lineage_id, originating_invoice_id) DO NOTHING
     RETURNING originating_invoice_id AS "invoiceId"
   `)

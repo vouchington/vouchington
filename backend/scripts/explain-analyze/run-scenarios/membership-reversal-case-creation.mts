@@ -1,14 +1,14 @@
 import { seedMembershipReversalPlanNoise } from './membership-reversal-case-noise.mts'
 import { runMembershipReversalSelectorScenarios } from './membership-reversal-case-selectors.mts'
 import { randomUUID } from 'node:crypto'
+import { runMembershipReversalReadScenarios } from './membership-reversal-case-reads.mts'
+import { runMembershipReversalBindingScenarios } from './membership-reversal-case-bindings.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import type { StripeInvoiceWithAllPayments } from '../../../modules/stripe/invoices.mts'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import { createProviderMembershipSource } from '@services/memberships/provider-source'
 import { recordIneligibleStripePurchaseCaseForCollision } from '@services/memberships/ineligible-stripe-purchase-reversal/case-creation'
-import { getIneligiblePurchaseReversalCase } from '@services/memberships/ineligible-stripe-purchase-reversal/case-read'
-import { getLockedIneligiblePurchaseReversalCase } from '@services/memberships/ineligible-stripe-purchase-reversal/case-ledger'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedLedgerOperations } from './payment-ledger-retention-seed.mts'
@@ -147,45 +147,15 @@ export async function runMembershipReversalCaseCreationScenario(): Promise<void>
     providerApplicationId: sourceIdentity.applicationId,
     subscriptionId: sourceIdentity.providerLineageId,
   }
-  for (const [scenario, label] of [
-    ['membership-reversal-case-read', 'getIneligiblePurchaseReversalCase'],
-    ['membership-reversal-case-locked-read', 'getLockedIneligiblePurchaseReversalCase'],
-  ] as const) {
-    registerScenarioContract(scenario, {
-      seededRows: {
-        membership_ineligible_purchase_reversal_cases: 2001,
-        membership_provider_contexts: 2002,
-        membership_provider_lineages: 4002,
-        membership_lineage_bindings: 2001,
-      },
-      expectations: [
-        {
-          kind: 'maxProcessedRows',
-          relation: 'membership_ineligible_purchase_reversal_cases',
-          max: 2,
-        },
-        { kind: 'maxProcessedRows', relation: 'membership_lineage_bindings', max: 2 },
-        { kind: 'maxProcessedRows', relation: 'membership_provider_lineages', max: 2 },
-        { kind: 'maxProcessedRows', relation: 'membership_provider_contexts', max: 2 },
-      ],
-    })
-    await runAndCapture(
-      scenario,
-      async () => {
-        if (scenario === 'membership-reversal-case-read') {
-          if (!(await getIneligiblePurchaseReversalCase(lookup)))
-            throw new Error('Expected reversal case')
-        } else {
-          await using transaction = await beginTransaction()
-          if (!(await getLockedIneligiblePurchaseReversalCase(lookup, transaction)))
-            throw new Error('Expected locked reversal case')
-          await transaction.rollback()
-        }
-      },
-      undefined,
-      label,
-    )
-  }
+  await runMembershipReversalReadScenarios(lookup)
+  await runMembershipReversalBindingScenarios({
+    userId,
+    sourceIdentity,
+    invoice,
+    stripePriceId: `price_${suffix}`,
+    winningSourceKind: 'family',
+    collisionAt: new Date(1_800_043_200_000),
+  })
   await runMembershipReversalSelectorScenarios(
     userId,
     familyUserId,
