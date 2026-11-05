@@ -1,7 +1,7 @@
 import { decryptSecret } from '@modules/token-secrets'
 
 /** Written into an export cell whose plaintext the case's evidence erasure removed. */
-export const EXPORT_COPYRIGHT_ERASED_TEXT = '[erased by the retention policy]'
+const EXPORT_COPYRIGHT_ERASED_TEXT = '[erased by the retention policy]'
 
 export type FiledNoticeRow = {
   notice_id: string
