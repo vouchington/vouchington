@@ -4,10 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { expireTestClientIdMetadataClient } from '@voucha/test-helpers/data-stores/psql/oauth-client-metadata'
-import {
-  resolveClientIdMetadataDocument,
-  type ClientIdMetadataDependencies,
-} from './client-id-metadata-document.mts'
+import { resolveClientIdMetadataDocument } from './client-id-metadata-document.mts'
 import {
   beginValidatedOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
@@ -20,6 +17,10 @@ import {
   listUserOAuthGrants,
   validateOAuthAuthorizationRequest,
 } from './index.mts'
+
+type ClientIdMetadataDependencies = Required<
+  NonNullable<Parameters<typeof resolveClientIdMetadataDocument>[1]>
+>
 
 function randomMetadataUrl(): string {
   return `https://client.example/${randomBytes(12).toString('hex')}/metadata.json`

@@ -31,7 +31,7 @@ type ClientIdMetadataResponse = Pick<
   'body' | 'headers' | 'ok' | 'status' | 'url'
 >
 
-export type ClientIdMetadataDependencies = {
+type ClientIdMetadataDependencies = {
   query: QueryExecutor
   readResponseBodyAsBuffer: typeof readResponseBodyAsBuffer
   safeFetch: (

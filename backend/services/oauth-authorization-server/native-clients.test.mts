@@ -1,10 +1,11 @@
 import { randomBytes } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  resolveClientIdMetadataDocument,
-  type ClientIdMetadataDependencies,
-} from './client-id-metadata-document.mts'
+import { resolveClientIdMetadataDocument } from './client-id-metadata-document.mts'
 import { getNativeOAuthClientDocument, NATIVE_OAUTH_CLIENT_APPS } from './native-clients.mts'
+
+type ClientIdMetadataDependencies = Required<
+  NonNullable<Parameters<typeof resolveClientIdMetadataDocument>[1]>
+>
 
 describe('native OAuth client metadata', () => {
   afterEach(() => vi.unstubAllEnvs())
