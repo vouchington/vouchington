@@ -15,8 +15,8 @@ export type CopyrightStaffCase = {
   claimant: {
     display_name: string | null
     contact: string
-    /** The claimant account's misuse ledger, or null when no account filed the notice. */
     user_id: string | null
+    /** The claimant account's misuse ledger, or null when no account filed the notice. */
     misuse: ClaimantMisuseSummary | null
   }
   work_description: string

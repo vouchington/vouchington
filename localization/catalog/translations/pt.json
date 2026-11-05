@@ -8,6 +8,7 @@
 {"id":"copy.common.save","value":"Salvar"},
 {"id":"copy.common.support","value":"Suporte"},
 {"id":"copy.copyright.claimantMisuse.newestNoticeReceived","value":"Aviso recebido mais recente"},
+{"id":"copy.copyright.claimantMisuse.noticesInspected","value":{"one":"{count} aviso analisado","other":"{count} avisos analisados"}},
 {"id":"copy.copyright.claimantMisuse.oldestNoticeReceived","value":"Aviso recebido mais antigo"},
 {"id":"copy.email.api-key-expiry.action","value":"Renove-a e atualize seus aplicativos para mantê-los conectados."},
 {"id":"copy.email.api-key-expiry.body","value":"Sua chave de API “{label}” expira em {date}."},

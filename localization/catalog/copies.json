@@ -8,6 +8,7 @@
 {"descriptor":null,"id":"copy.common.save"},
 {"descriptor":null,"id":"copy.common.support"},
 {"descriptor":null,"id":"copy.copyright.claimantMisuse.newestNoticeReceived"},
+{"descriptor":{"kind":"plural","numberParameters":["count"],"valueParameter":"count"},"id":"copy.copyright.claimantMisuse.noticesInspected"},
 {"descriptor":null,"id":"copy.copyright.claimantMisuse.oldestNoticeReceived"},
 {"descriptor":null,"id":"copy.email.api-key-expiry.action"},
 {"descriptor":null,"id":"copy.email.api-key-expiry.body"},

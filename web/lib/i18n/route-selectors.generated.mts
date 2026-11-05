@@ -105,7 +105,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/copyright/notices/[id]/guest", selectorId: "web.route.70f15876d7ee5fc2.18a6f38661bfd2ec", hasMembership: true },
   { pattern: "/copyright/notices/new", selectorId: "web.route.33bc31725bbf9188.18a6f38661bfd2ec", hasMembership: true },
   { pattern: "/copyright/repeat-infringer-policy", selectorId: "web.route.3e1923115d812a61.cbf29ce484222325", hasMembership: false },
-  { pattern: "/copyright/review-queue", selectorId: "web.route.cfd5a705607388d2.43d03042c18fc874", hasMembership: true },
+  { pattern: "/copyright/review-queue", selectorId: "web.route.cfd5a705607388d2.d7f27674841e2176", hasMembership: true },
   { pattern: "/crawler/[id]", selectorId: "web.route.20e3048ba7a9ea74.ddf651167978e781", hasMembership: true },
   { pattern: "/crawler/[id]/edit", selectorId: "web.route.06af515f7fd523d5.7c756e9b12dbfb32", hasMembership: true },
   { pattern: "/crawlers", selectorId: "web.route.a3665d6ba740f0fb.caaafb7368dd6077", hasMembership: true },
