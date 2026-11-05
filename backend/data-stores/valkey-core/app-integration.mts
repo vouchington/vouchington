@@ -17,7 +17,6 @@ interface ValkeyAppIntegrationState {
   analyticsPromise: Promise<AnalyticsModule | null> | null
   bridge?: CacheCallMetricBridge
   loadAnalytics: ValkeyAnalyticsLoader
-  pendingMetricCompletions?: Set<Promise<void>>
 }
 
 const valkeyAppIntegrationStateKey = Symbol.for('voucha.valkey.app-integration')
@@ -36,9 +35,7 @@ function getValkeyAppIntegrationState(): ValkeyAppIntegrationState {
   return globalState[valkeyAppIntegrationStateKey]
 }
 
-export function initializeValkeyAppIntegration(): {
-  waitForCacheMetricCompletions: () => Promise<void>
-} {
+function initializeValkeyAppIntegration(): void {
   const state = getValkeyAppIntegrationState()
 
   setValkeyErrorHandler(onError)
@@ -49,16 +46,6 @@ export function initializeValkeyAppIntegration(): {
     if (isValkeyCacheMetricBridge(listener)) valkeyEvents.off('cache:call', listener)
   }
   valkeyEvents.on('cache:call', state.bridge)
-  return { waitForCacheMetricCompletions: waitForValkeyCacheMetricCompletions }
-}
-
-/** Waits until all cache-call analytics events emitted so far finish loading and dispatching. */
-async function waitForValkeyCacheMetricCompletions(): Promise<void> {
-  const pending = getValkeyAppIntegrationState().pendingMetricCompletions
-  if (!pending) return
-  const completions = await Promise.allSettled([...pending])
-  const failedCompletion = completions.find(completion => completion.status === 'rejected')
-  if (failedCompletion?.status === 'rejected') throw failedCompletion.reason
 }
 
 function markValkeyCacheMetricBridge(bridge: CacheCallMetricBridge): CacheCallMetricBridge {
@@ -77,8 +64,6 @@ function isValkeyCacheMetricBridge(
 
 function emitValkeyCacheCallMetric(metric: CacheCallMetric): Promise<void> {
   const state = getValkeyAppIntegrationState()
-  if (!state.pendingMetricCompletions) state.pendingMetricCompletions = new Set()
-  const pending = state.pendingMetricCompletions
   const now = new Date()
   state.analyticsPromise ??= state.loadAnalytics().catch(err => {
     onError(err)
@@ -101,12 +86,13 @@ function emitValkeyCacheCallMetric(metric: CacheCallMetric): Promise<void> {
       })
     })
     .catch(onError)
-  pending.add(completion)
-  void completion.then(
-    () => pending.delete(completion),
-    () => pending.delete(completion),
-  )
+  // EventEmitter ignores returned promises; retain a rejection handler if error reporting throws.
+  void completion.catch(ignoreMetricReportingFailure)
   return completion
+}
+
+function ignoreMetricReportingFailure(): void {
+  // onError already attempted reporting; EventEmitter has no promise consumer to notify.
 }
 
 initializeValkeyAppIntegration()
