@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { Passkey } from '@/types/user'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface PasskeyListProps {
   confirmingDeleteId: string | null
@@ -39,11 +40,11 @@ export function PasskeyList({
   return (
     <ul className='space-y-2'>
       {passkeys.map(passkey => (
-        <li
+        <DataPw
           key={passkey.id}
+          dataPw={`passkey-item-${passkey.id}`}
+          as='li'
           className='rounded-md border p-4'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-          data-pw={`passkey-item-${passkey.id}`}
         >
           {renamingId === passkey.id ? (
             <form
@@ -168,7 +169,7 @@ export function PasskeyList({
               </div>
             </div>
           )}
-        </li>
+        </DataPw>
       ))}
     </ul>
   )

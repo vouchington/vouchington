@@ -1,6 +1,5 @@
 'use client'
 
-// oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Post default call sites pass literal test IDs through this shared select.
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -10,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface PostDefaultOption {
   label: string
@@ -47,27 +47,29 @@ export function PostDefaultSelect({
         onValueChange={onChange}
         disabled={disabled}
       >
-        <SelectTrigger
+        <DataPw
+          dataPw={triggerTestId}
+          as={SelectTrigger}
           id={id}
           className='w-48'
-          data-pw={triggerTestId}
         >
           <SelectValue
             placeholder={t('extracted.privacyForm.postDefaultSelect.selectPrivacySetting_4587a12c')}
           />
-        </SelectTrigger>
+        </DataPw>
         <SelectContent>
           {options.map(o => {
             const optionTestId = dataPw?.options?.[o.value]
 
             return (
-              <SelectItem
+              <DataPw
                 key={o.value}
+                dataPw={optionTestId}
+                as={SelectItem}
                 value={o.value}
-                data-pw={optionTestId}
               >
                 {o.label}
-              </SelectItem>
+              </DataPw>
             )
           })}
         </SelectContent>

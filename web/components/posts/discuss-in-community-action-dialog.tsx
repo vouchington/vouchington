@@ -19,6 +19,7 @@ import { TurnstileField } from '@/components/shared/turnstile-field'
 import type { UseTurnstileTokenReturn } from '@/hooks/use-turnstile-token'
 import type { Community } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface DiscussInCommunityActionDialogProps {
   communities: Community[]
@@ -74,14 +75,14 @@ export function DiscussInCommunityActionDialog({
         </SelectTrigger>
         <SelectContent>
           {communities.map(community => (
-            <SelectItem
+            <DataPw
               key={community.id}
+              dataPw={`discuss-in-community-option-${community.slug}`}
+              as={SelectItem}
               value={community.slug}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-              data-pw={`discuss-in-community-option-${community.slug}`}
             >
               {community.name}
-            </SelectItem>
+            </DataPw>
           ))}
         </SelectContent>
       </Select>

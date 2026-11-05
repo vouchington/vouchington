@@ -16,6 +16,7 @@ import { slugify } from '@ts-shared/utils/slugs'
 import { toTitleCase } from '@ts-shared/utils/strings'
 import type { UnmappedCategory } from '@/types/rss-feed-categories'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface Props {
   category: UnmappedCategory
@@ -84,10 +85,10 @@ export function CategoryRowActions({ category }: Props) {
   )
 
   return (
-    <div
+    <DataPw
       className='flex flex-wrap items-center gap-2'
-      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-      data-pw={`category-row-actions-${category.category_text}`}
+      dataPw={`category-row-actions-${category.category_text}`}
+      as='div'
     >
       <TopicAutocomplete
         value={null}
@@ -99,38 +100,38 @@ export function CategoryRowActions({ category }: Props) {
         )}
         disabled={assigning}
       />
-      <Link
+      <DataPw
         href={createTopicHref}
         prefetch={false}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-        data-pw={`category-create-topic-${category.category_text}`}
+        dataPw={`category-create-topic-${category.category_text}`}
         className='text-sm text-primary underline-offset-2 hover:underline'
+        as={Link}
       >
         {t('extracted.rssFeedCategories.categoryRowActions.createTopic_488184ed')}
-      </Link>
+      </DataPw>
       {category.rejected ? (
-        <Button
+        <DataPw
           size='sm'
           variant='outline'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-          data-pw={`category-unreject-${category.category_text}`}
+          dataPw={`category-unreject-${category.category_text}`}
           disabled={rejecting}
           onClick={handleUnreject}
+          as={Button}
         >
           {t('extracted.rssFeedCategories.categoryRowActions.unReject_067277f5')}
-        </Button>
+        </DataPw>
       ) : (
-        <Button
+        <DataPw
           size='sm'
           variant='ghost'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-          data-pw={`category-reject-${category.category_text}`}
+          dataPw={`category-reject-${category.category_text}`}
           disabled={rejecting}
           onClick={handleReject}
+          as={Button}
         >
           {t('extracted.rssFeedCategories.categoryRowActions.reject_ab604a36')}
-        </Button>
+        </DataPw>
       )}
-    </div>
+    </DataPw>
   )
 }

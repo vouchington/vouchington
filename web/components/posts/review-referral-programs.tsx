@@ -5,6 +5,7 @@ import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { topicHref } from '@/lib/links/entity-href'
 import type { getTranslations } from '@/lib/i18n/get-translations'
 import type { Post } from '@/types/posts'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface ReviewReferralProgramsProps {
   t: Awaited<ReturnType<typeof getTranslations>>
@@ -69,15 +70,15 @@ export function ReviewReferralPrograms({ t, post }: ReviewReferralProgramsProps)
       </p>
       <div className='flex flex-wrap gap-2'>
         {referralTopics.map(topic => (
-          <Link
+          <DataPw
             key={topic.topicId}
+            dataPw={`review-referral-link-${topic.topicId}`}
+            as={Link}
             href={topicHref(
               { topic_type: topic.topicType, id: topic.topicId, slug: topic.topicSlug },
               'referral-links',
             )}
             prefetch={false}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-            data-pw={`review-referral-link-${topic.topicId}`}
           >
             <Badge
               variant='secondary'
@@ -87,7 +88,7 @@ export function ReviewReferralPrograms({ t, post }: ReviewReferralProgramsProps)
                 topicName: topic.topicName,
               })}
             </Badge>
-          </Link>
+          </DataPw>
         ))}
       </div>
     </Card>

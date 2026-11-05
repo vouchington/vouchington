@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { Button, DataPw } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -137,14 +137,14 @@ export function AppealForm({
           </SelectTrigger>
           <SelectContent>
             {APPEAL_REASONS.map(r => (
-              <SelectItem
+              <DataPw
                 key={r.value}
+                dataPw={`appeal-reason-option-${r.value}`}
+                as={SelectItem}
                 value={r.value}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from appeal reason value
-                data-pw={`appeal-reason-option-${r.value}`}
               >
                 {t(r.messageKey)}
-              </SelectItem>
+              </DataPw>
             ))}
           </SelectContent>
         </Select>

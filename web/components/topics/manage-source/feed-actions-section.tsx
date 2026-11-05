@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import type { ManageSourceRssFeed } from './manage-source-model'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 export function FeedActionsSection({
   confirmDelete,
@@ -36,19 +37,21 @@ export function FeedActionsSection({
         {t('extracted.manageSource.feedActionsSection.actions_ff8059dc')}
       </h2>
       <div className='flex flex-wrap items-center gap-3'>
-        <Button
+        <DataPw
+          dataPw={rssFeed.is_enabled ? 'feed-disable' : 'feed-enable'}
+          as={Button}
           type='button'
           variant='secondary'
           onClick={onToggle}
           disabled={toggling}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- conditional button based on state
-          data-pw={rssFeed.is_enabled ? 'feed-disable' : 'feed-enable'}
         >
           {rssFeed.is_enabled
             ? t('extracted.manageSource.feedActionsSection.disable_b7e3e4aa')
             : t('extracted.manageSource.feedActionsSection.enable_5342e09f')}
-        </Button>
-        <Button
+        </DataPw>
+        <DataPw
+          dataPw={rssFeed.is_discoverable ? 'feed-hide-discovery' : 'feed-make-discoverable'}
+          as={Button}
           type='button'
           variant={rssFeed.is_discoverable ? 'secondary' : 'destructive'}
           onClick={onToggleDiscoverability}
@@ -56,13 +59,11 @@ export function FeedActionsSection({
           title={t(
             'extracted.manageSource.feedActionsSection.whenHiddenFromDiscoveryItemsFrom_77cd310f',
           )}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- conditional button based on state
-          data-pw={rssFeed.is_discoverable ? 'feed-hide-discovery' : 'feed-make-discoverable'}
         >
           {rssFeed.is_discoverable
             ? t('extracted.manageSource.feedActionsSection.hideFromDiscovery_c2075b95')
             : t('extracted.manageSource.feedActionsSection.makeDiscoverable_f4310831')}
-        </Button>
+        </DataPw>
         <Button
           data-pw='feed-actions-section-trigger-crawl'
           type='button'

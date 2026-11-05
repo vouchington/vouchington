@@ -12,6 +12,7 @@ import { CategoryRowActions } from './category-row-actions'
 import type { UnmappedCategoryStatus } from '@/types/rss-feed-categories'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = createNoIndexMetadata('RSS Feed Categories | Admin')
@@ -92,10 +93,10 @@ export default async function RssFeedCategoriesPage({
               </tr>
             )}
             {data.results.map(category => (
-              <tr
+              <DataPw
                 key={category.category_text}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                data-pw={`rss-category-row-${category.category_text}`}
+                dataPw={`rss-category-row-${category.category_text}`}
+                as='tr'
               >
                 <td className='px-6 py-4 text-sm font-medium text-foreground'>
                   <code className='rounded bg-muted px-1.5 py-0.5 text-xs'>
@@ -108,7 +109,7 @@ export default async function RssFeedCategoriesPage({
                 <td className='px-6 py-4'>
                   <CategoryRowActions category={category} />
                 </td>
-              </tr>
+              </DataPw>
             ))}
           </tbody>
         </table>

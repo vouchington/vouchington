@@ -12,6 +12,7 @@ import { Kbd } from '@/components/ui/kbd'
 import { KEYBOARD_SHORTCUTS, formatShortcut, type KeyboardShortcut } from '@/lib/keyboard-shortcuts'
 import { useIsMac } from '@/hooks/use-is-mac'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 export function KeyboardShortcutsDialog({
   description = 'Quick access to common actions.',
@@ -53,15 +54,15 @@ export function KeyboardShortcutsDialog({
                   shortcut.category !== category
                     ? []
                     : [
-                        <div
+                        <DataPw
                           key={shortcut.id}
-                          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                          data-pw={`shortcut-item-${shortcut.id}`}
+                          dataPw={`shortcut-item-${shortcut.id}`}
+                          as='div'
                           className='flex items-center justify-between'
                         >
                           <span className='text-sm text-foreground'>{t(shortcut.description)}</span>
                           <Kbd className='ml-4 shrink-0'>{formatShortcut(shortcut, isMac)}</Kbd>
-                        </div>,
+                        </DataPw>,
                       ],
                 )}
               </div>

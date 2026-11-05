@@ -9,6 +9,7 @@ import { communityHref, reviewHref, topicTabForPostType } from '@/lib/links/enti
 import { humanizePostType } from '@ts-shared/utils/format'
 import type { Post, PostCommunity } from '@/types/posts'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 export function PostCardBadges({
   post,
@@ -38,14 +39,14 @@ export function PostCardBadges({
   )
   return (
     <div className='scrollbar-hide relative z-10 flex items-center gap-1.5 overflow-x-auto'>
-      <Badge
+      <DataPw
+        dataPw={`post-card-type-badge-${post.post_type}`}
+        as={Badge}
         variant={post.post_type}
         className='text-xs'
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-        data-pw={`post-card-type-badge-${post.post_type}`}
       >
         {humanizePostType(post.post_type)}
-      </Badge>
+      </DataPw>
       <ProvenanceBadges
         testIdPrefix='post'
         provenance={post.provenance}

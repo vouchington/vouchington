@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-literals -- View option IDs come from caller-provided option data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import { ChevronDown, Check, LayoutGrid, List } from 'lucide-react'
@@ -14,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { FILTER_CONTROL_HEIGHT } from './filter-control-height'
 import { useDidHydrate } from '@/hooks/use-did-hydrate'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface ViewModeDropdownOption<T extends string> {
   label: string
@@ -46,7 +46,9 @@ export function ViewModeDropdown<T extends string>({
         asChild
         disabled={!didHydrate}
       >
-        <Button
+        <DataPw
+          dataPw={dataPw}
+          as={Button}
           type='button'
           variant='outline'
           size='touchSm'
@@ -54,12 +56,11 @@ export function ViewModeDropdown<T extends string>({
           aria-label={t('extracted.shared.viewModeDropdown.viewLabel_fa86d6b1', {
             label: active.label,
           })}
-          data-pw={dataPw}
         >
           <ActiveIcon className='h-4 w-4' />
           <span className='sr-only'>{active.label}</span>
           <ChevronDown className='h-4 w-4' />
-        </Button>
+        </DataPw>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align='end'
@@ -73,15 +74,16 @@ export function ViewModeDropdown<T extends string>({
           const isActive = option.value === value
 
           return (
-            <DropdownMenuItem
+            <DataPw
               key={option.value}
+              dataPw={option.dataPw}
+              as={DropdownMenuItem}
               onSelect={() => onValueChange(option.value)}
-              data-pw={option.dataPw}
             >
               <Icon className='h-4 w-4' />
               <span>{option.label}</span>
               {isActive ? <Check className='ml-auto h-4 w-4' /> : null}
-            </DropdownMenuItem>
+            </DataPw>
           )
         })}
       </DropdownMenuContent>

@@ -77,3 +77,4 @@ function Button({
 Button.displayName = 'Button'
 
 export { Button, buttonVariants }
+export { DataPw } from '@/components/shared/data-pw'

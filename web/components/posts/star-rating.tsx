@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Star } from 'lucide-react'
 import { useId, type KeyboardEvent } from 'react'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 export function StarRating({
   rating,
@@ -50,7 +51,9 @@ export function StarRating({
           key={star}
           className='relative h-6 w-6'
         >
-          <Input
+          <DataPw
+            dataPw={`star-rating-${star}`}
+            as={Input}
             id={inputId(star)}
             type='radio'
             name={ratingName}
@@ -61,8 +64,6 @@ export function StarRating({
             aria-label={`${star} star${star !== 1 ? 's' : ''}`}
             className='peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0'
             tabIndex={star === selected ? 0 : -1}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-            data-pw={`star-rating-${star}`}
           />
           <Label
             htmlFor={inputId(star)}

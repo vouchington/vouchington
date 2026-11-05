@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- dataPw is a static prop passed from callers with literal values; ast-grep bans dynamic data-pw but this is a safe prop passthrough. */
 'use client'
 
 import { useRef } from 'react'
@@ -7,6 +6,7 @@ import { TextLink } from '@/components/ui/text-link'
 import { PostContentText, type PostContentTextValue } from '@/components/posts/post-content-text'
 import { RssFeedItemTitle } from '@/components/rss-feed-items/rss-feed-item-title'
 import { ExternalLink } from '@/components/ui/external-link'
+import { DataPw } from '@/components/shared/data-pw'
 
 type InteractionKind = 'keyboard' | 'plain' | 'modified'
 
@@ -106,39 +106,42 @@ export function CommandLinkItem({
 
   if (external) {
     return (
-      <CommandItem
+      <DataPw
         asChild
-        data-pw={dataPw}
+        dataPw={dataPw}
         onSelect={handleSelect}
+        as={CommandItem}
       >
-        <ExternalLink
-          data-pw={dataPw}
+        <DataPw
+          dataPw={dataPw}
           ref={externalAnchorRef}
           href={href}
           rel='noopener noreferrer'
           onClick={captureClickModifier}
+          as={ExternalLink}
         >
           {content}
-        </ExternalLink>
-      </CommandItem>
+        </DataPw>
+      </DataPw>
     )
   }
 
   return (
-    <CommandItem
+    <DataPw
       asChild
-      data-pw={dataPw}
+      dataPw={dataPw}
       onSelect={handleSelect}
+      as={CommandItem}
     >
-      <TextLink
-        data-pw={dataPw}
+      <DataPw
+        dataPw={dataPw}
         href={href}
-        // Search lists many results; opt out of hover prefetch to avoid wasted bandwidth.
         prefetch={false}
         onClick={captureClickModifier}
+        as={TextLink}
       >
         {content}
-      </TextLink>
-    </CommandItem>
+      </DataPw>
+    </DataPw>
   )
 }

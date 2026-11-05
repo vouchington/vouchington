@@ -16,6 +16,7 @@ import { isTagLimitError } from '@/lib/api/error-helpers'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { TagLimitCta } from './tag-limit-cta'
 import type { EnumOption } from './types'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface AddTagFormProps {
   entityType: string
@@ -96,14 +97,14 @@ export function AddTagForm({
         </SelectTrigger>
         <SelectContent>
           {availableOptions.map(opt => (
-            <SelectItem
+            <DataPw
               key={opt.id}
+              dataPw={`publisher-type-option-${opt.slug}`}
+              as={SelectItem}
               value={opt.id}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from enum data
-              data-pw={`publisher-type-option-${opt.slug}`}
             >
               {opt.label}
-            </SelectItem>
+            </DataPw>
           ))}
         </SelectContent>
       </Select>

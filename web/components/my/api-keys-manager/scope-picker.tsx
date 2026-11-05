@@ -1,5 +1,6 @@
 'use client'
 
+import { DataPw } from '@/components/shared/data-pw'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -20,10 +21,10 @@ interface ScopePickerProps {
 export function ScopePicker({ idPrefix, groups, selected, onToggle }: ScopePickerProps) {
   const t = useTranslations()
   return (
-    <fieldset
+    <DataPw
+      dataPw={`${idPrefix}-scope-picker`}
+      as='fieldset'
       className='space-y-2'
-      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from the form's id prefix
-      data-pw={`${idPrefix}-scope-picker`}
     >
       <legend className='text-sm font-medium'>
         {t('extracted.apiKeysManager.scopePicker.scopes_0d5644ff')}
@@ -47,7 +48,7 @@ export function ScopePicker({ idPrefix, groups, selected, onToggle }: ScopePicke
           </ul>
         </section>
       ))}
-    </fieldset>
+    </DataPw>
   )
 }
 
@@ -131,14 +132,14 @@ function ScopeCheckbox({
       htmlFor={id}
       className='flex min-h-11 cursor-pointer flex-wrap items-center gap-2 font-normal'
     >
-      <Checkbox
+      <DataPw
+        dataPw={`scope-checkbox-${entry.scope}`}
+        as={Checkbox}
         id={id}
         checked={checked}
         onCheckedChange={value => onToggle(entry.scope, value === true)}
         aria-labelledby={`${resourceId} ${id}-label`}
         aria-describedby={description ? descriptionId : undefined}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from catalogue data
-        data-pw={`scope-checkbox-${entry.scope}`}
       />
       <span id={`${id}-label`}>
         {entry.action === 'read'

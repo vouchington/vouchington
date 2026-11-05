@@ -1,10 +1,10 @@
-/* oxlint-disable no-mistakes/playwright-literals -- Footer IDs come from static link data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
 import { footerContentLinks, footerSiteLinks } from './footer-links'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 function FooterLinks({
   links,
@@ -15,15 +15,16 @@ function FooterLinks({
     <>
       {links.map(link =>
         link.href ? (
-          <Link
+          <DataPw
             key={link.label}
+            dataPw={link.dataPw}
+            as={Link}
             href={link.href}
             prefetch={false}
             className='inline-flex min-h-6 items-center px-1 hover:text-foreground max-md:min-h-11'
-            data-pw={link.dataPw}
           >
             {link.label}
-          </Link>
+          </DataPw>
         ) : (
           <span
             key={link.label}

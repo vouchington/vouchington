@@ -12,6 +12,7 @@ import type { ElectionVoteChoice } from '@/lib/api/client/elections'
 import { BinaryVote, ChoiceGroup, CompactVote, VoteCounts } from './score-vote-controls'
 import { ClearButton } from './clear-button'
 import { ClearOnlyVote } from './clear-only-vote'
+import { DataPw } from '@/components/shared/data-pw'
 import type { ScoreVoteProps } from './score-vote-types'
 
 export type { ScoreVoteProps } from './score-vote-types'
@@ -71,12 +72,12 @@ export function ScoreVote({ 'data-pw': dataPw = 'score-vote', ...props }: ScoreV
         className={`flex items-center gap-2 ${props.className ?? ''}`}
         data-pw={dataPw}
       >
-        <Button
+        <DataPw
+          dataPw={`${dataPw}-sign-in`}
+          as={Button}
           asChild
           variant='ghost'
           size='touch'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- fixed suffix under ScoreVote's literal-default test namespace
-          data-pw={`${dataPw}-sign-in`}
         >
           <Link
             href={loginHref}
@@ -84,7 +85,7 @@ export function ScoreVote({ 'data-pw': dataPw = 'score-vote', ...props }: ScoreV
           >
             {t('extracted.votes.semanticVote.signIn')}
           </Link>
-        </Button>
+        </DataPw>
         <VoteCounts
           hideDownCount={props.hideDownCount}
           vote={vote}

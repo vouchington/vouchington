@@ -3,6 +3,7 @@ import { AdminTableShell } from '@/components/admin/admin-table-shell'
 import type { ReferralLinkValidation } from '@/lib/api/client/referral-link-validations'
 import type { getTranslations } from '@/lib/i18n/get-translations'
 import { referralValidationHref } from '@/lib/links/entity-href'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface ValidationsListTableProps {
   validations: ReferralLinkValidation[]
@@ -55,15 +56,15 @@ export function ValidationsListTable({ validations, programSlug, t }: Validation
           {validations.map(v => (
             <tr key={v.id}>
               <td className='whitespace-nowrap px-6 py-4 text-sm font-medium text-foreground'>
-                <Link
+                <DataPw
+                  dataPw={`validation-link-${v.id}`}
+                  as={Link}
                   prefetch={false}
                   href={referralValidationHref(programSlug, v)}
-                  // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                  data-pw={`validation-link-${v.id}`}
                   className='text-primary hover:text-primary/80'
                 >
                   {v.slug}
-                </Link>
+                </DataPw>
               </td>
               <td className='max-w-sm truncate px-6 py-4 text-sm text-muted-foreground'>
                 {v.user_help_text || '—'}

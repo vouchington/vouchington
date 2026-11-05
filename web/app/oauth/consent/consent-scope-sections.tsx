@@ -5,6 +5,7 @@ import { scopeDescriptionMessageKey } from '@/components/my/api-keys-manager/sco
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ScopeCatalogResponse } from '@/types/scopes'
 import { groupConsentScopes } from './scope-groups'
+import { DataPw } from '@/components/shared/data-pw'
 
 const OWN_PRIVATE_POST_RELATIONS_WRITE_SCOPE = 'post-relations.owned-private:write'
 
@@ -42,10 +43,10 @@ export function ConsentScopeSections({
                   : 'shared.oauth.consent.permissionsHeading',
               )}
             </h3>
-            <ul
+            <DataPw
+              dataPw={sensitive ? 'oauth-consent-sensitive-scopes' : 'oauth-consent-scopes'}
+              as='ul'
               className='mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground'
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- static selector chosen by sensitivity
-              data-pw={sensitive ? 'oauth-consent-sensitive-scopes' : 'oauth-consent-scopes'}
             >
               {entries.map(scope => (
                 <li key={scope}>
@@ -62,7 +63,7 @@ export function ConsentScopeSections({
                   )}
                 </li>
               ))}
-            </ul>
+            </DataPw>
           </div>
         )
       })}

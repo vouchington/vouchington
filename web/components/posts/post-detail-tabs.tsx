@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatNumber } from '@ts-shared/utils/format'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface PostDetailTabsProps {
   activeTab: 'comments' | 'manage-tags'
@@ -66,18 +67,18 @@ export function PostDetailTabs({
       dropdownItems: postTagTabs.map(tab => ({
         key: tab.value,
         content: (
-          <Link
+          <DataPw
+            dataPw={`manage-tags-tab-${tab.value}`}
+            as={Link}
             href={`/${postType}/${postId}/tags/${tab.value}`}
             prefetch={false}
             scroll={false}
             aria-current={
               activeTab === 'manage-tags' && activeTag === tab.value ? 'page' : undefined
             }
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from relation config
-            data-pw={`manage-tags-tab-${tab.value}`}
           >
             {t(tab.label)}
-          </Link>
+          </DataPw>
         ),
         active: activeTab === 'manage-tags' && activeTag === tab.value,
       })),

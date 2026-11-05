@@ -12,6 +12,7 @@ import type {
   CommunityVisibility,
 } from '@/types/api-responses'
 import { buildCommunityNavTabs, isCommunityNavTabActive } from './community-nav-tabs'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface CommunityNavProps {
   slug: string
@@ -48,36 +49,36 @@ export function CommunityNav({
       key: tab.name,
       active: isCommunityNavTabActive(tab, pathname, base),
       content: tab.dropdownItems ? (
-        <span
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from tab data
-          data-pw={`community-nav-${tab.name}`}
+        <DataPw
+          dataPw={`community-nav-${tab.name}`}
+          as='span'
         >
           {t(tab.label)}
-        </span>
+        </DataPw>
       ) : (
-        <Link
+        <DataPw
+          dataPw={`community-nav-${tab.name}`}
+          as={Link}
           href={tab.path}
           prefetch={false}
           scroll={false}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from tab data
-          data-pw={`community-nav-${tab.name}`}
         >
           {t(tab.label)}
-        </Link>
+        </DataPw>
       ),
       dropdownItems: tab.dropdownItems?.map(item => ({
         key: item.name,
         active: isActivePath(pathname, item.path),
         content: (
-          <Link
+          <DataPw
+            dataPw={`community-nav-${item.name}`}
+            as={Link}
             href={item.path}
             prefetch={false}
             scroll={false}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from tab data
-            data-pw={`community-nav-${item.name}`}
           >
             {t(item.label)}
-          </Link>
+          </DataPw>
         ),
       })),
     }

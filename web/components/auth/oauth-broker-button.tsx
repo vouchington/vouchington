@@ -7,6 +7,7 @@ import { startOAuthBrokerAuthorization, type BrokerOAuthProvider } from '@/lib/a
 import type { OAuthBrokerPurpose } from '@/lib/api/client'
 import { ProviderIcon } from './oauth-provider-icons'
 import { providerButtonClassNames } from './oauth-provider-configs'
+import { DataPw } from '@/components/shared/data-pw'
 
 const providerLabels: Record<BrokerOAuthProvider, string> = {
   facebook: 'Facebook',
@@ -77,15 +78,15 @@ export function OAuthBrokerButton({
   }
 
   return (
-    <Button
+    <DataPw
+      dataPw={`oauth-provider-button-${provider}`}
+      as={Button}
       type='button'
       variant='outline'
       className={`w-full justify-center gap-3 ${providerButtonClassNames[provider]}`}
       onClick={startBrokerAuthorization}
       loading={loading}
       disabled={disabled || activeProvider !== null}
-      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic provider identifier
-      data-pw={`oauth-provider-button-${provider}`}
     >
       {!loading && (
         <span className='shrink-0'>
@@ -93,6 +94,6 @@ export function OAuthBrokerButton({
         </span>
       )}
       {loading ? 'Connecting...' : `Continue with ${label}`}
-    </Button>
+    </DataPw>
   )
 }

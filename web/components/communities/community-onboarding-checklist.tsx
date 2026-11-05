@@ -8,6 +8,7 @@ import { createCommunityPathname } from '@/lib/links/entity-href'
 import { getPreference, setPreference } from '@/lib/preferences/storage'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { TextLink } from '@/components/ui/text-link'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface Props {
   communitySlug: string
@@ -129,10 +130,10 @@ interface ChecklistItemProps {
 function ChecklistItem({ done, label, description, dataPw, href, onAck }: ChecklistItemProps) {
   const t = useTranslations()
   return (
-    <li
+    <DataPw
+      as='li'
       className='flex items-start gap-3'
-      // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- controlled sub-component, call sites all use literals
-      data-pw={dataPw}
+      dataPw={dataPw}
     >
       {done ? (
         <CheckCircle2
@@ -160,21 +161,21 @@ function ChecklistItem({ done, label, description, dataPw, href, onAck }: Checkl
             </TextLink>
           )}
           {!done && onAck && (
-            <Button
+            <DataPw
+              dataPw={`${dataPw}-ack`}
+              as={Button}
               type='button'
               variant='outline'
               size='sm'
               className='h-6 px-2 text-xs'
               onClick={onAck}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- template from caller's literal dataPw
-              data-pw={`${dataPw}-ack`}
             >
               {t('extracted.communities.communityOnboardingChecklist.markAsReviewed_bd433677')}
-            </Button>
+            </DataPw>
           )}
         </div>
         <p className='text-sm text-muted-foreground'>{description}</p>
       </div>
-    </li>
+    </DataPw>
   )
 }

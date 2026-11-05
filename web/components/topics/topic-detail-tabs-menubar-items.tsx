@@ -7,6 +7,7 @@ import type { useTranslations } from '@/lib/i18n/use-translations'
 import { isActivePath } from '@/lib/utils/path'
 import type { TopicTypes } from '@/types/topics'
 import type { TopicDetailTab } from './topic-detail-tabs-helpers'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface BuildTopicDetailMenubarItemsOptions {
   tabs: TopicDetailTab[]
@@ -32,22 +33,24 @@ export function buildTopicDetailMenubarItems({
       ? {
           key: tab.name,
           content: (
-            <Button
+            <DataPw
+              dataPw={`topic-detail-tab-${tab.name}`}
+              as={Button}
               type='button'
               variant='ghost'
               size='sm'
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from tab config
-              data-pw={`topic-detail-tab-${tab.name}`}
             >
               {tab.label}
               <ChevronDown data-icon='inline-end' />
-            </Button>
+            </DataPw>
           ),
           active: activeTab === tab.name,
           dropdownItems: getTopicTagTabsForTopicType(topicTypeName).map(tagTab => ({
             key: tagTab.value,
             content: (
-              <Link
+              <DataPw
+                dataPw={`manage-tags-tab-${tagTab.value}`}
+                as={Link}
                 href={`/${topicType}/${topicId}/tags/${tagTab.value}`}
                 prefetch={false}
                 scroll={false}
@@ -56,11 +59,9 @@ export function buildTopicDetailMenubarItems({
                     ? 'page'
                     : undefined
                 }
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from relation config
-                data-pw={`manage-tags-tab-${tagTab.value}`}
               >
                 {t(tagTab.label)}
-              </Link>
+              </DataPw>
             ),
             active: isActivePath(pathname, `/${topicType}/${topicId}/tags/${tagTab.value}`),
           })),
@@ -68,16 +69,16 @@ export function buildTopicDetailMenubarItems({
       : {
           key: tab.name,
           content: (
-            <Link
+            <DataPw
+              dataPw={`topic-detail-tab-${tab.name}`}
+              as={Link}
               href={tab.path}
               prefetch={false}
               scroll={false}
               aria-current={activeTab === tab.name ? 'page' : undefined}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from tab config
-              data-pw={`topic-detail-tab-${tab.name}`}
             >
               {tab.label}
-            </Link>
+            </DataPw>
           ),
           active: activeTab === tab.name,
         },

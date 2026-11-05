@@ -16,6 +16,7 @@ import {
 import { unlinkValidationFromReferralProgram } from '@/lib/api/client/referral-link-validations'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { DataPw } from '@/components/shared/data-pw'
 
 interface UnlinkValidationButtonProps {
   referralProgramId: string
@@ -56,19 +57,19 @@ export function UnlinkValidationButton({
 
   return (
     <>
-      <Button
+      <DataPw
+        dataPw={`unlink-validation-${validationId}`}
+        as={Button}
         size='sm'
         variant='destructive'
         loading={unlinking}
         disabled={unlinking}
         onClick={() => setShowConfirm(true)}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-        data-pw={`unlink-validation-${validationId}`}
       >
         {unlinking
           ? t('extracted.validations.unlinkValidationButton.unlinking_eb4e0835')
           : t('extracted.validations.unlinkValidationButton.unlink_b90108da')}
-      </Button>
+      </DataPw>
 
       <AlertDialog
         open={showConfirm}
