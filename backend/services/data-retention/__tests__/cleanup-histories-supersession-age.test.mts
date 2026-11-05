@@ -13,7 +13,7 @@ import {
   readRemainingHistoryIds,
   reserveHistoryRetentionFixtureIds,
 } from '@voucha/test-helpers/history-retention-reads'
-import { cleanupHistory } from '../cleanup-histories.mts'
+import { cleanupHistories } from '../cleanup-histories.mts'
 
 const day = 24 * 60 * 60 * 1000
 
@@ -47,18 +47,20 @@ describe('history retention after the next same-key decision', () => {
     const options = { ...range, batchSize: 5, maxBatches: 2 }
 
     expect(
-      await cleanupHistory('rss_feed_setting_changes', {
+      await cleanupHistories({
+        kinds: ['rss_feed_setting_changes'],
         ...options,
         now: new Date(latestAt.getTime() + day),
-      }),
+      }).then(result => result.rss_feed_setting_changes),
     ).toEqual({ scanned: 2, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('rss_feed_setting_changes', ids)).toEqual(ids.slice(1))
 
     expect(
-      await cleanupHistory('rss_feed_setting_changes', {
+      await cleanupHistories({
+        kinds: ['rss_feed_setting_changes'],
         ...options,
         now: new Date(latestAt.getTime() + 90 * day + 2),
-      }),
+      }).then(result => result.rss_feed_setting_changes),
     ).toEqual({ scanned: 2, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('rss_feed_setting_changes', ids)).toEqual([ids[2]])
   })
@@ -98,20 +100,22 @@ describe('history retention after the next same-key decision', () => {
     const options = { ...range, batchSize: 5, maxBatches: 2 }
 
     expect(
-      await cleanupHistory('fediverse_instance_integration_changes', {
+      await cleanupHistories({
+        kinds: ['fediverse_instance_integration_changes'],
         ...options,
         now: new Date(latestAt.getTime() + day),
-      }),
+      }).then(result => result.fediverse_instance_integration_changes),
     ).toEqual({ scanned: 2, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('fediverse_instance_integration_changes', ids)).toEqual(
       ids.slice(1),
     )
 
     expect(
-      await cleanupHistory('fediverse_instance_integration_changes', {
+      await cleanupHistories({
+        kinds: ['fediverse_instance_integration_changes'],
         ...options,
         now: afterUtcMonths(latestAt, 12, 2),
-      }),
+      }).then(result => result.fediverse_instance_integration_changes),
     ).toEqual({ scanned: 2, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('fediverse_instance_integration_changes', ids)).toEqual([
       ids[2],

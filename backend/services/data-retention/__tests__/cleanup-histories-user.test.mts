@@ -21,7 +21,7 @@ import {
 } from '@voucha/test-helpers/history-retention-reads'
 import { getReferralClickLog } from '../../attribution/click-log.mts'
 import { streamReferralAttributions } from '../../account-data-requests/stream-consents.mts'
-import { cleanupHistory } from '../cleanup-histories.mts'
+import { cleanupHistories } from '../cleanup-histories.mts'
 
 const day = 24 * 60 * 60 * 1000
 
@@ -69,14 +69,18 @@ describe('bounded import and referral history retention', () => {
         persistentCursorForTest: true,
       }
 
-      expect(await cleanupHistory(kind, options)).toEqual({
+      expect(
+        await cleanupHistories({ ...options, kinds: [kind] }).then(result => result[kind]),
+      ).toEqual({
         scanned: 1,
         changed: 1,
         hasMore: false,
       })
       const firstCursor = await readHistoryCursor(kind)
       expect(firstCursor?.cursor_id).toBe(firstId)
-      expect(await cleanupHistory(kind, options)).toEqual({
+      expect(
+        await cleanupHistories({ ...options, kinds: [kind] }).then(result => result[kind]),
+      ).toEqual({
         scanned: 0,
         changed: 0,
         hasMore: false,
@@ -89,20 +93,25 @@ describe('bounded import and referral history retention', () => {
         new Date(base.getTime() + 2),
       )
       ids.push(lateId)
-      expect(await cleanupHistory(kind, options)).toEqual({ scanned: 1, changed: 1, hasMore: true })
+      expect(
+        await cleanupHistories({ ...options, kinds: [kind] }).then(result => result[kind]),
+      ).toEqual({ scanned: 1, changed: 1, hasMore: true })
       expect((await readReferralDetails(lateId))?.landing_url).toBeNull()
       expect((await readHistoryCursor(kind))?.cursor_id).toBe(firstId)
-      expect(await cleanupHistory(kind, options)).toEqual({
+      expect(
+        await cleanupHistories({ ...options, kinds: [kind] }).then(result => result[kind]),
+      ).toEqual({
         scanned: 0,
         changed: 0,
         hasMore: false,
       })
 
       // With a one-page budget, an empty residual probe must still advance the forward cursor.
-      const later = await cleanupHistory(kind, {
+      const later = await cleanupHistories({
+        kinds: [kind],
         ...options,
         now: new Date(base.getTime() + 90 * day + 20),
-      })
+      }).then(result => result[kind])
       expect(later).toEqual({ scanned: 1, changed: 1, hasMore: false })
       expect((await readReferralDetails(laterId))?.landing_url).toBeNull()
       expect((await readHistoryCursor(kind))?.cursor_id).toBe(laterId)
@@ -135,10 +144,11 @@ describe('bounded import and referral history retention', () => {
     ]
     ownedIds.push(...ids)
 
-    const result = await cleanupHistory('followed_user_import_requests', {
+    const result = await cleanupHistories({
+      kinds: ['followed_user_import_requests'],
       ...scoped,
       now: new Date(base.getTime() + 100 * day),
-    })
+    }).then(result => result.followed_user_import_requests)
     expect(result).toEqual({ scanned: 2, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('followed_user_import_requests', ids)).toEqual([ids[1]])
   })
@@ -156,10 +166,11 @@ describe('bounded import and referral history retention', () => {
     ]
     ownedIds.push(...ids)
 
-    const result = await cleanupHistory('pending_user_import_requests', {
+    const result = await cleanupHistories({
+      kinds: ['pending_user_import_requests'],
       ...scoped,
       now: new Date(base.getTime() + 180 * day + 1),
-    })
+    }).then(result => result.pending_user_import_requests)
     expect(result).toEqual({ scanned: 1, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('pending_user_import_requests', ids)).toEqual([ids[1]])
   })
@@ -179,10 +190,11 @@ describe('bounded import and referral history retention', () => {
     const ids = [oldId, freshId]
     ownedIds.push(...ids)
 
-    const scrub = await cleanupHistory('referral_attribution_scrub', {
+    const scrub = await cleanupHistories({
+      kinds: ['referral_attribution_scrub'],
       ...scoped,
       now: new Date(base.getTime() + 90 * day + 2),
-    })
+    }).then(result => result.referral_attribution_scrub)
     expect(scrub).toEqual({ scanned: 1, changed: 1, hasMore: false })
     expect(await readReferralDetails(oldId)).toEqual({
       landing_url: null,
@@ -206,10 +218,11 @@ describe('bounded import and referral history retention', () => {
         base.getUTCMilliseconds() + 2,
       ),
     )
-    const expiry = await cleanupHistory('referral_attribution_expiry', {
+    const expiry = await cleanupHistories({
+      kinds: ['referral_attribution_expiry'],
       ...scoped,
       now: after24Months,
-    })
+    }).then(result => result.referral_attribution_expiry)
     expect(expiry).toEqual({ scanned: 1, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('referral_attribution_expiry', ids)).toEqual([freshId])
   })
