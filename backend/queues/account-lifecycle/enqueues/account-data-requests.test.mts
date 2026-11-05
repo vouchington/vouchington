@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB } from '@queues/background/enqueues/account-lifecycle-jobs'
 import {
-  enqueueBulkExportRequests,
   enqueueCleanupExpiredExports,
   enqueueExportRequest,
   enqueueOrReactivateBulkExportRequests,
@@ -33,7 +32,7 @@ describe('account data request enqueues', () => {
       processingAttemptId: randomUUID(),
     }
     const jobId = `account-data-export__${data.requestId}__${data.processingAttemptId}`
-    const [job] = await enqueueBulkExportRequests([data])
+    const [job] = await enqueueOrReactivateBulkExportRequests([data])
     expect(job).toMatchObject({
       id: jobId,
       data,

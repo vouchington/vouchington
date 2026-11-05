@@ -16,7 +16,7 @@ const enqueueBulkPages = createBackgroundBulkEnqueue(
   (data: TopicMergePageData) => ({ data, opts: { jobId: topicMergePageJobId(data) } }),
 )
 
-export function topicMergePageJobId(data: TopicMergePageData): string {
+function topicMergePageJobId(data: TopicMergePageData): string {
   return `topic_merge_page_${data.operationId}_${data.generation}`
 }
 

@@ -2,10 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 const SPEND_CAP_RECHECK_JOB_NAME = 'ai-spend-cap.recheck'
 import type { SpendCapRecheckJobData } from '../types.mts'
-import { enqueueSpendCapRecheck } from './spend-cap-recheck.mts'
+import { enqueueSpendCapRecheckBestEffort } from './spend-cap-recheck.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -14,7 +15,11 @@ const connection = { connection: workerQueueConnection, prefix: workerQueuePrefi
 describe('spend-cap recheck priority-ten scheduling with real GlideMQ', () => {
   it('enqueues the coordinator with generation-scoped deduplication and priority ten', async () => {
     const generation = randomUUID()
-    const job = await enqueueSpendCapRecheck('2026-08-16', generation, 1_000)
+    await enqueueSpendCapRecheckBestEffort('2026-08-16', generation, 1_000)
+    const [job] = await backgroundCpu.searchJobs({
+      name: SPEND_CAP_RECHECK_JOB_NAME,
+      data: { day: '2026-08-16', generation },
+    })
     if (!job) throw new Error('Expected spend-cap recheck job')
     try {
       expect(job.data).toEqual({ day: '2026-08-16', generation })

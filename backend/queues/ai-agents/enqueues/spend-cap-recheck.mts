@@ -12,7 +12,7 @@ const enqueueRecheck = createEnqueueFunction<SpendCapRecheckJobData, string>({
   defaults: requireBackgroundCpuJob('ai-spend-cap.recheck').options,
 })
 
-export function enqueueSpendCapRecheck(
+function enqueueSpendCapRecheck(
   day: string,
   generation: string,
   delayMs: number,

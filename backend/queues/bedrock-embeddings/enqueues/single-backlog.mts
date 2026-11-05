@@ -11,36 +11,48 @@ const SINGLE_NAMES = new Set([
 ])
 const STATES = ['waiting', 'active', 'delayed'] as const
 export type SingleEmbeddingBacklogSnapshot = { depth: number; uncertain: boolean }
-let cached: { at: number; cap: number; result: Promise<SingleEmbeddingBacklogSnapshot> } | undefined
+type BacklogQueue = Pick<Queue, 'getJobs'>
+const snapshots = new WeakMap<
+  BacklogQueue,
+  { at: number; cap: number; result: Promise<SingleEmbeddingBacklogSnapshot> }
+>()
 
 /** A bounded shared-queue scan, exact below the cap and a matching-job lower bound at saturation. */
-export function getSingleEmbeddingBacklogSnapshot(): Promise<SingleEmbeddingBacklogSnapshot> {
-  const cap = getSingleBacklogScanCap()
-  const now = Date.now()
+export function getSingleEmbeddingBacklogSnapshot(
+  queue: BacklogQueue = backgroundCpu,
+  cap = getSingleBacklogScanCap(),
+  now = Date.now(),
+): Promise<SingleEmbeddingBacklogSnapshot> {
+  const cached = snapshots.get(queue)
   if (cached && cached.cap === cap && now - cached.at < CACHE_TTL_MS) return cached.result
-  const result = readSingleEmbeddingBacklogSnapshot(backgroundCpu, cap).catch((err: unknown) => {
-    if (cached?.result === result) cached = undefined
+  const result = readSingleEmbeddingBacklogSnapshot(queue, cap).catch((err: unknown) => {
+    if (snapshots.get(queue)?.result === result) snapshots.delete(queue)
     throw err
   })
-  cached = { at: now, cap, result }
+  snapshots.set(queue, { at: now, cap, result })
   return result
 }
 
-export async function isSingleEmbeddingBackedUp(): Promise<boolean> {
+export async function isSingleEmbeddingBackedUp(
+  queue: BacklogQueue = backgroundCpu,
+  cap = getSingleBacklogScanCap(),
+  threshold?: number,
+  now = Date.now(),
+): Promise<boolean> {
   return shouldDeferSingleEmbedding(
-    await getSingleEmbeddingBacklogSnapshot(),
-    getBacklogThreshold(),
+    await getSingleEmbeddingBacklogSnapshot(queue, cap, now),
+    threshold ?? getBacklogThreshold(),
   )
 }
 
-export function shouldDeferSingleEmbedding(
+function shouldDeferSingleEmbedding(
   snapshot: SingleEmbeddingBacklogSnapshot,
   threshold: number,
 ): boolean {
   return snapshot.depth >= threshold
 }
 
-export async function readSingleEmbeddingBacklogSnapshot(
+async function readSingleEmbeddingBacklogSnapshot(
   queue: Pick<Queue, 'getJobs'>,
   cap: number,
 ): Promise<SingleEmbeddingBacklogSnapshot> {
