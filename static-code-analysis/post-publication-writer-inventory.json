@@ -153,6 +153,10 @@
       "reason": "called inside captured post creation"
     },
     {
+      "path": "backend/services/posts/hacker-news-flags.mts",
+      "reason": "updates only the derived Hacker News reference filter flag; public publication eligibility and its updated_at fingerprint remain unchanged"
+    },
+    {
       "path": "backend/services/posts/images.mts",
       "reason": "image attachment lifecycle does not alter public eligibility"
     },
@@ -163,6 +167,10 @@
     {
       "path": "backend/services/post-clearance/update-status.mts",
       "reason": "delegates clearance and publication writes to captured set-status"
+    },
+    {
+      "path": "backend/services/rss-feed-items/hacker-news-flags.mts",
+      "reason": "updates only the derived Hacker News reference filter flag; public publication eligibility and its updated_at fingerprint remain unchanged"
     },
     {
       "path": "backend/services/rss-feed-items/upsert-queries.mts",

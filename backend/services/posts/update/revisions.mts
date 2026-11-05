@@ -1,6 +1,7 @@
 import { createPostRevision, type PostRevisionChanges } from '@services/post-revisions'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { Post, UpdatePostChanges } from '../types.mts'
+import { getPostLinkRevision } from './post-link-revision.mts'
 
 export async function createUpdatePostRevision(
   post: Post,
@@ -16,8 +17,7 @@ export async function createUpdatePostRevision(
 
 function getPostRevisionChanges(post: Post, changes: UpdatePostChanges): PostRevisionChanges {
   const revisionChanges: PostRevisionChanges = {}
-  if (changes.url_id !== undefined && changes.url_id !== post.url_id)
-    revisionChanges.url_id = { before: post.url_id ?? null, after: changes.url_id }
+  Object.assign(revisionChanges, getPostLinkRevision(post, changes))
   if (changes.title !== undefined && changes.title !== post.title)
     revisionChanges.title = { before: post.title, after: changes.title }
   if (changes.markdown !== undefined && changes.markdown !== post.markdown)
