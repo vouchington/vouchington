@@ -45,7 +45,7 @@ function hasOnlyGithub5xxLycheeFailures(log: string): boolean {
 }
 
 const githubComDnsResolutionFailurePattern =
-  /curl: \(6\) Could not resolve host: github\.com(?:\s|$)/m
+  /curl: \(6\) Could not resolve host: (?:github\.com|release-assets\.githubusercontent\.com)(?:\s|$)/m
 
 function terminalLycheeSetupFailureLog(log: string): string {
   const slices = getGithubActionsStepGroupSlices(log)
@@ -129,9 +129,9 @@ export const lintLinksSetupLycheeDownloadFlakeRule: TransientRetryRule = {
   consumerKey: 'setup-lychee',
   rootCauseKey: 'github-release-download-failure',
   description:
-    'Lint Links fails before link checking because the Install lychee step cannot download the pinned Lychee release asset from GitHub Releases, including when DNS cannot resolve github.com.',
+    'Lint Links fails before link checking because the Install lychee step cannot download the pinned Lychee release asset from GitHub Releases, including when DNS cannot resolve github.com or release-assets.githubusercontent.com.',
   rationale:
-    'The Markdown link checker never starts; the only failed job is lint-links and the stable fingerprint is an external GitHub Releases download or github.com DNS failure, not a broken repository link.',
+    'The Markdown link checker never starts; the only failed job is lint-links and the stable fingerprint is an external GitHub Releases download or DNS failure for github.com or release-assets.githubusercontent.com, not a broken repository link.',
   exampleRunIds: ['29263881027'],
   maxAttempts: 1,
   needsLogs: true,
