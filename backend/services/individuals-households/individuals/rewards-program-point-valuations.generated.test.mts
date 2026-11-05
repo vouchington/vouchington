@@ -1,11 +1,12 @@
 import { createTestUser, insertTestRewardsProgram } from '@voucha/test-helpers'
+import { rejectQuery } from '@voucha/test-helpers/injected-failures'
+import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { it, expect, beforeAll, describe } from 'vitest'
 import {
   getIndividualRewardsProgramPointValuations,
   createIndividualRewardsProgramPointValuation,
   updateIndividualRewardsProgramPointValuationById,
   deleteIndividualRewardsProgramPointValuationById,
-  isDuplicatePointValuationConstraint,
 } from './rewards-program-point-valuations.mts'
 import type { PrivateUser } from '@services/users/types'
 import { MAX_POINT_VALUE_MICROUNITS } from '@ts-shared/money'
@@ -21,9 +22,48 @@ describe('rewards-program-point-valuations.generated', () => {
     ['uq_individual_rewards_program_point_valuations__individual_rewa', true],
     ['uq_individual_rewards_program_point_valuations__individual_rewards', false],
     [undefined, false],
-  ])('isDuplicatePointValuationConstraint - maps %s to %s', (constraint, expected) => {
-    expect(isDuplicatePointValuationConstraint(constraint)).toBe(expected)
-  })
+  ])(
+    'createIndividualRewardsProgramPointValuation - classifies duplicate constraint %s as %s',
+    async (constraint, expected) => {
+      const programId = await insertTestRewardsProgram({ createdById: user.id })
+      const injectedPgError = Object.assign(new Error('Injected PostgreSQL unique violation'), {
+        code: '23505',
+        constraint,
+      })
+      let matchedInsertCount = 0
+      await withPostgresTransactionForTest(async transaction => {
+        const query = rejectQuery(
+          transaction,
+          statement => {
+            const matches = statement.includes('/* createIndividualRewardsProgramPointValuation */')
+            if (matches) matchedInsertCount += 1
+            return matches
+          },
+          injectedPgError,
+        )
+        let caughtError: unknown
+        try {
+          await createIndividualRewardsProgramPointValuation(
+            user,
+            user,
+            programId,
+            { value_per_point: { amount: 15_000, currency: 'usd', scale: 6 } },
+            { query },
+          )
+        } catch (err) {
+          caughtError = err
+        }
+
+        const observedError = caughtError as { message?: string; status?: number } | undefined
+        const isDuplicate =
+          observedError?.status === 409 &&
+          observedError.message === 'You already have a valuation for this rewards program'
+        expect(isDuplicate).toBe(expected)
+        expect(caughtError === injectedPgError || isDuplicate).toBe(true)
+      })
+      expect(matchedInsertCount).toBe(1)
+    },
+  )
 
   it('createIndividualRewardsProgramPointValuation - returns enriched row with rewards_program', async () => {
     const programId = await insertTestRewardsProgram({ createdById: user.id })
@@ -36,6 +76,29 @@ describe('rewards-program-point-valuations.generated', () => {
     expect(valuation.value_per_point).toEqual({ amount: 35_000, currency: 'usd', scale: 6 })
     expect(valuation.rewards_program).toBeDefined()
     expect(valuation.rewards_program.id).toBe(programId)
+  })
+
+  it('createIndividualRewardsProgramPointValuation - reads a borrowed insert before rollback', async () => {
+    const programId = await insertTestRewardsProgram({ createdById: user.id })
+    const valuation = await withPostgresTransactionForTest(query =>
+      createIndividualRewardsProgramPointValuation(
+        user,
+        user,
+        programId,
+        {
+          value_per_point: { amount: 42_000, currency: 'usd', scale: 6 },
+          note: 'Borrowed transaction valuation',
+        },
+        { query },
+      ),
+    )
+
+    expect(valuation.value_per_point).toEqual({ amount: 42_000, currency: 'usd', scale: 6 })
+    expect(valuation.note).toBe('Borrowed transaction valuation')
+    expect(valuation.rewards_program_id).toBe(programId)
+
+    const persisted = await getIndividualRewardsProgramPointValuations(user, user)
+    expect(persisted.results.some(result => result.id === valuation.id)).toBe(false)
   })
 
   it('createIndividualRewardsProgramPointValuation - rejects duplicate rewards program valuation', async () => {
