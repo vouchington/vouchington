@@ -3,13 +3,14 @@ import type { UrlFlagCursor } from '@queues/hacker-news-flags/types'
 import { pagePostHackerNewsFlags } from '@services/posts/hacker-news-flag-pages'
 import { pageRssHackerNewsFlags } from '@services/rss-feed-items/hacker-news-flag-pages'
 import { nextHackerNewsCanonicalAlias } from '@services/urls/hacker-news-flag-pages'
-import { recomputeHackerNewsFlags } from './recompute.mts'
+import type { recomputeHackerNewsFlags } from './recompute.mts'
 const ZERO_ID = '00000000-0000-0000-0000-000000000000'
 
 /** One indexed page per attempt; canonical traversal retains only two ancestor frames. */
 export async function refreshUrlHackerNewsFlags(
   cursor: UrlFlagCursor,
   size: number,
+  recompute: typeof recomputeHackerNewsFlags,
 ): Promise<UrlFlagCursor | null> {
   const data = { ...cursor, upperId: cursor.upperId ?? uuidv7() }
   const phase = data.phase ?? 'posts'
@@ -25,7 +26,7 @@ export async function refreshUrlHackerNewsFlags(
           data.upperId,
           size,
         )
-  await recomputeHackerNewsFlags(phase === 'rss' ? { rssFeedItemIds: ids } : { postIds: ids })
+  await recompute(phase === 'rss' ? { rssFeedItemIds: ids } : { postIds: ids })
   if (ids.length === size) return { ...data, phase, afterId: ids.at(-1) }
   return {
     ...data,

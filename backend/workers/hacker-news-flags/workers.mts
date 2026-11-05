@@ -9,6 +9,7 @@ import {
 import type { HackerNewsFlagData } from '@queues/hacker-news-flags/types'
 import { refreshUrlHackerNewsFlags } from './workers/url-page.mts'
 import { repairHackerNewsFlags } from './workers/repair-page.mts'
+import { recomputeHackerNewsFlags } from './workers/recompute.mts'
 import type { Job } from 'glide-mq'
 
 /** Lane caps are loaded before worker startup and shared by every process. */
@@ -24,9 +25,9 @@ export async function createHackerNewsFlagsWorker(options: { promotionInterval?:
       return processRetainedSweep<HackerNewsFlagData, { hasMore: boolean }>(job, async save => {
         const next =
           job.name === FLAG_JOB && job.data.kind === 'url' && typeof job.data.urlId === 'string'
-            ? await refreshUrlHackerNewsFlags(job.data, size)
+            ? await refreshUrlHackerNewsFlags(job.data, size, recomputeHackerNewsFlags)
             : job.name === REPAIR_JOB && job.data.kind === 'repair'
-              ? await repairHackerNewsFlags(job.data, size)
+              ? await repairHackerNewsFlags(job.data, size, recomputeHackerNewsFlags)
               : invalidJob()
         // Persist only after the domain transactions commit; retries replay idempotent writes.
         if (next) await save(next)
