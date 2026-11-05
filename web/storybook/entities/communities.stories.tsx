@@ -6,12 +6,15 @@ import { CommunityFeed } from '@/components/communities/community-feed'
 import { CommunityHeader } from '@/components/communities/community-header'
 import { CommunityList } from '@/components/communities/community-list'
 import { CreateCommunityForm } from '@/components/communities/create-community-form'
+import { CommunityModeratorsAside } from '@/components/communities/community-moderators-aside'
 import { PostFilters } from '@/components/posts/post-filters'
 import { EntityStoryFrame, StoryCard } from './entity-story-frame'
 import { storyCurrentUser } from './entity-fixtures'
 import { CommunityAsides } from './communities-story-asides'
 import {
   communitiesResponse,
+  communityAsideModerators,
+  communityAsideOwners,
   communityEntities,
   communityMetrics,
   storyCommunityPostsData,
@@ -27,11 +30,20 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+const communityAside = (
+  <CommunityAsides>
+    <CommunityModeratorsAside
+      owners={communityAsideOwners}
+      moderators={communityAsideModerators}
+    />
+  </CommunityAsides>
+)
+
 export const ListPage: Story = {
   render: () => (
     <EntityStoryFrame
       title='Communities'
-      aside={CommunityAsides}
+      aside={communityAside}
     >
       <CommunityList data={communitiesResponse} />
     </EntityStoryFrame>
@@ -48,7 +60,7 @@ export const MainPageContent: Story = {
   render: () => (
     <EntityStoryFrame
       title='Community detail'
-      aside={CommunityAsides}
+      aside={communityAside}
     >
       <CommunityHeader
         community={communityEntities[0]!}
@@ -62,7 +74,7 @@ export const PostsPage: Story = {
   render: () => (
     <EntityStoryFrame
       title='Community posts'
-      aside={CommunityAsides}
+      aside={communityAside}
     >
       <div className='space-y-4'>
         <PostFilters
@@ -137,9 +149,5 @@ export const Form: Story = {
 }
 
 export const Asides: Story = {
-  render: () => (
-    <EntityStoryFrame title='Community asides'>
-      <CommunityAsides />
-    </EntityStoryFrame>
-  ),
+  render: () => <EntityStoryFrame title='Community asides'>{communityAside}</EntityStoryFrame>,
 }

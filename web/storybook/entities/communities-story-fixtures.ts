@@ -4,6 +4,7 @@ import type {
   Community,
   CommunityListItem,
   CommunityMember,
+  CommunityMembersResponseBody,
   CommunityMetrics,
   CommunityPostsResponseBody,
 } from '@/types/api-responses'
@@ -93,3 +94,37 @@ export const storyMembership: CommunityMember = {
   created_at: '2026-05-01T00:00:00.000Z',
   updated_at: '2026-05-01T00:00:00.000Z',
 }
+
+export const communityAsideOwners = {
+  results: [{ __entity_type: 'community_member', id: 'community-member-owner' }],
+  page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+  community_members: {
+    'community-member-owner': {
+      __entity_type: 'community_member',
+      id: 'community-member-owner',
+      community_id: communityEntities[0]!.id,
+      user_id: storyCurrentUser.id,
+      role: 'owner',
+      approved_by_id: null,
+      removed_at: null,
+      removed_by_id: null,
+      created_at: '2026-05-10T12:00:00.000Z',
+      updated_at: '2026-05-10T12:00:00.000Z',
+    },
+  },
+  users: {
+    [storyCurrentUser.id]: {
+      account_type: null,
+      id: storyCurrentUser.id,
+      username: storyCurrentUser.username,
+      profile_image_id: null,
+    },
+  },
+} satisfies CommunityMembersResponseBody
+
+export const communityAsideModerators = {
+  results: [],
+  page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+  community_members: {},
+  users: {},
+} satisfies CommunityMembersResponseBody

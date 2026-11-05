@@ -324,14 +324,17 @@
           callee: 'createEligibleCopyrightRestoreIntent',
         }
       - {
-          file: backend/services/copyright-notices/submission-reviews.mts,
+          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
       - {
-          file: backend/services/copyright-notices/submission-reviews.mts,
+          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
           callee: 'recordClaimantMisuseEvent',
         }
-      - { file: backend/services/copyright-notices/submission-reviews.mts, callee: 'transaction' }
+      - {
+          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
+          callee: 'transaction',
+        }
       - {
           file: backend/services/copyright-notices/territorial-redress.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
@@ -353,10 +356,13 @@
           file: backend/services/data-retention/cleanup-retained-relation-identities.mts,
           callee: 'cleanupRelationFamily',
         }
-      - { file: backend/services/data-retention/cleanup.mts, callee: 'cleanupSoftDeletedUserBatch' }
       - {
-          file: backend/services/data-retention/cleanup.mts,
+          file: backend/services/data-retention/cleanup-orphaned-oauth-accounts.mts,
           callee: 'deleteOrphanedOAuthAccountBatch',
+        }
+      - {
+          file: backend/services/data-retention/cleanup-soft-deleted-users.mts,
+          callee: 'cleanupSoftDeletedUserBatch',
         }
       - {
           file: backend/services/elections-votes/agent-moderation/votes-upsert.mts,
