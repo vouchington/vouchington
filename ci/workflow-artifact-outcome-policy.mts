@@ -1,7 +1,7 @@
 import { parse as loadYaml } from 'yaml'
 import type { WorkflowSource } from './workflow-artifact-policy.mts'
 
-export const EXPECTED_RUN =
+const EXPECTED_RUN =
   'node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"'
 
 export type OutcomeStep = {
@@ -12,7 +12,7 @@ export type OutcomeStep = {
 }
 type ProducerWorkflow = { jobs?: Record<string, { steps?: OutcomeStep[] }> }
 
-export const EXPECTED_SUITES = [
+const EXPECTED_SUITES = [
   'backend-modules',
   'backend-native-migrations',
   'backend-native-mv',

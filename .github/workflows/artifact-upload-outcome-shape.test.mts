@@ -2,10 +2,27 @@ import { describe, expect, it } from 'vitest'
 import { stringify } from 'yaml'
 import {
   artifactUploadOutcomeViolations,
-  EXPECTED_RUN,
-  EXPECTED_SUITES,
   outcomeSteps,
 } from '../../ci/workflow-artifact-outcome-policy.mts'
+
+const EXPECTED_RUN =
+  'node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"'
+const PRODUCER_SUITES = [
+  'backend-modules',
+  'backend-native-migrations',
+  'backend-native-mv',
+  'backend-shard-${{ matrix.shard }}',
+  'cloudflare-worker',
+  'lambdas',
+  'portability-linux',
+  'tooling',
+  'ts-shared',
+  'web-api-shard-${{ matrix.shard }}',
+  'web-integration-shard-${{ matrix.shard }}',
+  'web-shard-${{ matrix.shard }}',
+  'web-storybook',
+  'web-storybook-browser',
+]
 
 const STEP = {
   run: EXPECTED_RUN,
@@ -25,7 +42,7 @@ describe('artifact-upload-outcome.mts call sites', () => {
         source: stringify({
           jobs: {
             upload: {
-              steps: EXPECTED_SUITES.map(suite => ({
+              steps: PRODUCER_SUITES.map(suite => ({
                 ...STEP,
                 env: { ...STEP.env, SUITE: suite },
               })),
