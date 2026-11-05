@@ -43,6 +43,7 @@ describe('no-mistakes config freshness', () => {
     const ciCoverage = rules.find(rule => rule.rule === 'vitest-ci-path-coverage')
 
     expect(correspondence?.options?.stemSuffixesToStrip).toContain('.no-data.mock')
+    expect(correspondence?.options?.stemSuffixesToStrip).toContain('.no-data')
     expect(ciCoverage?.options?.projectFilters).toMatchObject({
       'backend-no-data-mocks': ['backend'],
       'backend-real-glide-mq': ['backend'],
