@@ -1,6 +1,7 @@
 import { upsertBackgroundCpuSchedules as upsertBackgroundCpuSchedulesOnQueue } from '@queues/background-cpu/enqueues/schedules'
+import type { ScheduledJobQueue } from '@vouchington/worker-runtime/schedule-manifest'
 
-export async function loadBackgroundCpuScheduleManifests() {
+async function loadBackgroundCpuScheduleManifests() {
   const [crawlDispatch, crawlReferral, crawlUnfurl, contentAnalysis, bedrock] = await Promise.all([
     import('@queues/crawl-dispatch/enqueues/schedules'),
     import('@queues/crawl-referral-links/enqueues/schedules'),
@@ -17,6 +18,6 @@ export async function loadBackgroundCpuScheduleManifests() {
   ]
 }
 
-export async function upsertBackgroundCpuSchedules(): Promise<void> {
-  await upsertBackgroundCpuSchedulesOnQueue(await loadBackgroundCpuScheduleManifests())
+export async function upsertBackgroundCpuSchedules(queue?: ScheduledJobQueue): Promise<void> {
+  await upsertBackgroundCpuSchedulesOnQueue(await loadBackgroundCpuScheduleManifests(), queue)
 }
