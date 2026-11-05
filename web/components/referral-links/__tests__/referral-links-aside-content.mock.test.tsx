@@ -56,15 +56,20 @@ function makeResponse(
 }
 
 describe('ReferralLinksAsideContent', () => {
-  it('renders nothing when there are no links', () => {
-    const { container } = render(
+  it('links to all referral links when the personalized list is empty', () => {
+    render(
       <ReferralLinksAsideContent
         topicId='topic-1'
+        topicSlug='chase-sapphire'
         topicType='card'
         response={{ links: [], users: {} }}
       />,
     )
-    expect(container).toBeEmptyDOMElement()
+    expect(screen.getByRole('heading', { name: 'Referral Links' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'View All' })).toHaveAttribute(
+      'href',
+      '/card/chase-sapphire/referral-links',
+    )
   })
 
   it('renders link and user name', () => {
