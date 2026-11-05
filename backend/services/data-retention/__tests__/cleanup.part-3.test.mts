@@ -106,12 +106,12 @@ describe('cleanupOldReferralAttributions', () => {
       linkedUser.id,
     )
 
-    const result = await runDataRetentionCleanup(
+    const oldReferralAttributionsCleanup = await runDataRetentionCleanup(
       { batchSize: 500, maxBatches: 1 },
       { families: ['oldReferralAttributions'], oldReferralAttributions: window },
     ).then(result => result.oldReferralAttributions)
 
-    expect(result).toEqual({ deleted: 0, hasMore: false })
+    expect(oldReferralAttributionsCleanup).toEqual({ deleted: 0, hasMore: false })
     expect(await referralAttributionExistsById(oldLinkedId)).toBe(true)
   })
 
@@ -135,12 +135,12 @@ describe('cleanupOldReferralAttributions', () => {
       window.afterUpperBoundDate,
     )
 
-    const result = await runDataRetentionCleanup(
+    const oldReferralAttributionsCleanup = await runDataRetentionCleanup(
       { batchSize: 500, maxBatches: 1 },
       { families: ['oldReferralAttributions'], oldReferralAttributions: window },
     ).then(result => result.oldReferralAttributions)
 
-    expect(result).toEqual({ deleted: 1, hasMore: false })
+    expect(oldReferralAttributionsCleanup).toEqual({ deleted: 1, hasMore: false })
     expect(await referralAttributionExistsById(originalId)).toBe(false)
     expect(await referralAttributionExistsById(movedId)).toBe(true)
   })
@@ -161,12 +161,12 @@ describe('cleanupOldReferralAttributions', () => {
     // the anonymous sweep even though signed_up_at is still set.
     await clearReferralAttributionUserId(rowId)
 
-    const result = await runDataRetentionCleanup(
+    const oldReferralAttributionsCleanup = await runDataRetentionCleanup(
       { batchSize: 500, maxBatches: 1 },
       { families: ['oldReferralAttributions'], oldReferralAttributions: window },
     ).then(result => result.oldReferralAttributions)
 
-    expect(result).toEqual({ deleted: 1, hasMore: false })
+    expect(oldReferralAttributionsCleanup).toEqual({ deleted: 1, hasMore: false })
     expect(await referralAttributionExistsById(rowId)).toBe(false)
   })
 

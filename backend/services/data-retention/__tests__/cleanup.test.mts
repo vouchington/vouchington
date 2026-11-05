@@ -150,12 +150,12 @@ describe('cleanupSoftDeletedUsers', () => {
 
     await softDeleteUserAt(user.id, window.afterUpperBoundDate)
 
-    const result = await runDataRetentionCleanup(
+    const softDeletedUsersCleanup = await runDataRetentionCleanup(
       { batchSize: 500, maxBatches: 1 },
       { families: ['softDeletedUsers'], softDeletedUsers: window },
     ).then(result => result.softDeletedUsers)
 
-    expect(result).toEqual({ deleted: 0, hasMore: false })
+    expect(softDeletedUsersCleanup).toEqual({ deleted: 0, hasMore: false })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
   }, 30_000)
 

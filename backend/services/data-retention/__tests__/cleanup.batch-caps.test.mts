@@ -153,7 +153,7 @@ describe('data retention per-run caps', () => {
       insertReferralAttributionAt(referrer.id, window.secondEligibleDate),
     ])
 
-    const result = await runDataRetentionCleanup(
+    const oldReferralAttributionsCleanup = await runDataRetentionCleanup(
       { batchSize: 500, maxBatches: 1 },
       {
         families: ['oldReferralAttributions'],
@@ -167,7 +167,7 @@ describe('data retention per-run caps', () => {
       },
     ).then(result => result.oldReferralAttributions)
 
-    expect(result).toEqual({ deleted: 2, hasMore: false })
+    expect(oldReferralAttributionsCleanup).toEqual({ deleted: 2, hasMore: false })
     expect(await Promise.all(ids.map(id => referralAttributionExistsById(id)))).toEqual([
       false,
       false,

@@ -11,7 +11,7 @@ import { communities } from '@/storybook/entities/fixtures/communities'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { StoryFrame } from '@/storybook/story-frame'
 
-const pageInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
+const emptyPageInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
 
 const meta = {
   title: 'Communities/Community Agent Prompts Panel',
@@ -77,12 +77,12 @@ function PromptPanelPreview({
 }
 
 export const WithPrompt: Story = {
-  args: { pageInfo, communitySlug: communities[0]!.slug, prompts: [prompt] },
+  args: { pageInfo: emptyPageInfo, communitySlug: communities[0]!.slug, prompts: [prompt] },
   render: args => <PromptPanelPreview {...args} />,
 }
 
 export const Empty: Story = {
-  args: { pageInfo, communitySlug: communities[0]!.slug, prompts: [] },
+  args: { pageInfo: emptyPageInfo, communitySlug: communities[0]!.slug, prompts: [] },
   render: args => <PromptPanelPreview {...args} />,
 }
 

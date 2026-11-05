@@ -59,12 +59,12 @@ describe('cleanup retention windows', () => {
     await softDeleteUserAt(atUpperBoundUser.id, window.upperBoundDate)
     await softDeleteUserAt(afterUpperBoundUser.id, window.afterUpperBoundDate)
 
-    const result = await runDataRetentionCleanup(
+    const softDeletedUsersCleanup = await runDataRetentionCleanup(
       { batchSize: 500, maxBatches: 1 },
       { families: ['softDeletedUsers'], softDeletedUsers: window },
     ).then(result => result.softDeletedUsers)
 
-    expect(result).toEqual({ deleted: 2, hasMore: false })
+    expect(softDeletedUsersCleanup).toEqual({ deleted: 2, hasMore: false })
     expect(await getTestUserRaw(beforeLowerBoundUser.id)).not.toBeNull()
     expect(await getTestUserRaw(firstEligibleUser.id)).toBeNull()
     expect(await getTestUserRaw(secondEligibleUser.id)).toBeNull()
@@ -93,12 +93,12 @@ describe('cleanup retention windows', () => {
       window.afterUpperBoundDate,
     )
 
-    const result = await runDataRetentionCleanup(
+    const oldReferralAttributionsCleanup = await runDataRetentionCleanup(
       { batchSize: 500, maxBatches: 1 },
       { families: ['oldReferralAttributions'], oldReferralAttributions: window },
     ).then(result => result.oldReferralAttributions)
 
-    expect(result).toEqual({ deleted: 2, hasMore: false })
+    expect(oldReferralAttributionsCleanup).toEqual({ deleted: 2, hasMore: false })
     expect(await referralAttributionExistsById(beforeLowerBoundId)).toBe(true)
     expect(await referralAttributionExistsById(firstEligibleId)).toBe(false)
     expect(await referralAttributionExistsById(secondEligibleId)).toBe(false)
@@ -142,12 +142,12 @@ describe('cleanup retention windows', () => {
       window.afterUpperBoundDate,
     )
 
-    const result = await runDataRetentionCleanup(
+    const orphanedOAuthAccountsCleanup = await runDataRetentionCleanup(
       { batchSize: 500, maxBatches: 1 },
       { families: ['orphanedOAuthAccounts'], orphanedOAuthAccounts: window },
     ).then(result => result.orphanedOAuthAccounts)
 
-    expect(result).toEqual({ deleted: 2, hasMore: false })
+    expect(orphanedOAuthAccountsCleanup).toEqual({ deleted: 2, hasMore: false })
     expect(await oauthAccountExistsByProviderUserId('github', beforeLowerBoundProviderUserId)).toBe(
       true,
     )
