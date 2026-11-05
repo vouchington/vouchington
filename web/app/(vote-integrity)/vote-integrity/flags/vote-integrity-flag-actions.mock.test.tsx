@@ -6,7 +6,7 @@ import type { VoteIntegrityFlagsState } from './use-vote-integrity-flags'
 vi.mock(import('@/lib/i18n/use-translations'), () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) => {
     if (key.endsWith('penaltyApplied_c21b6fb4')) return 'Penalty applied'
-    if (key.endsWith('countPenalized_2a7e9c14')) return `${values?.count} penalized`
+    if (key.endsWith('countPenalized_2a7e9c14')) return `${String(values?.count)} penalized`
     return key
   },
 }))

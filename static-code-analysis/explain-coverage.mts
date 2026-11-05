@@ -127,7 +127,7 @@ function formatGroups(entries: readonly UncoveredRead[]): string[] {
         left.fileName.localeCompare(right.fileName) ||
         left.line - right.line,
     )) {
-      const reason = 'reason' in read ? ` — ${read.reason}` : ''
+      const reason = 'reason' in read ? ` — ${String(read.reason)}` : ''
       lines.push(`  ${read.name} — ${read.fileName}:${read.line}${reason}`)
     }
   }

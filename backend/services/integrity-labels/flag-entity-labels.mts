@@ -86,7 +86,7 @@ function flagLabelQuery(domain: FlagDomain, ids: string[]): SQLStatement {
           LEFT JOIN moderator_agents agent ON agent.agent_id = am.agent_id
           WHERE f.id = ANY(${ids}::uuid[])`)
     default:
-      throw new Error(`Unsupported integrity flag domain: ${domain}`)
+      throw new Error(`Unsupported integrity flag domain: ${String(domain)}`)
   }
 }
 

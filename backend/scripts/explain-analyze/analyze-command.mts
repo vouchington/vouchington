@@ -62,7 +62,9 @@ export function analyzePairedResults(
     console.error(`Unstable sequential scans (advisory): ${JSON.stringify(unstable)}`)
   const nearTies = getSeqScanNearTies(results, repeatedResults)
   if (nearTies.length > 0)
-    console.error(`Sequential scans within a near-tie of an index plan (advisory): ${nearTies}`)
+    console.error(
+      `Sequential scans within a near-tie of an index plan (advisory): ${nearTies.join(',')}`,
+    )
   assertNoDisallowedRegressions(results, baseline)
   console.error(`Loaded ${results.length} query results`)
 

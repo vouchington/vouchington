@@ -57,7 +57,7 @@ function getTimeRangeLowerBoundTimestampMs(timeRange: TimeRange, now = new Date(
       return null
     default: {
       const _exhaustive: never = timeRange
-      throw new Error(`Unknown time range: ${_exhaustive}`)
+      throw new Error(`Unknown time range: ${String(_exhaustive)}`)
     }
   }
 }

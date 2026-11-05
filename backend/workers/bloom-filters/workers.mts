@@ -26,7 +26,7 @@ function runOne(job: Job): Promise<void> {
       return processors.processRebuildEmbeddingBloomFilter(job.data)
     default: {
       const exhaustiveCheck: never = jobName
-      throw new Error(`Bloom filter job ${exhaustiveCheck} not found`)
+      throw new Error(`Bloom filter job ${String(exhaustiveCheck)} not found`)
     }
   }
 }

@@ -184,7 +184,9 @@ describe('read_reference_data.countries, read_reference_data.currencies and read
       'read_reference_data',
       optionArgs('currencies', { limit: 4, after: cursor }),
     )
-    const rest = await createRequest().get(`/api/v1/currencies?limit=4&after=${cursor}`).expect(200)
+    const rest = await createRequest()
+      .get(`/api/v1/currencies?limit=4&after=${String(cursor)}`)
+      .expect(200)
 
     expect((first['results'] as Body[]).map(currency => currency['code'])).toEqual([
       'aud',

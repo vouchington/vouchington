@@ -86,6 +86,6 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
       )
     default:
       name satisfies never
-      throw new Error(`Unknown AI agent job: ${name}`)
+      throw new Error(`Unknown AI agent job: ${String(name)}`)
   }
 }
