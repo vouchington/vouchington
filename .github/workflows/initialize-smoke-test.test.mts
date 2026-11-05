@@ -23,7 +23,15 @@ function readWorkflow(): Workflow {
 function stepRun(name: string): string {
   const matchingStep = workflowStep(name)
   expect(matchingStep?.run).toBeTypeOf('string')
-  return matchingStep?.run ?? ''
+  const run = matchingStep?.run ?? ''
+  const scripts: Record<string, string> = {
+    'Prepare disposable worktree': '.github/workflows/initialize-smoke-test/prepare-worktree.sh',
+    'Ensure PostgreSQL is available': '.github/workflows/initialize-smoke-test/prepare-postgres.sh',
+  }
+  const script = scripts[name]
+  if (!script) return run
+  expect(run).toBe(`source ${script}`)
+  return readFileSync(script, 'utf8')
 }
 
 function workflowStep(name: string) {

@@ -132,6 +132,8 @@ describe('PostgreSQL workflow image policy', () => {
   })
 
   it('gives the initialize-smoke docker postgres the shared CI server settings', () => {
-    expect(readWorkflow('initialize-smoke-test.yml')).toContain(requiredDockerInitdbArgs)
+    const script = '.github/workflows/initialize-smoke-test/prepare-postgres.sh'
+    expect(readWorkflow('initialize-smoke-test.yml')).toContain(`run: source ${script}`)
+    expect(readFileSync(script, 'utf8')).toContain(requiredDockerInitdbArgs)
   })
 })
