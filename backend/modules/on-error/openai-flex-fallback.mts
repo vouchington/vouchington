@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { consoleContext } from './console-format.mts'
 
 const sentryThrottleMs = 60_000
 const lastSentryReportByKey = new Map<string, number>()
@@ -25,7 +26,17 @@ export type OpenAiFlexFallbackContext = {
  */
 export function recordOpenAiFlexFallback(context: OpenAiFlexFallbackContext): void {
   if (shouldLogToConsole()) {
-    console.warn('[openai-utils] flex capacity unavailable, resending on the default tier', context)
+    console.warn(
+      '[openai-utils] flex capacity unavailable, resending on the default tier',
+      consoleContext(
+        {
+          provider: context.provider,
+          model: context.model,
+          trigger: context.trigger,
+        },
+        context,
+      ),
+    )
   }
   Sentry.addBreadcrumb({
     category: 'openai',

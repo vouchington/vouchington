@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { consoleContext } from './console-format.mts'
 
 /**
  * Record that a scheduled or reconcile job skipped its run because required configuration (e.g. a
@@ -14,10 +15,10 @@ import { shouldLogToConsole } from './should-log-to-console.mts'
  */
 export function recordScheduledJobConfigMissing(jobName: string, missingEnvVar: string): void {
   if (shouldLogToConsole()) {
-    console.warn('[scheduled-job] skipping run, missing required config', {
-      jobName,
-      missingEnvVar,
-    })
+    console.warn(
+      '[scheduled-job] skipping run, missing required config',
+      consoleContext({ jobName, missingEnvVar }),
+    )
   }
   Sentry.captureMessage('scheduled_job_config_missing', {
     level: 'warning',

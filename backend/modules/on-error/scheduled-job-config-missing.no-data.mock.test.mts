@@ -66,13 +66,13 @@ describe('recordScheduledJobConfigMissing', () => {
     }
   })
 
-  it('does not log to the console in production outside CI, but still reports to Sentry', () => {
+  it('logs in production outside CI when Sentry is disabled and retains Sentry capture', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('CI', '')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
       recordScheduledJobConfigMissing('reconcile', 'S3_BUCKET_SES_INBOUND')
-      expect(consoleWarn).not.toHaveBeenCalled()
+      expect(consoleWarn).toHaveBeenCalledOnce()
       expect(captureMessage).toHaveBeenCalledOnce()
     } finally {
       consoleWarn.mockRestore()

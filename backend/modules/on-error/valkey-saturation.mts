@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { consoleContext } from './console-format.mts'
 
 const sentryThrottleMs = 10_000
 const lastSentryReportByClientCommand = new Map<string, number>()
@@ -18,7 +19,17 @@ export type ValkeySaturationContext = {
  */
 export function recordValkeySaturation(context: ValkeySaturationContext): void {
   if (shouldLogToConsole()) {
-    console.warn('[valkey] inflight saturation retry', context)
+    console.warn(
+      '[valkey] inflight saturation retry',
+      consoleContext(
+        {
+          client: context.client,
+          command: context.command,
+          attempt: context.attempt,
+        },
+        context,
+      ),
+    )
   }
   Sentry.addBreadcrumb({
     category: 'valkey',

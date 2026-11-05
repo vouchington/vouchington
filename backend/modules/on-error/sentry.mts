@@ -12,6 +12,8 @@ const sentryInitOptions = createVouchaSentryInitOptions({
   filter: { isExpected: isExpectedCrawlerOperationalError },
 })
 
-if (sentryInitOptions.enabled) SentrySdk.init(sentryInitOptions)
+export const sentryEnabled = sentryInitOptions.enabled
+
+if (sentryEnabled) SentrySdk.init(sentryInitOptions)
 
 export default SentrySdk

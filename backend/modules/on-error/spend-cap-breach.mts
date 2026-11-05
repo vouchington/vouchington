@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { consoleContext } from './console-format.mts'
 
 const spendCapBreachThrottleMs = 60_000
 let lastSpendCapBreachReportedAt: number | undefined
@@ -21,7 +22,18 @@ type SpendCapBreachContext = {
  */
 export function recordSpendCapBreach(context: SpendCapBreachContext): void {
   if (shouldLogToConsole()) {
-    console.warn('[ai-usage] daily AI spend cap breached', context)
+    console.warn(
+      '[ai-usage] daily AI spend cap breached',
+      consoleContext(
+        {
+          agentJobName: context.agentJobName,
+          dailyTotalMicrounits: context.dailyTotalMicrounits,
+          dailyCapMicrounits: context.dailyCapMicrounits,
+          reason: context.reason,
+        },
+        context,
+      ),
+    )
   }
   if (!shouldCaptureSentryMessage()) return
   Sentry.captureMessage('ai_spend_cap_breach', {

@@ -71,7 +71,6 @@ describe('onError console logging', () => {
     flush.mockReset()
     flush.mockResolvedValue(true)
   })
-
   it('logs to console in development', () => {
     process.env.NODE_ENV = 'development'
     delete process.env.CI
@@ -79,7 +78,6 @@ describe('onError console logging', () => {
     onError(err)
     expect(consoleSpy).toHaveBeenCalledWith(err)
   })
-
   it('logs to console in CI', () => {
     process.env.NODE_ENV = 'production'
     process.env.CI = 'true'
@@ -87,8 +85,7 @@ describe('onError console logging', () => {
     onError(err)
     expect(consoleSpy).toHaveBeenCalledWith(err)
   })
-
-  it('enriches structured console logs from request client context', () => {
+  it('omits IP and device identifiers from structured console logs', () => {
     process.env.NODE_ENV = 'development'
     delete process.env.CI
     const err = new Error('request failed')
@@ -113,12 +110,9 @@ describe('onError console logging', () => {
       client_platform: 'ios',
       client_app_version: '1.2.3',
       client_sdk_version: '2.0.0',
-      client_device_id: 'device-1',
-      client_ip_address: '203.0.113.1',
       request_id: 'request-1',
     })
   })
-
   it('does not log to console in test mode', () => {
     process.env.NODE_ENV = 'test'
     delete process.env.CI
@@ -126,7 +120,6 @@ describe('onError console logging', () => {
     onError(err)
     expect(consoleSpy).not.toHaveBeenCalled()
   })
-
   it('does not log to console in test mode even when CI=true', () => {
     process.env.NODE_ENV = 'test'
     process.env.CI = 'true'
@@ -134,15 +127,30 @@ describe('onError console logging', () => {
     onError(err)
     expect(consoleSpy).not.toHaveBeenCalled()
   })
-
-  it('does not log to console in production without CI', () => {
+  it('logs in production without CI when Sentry was disabled at initialization', () => {
     process.env.NODE_ENV = 'production'
     delete process.env.CI
     const err = new Error('prod error')
     onError(err)
-    expect(consoleSpy).not.toHaveBeenCalled()
+    expect(consoleSpy).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(`${err.name}:`))
   })
-
+  it('drops deployed console private fields while retaining the original Sentry error', () => {
+    process.env.NODE_ENV = 'production'
+    delete process.env.CI
+    const err = Object.assign(
+      new TypeError('https://user:private-password@example.test/path?code=private-code'),
+      {
+        cause: new Error('private-cause'),
+        request: { authorization: 'private-header' },
+      },
+    )
+    onError(err)
+    const output = JSON.stringify(consoleSpy.mock.calls)
+    for (const secret of ['private-password', 'private-code', 'private-cause', 'private-header']) {
+      expect(output).not.toContain(secret)
+    }
+    expect(captureException).toHaveBeenCalledWith(err, {})
+  })
   it('does not log 4xx errors', () => {
     process.env.NODE_ENV = 'development'
     delete process.env.CI
@@ -150,7 +158,6 @@ describe('onError console logging', () => {
     onError(err)
     expect(consoleSpy).not.toHaveBeenCalled()
   })
-
   it('does not log 4xx statusCode errors', () => {
     process.env.NODE_ENV = 'development'
     delete process.env.CI
@@ -158,7 +165,6 @@ describe('onError console logging', () => {
     onError(err)
     expect(consoleSpy).not.toHaveBeenCalled()
   })
-
   it('does not log ECONNRESET', () => {
     process.env.NODE_ENV = 'development'
     delete process.env.CI

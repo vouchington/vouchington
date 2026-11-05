@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { consoleContext } from './console-format.mts'
 
 /**
  * Record that an SQS consumer's required configuration (e.g. a queue URL env var) is absent, so
@@ -15,10 +16,10 @@ import { shouldLogToConsole } from './should-log-to-console.mts'
  */
 export function recordSqsConsumerConfigMissing(queueName: string, missingEnvVar: string): void {
   if (shouldLogToConsole()) {
-    console.warn('[sqs-consumer] skipping consumer, missing required config', {
-      queueName,
-      missingEnvVar,
-    })
+    console.warn(
+      '[sqs-consumer] skipping consumer, missing required config',
+      consoleContext({ queueName, missingEnvVar }),
+    )
   }
   Sentry.captureMessage('sqs_consumer_config_missing', {
     level: 'warning',

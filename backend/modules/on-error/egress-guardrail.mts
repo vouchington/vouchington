@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
+import { useFullConsoleOutput, consoleContext } from './console-format.mts'
 
 /**
  * Record that the API process attempted direct egress to a host that is neither on the IPv6
@@ -21,7 +22,11 @@ export function recordOffAllowlistEgress(
   extra: { path?: string; method?: string },
 ): void {
   if (shouldLogToConsole()) {
-    console.warn('[egress-guardrail] off-allowlist API egress', host, extra)
+    console.warn(
+      '[egress-guardrail] off-allowlist API egress',
+      ...(useFullConsoleOutput() ? [host] : []),
+      consoleContext({ path: extra.path, method: extra.method }, extra),
+    )
   }
   Sentry.captureMessage(`off-allowlist API egress: ${host}`, {
     level: 'warning',

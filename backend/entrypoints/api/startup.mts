@@ -5,9 +5,8 @@ import { shouldRejectPlaywrightTest } from './boot-guards.mts'
 type ApiStartupDeps = {
   exitWithFailure: () => void
   flushErrorReporting: () => Promise<void>
-  logError: (error: Error) => void
   logListening: (port: number) => void
-  reportError: (error: Error) => void
+  reportFatalError: (error: Error) => void
 }
 
 export function exitAfterErrorReporting(
@@ -22,13 +21,10 @@ export function exitAfterErrorReporting(
 export async function startApiServer(
   server: http.Server,
   port: number,
-  { exitWithFailure, flushErrorReporting, logError, logListening, reportError }: ApiStartupDeps,
+  { exitWithFailure, flushErrorReporting, logListening, reportFatalError }: ApiStartupDeps,
 ): Promise<void> {
   function handleServerStartupError(error: Error) {
-    // Console first: a deployed process with Sentry disabled has no other output, so a fatal
-    // boot error must never depend on the reporter to be visible.
-    logError(error)
-    reportError(error)
+    reportFatalError(error)
     exitAfterErrorReporting(flushErrorReporting, exitWithFailure)
   }
 

@@ -108,7 +108,7 @@ describe('recordSpendCapBreach', () => {
     }
   })
 
-  it('does not log to console in production without CI', async () => {
+  it('logs in production without CI when Sentry is disabled', async () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('CI', '')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -116,7 +116,7 @@ describe('recordSpendCapBreach', () => {
       const { recordSpendCapBreach } = await import('./spend-cap-breach.mts')
       recordSpendCapBreach(breachContext)
 
-      expect(consoleWarn).not.toHaveBeenCalled()
+      expect(consoleWarn).toHaveBeenCalledOnce()
     } finally {
       consoleWarn.mockRestore()
       vi.unstubAllEnvs()
