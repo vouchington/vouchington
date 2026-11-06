@@ -1656,11 +1656,6 @@
 - `video`
 - `mixed`
 
-## `rss_feed_item_candidate_reconciliation_phases`
-
-- `sources`
-- `topics`
-
 ## `rss_feed_item_media_types`
 
 - `article`
@@ -1696,7 +1691,6 @@
 - `rss_item_categories`
 - `rss_item_text_categories`
 - `rss_feed_text_categories`
-- `rss_item_alias_candidates`
 - `completed`
 
 ## `topic_claim_verification_methods`

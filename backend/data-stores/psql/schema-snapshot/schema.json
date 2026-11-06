@@ -1255,9 +1255,6 @@
     "rss_feed_content_types": {
       "values": ["article", "podcast", "video", "mixed"]
     },
-    "rss_feed_item_candidate_reconciliation_phases": {
-      "values": ["sources", "topics"]
-    },
     "rss_feed_item_media_types": {
       "values": ["article", "audio", "video"]
     },
@@ -1287,7 +1284,6 @@
         "rss_item_categories",
         "rss_item_text_categories",
         "rss_feed_text_categories",
-        "rss_item_alias_candidates",
         "completed"
       ]
     },
@@ -1669,18 +1665,6 @@
     },
     "fn_project_retire_notification_push_intent": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_retire_notification_push_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- Retire the prior effect before its foreign keys can cascade to the new generation.\n  DELETE FROM notification_push_intents\n  WHERE user_id = OLD.user_id AND notification_id = OLD.id;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_project_rss_feed_category_candidates": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_category_candidates()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_update_rss_feed_item_topic_candidate_memberships(\n    CASE WHEN TG_OP <> 'INSERT' THEN OLD.rss_feed_item_id END,\n    CASE WHEN TG_OP <> 'INSERT' THEN OLD.topic_id END,\n    CASE WHEN TG_OP <> 'DELETE' THEN NEW.rss_feed_item_id END,\n    CASE WHEN TG_OP <> 'DELETE' THEN NEW.topic_id END);\n  RETURN NULL;\nEND $function$\n"
-    },
-    "fn_project_rss_feed_item_feed_candidate": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_item_feed_candidate()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO rss_feed_item_feed_candidates (id, story_id, sort_at, deleted_at)\n  VALUES (NEW.id, NEW.story_id, NEW.published_at, NEW.deleted_at)\n  ON CONFLICT (id) DO UPDATE SET story_id = EXCLUDED.story_id,\n    sort_at = EXCLUDED.sort_at, deleted_at = EXCLUDED.deleted_at;\n  IF TG_OP = 'UPDATE' AND (OLD.published_at IS DISTINCT FROM NEW.published_at\n      OR OLD.deleted_at IS DISTINCT FROM NEW.deleted_at) THEN\n    INSERT INTO rss_feed_item_candidate_reconciliations (rss_feed_item_id) VALUES (NEW.id)\n    ON CONFLICT (rss_feed_item_id) DO UPDATE SET\n      generation = rss_feed_item_candidate_reconciliations.generation + 1,\n      phase = 'sources', cursor_feed_id = NULL, cursor_topic_id = NULL;\n  END IF;\n  RETURN NULL;\nEND $function$\n"
-    },
-    "fn_project_rss_feed_topic_alias_relation_candidates": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_topic_alias_relation_candidates()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP <> 'INSERT' AND (TG_OP = 'DELETE' OR OLD.subject_id IS DISTINCT FROM NEW.subject_id\n      OR OLD.object_id IS DISTINCT FROM NEW.object_id OR NEW.deleted_at IS NOT NULL OR NEW.votes_score_net <= 0) THEN\n    DELETE FROM rss_feed_item_topic_alias_candidates\n      WHERE rss_feed_item_id = OLD.subject_id AND topic_alias_id = OLD.object_id;\n  END IF;\n  IF TG_OP <> 'DELETE' AND NEW.deleted_at IS NULL AND NEW.votes_score_net > 0 THEN\n    INSERT INTO rss_feed_item_topic_alias_candidates (rss_feed_item_id, topic_alias_id, topic_id)\n    SELECT NEW.subject_id, alias.id, alias.topic_id FROM topic_aliases alias\n      WHERE alias.id = NEW.object_id\n    ON CONFLICT (topic_alias_id, rss_feed_item_id) DO UPDATE SET topic_id = EXCLUDED.topic_id\n      WHERE rss_feed_item_topic_alias_candidates.topic_id IS DISTINCT FROM EXCLUDED.topic_id;\n  END IF;\n  RETURN NULL;\nEND $function$\n"
-    },
-    "fn_project_rss_feed_topic_relation_candidates": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_topic_relation_candidates()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_update_rss_feed_item_topic_candidate_memberships(\n    CASE WHEN TG_OP <> 'INSERT' THEN OLD.subject_id END,\n    CASE WHEN TG_OP <> 'INSERT' AND OLD.deleted_at IS NULL AND OLD.votes_score_net > 0 THEN OLD.object_id END,\n    CASE WHEN TG_OP <> 'DELETE' THEN NEW.subject_id END,\n    CASE WHEN TG_OP <> 'DELETE' AND NEW.deleted_at IS NULL AND NEW.votes_score_net > 0 THEN NEW.object_id END);\n  RETURN NULL;\nEND $function$\n"
     },
     "fn_project_story_post_related_url_relation_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_story_post_related_url_relation_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.deleted_at IS NOT NULL OR\n    current_setting('voucha.story_post_related_url_projection_write', true) = 'true' THEN\n    RETURN NEW;\n  END IF;\n\n  INSERT INTO story_post_related_url_projection_relation_mutations (post_id, generation, relation_id)\n  SELECT work.post_id, work.generation, NEW.id\n  FROM story_post_related_url_projection_jobs work\n  WHERE work.post_id = NEW.subject_id\n  ON CONFLICT DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -2141,20 +2125,8 @@
     "fn_update_retained_copyright_notice_identity_residual": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_retained_copyright_notice_identity_residual()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE retained_copyright_notice_identities SET case_deleted_at = clock_timestamp() WHERE id = OLD.id;\n  RETURN NULL;\nEND;\n$function$\n"
     },
-    "fn_update_rss_feed_item_topic_candidate_count(item_id uuid, target_topic_id uuid, delta integer)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_topic_candidate_count(item_id uuid, target_topic_id uuid, delta integer)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_count BIGINT;\nBEGIN\n  IF item_id IS NULL OR target_topic_id IS NULL THEN RETURN; END IF;\n  IF delta = 1 THEN\n    INSERT INTO rss_feed_item_topic_candidates (rss_feed_item_id, topic_id, sort_at, membership_count)\n    SELECT id, target_topic_id, CASE WHEN deleted_at IS NULL THEN published_at END, 1\n    FROM rss_feed_items WHERE id = item_id\n    ON CONFLICT (rss_feed_item_id, topic_id) DO UPDATE\n      SET membership_count = rss_feed_item_topic_candidates.membership_count + 1;\n  ELSE\n    SELECT membership_count INTO current_count FROM rss_feed_item_topic_candidates\n      WHERE rss_feed_item_id = item_id AND topic_id = target_topic_id FOR UPDATE;\n    IF current_count = 1 THEN\n      DELETE FROM rss_feed_item_topic_candidates\n        WHERE rss_feed_item_id = item_id AND topic_id = target_topic_id;\n    ELSIF current_count > 1 THEN\n      UPDATE rss_feed_item_topic_candidates SET membership_count = membership_count - 1\n        WHERE rss_feed_item_id = item_id AND topic_id = target_topic_id;\n    END IF;\n  END IF;\nEND $function$\n"
-    },
-    "fn_update_rss_feed_item_topic_candidate_memberships(old_item uuid, old_topic uuid, new_item uuid, new_topic uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_topic_candidate_memberships(old_item uuid, old_topic uuid, new_item uuid, new_topic uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE change RECORD;\nBEGIN\n  IF old_item IS NOT DISTINCT FROM new_item AND old_topic IS NOT DISTINCT FROM new_topic THEN RETURN; END IF;\n  -- Exactly two contribution keys; deterministic order also covers topic moves.\n  FOR change IN SELECT * FROM (VALUES (old_item, old_topic, -1), (new_item, new_topic, 1))\n      AS changes(item_id, topic_id, delta) WHERE topic_id IS NOT NULL ORDER BY item_id, topic_id\n  LOOP\n    PERFORM fn_update_rss_feed_item_topic_candidate_count(change.item_id, change.topic_id, change.delta);\n  END LOOP;\nEND $function$\n"
-    },
     "fn_update_rss_feed_items_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_items_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.data->>'title', '')), 'A') ||\n    setweight(to_tsvector('voucha_english',\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encodedSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encoded', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'contentSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'summary', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'media:description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '')\n    ), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_update_rss_feed_latest_item_sort": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_latest_item_sort()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE feed_id UUID; latest_sort TIMESTAMPTZ;\nBEGIN\n  -- At most the old and new feed; no follower rows are touched.\n  FOR feed_id IN SELECT DISTINCT value FROM unnest(ARRAY[\n    CASE WHEN TG_OP <> 'INSERT' THEN OLD.rss_feed_id END,\n    CASE WHEN TG_OP <> 'DELETE' THEN NEW.rss_feed_id END\n  ]) AS ids(value) WHERE value IS NOT NULL ORDER BY value\n  LOOP\n    -- Serialize before taking the source snapshot, including concurrent first inserts.\n    PERFORM 1 FROM rss_feeds WHERE id = feed_id FOR NO KEY UPDATE;\n    SELECT item_sort_at INTO latest_sort FROM rss_feed_item_sources\n      WHERE rss_feed_id = feed_id AND item_sort_at IS NOT NULL\n      ORDER BY item_sort_at DESC, rss_feed_item_id DESC LIMIT 1;\n    UPDATE rss_feeds SET latest_item_sort_at = latest_sort\n      WHERE id = feed_id AND latest_item_sort_at IS DISTINCT FROM latest_sort;\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
-    },
-    "fn_update_rss_feed_source_item_sort": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_source_item_sort()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- Read the canonical row: its AFTER projection trigger may still be queued in a data-modifying CTE.\n  SELECT CASE WHEN deleted_at IS NULL THEN published_at END INTO NEW.item_sort_at\n    FROM rss_feed_items WHERE id = NEW.rss_feed_item_id;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_update_topic_bookmark_stats_for_topic_id(target_topic_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_topic_bookmark_stats_for_topic_id(target_topic_id uuid)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  UPDATE topic_metrics\n  SET\n    bookmarks__updated_at = CURRENT_TIMESTAMP,\n    bookmarks__follow_count = (\n      SELECT COUNT(*)\n      FROM relation__user__follow__topic\n      WHERE object_id = target_topic_id AND deleted_at IS NULL\n    )\n  WHERE topic_id = target_topic_id;\n$function$\n"
@@ -19740,33 +19712,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_community_list_rss_feeds__active_feed": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_rss_feeds__active_feed ON public.community_list_rss_feeds USING btree (rss_feed_id, community_id DESC) WHERE (removed_at IS NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "rss_feed_id",
-              "descending": false,
-              "expression": "rss_feed_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "community_id",
-              "descending": true,
-              "expression": "community_id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(removed_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_community_list_rss_feeds__added_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -20080,33 +20025,6 @@
           "primary": true,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_community_list_topics__active_topic": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_topics__active_topic ON public.community_list_topics USING btree (topic_id, community_id DESC) WHERE (removed_at IS NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "community_id",
-              "descending": true,
-              "expression": "community_id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(removed_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_community_list_topics__added_by_id": {
@@ -99597,8 +99515,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')",
-        "trigger_rss_feed_topic_relation_candidates": "CREATE TRIGGER trigger_rss_feed_topic_relation_candidates AFTER INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_topic_relation_candidates()"
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
       },
       "uniqueConstraints": {
         "relation__rss_feed_item__category__topic_subject_id_id_key": {
@@ -100475,9 +100392,7 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {
-        "trigger_rss_feed_topic_alias_relation_candidates": "CREATE TRIGGER trigger_rss_feed_topic_alias_relation_candidates AFTER INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic_alias FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_topic_alias_relation_candidates()"
-      },
+      "triggers": {},
       "uniqueConstraints": {
         "uq_relatio__rss_feed_item__category__topic_alias__subject_id_id": {
           "columns": ["subject_id", "id"],
@@ -122739,110 +122654,6 @@
       },
       "uniqueConstraints": {}
     },
-    "rss_feed_item_candidate_reconciliations": {
-      "checkConstraints": {},
-      "columns": {
-        "cursor_feed_id": {
-          "collation": null,
-          "comment": "Opaque last source key scanned; may outlive a removed feed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
-        "cursor_topic_id": {
-          "collation": null,
-          "comment": "Opaque last topic key scanned; may outlive a removed topic.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "uuid"
-        },
-        "generation": {
-          "collation": null,
-          "comment": "Monotonic signal generation; new item changes reset both page cursors.",
-          "defaultExpression": "1",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "bigint"
-        },
-        "phase": {
-          "collation": null,
-          "comment": "Current bounded association stream.",
-          "defaultExpression": "'sources'::rss_feed_item_candidate_reconciliation_phases",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "rss_feed_item_candidate_reconciliation_phases"
-        },
-        "rss_feed_item_id": {
-          "collation": null,
-          "comment": "Live item needing projection fanout; item deletion cascades.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        }
-      },
-      "comment": "Coalesced pending canonical-date/deletion projection fanout. Bounded source/topic pages advance transactionally and completion deletes the row.",
-      "foreignKeys": {
-        "rss_feed_item_candidate_reconciliations_rss_feed_item_id_fkey": {
-          "columns": ["rss_feed_item_id"],
-          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "rss_feed_items",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "rss_feed_item_candidate_reconciliations_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_item_candidate_reconciliations_pkey ON public.rss_feed_item_candidate_reconciliations USING btree (rss_feed_item_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["rss_feed_item_id"],
-        "definition": "PRIMARY KEY (rss_feed_item_id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
     "rss_feed_item_categories": {
       "checkConstraints": {},
       "columns": {
@@ -123118,7 +122929,6 @@
       "triggers": {
         "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_refresh_rss_feed_item_unmapped_category_count": "CREATE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count AFTER INSERT OR DELETE OR UPDATE OF category_identity_id, topic_id ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()",
-        "trigger_rss_feed_category_candidates": "CREATE TRIGGER trigger_rss_feed_category_candidates AFTER INSERT OR DELETE OR UPDATE OF topic_id, rss_feed_item_id ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_category_candidates()",
         "trigger_rss_feed_item_categories_updated_at": "CREATE TRIGGER trigger_rss_feed_item_categories_updated_at BEFORE UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -123379,169 +123189,6 @@
       "triggers": {
         "trigger_rss_feed_item_category_snapshot_reconcile_updated_at": "CREATE TRIGGER trigger_rss_feed_item_category_snapshot_reconcile_updated_at BEFORE UPDATE ON public.rss_feed_item_category_snapshot_reconciliations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
-    },
-    "rss_feed_item_feed_candidates": {
-      "checkConstraints": {},
-      "columns": {
-        "deleted_at": {
-          "collation": null,
-          "comment": "Current item deletion marker; excluded by the live story-order index.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": "Live RSS item identity; foreign key cascades on item deletion.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "sort_at": {
-          "collation": null,
-          "comment": "Current canonical publication order copied from the item.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "story_id": {
-          "collation": null,
-          "comment": "Current story membership; the story foreign key is installed with its canonical creator.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        }
-      },
-      "comment": "Current item order and story membership projection; one row per live item identity and cascading item deletion, not event history.",
-      "foreignKeys": {
-        "fk_rss_feed_item_feed_candidates__story": {
-          "columns": ["story_id"],
-          "definition": "FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "stories",
-          "validated": true
-        },
-        "rss_feed_item_feed_candidates_id_fkey": {
-          "columns": ["id"],
-          "definition": "FOREIGN KEY (id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "rss_feed_items",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "idx_rss_feed_item_feed_candidates__story": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_feed_candidates__story ON public.rss_feed_item_feed_candidates USING btree (story_id, id) WHERE (story_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "story_id",
-              "descending": false,
-              "expression": "story_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(story_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_rss_feed_item_feed_candidates__story_order": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_feed_candidates__story_order ON public.rss_feed_item_feed_candidates USING btree (story_id, sort_at DESC, id DESC) WHERE ((story_id IS NOT NULL) AND (deleted_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "story_id",
-              "descending": false,
-              "expression": "story_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "sort_at",
-              "descending": true,
-              "expression": "sort_at",
-              "nullsFirst": true,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((story_id IS NOT NULL) AND (deleted_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "rss_feed_item_feed_candidates_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_item_feed_candidates_pkey ON public.rss_feed_item_feed_candidates USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
       "uniqueConstraints": {}
     },
     "rss_feed_item_feed_shares": {
@@ -124179,17 +123826,6 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "item_sort_at": {
-          "collation": null,
-          "comment": "Projected current canonical item publication time, distinct from first-observed source payload publication; NULL for a hidden item. Corrections are refreshed in bounded pages.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
           "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
@@ -124311,40 +123947,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_rss_feed_item_sources__item_sort": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_sources__item_sort ON public.rss_feed_item_sources USING btree (rss_feed_id, item_sort_at DESC, rss_feed_item_id DESC) WHERE (item_sort_at IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "rss_feed_id",
-              "descending": false,
-              "expression": "rss_feed_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "item_sort_at",
-              "descending": true,
-              "expression": "item_sort_at",
-              "nullsFirst": true,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "rss_feed_item_id",
-              "descending": true,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(item_sort_at IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_rss_feed_item_sources__missing_published_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -124405,347 +124007,6 @@
       "primaryKey": {
         "columns": ["rss_feed_id", "rss_feed_item_id"],
         "definition": "PRIMARY KEY (rss_feed_id, rss_feed_item_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_rss_feed_latest_item_sort": "CREATE TRIGGER trigger_rss_feed_latest_item_sort AFTER INSERT OR DELETE OR UPDATE OF item_sort_at, rss_feed_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_latest_item_sort()",
-        "trigger_rss_feed_source_item_sort": "CREATE TRIGGER trigger_rss_feed_source_item_sort BEFORE INSERT OR UPDATE OF item_sort_at, rss_feed_item_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_source_item_sort()"
-      },
-      "uniqueConstraints": {}
-    },
-    "rss_feed_item_topic_alias_candidates": {
-      "checkConstraints": {},
-      "columns": {
-        "rss_feed_item_id": {
-          "collation": null,
-          "comment": "Current relation subject; item deletion cascades.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "topic_alias_id": {
-          "collation": null,
-          "comment": "Current voted alias; alias deletion cascades.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "topic_id": {
-          "collation": null,
-          "comment": "Last projected alias owner; NULL for an unlinked alias.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        }
-      },
-      "comment": "Current positive alias-relation contribution, including unlinked aliases for bounded ownership reconciliation.",
-      "foreignKeys": {
-        "fk_rss_feed_item_topic_alias_candidates__relation": {
-          "columns": ["rss_feed_item_id", "topic_alias_id"],
-          "definition": "FOREIGN KEY (rss_feed_item_id, topic_alias_id) REFERENCES relation__rss_feed_item__category__topic_alias(subject_id, object_id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["subject_id", "object_id"],
-          "referencedTable": "relation__rss_feed_item__category__topic_alias",
-          "validated": true
-        },
-        "rss_feed_item_topic_alias_candidates_rss_feed_item_id_fkey": {
-          "columns": ["rss_feed_item_id"],
-          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "rss_feed_items",
-          "validated": true
-        },
-        "rss_feed_item_topic_alias_candidates_topic_alias_id_fkey": {
-          "columns": ["topic_alias_id"],
-          "definition": "FOREIGN KEY (topic_alias_id) REFERENCES topic_aliases(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "topic_aliases",
-          "validated": true
-        },
-        "rss_feed_item_topic_alias_candidates_topic_id_fkey": {
-          "columns": ["topic_id"],
-          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "topics",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "idx_rss_feed_item_topic_alias_candidates__item": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_topic_alias_candidates__item ON public.rss_feed_item_topic_alias_candidates USING btree (rss_feed_item_id, topic_alias_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "topic_alias_id",
-              "descending": false,
-              "expression": "topic_alias_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_rss_feed_item_topic_alias_candidates__topic": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_topic_alias_candidates__topic ON public.rss_feed_item_topic_alias_candidates USING btree (topic_id) WHERE (topic_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "rss_feed_item_topic_alias_candidates_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_item_topic_alias_candidates_pkey ON public.rss_feed_item_topic_alias_candidates USING btree (topic_alias_id, rss_feed_item_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_alias_id",
-              "descending": false,
-              "expression": "topic_alias_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["topic_alias_id", "rss_feed_item_id"],
-        "definition": "PRIMARY KEY (topic_alias_id, rss_feed_item_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.rss_feed_item_topic_alias_candidates FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
-        "trigger_rss_feed_alias_candidate_memberships": "CREATE TRIGGER trigger_rss_feed_alias_candidate_memberships AFTER INSERT OR DELETE OR UPDATE OF topic_id, rss_feed_item_id ON public.rss_feed_item_topic_alias_candidates FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_category_candidates()"
-      },
-      "uniqueConstraints": {}
-    },
-    "rss_feed_item_topic_candidates": {
-      "checkConstraints": {
-        "rss_feed_item_topic_candidates_membership_count_check": "CHECK ((membership_count > 0))"
-      },
-      "columns": {
-        "membership_count": {
-          "collation": null,
-          "comment": "Positive count of current category, topic-relation and alias-relation contributions.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "bigint"
-        },
-        "rss_feed_item_id": {
-          "collation": null,
-          "comment": "Live item foreign key; item deletion cascades.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "sort_at": {
-          "collation": null,
-          "comment": "Projected canonical item publication time; hidden items have no sortable timestamp.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "topic_id": {
-          "collation": null,
-          "comment": "Current matched topic; topic deletion cascades.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        }
-      },
-      "comment": "Current topic-to-item membership projection coalescing RSS categories and positive voted relations; deleted when the last contribution disappears.",
-      "foreignKeys": {
-        "rss_feed_item_topic_candidates_rss_feed_item_id_fkey": {
-          "columns": ["rss_feed_item_id"],
-          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "rss_feed_items",
-          "validated": true
-        },
-        "rss_feed_item_topic_candidates_topic_id_fkey": {
-          "columns": ["topic_id"],
-          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "topics",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "idx_rss_feed_item_topic_candidates__topic": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_topic_candidates__topic ON public.rss_feed_item_topic_candidates USING btree (topic_id, rss_feed_item_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_rss_feed_item_topic_candidates__topic_order": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_topic_candidates__topic_order ON public.rss_feed_item_topic_candidates USING btree (topic_id, sort_at DESC, rss_feed_item_id DESC) WHERE (sort_at IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "sort_at",
-              "descending": true,
-              "expression": "sort_at",
-              "nullsFirst": true,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "rss_feed_item_id",
-              "descending": true,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(sort_at IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "rss_feed_item_topic_candidates_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_item_topic_candidates_pkey ON public.rss_feed_item_topic_candidates USING btree (rss_feed_item_id, topic_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["rss_feed_item_id", "topic_id"],
-        "definition": "PRIMARY KEY (rss_feed_item_id, topic_id)"
       },
       "relationKind": "table",
       "triggers": {},
@@ -125982,6 +125243,40 @@
           "unique": false,
           "valid": true
         },
+        "idx_rss_feed_items__story_id__published_at__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__story_id__published_at__id ON ONLY public.rss_feed_items USING btree (story_id, published_at DESC, id DESC) WHERE ((story_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "published_at",
+              "descending": true,
+              "expression": "published_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((story_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_rss_feed_items__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -126129,7 +125424,6 @@
       "relationKind": "partitioned table",
       "triggers": {
         "trigger_register_retained_rss_feed_item_identity": "CREATE TRIGGER trigger_register_retained_rss_feed_item_identity BEFORE INSERT ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('rss_feed_item')",
-        "trigger_rss_feed_item_feed_candidate": "CREATE TRIGGER trigger_rss_feed_item_feed_candidate AFTER INSERT OR UPDATE OF data, story_id, deleted_at ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_item_feed_candidate()",
         "trigger_rss_feed_items_updated_at": "CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_sync_rss_feed_items_search_vector": "CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_items_search_vector()"
       },
@@ -126350,7 +125644,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "created_at": {
@@ -126361,7 +125655,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -126372,7 +125666,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "uuid"
         },
         "created_via": {
@@ -126405,7 +125699,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 20,
           "type": "text"
         },
         "deleted_at": {
@@ -126416,7 +125710,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "etag": {
@@ -126438,7 +125732,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18,
+          "ordinalPosition": 17,
           "type": "rss_feed_content_types"
         },
         "hard_delete_requested_at": {
@@ -126449,7 +125743,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -126471,7 +125765,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 20,
+          "ordinalPosition": 19,
           "type": "boolean"
         },
         "is_enabled": {
@@ -126482,7 +125776,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19,
+          "ordinalPosition": 18,
           "type": "boolean"
         },
         "last_fetched_at": {
@@ -126507,17 +125801,6 @@
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
-        "latest_item_sort_at": {
-          "collation": null,
-          "comment": "Latest projected canonical item publication time; ranks the bounded followed-source set without follower fanout.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "timestamp with time zone"
-        },
         "rss_feed_url_id": {
           "collation": null,
           "comment": "The URL of the RSS/Atom feed.",
@@ -126537,7 +125820,7 @@
           "generatedExpression": "setweight(to_tsvector('voucha_english'::regconfig, COALESCE(title, ''::text)), 'A'::\"char\")",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "tsvector"
         },
         "should_ignore_robots_txt": {
@@ -126548,7 +125831,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 21,
           "type": "boolean"
         },
         "title": {
@@ -126581,7 +125864,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 22,
           "type": "smallint[]"
         },
         "updated_at": {
@@ -126592,7 +125875,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         }
       },
@@ -126808,26 +126091,6 @@
             }
           ],
           "predicate": "((is_enabled = true) AND (deleted_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_rss_feeds__live_activity_lookup": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feeds__live_activity_lookup ON public.rss_feeds USING btree (id) INCLUDE (latest_item_sort_at) WHERE (is_enabled AND (deleted_at IS NULL))",
-          "includedColumns": ["latest_item_sort_at"],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(is_enabled AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
