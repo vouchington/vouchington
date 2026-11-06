@@ -62,7 +62,10 @@ async function seedReplacementWork(storyId: string): Promise<ProjectionWork[]> {
       SELECT post_id, $2, (SELECT id FROM relation__post__related__url
         WHERE subject_id = post_id ORDER BY id DESC LIMIT 1), clock_timestamp(),
         clock_timestamp(), post_id, clock_timestamp(), clock_timestamp() + INTERVAL '1 day'
-      FROM unnest($1::uuid[]) input(post_id) RETURNING *`,
+      FROM unnest($1::uuid[]) input(post_id)
+      RETURNING post_id, story_id, generation, sweep_upper_bound_source_id,
+        sweep_upper_bound_relation_id, relation_snapshot_at, cursor_source_id,
+        eligibility_completed_at, source_completed_at, cursor_prune_id, lease_token`,
     [seed.posts, storyId],
   )
   await write(
