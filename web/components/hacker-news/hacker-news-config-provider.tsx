@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { getHackerNewsConfigClient } from '@/lib/api/client/hacker-news-config'
 import type { HackerNewsConfig } from '@/lib/hacker-news-config'
@@ -67,6 +67,10 @@ export function HackerNewsConfigProvider({
     }))
   }
   const config = snapshot.config
+  const observedConfig = useRef(config)
+  useLayoutEffect(() => {
+    observedConfig.current = config
+  }, [config])
   const initialReferencesVisible = initialConfig.references_visible
   const initialPostTimeRangeCap = initialConfig.post_time_range_cap
   const router = useRouter()
@@ -76,7 +80,7 @@ export function HackerNewsConfigProvider({
       references_visible: initialReferencesVisible,
       post_time_range_cap: initialPostTimeRangeCap,
     }
-    let current = serverConfig
+    let current = observedConfig.current
     async function refresh() {
       try {
         const next = await getHackerNewsConfigClient()
