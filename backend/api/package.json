@@ -265,6 +265,7 @@
     "@aws-sdk/client-s3": "^3.1161.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "@modules/structured-decisions": "workspace:^",
+    "@queues/hacker-news-flags": "workspace:^",
     "@services/openai-agents": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@types/node": "^26.6.5",

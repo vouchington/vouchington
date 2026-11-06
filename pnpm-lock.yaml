@@ -1360,6 +1360,9 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../modules/structured-decisions
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../queues/hacker-news-flags
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents
