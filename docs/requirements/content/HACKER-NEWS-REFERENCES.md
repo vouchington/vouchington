@@ -42,5 +42,6 @@ until it is old enough or another qualifying event occurs; an unattended URL can
 flight may finish; incomplete results are discarded when pulling has been disabled.
 
 Backend configuration propagates through Valkey notifications with a periodic refresh fallback.
-Open web pages poll the public configuration and refresh their data after changes; background timer
-throttling, connectivity failures, and service outages can delay convergence.
+Open web pages poll the public configuration and retry data refreshes until the server acknowledges
+the same settings, preserving application state while counts converge. Background timer throttling,
+connectivity failures, and service outages can delay convergence.
