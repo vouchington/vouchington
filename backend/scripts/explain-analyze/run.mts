@@ -70,7 +70,6 @@ import { runRequestContextFoldScenarios } from './run-scenarios/request-context-
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 import { runIngestionRawPageScenarios } from './run-scenarios/ingestion-raw-pages.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
-import { runIneligibleCollectionPageScenarios } from './run-scenarios/ineligible-collection-pages.mts'
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
 import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
@@ -115,7 +114,6 @@ async function main() {
     await runStep(runFollowerDistributionScenarios.name, runFollowerDistributionScenarios)
     await runStep(runEntityAndCommunityScenarios.name, runEntityAndCommunityScenarios)
     await runStep(runViewDrivenReadScenarios.name, runViewDrivenReadScenarios)
-    await runStep(runIneligibleCollectionPageScenarios.name, runIneligibleCollectionPageScenarios)
     await runStep(runTopicImportAttemptScenarios.name, runTopicImportAttemptScenarios)
     await runStep(runImportRequestRetentionScenarios.name, runImportRequestRetentionScenarios)
     await runStep(runPostModerationRetentionScenarios.name, runPostModerationRetentionScenarios)
