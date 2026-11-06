@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestUser,
   createRandomString,
@@ -17,6 +18,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { importCommunityList } from '../import.mts'
+import { listImportConfig } from '../import-config.mts'
 import { getManageableList, type ManageableList } from '../manage.mts'
 
 describe('importCommunityList', () => {
@@ -114,21 +116,29 @@ describe('importCommunityList', () => {
     await deleteTestPost(newer)
 
     const viewer = viewerFor(user.id)
-    const newestOnly = await importCommunityList(list, {
-      communityId: community.id,
-      viewer,
-      sourceLimit: 1,
-    })
-    expect(newestOnly.posts).toBe(0)
-    expect(await listPostItemExists(list.id, older)).toBe(false)
-    const withOlder = await importCommunityList(list, {
-      communityId: community.id,
-      viewer,
-      sourceLimit: 2,
-    })
-    expect(withOlder.posts).toBe(1)
-    expect(await listPostItemExists(list.id, older)).toBe(true)
-    expect(await listPostItemExists(list.id, newer)).toBe(false)
+    const restoreOne = overrideDynamicConfigFieldsForTest(listImportConfig, { max_items: 1 })
+    try {
+      const newestOnly = await importCommunityList(list, {
+        communityId: community.id,
+        viewer,
+      })
+      expect(newestOnly.posts).toBe(0)
+      expect(await listPostItemExists(list.id, older)).toBe(false)
+    } finally {
+      restoreOne()
+    }
+    const restoreTwo = overrideDynamicConfigFieldsForTest(listImportConfig, { max_items: 2 })
+    try {
+      const withOlder = await importCommunityList(list, {
+        communityId: community.id,
+        viewer,
+      })
+      expect(withOlder.posts).toBe(1)
+      expect(await listPostItemExists(list.id, older)).toBe(true)
+      expect(await listPostItemExists(list.id, newer)).toBe(false)
+    } finally {
+      restoreTwo()
+    }
   })
 })
 

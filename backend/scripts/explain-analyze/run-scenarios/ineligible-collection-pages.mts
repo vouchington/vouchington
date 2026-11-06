@@ -134,6 +134,7 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
     'collection-community-list-import-ineligible-page',
     bounded('community_list_posts', [
       'idx_community_list_posts__community_id__id',
+      'idx_community_list_posts__community_id__id__all_rows',
       'community_list_posts_pkey',
     ]),
   )

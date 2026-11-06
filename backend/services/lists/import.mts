@@ -16,16 +16,15 @@ export function importCommunityListPostsSourceSql(
   limit: number,
   delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string },
 ): SQLStatement {
-  // Membership ids are NOT NULL. ORDER BY id DESC is NULLS FIRST, which the primary key
-  // already supplies by scanning backward, so a generic plan walks newer rows from other
-  // communities. NULLS LAST matches idx_community_list_posts__community_id__id instead.
+  // Newest live memberships for one community. ORDER BY id DESC matches
+  // idx_community_list_posts__community_id__id, the same shape as a user-list page.
   const statement = sql`/* importCommunityListPostsSource */
     WITH source_page AS MATERIALIZED (
       SELECT item.post_id
       FROM community_list_posts item
       WHERE item.community_id = ${communityId}::uuid
         AND item.removed_at IS NULL
-      ORDER BY item.id DESC NULLS LAST
+      ORDER BY item.id DESC
       LIMIT ${limit}
     )
     SELECT ${targetListId}::uuid, picked.id
@@ -103,18 +102,14 @@ export async function importCommunityList(
     communityId,
     viewer,
     delegated,
-    sourceLimit,
   }: {
     communityId: string
     viewer: EntityRelationViewer
     delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string }
-    /** Shortens the membership page. Never raises the configured import limit. */
-    sourceLimit?: number
   },
 ): Promise<{ posts: number; items: number }> {
   const targetListId = targetList.id
-  const configuredLimit = getListImportLimit()
-  const limit = sourceLimit === undefined ? configuredLimit : Math.min(sourceLimit, configuredLimit)
+  const limit = getListImportLimit()
   const postsSource = importCommunityListPostsSourceSql(
     targetListId,
     communityId,
