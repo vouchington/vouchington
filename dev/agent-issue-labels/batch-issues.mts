@@ -74,7 +74,7 @@ export async function executeBatch(
 ): Promise<{ exitCode: number; summary: string }> {
   const args = parseBatchArgs(commandArgs)
   const preflightPath = join(args.sessionDir, 'preflight-report.json')
-  // ast-grep-ignore: no-three-sequential-awaits -- manifest validation, live preflight, and report persistence are dependent
+  // ast-grep-ignore: no-three-sequential-awaits -- the loaded manifest supplies preflight inputs; its report supplies the persisted artifact
   const manifest = await loadManifest(args.sessionDir, deps, args.repo)
   const report = await executePreflight(manifest, {
     runGh: deps.runGh,

@@ -53,7 +53,7 @@ export async function processExtractImageMetadata(imageId: string): Promise<void
 
   let shouldEnqueueImageCreated = false
   try {
-    // ast-grep-ignore: no-three-sequential-awaits -- ordered source, spool, and DB transition
+    // ast-grep-ignore: no-three-sequential-awaits -- the S3 body supplies the temporary file; its extracted metadata supplies the finalized image transition
     const body = await readS3Body(canonicalS3Key)
     const metadata = await withTemporaryMediaFile(
       body,

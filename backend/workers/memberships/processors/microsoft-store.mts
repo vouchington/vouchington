@@ -9,7 +9,7 @@ import {
 } from '@services/memberships/microsoft'
 
 export async function recoverMicrosoftStoreSources(): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- the durable recovery cursor advances only after the awaited bulk fan-out succeeds
+  // ast-grep-ignore: no-three-sequential-awaits -- stable reconciliation jobs for the source page must finish enqueue admission before CAS advances its recovery cursor, so recovery never checkpoints unqueued source ids
   const batch = await findRecoverableMicrosoftStoreSourceJobs()
   await enqueueBulkReconcileMicrosoftStoreSources(batch.sourceIds.map(sourceId => ({ sourceId })))
   const advanced = await advanceMicrosoftStoreSourceRecoveryCursor(batch)

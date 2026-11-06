@@ -49,7 +49,6 @@ export async function processReconcileMediaDeliveryRegistry(
   }
   const scanBefore =
     data.scanBefore ?? options.scanBefore ?? (await getMediaDeliveryRegistryScanBefore())
-  // ast-grep-ignore: no-three-sequential-awaits -- terminal cleanup precedes primary discovery, then child acceptance precedes continuation
   await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, options.recordIds, batchSize)
   const page = await listRecoverableMediaDeliveryRegistryIds({
     limit: pageSize,

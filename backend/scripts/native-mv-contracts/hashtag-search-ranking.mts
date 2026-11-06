@@ -65,7 +65,7 @@ export async function checkHashtagSearchRankingContracts(): Promise<void> {
     archivePostForTopHashtagTest(posts[3]!.post.id, posts[3]!.user.id),
     createTestUser({ administrator: true }),
   ])
-  // ast-grep-ignore: no-three-sequential-awaits -- the feed needs its topic and the RSS item needs that feed
+  // ast-grep-ignore: no-three-sequential-awaits -- the topic id supplies the feed; its feed id and URL id supply the RSS item and indexed hashtag source
   const rssTopicId = await insertTestTopic({
     name: `Old RSS hashtag source ${suffix}`,
     slug: `old-rss-hashtag-source-${suffix}`,

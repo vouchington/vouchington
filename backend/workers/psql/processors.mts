@@ -96,7 +96,6 @@ export default async function processPsql(
       return processMonthlyPartitionCleanup(data?.partitionContinuation, dependencies, jobId)
     }
     case 'dataRetentionCleanup': {
-      // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.
       await dataRetentionConfig.waitForInitialization()
       const copyrightFamilies = data?.continuation?.copyrightFamilies
       if (copyrightFamilies) {
@@ -151,7 +150,7 @@ export default async function processPsql(
       return processAgentModerationRetentionContinuation(data, options?.agentModeration)
     case 'continueVoteRetentionCleanup': {
       const selection = requireVoteRetentionSelection(data)
-      // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue its durable continuation in order.
+      // ast-grep-ignore: no-three-sequential-awaits -- initialization publishes batch_size and max_batches_per_run read by getDataRetentionLimits; the bounded page result supplies the continuation cursor
       await dataRetentionConfig.waitForInitialization()
       const result = await runVoteRetentionCleanupPage(
         getDataRetentionLimits(),

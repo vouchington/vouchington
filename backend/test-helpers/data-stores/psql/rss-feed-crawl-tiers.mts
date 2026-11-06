@@ -27,11 +27,18 @@ export async function getEnabledRssFeedCount(): Promise<number> {
 }
 
 export async function getRssFeedCrawlTiers(feedIds: string[]): Promise<number[]> {
-  const { rows } = await read<{ crawl_tier: number }>(
-    '/* getRssFeedCrawlTiers */ SELECT DISTINCT crawl_tier FROM mv_rss_feed_crawl_tiers WHERE rss_feed_id = ANY($1) ORDER BY crawl_tier',
+  const assignments = await getRssFeedCrawlTierAssignments(feedIds)
+  return [...new Set(assignments.values())]
+}
+
+export async function getRssFeedCrawlTierAssignments(
+  feedIds: string[],
+): Promise<Map<string, number>> {
+  const { rows } = await read<{ rss_feed_id: string; crawl_tier: number }>(
+    '/* getRssFeedCrawlTierAssignments */ SELECT rss_feed_id, crawl_tier FROM mv_rss_feed_crawl_tiers WHERE rss_feed_id = ANY($1) ORDER BY crawl_tier',
     [feedIds],
   )
-  return rows.map(row => row.crawl_tier)
+  return new Map(rows.map(row => [row.rss_feed_id, row.crawl_tier]))
 }
 
 export async function setCanonicalRssFeed(
