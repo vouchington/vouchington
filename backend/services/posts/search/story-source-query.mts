@@ -6,7 +6,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   appendChildLateral,
   appendLaterFeedSlice,
-  appendOwningSource,
+  appendStoryOwnership,
   resumeBounds,
 } from './story-source-child.mts'
 import type { StoryCursor, StoryFeedBounds } from './story-source-types.mts'
@@ -59,7 +59,7 @@ export function buildStorySourcePageQuery(input: {
         (SELECT COUNT(*) > ${laterPage} FROM later_feeds) AS parent_has_more,
         (SELECT id FROM later_feeds WHERE ord = ${laterPage + 1}) AS next_feed_id
     ),
-    sources AS MATERIALIZED (`)
+    source_rows AS MATERIALIZED (`)
   if (input.cursor?.feed_open) {
     appendFeedArm(query, {
       fromSql: sql`rss_feeds feed`,
@@ -67,7 +67,6 @@ export function buildStorySourcePageQuery(input: {
       ordSql: sql`0::int`,
       bounds: resumeBounds(input.cursor),
       lookahead,
-      staff,
     })
     query.append(sql`
       UNION ALL
@@ -79,10 +78,12 @@ export function buildStorySourcePageQuery(input: {
     ordSql: sql`feed.ord`,
     bounds: { published: null, missingItemUpper: null },
     lookahead,
-    staff,
   })
   query.append(sql`
-    )
+    ),
+    `)
+  appendStoryOwnership(query, staff)
+  query.append(sql`
     SELECT
       sources.feed_id,
       sources.feed_ord,
@@ -120,7 +121,6 @@ function appendFeedArm(
     ordSql: SQLStatement
     bounds: StoryFeedBounds
     lookahead: number
-    staff: boolean
   },
 ): void {
   query.append(sql`
@@ -133,13 +133,8 @@ function appendFeedArm(
         src.published_at,
         src.phase,
         src.child_rank,
-        CASE
-          WHEN story_posts.post_id IS NOT NULL
-           AND owner.feed_id = feed.id
-           AND owner.item_id = item.id
-          THEN story_posts.post_id
-          ELSE NULL
-        END AS post_id
+        story_posts.post_id AS story_post_id,
+        item.story_id AS story_id
       FROM `)
   query.append(arm.fromSql)
   appendChildLateral(query, arm.bounds, arm.lookahead)
@@ -152,7 +147,6 @@ function appendFeedArm(
         ON stories.id = item.story_id
        AND stories.deleted_at IS NULL
       LEFT JOIN story_posts ON story_posts.story_id = stories.id`)
-  appendOwningSource(query, arm.staff)
   if (arm.whereSql.values.length > 0 || arm.whereSql.text.includes('WHERE')) {
     query.append(sql`\n`).append(arm.whereSql)
   }
