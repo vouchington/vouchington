@@ -62819,33 +62819,6 @@
                   },
                   "type": "object"
                 }
-              },
-              "viewer_count": {
-                "required": false,
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "comments": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
-                    "discussions": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
-                    "reviews": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    }
-                  },
-                  "type": "object"
-                }
               }
             },
             "type": "object"
@@ -64503,33 +64476,6 @@
                       }
                     },
                     "users_subscribed_posts": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    }
-                  },
-                  "type": "object"
-                }
-              },
-              "viewer_count": {
-                "required": false,
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "comments": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
-                    "discussions": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
-                    "reviews": {
                       "required": true,
                       "schema": {
                         "type": "number"
@@ -106964,7 +106910,7 @@
         "include_bio": "1"
       },
       "responseSchema": {
-        "hash": "5ff149338895286f35b5d68077777860d6b2fb2bf8a23657ef155ed284d81bd6",
+        "hash": "1cbb19c8a419883c7a72b94fa6e5d189779de1a0c2e30947a9a3c4c514759920",
         "key": "native.users.profile.default"
       },
       "route": {

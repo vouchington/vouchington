@@ -84,7 +84,7 @@ describe('UserProfileHeader', () => {
         }}
       />,
     )
-    expect(screen.getByText(/1,000 reviews\+/)).toBeDefined()
+    expect(screen.getByText(/1,000\+ reviews/)).toBeDefined()
   })
 
   it('signed-out (no currentUserId): FollowButton renders, no subscribe bookmark button', async () => {

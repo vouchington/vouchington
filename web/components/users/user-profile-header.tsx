@@ -16,6 +16,8 @@ import { useAuth } from '@/lib/auth/context'
 import type { User, UserMetrics, ProfileLink } from '@/types/user'
 import { createUserPathname, userHref, userPathSegment } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatNumber } from '@ts-shared/utils/format'
 import { isPlatformAccount } from '@/lib/auth/account-type'
 import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
 
@@ -51,14 +53,17 @@ export function UserProfileHeader({
   isAdmin = false,
 }: UserProfileHeaderProps) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   const router = useRouter()
   const { currentUser } = useAuth()
   const currentUserId = currentUser?.id
   const displayName = getUserLabel(user, t('shared.user.deletedUser'))
   const canFollow = currentUserId !== user.id
   const profileCountLabel = (count: number, unit: 'review' | 'discussion' | 'comment') => {
-    const label = t('shared.countLabel.format', { count, unit })
-    return metrics?.post_counts_capped ? `${label}+` : label
+    const formattedCount = `${formatNumber(count, uiLocale)}${
+      metrics?.post_counts_capped && count > 0 ? '+' : ''
+    }`
+    return t('shared.countLabel.formatted', { count, formattedCount, unit })
   }
   const summaryItems = [
     metrics?.count.reviews ? profileCountLabel(metrics.count.reviews, 'review') : null,

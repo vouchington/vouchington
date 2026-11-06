@@ -36,17 +36,15 @@ describe('profile post facet counts', () => {
     const asStranger = await getUserPostTypeFacets(author.id, stranger)
 
     expect(anonymous).toEqual({
-      public: { review: 1, discussion: 0, comment: 0 },
+      counts: { review: 1, discussion: 0, comment: 0 },
       capped: false,
     })
     expect(asAuthor).toEqual({
-      public: { review: 2, discussion: 0, comment: 0 },
-      viewer: { review: 2, discussion: 0, comment: 0 },
+      counts: { review: 2, discussion: 0, comment: 0 },
       capped: false,
     })
     expect(asStranger).toEqual({
-      public: { review: 2, discussion: 0, comment: 0 },
-      viewer: { review: 2, discussion: 0, comment: 0 },
+      counts: { review: 2, discussion: 0, comment: 0 },
       capped: false,
     })
   })
@@ -66,19 +64,13 @@ describe('profile post facet counts', () => {
       const asAuthor = await getUserPostTypeFacets(author.id, author)
       const asStranger = await getUserPostTypeFacets(author.id, stranger)
       const cappedCounts = {
-        public: { review: 2, discussion: 0, comment: 0 },
+        counts: { review: 2, discussion: 0, comment: 0 },
         capped: true,
       }
 
       expect(anonymous).toEqual(cappedCounts)
-      expect(asAuthor).toEqual({
-        ...cappedCounts,
-        viewer: { review: 2, discussion: 0, comment: 0 },
-      })
-      expect(asStranger).toEqual({
-        ...cappedCounts,
-        viewer: { review: 2, discussion: 0, comment: 0 },
-      })
+      expect(asAuthor).toEqual(cappedCounts)
+      expect(asStranger).toEqual(cappedCounts)
     } finally {
       restore()
     }

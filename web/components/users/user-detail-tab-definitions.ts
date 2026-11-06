@@ -31,14 +31,9 @@ export function buildUserProfileDropdownItems(
       (metrics?.count.reviews ?? 0) +
       (metrics?.count.discussions ?? 0) +
       (metrics?.count.comments ?? 0)
-    const allViewerCount =
-      (metrics?.viewer_count?.reviews ?? 0) +
-      (metrics?.viewer_count?.discussions ?? 0) +
-      (metrics?.viewer_count?.comments ?? 0)
-    if (allCount > 0 || allViewerCount > 0 || routeSuffix === '/posts') {
+    if (allCount > 0 || routeSuffix === '/posts') {
       const allCountDisplay = formatProfilePostCount(allCount, {
         capped: metrics?.post_counts_capped === true,
-        viewerCount: allViewerCount,
         uiLocale,
       })
       tabs.push({

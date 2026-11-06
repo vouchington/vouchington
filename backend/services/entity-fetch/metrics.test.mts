@@ -94,7 +94,7 @@ describe('metrics', () => {
       )
     })
 
-    it('returns public, viewer, and private profile counts when authorized', async () => {
+    it('returns the posts this viewer can see and private profile counts when authorized', async () => {
       const fixture = await createUserProfileFixture({ suffix: `metrics-${Date.now()}` })
 
       const metrics = await getUserProfileMetricsByAny(fixture.owner.id, {
@@ -110,11 +110,6 @@ describe('metrics', () => {
           users_followers: 1,
           topics_following: 1,
           rss_feeds_following: 1,
-        },
-        viewer_count: {
-          reviews: 1,
-          discussions: 1,
-          comments: 1,
         },
         private_count: {
           topics_blocked: 1,

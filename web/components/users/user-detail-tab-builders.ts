@@ -13,15 +13,13 @@ export function formatProfilePostCount(
   count: number,
   {
     capped,
-    viewerCount,
     uiLocale,
   }: {
     capped: boolean
-    viewerCount: number
     uiLocale?: NumberFormatLocale
   },
 ): string {
-  const showPlus = (capped && count > 0) || viewerCount > count
+  const showPlus = capped && count > 0
   return `${formatNumber(count, uiLocale)}${showPlus ? '+' : ''}`
 }
 
@@ -35,15 +33,13 @@ export function appendContentTab(
   activeRouteSuffix: string,
   uiLocale?: NumberFormatLocale,
 ) {
-  const publicCount = metrics?.count[key] ?? 0
-  const viewerCount = metrics?.viewer_count?.[key] ?? 0
+  const count = metrics?.count[key] ?? 0
 
   const routeSuffix = `/${key}`
-  if (publicCount === 0 && viewerCount === 0 && activeRouteSuffix !== routeSuffix) return
+  if (count === 0 && activeRouteSuffix !== routeSuffix) return
 
-  const countDisplay = formatProfilePostCount(publicCount, {
+  const countDisplay = formatProfilePostCount(count, {
     capped: metrics?.post_counts_capped === true,
-    viewerCount,
     uiLocale,
   })
   tabs.push({

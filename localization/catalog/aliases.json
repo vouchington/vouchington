@@ -9349,6 +9349,7 @@
 {"alias":"shared.botChallenge.completeToContinue","consumer":"web","copyId":"copy.botChallenge.completeToContinue"},
 {"alias":"shared.botChallenge.securityVerification","consumer":"web","copyId":"copy.botChallenge.securityVerification"},
 {"alias":"shared.countLabel.format","consumer":"web","copyId":"copy.shared.countLabel.format"},
+{"alias":"shared.countLabel.formatted","consumer":"web","copyId":"copy.shared.countLabel.formatted"},
 {"alias":"shared.images.uploadPreviewUnavailable","consumer":"web","copyId":"copy.images.uploadPreviewUnavailable"},
 {"alias":"shared.moderation.deletedCommunity","consumer":"web","copyId":"copy.shared.moderation.deletedCommunity"},
 {"alias":"shared.moderation.deletedContent","consumer":"web","copyId":"copy.shared.moderation.deletedContent"},

@@ -131,6 +131,9 @@ export type PrivateUser = BasicUser & {
 export type UserMetrics = {
   __entity_type: 'user_metrics'
   id: string
+  /**
+   * Profile totals. `reviews`, `discussions`, and `comments` are the posts this viewer can see.
+   */
   count: {
     reviews: number
     discussions: number
@@ -143,11 +146,6 @@ export type UserMetrics = {
   }
   /** True when profile post counts stopped at the configured cap. */
   post_counts_capped?: boolean
-  viewer_count?: {
-    reviews: number
-    discussions: number
-    comments: number
-  }
   private_count?: {
     posts_saved: number
     posts_hidden: number

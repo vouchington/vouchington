@@ -48,8 +48,8 @@ export async function getPostFacets(
 type UserPostTypeFacets = Record<'review' | 'discussion' | 'comment', number>
 
 export type UserPostTypeFacetResult = {
-  public: UserPostTypeFacets
-  viewer?: UserPostTypeFacets
+  /** Review, discussion, and comment totals this viewer can see. */
+  counts: UserPostTypeFacets
   capped: boolean
 }
 
@@ -102,8 +102,7 @@ export async function getUserPostTypeFacets(
     capped = capped || row.capped === true
   }
   return {
-    public: counts,
-    ...(currentUser ? { viewer: { ...counts } } : {}),
+    counts,
     capped,
   }
 }

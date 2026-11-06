@@ -70,10 +70,10 @@ async function buildUserMetrics(
       getMetricsCollectionVisibility(currentUser, row.id),
     ])
 
-  const publicCounts = {
-    reviews: postTypeFacets.public.review,
-    discussions: postTypeFacets.public.discussion,
-    comments: postTypeFacets.public.comment,
+  const counts = {
+    reviews: postTypeFacets.counts.review,
+    discussions: postTypeFacets.counts.discussion,
+    comments: postTypeFacets.counts.comment,
     users_following: collectionVisibility.follows
       ? (bookmarkCounts.bookmarks.users.follow ?? 0)
       : 0,
@@ -87,15 +87,6 @@ async function buildUserMetrics(
     communities_member: communitiesMemberCount,
   }
 
-  let viewerCount: UserMetrics['viewer_count']
-  if (currentUser && postTypeFacets.viewer) {
-    viewerCount = {
-      reviews: postTypeFacets.viewer.review,
-      discussions: postTypeFacets.viewer.discussion,
-      comments: postTypeFacets.viewer.comment,
-    }
-  }
-
   let privateCount: UserMetrics['private_count']
   const allowPrivateCounts = currentUserCanAccessUser(currentUser ?? null, row.id)
 
@@ -106,9 +97,8 @@ async function buildUserMetrics(
   return {
     __entity_type: 'user_metrics',
     id: row.id,
-    count: publicCounts,
+    count: counts,
     ...(postTypeFacets.capped ? { post_counts_capped: true } : {}),
-    ...(viewerCount ? { viewer_count: viewerCount } : {}),
     ...(privateCount ? { private_count: privateCount } : {}),
     bookmarks: {
       follow: {
