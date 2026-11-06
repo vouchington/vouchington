@@ -9,11 +9,12 @@ describe('appendRssFeedItemHashtagFilters', () => {
       aliasIds: undefined,
       hasUnknownHashtag: undefined,
       topicIds: ['topic-1'],
+      eligibilityChildLimit: 4,
     })
 
-    expect(query.text).toContain('FROM rss_feed_item_sources hashtag_sources')
-    expect(query.text).toContain('rss_feed_items.id IN (')
-    expect(query.text).toContain('SELECT candidate.rss_feed_item_id')
+    expect(query.text).toContain(') hashtag_sources')
+    expect(query.text).toContain('rss_feed_item_topic_alias_candidates')
+    expect(query.text).toContain('ORDER BY relation.id DESC LIMIT')
     expect(query.text).not.toMatch(/EXISTS\s*\([^)]*UNION ALL/s)
     expect(query.values).toContain('topic-1')
   })
@@ -24,9 +25,10 @@ describe('appendRssFeedItemHashtagFilters', () => {
       aliasIds: undefined,
       hasUnknownHashtag: undefined,
       topicIds: ['topic-1', 'topic-1'],
+      eligibilityChildLimit: 4,
     })
 
-    expect(query.text.match(/AND \(\s*\n\s*EXISTS \(/g)).toHaveLength(1)
+    expect(query.values.filter(value => value === 'topic-1')).toHaveLength(3)
   })
 
   it('leaves the alias-only loop as a plain EXISTS, not the candidate-bind shape', () => {
@@ -35,10 +37,11 @@ describe('appendRssFeedItemHashtagFilters', () => {
       aliasIds: ['alias-1'],
       hasUnknownHashtag: undefined,
       topicIds: undefined,
+      eligibilityChildLimit: 4,
     })
 
     expect(query.text).toContain('EXISTS (')
-    expect(query.text).toContain('relation__rss_feed_item__category__topic_alias')
+    expect(query.text).toContain('rss_feed_item_topic_alias_candidates')
     expect(query.text).not.toContain('rss_feed_items.id IN (')
     expect(query.values).toContain('alias-1')
   })
@@ -49,6 +52,7 @@ describe('appendRssFeedItemHashtagFilters', () => {
       aliasIds: undefined,
       hasUnknownHashtag: true,
       topicIds: undefined,
+      eligibilityChildLimit: 4,
     })
 
     expect(query.text).toContain('AND FALSE')

@@ -14,7 +14,9 @@ import { getCutoffDateForTimeRange } from './query-utils.mts'
 import { appendRelationCTEs } from './get-ids/relation-ctes.mts'
 import { appendEligibleRssFeedItemsCTE } from './get-ids/eligible-items-cte.mts'
 import { appendDeliveryCTEs } from './get-ids/delivery-ctes.mts'
-import { appendFinalSelectCTE, appendPaginationCTEs } from './get-ids/pagination-ctes.mts'
+import { appendFeedPageSelect } from './get-ids/page-select.mts'
+import { getRssFeedItemPageLimit } from './feed-page-config.mts'
+import { getRelationTypeLimit } from '@services/entity-relations/relation-limits-config'
 
 export async function getRssFeedItemFeedIds(
   currentUser: PrivateUser | null,
@@ -40,31 +42,49 @@ export async function getRssFeedItemFeedIds(
     options.min_score_follow_rss_feeds ?? DEFAULT_MIN_SCORE_FOLLOW_RSS_FEEDS
   const min_score_follow_topics = options.min_score_follow_topics ?? DEFAULT_MIN_SCORE_FOLLOW_TOPICS
   const safeLimit = clampLimit(limit)
-  const cursorScope = getRssFeedItemFeedCursorScope(currentUserId, {
-    ...options,
-    feed_type,
-    time_range,
-    min_score_follow_rss_feeds,
-    min_score_follow_topics,
-    isAdministrator: currentUserIsAdministrator,
-  })
-  const { published_lt, item_id_lt, share_event_id_lt } = parseRssFeedItemFeedCursor(
-    options.after,
-    cursorScope,
+  const pageLimits = {
+    source_limit: getRssFeedItemPageLimit('source_limit'),
+    items_per_source: getRssFeedItemPageLimit('items_per_source'),
+    story_item_limit: getRssFeedItemPageLimit('story_item_limit'),
+    eligibility_child_limit: getRssFeedItemPageLimit('eligibility_child_limit'),
+    share_limit: getRssFeedItemPageLimit('share_limit'),
+    exclusion_relation_limit: getRssFeedItemPageLimit('exclusion_relation_limit'),
+  }
+  const cursorScope = getRssFeedItemFeedCursorScope(
+    currentUserId,
+    {
+      ...options,
+      feed_type,
+      time_range,
+      min_score_follow_rss_feeds,
+      min_score_follow_topics,
+      isAdministrator: currentUserIsAdministrator,
+    },
+    pageLimits,
   )
+  const { sort_at_lt, id_lt } = parseRssFeedItemFeedCursor(options.after, cursorScope)
 
   const includeDirectItems = feed_type !== 'follow_users'
   const includeSharedItems =
     !!currentUserId && !communityId && (feed_type === 'follow_users' || feed_type === 'any')
   const { cutoffDate, itemCutoffId } = getCutoffDateForTimeRange(time_range, decisionInstant)
+  const sourceLimit = pageLimits.source_limit
+  const followInputLimit = Math.max(
+    getRelationTypeLimit('relation__user__follow__rss_feed') ?? 10_000,
+    getRelationTypeLimit('relation__user__follow__topic') ?? 10_000,
+  )
 
-  const query = appendRelationCTEs(sql``, { communityId, currentUserId })
-
-  appendEligibleRssFeedItemsCTE(query, {
+  const query = appendRelationCTEs(sql``, {
     communityId,
     currentUserId,
+    sourceLimit,
+    followInputLimit,
+    exclusionRelationLimit: pageLimits.exclusion_relation_limit,
+  })
+
+  appendEligibleRssFeedItemsCTE(query, {
+    currentUserId,
     currentUserIsAdministrator,
-    feedType: feed_type,
     hasRelatedPosts: options.has_related_posts,
     hasHackerNewsReferences: options.has_hacker_news_references,
     mediaTypes: media_types,
@@ -73,6 +93,7 @@ export async function getRssFeedItemFeedIds(
     hashtagTopicIds: options.hashtag_topic_ids,
     hashtagAliasIds: options.hashtag_alias_ids,
     hasUnknownHashtag: options.has_unknown_hashtag,
+    eligibilityChildLimit: pageLimits.eligibility_child_limit,
   })
 
   appendDeliveryCTEs(query, {
@@ -93,23 +114,27 @@ export async function getRssFeedItemFeedIds(
     hashtagTopicIds: options.hashtag_topic_ids,
     hashtagAliasIds: options.hashtag_alias_ids,
     hasUnknownHashtag: options.has_unknown_hashtag,
+    sourceLimit,
+    itemsPerSource: pageLimits.items_per_source,
+    storyItemLimit: pageLimits.story_item_limit,
+    eligibilityChildLimit: pageLimits.eligibility_child_limit,
+    shareLimit: pageLimits.share_limit,
   })
-  appendPaginationCTEs(query, {
-    itemIdLt: item_id_lt,
-    publishedLt: published_lt,
+  appendFeedPageSelect(query, {
+    idLt: id_lt,
+    sortAtLt: sort_at_lt,
     safeLimit,
-    shareEventIdLt: share_event_id_lt,
   })
-  appendFinalSelectCTE(query)
 
   const { rows } = await read(
     `/* getRssFeedItemFeedIds */
     WITH ${query.text}`,
     query.values,
   )
-  const hasNextPage = rows.some(row => row.has_next_page === true)
+  const hasNextPage = rows.length > safeLimit
+  const pageRows = rows.slice(0, safeLimit)
 
-  const results = rows.map(row => ({
+  const results = pageRows.map(row => ({
     __entity_type: 'rss_feed_item' as const,
     id: row.result_id as string,
     entity_id: row.entity_id as string,
@@ -123,10 +148,9 @@ export async function getRssFeedItemFeedIds(
   return {
     results,
     page_info: buildRssFeedItemFeedPageInfo(
-      rows.map(row => ({
+      pageRows.map(row => ({
         cursor_sort_at: row.cursor_sort_at as string,
-        sort_rank: row.sort_rank as 0 | 1,
-        cursor_id: (row.share_event_id ?? row.item_id) as string,
+        cursor_id: row.result_id as string,
       })),
       hasNextPage,
       cursorScope,

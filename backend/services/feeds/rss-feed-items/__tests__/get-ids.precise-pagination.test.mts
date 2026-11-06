@@ -8,6 +8,7 @@ import {
   followUser,
   insertTestStory,
   setTestItemStoryId,
+  setTestRssFeedItemVotes,
   setRssFeedItemShareSortAtForTest,
 } from '@voucha/test-helpers'
 import { getRssFeedItemFeedIds } from '../get-ids.mts'
@@ -72,6 +73,10 @@ describe('RSS feed precise pagination', () => {
     const story = await insertTestStory({ officialRssFeedItemId: items[0].id })
     await setTestItemStoryId(items[0].id, story.id)
     await setTestItemStoryId(items[1].id, story.id)
+    await Promise.all([
+      setTestRssFeedItemVotes(items[0].id, 1),
+      setTestRssFeedItemVotes(items[1].id, 1),
+    ])
     for (const [index, sharer] of sharers.entries()) {
       await processFollowerDistributionChunk(
         (await shareRssFeedItemWithFollowers(sharer, items[index].id)).distribution_id,

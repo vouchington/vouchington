@@ -4,7 +4,11 @@ Personalized post and RSS feed item feeds for logged-in users. Feeds are filtere
 
 ## Query Pipeline
 
-Both feeds start with follow and exclusion relations and combine direct and shared deliveries. RSS feeds build deduplicated source/topic membership sets with the time-range item cutoff, then materialize a narrow eligible direct cohort. Story winners are selected once from that cohort before adding storyless items and independent shares. The cursor and page limit apply to those canonical deliveries. RSS feeds are always ordered chronologically.
+Both feeds start with follow and exclusion relations and combine direct and shared deliveries. RSS reads choose the most active followed sources, then take a bounded recent pool from each source before applying eligibility. Feed activity is cached on the feed, so publication does not rewrite follower rows. Topic candidates coalesce current category and voted memberships rather than expanding those relationships during every read.
+
+RSS results intentionally cover a bounded recent pool, not the complete matching history. Each continuation uses that same pool and chooses story winners before the strict publication-time and delivery-ID cursor comparison. Short pages are valid; reaching the end does not trigger a deeper scan. Live item, follow, activity, or score changes can change the pool between requests. Eligibility reads also have budgets and omit candidates when checking all relevant exclusions would exceed them.
+
+Canonical date and deletion corrections leave durable, coalesced projection work. Bounded worker pages refresh source and topic order, and scheduled recovery resumes work after a crash. Alias ownership changes use the category reconciler's bounded candidate phase. Item deletion cascades through the projections.
 
 ```mermaid
 flowchart TD
@@ -24,9 +28,9 @@ flowchart TD
     subgraph RSS["RSS item feed - getRssFeedItemFeedIds"]
         RR["Follow and exclusion relations"] --> RM
         RR --> RE
-        RM["Deduplicated source/topic membership IDs with item cutoff"] --> RD
+        RM["Activity-ranked sources, then bounded recent item pools"] --> RD
         RD["Materialized eligible direct cohort with score and request filters"] --> RW
-        RW["Story winners: official, vote score, ID; retain storyless items"] --> RCombined
+        RW["Bounded positive-net story children: official, Wilson score, ID"] --> RCombined
         RE["Shared-item eligibility"] --> RShared
         RShared["shared_rss_feed_items (rss_feed_item_feed_shares JOIN eligible items)"] --> RCombined
         RCombined["combined_rss_feed_items = UNION ALL"] --> RFinal
@@ -115,7 +119,7 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
 
 ## Story Clustering
 
-RSS feed items are grouped into stories — first-class entities representing a single news event covered by multiple outlets. The story-clustering Choice classifier decides whether to cluster using heuristics (e.g., rumors ≠ announcements) and fails closed on a low-confidence or malformed answer. Eligibility filters run before selecting one direct representative: official first, then highest vote score, then ID. Share deliveries remain independent events. The resulting canonical rows are cursor-filtered and paginated, so a story cannot recur on a later page. See stories.md for full details.
+RSS feed items are grouped into stories — first-class entities representing a single news event covered by multiple outlets. The story-clustering Choice classifier decides whether to cluster using heuristics (e.g., rumors ≠ announcements) and fails closed on a low-confidence or malformed answer. Among the bounded positive-net candidates already read for a story, eligibility filters run before selecting one direct representative: official first, then highest Wilson score, then ID. Share deliveries remain independent events. Winners are selected before cursor filtering, so an unchanged story pool does not produce a different sibling on its next page. See stories.md for full details.
 
 The [direct winner builder](../../../backend/services/feeds/rss-feed-items/get-ids/direct-winner-cte.mts) uses `DISTINCT ON (story_id)` over the materialized eligible cohort. An official item that fails a request filter cannot displace an eligible sibling; a deleted story does not confer official priority. Ordinary, heavy-follow, sparse source-filter, and skewed-story [EXPLAIN scenarios](../../development/postgresql/explain-analyze/README.md) enforce source work in custom and generic plans. Global recency and semantic search retain their separate selection paths.
 

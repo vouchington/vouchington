@@ -28,6 +28,7 @@ import { featureFlagDynamicConfigRegistryEntries } from './registry-feature-flag
 import { operationalDynamicConfigRegistryEntries } from './registry-operational-entries.mts'
 import { policyDynamicConfigRegistryEntries } from './registry-policy-entries.mts'
 import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-entries.mts'
+import { rssFeedItemPageRegistryEntry } from './registry-rss-feed-item-page-entry.mts'
 import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 import { orderDynamicConfigRegistryEntries } from './registry-order.mts'
 
@@ -59,6 +60,7 @@ const unorderedRegistryEntries = [
   ...operationalDynamicConfigRegistryEntries,
   ...externalProxyDynamicConfigRegistryEntries,
   ...tagLimitsDynamicConfigRegistryEntries,
+  rssFeedItemPageRegistryEntry,
   ...aiUsageDynamicConfigRegistryEntries,
 ] satisfies DynamicConfigRegistryEntry[]
 

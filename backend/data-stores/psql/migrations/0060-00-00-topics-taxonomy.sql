@@ -870,7 +870,7 @@ COMMENT ON COLUMN topic_aliases.alias IS 'Lowercase canonical alias or hashtag l
 -- no foreign key: a linked alias DELETE must leave a tombstone for asynchronous cleanup.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE topic_alias_category_reconciliation_phases AS ENUM (
-  'rss_item_categories', 'rss_item_text_categories', 'rss_feed_text_categories', 'completed'
+  'rss_item_categories', 'rss_item_text_categories', 'rss_feed_text_categories', 'rss_item_alias_candidates', 'completed'
 );
 
 CREATE TABLE IF NOT EXISTS topic_alias_category_mapping_reconciliations (

@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS rss_feeds (
   last_modified_at TIMESTAMPTZ,
   etag TEXT,
   last_fetched_at TIMESTAMPTZ,
+  latest_item_sort_at TIMESTAMPTZ,
 
   -- canonical redirect chain: set when this feed is a 301/308 redirect to another feed
   canonical_rss_feed_id UUID REFERENCES rss_feeds ON DELETE SET NULL,
@@ -492,6 +493,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_sources (
   rss_feed_id UUID NOT NULL REFERENCES rss_feeds ON DELETE CASCADE,
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items ON DELETE CASCADE,
   published_at TIMESTAMPTZ,
+  item_sort_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (rss_feed_id, rss_feed_item_id)
 );
@@ -757,3 +759,6 @@ ALTER INDEX idx_rss_feed_items__story_id__id__url_id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_rss_feed_items__enclosure_media_type_id ON rss_feed_items (enclosure_media_type_id);
+
+COMMENT ON COLUMN rss_feeds.latest_item_sort_at IS 'Latest projected canonical item publication time; ranks the bounded followed-source set without follower fanout.';
+COMMENT ON COLUMN rss_feed_item_sources.item_sort_at IS 'Projected current canonical item publication time, distinct from first-observed source payload publication; NULL for a hidden item. Corrections are refreshed in bounded pages.';

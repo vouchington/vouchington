@@ -1,5 +1,6 @@
 import { VOTE_SCORE_SCENARIO_IDS } from './vote-score-scenario-ids.mts'
 import { COMMENT_SCENARIO_IDS } from './comment-scenario-ids.mts'
+import { RSS_FEED_SCENARIO_IDS } from './rss-feed-scenario-ids.mts'
 import { INGESTION_PAGE_SCENARIO_IDS } from './ingestion-page-scenario-ids.mts'
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
@@ -103,20 +104,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'report-judgement-contexts-batch',
   'review-succession-candidates',
   'remote-follower-inbox-late-cursor',
-  'rss-feed-item-feed',
-  'rss-feed-item-feed-after',
-  'rss-feed-item-feed-sparse-source-filter',
-  'rss-feed-item-feed-sparse-source-filter-after',
-  'rss-feed-item-feed-heavy-follows-after',
-  'rss-feed-item-feed-heavy-story-skew',
-  'rss-feed-item-feed-follow-rss-feeds',
-  'rss-feed-item-feed-follow-topics',
-  'rss-feed-item-feed-heavy-all',
-  'rss-feed-item-feed-heavy-follow-rss-feeds',
-  'rss-feed-item-feed-heavy-follow-topics',
-  'rss-feed-item-feed-heavy-follows',
-  'rss-feed-item-feed-related-posts',
-  'story-post-related-url-projection-source-page',
+  ...RSS_FEED_SCENARIO_IDS,
   'story-members-preview-1-first',
   'story-hydration-preview-1-first',
   'story-members-preview-1-after',

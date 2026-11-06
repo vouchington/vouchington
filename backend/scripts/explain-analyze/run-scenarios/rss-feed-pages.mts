@@ -3,25 +3,80 @@ import type { RssFeedItemFeedOptions, RssFeedItemFeedResponse } from '@services/
 import { getRssFeedItemFeedIds } from '@services/feeds'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import {
-  HOSTNAME_COUNT,
-  RSS_FEED_ITEM_SEED_COUNT,
-  RSS_FEED_SEED_COUNT,
-} from '../seed-data/common.mts'
+import { rssFeedItemPageMaxima } from '@services/feeds/rss-feed-items/feed-page-config'
 
-const feedCandidateExpectations = [
-  { kind: 'custom', name: 'rssFeedCandidates' },
-  {
-    kind: 'maxProcessedRows',
-    relation: 'rss_feed_item_sources',
-    max: RSS_FEED_ITEM_SEED_COUNT * Math.ceil(RSS_FEED_SEED_COUNT / HOSTNAME_COUNT) * 3,
-  },
-  { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: RSS_FEED_ITEM_SEED_COUNT * 2 },
-] as const
+const MAX_SOURCE_ITEM_ROWS =
+  rssFeedItemPageMaxima.source_limit * rssFeedItemPageMaxima.items_per_source
+const MAX_TOPIC_SOURCE_PROBES = 10_000
+const MAX_ELIGIBILITY_CHILD_ROWS = rssFeedItemPageMaxima.eligibility_child_limit
+const MAX_SOURCE_CHILD_READS =
+  MAX_SOURCE_ITEM_ROWS + MAX_SOURCE_ITEM_ROWS * (2 * MAX_ELIGIBILITY_CHILD_ROWS + 1)
+const MAX_TOPIC_CANDIDATE_ROWS =
+  MAX_SOURCE_ITEM_ROWS +
+  MAX_TOPIC_SOURCE_PROBES +
+  MAX_SOURCE_ITEM_ROWS * (2 * MAX_ELIGIBILITY_CHILD_ROWS + 1)
+const MAX_STORY_PRIORITY_ROWS = MAX_SOURCE_ITEM_ROWS * rssFeedItemPageMaxima.story_item_limit
+const MAX_PUBLISHER_TYPE_ROWS =
+  MAX_SOURCE_ITEM_ROWS * MAX_ELIGIBILITY_CHILD_ROWS * (2 * MAX_ELIGIBILITY_CHILD_ROWS + 1)
 
-export function registerRssFeedCandidateScenario(scenarioId: string): void {
+function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type']) {
+  return [
+    { kind: 'custom', name: 'rssFeedCandidates' },
+    ...(feedType === 'follow_topics'
+      ? []
+      : [
+          { kind: 'usesIndexes' as const, indexes: ['idx_rss_feeds__live_activity_lookup'] },
+          { kind: 'usesIndexes' as const, indexes: ['idx_rss_feed_item_sources__item_sort'] },
+          {
+            kind: 'maxProcessedRows' as const,
+            relation: 'relation__user__follow__rss_feed',
+            max: 10_000,
+          },
+          { kind: 'maxProcessedRows' as const, relation: 'rss_feeds', max: 10_000 },
+        ]),
+    ...(feedType === 'follow_rss_feeds'
+      ? []
+      : [
+          {
+            kind: 'usesIndexes' as const,
+            indexes: ['idx_rss_feed_item_topic_candidates__topic_order'],
+          },
+          {
+            kind: 'maxProcessedRows' as const,
+            relation: 'relation__user__follow__topic',
+            max: 10_000,
+          },
+        ]),
+    {
+      kind: 'maxProcessedRows',
+      relation: 'rss_feed_item_sources',
+      max: MAX_SOURCE_CHILD_READS,
+    },
+    { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: MAX_SOURCE_ITEM_ROWS },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'rss_feed_item_topic_candidates',
+      max: MAX_TOPIC_CANDIDATE_ROWS,
+    },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'rss_feed_item_feed_candidates',
+      max: MAX_STORY_PRIORITY_ROWS,
+    },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'relation__topic__publisher_type__topic',
+      max: MAX_PUBLISHER_TYPE_ROWS,
+    },
+  ] as const
+}
+
+export function registerRssFeedCandidateScenario(
+  scenarioId: string,
+  feedType?: RssFeedItemFeedOptions['feed_type'],
+): void {
   registerScenarioContract(scenarioId, {
-    expectations: feedCandidateExpectations,
+    expectations: feedCandidateExpectations(feedType),
     crossPartition: {
       rss_feed_items: 'The feed ranks recent matching items across the time window.',
     },
@@ -35,7 +90,7 @@ export async function runRssFeedFirstAndContinuationScenarios(
   suffix?: string,
 ): Promise<void> {
   let first: RssFeedItemFeedResponse | undefined
-  registerRssFeedCandidateScenario(scenarioId)
+  registerRssFeedCandidateScenario(scenarioId, options.feed_type)
   await runAndCapture(
     scenarioId,
     async () => {
@@ -53,7 +108,7 @@ export async function runRssFeedFirstAndContinuationScenarios(
       .filter(row => row.delivery_type === 'direct' && row.story_id)
       .map(row => row.story_id),
   )
-  registerRssFeedCandidateScenario(`${scenarioId}-after`)
+  registerRssFeedCandidateScenario(`${scenarioId}-after`, options.feed_type)
   await runAndCapture(
     `${scenarioId}-after`,
     async () => {

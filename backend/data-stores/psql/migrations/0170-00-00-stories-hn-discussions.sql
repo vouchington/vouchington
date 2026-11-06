@@ -107,3 +107,17 @@ ALTER TABLE rss_feed_items VALIDATE CONSTRAINT fk_rss_feed_items_story_id;
 CREATE INDEX IF NOT EXISTS idx_story_posts__initiated_by_id
   ON story_posts (initiated_by_id, post_id)
   WHERE initiated_by_id IS NOT NULL;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint
+      WHERE conrelid = 'rss_feed_item_feed_candidates'::regclass
+        AND conname = 'fk_rss_feed_item_feed_candidates__story') THEN
+    ALTER TABLE rss_feed_item_feed_candidates
+      ADD CONSTRAINT fk_rss_feed_item_feed_candidates__story
+      FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE SET NULL NOT VALID;
+  END IF;
+END $$;
+ALTER TABLE rss_feed_item_feed_candidates VALIDATE CONSTRAINT fk_rss_feed_item_feed_candidates__story;
+CREATE OR REPLACE TRIGGER trigger_story_official_feed_candidates
+  AFTER INSERT OR UPDATE OF official_rss_feed_item_id, deleted_at OR DELETE ON stories
+  FOR EACH ROW EXECUTE FUNCTION fn_project_story_official_feed_candidates();

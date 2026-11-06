@@ -1,4 +1,5 @@
 import type { Job } from 'glide-mq'
+import { dispatchFeedCandidates, processFeedCandidatePage } from './processors/feed-candidates.mts'
 import {
   applyTopicAliasUnlinkPage,
   recoverTopicAliasUnlinks,
@@ -16,6 +17,16 @@ import { clearTopicAliasUnlinkCategoryPage } from '@services/rss-feed-items/clea
 
 export function processRssFeedMaintenanceJob(job: Job) {
   switch (job.name) {
+    case 'dispatchRssFeedItemCandidates':
+      return dispatchFeedCandidates(
+        job as Job<
+          import('@queues/rss-feed-maintenance/enqueues/feed-candidates').FeedCandidateDispatch
+        >,
+      )
+    case 'processReconcileRssFeedItemCandidates':
+      return processFeedCandidatePage(
+        job.data as import('@queues/rss-feed-maintenance/enqueues/feed-candidates').FeedCandidatePage,
+      )
     case 'processHardDeleteRssFeedSourcePage':
       return hardDelete.processHardDeleteRssFeedSourcePage(
         job.data as import('@queues/rss-feed-maintenance/types').RssFeedHardDeletePageData,

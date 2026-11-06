@@ -1,4 +1,17 @@
 export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
+  ['rss_feed_item_feed_candidates', 'One current ranking row per item; item deletion cascades.'],
+  [
+    'rss_feed_item_topic_candidates',
+    'One current positive topic membership per item/topic; last contribution removal or parent deletion deletes it.',
+  ],
+  [
+    'rss_feed_item_topic_alias_candidates',
+    'One current routing row per positive alias relation; relation/item/alias deletion cascades.',
+  ],
+  [
+    'rss_feed_item_candidate_reconciliations',
+    'One coalesced row per unfinished item projection; completion or item deletion removes it.',
+  ],
   [
     'bedrock_embedding_batches',
     'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',

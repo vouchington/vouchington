@@ -1,15 +1,13 @@
-import { assertNever } from '@modules/utils/assert-never'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { RssFeedItemFeedOptions } from '../../types.mts'
 import { appendRssFeedItemEligibilityFilters } from './eligibility-filters.mts'
 
+/** Shared deliveries are user-scoped; community feeds never include shares. */
 export function appendEligibleRssFeedItemsCTE(
   query: SQLStatement,
   {
-    communityId,
     currentUserId,
     currentUserIsAdministrator,
-    feedType,
     hasRelatedPosts,
     hasHackerNewsReferences,
     mediaTypes,
@@ -18,11 +16,10 @@ export function appendEligibleRssFeedItemsCTE(
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
+    eligibilityChildLimit,
   }: {
-    communityId?: string
     currentUserId?: string
     currentUserIsAdministrator: boolean
-    feedType: RssFeedItemFeedOptions['feed_type']
     hasRelatedPosts: boolean | undefined
     hasHackerNewsReferences?: boolean
     mediaTypes: string[]
@@ -31,6 +28,7 @@ export function appendEligibleRssFeedItemsCTE(
     hashtagTopicIds: RssFeedItemFeedOptions['hashtag_topic_ids']
     hashtagAliasIds: RssFeedItemFeedOptions['hashtag_alias_ids']
     hasUnknownHashtag: RssFeedItemFeedOptions['has_unknown_hashtag']
+    eligibilityChildLimit: number
   },
 ): SQLStatement {
   query.append(sql`,
@@ -55,80 +53,8 @@ export function appendEligibleRssFeedItemsCTE(
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
+    eligibilityChildLimit,
   })
-
-  appendCommunityScopeFilter(query, communityId, feedType)
   return query.append(sql`
     )`)
-}
-
-function appendCommunityScopeFilter(
-  query: SQLStatement,
-  communityId: string | undefined,
-  feedType: RssFeedItemFeedOptions['feed_type'],
-): void {
-  if (!communityId) return
-  query.append(communityScopeClause(feedType))
-}
-
-function communityScopeClause(feedType: RssFeedItemFeedOptions['feed_type']): SQLStatement {
-  const sourceFilter = buildCommunityScopeSourceFilter()
-  const topicFilter = buildCommunityScopeTopicFilter()
-  switch (feedType) {
-    case 'follow_rss_feeds':
-      return sql` AND `.append(sourceFilter)
-    case 'follow_topics':
-      return sql` AND `.append(topicFilter)
-    case 'all':
-      return sql` AND `
-        .append(sourceFilter)
-        .append(sql` AND `)
-        .append(topicFilter)
-    case 'any':
-      return sql`
-        AND (
-          `
-        .append(sourceFilter)
-        .append(sql`
-          OR `)
-        .append(topicFilter).append(sql`
-        )
-      `)
-    case 'follow_users':
-    case undefined:
-      return sql``
-    default:
-      return assertNever(feedType, 'Unknown RSS feed item feed type')
-  }
-}
-
-function buildCommunityScopeSourceFilter(): SQLStatement {
-  return sql`EXISTS (
-    SELECT 1
-    FROM rss_feed_item_sources scope_rfis
-    JOIN followed_rss_feeds
-      ON followed_rss_feeds.rss_feed_id = scope_rfis.rss_feed_id
-    WHERE scope_rfis.rss_feed_item_id = rss_feed_items.id
-  )`
-}
-
-function buildCommunityScopeTopicFilter(): SQLStatement {
-  return sql`(
-    EXISTS (
-      SELECT 1
-      FROM rss_feed_item_categories scope_categories
-      JOIN followed_topics
-        ON followed_topics.topic_id = scope_categories.topic_id
-      WHERE scope_categories.rss_feed_item_id = rss_feed_items.id
-    )
-    OR EXISTS (
-      SELECT 1
-      FROM relation__rss_feed_item__category__topic scope_topic_relation
-      JOIN followed_topics
-        ON followed_topics.topic_id = scope_topic_relation.object_id
-      WHERE scope_topic_relation.subject_id = rss_feed_items.id
-        AND scope_topic_relation.deleted_at IS NULL
-        AND scope_topic_relation.votes_score_net > 0
-    )
-  )`
 }

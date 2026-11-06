@@ -3120,6 +3120,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Refresh bounded RSS item source and topic candidate projections",
+        "id": "reconcileRssFeedItemCandidates",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "rss-feed-maintenance",
+    "registration": "sequential",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "reconcileRssFeedItemCandidates",
+    "template": {
+      "data": {},
+      "name": "dispatchRssFeedItemCandidates",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "rss-feed-candidates:dispatch",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Resume bounded staff RSS feed hard deletes",
         "id": "recoverRssFeedHardDeletes",
         "kind": "scheduled-jobs",
@@ -3712,6 +3749,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "rss-feed-maintenance",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcileTopicAliasCategoryMappings",
+  },
+  {
+    "description": "Refresh bounded RSS item source and topic candidate projections",
+    "id": "reconcileRssFeedItemCandidates",
+    "job_name": "dispatchRssFeedItemCandidates",
+    "queue_name": "rss-feed-maintenance",
+    "schedule": "every 1m",
+    "triggerName": "enqueueDispatchFeedCandidates",
   },
   {
     "description": "Resume accepted topic alias unlinks",
