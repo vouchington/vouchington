@@ -18,6 +18,7 @@ import {
   acquireContentAnalysisTestReservation,
   waitForQueueDomainTestResult,
 } from '@voucha/test-helpers/queue-domain-controls'
+import { acquireEmbeddingCreationCooldown } from '@voucha/test-helpers/embedding-creation-cooldown'
 import { createBackgroundCpuProcessor } from '../processors.mts'
 import { withBedrockRateLimit } from '../processors/bedrock-rate.mts'
 
@@ -46,10 +47,12 @@ describe('background-cpu groups through real GlideMQ', () => {
           await lease?.release()
         })
         closingResources.defer(async () => {
-          await harness?.close()
-        })
-        closingResources.defer(async () => {
-          await events?.close()
+          const results = await Promise.allSettled([harness?.close(), events?.close()])
+          const errors = results
+            .filter(result => result.status === 'rejected')
+            .map(result => result.reason)
+          if (errors.length)
+            throw new AggregateError(errors, 'Provider cooldown resources did not close')
         })
         await pendingWork?.catch(() => undefined)
       })())
@@ -171,74 +174,90 @@ describe('background-cpu groups through real GlideMQ', () => {
     expect(delayedEvents).toContainEqual(expect.objectContaining({ jobId: sameGroup.id }))
   })
 
-  it('shares creation cooldown across type lanes while serving other CPU work', async ({
-    signal,
-  }) => {
+  describe('with reserved creation cooldown', () => {
+    let cooldown: Awaited<ReturnType<typeof acquireEmbeddingCreationCooldown>>
     let imageAttempts = 0
     let postStarts = 0
-    const handlers = new Map<string, BackgroundCpuHandler>([
-      [
-        creationImage.name,
-        {
-          job: creationImage,
-          handle: () => {
-            imageAttempts += 1
-            if (imageAttempts === 1)
-              throwRateLimited(3_000, new Error('Bedrock throttled'), {
-                RateLimitError: Worker.RateLimitError,
-              })
+    beforeEach(async ({ signal }) => {
+      imageAttempts = 0
+      postStarts = 0
+      const handlers = new Map<string, BackgroundCpuHandler>([
+        [
+          creationImage.name,
+          {
+            job: creationImage,
+            handle: () => {
+              imageAttempts += 1
+              if (imageAttempts === 1)
+                throwRateLimited(3_000, new Error('Bedrock throttled'), {
+                  RateLimitError: Worker.RateLimitError,
+                })
+            },
           },
-        },
-      ],
-      [
-        creationPost.name,
-        {
-          job: creationPost,
-          handle: () => {
-            postStarts += 1
+        ],
+        [
+          creationPost.name,
+          {
+            job: creationPost,
+            handle: () => {
+              postStarts += 1
+            },
           },
-        },
-      ],
-      [contentPost.name, { job: contentPost, handle: () => undefined }],
-    ])
-    harness = await trackWork(signal, () =>
-      startRealGlideBackgroundLifecycle<BackgroundCpuJobDefinition>({
-        queueNamePrefix: 'background_cpu_creation_cooldown',
-        connection,
-        processor: createBackgroundCpuProcessor(handlers),
-      }),
-    )
-    events = new QueueEvents(harness.queue.name, {
-      ...connection,
-      lastEventId: '0',
-      blockTimeout: 1_000,
+        ],
+        [contentPost.name, { job: contentPost, handle: () => undefined }],
+      ])
+      harness = await trackWork(signal, () =>
+        startRealGlideBackgroundLifecycle<BackgroundCpuJobDefinition>({
+          queueNamePrefix: 'background_cpu_creation_cooldown',
+          connection,
+          processor: createBackgroundCpuProcessor(handlers),
+        }),
+      )
+      events = new QueueEvents(harness.queue.name, {
+        ...connection,
+        lastEventId: '0',
+        blockTimeout: 1_000,
+      })
+      await events.waitUntilReady()
+
+      cooldown = await acquireEmbeddingCreationCooldown(signal)
+      cooldown.beforeRelease(cleanup)
     })
-    await events.waitUntilReady()
 
-    const imageDelayed = waitForQueueDomainTestResult(
-      once(events, 'delay-changed', { signal }),
+    it('shares creation cooldown across type lanes while serving other CPU work', async ({
       signal,
-    )
-    const image = await trackWork(signal, () => harness!.add(creationImage, {}))
-    expect((await imageDelayed)[0]).toMatchObject({ jobId: image.id })
-    expect(await getCpuProviderCooldownRemainingMs('bedrock-embeddings:creation')).toBeGreaterThan(
-      0,
-    )
+    }) => {
+      const imageDelayed = waitForQueueDomainTestResult(
+        once(events!, 'delay-changed', { signal }),
+        signal,
+      )
+      const image = await trackWork(signal, () => harness!.add(creationImage, {}))
+      expect((await imageDelayed)[0]).toMatchObject({ jobId: image.id })
+      await cooldown.witnessOwnWrite()
+      expect(
+        await getCpuProviderCooldownRemainingMs('bedrock-embeddings:creation'),
+      ).toBeGreaterThan(0)
 
-    const postDelayed = waitForQueueDomainTestResult(
-      once(events, 'delay-changed', { signal }),
-      signal,
-    )
-    const post = await trackWork(signal, () => harness!.add(creationPost, {}))
-    expect((await postDelayed)[0]).toMatchObject({ jobId: post.id })
-    const other = await trackWork(signal, () => harness!.add(contentPost, { id: randomUUID() }))
-    expect(await waitForQueueDomainTestResult(harness.settled(other), signal)).toBe('completed')
-    expect(postStarts).toBe(0)
-    expect(await (await harness.queue.getJob(post.id))?.getState()).toBe('delayed')
+      const postDelayed = waitForQueueDomainTestResult(
+        once(events!, 'delay-changed', { signal }),
+        signal,
+      )
+      const post = await trackWork(signal, () => harness!.add(creationPost, {}))
+      const other = await trackWork(signal, () => harness!.add(contentPost, { id: randomUUID() }))
+      expect((await postDelayed)[0]).toMatchObject({ jobId: post.id })
+      expect(await waitForQueueDomainTestResult(harness!.settled(other), signal)).toBe('completed')
+      expect(postStarts).toBe(0)
+      expect(await (await harness!.queue.getJob(post.id))?.getState()).toBe('delayed')
 
-    expect(await waitForQueueDomainTestResult(harness.settled(image), signal)).toBe('completed')
-    expect(await waitForQueueDomainTestResult(harness.settled(post), signal)).toBe('completed')
-    expect(imageAttempts).toBe(2)
-    expect(postStarts).toBe(1)
+      const imageCompleted = waitForQueueDomainTestResult(harness!.settled(image), signal)
+      const postCompleted = waitForQueueDomainTestResult(harness!.settled(post), signal)
+      await cooldown.expire()
+      await cooldown.promote(image, imageCompleted)
+      await cooldown.promote(post, postCompleted)
+      expect(await imageCompleted).toBe('completed')
+      expect(await postCompleted).toBe('completed')
+      expect(imageAttempts).toBe(2)
+      expect(postStarts).toBe(1)
+    })
   })
 })
