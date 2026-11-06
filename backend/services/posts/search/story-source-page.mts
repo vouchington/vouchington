@@ -17,9 +17,10 @@ export function isStorySourceSearch(options: PostSearchOptions): boolean {
 }
 
 /**
- * Story search reads a keyset page of live discoverable feeds, then a bounded
- * item slice from each feed. Sort modes do not rank the whole corpus; they
- * only thin this inspected window. A short page keeps a cursor.
+ * Story search reads a keyset page of feeds, then a bounded item slice from
+ * each feed. Public readers walk live discoverable feeds. Moderation staff
+ * also walk disabled and non-discoverable feeds. Sort modes do not rank the
+ * whole corpus; they only thin this inspected window. A short page keeps a cursor.
  */
 export async function searchStorySourcePosts(
   currentUser: BasicUser | undefined,

@@ -27,15 +27,15 @@ export function appendNullArm(
         COALESCE(posts.structured_data, '{}'::jsonb) AS structured_data,
         (`)
   query.append(buildSourceBoundPostEligibilityFilter('posts', 'root_post', null))
+  query.append(sql` AND `)
+  appendDataPointFilters(query, options)
   query.append(sql`) AS eligible
       FROM (
         SELECT id
         FROM posts
         WHERE post_type = 'data_point'
           AND deleted_at IS NULL
-          AND community_id IS NULL
-          AND `)
-  appendDataPointFilters(query, options)
+          AND community_id IS NULL`)
   if (postUpper) query.append(sql` AND id < ${postUpper}::uuid`)
   query.append(sql`
         ORDER BY id DESC
@@ -73,6 +73,8 @@ export function appendCommunityArm(
           WHEN posts.id IS NULL OR root_post.id IS NULL THEN false
           ELSE (`)
   query.append(buildSourceBoundPostEligibilityFilter('posts', 'root_post', null))
+  query.append(sql` AND `)
+  appendDataPointFilters(query, arm.options)
   query.append(sql`)
         END AS eligible
       FROM `)
@@ -83,9 +85,7 @@ export function appendCommunityArm(
         FROM posts
         WHERE post_type = 'data_point'
           AND deleted_at IS NULL
-          AND community_id = community.id
-          AND `)
-  appendDataPointFilters(query, arm.options)
+          AND community_id = community.id`)
   if (arm.postUpper) query.append(sql` AND id < ${arm.postUpper}::uuid`)
   query.append(sql`
         ORDER BY id DESC

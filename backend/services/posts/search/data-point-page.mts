@@ -9,9 +9,8 @@ export type { DataPointSearchPage, SearchDataPointsOptions } from './data-point-
 
 /**
  * Data-point search reads community-less posts first, then a keyset page of
- * live public communities and a bounded child slice from each. Caller filters
- * sit inside the child limit so the newest match stays on the first page.
- * Publication eligibility stays outside that limit and may shorten the page.
+ * live public communities and a bounded child slice from each. Optional filters
+ * sit outside that limit, same as publication eligibility, and may shorten the page.
  */
 export async function searchDataPoints(
   options: SearchDataPointsOptions,

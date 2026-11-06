@@ -40,5 +40,16 @@ export function decodeStoryCursor(after: string | undefined): StoryCursor | null
 }
 
 function isPublishedAt(value: unknown): value is string {
-  return typeof value === 'string' && PUBLISHED_AT_PATTERN.test(value)
+  if (typeof value !== 'string' || !PUBLISHED_AT_PATTERN.test(value)) return false
+  const year = Number(value.slice(0, 4))
+  const month = Number(value.slice(5, 7))
+  const day = Number(value.slice(8, 10))
+  const hour = Number(value.slice(11, 13))
+  const minute = Number(value.slice(14, 16))
+  const second = Number(value.slice(17, 19))
+  if (year < 1 || month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59) {
+    return false
+  }
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  return day >= 1 && day <= lastDay
 }

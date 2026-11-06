@@ -52,6 +52,99 @@ export function appendChildLateral(
       ) src ON TRUE`)
 }
 
+export function appendLaterFeedSlice(
+  query: SQLStatement,
+  cursor: StoryCursor | null,
+  laterLimit: number,
+  staff: boolean,
+): void {
+  if (staff) appendStaffFeedSlice(query, cursor, laterLimit)
+  else appendPublicFeedSlice(query, cursor, laterLimit)
+}
+
+function appendPublicFeedSlice(
+  query: SQLStatement,
+  cursor: StoryCursor | null,
+  laterLimit: number,
+): void {
+  query.append(sql`
+        SELECT id
+        FROM rss_feeds
+        WHERE is_enabled
+          AND is_discoverable
+          AND deleted_at IS NULL
+          AND `)
+  appendFeedIdUpperBound(query, cursor)
+  query.append(sql`
+        ORDER BY id DESC
+        LIMIT ${laterLimit}`)
+}
+
+function appendStaffFeedSlice(
+  query: SQLStatement,
+  cursor: StoryCursor | null,
+  laterLimit: number,
+): void {
+  query.append(sql`
+        SELECT id
+        FROM (
+          SELECT id
+          FROM rss_feeds
+          WHERE is_enabled = TRUE
+            AND deleted_at IS NULL
+            AND `)
+  appendFeedIdUpperBound(query, cursor)
+  query.append(sql`
+          ORDER BY id DESC
+          LIMIT ${laterLimit}
+        ) enabled_feeds
+        UNION ALL
+        SELECT id
+        FROM (
+          SELECT id
+          FROM rss_feeds
+          WHERE is_enabled = FALSE
+            AND deleted_at IS NULL
+            AND `)
+  appendFeedIdUpperBound(query, cursor)
+  query.append(sql`
+          ORDER BY id DESC
+          LIMIT ${laterLimit}
+        ) disabled_feeds
+        ORDER BY id DESC
+        LIMIT ${laterLimit}`)
+}
+
+function appendFeedIdUpperBound(query: SQLStatement, cursor: StoryCursor | null): void {
+  if (cursor) query.append(sql`id < ${cursor.feed_id}::uuid`)
+  else query.append(sql`TRUE`)
+}
+
+/** Newest visible feed, then greatest item id, owns the story post for this reader. */
+export function appendOwningSource(query: SQLStatement, staff: boolean): void {
+  query.append(sql`
+      LEFT JOIN LATERAL (
+        SELECT owner_feed.id AS feed_id, owner_item.id AS item_id
+        -- no-mistakes-disable-next-line postgres-required-predicates: the owning source is the newest visible feed of this story, and story_id is the indexed key across item id partitions
+        FROM rss_feed_items owner_item
+        JOIN rss_feed_item_sources owner_src
+          ON owner_src.rss_feed_item_id = owner_item.id
+        JOIN rss_feeds owner_feed
+          ON owner_feed.id = owner_src.rss_feed_id
+         AND owner_feed.deleted_at IS NULL`)
+  if (!staff) {
+    query.append(sql`
+         AND owner_feed.is_enabled
+         AND owner_feed.is_discoverable`)
+  }
+  query.append(sql`
+        WHERE owner_item.story_id = item.story_id
+          AND owner_item.deleted_at IS NULL
+        ORDER BY owner_feed.id DESC, owner_item.id DESC
+        LIMIT 1
+      ) owner ON item.id IS NOT NULL`)
+}
+
 export function resumeBounds(cursor: StoryCursor): StoryFeedBounds & { published: SQLStatement } {
   if (!cursor.item_id) throw createHttpError(400, 'Invalid cursor')
   if (cursor.phase === 'missing') {
