@@ -9,7 +9,7 @@ import { hackerNewsQueueConfig } from '@queues/hacker-news/config'
 import { hackerNewsFlagsQueue } from '@queues/hacker-news-flags/queues'
 import { READMISSION_JOB, getHackerNewsFlagsOrdering } from '@queues/hacker-news-flags/config'
 import { hackerNewsWorkConfig } from '@services/urls/hacker-news-work-limits'
-import { createHackerNewsFlagsWorker } from './workers.mts'
+import { createHackerNewsFlagsWorker } from '../workers.mts'
 import type { Job } from 'glide-mq'
 
 vi.hoisted(() => {

@@ -1,3 +1,4 @@
+import type { QueryOptions } from '@data-stores/psql/types'
 import { write } from '@data-stores/psql'
 
 export async function pageRssHackerNewsFlags(
@@ -5,10 +6,12 @@ export async function pageRssHackerNewsFlags(
   afterId: string,
   upperId: string,
   size: number,
+  options: QueryOptions = {},
 ): Promise<string[]> {
   const page = await write<{ id: string }>(
     `/* pageHackerNewsUrlRssItems */ SELECT id FROM rss_feed_items WHERE url_id = $1 AND id > $2 AND id <= $4 ORDER BY id LIMIT $3`,
     [urlId, afterId, size, upperId],
+    options,
   )
   return page.rows.map(row => row.id)
 }
