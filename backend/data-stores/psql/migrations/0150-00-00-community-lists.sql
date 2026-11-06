@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS community_list_topics (
   removed_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_list_topics__added_by_id
+  ON community_list_topics (added_by_id) WHERE added_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_list_topics__removed_by_id
+  ON community_list_topics (removed_by_id) WHERE removed_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_topics__unique ON community_list_topics (community_id, topic_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -53,6 +58,11 @@ CREATE TABLE IF NOT EXISTS community_list_rss_feeds (
   removed_at TIMESTAMPTZ,
   removed_by_id UUID REFERENCES users ON DELETE SET NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__added_by_id
+  ON community_list_rss_feeds (added_by_id) WHERE added_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__removed_by_id
+  ON community_list_rss_feeds (removed_by_id) WHERE removed_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_rss_feeds__unique ON community_list_rss_feeds (community_id, rss_feed_id) WHERE removed_at IS NULL;
@@ -85,6 +95,11 @@ CREATE TABLE IF NOT EXISTS community_list_posts (
   removed_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_list_posts__added_by_id
+  ON community_list_posts (added_by_id) WHERE added_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_list_posts__removed_by_id
+  ON community_list_posts (removed_by_id) WHERE removed_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_posts__unique ON community_list_posts (community_id, post_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -113,6 +128,11 @@ CREATE TABLE IF NOT EXISTS community_list_url_hostnames (
   removed_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__added_by_id
+  ON community_list_url_hostnames (added_by_id) WHERE added_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__removed_by_id
+  ON community_list_url_hostnames (removed_by_id) WHERE removed_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_url_hostnames__unique ON community_list_url_hostnames (community_id, url_hostname_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -140,6 +160,11 @@ CREATE TABLE IF NOT EXISTS community_list_urls (
   removed_at TIMESTAMPTZ,
   removed_by_id UUID REFERENCES users ON DELETE SET NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_community_list_urls__added_by_id
+  ON community_list_urls (added_by_id) WHERE added_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_list_urls__removed_by_id
+  ON community_list_urls (removed_by_id) WHERE removed_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_urls__unique ON community_list_urls (community_id, url_id) WHERE removed_at IS NULL;

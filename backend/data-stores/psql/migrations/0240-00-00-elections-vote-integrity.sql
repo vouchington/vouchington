@@ -193,6 +193,9 @@ CREATE TABLE IF NOT EXISTS vote_integrity_flags (
   CHECK ((agent_moderation_post_id IS NULL) = (agent_moderation_id IS NULL))
 );
 
+CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__resolved_by_id
+  ON vote_integrity_flags (resolved_by_id) WHERE resolved_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_vote_integrity_flags_updated_at
   BEFORE UPDATE ON vote_integrity_flags FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -306,6 +309,9 @@ CREATE TABLE IF NOT EXISTS vote_weight_penalties (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__revoked_by_id
+  ON vote_weight_penalties (revoked_by_id) WHERE revoked_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_vote_weight_penalties_updated_at

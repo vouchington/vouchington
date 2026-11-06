@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS dynamic_configuration_revisions (
   created_at       timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
+CREATE INDEX IF NOT EXISTS idx_dynamic_configuration_revisions__revised_by_id
+  ON dynamic_configuration_revisions (revised_by_id) WHERE revised_by_id IS NOT NULL;
+
 -- Index on configuration_key + id DESC (id is UUIDv7 so DESC is chronological descending).
 -- Virtual generated columns cannot be indexed directly.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

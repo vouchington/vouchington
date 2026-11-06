@@ -33,6 +33,8 @@ _none_
 
 **Indexes:**
 
+- `idx_post_locks__lifted_by_id`: `CREATE INDEX idx_post_locks__lifted_by_id ON public.post_locks USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)`
+- `idx_post_locks__locked_by_id`: `CREATE INDEX idx_post_locks__locked_by_id ON public.post_locks USING btree (locked_by_id) WHERE (locked_by_id IS NOT NULL)`
 - `idx_post_locks__post`: `CREATE INDEX idx_post_locks__post ON public.post_locks USING btree (post_id) WHERE (lifted_at IS NULL)`
 - `idx_post_locks__post_id`: `CREATE INDEX idx_post_locks__post_id ON public.post_locks USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `post_locks_pkey`: `CREATE UNIQUE INDEX post_locks_pkey ON public.post_locks USING btree (id)`

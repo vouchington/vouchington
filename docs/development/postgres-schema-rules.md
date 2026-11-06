@@ -163,7 +163,9 @@ PostgreSQL does not auto-index FK columns, so an unindexed FK makes every parent
 `ON DELETE RESTRICT` check sequential-scan the child. The FK must be the leading column of some
 index. A partial index `WHERE <fk> IS NOT NULL` is usable; `WHERE deleted_at IS NULL` is not,
 because cascades and RESTRICT checks touch soft-deleted children too. `SET NULL` audit columns
-(`*_by_id` to users) are the systemic exception: index only those on large tables.
+(`*_by_id` to users) need the same lookup support when a user is purged. Retention periods and
+per-entity limits do not cap the global child table. Prefer a sparse `IS NOT NULL` index for
+nullable actor references so rows without an actor add no index entries.
 
 ## Large aggregation recomputes read the replica and absorb lag asynchronously
 

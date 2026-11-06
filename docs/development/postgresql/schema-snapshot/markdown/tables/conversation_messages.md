@@ -67,9 +67,13 @@ _none_
 **Indexes:**
 
 - `conversation_messages_pkey`: `CREATE UNIQUE INDEX conversation_messages_pkey ON ONLY public.conversation_messages USING btree (conversation_id, id)`
+- `idx_conversation_messages__approved_by_id`: `CREATE INDEX idx_conversation_messages__approved_by_id ON ONLY public.conversation_messages USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)`
 - `idx_conversation_messages__created_by_id`: `CREATE INDEX idx_conversation_messages__created_by_id ON ONLY public.conversation_messages USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
 - `idx_conversation_messages__created_via_oauth_client_id`: `CREATE INDEX idx_conversation_messages__created_via_oauth_client_id ON ONLY public.conversation_messages USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
+- `idx_conversation_messages__deleted_by_id`: `CREATE INDEX idx_conversation_messages__deleted_by_id ON ONLY public.conversation_messages USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
+- `idx_conversation_messages__edited_by_id`: `CREATE INDEX idx_conversation_messages__edited_by_id ON ONLY public.conversation_messages USING btree (edited_by_id) WHERE (edited_by_id IS NOT NULL)`
 - `idx_conversation_messages__email_message_id`: `CREATE INDEX idx_conversation_messages__email_message_id ON ONLY public.conversation_messages USING btree (email_message_id) WHERE (email_message_id IS NOT NULL)`
+- `idx_conversation_messages__updated_by_id`: `CREATE INDEX idx_conversation_messages__updated_by_id ON ONLY public.conversation_messages USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)`
 
 **Triggers:**
 

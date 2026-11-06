@@ -79,10 +79,12 @@ Not partitioned — growth: bounded.
 **Indexes:**
 
 - `idx_moderation_appeals__appellant`: `CREATE INDEX idx_moderation_appeals__appellant ON public.moderation_appeals USING btree (appellant_user_id, id DESC)`
+- `idx_moderation_appeals__approved_by_id`: `CREATE INDEX idx_moderation_appeals__approved_by_id ON public.moderation_appeals USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)`
 - `idx_moderation_appeals__case_id`: `CREATE INDEX idx_moderation_appeals__case_id ON public.moderation_appeals USING btree (case_id)`
 - `idx_moderation_appeals__community_ban`: `CREATE INDEX idx_moderation_appeals__community_ban ON public.moderation_appeals USING btree (community_ban_id) WHERE (community_ban_id IS NOT NULL)`
 - `idx_moderation_appeals__community_id`: `CREATE INDEX idx_moderation_appeals__community_id ON public.moderation_appeals USING btree (community_id) WHERE (community_id IS NOT NULL)`
 - `idx_moderation_appeals__created_via_oauth_client_id`: `CREATE INDEX idx_moderation_appeals__created_via_oauth_client_id ON public.moderation_appeals USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
+- `idx_moderation_appeals__edited_by_id`: `CREATE INDEX idx_moderation_appeals__edited_by_id ON public.moderation_appeals USING btree (edited_by_id) WHERE (edited_by_id IS NOT NULL)`
 - `idx_moderation_appeals__latest_lifecycle_change_id`: `CREATE INDEX idx_moderation_appeals__latest_lifecycle_change_id ON public.moderation_appeals USING btree (latest_lifecycle_change_id) WHERE (latest_lifecycle_change_id IS NOT NULL)`
 - `idx_moderation_appeals__one_open_ban`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_ban ON public.moderation_appeals USING btree (appellant_user_id, community_ban_id) WHERE ((resolved_at IS NULL) AND (community_ban_id IS NOT NULL))`
 - `idx_moderation_appeals__one_open_post`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_post ON public.moderation_appeals USING btree (appellant_user_id, post_id, post_removal_kind) WHERE ((resolved_at IS NULL) AND (post_id IS NOT NULL))`
@@ -90,6 +92,7 @@ Not partitioned — growth: bounded.
 - `idx_moderation_appeals__one_open_warning`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_warning ON public.moderation_appeals USING btree (appellant_user_id, user_warning_id) WHERE ((resolved_at IS NULL) AND (user_warning_id IS NOT NULL))`
 - `idx_moderation_appeals__original_decided_by_id`: `CREATE INDEX idx_moderation_appeals__original_decided_by_id ON public.moderation_appeals USING btree (original_decided_by_id) WHERE (original_decided_by_id IS NOT NULL)`
 - `idx_moderation_appeals__post_id`: `CREATE INDEX idx_moderation_appeals__post_id ON public.moderation_appeals USING btree (post_id) WHERE (post_id IS NOT NULL)`
+- `idx_moderation_appeals__resolved_by_id`: `CREATE INDEX idx_moderation_appeals__resolved_by_id ON public.moderation_appeals USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)`
 - `idx_moderation_appeals__status_created`: `CREATE INDEX idx_moderation_appeals__status_created ON public.moderation_appeals USING btree (resolved_at, id DESC)`
 - `idx_moderation_appeals__user_suspension_id`: `CREATE INDEX idx_moderation_appeals__user_suspension_id ON public.moderation_appeals USING btree (user_suspension_id) WHERE (user_suspension_id IS NOT NULL)`
 - `idx_moderation_appeals__user_warning`: `CREATE INDEX idx_moderation_appeals__user_warning ON public.moderation_appeals USING btree (user_warning_id) WHERE (user_warning_id IS NOT NULL)`

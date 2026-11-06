@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS images (
   bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ
 );
 
+CREATE INDEX IF NOT EXISTS idx_images__deleted_by_id
+  ON images (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+
 ALTER TABLE images
 ADD CONSTRAINT fk_images__retained_image_identity
 FOREIGN KEY (id, created_by_id) REFERENCES retained_image_identities (id, created_by_id) ON DELETE RESTRICT NOT VALID;

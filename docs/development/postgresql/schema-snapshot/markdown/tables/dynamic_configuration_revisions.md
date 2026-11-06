@@ -31,6 +31,7 @@ _none_
 
 - `dynamic_configuration_revisions_pkey`: `CREATE UNIQUE INDEX dynamic_configuration_revisions_pkey ON public.dynamic_configuration_revisions USING btree (id)`
 - `idx_dynamic_configuration_revisions__configuration_key`: `CREATE INDEX idx_dynamic_configuration_revisions__configuration_key ON public.dynamic_configuration_revisions USING btree (configuration_key, id DESC)`
+- `idx_dynamic_configuration_revisions__revised_by_id`: `CREATE INDEX idx_dynamic_configuration_revisions__revised_by_id ON public.dynamic_configuration_revisions USING btree (revised_by_id) WHERE (revised_by_id IS NOT NULL)`
 
 **Triggers:**
 

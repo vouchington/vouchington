@@ -31,6 +31,7 @@ _none_
 **Indexes:**
 
 - `idx_post_revisions__post_id`: `CREATE INDEX idx_post_revisions__post_id ON ONLY public.post_revisions USING btree (post_id)`
+- `idx_post_revisions__revised_by_id`: `CREATE INDEX idx_post_revisions__revised_by_id ON ONLY public.post_revisions USING btree (revised_by_id) WHERE (revised_by_id IS NOT NULL)`
 - `post_revisions_pkey`: `CREATE UNIQUE INDEX post_revisions_pkey ON ONLY public.post_revisions USING btree (id)`
 
 **Triggers:**

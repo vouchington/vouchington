@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS community_agent_prompt_revisions (
   created_at       timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_agent_prompt_revisions__revised_by_id
+  ON community_agent_prompt_revisions (revised_by_id) WHERE revised_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompt_revisions__community_id
   ON community_agent_prompt_revisions (community_id, id DESC);

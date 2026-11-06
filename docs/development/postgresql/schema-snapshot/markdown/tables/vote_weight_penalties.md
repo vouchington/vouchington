@@ -55,6 +55,7 @@ _none_
 - `idx_vote_weight_penalties__post`: `CREATE INDEX idx_vote_weight_penalties__post ON public.vote_weight_penalties USING btree (source_post_id) WHERE (source_post_id IS NOT NULL)`
 - `idx_vote_weight_penalties__review_due`: `CREATE INDEX idx_vote_weight_penalties__review_due ON public.vote_weight_penalties USING btree (review_due_at, id) WHERE (revoked_at IS NULL)`
 - `idx_vote_weight_penalties__reviewed_by_id`: `CREATE INDEX idx_vote_weight_penalties__reviewed_by_id ON public.vote_weight_penalties USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
+- `idx_vote_weight_penalties__revoked_by_id`: `CREATE INDEX idx_vote_weight_penalties__revoked_by_id ON public.vote_weight_penalties USING btree (revoked_by_id) WHERE (revoked_by_id IS NOT NULL)`
 - `idx_vote_weight_penalties__user_flag_unique`: `CREATE UNIQUE INDEX idx_vote_weight_penalties__user_flag_unique ON public.vote_weight_penalties USING btree (user_id, source_flag_id) WHERE ((source_flag_id IS NOT NULL) AND (revoked_at IS NULL))`
 - `idx_vote_weight_penalties__user_hostname_unique`: `CREATE UNIQUE INDEX idx_vote_weight_penalties__user_hostname_unique ON public.vote_weight_penalties USING btree (user_id, source_hostname_id) WHERE ((source_hostname_id IS NOT NULL) AND (revoked_at IS NULL))`
 - `idx_vote_weight_penalties__user_id`: `CREATE INDEX idx_vote_weight_penalties__user_id ON public.vote_weight_penalties USING btree (user_id) WHERE (user_id IS NOT NULL)`

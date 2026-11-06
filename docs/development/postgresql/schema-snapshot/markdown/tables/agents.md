@@ -42,7 +42,10 @@ Not partitioned — growth: unbounded.
 - `agents_pkey`: `CREATE UNIQUE INDEX agents_pkey ON public.agents USING btree (id)`
 - `agents_system_user_id_key`: `CREATE UNIQUE INDEX agents_system_user_id_key ON public.agents USING btree (system_user_id)`
 - `idx_agents__active_by_type`: `CREATE INDEX idx_agents__active_by_type ON public.agents USING btree (agent_type, activated_at DESC) WHERE ((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))`
+- `idx_agents__created_by_id`: `CREATE INDEX idx_agents__created_by_id ON public.agents USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_agents__deleted_by_id`: `CREATE INDEX idx_agents__deleted_by_id ON public.agents USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_agents__system_user_id`: `CREATE INDEX idx_agents__system_user_id ON public.agents USING btree (system_user_id) WHERE (deleted_at IS NULL)`
+- `idx_agents__updated_by_id`: `CREATE INDEX idx_agents__updated_by_id ON public.agents USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)`
 
 **Triggers:**
 

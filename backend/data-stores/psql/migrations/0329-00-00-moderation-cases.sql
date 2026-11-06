@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS moderation_cases (
   CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1)
 );
 
+CREATE INDEX IF NOT EXISTS idx_moderation_cases__resolved_by_id
+  ON moderation_cases (resolved_by_id) WHERE resolved_by_id IS NOT NULL;
+
 CREATE OR REPLACE TRIGGER trigger_moderation_cases_updated_at
   BEFORE UPDATE ON moderation_cases
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

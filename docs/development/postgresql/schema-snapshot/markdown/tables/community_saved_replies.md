@@ -40,6 +40,8 @@ _none_
 - `idx_community_saved_replies__community_id`: `CREATE INDEX idx_community_saved_replies__community_id ON public.community_saved_replies USING btree (community_id, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_community_saved_replies__community_id_bare`: `CREATE INDEX idx_community_saved_replies__community_id_bare ON public.community_saved_replies USING btree (community_id)`
 - `idx_community_saved_replies__community_order`: `CREATE UNIQUE INDEX idx_community_saved_replies__community_order ON public.community_saved_replies USING btree (community_id, order_index) WHERE (deleted_at IS NULL)`
+- `idx_community_saved_replies__created_by_id`: `CREATE INDEX idx_community_saved_replies__created_by_id ON public.community_saved_replies USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_community_saved_replies__deleted_by_id`: `CREATE INDEX idx_community_saved_replies__deleted_by_id ON public.community_saved_replies USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 
 **Triggers:**
 

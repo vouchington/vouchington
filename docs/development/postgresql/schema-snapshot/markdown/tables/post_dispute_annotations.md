@@ -39,6 +39,7 @@ _none_
 - `idx_post_dispute_annotations__dispute_active`: `CREATE UNIQUE INDEX idx_post_dispute_annotations__dispute_active ON public.post_dispute_annotations USING btree (review_dispute_id) WHERE (removed_at IS NULL)`
 - `idx_post_dispute_annotations__post_active`: `CREATE INDEX idx_post_dispute_annotations__post_active ON public.post_dispute_annotations USING btree (post_id) WHERE (removed_at IS NULL)`
 - `idx_post_dispute_annotations__post_id`: `CREATE INDEX idx_post_dispute_annotations__post_id ON public.post_dispute_annotations USING btree (post_id) WHERE (post_id IS NOT NULL)`
+- `idx_post_dispute_annotations__removed_by_id`: `CREATE INDEX idx_post_dispute_annotations__removed_by_id ON public.post_dispute_annotations USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)`
 - `idx_post_dispute_annotations__review_dispute_id`: `CREATE INDEX idx_post_dispute_annotations__review_dispute_id ON public.post_dispute_annotations USING btree (review_dispute_id) WHERE (review_dispute_id IS NOT NULL)`
 - `post_dispute_annotations_pkey`: `CREATE UNIQUE INDEX post_dispute_annotations_pkey ON public.post_dispute_annotations USING btree (id)`
 

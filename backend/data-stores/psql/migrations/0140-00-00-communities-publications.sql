@@ -187,6 +187,13 @@ CREATE TABLE IF NOT EXISTS community_members (
   suspected_ban_evader_dismissed_by_id UUID REFERENCES users(id) ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_members__approved_by_id
+  ON community_members (approved_by_id) WHERE approved_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_members__removed_by_id
+  ON community_members (removed_by_id) WHERE removed_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_members__suspected_ban_evader_dismissed_by_id
+  ON community_members (suspected_ban_evader_dismissed_by_id) WHERE suspected_ban_evader_dismissed_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_members_updated_at
   BEFORE UPDATE ON community_members FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -299,6 +306,9 @@ CREATE TABLE IF NOT EXISTS community_applications (
   CHECK (rejection_reason IS NULL OR rejection_reason = TRIM(rejection_reason)),
   CONSTRAINT community_applications_identity_key UNIQUE (community_id, id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_community_applications__reviewed_by_id
+  ON community_applications (reviewed_by_id) WHERE reviewed_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_applications_updated_at
@@ -480,6 +490,17 @@ CREATE TABLE IF NOT EXISTS community_post_reviews (
   CHECK (platform_override_at IS NOT NULL OR platform_override_private_note IS NULL)
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_post_reviews__automod_dismissed_by_id
+  ON community_post_reviews (automod_dismissed_by_id) WHERE automod_dismissed_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_post_reviews__escalated_by_id
+  ON community_post_reviews (escalated_by_id) WHERE escalated_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_post_reviews__reviewed_by_id
+  ON community_post_reviews (reviewed_by_id) WHERE reviewed_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_post_reviews__submitted_by_id
+  ON community_post_reviews (submitted_by_id) WHERE submitted_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_post_reviews__unpublished_by_id
+  ON community_post_reviews (unpublished_by_id) WHERE unpublished_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_post_reviews__platform_override_by_id
 ON community_post_reviews (platform_override_by_id);
@@ -602,6 +623,9 @@ CREATE TABLE IF NOT EXISTS community_agent_prompts (
   CONSTRAINT uq_community_agent_prompts__id__community UNIQUE (id, community_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__deleted_by_id
+  ON community_agent_prompts (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+
 -- Lookup by community for listing
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__community_id
@@ -658,6 +682,11 @@ CREATE TABLE IF NOT EXISTS community_auto_tagger_agents (
   PRIMARY KEY (community_id, agent_id),
   CHECK (disabled_at IS NULL OR disabled_at >= enabled_at)
 );
+
+CREATE INDEX IF NOT EXISTS idx_community_auto_tagger_agents__disabled_by_id
+  ON community_auto_tagger_agents (disabled_by_id) WHERE disabled_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_auto_tagger_agents__enabled_by_id
+  ON community_auto_tagger_agents (enabled_by_id) WHERE enabled_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_auto_tagger_agents_updated_at
@@ -722,6 +751,11 @@ CREATE TABLE IF NOT EXISTS community_saved_replies (
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_community_saved_replies__created_by_id
+  ON community_saved_replies (created_by_id) WHERE created_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_saved_replies__deleted_by_id
+  ON community_saved_replies (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_saved_replies_updated_at

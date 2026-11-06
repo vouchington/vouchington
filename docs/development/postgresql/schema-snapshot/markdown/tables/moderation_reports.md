@@ -65,6 +65,7 @@ _none_
 - `idx_moderation_reports__case_id`: `CREATE INDEX idx_moderation_reports__case_id ON public.moderation_reports USING btree (case_id)`
 - `idx_moderation_reports__community_id`: `CREATE INDEX idx_moderation_reports__community_id ON public.moderation_reports USING btree (community_id) WHERE (community_id IS NOT NULL)`
 - `idx_moderation_reports__created_via_oauth_client_id`: `CREATE INDEX idx_moderation_reports__created_via_oauth_client_id ON public.moderation_reports USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
+- `idx_moderation_reports__escalated_by_id`: `CREATE INDEX idx_moderation_reports__escalated_by_id ON public.moderation_reports USING btree (escalated_by_id) WHERE (escalated_by_id IS NOT NULL)`
 - `idx_moderation_reports__hostname_id`: `CREATE INDEX idx_moderation_reports__hostname_id ON public.moderation_reports USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
 - `idx_moderation_reports__pending_id`: `CREATE INDEX idx_moderation_reports__pending_id ON public.moderation_reports USING btree (id DESC) WHERE (reviewed_at IS NULL)`
 - `idx_moderation_reports__post_id`: `CREATE INDEX idx_moderation_reports__post_id ON public.moderation_reports USING btree (post_id) WHERE (post_id IS NOT NULL)`

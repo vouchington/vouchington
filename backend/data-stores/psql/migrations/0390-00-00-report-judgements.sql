@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1)
 );
 
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__rerun_by_id
+  ON moderation_report_judgements (rerun_by_id) WHERE rerun_by_id IS NOT NULL;
+
 -- Per-entity lookup (most-recent judgement per entity)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__post_id

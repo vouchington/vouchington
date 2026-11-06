@@ -45,8 +45,10 @@ _none_
 
 - `hostname_crawler_configurations_pkey`: `CREATE UNIQUE INDEX hostname_crawler_configurations_pkey ON public.hostname_crawler_configurations USING btree (id)`
 - `idx_hostname_crawler_configurations__created_by_id`: `CREATE INDEX idx_hostname_crawler_configurations__created_by_id ON public.hostname_crawler_configurations USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_hostname_crawler_configurations__deleted_by_id`: `CREATE INDEX idx_hostname_crawler_configurations__deleted_by_id ON public.hostname_crawler_configurations USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_hostname_crawler_configurations__hostname_id`: `CREATE INDEX idx_hostname_crawler_configurations__hostname_id ON public.hostname_crawler_configurations USING btree (hostname_id)`
 - `idx_hostname_crawler_configurations__referral_program_topic_id`: `CREATE INDEX idx_hostname_crawler_configurations__referral_program_topic_id ON public.hostname_crawler_configurations USING btree (referral_program_topic_id) WHERE (referral_program_topic_id IS NOT NULL)`
+- `idx_hostname_crawler_configurations__updated_by_id`: `CREATE INDEX idx_hostname_crawler_configurations__updated_by_id ON public.hostname_crawler_configurations USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)`
 
 **Triggers:**
 

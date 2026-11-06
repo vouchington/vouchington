@@ -35,7 +35,9 @@ _none_
 **Indexes:**
 
 - `community_list_url_hostnames_pkey`: `CREATE UNIQUE INDEX community_list_url_hostnames_pkey ON public.community_list_url_hostnames USING btree (id)`
+- `idx_community_list_url_hostnames__added_by_id`: `CREATE INDEX idx_community_list_url_hostnames__added_by_id ON public.community_list_url_hostnames USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)`
 - `idx_community_list_url_hostnames__community`: `CREATE INDEX idx_community_list_url_hostnames__community ON public.community_list_url_hostnames USING btree (community_id)`
+- `idx_community_list_url_hostnames__removed_by_id`: `CREATE INDEX idx_community_list_url_hostnames__removed_by_id ON public.community_list_url_hostnames USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)`
 - `idx_community_list_url_hostnames__unique`: `CREATE UNIQUE INDEX idx_community_list_url_hostnames__unique ON public.community_list_url_hostnames USING btree (community_id, url_hostname_id) WHERE (removed_at IS NULL)`
 - `idx_community_list_url_hostnames__url_hostname`: `CREATE INDEX idx_community_list_url_hostnames__url_hostname ON public.community_list_url_hostnames USING btree (url_hostname_id)`
 

@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS report_integrity_flags (
     CHECK (details -> 'reporter_user_ids' IS NULL)
 );
 
+CREATE INDEX IF NOT EXISTS idx_report_integrity_flags__resolved_by_id
+  ON report_integrity_flags (resolved_by_id) WHERE resolved_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_report_integrity_flags_updated_at
   BEFORE UPDATE ON report_integrity_flags FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -147,6 +150,11 @@ CREATE TABLE IF NOT EXISTS report_abuse_penalties (
   created_at    timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at    timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__created_by_id
+  ON report_abuse_penalties (created_by_id) WHERE created_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__revoked_by_id
+  ON report_abuse_penalties (revoked_by_id) WHERE revoked_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_report_abuse_penalties_updated_at

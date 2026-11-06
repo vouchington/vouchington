@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS community_bans (
   case_id UUID NOT NULL REFERENCES moderation_cases (id) ON DELETE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_bans__banned_by_id
+  ON community_bans (banned_by_id) WHERE banned_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_bans__lifted_by_id
+  ON community_bans (lifted_by_id) WHERE lifted_by_id IS NOT NULL;
+
 CREATE OR REPLACE TRIGGER trigger_community_bans_updated_at
   BEFORE UPDATE ON community_bans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 

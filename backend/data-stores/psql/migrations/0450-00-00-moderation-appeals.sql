@@ -112,6 +112,13 @@ CREATE TABLE IF NOT EXISTS moderation_appeals (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_moderation_appeals__approved_by_id
+  ON moderation_appeals (approved_by_id) WHERE approved_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_appeals__edited_by_id
+  ON moderation_appeals (edited_by_id) WHERE edited_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_appeals__resolved_by_id
+  ON moderation_appeals (resolved_by_id) WHERE resolved_by_id IS NOT NULL;
+
 
 
 -- Queue pagination

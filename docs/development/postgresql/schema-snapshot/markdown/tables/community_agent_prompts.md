@@ -43,6 +43,7 @@ Not partitioned — growth: unbounded.
 - `idx_community_agent_prompts__community_id_bare`: `CREATE INDEX idx_community_agent_prompts__community_id_bare ON public.community_agent_prompts USING btree (community_id)`
 - `idx_community_agent_prompts__created_by_id`: `CREATE INDEX idx_community_agent_prompts__created_by_id ON public.community_agent_prompts USING btree (created_by_id)`
 - `idx_community_agent_prompts__created_by_id__slot`: `CREATE INDEX idx_community_agent_prompts__created_by_id__slot ON public.community_agent_prompts USING btree (created_by_id, is_slot_allocated) WHERE (deleted_at IS NULL)`
+- `idx_community_agent_prompts__deleted_by_id`: `CREATE INDEX idx_community_agent_prompts__deleted_by_id ON public.community_agent_prompts USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `uq_community_agent_prompts__id__community`: `CREATE UNIQUE INDEX uq_community_agent_prompts__id__community ON public.community_agent_prompts USING btree (id, community_id)`
 
 **Triggers:**

@@ -59,6 +59,9 @@ CREATE TABLE IF NOT EXISTS rss_feeds (
   should_ignore_robots_txt BOOLEAN, -- whether robots.txt allow/disallow rules are ignored for this specific feed. NULL = inherit from hostname or global config
   unreliable_status_codes SMALLINT[] -- RSS fetch HTTP status codes that should retry instead of soft-deleting this feed. NULL = inherit from hostname; empty array = no override statuses
 );
+
+CREATE INDEX IF NOT EXISTS idx_rss_feeds__created_by_id
+  ON rss_feeds (created_by_id) WHERE created_by_id IS NOT NULL;
 COMMENT ON COLUMN rss_feeds.hard_delete_requested_at IS 'Accepted asynchronous hard deletion marker; workers drain bounded child pages and recover unfinished feeds.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -449,6 +452,9 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_category_rejections (
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   created_by_id UUID REFERENCES users ON DELETE SET NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_rss_feed_item_category_rejections__created_by_id
+  ON rss_feed_item_category_rejections (created_by_id) WHERE created_by_id IS NOT NULL;
 
 COMMENT ON TABLE rss_feed_item_category_rejections IS 'Category strings marked by admins as too vague to map to a topic (e.g. "news"). Hidden from the unmapped-category triage queue.';
 COMMENT ON COLUMN rss_feed_item_category_rejections.category_identity_id IS 'Canonical category identity rejected from editorial triage.';

@@ -20,6 +20,11 @@ CREATE TABLE IF NOT EXISTS user_warnings (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
+CREATE INDEX IF NOT EXISTS idx_user_warnings__issued_by_id
+  ON user_warnings (issued_by_id) WHERE issued_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_user_warnings__revoked_by_id
+  ON user_warnings (revoked_by_id) WHERE revoked_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_warnings__user_id ON user_warnings (user_id, id DESC);
 

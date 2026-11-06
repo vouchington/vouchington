@@ -223,6 +223,9 @@ CREATE TABLE IF NOT EXISTS users (
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_users__deleted_by_id
+  ON users (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_register_retained_user_identity
 BEFORE INSERT ON users
@@ -1367,6 +1370,9 @@ CREATE TABLE IF NOT EXISTS curated_aside_items (
   CONSTRAINT chk_curated_aside_items__one_target
     CHECK (num_nonnulls(topic_id, rss_feed_id, community_id) = 1)
 );
+
+CREATE INDEX IF NOT EXISTS idx_curated_aside_items__created_by_id
+  ON curated_aside_items (created_by_id) WHERE created_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_curated_aside_items__type_entity

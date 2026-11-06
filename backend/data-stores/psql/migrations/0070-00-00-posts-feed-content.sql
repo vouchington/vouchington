@@ -617,6 +617,13 @@ CREATE TABLE IF NOT EXISTS agents (
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_agents__created_by_id
+  ON agents (created_by_id) WHERE created_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_agents__deleted_by_id
+  ON agents (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_agents__updated_by_id
+  ON agents (updated_by_id) WHERE updated_by_id IS NOT NULL;
+
 -- Agent identities must always belong to automated platform accounts.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_agent_system_account()
@@ -689,6 +696,13 @@ CREATE TABLE IF NOT EXISTS agent_prompts (
 
   CHECK (NOT (activated_at IS NOT NULL AND deactivated_at IS NOT NULL))
 );
+
+CREATE INDEX IF NOT EXISTS idx_agent_prompts__created_by_id
+  ON agent_prompts (created_by_id) WHERE created_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_agent_prompts__deleted_by_id
+  ON agent_prompts (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_agent_prompts__updated_by_id
+  ON agent_prompts (updated_by_id) WHERE updated_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_prompts__agent_id
@@ -815,6 +829,9 @@ CREATE TABLE IF NOT EXISTS agent_moderations (
 
   PRIMARY KEY (post_id, input_sha256, prompt_id)
 ) PARTITION BY RANGE (post_id);
+
+CREATE INDEX IF NOT EXISTS idx_agent_moderations__deleted_by_id
+  ON agent_moderations (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_agent_moderations_updated_at
