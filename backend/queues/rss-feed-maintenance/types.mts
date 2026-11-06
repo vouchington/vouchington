@@ -71,7 +71,3 @@ export type TopicAliasUnlinkPage = {
 export type TopicAliasUnlinkRecovery = {
   afterId: string | null
 }
-
-export type RssFeedCandidateJobs =
-  | 'dispatchRssFeedItemCandidates'
-  | 'processReconcileRssFeedItemCandidates'

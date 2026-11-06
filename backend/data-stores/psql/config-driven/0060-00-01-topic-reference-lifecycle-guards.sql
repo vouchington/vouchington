@@ -181,6 +181,7 @@ BEGIN
         'topic_metrics', 'bedrock_embedding_batch_entities',
         'classifier_run_candidates', 'post_autotagger_result_topics',
         'rss_feed_item_autotagger_result_topics', 'autotagger_agent_run_topics',
+        'rss_feed_item_topic_candidates',
         'post_classifier_local_outcomes', 'topic_merge_operations'
       ])
       AND source.relname NOT LIKE 'topic_merge_%'

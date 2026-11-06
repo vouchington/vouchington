@@ -207,7 +207,8 @@ describe('categories', () => {
     // Backfill for this topic
     const result = await backfillCategoriesForTopicAliases(scienceTopic.id)
 
-    expect(result.updated).toBe(2) // Both categories should be updated
+    // Each category row and its alias-candidate projection are reconciled.
+    expect(result.updated).toBe(4)
 
     // Verify the updates
     allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)

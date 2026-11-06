@@ -104,16 +104,13 @@ describe('topic-aliases processors', () => {
     const [alias] = await createTopicAliases(topic.id, `mapping-tag-${randomUUID()}`)
 
     const data = { topicAliasIds: [alias!.id] }
-    await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
-      reconciled: 0,
-      updated: 0,
-      hasMore: true,
-    })
-    await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
-      reconciled: 0,
-      updated: 0,
-      hasMore: true,
-    })
+    for (let phase = 0; phase < 3; phase++) {
+      await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
+        reconciled: 0,
+        updated: 0,
+        hasMore: true,
+      })
+    }
     await expect(processReconcileTopicAliasCategoryMappings(data)).resolves.toEqual({
       reconciled: 1,
       updated: 0,
@@ -124,7 +121,7 @@ describe('topic-aliases processors', () => {
     onTestFinished(async () => {
       await Promise.all(jobs.map(job => job.remove()))
     })
-    expect(jobs.map(job => job.data)).toEqual([data, data])
+    expect(jobs.map(job => job.data)).toEqual([data, data, data])
     expect(await getTopicAliasCategoryMappingDirtyRowForTest(alias!.id)).toBeUndefined()
   })
 

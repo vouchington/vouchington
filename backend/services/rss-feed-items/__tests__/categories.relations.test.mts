@@ -221,7 +221,8 @@ describe('categories relations', () => {
     })
     await linkTopicAlias(topic.id, aliasId!, { skipSideEffects: true })
 
-    await expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toMatchObject({ updated: 1 })
+    // One raw category row and its alias-candidate projection are reconciled.
+    await expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toMatchObject({ updated: 2 })
     await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category_text: authored, topic_id: topic.id }),
