@@ -2405,6 +2405,42 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Recover pending Stripe purchase collision work",
+        "id": "recoverStripePurchaseCollisions",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "recoverStripePurchaseCollisions",
+    "template": {
+      "data": {},
+      "name": "recoverStripePurchaseCollisions",
+      "opts": {
+        "attempts": 2147483647,
+        "backoff": {
+          "delay": 1000,
+          "type": "paged-dispatch-memberships",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "memberships:stripe-purchase-collision-dispatch",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Reconcile the Stripe membership catalog",
         "id": "stripeCatalogReconciliation",
         "kind": "scheduled-jobs",
@@ -3514,6 +3550,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "memberships",
     "schedule": "every 5m",
     "triggerName": "enqueueRecoverMembershipVerifications",
+  },
+  {
+    "description": "Recover pending Stripe purchase collision work",
+    "id": "recoverStripePurchaseCollisions",
+    "job_name": "recoverStripePurchaseCollisions",
+    "queue_name": "memberships",
+    "schedule": "every 1m",
+    "triggerName": "enqueueRecoverStripePurchaseCollisions",
   },
   {
     "description": "Dispatch due membership refund reconciliations",

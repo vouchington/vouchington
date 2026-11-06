@@ -71,6 +71,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'memberships/googlePlayOidcTrustRefresh',
   'memberships/microsoftStoreSourceRecovery',
   'memberships/membershipVerificationRecovery',
+  'memberships/recoverStripePurchaseCollisions',
   'memberships/renewalNotificationCheck',
   'memberships/stripeCatalogReconciliation',
   'memberships/stripeEventRecovery',
