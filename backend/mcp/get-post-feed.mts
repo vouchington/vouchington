@@ -1,3 +1,4 @@
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPostFeedIds, VALID_POST_FEED_TYPES } from '@services/feeds'
 import type { BasicUser } from '@services/users/types'
@@ -67,9 +68,13 @@ const getPostFeedTool: MergedToolSource<PostArgs, FeedResult> = {
           limit: clampToolLimit(args.limit, 25, MAX_LIMIT),
           after: args.after,
         })
+        const references = await getPostHackerNewsSummaries(
+          result.results.map(row => row.entity_id),
+        )
         return {
           results: result.results.map(row => ({
             id: row.id,
+            ...(references[row.entity_id] && { hacker_news_references: references[row.entity_id] }),
             entity_id: row.entity_id,
             delivery_type: row.delivery_type,
             shared_by_id: row.shared_by_id ?? null,

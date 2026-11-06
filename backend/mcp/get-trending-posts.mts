@@ -1,3 +1,6 @@
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
+import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
+import { closedObject } from './read-tool-output-schema.mts'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPaginationLimitsForContract } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
@@ -5,7 +8,7 @@ import { getTrendingPosts, trendingPostsPaginationParser } from '@services/trend
 import type { TrendingPostsResult } from '@services/trending-posts/types'
 import { resolveTopic } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
-import { outcomeSchema, objectSchema } from '@vouchington/mcp-server/schema'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 import {
   VALID_TRENDING_POST_TYPES,
@@ -33,7 +36,14 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
   time_range: { type: 'string', enum: [...VALID_TRENDING_TIME_RANGES] },
   results: {
     type: 'array',
-    items: objectSchema({ id: { type: 'string' }, trending_score: { type: 'number' } }),
+    items: closedObject(
+      {
+        id: { type: 'string' },
+        trending_score: { type: 'number' },
+        hacker_news_references: mcpHackerNewsReferenceSchema(),
+      },
+      ['hacker_news_references'],
+    ),
   },
   page_info: componentSchema('PageInfo'),
 })
@@ -102,7 +112,16 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         minScore: args.min_score,
       })
 
-      return { success: true, time_range: timeRange, results, page_info }
+      const references = await getPostHackerNewsSummaries(results.map(row => row.id))
+      return {
+        success: true,
+        time_range: timeRange,
+        results: results.map(row => ({
+          ...row,
+          ...(references[row.id] && { hacker_news_references: references[row.id] }),
+        })),
+        page_info,
+      }
     },
 }
 

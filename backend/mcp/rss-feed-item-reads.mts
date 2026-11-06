@@ -20,7 +20,12 @@ import {
   pagedSearchSchemaProperties,
   type PagedSearchArgs,
 } from './paged-search.mts'
-import { mcpRssFeedItemSchema, toMcpRssFeedItem, type McpRssFeedItem } from './mcp-rss-output.mts'
+import {
+  mcpRssFeedItemSchema,
+  toMcpRssFeedItem,
+  toMcpRssFeedItems,
+  type McpRssFeedItem,
+} from './mcp-rss-output.mts'
 import { pageInfoSchema, type McpPage } from './mcp-read-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
@@ -146,10 +151,8 @@ export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
         })
         const items = await getRssFeedItemByIdCachedBatch(result.results.map(entry => entry.id))
         return {
-          results: await Promise.all(
-            items
-              .filter((item): item is NonNullable<typeof item> => item !== null)
-              .map(toMcpRssFeedItem),
+          results: await toMcpRssFeedItems(
+            items.filter((item): item is NonNullable<typeof item> => item !== null),
           ),
           page_info: result.page_info,
         }
@@ -175,7 +178,7 @@ export const getRssFeedItemTool: MergedToolSource<DetailArgs, DetailResult> = {
     requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items/:id' }],
-    outputSchema: foundOrNotFoundSchema({ rss_feed_item: mcpRssFeedItemSchema() }),
+    outputSchema: foundOrNotFoundSchema({ rss_feed_item: mcpRssFeedItemSchema(true) }),
   },
   function:
     (_currentUser: BasicUser) =>

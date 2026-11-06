@@ -1,3 +1,5 @@
+import { getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getRssFeedItemFeedIds, VALID_RSS_FEED_ITEM_FEED_TYPES } from '@services/feeds'
 import type { BasicUser } from '@services/users/types'
@@ -24,6 +26,11 @@ const getRssFeedItemFeedTool: MergedToolSource<ItemArgs, FeedResult> = {
       type: 'object',
       properties: {
         ...commonProperties,
+        has_hacker_news_references: {
+          type: 'boolean',
+          description:
+            'Filter by neutral Hacker News references, ignored while references are hidden.',
+        },
         feed_type: { type: 'string', enum: [...VALID_RSS_FEED_ITEM_FEED_TYPES] },
         min_score_follow_rss_feeds: { type: 'number' },
         has_related_posts: { type: 'boolean' },
@@ -65,14 +72,18 @@ const getRssFeedItemFeedTool: MergedToolSource<ItemArgs, FeedResult> = {
           time_range: args.time_range,
           min_score_follow_rss_feeds: args.min_score_follow_rss_feeds,
           min_score_follow_topics: args.min_score_follow_topics,
+          has_hacker_news_references: args.has_hacker_news_references,
           has_related_posts: args.has_related_posts,
           media_types: args.media_types ?? args.media_type,
           limit: clampToolLimit(args.limit, 25, MAX_LIMIT),
           after: args.after,
         })
+        const items = await getRssFeedItemByIdCachedBatch(result.results.map(row => row.entity_id))
+        const references = await getRssFeedItemHackerNewsSummaries(items)
         return {
           results: result.results.map(row => ({
             id: row.id,
+            ...(references[row.entity_id] && { hacker_news_references: references[row.entity_id] }),
             entity_id: row.entity_id,
             delivery_type: row.delivery_type,
             shared_by_id: row.shared_by_id ?? null,

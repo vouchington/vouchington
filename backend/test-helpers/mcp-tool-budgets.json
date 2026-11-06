@@ -45,7 +45,7 @@
       },
       "read_community": {
         "measured": {
-          "list": 10858,
+          "list": 10983,
           "core": 4180
         },
         "max": {
@@ -115,31 +115,31 @@
       },
       "read_rss_feed_item": {
         "measured": {
-          "list": 6557,
+          "list": 7881,
           "core": 3833
         },
         "max": {
-          "list": 7000,
+          "list": 8000,
           "core": 4000
         }
       },
       "read_feed": {
         "measured": {
-          "list": 4932,
-          "core": 2939
+          "list": 5271,
+          "core": 3082
         },
         "max": {
           "list": 6000,
-          "core": 3000
+          "core": 4000
         }
       },
       "read_posts": {
         "measured": {
-          "list": 9803,
+          "list": 12397,
           "core": 5629
         },
         "max": {
-          "list": 11000,
+          "list": 13000,
           "core": 6000
         }
       },
@@ -295,7 +295,7 @@
       },
       "create_post": {
         "measured": {
-          "list": 3760,
+          "list": 3885,
           "core": 1978
         },
         "max": {
@@ -305,7 +305,7 @@
       },
       "act_on_post": {
         "measured": {
-          "list": 6632,
+          "list": 6757,
           "core": 4330
         },
         "max": {
@@ -445,11 +445,11 @@
       },
       "start_discussion": {
         "measured": {
-          "list": 2881,
+          "list": 3006,
           "core": 1041
         },
         "max": {
-          "list": 3000,
+          "list": 4000,
           "core": 2000
         }
       },
@@ -485,7 +485,7 @@
       },
       "list_my_topic_recommendations": {
         "measured": {
-          "list": 4631,
+          "list": 4827,
           "core": 895
         },
         "max": {
@@ -665,7 +665,7 @@
       },
       "get_story": {
         "measured": {
-          "list": 2181,
+          "list": 2377,
           "core": 588
         },
         "max": {
@@ -851,7 +851,7 @@
     "admin": {
       "get_editorial_story": {
         "measured": {
-          "list": 2103,
+          "list": 2299,
           "core": 415
         },
         "max": {

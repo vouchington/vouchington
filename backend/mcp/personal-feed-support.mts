@@ -1,3 +1,5 @@
+import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
+import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
 import { loadCommunityForViewer } from '@services/communities'
 import { communityReferenceSchema } from './entity-reference-schema.mts'
 import type { PostFeedType, RssFeedItemFeedType, ReferralLinksFeedType } from '@services/feeds'
@@ -24,6 +26,7 @@ export type PostArgs = CommonArgs & {
   min_score_follow_users?: number
 }
 export type ItemArgs = CommonArgs & {
+  has_hacker_news_references?: boolean
   feed_type: RssFeedItemFeedType
   min_score_follow_rss_feeds?: number
   has_related_posts?: boolean
@@ -37,6 +40,7 @@ type PageInfo = {
   end_cursor: string | null
 }
 type FeedItem = {
+  hacker_news_references?: HackerNewsReferenceCounts
   id: string
   entity_id: string
   delivery_type: 'direct' | 'share'
@@ -76,13 +80,17 @@ export const commonProperties = {
   min_score_follow_topics: { type: 'number' },
 }
 export function feedItemSchema(component: 'Post' | 'ViewRssFeedItem') {
-  return closedObject({
-    id: pickProperties(component, ['id']).id!,
-    entity_id: pickProperties(component, ['id']).id!,
-    delivery_type: { type: 'string', enum: ['direct', 'share'] },
-    shared_by_id: { type: ['string', 'null'] },
-    shared_at: { type: ['string', 'null'], format: 'date-time' },
-  })
+  return closedObject(
+    {
+      hacker_news_references: mcpHackerNewsReferenceSchema(),
+      id: pickProperties(component, ['id']).id!,
+      entity_id: pickProperties(component, ['id']).id!,
+      delivery_type: { type: 'string', enum: ['direct', 'share'] },
+      shared_by_id: { type: ['string', 'null'] },
+      shared_at: { type: ['string', 'null'], format: 'date-time' },
+    },
+    ['hacker_news_references'],
+  )
 }
 export const referralSchema = closedObject(
   pickProperties('ReferralLinkFeedRow', [

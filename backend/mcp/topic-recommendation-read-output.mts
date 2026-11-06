@@ -1,3 +1,7 @@
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
+import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
+import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
+import { TOPIC_RECOMMENDATION_POST_SCHEMA } from './topic-recommendation-tool-support.mts'
 import type { Post } from '@services/posts/types'
 import { attachPostProvenance } from '@services/content-provenance'
 import {
@@ -12,6 +16,14 @@ import {
 import { externalText, sanitizedTitle } from './mcp-read-output.mts'
 
 const SOURCE = 'topic_recommendation'
+
+export const MCP_TOPIC_RECOMMENDATION_READ_SCHEMA = {
+  ...TOPIC_RECOMMENDATION_POST_SCHEMA,
+  properties: {
+    ...(TOPIC_RECOMMENDATION_POST_SCHEMA.properties as Record<string, unknown>),
+    hacker_news_references: mcpHackerNewsReferenceSchema(),
+  },
+}
 
 /**
  * The recommendations among `posts`, read from the primary database, that this page lists. The ids
@@ -72,7 +84,20 @@ export async function toMcpRecommendation(
 /** Label a list in one primary-database read before projecting its public fields. */
 export async function toMcpRecommendations(
   posts: TopicRecommendationPost[],
-): Promise<PublicTopicRecommendationPost[]> {
-  const labelled = await attachPostProvenance(posts, null, { readOnly: false })
-  return Promise.all(labelled.map(toMcpRecommendation))
+): Promise<
+  Array<PublicTopicRecommendationPost & { hacker_news_references?: HackerNewsReferenceCounts }>
+> {
+  const [labelled, references] = await Promise.all([
+    attachPostProvenance(posts, null, { readOnly: false }),
+    getPostHackerNewsSummaries(
+      posts.map(post => post.id),
+      { readOnly: false },
+    ),
+  ])
+  return Promise.all(
+    labelled.map(async post => ({
+      ...(await toMcpRecommendation(post)),
+      ...(references[post.id] && { hacker_news_references: references[post.id] }),
+    })),
+  )
 }

@@ -1,3 +1,7 @@
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
+import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
+import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
+import { closedObject } from './read-tool-output-schema.mts'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPaginationLimits } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
@@ -19,7 +23,7 @@ import {
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
-import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 import { POST_SORTS, postSearchFilterSchemaProperties } from './search-post-input.mts'
 
@@ -49,6 +53,7 @@ type ToolResult =
         title: string
         markdown: string
         post_type: string
+        hacker_news_references?: HackerNewsReferenceCounts
       }>
       page_info: SearchPageInfo
     }
@@ -60,12 +65,16 @@ type ToolResult =
 const OUTPUT_SCHEMA = outcomeSchema('success', {
   results: {
     type: 'array',
-    items: objectSchema({
-      id: { type: 'string' },
-      title: { type: 'string' },
-      markdown: { type: 'string' },
-      post_type: { type: 'string' },
-    }),
+    items: closedObject(
+      {
+        hacker_news_references: mcpHackerNewsReferenceSchema(),
+        id: { type: 'string' },
+        title: { type: 'string' },
+        markdown: { type: 'string' },
+        post_type: { type: 'string' },
+      },
+      ['hacker_news_references'],
+    ),
   },
   page_info: componentSchema('PageInfo'),
 })
@@ -163,11 +172,13 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       const posts = await getPostByAnyCachedBatch(results.map(result => result.id))
       const visiblePosts = posts.filter((post): post is NonNullable<typeof post> => post !== null)
 
+      const references = await getPostHackerNewsSummaries(visiblePosts.map(post => post.id))
       return {
         success: true,
         results: await Promise.all(
           visiblePosts.map(async post => ({
             id: post.id,
+            ...(references[post.id] && { hacker_news_references: references[post.id] }),
             title: await sanitizePromptInjection(post.title, { isTitle: true }),
             markdown: wrapExternalContent(await sanitizePromptInjection(post.markdown), {
               source: 'post',

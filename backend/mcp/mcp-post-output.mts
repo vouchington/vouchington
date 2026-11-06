@@ -1,3 +1,12 @@
+import {
+  getPostHackerNewsSummaries,
+  getPostHackerNewsDetails,
+} from '@services/urls/hacker-news-sidecars'
+import type {
+  HackerNewsReferenceCounts,
+  HackerNewsReferenceDetail,
+} from '@services/urls/hacker-news-references-types'
+import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { attachPostProvenance, attachWrittenPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
@@ -13,11 +22,19 @@ import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 const MCP_POST_FIELDS = PUBLIC_POST_FIELDS
 
 /** One post as an MCP client receives it. */
-export type McpPost = PublicPost
+export type McpPost = PublicPost & {
+  hacker_news_references?: HackerNewsReferenceCounts | HackerNewsReferenceDetail
+}
 
 /** The published schema of an `McpPost`, from the generated `Post` contract. */
-export function mcpPostSchema() {
-  return closedObject(pickProperties('Post', MCP_POST_FIELDS), ['provenance', 'placeholder_state'])
+export function mcpPostSchema(details = false) {
+  return closedObject(
+    {
+      ...pickProperties('Post', MCP_POST_FIELDS),
+      hacker_news_references: mcpHackerNewsReferenceSchema(details),
+    },
+    ['provenance', 'placeholder_state', 'hacker_news_references'],
+  )
 }
 
 /**
@@ -45,9 +62,22 @@ async function toMcpPost(post: Post): Promise<McpPost> {
  * Maps readable posts for MCP with their public provenance label. The label is the signed-out
  * one, so an anonymous post never names its OAuth client. Staff provenance is REST-only.
  */
-export async function toMcpPosts(posts: Post[]): Promise<McpPost[]> {
-  const labelled = await attachPostProvenance(posts, null)
-  return Promise.all(maskCommentPlaceholders(labelled, null).map(post => toMcpPost(post as Post)))
+export async function toMcpPosts(
+  posts: Post[],
+  { details = false }: { details?: boolean } = {},
+): Promise<McpPost[]> {
+  const [labeled, references] = await Promise.all([
+    attachPostProvenance(posts, null),
+    (details ? getPostHackerNewsDetails : getPostHackerNewsSummaries)(posts.map(post => post.id)),
+  ])
+  return Promise.all(
+    maskCommentPlaceholders(labeled, null).map(async masked => {
+      const post = masked as Post
+      return ({
+      ...(await toMcpPost(post)),
+      ...(references[post.id] && { hacker_news_references: references[post.id] }),
+    })}),
+  )
 }
 
 /**

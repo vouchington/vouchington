@@ -16,8 +16,11 @@ import {
 import { requirePrivateToolUser } from './private-user.mts'
 import { closedObject, foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
-import { listedRecommendations, toMcpRecommendations } from './topic-recommendation-read-output.mts'
-import { TOPIC_RECOMMENDATION_POST_SCHEMA } from './topic-recommendation-tool-support.mts'
+import {
+  listedRecommendations,
+  toMcpRecommendations,
+  MCP_TOPIC_RECOMMENDATION_READ_SCHEMA,
+} from './topic-recommendation-read-output.mts'
 
 type ToolArgs = { status?: TopicRecommendationStatus; q?: string; limit?: number; after?: string }
 
@@ -79,7 +82,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           post_type: { const: 'topic_recommendation' },
         }),
       },
-      posts: { type: 'object', additionalProperties: TOPIC_RECOMMENDATION_POST_SCHEMA },
+      posts: { type: 'object', additionalProperties: MCP_TOPIC_RECOMMENDATION_READ_SCHEMA },
       page_info: pageInfoSchema(),
     }),
   },

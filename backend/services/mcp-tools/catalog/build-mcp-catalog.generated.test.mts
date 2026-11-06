@@ -175,8 +175,8 @@ describe('generated MCP catalog contracts', () => {
 
   it('pins Reader and Plus participation-discovery snapshots', () => {
     const reader = listMcpToolsForUser(customer, readerScopes, USER_MCP_SERVER_CONFIG)
-    expect(JSON.stringify(reader)).toHaveLength(54910)
-    expect(hash(reader)).toBe('c1fd345056c47a79f4cbf9d235e5bf1c766ae2801565df5efee23bbe0ca34c1f')
+    expect(JSON.stringify(reader)).toHaveLength(59363)
+    expect(hash(reader)).toBe('4077d3dfa1deab8a835986bf0392c129a5110c57cd0dd3ea388805cec83abc77')
 
     const paid = listMcpToolsForUser(
       { ...customer, membership_plan: 'plus' },
@@ -191,7 +191,7 @@ describe('generated MCP catalog contracts', () => {
         .toSorted(),
     ).toEqual(participationNames.toSorted())
     expect(hash(paid.filter(tool => !participationNames.includes(tool.name)))).toBe(
-      '4b24c30a21b34f49b1a5d9df6efceed17853646ca3f804e90d4226d801306760',
+      '3aae7fb11b5142178dce8dd007ded4ae4b9caa97a38aa013ca542a8103aa2993',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(
