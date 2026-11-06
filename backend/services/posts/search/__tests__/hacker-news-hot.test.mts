@@ -128,15 +128,6 @@ describe('Hacker News hot search bounds', () => {
       })
       ids.push(pending)
       await setPostVotesScoreUp(pending, 1)
-      const zeroNet = await insertTestPost({
-        createdById: owner.id,
-        createdAt: new Date(Date.now() - 60_000),
-        title: crypto.randomUUID(),
-        slug: crypto.randomUUID(),
-        markdown: 'Net-zero cohort fixture',
-        clearanceStatus: 'approved',
-      })
-      ids.push(zeroNet)
       await setHackerNewsReferenceFlagsForTest(ids, [])
       const options = {
         user_id: owner.id,
@@ -155,6 +146,47 @@ describe('Hacker News hot search bounds', () => {
       ).toEqual([pending])
     } finally {
       restore()
+      await Promise.all(ids.map(id => deleteTestPost(id)))
+    }
+  })
+
+  it('trims net-zero posts from the hot cohort', async () => {
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('Expected a hot net-vote test user')
+    await Promise.all([
+      postsWorkConfig.waitForInitialization(),
+      hackerNewsVisibilityConfig.waitForInitialization(),
+    ])
+    const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+      hacker_news_hot_candidate_limit: 10,
+    })
+    const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
+      references_visible: true,
+    })
+    const ids: string[] = []
+    try {
+      for (const score of [1, 0]) {
+        const id = await insertTestPost({
+          createdById: user.id,
+          createdAt: new Date(NON_DECAYING_INSTANT - (ids.length + 1) * 3_600_000),
+          title: `HN net vote ${crypto.randomUUID()}`,
+          slug: `hn-net-vote-${crypto.randomUUID()}`,
+          markdown: 'Hacker News net vote fixture',
+        })
+        ids.push(id)
+        await setPostVotesScoreUp(id, score)
+      }
+      await setHackerNewsReferenceFlagsForTest(ids, [])
+      const page = await getPostIds(user, {
+        user_id: user.id,
+        has_hacker_news_references: true,
+        sort: 'hot',
+        limit: 10,
+      })
+      expect(page.results.map(row => row.id)).toEqual([ids[0]])
+    } finally {
+      restoreVisibility()
+      restoreCap()
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
   })
