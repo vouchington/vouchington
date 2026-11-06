@@ -22,10 +22,16 @@ export function HackerNewsConfigProvider({
     setSnapshot({ initialConfig, config: initialConfig })
   }
   const config = snapshot.config
+  const initialReferencesVisible = initialConfig.references_visible
+  const initialPostTimeRangeCap = initialConfig.post_time_range_cap
   const router = useRouter()
   useEffect(() => {
     let active = true
-    let current = initialConfig
+    const serverConfig: HackerNewsConfig = {
+      references_visible: initialReferencesVisible,
+      post_time_range_cap: initialPostTimeRangeCap,
+    }
+    let current = serverConfig
     async function refresh() {
       try {
         const next = await getHackerNewsConfigClient()
@@ -35,7 +41,7 @@ export function HackerNewsConfigProvider({
           next.post_time_range_cap !== current.post_time_range_cap
         ) {
           current = next
-          setSnapshot({ initialConfig, config: next })
+          setSnapshot({ initialConfig: serverConfig, config: next })
           router.refresh()
         }
       } catch {
@@ -50,7 +56,7 @@ export function HackerNewsConfigProvider({
       active = false
       clearInterval(timer)
     }
-  }, [router, initialConfig])
+  }, [router, initialReferencesVisible, initialPostTimeRangeCap])
   return (
     <HackerNewsConfigContext.Provider value={config}>{children}</HackerNewsConfigContext.Provider>
   )

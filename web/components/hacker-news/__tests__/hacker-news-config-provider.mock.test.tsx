@@ -23,7 +23,7 @@ describe('Hacker News runtime visibility', () => {
         resolve = done
       }),
     )
-    render(
+    const view = render(
       <HackerNewsConfigProvider
         initialConfig={{ references_visible: true, post_time_range_cap: '1y' }}
       >
@@ -42,6 +42,18 @@ describe('Hacker News runtime visibility', () => {
     expect(screen.queryByText('Seen on Hacker News · 1')).not.toBeInTheDocument()
     expect(nav.refresh).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenCalledOnce()
+    // A refreshed server tree can still carry the old values while config propagates.
+    // Its new object identity must not reset polling or the newer client snapshot.
+    view.rerender(
+      <HackerNewsConfigProvider
+        initialConfig={{ references_visible: true, post_time_range_cap: '1y' }}
+      >
+        <HackerNewsFilterToggle />
+      </HackerNewsConfigProvider>,
+    )
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(nav.refresh).toHaveBeenCalledOnce()
     fetchMock.mockRestore()
   })
 })
