@@ -25,6 +25,7 @@ _none_
 **Check constraints:**
 
 - `membership_stripe_purchase_collision__winning_source_kind_check`: `CHECK ((winning_source_kind = ANY (ARRAY['direct'::membership_source_kinds, 'family'::membership_source_kinds])))`
+- `membership_stripe_purchase_collision_work_it_winning_plan_check`: `CHECK ((winning_plan = ANY (ARRAY['plus'::membership_plan_slugs, 'pro'::membership_plan_slugs])))`
 
 **Foreign keys:**
 
