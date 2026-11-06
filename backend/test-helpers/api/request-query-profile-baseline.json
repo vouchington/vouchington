@@ -181,14 +181,6 @@
     "routes": ["DELETE /api/v1/hostnames/:id/vote"]
   },
   {
-    "annotation": "findAutomaticWithholdingSwitchOnTime",
-    "maxCount": null,
-    "reason": "The form review reads the switch-on time before its transaction and enforcement rereads it after that transaction commits, so a switch-off or flip in between stops automation instead of enforcing on the earlier answer",
-    "permanent": true,
-    "code": "backend/services/copyright-notices/form-reviews.mts:20",
-    "routes": ["POST /api/v1/copyright-form-intakes/:id/reviews"]
-  },
-  {
     "annotation": "getAutomodFeedbackContext:agent",
     "maxCount": null,
     "reason": "The feedback transaction re-reads the automod action after taking its locks to reject a concurrent change (backend/services/moderation-training/automod-feedback.mts:48-70)",
@@ -238,11 +230,7 @@
     "code": "backend/services/entity-relations/assert-upsert-allowed.mts:45",
     "routes": [
       "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/posts",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/mcp tools/call add_entity_relation",
-      "POST /api/v1/mcp tools/call create_post"
+      "POST /api/v1/mcp"
     ]
   },
   {
@@ -370,13 +358,10 @@
   {
     "annotation": "getPublicUserByAny",
     "maxCount": null,
-    "reason": "Follow commits before its best-effort trust vote loads the target (backend/services/bookmarks/upsert.mts:134). Ban-evasion confirm loads the source user only after the flag-claim transaction commits, then the ban loads the target in its own transaction (backend/services/communities/ban-evasion/confirm.mts:44)",
+    "reason": "Ban-evasion confirm loads the source user only after the flag-claim transaction commits, then the ban loads the target in its own transaction (backend/services/communities/ban-evasion/confirm.mts:44)",
     "permanent": true,
     "code": "backend/services/communities/ban-evasion/confirm.mts:44",
-    "routes": [
-      "POST /api/v1/communities/:idOrSlug/ban-evasion/:userId",
-      "PUT /api/v1/bookmarks/:entityType/:entityId/:predicate"
-    ]
+    "routes": ["POST /api/v1/communities/:idOrSlug/ban-evasion/:userId"]
   },
   {
     "annotation": "getTopicByAny",
@@ -445,14 +430,6 @@
     "reason": "SDK session persistence and final account attachment commit separately, so each transaction rechecks the initiating authorization and current actor session.",
     "permanent": true,
     "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
-    "routes": ["GET /api/v1/auth/bluesky/callback"]
-  },
-  {
-    "annotation": "lockBlueskyLinkAuthorization",
-    "maxCount": null,
-    "reason": "A failed web attachment releases its transaction before rejected-generation cleanup starts a new transaction and reacquires the authorization row lock",
-    "permanent": true,
-    "code": "backend/services/bluesky-accounts/callback-completion.mts:62",
     "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
@@ -526,16 +503,11 @@
     "permanent": true,
     "code": "backend/services/post-publication/lock.mts:29",
     "routes": [
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/rss-feeds/:id",
       "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/copyright-repeat-infringer-incidents/:id/dispositions",
       "POST /api/v1/mcp",
       "POST /api/v1/posts",
       "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "PUT /api/v1/posts/:idOrSlug/images"
+      "POST /api/v1/stories/:storyId/discussions"
     ]
   },
   {
@@ -872,14 +844,6 @@
     "routes": ["DELETE /api/v1/my/api-keys/:id"]
   },
   {
-    "annotation": "revokeAuthenticatedSession",
-    "maxCount": null,
-    "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
-    "permanent": true,
-    "code": "backend/services/jwt-session/user-session-revocation.mts:16",
-    "routes": ["DELETE /api/v1/auth/sessions/:id"]
-  },
-  {
     "annotation": "rotateApiKey",
     "maxCount": null,
     "reason": "Lock and validate the old key FOR UPDATE before inserting its replacement and linking the old key to it",
@@ -961,7 +925,6 @@
     "permanent": true,
     "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
     "routes": [
-      "GET /api/v1/auth/sessions",
       "POST /api/v1/app-attestation/attest",
       "POST /api/v1/auth/email-address/login",
       "POST /api/v1/auth/mfa/totp/verification",
@@ -977,17 +940,6 @@
     "permanent": true,
     "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
     "routes": ["POST /api/v1/auth/email-address/login"]
-  },
-  {
-    "annotation": "upsertUserAgentString",
-    "maxCount": 3,
-    "reason": "Cold device-bound and native credential registration each resolve one immutable user agent through a read, conflict-tolerant insert, and reread.",
-    "permanent": true,
-    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
-    "routes": [
-      "POST /api/v1/auth/device-bound-sessions",
-      "POST /api/v1/auth/native/email-address/login"
-    ]
   },
   {
     "annotation": "upsertUrlHostnames",
@@ -1027,22 +979,6 @@
     "permanent": true,
     "code": "backend/services/totp/verify-setup.mts:14",
     "routes": ["POST /api/v1/auth/totp/setup/verification"]
-  },
-  {
-    "annotation": "withMfaLock",
-    "maxCount": null,
-    "reason": "Lock the active user, then passkey rows, then TOTP rows before counting methods and consuming reauthentication to prevent concurrent last-factor deletions",
-    "permanent": true,
-    "code": "backend/services/mfa/protected-mfa-delete.mts:14",
-    "routes": ["DELETE /api/v1/auth/passkeys/:id", "DELETE /api/v1/auth/totp/:id"]
-  },
-  {
-    "annotation": "expireElapsedMemberships",
-    "routes": ["DELETE /api/v1/membership-grants/:grantId"],
-    "maxCount": null,
-    "reason": "Expiring one projection can activate an already elapsed queued grant, so revocation must normalize through a variable number of rechecks before locking and checking the grant.",
-    "permanent": true,
-    "code": "backend/services/memberships/grants/expire-elapsed.mts:39-75"
   },
   {
     "annotation": "lockTopicAliasPublicationCaptures",

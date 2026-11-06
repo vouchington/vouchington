@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -o pipefail
 resource_prefix='[backend-unit-resources]'
 postgres_wait_prefix='[backend-unit-pg-waits]'
 pressure_prefix='[backend-unit-pressure]'
@@ -96,4 +97,6 @@ if [ "$VITEST_DIAGNOSTICS" = 1 ]; then
   start_sampler sample_postgres_waits 0.5
   start_sampler sample_runner_pressure 2
 fi
-pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD"
+pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD" 2>&1 | tee backend-unit-output.log
+node backend/test-helpers/api/request-query-profile-stale.mts --collect \
+  "$CI_SHARD" backend-unit-output.log "$REQUEST_QUERY_PROFILE_HITS_FILE"

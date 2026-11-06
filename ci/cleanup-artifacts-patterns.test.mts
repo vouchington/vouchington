@@ -33,6 +33,7 @@ const KEEP_NAMES = [
 ]
 
 const DELETE_NAMES = [
+  'backend-query-profile-hits-shard-2',
   'code-review-payload-abc123',
   'lcov-full-web-shard-1',
   'playwright-otel-output-shard-2',

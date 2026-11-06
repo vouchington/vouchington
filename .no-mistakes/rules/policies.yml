@@ -3552,7 +3552,8 @@
           prepare-postgres,
         ]
       .github/workflows/tests-backend-modules.yml: [backend-modules]
-      .github/workflows/tests-backend-unit.yml: [backend-tests, prep, prepare-postgres]
+      .github/workflows/tests-backend-unit.yml:
+        [backend-tests, check-query-profile-baseline, prep, prepare-postgres]
       .github/workflows/tests-cloudflare-worker.yml: [cloudflare-worker-tests]
       .github/workflows/tests-lambdas.yml: [lambdas-tests]
       .github/workflows/tests-playwright-credentialed.yml: [playwright-credentialed-tests]
