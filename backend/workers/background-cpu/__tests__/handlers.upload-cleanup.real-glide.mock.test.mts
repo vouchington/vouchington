@@ -136,9 +136,11 @@ describe('background CPU abandoned upload cleanup', () => {
       expect(stored?.data.sweep.windows.staged.done).toBe(true)
       expect(stored?.data.sweep.windows.recovery.done).toBe(true)
       expect(stored?.data.sweep.windows.abandonment.done).toBe(true)
-      expect(storage.calls.map(call => call.Key).toSorted()).toEqual(
-        [completedId, recoveryId, abandonedId].toSorted(),
-      )
+      expect(
+        storage.calls
+          .map(call => call.Key)
+          .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+      ).toEqual([completedId, recoveryId, abandonedId].toSorted())
       expect(await getImageById(abandonedId)).toBeNull()
       expect(await getImageById(completedId)).not.toBeNull()
       expect(await getImageById(recoveryId)).not.toBeNull()

@@ -16,9 +16,13 @@ describe('relation vote export', () => {
       events
         .filter(row => row.entity_id === fixture.id)
         .map(row => row.choice)
-        .toSorted(),
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     ).toEqual(['confirm', 'dispute'])
-    expect(events.map(row => row.sort_id)).toEqual(events.map(row => row.sort_id).toSorted())
+    expect(events.map(row => row.sort_id)).toEqual(
+      events
+        .map(row => row.sort_id)
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    )
     const exported: Record<string, unknown>[] = []
     for await (const event of streamVotes(fixture.viewer.id)) exported.push(event)
     expect(exported.filter(row => row.entity_id === fixture.id)).toHaveLength(2)

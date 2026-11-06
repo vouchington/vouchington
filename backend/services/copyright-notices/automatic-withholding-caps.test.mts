@@ -86,11 +86,16 @@ describe('automatic withholding caps', () => {
     await Promise.all(notices.map(screen))
 
     const outcomes = await Promise.all(notices.map(readTestAutomaticWithholdingOutcome))
-    expect(outcomes.map(outcome => outcome.restrictions).toSorted()).toEqual([0, 1])
-    expect(outcomes.map(outcome => outcome.refusal).toSorted()).toEqual([
-      'claimant_daily_cap',
-      null,
-    ])
+    expect(
+      outcomes
+        .map(outcome => outcome.restrictions)
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual([0, 1])
+    expect(
+      outcomes
+        .map(outcome => outcome.refusal)
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual(['claimant_daily_cap', null])
   })
 
   it('counts only automated assessments from the last 24 hours', async () => {

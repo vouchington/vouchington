@@ -142,7 +142,11 @@ describe('processFindYourFriendsDispatcher', () => {
     })
 
     const facebookUpperId = saved[0]?.upperIds?.facebook
-    expect([window.upperId, facebookUpperId].toSorted().at(-1)).toBe(facebookUpperId)
+    expect(
+      [window.upperId, facebookUpperId]
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)))
+        .at(-1),
+    ).toBe(facebookUpperId)
     expect(Object.keys(saved[0]?.upperIds ?? {}).toSorted()).toEqual(['facebook', 'github', 'x'])
   })
 })

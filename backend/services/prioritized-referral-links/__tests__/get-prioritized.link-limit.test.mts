@@ -76,7 +76,11 @@ describe('get-prioritized personalized link limit', () => {
 
     const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
 
-    expect(result.links.map(l => l.user_id).toSorted()).toEqual(withLinks.map(u => u.id).toSorted())
+    expect(
+      result.links
+        .map(l => l.user_id)
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual(withLinks.map(u => u.id).toSorted())
   })
 
   it('does not let a full follow group hide a mutual follow', async () => {

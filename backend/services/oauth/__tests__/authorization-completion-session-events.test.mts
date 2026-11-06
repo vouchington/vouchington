@@ -71,9 +71,10 @@ describe('OAuth authorization completion session events', () => {
       sessionId: durableSessionId,
       currentUserId: first.user.id,
     })
-    expect((await readEventTypes(durableSessionId)).toSorted()).toEqual([
-      'created',
-      'refreshed_authenticated',
-    ])
+    expect(
+      (await readEventTypes(durableSessionId)).toSorted(
+        (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)),
+      ),
+    ).toEqual(['created', 'refreshed_authenticated'])
   })
 })

@@ -117,7 +117,9 @@ describe('GET /api/v1/users/:idOrSlug/rss-feeds — pagination and feed_type fil
       ...page1.body.results.map((f: { id: string }) => f.id),
       ...page2.body.results.map((f: { id: string }) => f.id),
     ]
-    expect(allIds.toSorted()).toEqual(feedIds.toSorted())
+    expect(
+      allIds.toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual(feedIds.toSorted())
   })
 
   it('returns 400 for invalid after cursor on rss-feeds/following', async () => {

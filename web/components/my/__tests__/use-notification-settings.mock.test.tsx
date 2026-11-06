@@ -44,6 +44,54 @@ describe('useNotificationSettings', () => {
     vi.clearAllMocks()
   })
 
+  it('persists sorted unique weekdays and keeps the last selected day', async () => {
+    const initialSettings = {
+      ...preferences,
+      moderation_email_timezone: 'America/Los_Angeles',
+      moderation_email_days_of_week: [1, 5],
+    }
+    vi.mocked(getMyEmailPreferences).mockResolvedValue({ email_preferences: initialSettings })
+    vi.mocked(updateMyEmailPreferences)
+      .mockResolvedValueOnce({
+        email_preferences: { ...initialSettings, moderation_email_days_of_week: [1, 3, 5] },
+      })
+      .mockResolvedValueOnce({
+        email_preferences: { ...initialSettings, moderation_email_days_of_week: [3, 5] },
+      })
+      .mockResolvedValueOnce({
+        email_preferences: { ...initialSettings, moderation_email_days_of_week: [3] },
+      })
+    const { result } = renderHook(() => useNotificationSettings(initialSettings))
+    await waitFor(() => expect(result.current.loadingSettings).toBe(false))
+    await waitFor(() => expect(getMyEmailPreferences).toHaveBeenCalledTimes(1))
+
+    act(() => result.current.handleDayToggle(3, true))
+    await waitFor(() => expect(result.current.pending.size).toBe(0))
+    expect(updateMyEmailPreferences).toHaveBeenNthCalledWith(1, {
+      moderation_email_days_of_week: [1, 3, 5],
+    })
+    expect(result.current.settings.moderation_email_days_of_week).toEqual([1, 3, 5])
+
+    act(() => result.current.handleDayToggle(3, true))
+    expect(updateMyEmailPreferences).toHaveBeenCalledTimes(1)
+
+    act(() => result.current.handleDayToggle(1, false))
+    await waitFor(() => expect(result.current.pending.size).toBe(0))
+    expect(updateMyEmailPreferences).toHaveBeenNthCalledWith(2, {
+      moderation_email_days_of_week: [3, 5],
+    })
+
+    act(() => result.current.handleDayToggle(5, false))
+    await waitFor(() => expect(result.current.pending.size).toBe(0))
+    expect(updateMyEmailPreferences).toHaveBeenNthCalledWith(3, {
+      moderation_email_days_of_week: [3],
+    })
+
+    act(() => result.current.handleDayToggle(3, false))
+    expect(updateMyEmailPreferences).toHaveBeenCalledTimes(3)
+    expect(result.current.settings.moderation_email_days_of_week).toEqual([3])
+  })
+
   it('retries automatic timezone initialization after its PATCH fails', async () => {
     const dateTimeFormatSpy = vi.spyOn(Intl, 'DateTimeFormat').mockReturnValue({
       format: () => '1/1/2026',

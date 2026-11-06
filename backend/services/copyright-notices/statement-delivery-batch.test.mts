@@ -44,13 +44,17 @@ describe('statement delivery batches', () => {
     const intents = (await readTestCopyrightStatementIntents(noticeId)).filter(row =>
       [first.id, second.id].includes(row.recipient_user_id ?? ''),
     )
-    expect(intents.map(row => [row.recipient_user_id, row.channel, row.text]).toSorted()).toEqual(
+    expect(
+      intents
+        .map(row => [row.recipient_user_id, row.channel, row.text])
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual(
       [
         [first.id, 'email', 'First recipient.'],
         [first.id, 'in_app', 'First recipient.'],
         [second.id, 'email', 'Second recipient.'],
         [second.id, 'in_app', 'Second recipient.'],
-      ].toSorted(),
+      ].toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     )
   })
 

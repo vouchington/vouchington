@@ -121,7 +121,11 @@ describe('territorial restriction commitment and enforcement', () => {
       staffRequest.post(url).send(body),
       staffRequest.post(url).send(body),
     ])
-    expect(responses.map(response => response.status).toSorted()).toEqual([201, 409])
+    expect(
+      responses
+        .map(response => response.status)
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual([201, 409])
     expect(await readTestTerritorialDecisions(scene.noticeId)).toHaveLength(1)
     expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions).toHaveLength(1)
   })

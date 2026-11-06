@@ -253,7 +253,8 @@ describe('penalties', () => {
         request1.delete(`/api/v1/vote-integrity/penalties/${penaltyId}`),
         request2.delete(`/api/v1/vote-integrity/penalties/${penaltyId}`),
       ])
-      expect(responses.map(response => response.status).toSorted()).toEqual([200, 404])
+      const sortedStatuses = responses.map(response => response.status).toSorted((a, b) => a - b)
+      expect(sortedStatuses).toEqual([200, 404])
       await request1.delete(`/api/v1/vote-integrity/penalties/${penaltyId}`).expect(404)
     })
   })

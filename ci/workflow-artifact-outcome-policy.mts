@@ -47,7 +47,7 @@ export function artifactUploadOutcomeViolations(files: readonly WorkflowSource[]
     violations.push(
       `Expected ${EXPECTED_SUITES.length} artifact outcome steps, got ${steps.length}`,
     )
-  const suites = steps.map(step => step.env?.SUITE).toSorted()
+  const suites = steps.map(step => String(step.env?.SUITE)).toSorted()
   if (JSON.stringify(suites) !== JSON.stringify(EXPECTED_SUITES))
     violations.push(`Unexpected artifact outcome suites: ${JSON.stringify(suites)}`)
   for (const step of steps) {

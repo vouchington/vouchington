@@ -88,14 +88,16 @@ describe('Dependabot policy', () => {
     const updates = readDependabotUpdates()
 
     expect(
-      updates.map(update => [update['package-ecosystem'], update.directory]).toSorted(),
+      updates
+        .map(update => [update['package-ecosystem'], update.directory])
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     ).toEqual(
       [
         ['docker', '/backend'],
         ['docker', '/web'],
         ['github-actions', '/'],
         ['npm', '/'],
-      ].toSorted(),
+      ].toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     )
 
     for (const update of updates) {

@@ -76,7 +76,11 @@ describe('upsert-crawl', () => {
 
       expect(ownedPromises()).toHaveLength(1)
       const jobs = (await Promise.all(ownedPromises())).flat().filter(job => job != null)
-      expect(jobs.map(job => job.data.url_id).toSorted()).toEqual([url1!.id, url2!.id].toSorted())
+      expect(
+        jobs
+          .map(job => job.data.url_id)
+          .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+      ).toEqual([url1!.id, url2!.id].toSorted())
       for (const job of jobs) {
         await expect(crawlUrls.getJob(job.id)).resolves.toMatchObject({
           name: CRAWL_URL_JOB_NAME,

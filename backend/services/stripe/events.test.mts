@@ -66,7 +66,11 @@ describe('events', () => {
 
       expect(first.stripe_event_type_id).toBe(event.type)
       expect(first.id).toBe(second.id)
-      expect([first.is_new, second.is_new].toSorted()).toEqual([false, true])
+      expect(
+        [first.is_new, second.is_new].toSorted(
+          (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)),
+        ),
+      ).toEqual([false, true])
     })
 
     it('tracks processing lifecycle', async () => {

@@ -85,10 +85,11 @@ describe('rss-feeds enqueues', () => {
     await enqueueBulkFetchRssFeeds([rssFeedId], { ttl: 60_000, deduplicationScope: 'request' })
 
     const jobs = await readFeedJobs(rssFeedId)
-    expect(jobs.map(job => job.opts.deduplication?.id).toSorted()).toEqual([
-      `rss-feed-request__${rssFeedId}`,
-      `rss-feed__${rssFeedId}`,
-    ])
+    expect(
+      jobs
+        .map(job => job.opts.deduplication?.id)
+        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
+    ).toEqual([`rss-feed-request__${rssFeedId}`, `rss-feed__${rssFeedId}`])
   })
 
   it('enqueues the dispatcher at dispatcher priority in its own namespaced lane', async () => {
