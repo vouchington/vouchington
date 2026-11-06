@@ -13,6 +13,10 @@ export function recordScenarioFailure(scenario: string, error: unknown): void {
   console.error(error)
 }
 
+export async function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
+  await result.catch((err: unknown) => recordScenarioFailure(scenario, err))
+}
+
 export async function continueAfterFailure(
   scenario: string,
   fn: () => Promise<unknown>,

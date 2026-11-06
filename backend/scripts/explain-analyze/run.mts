@@ -29,7 +29,7 @@ import {
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 import { assertSeedAnchorMatches } from './seed-anchor-check.mts'
 import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/seed-anchor.mts'
-import { assertNoScenarioFailures, recordScenarioFailure } from './scenario-failures.mts'
+import { assertNoScenarioFailures, runStep } from './scenario-failures.mts'
 import { assertPlanRegistry } from './plan-expectations.mts'
 import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
@@ -88,10 +88,6 @@ async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
       moderation_training_feedbacks, vote_integrity_flags, moderator_actions,
       moderation_transparency_released_daily_rollups`)
 }
-async function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
-  await result.catch((err: unknown) => recordScenarioFailure(scenario, err))
-}
-
 async function main() {
   prepareOutputDir()
   try {
