@@ -38,6 +38,20 @@ export async function getRssFeedItemSourcePublicationForTest(
   return rows[0]
 }
 
+/** rss_feed_items.published_at is generated. Story pages order this source column. */
+export async function setRssFeedItemSourcePublishedAtForTest(
+  feedId: string,
+  itemId: string,
+  publishedAt: string | null,
+): Promise<void> {
+  await write(sql`/* setRssFeedItemSourcePublishedAtForTest */
+    UPDATE rss_feed_item_sources
+    SET published_at = ${publishedAt}::timestamptz
+    WHERE rss_feed_id = ${feedId}
+      AND rss_feed_item_id = ${itemId}
+  `)
+}
+
 export async function clearRssFeedItemSourcePublicationsForTest(
   feedId: string,
   itemIds: string[],
