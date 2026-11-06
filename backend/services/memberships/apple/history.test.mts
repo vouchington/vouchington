@@ -3,8 +3,9 @@ import {
   createConfiguredAppleTransactionHistoryClient,
   fetchAppleTransactionHistory,
   getLatestAuthoritativeAppleTransaction,
-  type AppleTransactionHistoryClient,
 } from './history.mts'
+
+type AppleTransactionHistoryClient = Parameters<typeof fetchAppleTransactionHistory>[0]
 
 describe('Apple transaction history', () => {
   afterEach(() => {
