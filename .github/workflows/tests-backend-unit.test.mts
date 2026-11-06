@@ -113,7 +113,7 @@ describe('backend uncredentialed Docker test workflow', () => {
     const script = runBackendTestsScript ?? ''
     const vitestPipeline = '2>&1 | tee backend-unit-output.log'
 
-    expect(script.startsWith('set -o pipefail\n')).toBe(true)
+    expect(script.startsWith('#!/usr/bin/env bash\nset -o pipefail\n')).toBe(true)
     expect(script).toContain(vitestPipeline)
     expect(script.indexOf(' --collect \\')).toBeGreaterThan(script.indexOf(vitestPipeline))
   })
