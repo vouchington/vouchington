@@ -2,6 +2,7 @@ import { SEED_PREFIX, runAndCapture, seedTopicId, seedUser } from '../run-suppor
 import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
 import { runAdminUserSearchScenarios } from './admin-user-search.mts'
+import { runDataPointSearchScenarios } from './data-point-search.mts'
 import { runUserRemovedPostPageScenarios } from './user-removed-post-pages.mts'
 import { runViewDrivenHostnameScenarios } from './view-driven-hostnames.mts'
 
@@ -13,7 +14,6 @@ const {
   getRevenue,
   getTopicDataPointInsights,
   getUserBookmarkCounts,
-  getPostIds,
   searchTopicAliases,
   updateTopicRatingStats,
 } = services
@@ -38,30 +38,7 @@ export async function runEntityTailScenarios(): Promise<void> {
     searchTopicAliases({ prefixQuery: 'seed', limit: 25 }),
   )
 
-  // Seeded data points are credit_card, so this vertical matches none of them.
-  registerScenarioContract('search-data-points-filtered-page', {
-    allowEmptyResult: true,
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'posts', max: 500 },
-      {
-        kind: 'usesIndexes',
-        indexes: ['posts__default_data_point_vertical_id_idx', 'idx_posts__data_point_vertical'],
-        anyOf: true,
-      },
-    ],
-    crossPartition: {
-      posts:
-        'A selective data-point vertical reads the 30-day id window, which can span id partitions.',
-    },
-  })
-  await runAndCapture('search-data-points-filtered-page', () =>
-    getPostIds(undefined, {
-      post_types: ['data_point'],
-      data_point_vertical: 'bank_account',
-      sort: 'new',
-      limit: 21,
-    }),
-  )
+  await runDataPointSearchScenarios()
 
   // User bookmark counts — dynamic UNION ALL of COUNT queries across bookmark tables
   await runAndCapture('user-bookmark-counts', () => getUserBookmarkCounts(seedUser.id))

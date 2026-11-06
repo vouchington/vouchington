@@ -218,7 +218,7 @@ describe('query-builder (pagination and moderation)', () => {
     expect(moderator.sql).toContain('story_posts post_story')
     expect(moderator.sql).toContain('rss_feed_items story_item')
     expect(moderator.sql).toContain('is_discoverable')
-    expect(moderator.sql).toContain('posts.post_type = ')
+    expect(moderator.sql).toContain("posts.post_type = 'story'")
     expect(moderator.sql).not.toContain('post_type = ANY')
   })
 
