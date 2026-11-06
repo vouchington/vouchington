@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import { encodeCursor } from '@modules/pagination'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -8,12 +7,13 @@ import {
   insertTestPostStory,
   insertTestRssFeedDirect,
   insertTestStory,
+  setRssFeedItemSourcePublishedAtForTest,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
 import { postsWorkConfig } from '@services/posts/work-limits'
+import { softDeleteRssFeedById } from '@services/rss-feeds/delete'
 import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
 import { getPostIds } from './get-ids.mts'
 
 const MAX_ITEM_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
@@ -34,8 +34,16 @@ describe('story source pages', () => {
       const feed = await insertTestRssFeedDirect({})
       const newerItem = await createTestRssFeedItemWithUrl(feed.id)
       const olderItem = await createTestRssFeedItemWithUrl(feed.id)
-      await setSourcePublishedAt(newerItem.id, '2020-06-01T00:00:00.000000Z')
-      await setSourcePublishedAt(olderItem.id, '2020-01-01T00:00:00.000000Z')
+      await setRssFeedItemSourcePublishedAtForTest(
+        feed.id,
+        newerItem.id,
+        '2020-06-01T00:00:00.000000Z',
+      )
+      await setRssFeedItemSourcePublishedAtForTest(
+        feed.id,
+        olderItem.id,
+        '2020-01-01T00:00:00.000000Z',
+      )
       const newerStory = await insertTestStory({ title: 'newer story page' })
       const olderStory = await insertTestStory({ title: 'older story page' })
       await setTestItemStoryId(newerItem.id, newerStory.id)
@@ -98,7 +106,7 @@ describe('story source pages', () => {
       postType: 'story',
     })
     await insertTestPostStory(postId, story.id, user.id)
-    await setSourcePublishedAt(item.id, null)
+    await setRssFeedItemSourcePublishedAtForTest(feed.id, item.id, null)
     const after = encodeCursor({
       feed_id: feed.id,
       feed_open: true,
@@ -114,9 +122,7 @@ describe('story source pages', () => {
     })
     expect(visible.results.map(result => result.id)).toContain(postId)
 
-    await write(sql`/* storySourcePageTest */
-      UPDATE rss_feeds SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${feed.id}
-    `)
+    await softDeleteRssFeedById(feed.id)
     const hidden = await getPostIds(undefined, {
       post_types: ['story'],
       time_range: 'all',
@@ -126,12 +132,3 @@ describe('story source pages', () => {
     expect(hidden.results.map(result => result.id)).not.toContain(postId)
   })
 })
-
-async function setSourcePublishedAt(itemId: string, publishedAt: string | null): Promise<void> {
-  // rss_feed_items.published_at is generated. Story pages order the source association.
-  await write(sql`/* storySourcePageTest */
-    UPDATE rss_feed_item_sources
-    SET published_at = ${publishedAt}::timestamptz
-    WHERE rss_feed_item_id = ${itemId}
-  `)
-}
