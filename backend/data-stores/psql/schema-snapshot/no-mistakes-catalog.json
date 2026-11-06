@@ -131961,11 +131961,7 @@
         "columns": ["rss_feed_item_id", "topic_id"]
       },
       "relationKind": "table",
-      "triggers": {
-        "trigger_active_topic_references": {
-          "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.rss_feed_item_topic_candidates FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
-        }
-      },
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "rss_feed_item_unmapped_category_counts": {
