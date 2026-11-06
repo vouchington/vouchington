@@ -17,6 +17,12 @@ import { postItemFactsSql } from './item-facts.mts'
 import { listItemEligibleSql } from './list-item-eligible-sql.mts'
 export { addListItem } from './add-item.mts'
 
+type ListItemPageRow = Record<string, unknown> & {
+  eligible: boolean
+  id: string
+  item_type: ListItemType
+}
+
 export async function removeListItem(
   listId: string,
   itemType: ListItemType,
@@ -152,18 +158,18 @@ export async function searchListItems(
     ) post_labels ON TRUE
     ORDER BY page.id DESC`)
 
-  const { rows } = await read<{ eligible: boolean }>(query)
+  const { rows } = await read<ListItemPageRow>(query)
   const { window, hasMore } = sliceRawKeysetPage(rows, limit)
   const results: ListItem[] = []
   for (const row of window) {
-    if (row.eligible) results.push(rowToListItem(row, row.item_type as ListItemType))
+    if (row.eligible) results.push(rowToListItem(row, row.item_type))
   }
 
   return {
     results,
     page_info: buildPageInfo(window, {
       hasNextPage: hasMore,
-      getCursor: row => ({ id: row.id as string }),
+      getCursor: row => ({ id: row.id }),
     }),
   }
 }

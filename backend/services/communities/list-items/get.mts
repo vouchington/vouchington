@@ -14,6 +14,16 @@ import type { BasicUser } from '@services/users/types'
 import sql from 'sql-template-strings'
 import { listItemCountBody, listItemJoins, listItemPageEligible } from './item-type-sql.mts'
 
+type CommunityListItemPageRow = {
+  id: string
+  community_id: string
+  entity_id: string
+  order_index: number
+  added_by_id: string | null
+  created_at: Date
+  eligible: boolean
+}
+
 export async function searchCommunityListItems(
   communityId: string,
   itemType: CommunityListItemType,
@@ -75,20 +85,20 @@ export async function searchCommunityListItems(
   query.append(sql`
     ORDER BY page.order_index ASC, page.id ASC`)
 
-  const { rows } = await read<{ eligible: boolean }>(query, options)
+  const { rows } = await read<CommunityListItemPageRow>(query, options)
   const { window, hasMore } = sliceRawKeysetPage(rows, limit)
   const results: CommunityListItem[] = []
   for (const row of window) {
     if (!row.eligible) continue
     results.push({
       __entity_type: 'community_list_item' as const,
-      id: row.id as string,
-      community_id: row.community_id as string,
+      id: row.id,
+      community_id: row.community_id,
       item_type: itemType,
-      entity_id: row.entity_id as string,
-      order_index: row.order_index as number,
-      added_by_id: (row.added_by_id as string | null) ?? null,
-      created_at: row.created_at as Date,
+      entity_id: row.entity_id,
+      order_index: row.order_index,
+      added_by_id: row.added_by_id,
+      created_at: row.created_at,
     })
   }
 
@@ -96,8 +106,8 @@ export async function searchCommunityListItems(
     results,
     page_info: buildPageInfo(
       window.map(row => ({
-        order_index: row.order_index as number,
-        id: row.id as string,
+        order_index: row.order_index,
+        id: row.id,
       })),
       {
         hasNextPage: hasMore,

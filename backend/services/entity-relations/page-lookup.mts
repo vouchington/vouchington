@@ -25,7 +25,7 @@ export function objectLookupColumns(
     throw new Error(`Entity relation reads do not project ${objectType} objects`)
   }
   if (objectType === 'post') return POST_PAGE_COLUMNS
-  const columns = [...entityRelationObjectColumns[objectType]]
+  const columns: string[] = [...entityRelationObjectColumns[objectType]]
   if (hasSoftDelete) columns.push('deleted_at')
   return columns.join(', ')
 }
