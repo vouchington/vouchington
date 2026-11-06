@@ -1,4 +1,4 @@
-import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
+import { bedrockEmbeddingsBatchConfig } from '../services/bedrock-embeddings/batch/config.mts'
 import {
   resetDynamicConfigToTestBaseline,
   snapshotDynamicConfigFieldsForTest,

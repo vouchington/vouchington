@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
+import { bedrockEmbeddingsBatchConfig } from '../services/bedrock-embeddings/batch/config.mts'
 import { initializeEmbeddingCreationConfig } from './embedding-creation-config.mts'
 
 describe('embedding creation config', () => {
