@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { appendCommunityArm, appendNullArm } from './data-point-arms.mts'
+import { appendCommunityArm, appendNullArm, dataPointLimitLiteral } from './data-point-arms.mts'
 import type { DataPointCursor, SearchDataPointsOptions } from './data-point-types.mts'
 
 export function buildDataPointPageQuery(
@@ -28,7 +28,9 @@ export function buildDataPointPageQuery(
   else query.append(sql`TRUE`)
   query.append(sql`
         ORDER BY id DESC
-        LIMIT ${laterLimit}
+        LIMIT `)
+  query.append(dataPointLimitLiteral(laterLimit))
+  query.append(sql`
       ) sliced
     ),
     later_page AS (
