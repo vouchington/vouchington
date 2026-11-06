@@ -21,11 +21,12 @@ const DEFAULT_TOTAL_CRAWL_TIMEOUT_MS = 60_000
  * returning `options` itself unchanged in that case would drop `deadlineAt` and reset the ceiling
  * on every hop.
  */
-export function scopeCrawlDeadline(
+function scopeCrawlDeadline(
   options: CrawlUrlOptions | undefined,
 ): CrawlUrlOptions & { deadlineAt: number } {
   const deadlineAt =
-    options?.deadlineAt ?? Date.now() + (options?.totalTimeoutMs ?? DEFAULT_TOTAL_CRAWL_TIMEOUT_MS)
+    options?.deadlineAt ??
+    (options?.startedAt ?? Date.now()) + (options?.totalTimeoutMs ?? DEFAULT_TOTAL_CRAWL_TIMEOUT_MS)
   return { ...options, deadlineAt }
 }
 
