@@ -3051,7 +3051,6 @@
       - '^bedrock_nova_multimodal_v1_'
       - '^lingua_rs_'
       - '^llm_moderation_'
-      - '^openai_omni_moderation_'
       - '^(search_vector$|votes_(count|score)_)'
     allow:
       - object: table:migrations
