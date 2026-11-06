@@ -4,7 +4,7 @@ import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { mergeMessages } from '@/lib/i18n/use-translations'
 import { DataPointProfileFields } from '../data-point-profile-fields'
 import type { FinancialProfile } from '@/types/my'
-import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 vi.mock(
   import('@/components/ui/checkbox'),

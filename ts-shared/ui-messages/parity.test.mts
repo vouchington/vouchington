@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isMessageDescriptor } from './message-descriptors.mts'
-import { enMessages, esMessages, frMessages, ptMessages } from './locale-catalogs.mts'
+import { enMessages, esMessages, frMessages, ptMessages } from '../test-helpers/locale-catalogs.mts'
 
 type LeafKind = 'string' | 'descriptor'
 

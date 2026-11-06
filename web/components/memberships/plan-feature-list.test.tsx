@@ -6,7 +6,7 @@ import type { MembershipBenefitCatalog } from '@/types/api-responses'
 import plansFixture from '../../../api-fixtures/v1/responses/native.memberships.plans.default.json'
 import { presentCardFeatures } from './plan-benefit-presentation'
 import { PlanFeatureList } from './plan-feature-list'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 describe('PlanFeatureList', () => {
   let t: Translator

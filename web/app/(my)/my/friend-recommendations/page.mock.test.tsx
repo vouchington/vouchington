@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 const { mockRequireCurrentUser, mockGetMyFriendRecommendations } = vi.hoisted(() => ({
   mockRequireCurrentUser: vi.fn<VitestLooseMock>(),

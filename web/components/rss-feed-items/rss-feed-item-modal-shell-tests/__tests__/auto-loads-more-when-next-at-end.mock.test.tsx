@@ -3,7 +3,7 @@ import { act, fireEvent, render } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { RssFeedItemModalShell } from '../../rss-feed-item-modal-shell'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 vi.mock(
   import('next/navigation'),

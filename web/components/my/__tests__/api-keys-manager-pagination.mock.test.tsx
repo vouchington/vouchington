@@ -4,7 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ListResponse } from '@/types/api-responses'
 import type { ApiKey } from '@/types/api-keys'
 import { ApiKeysManager } from '../api-keys-manager'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 let translate!: (key: MessageKey, params?: Record<string, unknown>) => string
 

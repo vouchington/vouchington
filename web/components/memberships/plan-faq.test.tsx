@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { createTranslator, type Translator } from '@ts-shared/ui-messages'
 import { PlanFAQ } from './plan-faq'
 import { getPlanFaqItems } from './plan-faq-items'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 describe('PlanFAQ', () => {
   let t: Translator

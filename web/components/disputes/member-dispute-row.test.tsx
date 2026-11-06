@@ -4,7 +4,7 @@ import { MemberDisputeRow } from './member-dispute-row'
 import type { ReviewDispute } from '@/types/review-disputes'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { mergeMessages } from '@/lib/i18n/use-translations'
-import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispute {
   return {

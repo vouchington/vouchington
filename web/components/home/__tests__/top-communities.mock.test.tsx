@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { configure, render, screen } from '@testing-library/react'
 import { TopCommunities } from '../top-communities'
-import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 import {
   makeCommunitiesSearchResponse,
   makeCommunity,

@@ -5,7 +5,7 @@ import { TopicCommunitiesAsideContent } from '../topic-communities-aside-content
 import { makeCommunity, makeCommunityMetrics } from '@/test-helpers/api-responses/communities'
 import type { Topic } from '@/types/topics'
 import type { Community, CommunityMetrics } from '@/types/api-responses'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 vi.mock(
   import('next/link'),

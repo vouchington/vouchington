@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { beforeAll, expect, it, type Mock } from 'vitest'
 import { createTranslator, type Translator } from '@ts-shared/ui-messages'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 import type { ReactNode } from 'react'
 import type { EntityRelation } from '@/lib/api/entity-relations'
 import type { Topic, TopicTypes } from '@/types/topics'

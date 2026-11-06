@@ -1,4 +1,4 @@
-import { catalogTreeForLocale } from './load-catalog-json.mts'
+import { catalogTreeForLocale } from '../ui-messages/load-catalog-json.mts'
 
 export const enMessages = catalogTreeForLocale('en')
 export const esMessages = catalogTreeForLocale('es')
