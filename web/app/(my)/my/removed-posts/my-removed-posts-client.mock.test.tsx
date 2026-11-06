@@ -42,6 +42,27 @@ const dataWithPost: MyRemovedPostsResponse = {
 }
 
 describe('MyRemovedPostsClient', () => {
+  it('loads the next page when the current page is empty but has a continuation', async () => {
+    mockListMyRemovedPosts.mockResolvedValueOnce(dataWithPost)
+
+    render(
+      <MyRemovedPostsClient
+        initialData={{
+          removed_posts: [],
+          page_info: { has_next_page: true, end_cursor: 'cursor-1', start_cursor: null },
+        }}
+      />,
+    )
+
+    expect(screen.getByText('You have no removed posts.')).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+
+    await waitFor(() => {
+      expect(mockListMyRemovedPosts).toHaveBeenCalledWith('cursor-1')
+      expect(screen.getByText('My great post')).toBeVisible()
+    })
+  })
+
   it('shows empty state when there are no removed posts', () => {
     render(<MyRemovedPostsClient initialData={emptyData} />)
     expect(screen.getByText('You have no removed posts.')).toBeVisible()
