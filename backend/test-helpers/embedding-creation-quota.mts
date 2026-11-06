@@ -47,9 +47,10 @@ export async function acquireEmbeddingQuotaFixture() {
     )
     acquired = true
     assertOpen()
-    lease = await claimEmbeddingQuotaLease(client, key)
-    assertOpen()
+    // Claim the lease after init so a timed-out init cannot leave the directory behind.
     restoreConfig = await initializeEmbeddingCreationConfig()
+    assertOpen()
+    lease = await claimEmbeddingQuotaLease(client, key)
     assertOpen()
     await client.query(
       "/* acquireEmbeddingQuotaFixture:testTimeout */ SET statement_timeout = '5s'",

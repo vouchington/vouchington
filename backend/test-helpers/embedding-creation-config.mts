@@ -1,4 +1,4 @@
-import { dynamicConfigRegistry } from '../services/dynamic-config-admin/registry.mts'
+import { bedrockEmbeddingsBatchConfig } from '../services/bedrock-embeddings/batch/config.mts'
 import {
   resetDynamicConfigToTestBaseline,
   snapshotDynamicConfigFieldsForTest,
@@ -7,31 +7,28 @@ import {
 
 type ClosableTestDynamicConfig = TestDynamicConfig & { close: () => Promise<void> }
 
+const quotaConfigs = [bedrockEmbeddingsBatchConfig]
+
 let initialization: Promise<void> | undefined
 
 /** The quota owner restores this snapshot only after its real workers have drained. */
 export async function initializeEmbeddingCreationConfig(): Promise<() => void> {
   initialization ??= initialize()
   await initialization
-  return snapshotDynamicConfigFieldsForTest(
-    dynamicConfigRegistry.entries.map(entry => entry.config as unknown as TestDynamicConfig),
-  )
+  return snapshotDynamicConfigFieldsForTest(quotaConfigs)
 }
 
 async function initialize(): Promise<void> {
   const initialized = await Promise.allSettled(
-    dynamicConfigRegistry.entries.map(({ config }) => config.waitForInitialization()),
+    quotaConfigs.map(config => config.waitForInitialization()),
   )
   const closed = await Promise.allSettled(
-    dynamicConfigRegistry.entries.map(({ config }) =>
-      (config as unknown as ClosableTestDynamicConfig).close(),
-    ),
+    quotaConfigs.map(config => (config as unknown as ClosableTestDynamicConfig).close()),
   )
   const errors = [...initialized, ...closed].flatMap(result =>
     result.status === 'rejected' ? [result.reason] : [],
   )
   if (errors.length)
     throw new AggregateError(errors, 'Embedding configuration initialization failed')
-  for (const { config } of dynamicConfigRegistry.entries)
-    resetDynamicConfigToTestBaseline(config as unknown as TestDynamicConfig)
+  for (const config of quotaConfigs) resetDynamicConfigToTestBaseline(config)
 }
