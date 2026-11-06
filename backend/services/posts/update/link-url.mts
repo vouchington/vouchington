@@ -6,7 +6,7 @@ import { isUUID } from '@modules/utils'
 import type { TransactionQuery } from '@data-stores/psql'
 import { assessUrls } from '@services/urls/upsert'
 import { persistAssessedUrls } from '@services/urls/upsert-persist'
-import { getUrlById } from '@services/urls/get'
+import { getCanonicalUrlsByIdBatch } from '@services/urls/get-canonical'
 import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import type { Post, UpdatePostChanges } from '../types.mts'
@@ -19,9 +19,12 @@ export async function assessPostLinkEdit(post: Post, changes: UpdatePostChanges)
     assert(/^https:\/\//i.test(changes.url), 422, 'url must be a valid https URL')
   if (changes.url_id !== undefined) {
     assert(isUUID(changes.url_id), 422, 'url_id must be a valid UUID')
-    const url = await getUrlById(changes.url_id, { readOnly: false })
-    assert(url, 422, 'url_id does not exist')
-    return { changes: { ...changes, url_id: url.canonical_url_id ?? url.id } }
+    const [destination] = await getCanonicalUrlsByIdBatch([changes.url_id], { readOnly: false })
+    assert(destination, 422, 'url_id does not exist')
+    const urls = await assessUrls([destination.url])
+    assert(urls.length > 0, 422, 'URL is blocked or not allowed')
+    // Reuse persistence so mutable hostname policy is checked under ownership locks.
+    return { changes: { ...changes, url_id: destination.id }, urls }
   }
   const urls = await assessUrls([changes.url!])
   assert(urls.length > 0, 422, 'URL is blocked or not allowed')
@@ -38,6 +41,13 @@ export async function persistPostLinkEdit(
   await prepareAndLockPostLinkHostnames(query, userId, urls)
   const [url] = await persistAssessedUrls(userId, urls, { query })
   assert(url, 422, 'URL is blocked or not allowed')
+  if (changes.url_id !== undefined) {
+    assert(
+      (url.canonical_url_id ?? url.id) === changes.url_id,
+      422,
+      'URL destination changed; retry the edit',
+    )
+  }
   return { ...changes, url_id: url.canonical_url_id ?? url.id }
 }
 
