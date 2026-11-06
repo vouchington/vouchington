@@ -121,6 +121,11 @@ export async function seedHackerNewsFilterFixture(
     VALUES('enablement',$1,TRUE,'Owned HN fixture'),('discoverability',$1,TRUE,'Owned HN fixture')`,
     [fixture.feedId],
   )
+  await q(
+    `INSERT INTO relation__user__follow__rss_feed(subject_id,object_id,created_by_id)
+    VALUES($1,$2,$1)`,
+    [fixture.actorId, fixture.feedId],
+  )
   for (let start = 0; start < rssCount; start += batchSize) {
     const count = Math.min(batchSize, rssCount - start)
     // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.

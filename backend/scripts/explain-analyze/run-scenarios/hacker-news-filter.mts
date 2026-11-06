@@ -2,6 +2,8 @@ import { beginTransaction, read } from '@data-stores/psql'
 import { buildHackerNewsPostUrlsSql } from '@services/urls/hacker-news-post-urls'
 import { buildPostSearchQuery } from '@services/posts/search/query-builder'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
+import { getRssFeedItemFeedIds } from '@services/feeds'
+import { getPrivateUserByIdOrSlug } from '@services/users'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
@@ -22,7 +24,7 @@ const RSS_COUNT = 5_000
 const POST_SEED_BOUND = SEEDED_ROWS_BY_RELATION.posts! + POST_COUNT + 16
 const RSS_SEED_BOUND = SEEDED_ROWS_BY_RELATION.rss_feed_items! + RSS_COUNT
 
-/** Real generated flag-filter plans; RSS search has no production time-window input. */
+/** Real generated flag-filter plans for public search and personalized feed windows. */
 export async function runHackerNewsFilterScenarios(): Promise<void> {
   let fixture: HackerNewsFilterFixture | undefined
   try {
@@ -32,6 +34,8 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
       rssCount: RSS_COUNT,
     })
     await seed.commit()
+    const user = await getPrivateUserByIdOrSlug(fixture.actorId)
+    if (!user) throw new Error('Hacker News feed fixture user is missing')
     for (const density of ['low', 'high'] as const) {
       await using update = await beginTransaction()
       // no-mistakes-disable-next-line query-reached-per-item: two fixed density states each seed bounded fixture batches before independent plan captures.
@@ -91,6 +95,29 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
       await runAndCapture(id, () =>
         searchRssFeedItems({ has_hacker_news_references: true, limit: 25 }),
       )
+      for (const timeRange of ['1m', '1y', 'all'] as const) {
+        const feedId = `hacker-news-rss-feed-new-${timeRange}-${density}`
+        registerScenarioContract(feedId, {
+          seededRows: { posts: POST_SEED_BOUND, rss_feed_items: RSS_SEED_BOUND },
+          expectations: [
+            { kind: 'queryBinds', token: 'rss_feed_items.has_hacker_news_references' },
+            { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: RSS_SEED_BOUND * 4 },
+          ],
+          allowEmptyResult: true,
+          crossPartition: {
+            rss_feed_items: 'Personalized RSS windows rank eligible followed-source deliveries.',
+          },
+        })
+        // no-mistakes-disable-next-line query-reached-per-item: each fixed window and density captures the actual bounded feed query independently.
+        await runAndCapture(feedId, () =>
+          getRssFeedItemFeedIds(user, {
+            feed_type: 'follow_rss_feeds',
+            has_hacker_news_references: true,
+            time_range: timeRange,
+            limit: 25,
+          }),
+        )
+      }
     }
   } finally {
     if (fixture) {
