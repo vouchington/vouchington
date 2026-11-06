@@ -51,8 +51,8 @@ async function runPrivatePostCollectionScenario(
 ): Promise<BrowserLifecycleObservation> {
   await navigateTo(page, '/my/posts/saved')
   if (isContinuationClaim(claim)) {
-    const { pageSize } = claim.scenario.input.preconditions
-    const loadedPostIds = await loadAllRows(page, pageSize)
+    const { pageSize, newerFilteredCount } = claim.scenario.input.preconditions
+    const loadedPostIds = await loadAllRows(page, pageSize - newerFilteredCount)
     return normalizeContinuationObservation(loadedPostIds)
   }
   if (!isRemovalClaim(claim))
