@@ -36,12 +36,18 @@ export function HackerNewsConfigProvider({
       try {
         const next = await getHackerNewsConfigClient()
         if (!active) return
-        if (
+        const changed =
           next.references_visible !== current.references_visible ||
           next.post_time_range_cap !== current.post_time_range_cap
-        ) {
+        if (changed) {
           current = next
           setSnapshot({ initialConfig: serverConfig, config: next })
+        }
+        if (
+          changed ||
+          next.references_visible !== serverConfig.references_visible ||
+          next.post_time_range_cap !== serverConfig.post_time_range_cap
+        ) {
           router.refresh()
         }
       } catch {

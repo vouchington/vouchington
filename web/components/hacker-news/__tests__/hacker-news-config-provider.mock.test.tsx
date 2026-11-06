@@ -71,6 +71,59 @@ function PersistentPlayer() {
 }
 
 describe('server configuration refresh', () => {
+  it('retries a stale server snapshot on the next poll without refetching on same-value renders', async () => {
+    nav.reset()
+    vi.useFakeTimers()
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () =>
+        Response.json({ references_visible: true, post_time_range_cap: '1y' }),
+      )
+    try {
+      const view = render(
+        <HackerNewsConfigProvider
+          initialConfig={{ references_visible: false, post_time_range_cap: '1y' }}
+        >
+          <HackerNewsFilterToggle />
+        </HackerNewsConfigProvider>,
+      )
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(screen.getByRole('checkbox')).toBeInTheDocument()
+      expect(nav.refresh).toHaveBeenCalledOnce()
+      view.rerender(
+        <HackerNewsConfigProvider
+          initialConfig={{ references_visible: false, post_time_range_cap: '1y' }}
+        >
+          <HackerNewsFilterToggle />
+        </HackerNewsConfigProvider>,
+      )
+      expect(fetchMock).toHaveBeenCalledOnce()
+      expect(nav.refresh).toHaveBeenCalledOnce()
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000)
+      })
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(nav.refresh).toHaveBeenCalledTimes(2)
+      view.rerender(
+        <HackerNewsConfigProvider
+          initialConfig={{ references_visible: true, post_time_range_cap: '1y' }}
+        >
+          <HackerNewsFilterToggle />
+        </HackerNewsConfigProvider>,
+      )
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000)
+      })
+      expect(nav.refresh).toHaveBeenCalledTimes(2)
+      view.unmount()
+    } finally {
+      fetchMock.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
   it('updates server configuration without resetting descendant state', () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}))
     const view = render(

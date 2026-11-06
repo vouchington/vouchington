@@ -115,7 +115,9 @@ export type UsersSearchResponseBody = ListResponse<UserSearchResult> & {
 
 export type TopicsListResponseBody = ListResponse<Topic>
 
-export type PostsListResponseBody = ListResponse<Post>
+export type PostsListResponseBody = ListResponse<Post> & {
+  post_hacker_news_references?: Record<string, HackerNewsReferenceCounts>
+}
 
 export type RssFeedsListResponseBody = ListResponse<ViewRssFeed> & {
   topic_elections: Record<string, TopicElection>

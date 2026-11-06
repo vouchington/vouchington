@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getPaginatedPage } from '@/lib/api/client'
 import type { PostsListResponseBody } from '@/types/api-responses'
 import type { Post } from '@/types/posts'
+import { HackerNewsReferenceLabel } from '@/components/hacker-news/hacker-news-reference-label'
 import { PaginatedUserPostRelationList } from '../paginated-user-post-relation-list'
 import type { RelationManagementActionConfig } from '../relation-management-action'
 
@@ -70,6 +71,7 @@ vi.mock(import('../user-post-relation-list'), () => ({
       {posts.map(post => (
         <div key={post.id}>
           <span>{post.id}</span>
+          <HackerNewsReferenceLabel entityId={post.id} />
           {relationAction ? (
             <button
               type='button'
@@ -134,28 +136,26 @@ describe('PaginatedUserPostRelationList', () => {
     vi.clearAllMocks()
   })
 
-  it('forwards the cursor and appends unique posts by stable ID', async () => {
-    vi.mocked(getPaginatedPage).mockResolvedValueOnce(makePage(['post-1', 'post-2']))
-
-    render(
-      <PaginatedUserPostRelationList
-        data={makePage(['post-1'], { endCursor: 'cursor-1', hasNextPage: true })}
-        endpoint='/api/v1/users/alice/posts/saved'
-        emptyTitle='No saved posts'
-        emptyDescription='There are no saved posts.'
-      />,
-    )
-
-    await act(async () => {
-      await receiveInfiniteScrollProps.mock.calls.at(-1)![0].onLoadMore()
-    })
-
-    expect(getPaginatedPage).toHaveBeenCalledWith('/api/v1/users/alice/posts/saved', {
-      after: 'cursor-1',
-    })
-    expect(screen.getAllByText('post-1')).toHaveLength(1)
-    expect(screen.getByText('post-2')).toBeDefined()
-  })
+  it.each(['saved', 'hidden', 'following', 'subscribed'])(
+    'appends unique %s posts with first-page and continuation reference counts',
+    async listType => {
+      const first = makePage(['post-1'], { endCursor: 'cursor-1', hasNextPage: true })
+      first.post_hacker_news_references = { 'post-1': { story_count: 1, comment_count: 0 } }
+      const next = makePage(['post-1', 'post-2'])
+      next.post_hacker_news_references = { 'post-2': { story_count: 0, comment_count: 2 } }
+      vi.mocked(getPaginatedPage).mockResolvedValueOnce(next)
+      const endpoint = `/api/v1/users/alice/posts/${listType}`
+      render(relationList(first, endpoint))
+      expect(screen.getByText('Seen on Hacker News · 1')).toBeInTheDocument()
+      await act(async () => {
+        await receiveInfiniteScrollProps.mock.calls.at(-1)![0].onLoadMore()
+      })
+      expect(getPaginatedPage).toHaveBeenCalledWith(endpoint, { after: 'cursor-1' })
+      expect(screen.getAllByText('post-1')).toHaveLength(1)
+      expect(screen.getByText('Seen on Hacker News · 1')).toBeInTheDocument()
+      expect(screen.getByText('Mentioned on Hacker News · 2')).toBeInTheDocument()
+    },
+  )
 
   it('preserves the first page after failure and retries the same continuation', async () => {
     vi.mocked(getPaginatedPage)
