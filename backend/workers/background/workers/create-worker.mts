@@ -15,8 +15,8 @@ import { buildHandlerMap } from '../processors/handler-map.mts'
 import { createBackgroundProcessor } from '../processors.mts'
 
 export type BackgroundWorkerOptions = {
-  /** Every domain's handlers; the runtime definition passes `BACKGROUND_HANDLERS`. */
-  handlers: readonly BackgroundHandler[]
+  /** Every domain's handlers, or a loader the first job awaits. The runtime defers the handlers import. */
+  handlers: readonly BackgroundHandler[] | (() => Promise<readonly BackgroundHandler[]>)
   /** Serve only these domains; a job of another domain parks. Tests use it; production serves all. */
   domains?: readonly BackgroundDomain[]
   /** An isolated key prefix, for tests that must not touch the shared queue. */
@@ -28,9 +28,19 @@ export type BackgroundWorkerOptions = {
  * One worker for every domain in the `background` queue. Its concurrency is the combined baseline of
  * the domains it replaced, and it follows pause changes published for those domains.
  */
+function backgroundProcessor(options: BackgroundWorkerOptions) {
+  if (typeof options.handlers !== 'function') {
+    return createBackgroundProcessor(buildHandlerMap(options.handlers, options.domains))
+  }
+  const loadHandlers = options.handlers
+  return createBackgroundProcessor(() =>
+    loadHandlers().then(handlers => buildHandlerMap(handlers, options.domains)),
+  )
+}
+
 export function createBackgroundWorker(options: BackgroundWorkerOptions) {
   const baseline = getBackgroundWorkerBaseline()
-  const processor = createBackgroundProcessor(buildHandlerMap(options.handlers, options.domains))
+  const processor = backgroundProcessor(options)
   const inboxEvents = observeActivityPubInboxReservations(BACKGROUND_QUEUE_NAME, options.prefix)
   const worker = createWorker(
     BACKGROUND_QUEUE_NAME,

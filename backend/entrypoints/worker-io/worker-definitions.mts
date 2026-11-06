@@ -3,13 +3,15 @@ import type { WorkerDefinition } from '@vouchington/worker-runtime'
 export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'background',
-    load: async () => {
-      const [{ createBackgroundWorker }, { BACKGROUND_HANDLERS }] = await Promise.all([
-        import('@workers/background/workers/create-worker'),
-        import('@workers/background/processors/handlers'),
-      ])
-      return createBackgroundWorker({ handlers: BACKGROUND_HANDLERS })
-    },
+    load: () =>
+      import('@workers/background/workers/create-worker').then(({ createBackgroundWorker }) =>
+        createBackgroundWorker({
+          handlers: () =>
+            import('@workers/background/processors/handlers').then(
+              module => module.BACKGROUND_HANDLERS,
+            ),
+        }),
+      ),
   },
   {
     queueName: 'find-your-friends',

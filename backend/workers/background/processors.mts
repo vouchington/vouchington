@@ -17,7 +17,20 @@ const UNSERVED_JOB_PARK_MS = 24 * 60 * 60_000
  * group. `Worker.RateLimitError` and `worker.rateLimit()` would idle the whole shared worker, so
  * neither ever reaches GlideMQ from here.
  */
-export function createBackgroundProcessor(handlers: ReadonlyMap<string, BackgroundHandler>) {
+export function createBackgroundProcessor(
+  handlers:
+    | ReadonlyMap<string, BackgroundHandler>
+    | (() => Promise<ReadonlyMap<string, BackgroundHandler>>),
+) {
+  if (typeof handlers !== 'function') return processBackgroundJobWith(handlers)
+  let ready: Promise<ReadonlyMap<string, BackgroundHandler>> | undefined
+  return async function processBackgroundJob(job: Job): Promise<unknown> {
+    ready ??= handlers()
+    return processBackgroundJobWith(await ready)(job)
+  }
+}
+
+function processBackgroundJobWith(handlers: ReadonlyMap<string, BackgroundHandler>) {
   return async function processBackgroundJob(job: Job): Promise<unknown> {
     const handler = handlers.get(job.name)
     if (!handler) return rejectUnservedJob(job)
