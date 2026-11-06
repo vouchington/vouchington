@@ -4,6 +4,7 @@ import { buildPostSearchQuery } from '@services/posts/search/query-builder'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import {
   seedHackerNewsFilterFixture,
   setHackerNewsFilterDensity,
@@ -16,6 +17,10 @@ import {
 
 const POST_COUNT = 20_000
 const RSS_COUNT = 5_000
+// Earlier dispatch-work and story-projection scenarios create posts outside the seed ledger;
+// reserve 16 for those bounded runtime fixtures (the observed corpus adds two).
+const POST_SEED_BOUND = SEEDED_ROWS_BY_RELATION.posts! + POST_COUNT + 16
+const RSS_SEED_BOUND = SEEDED_ROWS_BY_RELATION.rss_feed_items! + RSS_COUNT
 
 /** Real generated flag-filter plans; RSS search has no production time-window input. */
 export async function runHackerNewsFilterScenarios(): Promise<void> {
@@ -42,12 +47,14 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
         for (const timeRange of ['1m', '1y', 'all'] as const) {
           const id = `hacker-news-posts-${sort}-${timeRange}-${density}`
           registerScenarioContract(id, {
+            seededRows: { posts: POST_SEED_BOUND, rss_feed_items: RSS_SEED_BOUND },
             expectations: [
               { kind: 'queryBinds', token: 'posts.has_hacker_news_references' },
               {
                 kind: 'maxProcessedRows',
                 relation: 'posts',
-                max: sort === 'hot' ? POST_COUNT * 3 : 2000,
+                // Hot plans can scan the shared corpus once and hydrate at most two pages.
+                max: sort === 'hot' ? POST_SEED_BOUND + 2 * 26 : 2000,
               },
             ],
             allowEmptyResult: true,
@@ -70,6 +77,7 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
       }
       const id = `hacker-news-rss-new-all-${density}`
       registerScenarioContract(id, {
+        seededRows: { posts: POST_SEED_BOUND, rss_feed_items: RSS_SEED_BOUND },
         expectations: [
           { kind: 'queryBinds', token: 'rss_feed_items.has_hacker_news_references' },
           { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: RSS_COUNT * 3 },
