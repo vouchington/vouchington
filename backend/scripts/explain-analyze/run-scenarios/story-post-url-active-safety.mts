@@ -1,3 +1,4 @@
+import { captureStoryProjectionSafetyLocks } from './story-projection-safety-locks.mts'
 import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
 import { getStoryPostRelatedUrlProjectionActiveUrls } from '@services/stories/story-post-related-url-projection-replacement-safety'
@@ -33,6 +34,7 @@ export async function captureActivePostUrlSafety(work: ProjectionWork[]): Promis
       'getStoryPostRelatedUrlProjectionActiveUrls',
     )
   }
+  await captureStoryProjectionSafetyLocks()
   await captureUnsafeReceiptReplacement(work[2]!)
 }
 

@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 import { getRelationTypeLimit } from './relation-limits-config.mts'
 import type { EntityRelationMetadata } from './metadata.mts'
 
-export type LimitState = { remaining: number; existingObjectIds: string[] }
+export type LimitState = { capacity: number; remaining: number; existingObjectIds: string[] }
 export type LimitGroup = {
   relation: EntityRelationMetadata
   objectIds: readonly string[]
@@ -75,6 +75,7 @@ export async function readRelationLimitStates(
       return [
         `${row.table_name}:${row.subject_id}`,
         {
+          capacity: row.relation_limit,
           remaining: Math.max(0, row.relation_limit - row.active_count - reservedOthers),
           existingObjectIds: row.existing_object_ids,
         },

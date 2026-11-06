@@ -63,6 +63,7 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
             eligibility_completed_at = NULL,
             source_completed_at = NULL,
             cursor_prune_id = NULL,
+            limit_reached_capacity = NULL,
             lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
         RETURNING post_id
       )

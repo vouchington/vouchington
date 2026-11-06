@@ -84,7 +84,7 @@ async function seedReplacementWork(storyId: string): Promise<ProjectionWork[]> {
       FROM unnest($1::uuid[]) input(post_id)
       RETURNING post_id, story_id, generation, sweep_upper_bound_source_id,
         sweep_upper_bound_relation_id, relation_snapshot_at, cursor_source_id,
-        eligibility_completed_at, source_completed_at, cursor_prune_id, lease_token`,
+        eligibility_completed_at, source_completed_at, cursor_prune_id, limit_reached_capacity, lease_token`,
     [seed.posts, storyId],
   )
   await write(

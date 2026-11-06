@@ -9,6 +9,7 @@ export type ProjectionWork = {
   eligibility_completed_at: Date | null
   source_completed_at: Date | null
   cursor_prune_id: string | null
+  limit_reached_capacity: number | null
   lease_token: string | null
 }
 

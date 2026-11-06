@@ -144,9 +144,9 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
         {
           kind: 'usesIndexes',
           indexes: ['idx_story_post_relate_url_project_jobs__last_claimed_at_post_id'],
-          noSort: true,
         },
         { kind: 'maxProcessedRows', relation: 'story_post_related_url_projection_jobs', max: 4 },
+        { kind: 'custom', name: 'storyProjectionClaimCandidates' },
       ],
       seededRows: { story_post_related_url_projection_jobs: 2000 },
     })

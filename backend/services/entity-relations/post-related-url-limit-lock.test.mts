@@ -10,6 +10,8 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import type { TransactionQuery } from '@data-stores/psql/types'
 import '@voucha/test-helpers/entity-url-guard-registrations'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
+import { lockPostPublicationPostScopes } from '@services/post-publication'
+import { assertPostRelatedUrlsAllowed } from './assert-post-related-urls-allowed.mts'
 import { relationLimitsConfig } from './relation-limits.mts'
 import {
   insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction,
@@ -68,6 +70,8 @@ describe('post related URL capacity under the publication lock', () => {
           throw new Error('Write completed before reaching the post lock', { cause: error })
         }),
       ])
+      await lockPostPublicationPostScopes(holder, [post.id])
+      await assertPostRelatedUrlsAllowed(user, relation, post, [{ id: first }], { query: holder })
       await insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction(holder, user, post.id, [
         first,
       ])
@@ -80,7 +84,7 @@ describe('post related URL capacity under the publication lock', () => {
     expect(await getEntityRelation(table, post.id, second)).toHaveLength(0)
   })
 
-  it('checks capacity for direct prevalidated writes while allowing an existing URL', async () => {
+  it('prevalidates capacity under the caller lock while allowing an existing URL', async () => {
     await relationLimitsConfig.waitForInitialization()
     onTestFinished(
       overrideDynamicConfigFieldsForTest(relationLimitsConfig, { post_related_url: 1 }),
@@ -92,14 +96,17 @@ describe('post related URL capacity under the publication lock', () => {
       createTestUrlWithHostname(),
     ])
     await using query = await beginTransaction()
+    await lockPostPublicationPostScopes(query, [post.id])
+    await assertPostRelatedUrlsAllowed(user, relation, post, [{ id: first }], { query })
     await insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction(query, user, post.id, [
       first,
     ])
+    await assertPostRelatedUrlsAllowed(user, relation, post, [{ id: first }], { query })
     await expect(
       insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction(query, user, post.id, [first]),
     ).resolves.toHaveLength(1)
     await expect(
-      insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction(query, user, post.id, [second]),
+      assertPostRelatedUrlsAllowed(user, relation, post, [{ id: second }], { query }),
     ).rejects.toMatchObject({ status: 409, code: 'RELATION_LIMIT_REACHED' })
     await query.commit()
     expect(await getEntityRelation(table, post.id, first)).toHaveLength(1)

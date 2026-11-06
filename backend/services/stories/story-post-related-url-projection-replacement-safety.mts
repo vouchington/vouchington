@@ -1,7 +1,10 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import { containsReferralLinks } from '@services/referral-program-link-validations/contains-referral-links'
-import { lockProjectionEligibilityAndFindBlockedUrls } from './story-post-related-url-projection-relation-safety.mts'
+import {
+  lockProjectionEligibilityAndFindBlockedUrls,
+  findBlockedStoryPostRelatedUrlProjectionUrls,
+} from './story-post-related-url-projection-relation-safety.mts'
 
 type ProjectionSafetyUrl = { url_id: string; url: string }
 
@@ -26,7 +29,7 @@ export async function getStoryPostRelatedUrlProjectionActiveUrls(
   return rows
 }
 
-/** The caller subsequently takes the post/work fences and retains this safety lock to commit. */
+/** Lock the current page only; a concurrent block of another active URL is caught next generation. */
 export async function findUnsafeStoryPostRelatedUrlProjectionUrls(
   query: TransactionQuery,
   postId: string,
@@ -35,7 +38,15 @@ export async function findUnsafeStoryPostRelatedUrlProjectionUrls(
   const activeUrls = await getStoryPostRelatedUrlProjectionActiveUrls(query, postId)
   const urls = new Map<string, string>()
   for (const row of [...activeUrls, ...sourceRows]) urls.set(row.url_id, row.url)
-  const unsafeUrlIds = await lockProjectionEligibilityAndFindBlockedUrls(query, [...urls.keys()])
+  const unsafeUrlIds = await lockProjectionEligibilityAndFindBlockedUrls(
+    query,
+    sourceRows.map(row => row.url_id),
+  )
+  const blockedActiveUrlIds = await findBlockedStoryPostRelatedUrlProjectionUrls(
+    query,
+    activeUrls.map(row => row.url_id),
+  )
+  for (const urlId of blockedActiveUrlIds) unsafeUrlIds.add(urlId)
   const { matched_urls: matches } = await containsReferralLinks([...urls.values()], { query })
   const referralUrls = new Set(matches.map(match => match.url))
   for (const [urlId, url] of urls) {

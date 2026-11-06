@@ -48,10 +48,18 @@ relations such as follow, mute, and block remain bookmark API concerns.
 Story projection first records eligibility across its bounded source snapshot so that a source
 on a later page cannot be mistaken for an obsolete relation. Replacement writes remove obsolete
 projection-owned rows and admit the new sources in one transaction under the post publication
-lock. A capacity refusal rolls back those removals, while manual claims remain protected by the
-projection's ownership and mutation fences.
-Discovery stays bounded independently of a lowered admission limit, so obsolete sources cannot
-hold replacement capacity indefinitely. Reducing the limit alone does not remove existing rows.
+lock. Hostname checks lock the current source page and recheck already-active URLs without locking
+every active hostname. A block arriving on another active URL during the run is handled by the next
+generation. Manual claims remain protected by the projection's ownership and mutation fences.
+
+A capacity refusal rolls back that replacement page and records the refusing capacity as a
+terminal result for its generation, so the same capacity does not retry indefinitely. A capacity
+change or new source generation restarts from a fresh snapshot and carries forward manual relation
+mutation fences. Discovery stays bounded independently of admission capacity, so obsolete sources
+cannot hold replacement capacity indefinitely. Lowering capacity alone does not remove active rows.
+
+This serialized capacity guarantee applies to post-related URLs; other relation types retain their
+check-before-write behavior and may overshoot during concurrent admission.
 
 ## Table Structure
 

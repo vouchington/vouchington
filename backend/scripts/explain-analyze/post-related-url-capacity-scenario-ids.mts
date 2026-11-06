@@ -13,4 +13,13 @@ export const POST_URL_CAPACITY_SCENARIOS = [
   'post-url-active-safety-1000',
   'post-url-active-safety-10000',
   'post-url-replacement-unsafe-existing',
+  'post-url-capacity-queue-idle',
+  'post-url-capacity-queue-runnable',
+  'post-url-capacity-queue-lower',
+  'post-url-capacity-queue-higher',
+  'post-url-capacity-queue-mixed',
+  'post-url-capacity-terminal-result',
+  'post-url-active-safety-page-locks',
+  'post-url-active-safety-blocked-read',
+  'post-url-active-safety-maximum-page-locks',
 ] as const

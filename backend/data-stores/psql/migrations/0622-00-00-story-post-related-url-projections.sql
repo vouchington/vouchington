@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS story_post_related_url_projection_jobs (
   eligibility_completed_at TIMESTAMPTZ,
   source_completed_at TIMESTAMPTZ,
   cursor_prune_id UUID,
+  limit_reached_capacity INTEGER CHECK (limit_reached_capacity > 0),
   invalidation_required_at TIMESTAMPTZ,
   invalidation_completed_at TIMESTAMPTZ,
   lease_token UUID,
@@ -33,7 +34,12 @@ CREATE INDEX IF NOT EXISTS idx_story_post_relate_url_projec_jobs__lease_expires_
   ON story_post_related_url_projection_jobs (lease_expires_at, post_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_story_post_relate_url_project_jobs__last_claimed_at_post_id
-  ON story_post_related_url_projection_jobs (last_claimed_at ASC NULLS FIRST, post_id);
+  ON story_post_related_url_projection_jobs (last_claimed_at ASC NULLS FIRST, post_id)
+  WHERE limit_reached_capacity IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_jobs__limit_capacity
+  ON story_post_related_url_projection_jobs (limit_reached_capacity, last_claimed_at, post_id)
+  WHERE limit_reached_capacity IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_jobs__story_id
   ON story_post_related_url_projection_jobs (story_id);
@@ -139,6 +145,7 @@ COMMENT ON COLUMN story_post_related_url_projection_jobs.relation_snapshot_at IS
 COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_source_id IS 'RSS item ID keyset cursor for the bounded source projection phase.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.eligibility_completed_at IS 'Time the complete bounded eligibility scan finished before relation replacements; resets the source cursor for the write pass.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.source_completed_at IS 'Time the bounded source projection phase reached its high-water mark.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.limit_reached_capacity IS 'Capacity at which this generation could not admit its source; a changed capacity restarts it.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_prune_id IS 'Relation ID keyset cursor for the stale-relation pruning phase.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.invalidation_required_at IS 'Time a committed relation mutation made the story cache invalidation due.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.invalidation_completed_at IS 'Time the required story cache invalidation completed for this generation.';

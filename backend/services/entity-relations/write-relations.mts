@@ -2,8 +2,7 @@ import type { BasicUser } from '@voucha/types/entities/user'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { getEntityRelationMetadataOrThrow, type EntityRelationMetadata } from './metadata.mts'
 import { buildInsertQuery } from './build-insert-query.mts'
-import { assertRelationLimit, assertRelationLimits } from './relation-limits.mts'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
+import { assertRelationLimits } from './relation-limits.mts'
 import { assertPostRelatedUrlsAllowedForSubjects } from './assert-post-related-urls-allowed.mts'
 import { assertUrlObjectsAreValid } from './assert-url-objects-are-valid.mts'
 import { maintainBookmarkBloomForRelations } from './bookmark-bloom-maintenance.mts'
@@ -71,9 +70,9 @@ export async function writeEntityRelations(
 
 /**
  * Inserts already safety-screened post related URLs in a caller-owned transaction. This narrow
- * boundary checks capacity but performs no safety or authorization checks: projection receipts record
- * safety decisions, and the caller owns authorization before the publication lock is held. It dispatches no effects,
- * leaving the caller's atomic publication unit intact.
+ * boundary requires the caller to hold the post scope lock and check capacity, safety, and
+ * authorization in this same transaction. Projection receipts record safety decisions.
+ * It dispatches no effects, leaving the caller's atomic publication unit intact.
  */
 export async function insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction(
   query: TransactionQuery,
@@ -84,8 +83,6 @@ export async function insertPrevalidatedPostRelatedUrlEntityRelationsInTransacti
   if (urlIds.length === 0) return []
 
   const relation = getPostRelatedUrlRelationMetadata()
-  await lockPostPublicationPostScopes(query, [postId])
-  await assertRelationLimit(relation, postId, urlIds, { query })
   const objects = urlIds.map(id => ({ id }))
   const insert = buildInsertQuery(
     relation,

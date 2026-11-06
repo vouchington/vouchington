@@ -14,6 +14,7 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { relationLimitsConfig } from '@services/entity-relations/relation-limits'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertSystemUser } from '@services/users/system-users'
+import { readStoryProjectionWorkForTest } from '../../../test-helpers/entities/story-projection-work.mts'
 import { drainStoryPostRelatedUrlProjection } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
@@ -99,10 +100,10 @@ describe('story projection replacement at capacity', () => {
     await insertItem(story.id, feed.id, excess)
     await refreshStoryPostForStory(story.id)
     await upsertEntityRelation(user, relation, { id: post.id }, [{ id: manual }])
-    await expect(drainStoryPostRelatedUrlProjection(post.id)).rejects.toMatchObject({
-      status: 409,
-      code: 'RELATION_LIMIT_REACHED',
-    })
+    await expect(drainStoryPostRelatedUrlProjection(post.id)).resolves.toBeUndefined()
     expect((await getPostRelatedUrlIds(post.id)).toSorted()).toEqual([first, manual].toSorted())
+    expect(await readStoryProjectionWorkForTest([post.id])).toMatchObject([
+      { post_id: post.id, limit_reached_capacity: 2, lease_token: null },
+    ])
   })
 })
