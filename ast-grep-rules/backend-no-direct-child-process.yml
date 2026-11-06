@@ -22,7 +22,6 @@ ignores:
   - backend/modules/child-process/**/*
   - '**/*.test.mts'
   - '**/*.test.ts'
-  - '**/*.test.cts'
   - '**/__tests__/**'
 rule:
   any:

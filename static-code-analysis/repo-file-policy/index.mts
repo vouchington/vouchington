@@ -21,6 +21,7 @@ import {
   checkSchemaAllowlistFreshness,
   schemaAllowlistModules,
 } from './schema-allowlist-freshness.mts'
+import { checkAstGrepIgnoresFreshness } from './ast-grep-ignores-freshness.mts'
 import { checkRouteAdminSurfaceGuard } from './route-admin-surface-guard.mts'
 import { checkFiniteEnumRippleGuard } from './finite-enum-ripple-guard.mts'
 import { checkSchemaDocDriftGuard } from './schema-doc-drift-guard.mts'
@@ -100,6 +101,7 @@ export async function checkRepoFilePolicy(
   await checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
   await checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
   checkSchemaAllowlistFreshness(trackedFiles, schema, schemaAllowlistModules, errors)
+  checkAstGrepIgnoresFreshness(ctx.repoRoot, trackedFiles, errors)
   checkRouteAdminSurfaceGuard(ctx.repoRoot, trackedFileSet, errors, options.remaining)
   checkFiniteEnumRippleGuard(ctx, errors, trackedFiles)
   checkSchemaDocDriftGuard(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)

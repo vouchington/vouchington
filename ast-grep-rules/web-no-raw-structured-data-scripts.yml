@@ -6,7 +6,6 @@ files:
   - 'web/**/*.tsx'
 ignores:
   - '**/*.test.tsx'
-  - '**/*.spec.tsx'
   - '**/*.stories.tsx'
   - 'web/components/seo/structured-data-script.tsx'
 rule:

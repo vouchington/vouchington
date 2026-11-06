@@ -6,7 +6,6 @@ files:
   - 'web/**/*.tsx'
 ignores:
   - '**/*.test.tsx'
-  - '**/*.spec.tsx'
   - '**/*.mock.test.tsx'
   - '**/*.stories.tsx'
   - 'web/storybook/**'

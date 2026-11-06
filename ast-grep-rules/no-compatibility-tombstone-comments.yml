@@ -12,8 +12,6 @@ files:
   - '**/*.mts'
   - '**/*.cts'
   - '**/*.tsx'
-ignores:
-  - '**/node_modules/**'
 rule:
   kind: comment
   regex: '(?is)\b(?:retain(?:ed|s|ing)?|kept|keep(?:s|ing)?|preserv(?:e|ed|es|ing)|left)\b.{0,60}\bcompat|\bback(?:wards?)?[- ]?compat'
