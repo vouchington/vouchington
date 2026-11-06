@@ -37,7 +37,7 @@ export async function runTestActionWhileMembershipUserLocked<T>(
         const action = Promise.resolve().then(options.startAction)
         const outcome = action.then(
           value => ({ status: 'fulfilled' as const, value }),
-          err => ({ status: 'rejected' as const, reason: err }),
+          (err: unknown) => ({ status: 'rejected' as const, reason: err }),
         )
         let waitFailure: { reason: unknown } | undefined
         try {

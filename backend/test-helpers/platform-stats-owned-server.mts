@@ -17,7 +17,7 @@ export async function withOwnedPlatformStatsServer<Result>(
   const settle = (task: Promise<unknown>) =>
     task.then(
       value => ({ status: 'fulfilled' as const, value }),
-      err => ({ status: 'rejected' as const, reason: err }),
+      (err: unknown) => ({ status: 'rejected' as const, reason: err }),
     )
   const responses: Promise<PromiseSettledResult<unknown>>[] = []
   const handlers: Promise<PromiseSettledResult<unknown>>[] = []

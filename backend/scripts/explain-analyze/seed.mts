@@ -194,7 +194,7 @@ async function main() {
   console.log('\nSeed complete.')
   process.exit(0)
 }
-main().catch(err => {
+main().catch((err: unknown) => {
   console.error(err)
   process.exit(1)
 })

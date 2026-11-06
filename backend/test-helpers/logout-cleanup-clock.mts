@@ -70,7 +70,7 @@ export async function withLogoutCleanupClock<Result>(
       .run(owner, async () => operation())
       .then(
         value => ({ status: 'fulfilled', value }),
-        err => ({ status: 'rejected', reason: err }),
+        (err: unknown) => ({ status: 'rejected', reason: err }),
       )
     result = await settled
   } catch (err) {

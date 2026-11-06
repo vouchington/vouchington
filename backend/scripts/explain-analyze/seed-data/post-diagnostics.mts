@@ -34,7 +34,7 @@ export class PostSeedDiagnostics {
 
   startObserver(backend: SeedBackend): void {
     this.write({ kind: 'backend', backend_pid: backend.pid, settings: backend })
-    this.#observer = this.#observe(backend.pid).catch(err => {
+    this.#observer = this.#observe(backend.pid).catch((err: unknown) => {
       this.write({ kind: 'observer_error', error: String(err) })
     })
   }

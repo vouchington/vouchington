@@ -27,7 +27,7 @@ export async function TopicPostsPage({ id, searchParams }: TopicPostsPageProps) 
     sort,
     limit: 25,
   }
-  const dataResult = await getPosts({ searchParams: queryParams }).catch(err => {
+  const dataResult = await getPosts({ searchParams: queryParams }).catch((err: unknown) => {
     const message = getListSearchErrorMessage(err)
     if (!message) throw err
     return { error: message }

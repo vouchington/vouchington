@@ -116,9 +116,14 @@ export function startSSE(ctx: Context, options: { cycleDurationMs?: number } = {
 
   const pipelinePromise = ctx
     .pipeline(stream)
-    .catch((err: NodeJS.ErrnoException) => {
-      if (err?.code === 'ERR_STREAM_PREMATURE_CLOSE' || err?.code === 'ECONNRESET') return
-      onError(err)
+    .catch((err: unknown) => {
+      if (
+        err instanceof Error &&
+        'code' in err &&
+        (err.code === 'ERR_STREAM_PREMATURE_CLOSE' || err.code === 'ECONNRESET')
+      )
+        return
+      onError(err instanceof Error ? err : new Error(String(err), { cause: err }))
     })
     .finally(() => {
       if (cycleTimer !== undefined) clearTimeout(cycleTimer)

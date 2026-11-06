@@ -78,7 +78,7 @@ export async function deleteMfaFactor(
 /** Missing or unparseable optional bodies still reach the fresh-proof decision. */
 export async function readOptionalReAuthBody(ctx: Context): Promise<{ re_auth_token?: string }> {
   const body = ctx.request.is('json')
-    ? ((await parseJsonBody(ctx, '100kb').catch(err => {
+    ? ((await parseJsonBody(ctx, '100kb').catch((err: unknown) => {
         if (isHttpError(err) && err.status === 422) throw err
         return {}
       })) as { re_auth_token?: string })

@@ -31,7 +31,7 @@ describe('GET /api/v1/imports/:batchId/stream live events', () => {
           completed = true
           void updateRowCompleted(rowIds[0]!, feed.id)
             .then(progress => publishImportProgress(batch.id, progress))
-            .catch(err => stream.emit('error', err))
+            .catch((err: unknown) => stream.emit('error', err))
         })
         stream.on('end', () => done(null, body))
         stream.on('error', done)

@@ -14,7 +14,7 @@ describe('user deletion operation completion', () => {
       rejected.reject(reason)
       const result = await settleUserDeletionOperations([rejected.promise], 'failed').then(
         () => ({ ok: true as const, err: undefined }),
-        err => ({ ok: false as const, err }),
+        (err: unknown) => ({ ok: false as const, err }),
       )
       expect(result.ok).toBe(false)
       expect(result.err).toBe(reason)
@@ -36,7 +36,7 @@ describe('user deletion operation completion', () => {
       'multiple failed',
     ).then(
       () => ({ errors: [] as unknown[] }),
-      err => err as AggregateError,
+      (err: unknown) => err as AggregateError,
     )
     expect(result).toBeInstanceOf(AggregateError)
     expect(result.errors).toHaveLength(3)
@@ -57,7 +57,7 @@ describe('user deletion operation completion', () => {
     const result = settleUserDeletionOperations(
       [Promise.reject(reason), operation],
       'failed',
-    ).catch(err => ({ err, finished }))
+    ).catch((err: unknown) => ({ err, finished }))
     await started.promise
     later.resolve()
     expect(await result).toEqual({ err: reason, finished: true })

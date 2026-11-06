@@ -72,7 +72,7 @@ export default async function CommunityPage({ params, searchParams }: PageProps)
     ...(q ? { q } : {}),
   }
   const postsDataResult = await getCommunityPosts(slug, { searchParams: nextPageParams }).catch(
-    err => {
+    (err: unknown) => {
       const message = getListSearchErrorMessage(err)
       if (!message) throw err
       return { error: message }

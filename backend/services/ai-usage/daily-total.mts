@@ -53,7 +53,7 @@ export function getDailyAiCostTotalMicrounits(day = getCurrentUtcDay()): Promise
     return dailyAiCostTotalCache.promise
   }
 
-  const promise = loadDailyAiCostTotalMicrounits(day).catch(err => {
+  const promise = loadDailyAiCostTotalMicrounits(day).catch((err: unknown) => {
     if (dailyAiCostTotalCache?.promise === promise) dailyAiCostTotalCache = null
     throw err as Error
   })
@@ -67,7 +67,7 @@ export function refreshDailyAiCostTotalMicrounits(): Promise<DailyAiCostTotal> {
   if (dailyAiCostTotalRefresh?.day === day) return dailyAiCostTotalRefresh.promise
 
   const promise = loadDailyAiCostTotalMicrounits(day)
-    .catch(err => {
+    .catch((err: unknown) => {
       if (dailyAiCostTotalCache?.promise === promise) dailyAiCostTotalCache = null
       throw err as Error
     })

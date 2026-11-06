@@ -35,7 +35,7 @@ export default async function WebSearchPage({ searchParams }: PageProps) {
   const [currentUser, searchResult] = await Promise.all([
     getCurrentUser(),
     query && query.length >= 3
-      ? getWebSearch({ searchParams: { query } }).catch(err => {
+      ? getWebSearch({ searchParams: { query } }).catch((err: unknown) => {
           const message = getListSearchErrorMessage(err)
           if (!message) throw err
           return { error: message }

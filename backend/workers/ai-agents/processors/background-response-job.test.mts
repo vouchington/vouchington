@@ -103,7 +103,7 @@ describe('job-owned background responses', () => {
     const recovery = recoverJobBackgroundResponses(job as unknown as Job<AIAgentJobData>, context)
     const outcome = recovery.then(
       () => 'resolved' as const,
-      err => err,
+      (err: unknown) => err,
     )
 
     await bothStarted.promise

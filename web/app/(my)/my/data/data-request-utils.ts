@@ -7,7 +7,7 @@ export interface StreamPayload {
 }
 
 export async function loadDataRequest(userId: string): Promise<DataRequest | null> {
-  return getUserDataRequest(userId).catch(err => {
+  return getUserDataRequest(userId).catch((err: unknown) => {
     if (err instanceof ApiError && err.status === 404) return null
     throw err
   })

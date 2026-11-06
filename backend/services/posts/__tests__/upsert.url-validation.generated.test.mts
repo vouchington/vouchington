@@ -35,10 +35,10 @@ describe('upsert.generated (url validation)', () => {
     )!
 
     const error = await upsertEntityRelation(user!, metadata, post, [{ id: urlId }]).catch(
-      err => err,
+      (err: unknown) => err,
     )
-    expect(error.status).toBe(422)
-    expect(error.message).toMatch(/blocked/)
+    expect(error).toHaveProperty('status', 422)
+    expect(error).toHaveProperty('message', expect.stringMatching(/blocked/))
   })
 
   it('upsertEntityRelation throws 422 when linking post to URL matching a referral program rule', async () => {
@@ -62,10 +62,10 @@ describe('upsert.generated (url validation)', () => {
     )!
 
     const error = await upsertEntityRelation(user!, metadata, post, [{ id: urlId }]).catch(
-      err => err,
+      (err: unknown) => err,
     )
-    expect(error.status).toBe(422)
-    expect(error.message).toMatch(/referral/i)
+    expect(error).toHaveProperty('status', 422)
+    expect(error).toHaveProperty('message', expect.stringMatching(/referral/i))
 
     const rows = (await getEntityRelation(
       'relation__post__related__url',
@@ -110,9 +110,9 @@ describe('upsert.generated (url validation)', () => {
     const error = await upsertEntityRelation(user!, metadata, post, [
       { id: okUrlId },
       { id: refUrlId },
-    ]).catch(err => err)
-    expect(error.status).toBe(422)
-    expect(error.message).toMatch(/referral/i)
+    ]).catch((err: unknown) => err)
+    expect(error).toHaveProperty('status', 422)
+    expect(error).toHaveProperty('message', expect.stringMatching(/referral/i))
 
     const okRows = (await getEntityRelation(
       'relation__post__related__url',

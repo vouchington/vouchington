@@ -169,7 +169,7 @@ describe('asset admission root domain', () => {
             })
       ).then(
         () => null,
-        err => err as Error,
+        (err: unknown) => err as Error,
       )
       try {
         await blocked

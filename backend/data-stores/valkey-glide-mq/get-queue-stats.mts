@@ -26,10 +26,8 @@ const queueInstances = new Map<string, Queue>()
 // Register cleanup on graceful shutdown
 addGracefulShutdownCallback(async () => {
   const closurePromises = Array.from(queueInstances.values()).map(queue =>
-    queue.close().catch(err => {
-      const localErr = err as Error & { extra?: Record<string, unknown> }
-      localErr.extra = { operation: 'closeQueueInstance', queueName: queue.name }
-      onError(localErr)
+    queue.close().catch((err: unknown) => {
+      reportQueueStatsError(err, { operation: 'closeQueueInstance', queueName: queue.name })
     }),
   )
   await Promise.all(closurePromises)
@@ -54,9 +52,7 @@ export async function getQueueStats(name: string): Promise<QueueStats> {
   try {
     return await readQueueStats(getQueueInstance(name), name)
   } catch (err) {
-    const localErr = err as Error & { extra?: Record<string, unknown> }
-    localErr.extra = { queueName: name, operation: 'getQueueStats' }
-    onError(localErr)
+    reportQueueStatsError(err, { queueName: name, operation: 'getQueueStats' })
     throw err
   }
 }
@@ -94,11 +90,14 @@ async function getQueueMetricStats(name: string): Promise<QueueMetricStats> {
       oldestWaitingAgeMs: Number.isFinite(oldestWaitingAt) ? Math.max(0, now - oldestWaitingAt) : 0,
     }
   } catch (err) {
-    const localErr = err as Error & { extra?: Record<string, unknown> }
-    localErr.extra = { queueName: name, operation: 'getQueueMetricStats' }
-    onError(localErr)
+    reportQueueStatsError(err, { queueName: name, operation: 'getQueueMetricStats' })
     throw err
   }
+}
+
+function reportQueueStatsError(err: unknown, extra: Record<string, unknown>): void {
+  const error = err instanceof Error ? err : new Error(String(err), { cause: err })
+  onError(Object.assign(error, { extra }))
 }
 
 // Get statistics for all queues

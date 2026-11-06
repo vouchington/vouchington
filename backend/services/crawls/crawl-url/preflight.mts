@@ -66,10 +66,12 @@ export async function loadCrawlPreflight(
 
   if (options?.ignoreRobotsTxt !== true) {
     const checkUrlCrawlable = dependencies?.isUrlCrawlable ?? isUrlCrawlable
-    const isCrawlable = await checkUrlCrawlable(url.url, CRAWLER_USER_AGENT).catch(err => {
-      onError(err)
-      return false
-    })
+    const isCrawlable = await checkUrlCrawlable(url.url, CRAWLER_USER_AGENT).catch(
+      (err: unknown) => {
+        onError(err instanceof Error ? err : new Error(String(err), { cause: err }))
+        return false
+      },
+    )
     if (!isCrawlable) return null
   }
 

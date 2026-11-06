@@ -139,7 +139,9 @@ describe('crawlWithBrowser — request interception', () => {
       throw new Error('net::ERR_FAILED')
     })
     f.connectTo(makeMockBrowser(page))
-    const caught = await f.crawl.crawlWithBrowser('http://169.254.169.254/').catch(err => err)
+    const caught = await f.crawl
+      .crawlWithBrowser('http://169.254.169.254/')
+      .catch((err: unknown) => err)
     expect(caught).toBeInstanceOf(f.errors.CrawlerSsrfError)
     expect(caught).not.toBeInstanceOf(f.errors.CrawlerNetworkError)
     expect(caught).toMatchObject({ code: 'CrawlerSsrfError', url: 'http://169.254.169.254/' })
@@ -154,7 +156,9 @@ describe('crawlWithBrowser — request interception', () => {
       throw new Error('net::ERR_NAME_NOT_RESOLVED')
     })
     f.connectTo(makeMockBrowser(page))
-    const caught = await f.crawl.crawlWithBrowser('https://example.com').catch(err => err)
+    const caught = await f.crawl
+      .crawlWithBrowser('https://example.com')
+      .catch((err: unknown) => err)
     expect(caught).toBeInstanceOf(f.errors.CrawlerNetworkError)
     expect(caught).not.toBeInstanceOf(f.errors.CrawlerSsrfError)
     expect(route.abort).toHaveBeenCalledWith('blockedbyclient')

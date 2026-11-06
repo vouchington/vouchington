@@ -45,13 +45,13 @@ esac
       },
     }).then(
       value => ({ ok: true as const, value }),
-      err => ({ error: err, ok: false as const }),
+      (err: unknown) => ({ error: err, ok: false as const }),
     )
 
     const calls = await readFile(callsPath, 'utf8').then(
       content => content.trim().split('\n'),
-      (err: NodeJS.ErrnoException) => {
-        if (err.code === 'ENOENT') return []
+      (err: unknown) => {
+        if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return []
         throw err
       },
     )
@@ -163,19 +163,19 @@ printf '200'
       },
     ).then(
       value => ({ ok: true as const, value }),
-      err => ({ error: err, ok: false as const }),
+      (err: unknown) => ({ error: err, ok: false as const }),
     )
     const calls = await readFile(callsPath, 'utf8').then(
       content => content.trim().split('\n'),
-      (err: NodeJS.ErrnoException) => {
-        if (err.code === 'ENOENT') return []
+      (err: unknown) => {
+        if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return []
         throw err
       },
     )
     const pnpmCalls = await readFile(pnpmCallsPath, 'utf8').then(
       content => content.trim(),
-      (err: NodeJS.ErrnoException) => {
-        if (err.code === 'ENOENT') return ''
+      (err: unknown) => {
+        if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return ''
         throw err
       },
     )

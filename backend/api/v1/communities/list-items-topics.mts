@@ -85,7 +85,7 @@ app
       community.id,
       'topic',
       body.topic_id,
-    ).catch(err => {
+    ).catch((err: unknown) => {
       if ((err as { code?: string }).code === '23505')
         throw createHttpError(409, 'Item already in list')
       throw err

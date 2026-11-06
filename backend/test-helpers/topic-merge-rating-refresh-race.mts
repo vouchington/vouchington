@@ -30,7 +30,7 @@ export async function runTopicMergeRatingRefreshRace(
     },
   })
   const pendingRefresh = lockActiveTopicForRatingStatsRefresh(observed, sourceId)
-  void pendingRefresh.catch(err => ratingLockIssued.reject(err))
+  void pendingRefresh.catch((err: unknown) => ratingLockIssued.reject(err))
 
   let mergeCommitted = false
   try {

@@ -110,7 +110,7 @@ async function main() {
 }
 
 main()
-  .catch(err => {
+  .catch((err: unknown) => {
     console.error(err)
     process.exitCode = 1
   })

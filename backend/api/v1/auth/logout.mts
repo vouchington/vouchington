@@ -45,7 +45,7 @@ app.route('/api/v1/auth/logout').post(async ctx => {
           { userId, issuedAt },
           binding
             ? () =>
-                deleteExactWebPushSubscription(userId, binding).catch(err =>
+                deleteExactWebPushSubscription(userId, binding).catch((err: unknown) =>
                   onError(err instanceof Error ? err : new Error(String(err))),
                 )
             : async () => {},
@@ -60,7 +60,7 @@ app.route('/api/v1/auth/logout').post(async ctx => {
   } catch (err) {
     clearAuthenticationCookies(ctx)
     if (!fallbackRevoked)
-      await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch(err =>
+      await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch((err: unknown) =>
         onError(err instanceof Error ? err : new Error(String(err))),
       )
     throw err

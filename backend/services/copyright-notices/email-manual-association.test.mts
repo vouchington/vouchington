@@ -108,7 +108,7 @@ describe('manual copyright email association', () => {
         noticeId,
       ).then(
         () => new Error('Erased case was linked'),
-        err => err,
+        (err: unknown) => err,
       )
       await preflight
       await erasure.commit()
@@ -196,7 +196,7 @@ describe('manual copyright email association', () => {
       const association = runWithCapturedQueries(async () =>
         associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId).then(
           () => new Error('Manual association unexpectedly won'),
-          err => err,
+          (err: unknown) => err,
         ),
       )
       await preflight

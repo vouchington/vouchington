@@ -55,7 +55,7 @@ export function PartitionConfirmDialog({
       status => {
         if (active) setPartitionStatus(status)
       },
-      err => {
+      (err: unknown) => {
         if (active)
           setStatusError(err instanceof Error ? err.message : 'Could not load partition status')
       },

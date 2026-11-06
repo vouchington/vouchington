@@ -63,7 +63,7 @@ export async function fetchRecaptchaAssessment(
       body: JSON.stringify({ event }),
       signal: AbortSignal.timeout(5000),
     },
-  ).catch(err => {
+  ).catch((err: unknown) => {
     throw new Error('reCAPTCHA assessment request failed', { cause: err })
   })
 

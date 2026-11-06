@@ -25,7 +25,7 @@ export async function settleMeteredMcpResponses<T>(run: () => Promise<T>): Promi
       const gate = Promise.withResolvers<void>()
       const observed = gate.promise.then<PromiseSettledResult<void>, PromiseSettledResult<void>>(
         () => ({ status: 'fulfilled', value: undefined }),
-        err => ({ status: 'rejected', reason: err }),
+        (err: unknown) => ({ status: 'rejected', reason: err }),
       )
       gates.push(observed)
       try {

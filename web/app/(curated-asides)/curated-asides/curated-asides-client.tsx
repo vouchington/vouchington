@@ -56,7 +56,7 @@ export default function CuratedAsidesPage({ activeAsideType }: CuratedAsidesPage
         if (cancelled) return
         setItems(prev => ({ ...prev, [activeAsideType]: result.curated_aside_items }))
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         if (cancelled) return
         onError(err, {
           fallback: t(

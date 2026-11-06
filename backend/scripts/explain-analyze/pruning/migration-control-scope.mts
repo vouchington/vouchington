@@ -104,7 +104,7 @@ export async function withOwnedMigrationControl(
       owned.url,
       evidencePath,
       environment,
-    ).catch(async err => {
+    ).catch(async (err: unknown) => {
       throw await commandError(
         err,
         'Owned migration child failed; sibling and private evidence retained',

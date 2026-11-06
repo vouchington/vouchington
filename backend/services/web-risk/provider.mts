@@ -43,7 +43,7 @@ export async function checkWebRiskUrl(
         ? AbortSignal.any([AbortSignal.timeout(5000), signal])
         : AbortSignal.timeout(5000),
     })
-    .catch(err => {
+    .catch((err: unknown) => {
       throw new Error('Google Web Risk lookup request failed', { cause: err })
     })
 

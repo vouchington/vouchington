@@ -23,7 +23,7 @@ describe('invalid domain validation', () => {
 
   it('error includes domain in message', async () => {
     const domain = 'definitely-invalid-12345.test'
-    const err = await validateEmailDomain(domain).catch(err => err)
+    const err = await validateEmailDomain(domain).catch((err: unknown) => err)
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).message).toContain(domain)
     expect((err as EmailDomainInvalidError).domain).toBe(domain)
@@ -37,7 +37,7 @@ describe('database emailable flag', () => {
     const hostname = `test-not-emailable-${Date.now()}.com`
     await insertUrlHostname(hostname, { is_emailable: false })
 
-    const err = await validateEmailDomain(hostname).catch(err => err)
+    const err = await validateEmailDomain(hostname).catch((err: unknown) => err)
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).reason).toBe(
       'domain marked as not emailable in database',
@@ -101,7 +101,7 @@ describe('disposable email blocking', () => {
     await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
     await addDomainsToEmailBloomFilter([testDomain])
 
-    const err = await validateEmailDomain(testDomain).catch(err => err)
+    const err = await validateEmailDomain(testDomain).catch((err: unknown) => err)
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).reason).toBe('disposable')
     expect((err as EmailDomainInvalidError).message).toContain('disposable')

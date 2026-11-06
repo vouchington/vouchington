@@ -113,7 +113,7 @@ export function ownOAuthActors(
           settledOperations += 1
           return value
         },
-        err => {
+        (err: unknown) => {
           settledOperations += 1
           throw err
         },

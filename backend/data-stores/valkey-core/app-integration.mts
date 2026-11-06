@@ -65,8 +65,8 @@ function isValkeyCacheMetricBridge(
 function emitValkeyCacheCallMetric(metric: CacheCallMetric): Promise<void> {
   const state = getValkeyAppIntegrationState()
   const now = new Date()
-  state.analyticsPromise ??= state.loadAnalytics().catch(err => {
-    onError(err)
+  state.analyticsPromise ??= state.loadAnalytics().catch((err: unknown) => {
+    onError(err instanceof Error ? err : new Error(String(err), { cause: err }))
     return null
   })
   const completion = state.analyticsPromise

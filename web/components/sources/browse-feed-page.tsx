@@ -57,7 +57,7 @@ export async function BrowseFeedPage({
         q,
         limit: 50,
       },
-    }).catch(err => {
+    }).catch((err: unknown) => {
       const message = getListSearchErrorMessage(err)
       if (!message) throw err
       return { error: message }

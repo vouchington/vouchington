@@ -52,7 +52,7 @@ app
       fetchUser: userId => getPrivateUserByAny(userId, { readOnly: false }),
       userAgent: ctx.req.headers['user-agent'],
       ja4: getTrustedClientJa4(ctx.req),
-    }).catch(err => {
+    }).catch((err: unknown) => {
       if (isDefinitiveSessionFailure(err)) clearAuthenticationCookies(ctx)
       throw err
     })
@@ -107,11 +107,11 @@ app
       ctx.json({ session: body })
     } catch (err) {
       clearAuthenticationCookies(ctx)
-      await revokeSessionForLogout({ deviceToken: cookieDt, sessionToken: cookieSt }).catch(err =>
-        onError(err instanceof Error ? err : new Error(String(err))),
+      await revokeSessionForLogout({ deviceToken: cookieDt, sessionToken: cookieSt }).catch(
+        (err: unknown) => onError(err instanceof Error ? err : new Error(String(err))),
       )
       if (dt !== cookieDt || st !== cookieSt)
-        await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch(err =>
+        await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch((err: unknown) =>
           onError(err instanceof Error ? err : new Error(String(err))),
         )
       throw err

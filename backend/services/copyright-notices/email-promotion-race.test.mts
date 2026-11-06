@@ -64,7 +64,7 @@ describe('copyright email promotion and threading serialization', () => {
     try {
       const promotion = promoteCopyrightEmailIntake(input).then(
         () => null,
-        err => err,
+        (err: unknown) => err,
       )
       await reachedGraphRead
       const edge = recordCopyrightEmailAncestorEdges(ingestion, claimant.id)
@@ -135,7 +135,7 @@ describe('copyright email promotion and threading serialization', () => {
     try {
       const promotion = promoteCopyrightEmailIntake(input).then(
         () => new Error('Thread-linked intake was unexpectedly promoted'),
-        err => err,
+        (err: unknown) => err,
       )
       await reachedGraphRead
       await threading.commit()

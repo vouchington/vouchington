@@ -169,7 +169,7 @@ export const preparePostWithCommunityReviews = async (
   }
   const post = await (
     options.query ? createInTransaction(options.query) : createInOwnedTransaction()
-  ).catch(err => {
+  ).catch((err: unknown) => {
     const pgError = err as { code?: string; constraint?: string }
     if (pgError.code === '23503') {
       if (

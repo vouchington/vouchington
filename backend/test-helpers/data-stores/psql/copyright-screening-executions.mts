@@ -88,7 +88,7 @@ export async function startTestCopyrightScreeningBeforeAdmission<T>(
     () =>
       claimCopyrightFormScreening(intakeId).then(
         value => ({ value, error: null }),
-        err => ({ value: null, error: err }),
+        (err: unknown) => ({ value: null, error: err }),
       ),
   )
   await screening.waitForLock()
@@ -103,14 +103,20 @@ export async function startTestCopyrightScreeningBeforeAdmission<T>(
     () =>
       admit().then(
         value => ({ value, error: null }),
-        err => ({ value: null, error: err }),
+        (err: unknown) => ({ value: null, error: err }),
       ),
   )
   await admission.waitForLock()
   await transaction.commit()
   const [screeningResult, result] = await Promise.all([screening.operation, admission.operation])
-  if (screeningResult.error) throw screeningResult.error
+  if (screeningResult.error)
+    throw screeningResult.error instanceof Error
+      ? screeningResult.error
+      : new Error('Copyright screening operation failed', { cause: screeningResult.error })
   if (!screeningResult.value) throw new Error('Copyright screening retry was not claimed')
-  if (result.error) throw result.error
+  if (result.error)
+    throw result.error instanceof Error
+      ? result.error
+      : new Error('Copyright screening admission failed', { cause: result.error })
   return result.value as T
 }

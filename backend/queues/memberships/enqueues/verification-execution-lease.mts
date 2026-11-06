@@ -19,7 +19,7 @@ function getLeaseClient(): Promise<LeaseClient> {
   leaseClientPromise ??= upsertValkeyClientByUrl(config.worker_queue_url, {
     name: 'membership-verification-lease',
     readFrom: 'primary',
-  }).catch(err => {
+  }).catch((err: unknown) => {
     leaseClientPromise = undefined
     throw err
   })

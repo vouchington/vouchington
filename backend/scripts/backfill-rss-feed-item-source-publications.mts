@@ -48,7 +48,7 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  onError(err)
+main().catch((err: unknown) => {
+  onError(err instanceof Error ? err : new Error(String(err), { cause: err }))
   process.exitCode = 1
 })

@@ -18,7 +18,7 @@ if (!process.env['VITEST'] && devSeedAllowed(process.env['NODE_ENV'])) {
   import('@voucha/scripts/seed')
     .then(({ default: seed }) => seed())
     .then(() => process.exit(0))
-    .catch(err => {
+    .catch((err: unknown) => {
       process.stderr.write(
         `${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
         () => process.exit(1),

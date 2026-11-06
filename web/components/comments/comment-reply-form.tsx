@@ -61,7 +61,7 @@ export function CommentReplyForm({
       setPreviewLoading(true)
       previewMarkdown(markdown, { signal: controller.signal })
         .then(({ html }) => setPreviewHtml(html))
-        .catch(err => {
+        .catch((err: unknown) => {
           if (!(err instanceof DOMException && err.name === 'AbortError')) {
             setPreviewHtml(
               `<p class="text-sm text-muted-foreground">${t('extracted.comments.commentReplyForm.previewUnavailableTryAgain_7ece44e2')}</p>`,

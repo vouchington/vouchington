@@ -563,7 +563,7 @@
     "typescript/strict-boolean-expressions": "off",
     "typescript/switch-exhaustiveness-check": "off",
     "typescript/unified-signatures": "error",
-    "typescript/use-unknown-in-catch-callback-variable": "off",
+    "typescript/use-unknown-in-catch-callback-variable": "error",
     "typescript/no-unnecessary-type-arguments": "error",
     "typescript/no-redundant-type-constituents": "error",
     "typescript/unbound-method": "off",

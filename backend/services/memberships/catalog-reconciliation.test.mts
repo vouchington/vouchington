@@ -239,7 +239,7 @@ describe('Stripe membership catalog reconciliation', () => {
     })
     const failureOutcome = failure.then(
       () => null,
-      err => err as Error,
+      (err: unknown) => err as Error,
     )
     await started
     const success = reconcileStripeMembershipCatalog({

@@ -74,7 +74,7 @@ export function usePendingAiRefresh(
       inFlight = true
       void Promise.resolve()
         .then(() => latestRefresh.current())
-        .catch(err => {
+        .catch((err: unknown) => {
           console.error('Could not refresh pending AI result', err)
         })
         .finally(() => {

@@ -44,7 +44,7 @@ function resolveMxWithTimeout(
         cancelTimeout()
         resolve(result)
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         cancelTimeout()
         reject(err instanceof Error ? err : new Error('DNS lookup failed', { cause: err }))
       })

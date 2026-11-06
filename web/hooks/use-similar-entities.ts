@@ -66,7 +66,7 @@ export function useSimilarEntities<T>({
             setResult({ query: trimmed, data: result, isLoading: false })
           }
         })
-        .catch(err => {
+        .catch((err: unknown) => {
           if (!controller.signal.aborted) {
             setResult({ query: trimmed, data: null, isLoading: false })
             onError(err, { fallback: 'Failed to load similar items', skipSentry: true })

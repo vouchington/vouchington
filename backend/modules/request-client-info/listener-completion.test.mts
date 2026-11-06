@@ -34,7 +34,7 @@ describe('request client information listener completion', () => {
       } as unknown as IncomingMessage,
       {} as ServerResponse,
     )
-    const failure = handling.catch(err => err)
+    const failure = handling.catch((err: unknown) => err)
     await entered.promise
     expect(calls).toBe(1)
     release.reject(new Error('handler failure'))

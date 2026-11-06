@@ -174,7 +174,7 @@ printf '%s' "$reply"`
     failed = true
     throw err
   } finally {
-    await cleanup().catch(err =>
+    await cleanup().catch((err: unknown) =>
       failed ? undefined : Promise.reject(err instanceof Error ? err : new Error(String(err))),
     )
   }

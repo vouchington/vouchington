@@ -40,7 +40,7 @@ export function createNotificationPushIntentLeaseKeeper(input: {
         if (!accepted) fail()
         return accepted
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         const failure = err instanceof Error ? err : new Error('Push intent lease renewal failed')
         fail(failure)
         return false

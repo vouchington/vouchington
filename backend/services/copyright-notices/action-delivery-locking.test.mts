@@ -208,7 +208,7 @@ describe('copyright queue lease fencing', () => {
         imageId: old.image_id,
       },
       error,
-    ).catch(err => err)
+    ).catch((err: unknown) => err)
     try {
       await Promise.race([
         entered.promise,

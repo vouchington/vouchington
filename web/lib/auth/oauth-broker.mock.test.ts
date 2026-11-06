@@ -233,7 +233,7 @@ describe('OAuth broker popup', () => {
       },
       { lockManager: grantingLockManager() },
     )
-    const expiredAuthorization = authorization.catch(err => err)
+    const expiredAuthorization = authorization.catch((err: unknown) => err)
     await vi.advanceTimersByTimeAsync(1001)
 
     expect(await expiredAuthorization).toBeInstanceOf(OAuthCancelledError)

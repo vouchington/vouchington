@@ -17,7 +17,7 @@ export function useReAuthMethods(open: boolean) {
       methods => {
         if (current) setResult({ attempt, methods })
       },
-      err => {
+      (err: unknown) => {
         if (current)
           setResult({ attempt, error: err instanceof Error ? err : new Error(String(err)) })
       },

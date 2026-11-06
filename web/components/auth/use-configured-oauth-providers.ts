@@ -26,7 +26,7 @@ export function useConfiguredOAuthProviders(runtimePublicProviders: OAuthProvide
           })
         }
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         if (!ignore) {
           setConfiguration({ providers: [], broker_capabilities: {} })
           onError(err, {

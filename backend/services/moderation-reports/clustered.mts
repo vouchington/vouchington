@@ -47,7 +47,7 @@ export async function listClusteredModerationReports(
     cursorDirection === 'before' ? hasMoreInQueryDirection : Boolean(beforeCursor)
   const [reportsByCluster, indicatorsByPostId] = await Promise.all([
     selectReportsByCluster(status, pageRows, sortAsc),
-    selectPostIndicators(pageRows).catch(err => {
+    selectPostIndicators(pageRows).catch((err: unknown) => {
       onError(err instanceof Error ? err : new Error(String(err)))
       return new Map()
     }),
@@ -81,7 +81,7 @@ export async function listClusteredModerationReports(
   })
 
   const duplicate_clusters = await buildDuplicateClusters(clusters, indicatorsByPostId).catch(
-    err => {
+    (err: unknown) => {
       onError(err instanceof Error ? err : new Error(String(err)))
       return []
     },

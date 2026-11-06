@@ -28,9 +28,15 @@ async function addItem(
     type,
     args[key] as string,
     kind === 'domain' ? { isAdministrator: isAdminUser(user) } : undefined,
-  ).catch(err => {
+  ).catch((err: unknown) => {
     // Only the topic REST twin translates duplicate insertions to a conflict.
-    if (kind === 'topic' && (err as { code?: string }).code === '23505')
+    if (
+      kind === 'topic' &&
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      err.code === '23505'
+    )
       throw createHttpError(409, 'Item already in list', { cause: err })
     throw err
   })

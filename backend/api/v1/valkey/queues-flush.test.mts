@@ -179,7 +179,7 @@ describe('flushQueues', () => {
     close.mockResolvedValue(undefined)
 
     const flush = flushQueues()
-    const flushError = flush.catch(err => err)
+    const flushError = flush.catch((err: unknown) => err)
     await secondStarted.promise
     expect(close).not.toHaveBeenCalled()
 

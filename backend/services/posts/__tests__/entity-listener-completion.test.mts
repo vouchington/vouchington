@@ -76,7 +76,7 @@ describe('owned entity listener completion', () => {
             {
               start: () => {
                 const admission = enqueue(circular)
-                void admission.catch(err => {
+                void admission.catch((err: unknown) => {
                   admissionFailure = err
                   admissionRejected = true
                 })

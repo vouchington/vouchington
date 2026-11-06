@@ -49,7 +49,7 @@ async function verifyOrdinaryReadProfileThreshold(
             if (count === 2) await readAndAssertSeededFeed()
           })().then(
             () => response.end(),
-            err => {
+            (err: unknown) => {
               response.statusCode = 500
               response.end(err instanceof Error ? err.message : String(err))
             },

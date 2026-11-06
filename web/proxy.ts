@@ -103,7 +103,7 @@ async function proxy(request: NextRequest) {
         { referrer, landing_url: landingUrl, ...(utm ? { utm } : {}) },
         { dt: sessionDt, st: sessionSt },
         getProxyClientHeaders(request),
-      ).catch(err => {
+      ).catch((err: unknown) => {
         /* c8 ignore next -- attribution error handler; injecting network failure requires mocking */
         console.error('Attribution request failed:', err)
       }),

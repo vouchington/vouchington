@@ -137,7 +137,7 @@ async function captureRejectionBeforeDeadline(request: Promise<unknown>): Promis
       async () => {
         throw new Error('Expected the stalled AWS request to reject')
       },
-      err => err,
+      (err: unknown) => err,
     ),
     deadlineExceeded,
   ])

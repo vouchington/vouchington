@@ -50,7 +50,10 @@ describe('download-with-diagnostics', () => {
       },
     }).then(
       value => ({ ok: true as const, value }),
-      err => ({ error: err, ok: false as const }),
+      (err: unknown) => {
+        if (!(err instanceof Error) || !('stdout' in err) || !('stderr' in err)) throw err
+        return { error: err, ok: false as const }
+      },
     )
 
     return { destination, result, summary }

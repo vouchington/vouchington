@@ -53,7 +53,7 @@ export async function enqueueCommunityMemberMetricInvalidationBestEffort(
   communityId: string,
 ): Promise<void> {
   const metadata = await captureCommunityMemberMetricInvalidationMetadata(communityId).catch(
-    err => {
+    (err: unknown) => {
       onError(
         err instanceof Error
           ? err

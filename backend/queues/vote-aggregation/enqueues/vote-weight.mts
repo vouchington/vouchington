@@ -132,11 +132,11 @@ export function enqueueRecalculateVoteWeightEvents(events: VoteWeightEvent[]) {
     inputs: events,
     jobIdOf: event => event.jobId,
     enqueueBulk: inputs =>
-      enqueueVoteWeightEvents(inputs).catch(err => {
+      enqueueVoteWeightEvents(inputs).catch((err: unknown) => {
         factoryRejected = true
         throw err
       }),
-  }).catch(err => {
+  }).catch((err: unknown) => {
     if (!factoryRejected)
       onError(
         err instanceof Error ? err : new Error('Vote-weight admission failed', { cause: err }),

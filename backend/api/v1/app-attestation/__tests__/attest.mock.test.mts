@@ -203,7 +203,14 @@ describe('POST /api/v1/app-attestation/attest', () => {
       })
       const mintResult = await mint.then(
         value => ({ allowed: true, tokenType: value.token_type, code: null }),
-        (err: { code?: string }) => ({ allowed: false, tokenType: null, code: err.code }),
+        (err: unknown) => ({
+          allowed: false,
+          tokenType: null,
+          code:
+            typeof err === 'object' && err !== null && 'code' in err && typeof err.code === 'string'
+              ? err.code
+              : undefined,
+        }),
       )
       expect(mintResult).toEqual(
         authOrigin === 'native'

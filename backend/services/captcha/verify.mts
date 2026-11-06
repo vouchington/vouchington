@@ -59,7 +59,7 @@ export async function fetchTurnstileVerify(
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params.toString(),
     signal: AbortSignal.timeout(5000),
-  }).catch(err => {
+  }).catch((err: unknown) => {
     throw createHttpError(502, 'CAPTCHA service unavailable', { cause: err })
   })
   if (!response.ok) {

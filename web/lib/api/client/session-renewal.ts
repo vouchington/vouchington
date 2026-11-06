@@ -7,7 +7,7 @@ let renewalInFlight: Promise<boolean> | undefined
 /** One browser renewal at a time, including other tabs that share the httpOnly cookies. */
 export function renewBrowserSession(): Promise<boolean> {
   renewalInFlight ??= renewWithBrowserLock()
-    .catch(async err => {
+    .catch(async (err: unknown) => {
       if (isDefinitiveRenewalFailure(err)) {
         await fetch('/api/v1/session', {
           method: 'DELETE',

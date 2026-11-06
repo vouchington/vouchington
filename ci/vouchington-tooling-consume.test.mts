@@ -58,7 +58,10 @@ fi
       )
       const code = await result.then(
         () => 0,
-        (err: { code: number }) => err.code,
+        (err: unknown) => {
+          if (!(err instanceof Error) || !('code' in err) || typeof err.code !== 'number') throw err
+          return err.code
+        },
       )
       expect(code).toBe(fail ? 17 : 0)
       const expectedCalls = [

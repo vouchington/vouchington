@@ -31,7 +31,7 @@ const dynamicImportErrors: unknown[] = []
 export function trackDynamicImport(promise: Promise<unknown>): void {
   const settled = promise.then(
     () => undefined,
-    err => {
+    (err: unknown) => {
       dynamicImportErrors.push(err)
     },
   )

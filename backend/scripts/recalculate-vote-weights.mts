@@ -23,7 +23,7 @@ async function main() {
   console.log('Done. Dispatcher jobs enqueued.')
 }
 
-main().catch(err => {
-  onError(err)
+main().catch((err: unknown) => {
+  onError(err instanceof Error ? err : new Error(String(err), { cause: err }))
   process.exit(1)
 })

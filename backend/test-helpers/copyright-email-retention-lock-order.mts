@@ -46,7 +46,7 @@ export async function writeCopyrightEmailDuringErasure<T>(
       await writer(sql`/* holdCopyrightEmailIntakeBeforeErasure */
         SELECT id FROM copyright_notice_email_intakes WHERE id = ${intakeId} FOR UPDATE`)
       erasure = erase()
-      void erasure.catch(err => erasureAtIntake.reject(err))
+      void erasure.catch((err: unknown) => erasureAtIntake.reject(err))
       await erasureAtIntake.promise
       const recommendationId = uuidv7()
       const inputSha256 = Buffer.alloc(32, 7)
@@ -133,10 +133,10 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T>(
     const erasure = erase()
     let writer: Promise<boolean> | undefined
     try {
-      void erasure.catch(err => markerWritten.reject(err))
+      void erasure.catch((err: unknown) => markerWritten.reject(err))
       await markerWritten.promise
       writer = append()
-      void writer.catch(err => writerWaiting.reject(err))
+      void writer.catch((err: unknown) => writerWaiting.reject(err))
       await writerWaiting.promise
       releaseMarker.resolve()
       return { erasure: await erasure, appended: await writer }

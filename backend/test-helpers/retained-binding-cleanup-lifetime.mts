@@ -35,7 +35,7 @@ export function createRetainedBindingCleanupLifetime<Result>(
       return operation()
     })
     const entry: Operation = { pending: invoked, failed: false, primary: false }
-    const pending = invoked.catch(err => {
+    const pending = invoked.catch((err: unknown) => {
       entry.failed = true
       entry.error = err
       throw new OperationFailure(entry, err)
@@ -53,7 +53,7 @@ export function createRetainedBindingCleanupLifetime<Result>(
       .then(action)
       .then<Outcome<Result>, Outcome<Result>>(
         result => ({ ok: true, result }),
-        err => {
+        (err: unknown) => {
           if (err instanceof OperationFailure) {
             err.entry.primary = true
             return { ok: false, error: err.reason }

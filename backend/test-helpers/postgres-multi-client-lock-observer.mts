@@ -47,7 +47,7 @@ export async function createTestPostgresMultiWait() {
       restorePool?.()
     }
   })
-  void exclusive.catch(err => {
+  void exclusive.catch((err: unknown) => {
     primary ??= err
     entered.reject(err)
   })
@@ -65,7 +65,7 @@ export async function createTestPostgresMultiWait() {
         () => {
           throw new Error('Owned action settled without its native lock wait')
         },
-        err => {
+        (err: unknown) => {
           throw err
         },
       )

@@ -32,7 +32,7 @@ export function createStoryProjectionLifetime<Work extends { post_id: string }>(
       .then(() => operations.release(entry.work))
       .then(
         () => ({ ok: true }) as const,
-        err => ({ ok: false, error: err }) as const,
+        (err: unknown) => ({ ok: false, error: err }) as const,
       )
     return entry.release
   }
@@ -63,7 +63,7 @@ export function createStoryProjectionLifetime<Work extends { post_id: string }>(
       .then(action)
       .then(
         () => ({ ok: true }) as const,
-        err => {
+        (err: unknown) => {
           if (err instanceof ClaimReleaseFailure) {
             err.entry.primary = true
             return { ok: false, error: err.reason } as const

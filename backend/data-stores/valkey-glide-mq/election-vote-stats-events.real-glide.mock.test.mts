@@ -40,7 +40,7 @@ describe('owned election queue terminal streams', () => {
     const job = await owned.add('waiting')
     if (!job) throw new Error('Expected concrete owned waiting admission')
     const waiting = owned.observer.wait(job.id)
-    const rejected = waiting.catch(err => err)
+    const rejected = waiting.catch((err: unknown) => err)
     await owned.observer.close()
     expect(await rejected).toMatchObject({ message: 'Owned election observer is closed' })
     await expect(owned.observer.wait('')).rejects.toThrow('concrete owned job ID')

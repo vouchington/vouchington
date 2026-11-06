@@ -102,7 +102,7 @@ export async function runLogoutPushCleanupAndRevoke(
       } finally {
         await logoutCleanupLease
           .release(sessionId, reservation.token)
-          .catch(err => onError(err instanceof Error ? err : new Error(String(err))))
+          .catch((err: unknown) => onError(err instanceof Error ? err : new Error(String(err))))
       }
       return
     }

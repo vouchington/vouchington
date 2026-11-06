@@ -101,7 +101,7 @@ describe('incremental notification push receipts', () => {
       throw Object.assign(new Error('provider unavailable'), { statusCode: 500 })
     })
     const deliveryRejection = deliverClaimedNotificationPushIntent(intent, shortLeasePolicy).catch(
-      err => err,
+      (err: unknown) => err,
     )
     try {
       await periodicRenewal.promise
@@ -245,7 +245,10 @@ describe('incremental notification push receipts', () => {
       })
       const settled = await delivery.then(
         value => ({ value, errorMessage: undefined }),
-        err => ({ value: undefined, errorMessage: err instanceof Error ? err.message : undefined }),
+        (err: unknown) => ({
+          value: undefined,
+          errorMessage: err instanceof Error ? err.message : undefined,
+        }),
       )
       expect(settled).toEqual(
         renewal instanceof Error

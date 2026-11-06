@@ -16,8 +16,8 @@ export function checkRssFeedCrawlable(
   )
   return isUrlCrawlable(feedUrl, CRAWLER_USER_AGENT, {
     ignoreRobotsRules: ignoreRobots,
-  }).catch(err => {
-    onError(err)
+  }).catch((err: unknown) => {
+    onError(err instanceof Error ? err : new Error(String(err), { cause: err }))
     return false
   })
 }

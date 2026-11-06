@@ -98,7 +98,7 @@ describe('rss-feed categories', () => {
             const pending = upsertRssFeedCategories(feed.id, [category])
             outcome = pending.then(
               value => ({ value }),
-              err => ({ error: err }),
+              (err: unknown) => ({ error: err }),
             )
             await waitForLock(pending)
             await holder(
