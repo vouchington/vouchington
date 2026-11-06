@@ -35,7 +35,7 @@ describe('MCP neutral Hacker News facts', () => {
           ['posts:read'],
         )
         const row = (search.results as Array<Record<string, unknown>>).find(
-          row => row.id === post.id,
+          candidate => candidate.id === post.id,
         )
         expect(row).toBeDefined()
         expect(row!.hacker_news_references).toEqual(visible ? counts : undefined)

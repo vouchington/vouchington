@@ -70,7 +70,9 @@ export function workflowCachePnpmViolations(sources: YamlSources): string[] {
           .some(
             prior =>
               isActionsCacheStep(prior) &&
-              normalizedCachePaths(prior.with?.path)?.some(path => path.includes('ms-playwright')),
+              normalizedCachePaths(prior.with?.path)?.some(cachePath =>
+                cachePath.includes('ms-playwright'),
+              ),
           )
         if (!hasCache)
           violations.push(

@@ -92,10 +92,14 @@ export async function startAIAgentWorkerForTest() {
     const startupFailure = err
     try {
       await close()
-    } catch (err) {
-      throw new AggregateError([startupFailure, err], 'AI worker startup and cleanup failed', {
-        cause: err,
-      })
+    } catch (cleanupErr) {
+      throw new AggregateError(
+        [startupFailure, cleanupErr],
+        'AI worker startup and cleanup failed',
+        {
+          cause: cleanupErr,
+        },
+      )
     }
     throw err
   }
