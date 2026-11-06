@@ -34,11 +34,16 @@ describe('Knip extracted workflow evidence', () => {
       }
       const helper = '.github/workflows/coverage.sh'
       files.set('knip.jsonc', JSON.stringify({ workspaces }))
+      for (const workflow of ['explain-analyze', 'tests-backend-unit', 'tests-postgres-schema']) {
+        files.set(
+          `.github/workflows/${workflow}.yml`,
+          'jobs:\n  tests:\n    steps:\n      - run: source "$GITHUB_WORKSPACE/.github/workflows/coverage.sh"\n',
+        )
+      }
       files.set(
-        '.github/workflows/tests-backend-unit.yml',
-        'jobs:\n  tests:\n    steps:\n      - run: source "$GITHUB_WORKSPACE/.github/workflows/coverage.sh"\n',
+        helper,
+        './ci/node_modules/.bin/coverage-check merge\npnpm exec coverage-check native-v8-to-lcov\n',
       )
-      files.set(helper, './ci/node_modules/.bin/coverage-check merge\n')
       for (const [file, source] of files) {
         await mkdir(dirname(join(root, file)), { recursive: true })
         await writeFile(join(root, file), source)
