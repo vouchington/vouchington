@@ -133,7 +133,13 @@ async function captureReplacement(id: string, work: ProjectionWork, limit: numbe
       story_post_related_url_projection_relation_mutations: 500,
     },
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'relation__post__related__url', max: limit * 2 },
+      // The 1,000-row union ends with an empty probe: 999/1,000 rounds to one row/loop,
+      // so EXPLAIN counts 1,001 candidate reads. The maximum case has no terminal probe.
+      {
+        kind: 'maxProcessedRows',
+        relation: 'relation__post__related__url',
+        max: limit * 2 + (limit === 1000 ? 1 : 0),
+      },
       { kind: 'maxProcessedRows', relation: 'story_post_related_url_projection_jobs', max: 1 },
       {
         kind: 'maxProcessedRows',
