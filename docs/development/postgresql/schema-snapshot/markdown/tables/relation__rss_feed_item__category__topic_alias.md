@@ -61,4 +61,5 @@ Not partitioned — growth: unbounded.
 - `uq_relatio__rss_feed_item__category__topic_alias__subject_id_id`: `CREATE UNIQUE INDEX uq_relatio__rss_feed_item__category__topic_alias__subject_id_id ON public.relation__rss_feed_item__category__topic_alias USING btree (subject_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_rss_feed_topic_alias_relation_candidates`: `CREATE TRIGGER trigger_rss_feed_topic_alias_relation_candidates AFTER INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic_alias FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_topic_alias_relation_candidates()`

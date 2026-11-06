@@ -636,6 +636,46 @@ CREATE OR REPLACE FUNCTION public.fn_project_retire_notification_push_intent()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_rss_feed_category_candidates`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_category_candidates()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_rss_feed_item_feed_candidate`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_item_feed_candidate()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_rss_feed_topic_alias_relation_candidates`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_topic_alias_relation_candidates()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_rss_feed_topic_relation_candidates`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_topic_relation_candidates()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_story_official_feed_candidates`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_story_official_feed_candidates()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_story_post_related_url_relation_mutation`
 
 ```sql
@@ -1862,10 +1902,42 @@ CREATE OR REPLACE FUNCTION public.fn_update_retained_copyright_notice_identity_r
  LANGUAGE plpgsql
 ```
 
+## `fn_update_rss_feed_item_topic_candidate_count(item_id uuid, target_topic_id uuid, delta integer)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_topic_candidate_count(item_id uuid, target_topic_id uuid, delta integer)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_update_rss_feed_item_topic_candidate_memberships(old_item uuid, old_topic uuid, new_item uuid, new_topic uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_topic_candidate_memberships(old_item uuid, old_topic uuid, new_item uuid, new_topic uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_rss_feed_items_search_vector`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_items_search_vector()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_rss_feed_latest_item_sort`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_latest_item_sort()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_rss_feed_source_item_sort`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_source_item_sort()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
