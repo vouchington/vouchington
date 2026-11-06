@@ -152,6 +152,7 @@ export function buildLandingPageSourceQuery(options?: {
                   FROM topics group_topic
                   WHERE group_topic.id = ulpi.topic_id
                     AND group_topic.deleted_at IS NULL
+                    AND group_topic.merged_into_topic_id IS NULL
                 )
                 AND (group_review.id IS NOT NULL OR group_link.id IS NOT NULL)
             )
@@ -159,7 +160,7 @@ export function buildLandingPageSourceQuery(options?: {
       )) AS kept
     FROM landing_page
     LEFT JOIN LATERAL (
-      SELECT u.*
+      SELECT u.id, u.username, u.updated_at
       FROM users u
       WHERE u.id = landing_page.user_id
         AND u.deleted_at IS NULL

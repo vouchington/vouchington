@@ -94,7 +94,7 @@ export async function reconcilePostModerationWork(
           SELECT version_id, source, post_id, through_id FROM selected
           WHERE (SELECT count(*) FROM ordered_sources) > $1
             OR (
-              (SELECT count(*) FROM selected) > 0
+              EXISTS (SELECT 1 FROM selected)
               AND (SELECT count(*) FROM version_page) > $1
               AND (SELECT count(*) FROM ordered_sources) <= $1
             )
@@ -115,7 +115,7 @@ export async function reconcilePostModerationWork(
             SELECT version_page.*, row_number() OVER (ORDER BY version_id) AS n
             FROM version_page
           ) numbered
-          WHERE (SELECT count(*) FROM selected) = 0
+          WHERE NOT EXISTS (SELECT 1 FROM selected)
             AND (SELECT count(*) FROM version_page) > $1
             AND numbered.n = $1
         )

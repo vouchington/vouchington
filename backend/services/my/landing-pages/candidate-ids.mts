@@ -21,6 +21,7 @@ export async function getLandingPageCandidateIds(
   query.append(sql`
       ORDER BY sort_order ASC, id ASC LIMIT ${limit}
     ), reviews AS MATERIALIZED (
+      -- no-mistakes-disable-next-line postgres-required-predicates: owned review candidates span post-id partitions; the author index and bounded keyset preserve older candidates
       SELECT post.id, 1 AS tier, NULL::integer AS sort_order FROM posts post
       WHERE post.created_by_id = ${userId} AND post.post_type = 'review'
         AND ${cursor === null || cursor.tier >= 1}`)
@@ -47,6 +48,7 @@ export async function getLandingPageCandidateIds(
       SELECT referral_links.id, referral_links.tier, referral_links.sort_order,
         (topic.id IS NOT NULL) AS kept
       FROM referral_links
+      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints user_referral_program_links.referral_program_topic_id to the destination subtype; landing-page candidate pages still exclude deleted topics
       LEFT JOIN topics topic
         ON topic.id = referral_links.referral_program_topic_id AND topic.deleted_at IS NULL
     ) candidates
