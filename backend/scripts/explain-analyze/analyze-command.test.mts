@@ -74,17 +74,29 @@ describe('explain analyze paired results', () => {
     ).toThrow('temp-written')
   })
 
-  it('rejects excessive WAL in the recorded result', () => {
-    const result = {
-      name: 'wal-heavy-query',
-      query_text: 'UPDATE users SET markdown = markdown',
-      plan: { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': 11 * 1024 * 1024 } },
+  it('rejects WAL pressure only when both captures show it', () => {
+    const cold = walResult(11)
+    const warm = walResult(1)
+    expect(() => analyzePairedResults('fixture.json', [cold], [warm], {})).not.toThrow()
+    expect(() => analyzePairedResults('fixture.json', [cold], [cold], {})).toThrow('Sort:-:wal')
+  })
+
+  it('still rejects first-capture temp pressure when the repeat is clean', () => {
+    const spilling = {
+      name: 'spilling-query',
+      query_text: 'SELECT 1',
+      plan: { Plan: { 'Node Type': 'Sort', 'Temp Written Blocks': 1 } },
       execution_time_ms: 1,
       planning_time_ms: 1,
-      timestamp: new Date().toISOString(),
+      timestamp: '2026-11-06T00:00:00.000Z',
     }
-    const normal = { ...result, plan: { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': 1 } } }
-    expect(() => analyzePairedResults('fixture.json', [result], [normal], {})).toThrow('wal')
+    const clean = {
+      ...spilling,
+      plan: { Plan: { 'Node Type': 'Sort' } },
+    }
+    expect(() => analyzePairedResults('fixture.json', [spilling], [clean], {})).toThrow(
+      'temp-written',
+    )
   })
 
   it('enforces the scoped WAL budget without allowing other pressure', () => {
@@ -116,3 +128,19 @@ describe('explain analyze paired results', () => {
     }
   })
 })
+
+function walResult(megabytes: number) {
+  return {
+    name: 'wal-query',
+    scenario_id: 'wal-scenario',
+    capture_index: 0,
+    plan_cache_mode: 'auto' as const,
+    query_text: 'UPDATE relation SET deleted_at = now()',
+    plan: {
+      Plan: { 'Node Type': 'Sort', 'WAL Bytes': megabytes * 1024 * 1024 },
+    },
+    execution_time_ms: 1,
+    planning_time_ms: 1,
+    timestamp: '2026-11-06T00:00:00.000Z',
+  }
+}

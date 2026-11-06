@@ -30,15 +30,36 @@ function assertResultsPresent(results: readonly ExplainResult[]): void {
   }
 }
 
+function isCheckpointSensitiveWalFingerprint(fingerprint: string): boolean {
+  return fingerprint === 'query:wal-aggregate' || fingerprint.endsWith(':wal')
+}
+
+// WAL bytes include checkpoint full-page images, so one capture can cross the threshold while the
+// repeated capture of the same plan does not. Fail only when both captures show that fingerprint.
+// A missing repeat stays fail-closed. Temp, spill, and hash-batch fingerprints still use the first.
 function assertNoDisallowedRegressions(
   results: readonly ExplainResult[],
+  repeatedResults: readonly ExplainResult[],
   baseline: ResourcePressureBaseline = RESOURCE_PRESSURE_BASELINE,
 ): void {
+  const repeatedWalByIdentity = new Map(
+    repeatedResults.map(result => [
+      getExplainResultIdentity(result),
+      new Set(getResourcePressureFingerprints(result).filter(isCheckpointSensitiveWalFingerprint)),
+    ]),
+  )
   const regressions = results.flatMap(result => {
     const identity = getExplainResultIdentity(result)
     const allowed = new Set(baseline[identity] ?? [])
+    const repeatedWal = repeatedWalByIdentity.get(identity)
     return getResourcePressureFingerprints(result)
       .filter(fingerprint => !allowed.has(fingerprint))
+      .filter(
+        fingerprint =>
+          !isCheckpointSensitiveWalFingerprint(fingerprint) ||
+          repeatedWal === undefined ||
+          repeatedWal.has(fingerprint),
+      )
       .map(fingerprint => `${identity}=${fingerprint}`)
   })
   if (regressions.length > 0) {
@@ -65,7 +86,7 @@ export function analyzePairedResults(
     console.error(
       `Sequential scans within a near-tie of an index plan (advisory): ${nearTies.join(',')}`,
     )
-  assertNoDisallowedRegressions(results, baseline)
+  assertNoDisallowedRegressions(results, repeatedResults, baseline)
   console.error(`Loaded ${results.length} query results`)
 
   const sorted = results.toSorted((a, b) => b.execution_time_ms - a.execution_time_ms)
