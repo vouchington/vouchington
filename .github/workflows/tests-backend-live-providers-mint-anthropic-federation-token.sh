@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# integrity-check: skip reason=oidc-audience-literal-is-not-the-download
 oidc_response=$(curl -sS --fail-with-body \
   -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
   "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://api.anthropic.com")
