@@ -55,8 +55,9 @@ describe('buildInsertQuery', () => {
     ])
 
     expect(query.text).toContain('existing AS MATERIALIZED')
-    expect(query.text).toContain('ORDER BY r.subject_id, r.object_id')
+    expect(query.text).toContain('ORDER BY subject_id, object_id')
     expect(query.text).toContain('FOR UPDATE')
+    expect(query.text).toContain('LIMIT 1')
     expect(query.text).toContain('LEFT JOIN existing')
     expect(query.text).toContain(
       '(existing.subject_id IS NULL OR existing.deleted_at IS NOT NULL) AS newly_active',

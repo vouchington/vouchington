@@ -38,7 +38,8 @@ export function buildInsertQuery(
   const objectIds = pairs.map(({ object }) => object.id)
   const table = relation.table_name
 
-  // `existing` locks the row before the upsert reads it. This matters when a concurrent
+  // `existing` locks the prior row through one primary-key probe per pair, in subject/object
+  // order, before the upsert reads it. This matters when a concurrent
   // soft-delete commits between this statement's snapshot and its ON CONFLICT update: without the
   // lock, `existing` can report the stale active version while the upsert resurrects the deleted
   // version, causing downstream publication capture to skip that real eligibility transition.
@@ -51,14 +52,24 @@ export function buildInsertQuery(
       FROM unnest(${subjectIds}::uuid[], ${objectIds}::uuid[]) WITH ORDINALITY
         AS t(subject_id, object_id, ordinality)
     ),
+    ordered_input AS MATERIALIZED (
+      SELECT subject_id, object_id
+      FROM input
+      ORDER BY subject_id, object_id
+    ),
     existing AS MATERIALIZED (
       SELECT r.subject_id, r.object_id, r.deleted_at
-      FROM `
+      FROM ordered_input
+      JOIN LATERAL (
+        SELECT subject_id, object_id, deleted_at
+        FROM `
   query.append(table)
-  query.append(sql` r
-      JOIN input ON input.subject_id = r.subject_id AND input.object_id = r.object_id
-      ORDER BY r.subject_id, r.object_id
-      FOR UPDATE
+  query.append(sql` relation
+        WHERE relation.subject_id = ordered_input.subject_id
+          AND relation.object_id = ordered_input.object_id
+        FOR UPDATE
+        LIMIT 1
+      ) r ON TRUE
     ),
     upserted AS (
       INSERT INTO `)

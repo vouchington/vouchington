@@ -41,7 +41,8 @@ function assertPostRelationTableName(tableName: string): PostRelationTableName {
 /**
  * Pages live membership rows first. `limit` is the page size; the statement reads one extra
  * membership key as the has-more probe. Target visibility is applied to that page, so `rows`
- * can be shorter than `limit`.
+ * can be shorter than `limit`. The materialized membership page is already in keyset order;
+ * the outer statement does not sort it again.
  */
 export async function getVisiblePostCollectionRows(
   currentUser: PrivateUser | null,
@@ -93,8 +94,7 @@ export async function getVisiblePostCollectionRows(
       FROM posts access_post
       WHERE access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
       LIMIT 1
-    ) access_post ON TRUE
-    ORDER BY driving.created_us DESC, driving.entity_id DESC`)
+    ) access_post ON TRUE`)
 
   const { rows } = await read<{
     entity_id: string

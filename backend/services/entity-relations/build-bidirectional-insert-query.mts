@@ -83,15 +83,23 @@ function appendDirection(
   query.append(sql`${subjectIds}::uuid[], ${objectIds}::uuid[]) WITH ORDINALITY
         AS t(subject_id, object_id, ordinality)
     ), `)
-  query.append(`${prefix}_existing AS MATERIALIZED (
+  query.append(`${prefix}_ordered AS MATERIALIZED (
+      SELECT subject_id, object_id
+      FROM ${prefix}_input
+      ORDER BY subject_id, object_id
+    ), ${prefix}_existing AS MATERIALIZED (
       SELECT r.subject_id, r.object_id, r.deleted_at
-      FROM `)
+      FROM ${prefix}_ordered ordered_input
+      JOIN LATERAL (
+        SELECT subject_id, object_id, deleted_at
+        FROM `)
   query.append(relation.table_name)
-  query.append(` r
-      JOIN ${prefix}_input ON ${prefix}_input.subject_id = r.subject_id
-        AND ${prefix}_input.object_id = r.object_id
-      ORDER BY r.subject_id, r.object_id
-      FOR UPDATE
+  query.append(` relation
+        WHERE relation.subject_id = ordered_input.subject_id
+          AND relation.object_id = ordered_input.object_id
+        FOR UPDATE
+        LIMIT 1
+      ) r ON TRUE
     ), ${prefix}_upserted AS (
       INSERT INTO `)
   query.append(relation.table_name)

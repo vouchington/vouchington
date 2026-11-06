@@ -56,7 +56,11 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
 
   registerScenarioContract(
     'collection-list-posts-ineligible-page',
-    bounded('user_list_posts', ['idx_user_list_posts__user_list_id__id', 'user_list_posts_pkey']),
+    bounded('user_list_posts', [
+      'idx_user_list_posts__user_list_id__id',
+      'idx_user_list_posts__user_list_id__id__all_rows',
+      'user_list_posts_pkey',
+    ]),
   )
   await runAndCapture('collection-list-posts-ineligible-page', async () => {
     const page = await searchListItems(ineligibleCollectionPageIds.listId, {
