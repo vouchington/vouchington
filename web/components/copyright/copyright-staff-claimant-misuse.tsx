@@ -42,7 +42,7 @@ export function CopyrightStaffClaimantMisuse({
     return <p className='text-sm text-muted-foreground'>No account is linked to this notifier.</p>
   }
   const windows = [misuse, ...older]
-  const last = windows[windows.length - 1]!
+  const last = windows.at(-1)!
   async function loadOlder() {
     if (!claimantUserId || !last.page_info.end_cursor || loading) return
     setLoading(true)

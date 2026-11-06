@@ -32,10 +32,7 @@ export async function dispatchUserRssFeedImport(data: {
   )
   // The cursor advances only once the page is on the queue.
   if (pending.length > pageSize) {
-    await enqueueUserRssFeedImportDispatchContinuation(
-      data.importId,
-      page[page.length - 1]!.row_index,
-    )
+    await enqueueUserRssFeedImportDispatchContinuation(data.importId, page.at(-1)!.row_index)
   }
 }
 

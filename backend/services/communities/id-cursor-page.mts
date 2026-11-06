@@ -37,8 +37,8 @@ export function buildCommunityIdCursorPage<T extends { id: string }>(
       end_cursor:
         hasNextPage && results.length > 0
           ? encodeCursor({
-              name: results[results.length - 1]!.id,
-              id: results[results.length - 1]!.id,
+              name: results.at(-1)!.id,
+              id: results.at(-1)!.id,
             })
           : null,
       start_cursor:

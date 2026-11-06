@@ -28,10 +28,7 @@ export async function dispatchAdminTopicImport(data: {
   await enqueueBulkAdminTopicImportRows(page.map(row => ({ batchId: data.batchId, rowId: row.id })))
   // The cursor advances only once the page is on the queue.
   if (pending.length > pageSize) {
-    await enqueueAdminTopicImportDispatchContinuation(
-      data.batchId,
-      page[page.length - 1]!.row_index,
-    )
+    await enqueueAdminTopicImportDispatchContinuation(data.batchId, page.at(-1)!.row_index)
   }
 }
 

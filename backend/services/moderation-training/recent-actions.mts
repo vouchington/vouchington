@@ -73,7 +73,7 @@ export async function searchRecentAutomodActions(
     hasNextPage,
     endCursor:
       hasNextPage && pageRows.length > 0
-        ? encodeRecentAutomodActionsCursor(pageRows[pageRows.length - 1]!)
+        ? encodeRecentAutomodActionsCursor(pageRows.at(-1)!)
         : null,
     stats: buildStats(stats),
   }

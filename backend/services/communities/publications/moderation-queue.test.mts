@@ -213,7 +213,7 @@ describe('searchCommunityModerationQueue', () => {
     expect(page1.entries.length).toBe(2)
     expect(page1.hasNextPage).toBe(true)
 
-    const cursor = encodeCommunityModerationQueueCursor(page1.entries[page1.entries.length - 1]!)
+    const cursor = encodeCommunityModerationQueueCursor(page1.entries.at(-1)!)
     const page2 = await searchCommunityModerationQueue(community.id, {
       limit: 10,
       after: cursor,

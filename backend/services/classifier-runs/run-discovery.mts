@@ -76,7 +76,7 @@ export async function listIncompleteClassifierRuns(
       configurationSha256: row.configuration_sha256.toString('hex'),
       sweepEnqueueCount: row.sweep_enqueue_count,
     })),
-    next: rows.length === limit ? (rows[rows.length - 1]?.id ?? null) : null,
+    next: rows.length === limit ? (rows.at(-1)?.id ?? null) : null,
   }
 }
 
@@ -144,6 +144,6 @@ export async function listPendingClassifierRunRequests<C, L, E>(
   await retireIneligibleClassifierRunRequests(adapter, ineligible)
   return {
     items,
-    next: rows.length === limit ? (rows[rows.length - 1]?.id ?? null) : null,
+    next: rows.length === limit ? (rows.at(-1)?.id ?? null) : null,
   }
 }

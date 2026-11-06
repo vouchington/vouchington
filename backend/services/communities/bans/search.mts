@@ -61,7 +61,7 @@ export async function listUserActiveCommunityBans(
       has_next_page: hasNextPage,
       end_cursor:
         hasNextPage && results.length > 0
-          ? encodeScopedUuidCursor(results[results.length - 1]!.id, cursorScope)
+          ? encodeScopedUuidCursor(results.at(-1)!.id, cursorScope)
           : null,
       start_cursor: results.length > 0 ? encodeScopedUuidCursor(results[0]!.id, cursorScope) : null,
     },
@@ -112,9 +112,7 @@ export async function searchCommunityBans(
     page_info: {
       has_next_page: hasNextPage,
       end_cursor:
-        hasNextPage && results.length > 0
-          ? encodeCursor({ id: results[results.length - 1]!.id })
-          : null,
+        hasNextPage && results.length > 0 ? encodeCursor({ id: results.at(-1)!.id }) : null,
       start_cursor: results.length > 0 ? encodeCursor({ id: results[0]!.id }) : null,
     },
   }

@@ -107,7 +107,7 @@ async function cleanupFollowerRoleBeforeDisconnect(
     // Every receipt must be attempted before revocation; failed deletes stay behind the cursor.
     /* oxlint-disable no-await-in-loop -- ordered page operations depend on the preceding page */
     for (;;) {
-      const cursor = receipts[receipts.length - 1]!.followee_user_id
+      const cursor = receipts.at(-1)!.followee_user_id
 
       // no-mistakes-disable-next-line query-reached-per-item: each bounded receipt page is attempted before revocation; failed remote deletes must remain behind the physical cursor
       await deleteBlueskyFollowRecordsForFollower(session, receipts)

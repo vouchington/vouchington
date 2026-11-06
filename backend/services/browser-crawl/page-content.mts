@@ -88,7 +88,7 @@ export function measureAndSerializePage(limits: {
       omitHtml = true
       break
     }
-    const current = nodes[nodes.length - 1]!
+    const current = nodes.at(-1)!
     const { node } = current
     if (current.children) {
       const index = current.index!
