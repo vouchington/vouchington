@@ -23,7 +23,7 @@ import {
 } from '@services/stories'
 import { getPublicUsersByAnyBatch } from '@services/users/get-public-batch'
 import { isAdminUser } from '@services/users'
-import { parseNumberParams } from '@ts-shared/utils/query'
+import { parseBooleanish, parseNumberParams } from '@ts-shared/utils/query'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 import { apiQuery } from '../../../api-query-contract.mts'
@@ -73,7 +73,7 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     community_id: communityScope?.community.id,
     ...(has_related_posts !== undefined && { has_related_posts }),
     ...(ctx.query.has_hacker_news_references !== undefined && {
-      has_hacker_news_references: ctx.query.has_hacker_news_references === 'true',
+      has_hacker_news_references: parseBooleanish(ctx.query.has_hacker_news_references),
     }),
   }
 

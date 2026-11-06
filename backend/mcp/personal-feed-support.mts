@@ -1,8 +1,19 @@
+import {
+  getPostHackerNewsSummaries,
+  getRssFeedItemHackerNewsSummaries,
+} from '@services/urls/hacker-news-sidecars'
+import { getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
 import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
 import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
 import { loadCommunityForViewer } from '@services/communities'
 import { communityReferenceSchema } from './entity-reference-schema.mts'
-import type { PostFeedType, RssFeedItemFeedType, ReferralLinksFeedType } from '@services/feeds'
+import type {
+  PostFeedType,
+  RssFeedItemFeedType,
+  ReferralLinksFeedType,
+  getPostFeedIds,
+  getRssFeedItemFeedIds,
+} from '@services/feeds'
 import { resolveHashtagTopicSearch } from '@services/search-params'
 import type { PrivateUser } from '@services/users/types'
 import type { FilterablePostType } from '@ts-shared/feed-capabilities'
@@ -134,4 +145,33 @@ export async function hashtagOptions(q: string | undefined) {
         }
       : {}),
   }
+}
+
+/** The domain services already bound these pages and decide which entities are readable. */
+type PostFeedRows = Awaited<ReturnType<typeof getPostFeedIds>>['results']
+type RssFeedItemFeedRows = Awaited<ReturnType<typeof getRssFeedItemFeedIds>>['results']
+
+export async function toMcpPostFeedItems(rows: PostFeedRows): Promise<FeedItem[]> {
+  const references = await getPostHackerNewsSummaries(rows.map(row => row.entity_id))
+  return projectMcpFeedItems(rows, references)
+}
+
+export async function toMcpRssFeedItemFeedItems(rows: RssFeedItemFeedRows): Promise<FeedItem[]> {
+  const items = await getRssFeedItemByIdCachedBatch(rows.map(row => row.entity_id))
+  const references = await getRssFeedItemHackerNewsSummaries(items)
+  return projectMcpFeedItems(rows, references)
+}
+
+function projectMcpFeedItems(
+  rows: PostFeedRows | RssFeedItemFeedRows,
+  references: Record<string, HackerNewsReferenceCounts>,
+): FeedItem[] {
+  return rows.map(row => ({
+    id: row.id,
+    ...(references[row.entity_id] && { hacker_news_references: references[row.entity_id] }),
+    entity_id: row.entity_id,
+    delivery_type: row.delivery_type,
+    shared_by_id: row.shared_by_id ?? null,
+    shared_at: row.shared_at ? new Date(row.shared_at).toISOString() : null,
+  }))
 }

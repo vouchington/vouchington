@@ -36,7 +36,11 @@ describe('personalized RSS Hacker News filter', () => {
     for (const feedType of ['follow_rss_feeds', 'follow_users']) {
       for (const [value, expected] of [
         ['true', seen.id],
+        ['TRUE', seen.id],
+        ['1', seen.id],
         ['false', plain.id],
+        ['FALSE', plain.id],
+        ['0', plain.id],
       ]) {
         const response = await request
           .get(`/api/v1/feeds/rss_feed_items/${feedType}`)

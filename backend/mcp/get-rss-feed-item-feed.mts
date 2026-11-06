@@ -1,5 +1,3 @@
-import { getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
-import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getRssFeedItemFeedIds, VALID_RSS_FEED_ITEM_FEED_TYPES } from '@services/feeds'
 import type { BasicUser } from '@services/users/types'
@@ -13,6 +11,7 @@ import {
   feedItemSchema,
   getCommunityId,
   hashtagOptions,
+  toMcpRssFeedItemFeedItems,
   MAX_LIMIT,
   type FeedResult,
   type ItemArgs,
@@ -78,17 +77,8 @@ const getRssFeedItemFeedTool: MergedToolSource<ItemArgs, FeedResult> = {
           limit: clampToolLimit(args.limit, 25, MAX_LIMIT),
           after: args.after,
         })
-        const items = await getRssFeedItemByIdCachedBatch(result.results.map(row => row.entity_id))
-        const references = await getRssFeedItemHackerNewsSummaries(items)
         return {
-          results: result.results.map(row => ({
-            id: row.id,
-            ...(references[row.entity_id] && { hacker_news_references: references[row.entity_id] }),
-            entity_id: row.entity_id,
-            delivery_type: row.delivery_type,
-            shared_by_id: row.shared_by_id ?? null,
-            shared_at: row.shared_at ? new Date(row.shared_at).toISOString() : null,
-          })),
+          results: await toMcpRssFeedItemFeedItems(result.results),
           page_info: result.page_info,
         }
       })

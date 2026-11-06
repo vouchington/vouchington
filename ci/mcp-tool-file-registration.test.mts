@@ -12,6 +12,7 @@ describe('MCP tool file registration', () => {
       mcpToolFilesFromEntries([
         'discover-topics.mts',
         'private-user.mts',
+        'mcp-hacker-news-output.mts',
         'bookmark-batch-types.mts',
         'set-bookmark-prepare.mts',
         'registry.test.mts',
