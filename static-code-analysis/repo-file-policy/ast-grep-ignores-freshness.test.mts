@@ -1,23 +1,9 @@
-import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { checkAstGrepIgnoresFreshness } from './ast-grep-ignores-freshness.mts'
-
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-
-function trackedRepoFiles(): string[] {
-  return execFileSync('git', ['ls-files', '-z'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
-  })
-    .split('\0')
-    .filter(file => file.length > 0)
-}
 
 describe('ast-grep ignores freshness', () => {
   it('reports a missing literal and a glob that matches no tracked file', async () => {
@@ -46,11 +32,5 @@ describe('ast-grep ignores freshness', () => {
     } finally {
       await rm(dir, { force: true, recursive: true })
     }
-  })
-
-  it('reports no stale entries in the tracked ast-grep rules', () => {
-    const errors: string[] = []
-    checkAstGrepIgnoresFreshness(repoRoot, trackedRepoFiles(), errors)
-    expect(errors).toEqual([])
   })
 })

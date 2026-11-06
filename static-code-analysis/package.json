@@ -14,7 +14,7 @@
     "ajv": "^8.20.0",
     "no-mistakes": "^0.109.3",
     "oxfmt": "^0.76.0",
-    "picomatch": "^4.0.7",
+    "picomatch": "^4.0.4",
     "smol-toml": "^1.9.1",
     "vouchington-tooling": "^0.85.1",
     "yaml": "^2.9.1"

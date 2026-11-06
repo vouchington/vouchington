@@ -164,7 +164,7 @@
     "oxlint": "^1.90.0",
     "oxlint-plugin-react-doctor": "^0.9.21",
     "oxlint-tsgolint": "^7.0.2005",
-    "picomatch": "^4.0.7",
+    "picomatch": "^4.0.4",
     "playwright": "^1.64.1",
     "pr-shepherd": "^1.1.2",
     "squawk-cli": "^2.70.0",

@@ -137,7 +137,7 @@ importers:
         specifier: ^7.0.2005
         version: 7.0.2005
       picomatch:
-        specifier: ^4.0.7
+        specifier: ^4.0.4
         version: 4.0.7
       playwright:
         specifier: ^1.64.1
@@ -15069,7 +15069,7 @@ importers:
         specifier: ^0.109.3
         version: 0.109.3(vitest@5.1.0)
       picomatch:
-        specifier: ^4.0.7
+        specifier: ^4.0.4
         version: 4.0.7
       rehype-stringify:
         specifier: ^10.0.1
@@ -15345,7 +15345,7 @@ importers:
         specifier: ^0.76.0
         version: 0.76.0
       picomatch:
-        specifier: ^4.0.7
+        specifier: ^4.0.4
         version: 4.0.7
       smol-toml:
         specifier: ^1.9.1
