@@ -53,6 +53,11 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
   statistics, equality uses default selectivity and the trending ranking index is planned as a
   small bitmap that reads the whole window.
 - Seeding is idempotent (`ON CONFLICT DO NOTHING`); CI uses a fresh database per job.
+- The partitioned comment-page fixture runs after ordinary captures so its large corpus cannot
+  change their plans. Its owned partitions stay until the isolated database is discarded; deleting
+  the corpus row by row would spend the profiling budget on foreign-key cleanup. Seed and run
+  preflights reject a database that already contains these partitions. Recreate that disposable
+  database through the [dev workflow](../../../../dev/AGENTS.md) before another full run.
 - A fixture restored after a captured write needs fresh statistics for its participating relations
   before replay: bulk-seed statistics may no longer describe those rows. The hostname invalidation
   fixture owns this refresh so initial seeding and restoration use the same preparation.

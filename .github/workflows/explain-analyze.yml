@@ -31,8 +31,8 @@ jobs:
     needs: [prepare-postgres]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
-    # Setup plus the 10-minute run step no longer fits in 10 minutes (run 39276118528).
-    timeout-minutes: 20
+    # Include setup and the large partition fixture seeded after ordinary plan captures.
+    timeout-minutes: 30
     env:
       S3_BUCKET_IMAGES: test-images
       S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
@@ -144,7 +144,9 @@ jobs:
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
         run: source "$GITHUB_WORKSPACE/.github/workflows/explain-analyze-seed-with-resource-samples.sh"
       - run: node backend/scripts/explain-analyze/run.mts
-        timeout-minutes: 10
+        # The full partitioned corpus takes about ten minutes to load locally; include its load
+        # after ordinary captures in the step budget.
+        timeout-minutes: 20
         env:
           NODE_DISABLE_COMPILE_CACHE: '1'
           # Both canonical native runners append stock V8 records to the existing native coverage input.

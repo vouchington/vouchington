@@ -3373,10 +3373,10 @@
       # Healthy max was 381 seconds (the test step 337) across 1,552 GitHub-hosted successes in #2260.
       - job: '.github/workflows/tests-web.yml#web-tests'
         maxMinutes: 30
-      # Steps sum to 49m; cap 20m is below it. A healthy run finished in about 8m; run
-      # 39276118528 was cancelled at the 10m job ceiling while the plan step is allowed 10m.
+      # Ordinary plans previously finished in about 8m. The full partitioned comment corpus
+      # adds about 10m of local loading after those captures; the 30m cap includes setup and reports.
       - job: '.github/workflows/explain-analyze.yml#explain-analyze'
-        maxMinutes: 20
+        maxMinutes: 30
       # Dispatch-only evals; steps sum to 27m, cap 20m is below it. The two eval steps are
       # allowed 4m each after the shared backend setup.
       - job: '.github/workflows/evals-backend.yml#backend-evals'
