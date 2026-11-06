@@ -2,13 +2,17 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { RssFeedItemFeedType } from '../../types.mts'
 
 export function buildFollowedSourceMatch(itemId: SQLStatement): SQLStatement {
-  return sql`EXISTS (
-    SELECT 1 FROM rss_feed_item_sources source
-    JOIN followed_rss_feeds followed ON followed.rss_feed_id = source.rss_feed_id
-    JOIN rss_feeds feed ON feed.id = source.rss_feed_id
-      AND feed.is_enabled = TRUE AND feed.deleted_at IS NULL
+  // Make the viewer's active followed ids one uncorrelated input so generic plans cannot
+  // multiply every source row by the followed-feed set for each candidate item.
+  return sql`COALESCE((
+    SELECT BOOL_OR(source.rss_feed_id = ANY(ARRAY(
+      SELECT followed.rss_feed_id FROM followed_rss_feeds followed
+      JOIN rss_feeds feed ON feed.id = followed.rss_feed_id
+        AND feed.is_enabled = TRUE AND feed.deleted_at IS NULL
+    )))
+    FROM rss_feed_item_sources source
     WHERE source.rss_feed_item_id = `.append(itemId).append(sql`
-  )`)
+  ), FALSE)`)
 }
 
 export function buildFollowedTopicMatch(itemId: SQLStatement): SQLStatement {

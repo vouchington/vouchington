@@ -3,27 +3,27 @@ import type { RssFeedItemFeedOptions, RssFeedItemFeedResponse } from '@services/
 import { getRssFeedItemFeedIds } from '@services/feeds'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import {
-  HOSTNAME_COUNT,
-  RSS_FEED_ITEM_SEED_COUNT,
-  RSS_FEED_SEED_COUNT,
-} from '../seed-data/common.mts'
+import { RSS_FEED_ITEM_SEED_COUNT } from '../seed-data/common.mts'
+import { RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT } from '../seed-data/rss-feed-weekly-workload.mts'
 
-const feedCandidateExpectations = [
-  { kind: 'custom', name: 'rssFeedCandidates' },
+const RSS_FEED_SEEDED_ITEM_ROWS = RSS_FEED_ITEM_SEED_COUNT + RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT + 1
+
+const feedPageExpectations = [
+  { kind: 'custom', name: 'rssFeedPageWorkload' },
   {
     kind: 'maxProcessedRows',
     relation: 'rss_feed_item_sources',
-    max: RSS_FEED_ITEM_SEED_COUNT * Math.ceil(RSS_FEED_SEED_COUNT / HOSTNAME_COUNT) * 3,
+    max: RSS_FEED_SEEDED_ITEM_ROWS * 3,
   },
-  { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: RSS_FEED_ITEM_SEED_COUNT * 2 },
+  { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: RSS_FEED_SEEDED_ITEM_ROWS * 2 },
 ] as const
 
-export function registerRssFeedCandidateScenario(scenarioId: string): void {
+export function registerRssFeedPageScenario(scenarioId: string, allowEmptyResult = false): void {
   registerScenarioContract(scenarioId, {
-    expectations: feedCandidateExpectations,
+    expectations: feedPageExpectations,
+    allowEmptyResult,
     crossPartition: {
-      rss_feed_items: 'The feed ranks recent matching items across the time window.',
+      rss_feed_items: 'The personalized feed ranks source and topic matches within seven days.',
     },
   })
 }
@@ -35,7 +35,7 @@ export async function runRssFeedFirstAndContinuationScenarios(
   suffix?: string,
 ): Promise<void> {
   let first: RssFeedItemFeedResponse | undefined
-  registerRssFeedCandidateScenario(scenarioId)
+  registerRssFeedPageScenario(scenarioId)
   await runAndCapture(
     scenarioId,
     async () => {
@@ -53,7 +53,7 @@ export async function runRssFeedFirstAndContinuationScenarios(
       .filter(row => row.delivery_type === 'direct' && row.story_id)
       .map(row => row.story_id),
   )
-  registerRssFeedCandidateScenario(`${scenarioId}-after`)
+  registerRssFeedPageScenario(`${scenarioId}-after`)
   await runAndCapture(
     `${scenarioId}-after`,
     async () => {
