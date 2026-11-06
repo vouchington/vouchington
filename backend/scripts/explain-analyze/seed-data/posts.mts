@@ -22,9 +22,14 @@ export async function seedPosts(count = 10_000): Promise<void> {
       const batchIndex = i / 500
       await diagnostics.operation('batch', batchIndex, async () => {
         const batch = Math.min(500, count - i)
-        const values: unknown[] = []
-        const rows: string[] = []
         const postIds: string[] = []
+        const postTypes: string[] = []
+        const titles: string[] = []
+        const markdowns: string[] = []
+        const userIds: string[] = []
+        const hashes: Buffer[] = []
+        const verticals: (string | null)[] = []
+        const structuredDataValues: (string | null)[] = []
         for (let j = 0; j < batch; j++) {
           const idx = i + j
           const id = seedUuid(idx, '05')
@@ -44,21 +49,13 @@ export async function seedPosts(count = 10_000): Promise<void> {
               })
             : null
           postIds.push(id)
-          values.push(
-            id,
-            postType,
-            title,
-            markdown,
-            userId,
-            hash,
-            hash,
-            dataPointVertical,
-            structuredData,
-          )
-          const base = values.length - 8
-          rows.push(
-            `('system', $${base}, $${base + 1}::post_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}::jsonb)`,
-          )
+          postTypes.push(postType)
+          titles.push(title)
+          markdowns.push(markdown)
+          userIds.push(userId)
+          hashes.push(hash)
+          verticals.push(dataPointVertical)
+          structuredDataValues.push(structuredData)
         }
         await diagnostics.operation('insert', batchIndex, () =>
           query(
@@ -67,8 +64,24 @@ export async function seedPosts(count = 10_000): Promise<void> {
           bedrock_nova_multimodal_v1_content_sha256,
           llm_moderation_content_sha256,
           data_point_vertical, structured_data
-        ) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
-            values,
+        ) SELECT 'system', id, post_type, title, markdown, author_id,
+            hash, hash, vertical, data
+          FROM UNNEST($1::uuid[], $2::post_types[], $3::text[], $4::text[],
+            $5::uuid[], $6::bytea[], $7::text[], $8::jsonb[])
+            WITH ORDINALITY AS seed (
+              id, post_type, title, markdown, author_id, hash, vertical, data, ordinal
+            )
+          WHERE TRUE ORDER BY ordinal ON CONFLICT DO NOTHING`,
+            [
+              postIds,
+              postTypes,
+              titles,
+              markdowns,
+              userIds,
+              hashes,
+              verticals,
+              structuredDataValues,
+            ],
           ),
         )
         await diagnostics.operation('clearance', batchIndex, () =>
