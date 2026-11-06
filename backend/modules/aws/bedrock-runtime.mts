@@ -8,7 +8,6 @@ import { getBedrockCredentials, hasBedrockCredentials } from './credentials.mts'
 
 let directBedrockRuntimeClient: BedrockRuntimeClient | undefined
 let proxiedBedrockRuntimeClient: BedrockRuntimeClient | undefined
-let closePromise: Promise<void> | undefined
 
 function getBedrockRuntimeClient(): BedrockRuntimeClient {
   if (!isApiEgressProxyRouteEnabled('bedrock_embeddings_enabled')) {
@@ -51,16 +50,13 @@ export const BedrockEmbeddingsClient = new Proxy({} as BedrockRuntimeClient, {
   },
 })
 
-export async function closeBedrockRuntimeClients(): Promise<void> {
-  if (closePromise) return closePromise
+async function closeBedrockRuntimeClients(): Promise<void> {
   const direct = directBedrockRuntimeClient
   const proxied = proxiedBedrockRuntimeClient
   directBedrockRuntimeClient = undefined
   proxiedBedrockRuntimeClient = undefined
   direct?.destroy()
   proxied?.destroy()
-  closePromise = Promise.resolve()
-  return closePromise
 }
 
 addGracefulShutdownDrainCallback(closeBedrockRuntimeClients)
