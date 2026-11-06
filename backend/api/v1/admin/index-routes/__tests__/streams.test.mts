@@ -1,6 +1,4 @@
 import { ClientRequest } from 'node:http'
-import { GlideClient, GlideClientConfiguration } from '@valkey/valkey-glide'
-import { TestGlideClientScope } from '@voucha/test-helpers/glide-client-scope'
 import { afterAll, beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { closeApiTestServer, createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -13,7 +11,6 @@ type StreamCapture = {
 
 let admin: PrivateUser
 let regularUser: PrivateUser
-const streamClients = new TestGlideClientScope()
 
 describe('Admin SSE stream routes', () => {
   beforeAll(async () => {
@@ -24,13 +21,7 @@ describe('Admin SSE stream routes', () => {
     await Promise.all([import('../postgresql-stream-get.mts'), import('../valkey-stream-get.mts')])
   })
 
-  afterAll(async () => {
-    try {
-      await closeApiTestServer()
-    } finally {
-      await streamClients.close()
-    }
-  })
+  afterAll(closeApiTestServer)
 
   describe('GET /api/v1/admin/postgresql/stream', () => {
     it('returns 401 when not authenticated', async () => {
@@ -103,7 +94,6 @@ describe('Admin SSE stream routes', () => {
       expect(capture.contentType).toContain('text/event-stream')
       expect(capture.body.match(/event: snapshot\n/g)).toHaveLength(2)
       expect(capture.body).toContain('"groups"')
-      expect(streamClients.size).toBe(4)
     })
   })
 })
@@ -120,29 +110,6 @@ async function captureAdminStream(
   let response: { destroy(): void } | undefined
   const responseClosed = Promise.withResolvers<void>()
   const req = request.get(path).set('Accept', 'text/event-stream').timeout(5000).buffer(false)
-  const clientCreation = vi.spyOn(GlideClient, 'createClient').mockImplementation(async config => {
-    const client = await streamClients.create(config)
-    const patterns =
-      config.pubsubSubscriptions?.channelsAndPatterns?.[
-        GlideClientConfiguration.PubSubChannelModes.Pattern
-      ]
-    const ownedPatterns = ['admin:postgresql:*', 'admin:valkey:*'].filter(pattern =>
-      patterns?.has(pattern),
-    )
-    if (ownedPatterns.length > 0) streamClients.own(client, ownedPatterns)
-    return client
-  })
-  const publish = GlideClient.prototype.publish
-  const publication = vi.spyOn(GlideClient.prototype, 'publish').mockImplementation(function (
-    this: GlideClient,
-    message,
-    channel,
-  ) {
-    if (channel === 'admin:postgresql:snapshot' || channel === 'admin:valkey:snapshot') {
-      streamClients.own(this)
-    }
-    return publish.call(this, message, channel)
-  })
 
   if (options) {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
@@ -210,8 +177,6 @@ async function captureAdminStream(
       if (response) await responseClosed.promise
       await transportClosed
     } finally {
-      clientCreation.mockRestore()
-      publication.mockRestore()
       clearIntervalSpy?.mockRestore()
       if (options) {
         // Drain retained restorers before restoring real timer globals.

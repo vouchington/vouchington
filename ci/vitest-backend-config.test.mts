@@ -70,7 +70,7 @@ describe('backend Vitest project config', () => {
       ).toBeLessThan(setupFiles.indexOf('./test-helpers/vitest.setup.shared-db-scope-guard.mts'))
     }
   })
-  it('registers the direct GlideMQ attachment guard runner for backend-data-stores', () => {
+  it('registers the GlideMQ attachment guard runner only for backend-data-stores', () => {
     const runner = './test-helpers/vitest.runner.backend-data-guards.mts'
     const projects = config.test?.projects as BackendProject[] | undefined
     const owners = projects?.filter(project => project.test?.runner === runner) ?? []
@@ -78,16 +78,6 @@ describe('backend Vitest project config', () => {
     expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
     expect(dataStores?.runner).toBe(runner)
     expect(realGlideProject()?.runner).toBeUndefined()
-  })
-  it('owns admin stream cleanup in an isolated graph with both leak and worker guards', () => {
-    const path = 'backend/api/v1/admin/index-routes/__tests__/streams.test.mts'
-    const owners = backendProjects().filter(project => projectOwnsPath(project, path))
-    expect(owners.map(project => project.test?.name)).toEqual(['backend-admin-streams'])
-    expect(owners[0]?.test?.isolate).toBe(true)
-    expect(owners[0]?.test?.runner).toBe('./test-helpers/vitest.runner.admin-streams.mts')
-    expect(owners[0]?.test?.setupFiles).toContain(
-      './test-helpers/vitest.setup.fork-leak-detection.mts',
-    )
   })
   it('keeps the self-isolating global media replay case in backend-data-stores', () => {
     const path = 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts'

@@ -119,21 +119,9 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/data-stores/psql/__tests__/schema-*.test.mts',
         'backend/data-stores/psql/__tests__/lifecycle-integrity.test.mts',
         'backend/api/v1/platform-stats/platform-stats.test.mts',
-        'backend/api/v1/admin/index-routes/__tests__/streams.test.mts',
         'backend/services/ai-usage/__tests__/record-monthly-partition.test.mts',
         'backend/services/data-retention/cleanup-ai-usage*.test.mts',
       ],
-    },
-  },
-  {
-    extends: true,
-    test: {
-      ...backendDataStoreTestDefaults,
-      name: 'backend-admin-streams',
-      isolate: true,
-      runner: './test-helpers/vitest.runner.admin-streams.mts',
-      include: ['backend/api/v1/admin/index-routes/__tests__/streams.test.mts'],
-      exclude: ['**/node_modules/**', '**/.git/**'],
     },
   },
   {
@@ -156,11 +144,15 @@ export const backendDataProjects: TestProjectConfiguration[] = [
     test: {
       ...backendDataStoreTestDefaults,
       name: 'backend-platform-stats-cache',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       env: { ...backendDataStoreTestDefaults.env, PG_TEST_STATEMENT_TIMEOUT_MS: '2000' },
       isolate: true,
       runner: './test-helpers/vitest.runner.platform-stats-cache.mts',
       include: ['backend/api/v1/platform-stats/platform-stats.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
+      globalSetup: backendDataStoreTestDefaults.globalSetup,
+      setupFiles: backendDataStoreTestDefaults.setupFiles,
     },
   },
   {

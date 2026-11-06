@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { parse } from 'yaml'
 
-const ownershipLabel = 'voucha.private-test-valkey'
+const ownershipLabel = 'voucha.platform-stats-cache'
 const startupTimeout = 30_000
 
 function docker(args: string[]): string {
@@ -36,17 +36,19 @@ function watchHealth(containerId: string, since: string) {
         if (event.Actor?.ID !== containerId) return
         if (event.Action === 'health_status: healthy') resolve()
         if (['health_status: unhealthy', 'die', 'destroy'].includes(event.Action ?? '')) {
-          reject(new Error(`Private test Valkey failed: ${event.Action}`))
+          reject(new Error(`Private platform-stats Valkey failed: ${event.Action}`))
         }
       } catch (err) {
         reject(
-          err instanceof Error ? err : new Error('Private test Valkey log line was not valid JSON'),
+          err instanceof Error
+            ? err
+            : new Error('Private platform-stats Valkey log line was not valid JSON'),
         )
       }
     })
     child.once('error', reject)
     child.once('close', (code, signal) => {
-      reject(new Error(`Private test Valkey health watcher exited (${code}, ${signal})`))
+      reject(new Error(`Private platform-stats Valkey health watcher exited (${code}, ${signal})`))
     })
   })
   return {
@@ -65,14 +67,15 @@ function removeOwnedContainer(containerId: string, owner: string): void {
     `{{index .Config.Labels "${ownershipLabel}"}}`,
     containerId,
   ])
-  if (label !== owner) throw new Error('Refusing to remove a foreign private test Valkey container')
+  if (label !== owner)
+    throw new Error('Refusing to remove a foreign platform-stats cache container')
   docker(['rm', '--force', containerId])
 }
 
-export default async function createPrivateValkey(purpose: 'platform-stats' | 'admin-streams') {
+export default async function createPlatformStatsCache() {
   const owner = randomUUID()
   const since = new Date().toISOString()
-  const name = `voucha-${purpose}-${owner}`
+  const name = `voucha-platform-stats-${owner}`
   let containerId: string | undefined
   try {
     const createdId = docker([
@@ -112,7 +115,7 @@ export default async function createPrivateValkey(purpose: 'platform-stats' | 'a
     const binding = ports['6379/tcp']?.[0]
     const port = Number(binding?.HostPort)
     if (binding?.HostIp !== '127.0.0.1' || !Number.isInteger(port) || port < 1 || port > 65535) {
-      throw new Error('Private test Valkey did not bind an assigned localhost port')
+      throw new Error('Private platform-stats Valkey did not bind an assigned localhost port')
     }
     return {
       url: `redis://127.0.0.1:${port}`,
@@ -139,9 +142,11 @@ export default async function createPrivateValkey(purpose: 'platform-stats' | 'a
         removeOwnedContainer(containerId, owner)
       }
     } catch (err) {
-      throw new AggregateError([outerErr, err], 'Private test Valkey startup and cleanup failed', {
-        cause: err,
-      })
+      throw new AggregateError(
+        [outerErr, err],
+        'Private platform-stats cache startup and cleanup failed',
+        { cause: err },
+      )
     }
     throw outerErr
   }
