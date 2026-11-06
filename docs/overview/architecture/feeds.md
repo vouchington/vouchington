@@ -4,9 +4,9 @@ Personalized post and RSS feed item feeds for logged-in users. Feeds are filtere
 
 ## Query Pipeline
 
-Both feeds start with follow and exclusion relations and combine direct and shared deliveries. RSS reads choose the most active followed sources, then take a bounded recent pool from each source before applying eligibility. Feed activity is cached on the feed, so publication does not rewrite follower rows. Topic candidates coalesce current category and voted memberships rather than expanding those relationships during every read.
+Both feeds start with follow and exclusion relations and combine direct and shared deliveries. RSS pages read items through indexed followed-source and topic filters. Each source contributes its next item before the cursor; the highest heads choose the capped source set for that page. Each selected source and the share pool then take a bounded child page. Feed activity is cached on the feed, so publication does not rewrite follower rows. Topic candidates coalesce current category and voted memberships rather than expanding those relationships during every read.
 
-RSS results intentionally cover a bounded recent pool, not the complete matching history. Each continuation uses that same pool and chooses story winners before the strict publication-time and delivery-ID cursor comparison. Short pages are valid; reaching the end does not trigger a deeper scan. Live item, follow, activity, or score changes can change the pool between requests. Eligibility reads also have budgets and omit candidates when checking all relevant exclusions would exceed them.
+RSS continuations push the strict publication-time and delivery-ID cursor into every source, topic and share index walk. Source selection is repeated against that cursor, allowing previously unselected sources and older items to enter later pages. Omitted-source and proxy-community head lookahead, together with each full child window's last tuple, withholds older deliveries until the unread prefix can be considered. This prevents one stream from moving the cursor past another stream's unseen items. The cursor always identifies the last returned delivery; empty pages are terminal. Filters or exhausted eligibility and story-proof budgets can produce short or terminal partial results. Live item, follow or score changes can change results between requests.
 
 Canonical date and deletion corrections leave durable, coalesced projection work. Bounded worker pages refresh source and topic order, and scheduled recovery resumes work after a crash. Alias ownership changes use the category reconciler's bounded candidate phase. Item deletion cascades through the projections.
 
@@ -28,13 +28,13 @@ flowchart TD
     subgraph RSS["RSS item feed - getRssFeedItemFeedIds"]
         RR["Follow and exclusion relations"] --> RM
         RR --> RE
-        RM["Activity-ranked sources, then bounded recent item pools"] --> RD
+        RM["Cursor-relative source heads, then bounded child pages"] --> RD
         RD["Materialized eligible direct cohort with score and request filters"] --> RW
-        RW["Bounded positive-net story children: official, Wilson score, ID"] --> RCombined
+        RW["Bounded newer-member proof: newest eligible matching story member"] --> RCombined
         RE["Shared-item eligibility"] --> RShared
         RShared["shared_rss_feed_items (rss_feed_item_feed_shares JOIN eligible items)"] --> RCombined
         RCombined["combined_rss_feed_items = UNION ALL"] --> RFinal
-        RFinal["Cursor/order -> LIMIT+1"]
+        RFinal["Strict delivery cursor/order -> LIMIT+1"]
     end
 ```
 
@@ -119,9 +119,9 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
 
 ## Story Clustering
 
-RSS feed items are grouped into stories — first-class entities representing a single news event covered by multiple outlets. The story-clustering Choice classifier decides whether to cluster using heuristics (e.g., rumors ≠ announcements) and fails closed on a low-confidence or malformed answer. Among the bounded positive-net candidates already read for a story, eligibility filters run before selecting one direct representative: official first, then highest Wilson score, then ID. Share deliveries remain independent events. Winners are selected before cursor filtering, so an unchanged story pool does not produce a different sibling on its next page. See stories.md for full details.
+RSS feed items are grouped into stories — first-class entities representing a single news event covered by multiple outlets. The story-clustering Choice classifier decides whether to cluster using heuristics (e.g., rumors ≠ announcements) and fails closed on a low-confidence or malformed answer. Personalized feeds represent a story at its newest eligible member matching the viewer's follows, using the feed's normal score minima. Official status and Wilson score do not choose that representative. Share deliveries remain independent events. See stories.md for full details.
 
-The [direct winner builder](../../../backend/services/feeds/rss-feed-items/get-ids/direct-winner-cte.mts) uses `DISTINCT ON (story_id)` over the materialized eligible cohort. An official item that fails a request filter cannot displace an eligible sibling; a deleted story does not confer official priority. Ordinary, heavy-follow, sparse source-filter, and skewed-story [EXPLAIN scenarios](../../development/postgresql/explain-analyze/README.md) enforce source work in custom and generic plans. Global recency and semantic search retain their separate selection paths.
+The [direct winner builder](../../../backend/services/feeds/rss-feed-items/get-ids/direct-winner-cte.mts) checks newer story members in chronological index order without applying the page cursor to that proof. An eligible newer match suppresses its older sibling even on a later page. If the bounded proof cannot rule out a newer match, it conservatively omits the older candidate. Indexed follow and community-list checks keep membership work bounded and independent of the cursor-selected source set. Ordinary, heavy-follow, sparse source-filter, and skewed-story [EXPLAIN scenarios](../../development/postgresql/explain-analyze/README.md) enforce source work in custom and generic plans. Global recency and semantic search retain their separate selection paths.
 
 ## Related Services
 

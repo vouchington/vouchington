@@ -17,14 +17,9 @@ export const rssFeedItemPageRegistryEntry = defineDynamicConfigNamespace({
       maxValue: rssFeedItemPageMaxima.source_limit,
       integer: true,
     },
-    items_per_source: {
-      description: 'Maximum ordered item candidates read from each selected feed or topic.',
-      minValue: 1,
-      maxValue: rssFeedItemPageMaxima.items_per_source,
-      integer: true,
-    },
     story_item_limit: {
-      description: 'Maximum indexed members considered per story candidate.',
+      description:
+        'Maximum newer story members checked before proving an item is the representative.',
       minValue: 1,
       maxValue: rssFeedItemPageMaxima.story_item_limit,
       integer: true,
@@ -34,12 +29,6 @@ export const rssFeedItemPageRegistryEntry = defineDynamicConfigNamespace({
         'Maximum source, topic, hashtag, and story children checked for item eligibility.',
       minValue: 1,
       maxValue: rssFeedItemPageMaxima.eligibility_child_limit,
-      integer: true,
-    },
-    share_limit: {
-      description: 'Maximum ordered share candidates read per page.',
-      minValue: 1,
-      maxValue: rssFeedItemPageMaxima.share_limit,
       integer: true,
     },
     exclusion_relation_limit: {

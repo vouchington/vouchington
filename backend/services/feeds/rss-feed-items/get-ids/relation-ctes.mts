@@ -17,19 +17,41 @@ export function appendRelationCTEs(
     followInputLimit,
     sourceLimit,
     exclusionRelationLimit,
+    cursorSortAt,
+    cursorId,
   }: {
     communityId?: string
     currentUserId?: string
     followInputLimit: number
     sourceLimit: number
     exclusionRelationLimit: number
+    cursorSortAt?: string
+    cursorId?: string
   },
 ): SQLStatement {
   return query
-    .append(buildFollowedRssFeedsCTE({ communityId, currentUserId, followInputLimit, sourceLimit }))
+    .append(
+      buildFollowedRssFeedsCTE({
+        communityId,
+        currentUserId,
+        followInputLimit,
+        sourceLimit,
+        cursorSortAt,
+        cursorId,
+      }),
+    )
     .append(sql`,
     `)
-    .append(buildFollowedTopicsCTE({ communityId, currentUserId, followInputLimit, sourceLimit }))
+    .append(
+      buildFollowedTopicsCTE({
+        communityId,
+        currentUserId,
+        followInputLimit,
+        sourceLimit,
+        cursorSortAt,
+        cursorId,
+      }),
+    )
     .append(sql`,
     `)
     .append(appendPersonalizedExclusionCTEs(sql``, currentUserId, exclusionRelationLimit))

@@ -2,10 +2,12 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { RssFeedItemFeedOptions } from '../../types.mts'
 import { appendDirectCandidateCTE } from './direct-candidate-cte.mts'
 import { appendDirectWinnerCTE } from './direct-winner-cte.mts'
+import { appendSharedItemPoolCTEs } from './shared-item-pool-cte.mts'
 
 export function appendDeliveryCTEs(
   query: SQLStatement,
   {
+    communityId,
     cutoffDate,
     currentUserId,
     currentUserIsAdministrator,
@@ -24,11 +26,13 @@ export function appendDeliveryCTEs(
     hashtagAliasIds,
     hasUnknownHashtag,
     sourceLimit,
-    itemsPerSource,
+    pageSize,
     storyItemLimit,
     eligibilityChildLimit,
-    shareLimit,
+    cursorSortAt,
+    cursorId,
   }: {
+    communityId?: string
     cutoffDate: Date | null
     currentUserId?: string
     currentUserIsAdministrator: boolean
@@ -47,13 +51,23 @@ export function appendDeliveryCTEs(
     hashtagAliasIds: string[] | undefined
     hasUnknownHashtag: boolean | undefined
     sourceLimit: number
-    itemsPerSource: number
+    pageSize: number
     storyItemLimit: number
     eligibilityChildLimit: number
-    shareLimit: number
+    cursorSortAt?: string
+    cursorId?: string
   },
 ): SQLStatement {
+  appendSharedItemPoolCTEs(query, {
+    cutoffDate,
+    currentUserId,
+    includeSharedItems,
+    pageSize,
+    cursorSortAt,
+    cursorId,
+  })
   appendDirectCandidateCTE(query, {
+    communityId,
     currentUserId,
     currentUserIsAdministrator,
     feedType,
@@ -71,12 +85,22 @@ export function appendDeliveryCTEs(
     hashtagAliasIds,
     hasUnknownHashtag,
     sourceLimit,
-    itemsPerSource,
+    pageSize,
+    cursorSortAt,
+    cursorId,
     storyItemLimit,
     eligibilityChildLimit,
   })
-  appendDirectWinnerCTE(query, { storyItemLimit, eligibilityChildLimit })
-  appendSharedFeedItemsCTE(query, { cutoffDate, currentUserId, includeSharedItems, shareLimit })
+  appendDirectWinnerCTE(query, {
+    communityId,
+    currentUserId,
+    feedType,
+    storyItemLimit,
+    eligibilityChildLimit,
+    minScoreFollowRssFeeds,
+    minScoreFollowTopics,
+  })
+  appendSharedFeedItemsCTE(query)
   return query.append(sql`
     ),
     combined_rss_feed_items AS (
@@ -86,32 +110,8 @@ export function appendDeliveryCTEs(
     )`)
 }
 
-function appendSharedFeedItemsCTE(
-  query: SQLStatement,
-  {
-    cutoffDate,
-    currentUserId,
-    includeSharedItems,
-    shareLimit,
-  }: {
-    cutoffDate: Date | null
-    currentUserId?: string
-    includeSharedItems: boolean
-    shareLimit: number
-  },
-): void {
+function appendSharedFeedItemsCTE(query: SQLStatement): void {
   query.append(sql`
-    ),
-    shared_item_pool AS MATERIALIZED (
-      SELECT id, rss_feed_item_id, sort_at, shared_by_id, created_at
-      FROM rss_feed_item_feed_shares
-      WHERE recipient_user_id = ${currentUserId ?? '00000000-0000-0000-0000-000000000000'}
-        AND ${includeSharedItems}
-  `)
-  if (cutoffDate) query.append(sql` AND sort_at >= ${cutoffDate}`)
-  query.append(sql`
-      ORDER BY sort_at DESC, id DESC
-      LIMIT ${shareLimit}
     ),
     shared_rss_feed_items AS (
       SELECT

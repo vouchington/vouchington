@@ -5,7 +5,6 @@ import {
   createTestTopic,
 } from '@voucha/test-helpers'
 import { addCategoryToRssFeedItem } from '@voucha/test-helpers/entities/rss-feed-item-category-fixtures'
-import { setTestRssFeedItemVotes } from '@voucha/test-helpers/entities/rss-feed-item-votes'
 import { insertTestStory, setTestItemStoryId } from '@voucha/test-helpers/entities/stories'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
@@ -13,7 +12,6 @@ import {
   readCandidateFixture,
   addCandidateSource,
   setCandidatePublication,
-  setCandidateOfficial,
   deleteCandidateItem,
   setCandidateTopicClaim,
   setCandidateHidden,
@@ -36,28 +34,21 @@ describe('RSS feed candidate projections', () => {
     expect(state.topics[0]!.sort_at).toEqual(state.candidate!.sort_at)
     expect(state.feeds[0]!.latest_item_sort_at).toEqual(state.candidate!.sort_at)
   })
-  it('copies canonical order and score, tracks official pointer clearing, and cascades item deletion', async () => {
+  it('projects story/date order, tracks date changes, and cascades item deletion', async () => {
     const feed = await createTestRssFeedWithTiming((await createTestTopic()).id)
     const item = await createTestRssFeedItemWithUrl(feed)
     const story = await insertTestStory()
     await setTestItemStoryId(item.id, story.id)
-    await setTestRssFeedItemVotes(item.id, 7)
-    await setCandidateOfficial(story.id, item.id)
     const state = await readCandidateFixture(item.id, [feed])
     expect(state.candidate).toMatchObject({
       story_id: story.id,
-      is_official_for_story: true,
-      votes_score_net: 7,
     })
-    expect(state.candidate!.votes_score_sort).toBeGreaterThan(0)
     expect(state.sources[0]!.item_sort_at).toEqual(state.candidate!.sort_at)
     expect(state.feeds[0]!.latest_item_sort_at).toEqual(state.candidate!.sort_at)
-    await setCandidateOfficial(story.id, null)
-    expect((await readCandidateFixture(item.id, [feed])).candidate!.is_official_for_story).toBe(
-      false,
-    )
+    const revisedDate = new Date(Date.now() - 2 * 60_000)
+    await setCandidatePublication(item.id, revisedDate)
+    expect((await readCandidateFixture(item.id, [feed])).candidate!.sort_at).toEqual(revisedDate)
     await addCategoryToRssFeedItem(item.id, (await createTestTopic()).id)
-    await setCandidatePublication(item.id, new Date(Date.now() - 120_000))
     expect(await getCandidateReconciliation(item.id)).toBeDefined()
     await deleteCandidateItem(item.id)
     const deleted = await readCandidateFixture(item.id, [feed])

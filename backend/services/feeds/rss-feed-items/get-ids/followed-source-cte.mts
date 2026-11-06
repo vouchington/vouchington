@@ -1,30 +1,65 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import type { SourceKind } from './source-head.mts'
+import { buildCommunitySources, buildLatestCommunityActivity } from './community-source-heads.mts'
 
-type SourceKind = 'feed' | 'topic'
 type FollowedSourceOptions = {
   communityId?: string
   currentUserId?: string
   followInputLimit: number
   sourceLimit: number
+  cursorSortAt?: string
+  cursorId?: string
 }
 
 /** Both source kinds share the bounded direct/proxy follow shape; activity lookup stays kind-specific. */
 export function buildFollowedSourceCTE(
   kind: SourceKind,
-  { communityId, currentUserId, followInputLimit, sourceLimit }: FollowedSourceOptions,
+  {
+    communityId,
+    currentUserId,
+    followInputLimit,
+    sourceLimit,
+    cursorSortAt,
+    cursorId,
+  }: FollowedSourceOptions,
 ): SQLStatement {
-  const start =
+  const followedHeader =
     kind === 'feed'
       ? sql`/* buildFollowedCTE:fragment */ followed_rss_feeds AS (`
       : sql`/* buildFollowedCTE:fragment */ followed_topics AS (`
+  const proxyRankName =
+    kind === 'feed' ? sql`ranked_proxy_rss_feed_communities` : sql`ranked_proxy_topic_communities`
+  const omittedName =
+    kind === 'feed' ? sql`omitted_proxy_rss_feed_source` : sql`omitted_proxy_topic_source`
+  const start =
+    currentUserId && !communityId
+      ? buildProxyCommunityRankCTE(
+          kind,
+          currentUserId,
+          followInputLimit,
+          sourceLimit,
+          cursorSortAt,
+          cursorId,
+        )
+          .append(sql`, `)
+          .append(followedHeader)
+      : followedHeader
   const sourceId = kind === 'feed' ? sql`rss_feed_id` : sql`topic_id`
   if (communityId) {
     start
       .append(sql`SELECT picked.`)
       .append(sourceId)
       .append(sql` FROM (`)
-      .append(buildCommunitySources(kind, sql`${communityId}`, followInputLimit, sourceLimit))
-      .append(sql`) picked JOIN communities community ON community.id = ${communityId}
+      .append(
+        buildCommunitySources(
+          kind,
+          sql`${communityId}`,
+          followInputLimit,
+          sourceLimit + 1,
+          cursorSortAt,
+          cursorId,
+        ),
+      ).append(sql`) picked JOIN communities community ON community.id = ${communityId}
         AND community.deleted_at IS NULL`)
   } else if (currentUserId) {
     start
@@ -41,30 +76,21 @@ export function buildFollowedSourceCTE(
       SELECT child.`)
       .append(sourceId)
       .append(sql`
-      FROM (
-        SELECT proxy.community_id
-        FROM (
-          SELECT object_id AS community_id
-          FROM relation__user__proxy_follow__community
-          WHERE subject_id = ${currentUserId} AND deleted_at IS NULL
-          ORDER BY created_at DESC, object_id DESC LIMIT ${followInputLimit}
-        ) proxy
-        JOIN communities community ON community.id = proxy.community_id
-          AND community.deleted_at IS NULL
-        LEFT JOIN LATERAL (`)
-      .append(buildLatestCommunityActivity(kind, sql`proxy.community_id`, followInputLimit))
-      .append(sql`) latest ON TRUE
-        WHERE community.visibility = 'public' OR EXISTS (
-          SELECT 1 FROM community_members member
-          WHERE member.community_id = community.id
-            AND member.user_id = ${currentUserId} AND member.removed_at IS NULL
-        )
-        ORDER BY latest.activity_at DESC NULLS LAST, proxy.community_id DESC
-        LIMIT ${sourceLimit}
-      ) proxy
+      FROM `)
+      .append(proxyRankName)
+      .append(sql` proxy
       CROSS JOIN LATERAL (`)
-      .append(buildCommunitySources(kind, sql`proxy.community_id`, followInputLimit, sourceLimit))
-      .append(sql`) child
+      .append(
+        buildCommunitySources(
+          kind,
+          sql`proxy.community_id`,
+          followInputLimit,
+          sourceLimit + 1,
+          cursorSortAt,
+          cursorId,
+        ),
+      ).append(sql`) child
+      WHERE proxy.community_rank <= ${sourceLimit}
     ) combined`)
   } else {
     start
@@ -72,7 +98,66 @@ export function buildFollowedSourceCTE(
       .append(sourceId)
       .append(sql` WHERE false`)
   }
-  return start.append(sql` )`)
+  start
+    .append(sql` ), `)
+    .append(omittedName)
+    .append(sql` AS MATERIALIZED (`)
+  if (currentUserId && !communityId)
+    start
+      .append(sql`SELECT activity_at AS sort_at, activity_item_id AS item_id
+      FROM `)
+      .append(proxyRankName)
+      .append(sql` WHERE community_rank = ${sourceLimit + 1} AND activity_at IS NOT NULL`)
+  else start.append(sql`SELECT NULL::timestamptz AS sort_at, NULL::uuid AS item_id WHERE FALSE`)
+  return start.append(sql`)`)
+}
+
+function buildProxyCommunityRankCTE(
+  kind: SourceKind,
+  currentUserId: string,
+  followInputLimit: number,
+  sourceLimit: number,
+  cursorSortAt?: string,
+  cursorId?: string,
+): SQLStatement {
+  const name =
+    kind === 'feed' ? sql`ranked_proxy_rss_feed_communities` : sql`ranked_proxy_topic_communities`
+  return sql``
+    .append(name)
+    .append(sql` AS MATERIALIZED (
+    SELECT ranked.*,
+      row_number() OVER (ORDER BY activity_at DESC NULLS LAST,
+        activity_item_id DESC NULLS LAST, community_id DESC) AS community_rank
+    FROM (
+      SELECT proxy.community_id, latest.activity_at, latest.activity_item_id
+      FROM (
+        SELECT object_id AS community_id
+        FROM relation__user__proxy_follow__community
+        WHERE subject_id = ${currentUserId} AND deleted_at IS NULL
+        ORDER BY created_at DESC, object_id DESC LIMIT ${followInputLimit}
+      ) proxy
+      JOIN communities community ON community.id = proxy.community_id
+        AND community.deleted_at IS NULL
+      LEFT JOIN LATERAL (`)
+    .append(
+      buildLatestCommunityActivity(
+        kind,
+        sql`proxy.community_id`,
+        followInputLimit,
+        cursorSortAt,
+        cursorId,
+      ),
+    ).append(sql`) latest ON TRUE
+      WHERE community.visibility = 'public' OR EXISTS (
+        SELECT 1 FROM community_members member
+        WHERE member.community_id = community.id AND member.user_id = ${currentUserId}
+          AND member.removed_at IS NULL
+      )
+      ORDER BY latest.activity_at DESC NULLS LAST,
+        latest.activity_item_id DESC NULLS LAST, proxy.community_id DESC
+      LIMIT ${sourceLimit + 1}
+    ) ranked
+  )`)
 }
 
 function buildDirectFollows(kind: SourceKind, userId: string, limit: number): SQLStatement {
@@ -83,68 +168,4 @@ function buildDirectFollows(kind: SourceKind, userId: string, limit: number): SQ
     : sql`SELECT object_id FROM relation__user__follow__topic
         WHERE subject_id = ${userId} AND deleted_at IS NULL
         ORDER BY created_at DESC, object_id DESC LIMIT ${limit}`
-}
-
-function buildCommunityList(
-  kind: SourceKind,
-  communityId: SQLStatement,
-  limit: number,
-): SQLStatement {
-  const query =
-    kind === 'feed'
-      ? sql`SELECT rss_feed_id FROM community_list_rss_feeds WHERE community_id = `
-      : sql`SELECT topic_id FROM community_list_topics WHERE community_id = `
-  query
-    .append(communityId)
-    .append(sql` AND removed_at IS NULL ORDER BY `)
-    .append(kind === 'feed' ? sql`rss_feed_id` : sql`topic_id`)
-    .append(sql` DESC LIMIT ${limit}`)
-  return query
-}
-
-function buildLatestCommunityActivity(
-  kind: SourceKind,
-  communityId: SQLStatement,
-  limit: number,
-): SQLStatement {
-  if (kind === 'feed') {
-    return sql`SELECT feed.latest_item_sort_at AS activity_at FROM (`.append(
-      buildCommunityList(kind, communityId, limit),
-    ).append(sql`) raw
-        JOIN rss_feeds feed ON feed.id = raw.rss_feed_id
-          AND feed.is_enabled = TRUE AND feed.deleted_at IS NULL
-        ORDER BY feed.latest_item_sort_at DESC NULLS LAST, feed.id DESC LIMIT 1`)
-  }
-  return sql`SELECT candidate.sort_at AS activity_at FROM (`.append(
-    buildCommunityList(kind, communityId, limit),
-  ).append(sql`) raw JOIN LATERAL (
-      SELECT sort_at FROM rss_feed_item_topic_candidates candidate
-      WHERE candidate.topic_id = raw.topic_id AND candidate.sort_at IS NOT NULL
-      ORDER BY candidate.sort_at DESC, candidate.rss_feed_item_id DESC LIMIT 1
-    ) candidate ON TRUE ORDER BY candidate.sort_at DESC LIMIT 1`)
-}
-
-function buildCommunitySources(
-  kind: SourceKind,
-  communityId: SQLStatement,
-  followInputLimit: number,
-  sourceLimit: number,
-): SQLStatement {
-  if (kind === 'feed') {
-    return sql`SELECT feed.id AS rss_feed_id FROM (`.append(
-      buildCommunityList(kind, communityId, followInputLimit),
-    ).append(sql`) raw JOIN rss_feeds feed ON feed.id = raw.rss_feed_id
-        AND feed.is_enabled = TRUE AND feed.deleted_at IS NULL
-        ORDER BY feed.latest_item_sort_at DESC NULLS LAST, feed.id DESC
-        LIMIT ${sourceLimit}`)
-  }
-  return sql`SELECT raw.topic_id FROM (`.append(
-    buildCommunityList(kind, communityId, followInputLimit),
-  ).append(sql`) raw LEFT JOIN LATERAL (
-      SELECT sort_at FROM rss_feed_item_topic_candidates candidate
-      WHERE candidate.topic_id = raw.topic_id AND candidate.sort_at IS NOT NULL
-      ORDER BY candidate.sort_at DESC, candidate.rss_feed_item_id DESC LIMIT 1
-    ) latest ON TRUE
-    ORDER BY latest.sort_at DESC NULLS LAST, raw.topic_id DESC
-    LIMIT ${sourceLimit}`)
 }

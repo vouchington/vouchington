@@ -118,6 +118,3 @@ DO $$ BEGIN
   END IF;
 END $$;
 ALTER TABLE rss_feed_item_feed_candidates VALIDATE CONSTRAINT fk_rss_feed_item_feed_candidates__story;
-CREATE OR REPLACE TRIGGER trigger_story_official_feed_candidates
-  AFTER INSERT OR UPDATE OF official_rss_feed_item_id, deleted_at OR DELETE ON stories
-  FOR EACH ROW EXECUTE FUNCTION fn_project_story_official_feed_candidates();

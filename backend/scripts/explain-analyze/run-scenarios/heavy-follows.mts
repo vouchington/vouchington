@@ -4,7 +4,7 @@ import * as services from '../run-services.mts'
 import {
   RSS_AT_CAP_STORY_ID,
   RSS_AT_CAP_STORY_TOKEN,
-} from '../seed-data/rss-feed-candidate-work.mts'
+} from '../seed-data/rss-feed-candidate-at-cap.mts'
 import {
   registerRssFeedCandidateScenario,
   runRssFeedFirstAndContinuationScenarios,
@@ -142,11 +142,7 @@ export async function runHeavyFollowScenarios() {
       time_range: '1w',
       text_search_query: RSS_AT_CAP_STORY_TOKEN,
     })
-    if (
-      page.results.length !== 1 ||
-      page.results[0]?.story_id !== RSS_AT_CAP_STORY_ID ||
-      page.page_info.has_next_page
-    ) {
+    if (page.results.length !== 1 || page.results[0]?.story_id !== RSS_AT_CAP_STORY_ID) {
       throw new Error('RSS story-skew scenario must return one canonical direct representative')
     }
   })

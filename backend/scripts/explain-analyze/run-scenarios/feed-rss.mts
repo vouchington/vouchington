@@ -1,4 +1,5 @@
 import { SEED_PREFIX, heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
+import { read } from '@data-stores/psql'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
@@ -12,6 +13,7 @@ import {
 } from './rss-feed-pages.mts'
 import { runRssFeedCandidateReconciliationScenarios } from './rss-feed-candidate-maintenance.mts'
 import { runRssTopicMergeCandidateScenarios } from './rss-topic-merge-candidates.mts'
+import { RSS_AT_CAP_OUTSIDE_TOPIC_GUID } from '../seed-data/rss-feed-candidate-at-cap.mts'
 import * as services from '../run-services.mts'
 
 const {
@@ -41,11 +43,27 @@ export async function runFeedRssScenarios(): Promise<void> {
   const previousPageFields = rssFeedItemPageConfig.getFields()
   try {
     await rssFeedItemPageConfig.setFields(rssFeedItemPageMaxima)
-    await runRssFeedFirstAndContinuationScenarios('rss-feed-item-feed-at-cap', heavyFollowUser, {
-      limit: 25,
-      time_range: 'all',
-      feed_type: 'follow_topics',
-    })
+    const { rows } = await read<{ id: string }>(
+      `/* readRssAtCapOutsideTopicId */
+       SELECT id FROM rss_feed_item_guids WHERE guid = $1::text LIMIT 1`,
+      [RSS_AT_CAP_OUTSIDE_TOPIC_GUID],
+    )
+    const outsideTopicItemId = rows[0]?.id
+    if (!outsideTopicItemId) throw new Error('RSS at-cap outside-topic fixture is missing')
+    await runRssFeedFirstAndContinuationScenarios(
+      'rss-feed-item-feed-at-cap',
+      heavyFollowUser,
+      {
+        limit: 25,
+        time_range: 'all',
+        feed_type: 'follow_topics',
+      },
+      undefined,
+      continuation => {
+        if (!continuation.results.some(row => row.entity_id === outsideTopicItemId))
+          throw new Error('RSS at-cap continuation must admit the outside-top-source item')
+      },
+    )
   } finally {
     await rssFeedItemPageConfig.setFields(previousPageFields)
   }

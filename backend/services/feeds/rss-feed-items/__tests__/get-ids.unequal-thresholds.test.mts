@@ -97,13 +97,18 @@ describe('getRssFeedItemFeedIds eligibility regressions', () => {
     }
   })
 
-  it('keeps official priority only when that item still clears an applicable threshold', async () => {
+  it('chooses the newest story member that meets each applicable threshold', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic()
     const feedId = await createTestRssFeedWithTiming(topic.id)
     await Promise.all([followRssFeed(user, feedId), followTopic(user, topic)])
-    const official = await createTestRssFeedItemWithUrl(feedId)
-    const sibling = await createTestRssFeedItemWithUrl(feedId)
+    const now = Date.now()
+    const official = await createTestRssFeedItemWithUrl(feedId, {
+      createdAt: new Date(now - 10_000),
+    })
+    const sibling = await createTestRssFeedItemWithUrl(feedId, {
+      createdAt: new Date(now - 1000),
+    })
     const story = await insertTestStory({ officialRssFeedItemId: official.id })
     await Promise.all([
       setTestItemStoryId(official.id, story.id),
@@ -115,27 +120,21 @@ describe('getRssFeedItemFeedIds eligibility regressions', () => {
     ])
     const cases = [
       {
-        feed_type: 'any' as const,
-        min_score_follow_rss_feeds: meetingScore,
-        min_score_follow_topics: 0,
-        winner: official.id,
-      },
-      {
-        feed_type: 'all' as const,
+        feed_type: 'follow_rss_feeds' as const,
         min_score_follow_rss_feeds: meetingScore,
         min_score_follow_topics: 0,
         winner: sibling.id,
       },
       {
-        feed_type: 'any' as const,
+        feed_type: 'follow_topics' as const,
         min_score_follow_rss_feeds: 0,
         min_score_follow_topics: meetingScore,
-        winner: official.id,
+        winner: sibling.id,
       },
       {
-        feed_type: 'all' as const,
-        min_score_follow_rss_feeds: 0,
-        min_score_follow_topics: meetingScore,
+        feed_type: 'any' as const,
+        min_score_follow_rss_feeds: meetingScore,
+        min_score_follow_topics: 0,
         winner: sibling.id,
       },
     ]
@@ -163,7 +162,7 @@ describe('getRssFeedItemFeedIds eligibility regressions', () => {
     }
   })
 
-  it('selects the in-window sibling when the official item is outside the UUID cutoff', async () => {
+  it('selects the newest in-window sibling when the older official item is outside the cutoff', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic()
     const feedId = await createTestRssFeedWithTiming(topic.id)
@@ -196,7 +195,7 @@ describe('getRssFeedItemFeedIds eligibility regressions', () => {
       time_range: 'all',
     })
     expect(unbounded.results.map(row => [row.entity_id, row.story_id, row.delivery_type])).toEqual([
-      [official.id, story.id, 'direct'],
+      [sibling.id, story.id, 'direct'],
     ])
     expect(unbounded.page_info.has_next_page).toBe(false)
   })

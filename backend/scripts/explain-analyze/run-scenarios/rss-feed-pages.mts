@@ -3,21 +3,22 @@ import type { RssFeedItemFeedOptions, RssFeedItemFeedResponse } from '@services/
 import { getRssFeedItemFeedIds } from '@services/feeds'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { rssFeedItemPageMaxima } from '@services/feeds/rss-feed-items/feed-page-config'
 
-const MAX_SOURCE_ITEM_ROWS =
-  rssFeedItemPageMaxima.source_limit * rssFeedItemPageMaxima.items_per_source
-const MAX_TOPIC_SOURCE_PROBES = 10_000
-const MAX_ELIGIBILITY_CHILD_ROWS = rssFeedItemPageMaxima.eligibility_child_limit
-const MAX_SOURCE_CHILD_READS =
-  MAX_SOURCE_ITEM_ROWS + MAX_SOURCE_ITEM_ROWS * (2 * MAX_ELIGIBILITY_CHILD_ROWS + 1)
-const MAX_TOPIC_CANDIDATE_ROWS =
-  MAX_SOURCE_ITEM_ROWS +
-  MAX_TOPIC_SOURCE_PROBES +
-  MAX_SOURCE_ITEM_ROWS * (2 * MAX_ELIGIBILITY_CHILD_ROWS + 1)
-const MAX_STORY_PRIORITY_ROWS = MAX_SOURCE_ITEM_ROWS * rssFeedItemPageMaxima.story_item_limit
-const MAX_PUBLISHER_TYPE_ROWS =
-  MAX_SOURCE_ITEM_ROWS * MAX_ELIGIBILITY_CHILD_ROWS * (2 * MAX_ELIGIBILITY_CHILD_ROWS + 1)
+// Fixed-corpus ceilings include both prepared plan modes and cursor pages. They
+// deliberately catch a return to full item materialization instead of multiplying
+// every independent production hard maximum into a vacuous global allowance.
+const MAX_FEED_FOLLOW_ROWS = 1_000
+// Generic plans may hash the capped topic follows for both stable-match sites.
+const MAX_TOPIC_FOLLOW_ROWS = 31_000
+const MAX_PROXY_COMMUNITY_ROWS = 512
+const MAX_COMMUNITY_LIST_ROWS = 512
+const MAX_PAGE_ITEM_LIMIT = 100
+const MAX_SOURCE_TABLE_ROWS = 4_000
+const MAX_TOPIC_CANDIDATE_ROWS = 4_000
+const MAX_RSS_FEED_ROWS = 1_500
+const MAX_RSS_FEED_ITEM_ROWS = 1_200
+const MAX_STORY_PROBE_ROWS = 512
+const MAX_PUBLISHER_TYPE_ROWS = 3_000
 
 function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type']) {
   return [
@@ -25,14 +26,17 @@ function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type'
     ...(feedType === 'follow_topics'
       ? []
       : [
-          { kind: 'usesIndexes' as const, indexes: ['idx_rss_feeds__live_activity_lookup'] },
           { kind: 'usesIndexes' as const, indexes: ['idx_rss_feed_item_sources__item_sort'] },
           {
             kind: 'maxProcessedRows' as const,
             relation: 'relation__user__follow__rss_feed',
-            max: 10_000,
+            max: MAX_FEED_FOLLOW_ROWS,
           },
-          { kind: 'maxProcessedRows' as const, relation: 'rss_feeds', max: 10_000 },
+          {
+            kind: 'maxProcessedRows' as const,
+            relation: 'community_list_rss_feeds',
+            max: MAX_COMMUNITY_LIST_ROWS,
+          },
         ]),
     ...(feedType === 'follow_rss_feeds'
       ? []
@@ -44,15 +48,30 @@ function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type'
           {
             kind: 'maxProcessedRows' as const,
             relation: 'relation__user__follow__topic',
-            max: 10_000,
+            max: MAX_TOPIC_FOLLOW_ROWS,
+          },
+          {
+            kind: 'maxProcessedRows' as const,
+            relation: 'community_list_topics',
+            max: MAX_COMMUNITY_LIST_ROWS,
           },
         ]),
     {
       kind: 'maxProcessedRows',
       relation: 'rss_feed_item_sources',
-      max: MAX_SOURCE_CHILD_READS,
+      max: MAX_SOURCE_TABLE_ROWS,
     },
-    { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: MAX_SOURCE_ITEM_ROWS },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'relation__user__proxy_follow__community',
+      max: MAX_PROXY_COMMUNITY_ROWS,
+    },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'rss_feeds',
+      max: MAX_RSS_FEED_ROWS,
+    },
+    { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: MAX_RSS_FEED_ITEM_ROWS },
     {
       kind: 'maxProcessedRows',
       relation: 'rss_feed_item_topic_candidates',
@@ -61,7 +80,16 @@ function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type'
     {
       kind: 'maxProcessedRows',
       relation: 'rss_feed_item_feed_candidates',
-      max: MAX_STORY_PRIORITY_ROWS,
+      max: MAX_STORY_PROBE_ROWS,
+    },
+    {
+      kind: 'usesIndexes',
+      indexes: ['idx_rss_feed_item_feed_candidates__story_order'],
+    },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'rss_feed_item_feed_shares',
+      max: MAX_PAGE_ITEM_LIMIT + 1,
     },
     {
       kind: 'maxProcessedRows',
@@ -90,6 +118,7 @@ export async function runRssFeedFirstAndContinuationScenarios(
   user: PrivateUser,
   options: RssFeedItemFeedOptions,
   suffix?: string,
+  validateContinuation?: (page: RssFeedItemFeedResponse) => void,
 ): Promise<void> {
   let first: RssFeedItemFeedResponse | undefined
   registerRssFeedCandidateScenario(scenarioId, options.feed_type)
@@ -127,6 +156,7 @@ export async function runRssFeedFirstAndContinuationScenarios(
       ) {
         throw new Error(`${scenarioId} continuation must contain new canonical deliveries`)
       }
+      validateContinuation?.(next)
     },
     suffix,
   )

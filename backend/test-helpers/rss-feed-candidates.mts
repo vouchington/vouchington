@@ -6,14 +6,11 @@ import { registerTestRssCategoryIdentity } from './entities/rss-category-identit
 type CandidateRow = {
   story_id: string | null
   sort_at: Date
-  is_official_for_story: boolean
-  votes_score_sort: number
-  votes_score_net: number
 }
 
 export async function readCandidateFixture(itemId: string, feedIds: string[]) {
   const candidateQuery = write<CandidateRow>(sql`/* readCandidateFixture item */
-    SELECT story_id, sort_at, is_official_for_story, votes_score_sort, votes_score_net
+    SELECT story_id, sort_at
     FROM rss_feed_item_feed_candidates WHERE id = ${itemId} LIMIT 1`)
   const sourcesQuery = write<{
     rss_feed_id: string
