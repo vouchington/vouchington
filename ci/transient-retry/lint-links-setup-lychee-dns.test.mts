@@ -42,7 +42,19 @@ describe('lint-links-setup-lychee-download-flake github.com DNS', () => {
     expect(result.matchedRule).toBe('lint-links-setup-lychee-download-flake')
   })
 
-  it('does not match a setup-lychee DNS failure for a host other than github.com', async () => {
+  it('matches a setup-lychee DNS failure for release-assets.githubusercontent.com', async () => {
+    const log = setupLycheeCurl6DnsLog.replace(
+      'Could not resolve host: github.com',
+      'Could not resolve host: release-assets.githubusercontent.com',
+    )
+
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
+
+    expect(result.decision).toBe('rerun')
+    expect(result.matchedRule).toBe('lint-links-setup-lychee-download-flake')
+  })
+
+  it('does not match a setup-lychee DNS failure for a host outside the release-download set', async () => {
     const log = setupLycheeCurl6DnsLog.replace(
       'Could not resolve host: github.com',
       'Could not resolve host: github.com.invalid',
