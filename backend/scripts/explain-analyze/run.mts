@@ -43,6 +43,7 @@ import { runMembershipProviderRecoveryScenarios } from './run-scenarios/membersh
 import { runRetentionStagePageScenarios } from './run-scenarios/retention-stage-pages.mts'
 import { runStripeEventRecoveryScenario } from './run-scenarios/stripe-event-recovery.mts'
 import { runPaymentLedgerRetentionScenarios } from './run-scenarios/payment-ledger-retention.mts'
+import { runVoteScoreRankingScenarios } from './run-scenarios/vote-score-ranking.mts'
 import { runMembershipRenewalSelectionScenario } from './run-scenarios/membership-renewal-selection.mts'
 import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts'
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
@@ -169,6 +170,7 @@ async function main() {
     await runStep(measureReferralCache.name, measureReferralCache)
     await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios)
     await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
+    await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
@@ -185,7 +187,6 @@ async function main() {
     writeResults()
   }
 }
-
 async function run(): Promise<void> {
   try {
     await main()

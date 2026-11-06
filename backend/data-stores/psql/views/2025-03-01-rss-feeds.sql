@@ -98,7 +98,7 @@ CREATE OR REPLACE VIEW view_rss_feeds AS
         AND relation.deleted_at IS NULL
         AND relation.votes_score_net > 0
         AND topics.deleted_at IS NULL
-      ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id ASC
+      ORDER BY relation.votes_score_sort DESC, relation.created_at DESC, relation.object_id DESC
       LIMIT 1
     ) publisher_type_topic ON TRUE
     LEFT JOIN podcast_shows AS podcast_show

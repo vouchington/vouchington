@@ -16,6 +16,7 @@ import { seedViewDrivenCommunityPosts } from './view-driven-community-posts.mts'
 import { seedViewDrivenLists } from './view-driven-lists.mts'
 import { seedViewDrivenPrompts } from './view-driven-prompts.mts'
 import { seedModerationSummaryRecipient } from './view-driven-reads.mts'
+import { seedCommunityHotPosts } from './community-hot.mts'
 
 export async function seedCommunitySearchFixtures() {
   await seedCommunityMembershipCaps()
@@ -31,5 +32,6 @@ export async function seedCommunitySearchFixtures() {
   await seedCommunityPosts()
   await seedTrendingCommunityPostIds()
   await seedViewDrivenCommunityPosts()
+  await seedCommunityHotPosts()
   await seedCommunityProxyFollowsAndMutes()
 }

@@ -1,8 +1,11 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from '../plan-nodes.mts'
+import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
 import { SEMANTIC_POST_CANDIDATE_LIMIT } from '@services/posts/search/query-builder/semantic-candidates'
 
 // Literal bound under custom plans, parameter under generic plans.
+// Window rows, their eligibility lookups and the outer lookups, with headroom for index pages.
+const SEMANTIC_HOT_POSTS_BOUND = 6 * SEMANTIC_POST_CANDIDATE_LIMIT
+
 const SEMANTIC_TIME_BOUND = /\bid >= (?:'[0-9a-f-]{36}'::uuid|\$\d+)/
 
 export function assertSemanticPostCandidatePlan(result: ExplainResult): void {
@@ -59,5 +62,18 @@ export function assertSemanticPostCandidatePlan(result: ExplainResult): void {
   )
   if (!orderedVectorScan) {
     throw new Error(`${result.name} must use a distance-ordered vector index inside the window`)
+  }
+  if (result.scenario_id?.endsWith('-hot')) {
+    // Net votes filter the bounded window outside the vector walk; inside it most neighbours
+    // would be rejected until hnsw.max_scan_tuples.
+    const processed = nodes
+      .filter(node => baseRelationName(node) === 'posts')
+      .reduce((sum, node) => sum + processedRows(node), 0)
+    console.log(`${result.name}: processed ${processed} rows from posts`)
+    if (processed > SEMANTIC_HOT_POSTS_BOUND) {
+      throw new Error(
+        `${result.name} processed ${processed} rows from posts; expected at most ${SEMANTIC_HOT_POSTS_BOUND}`,
+      )
+    }
   }
 }

@@ -76,7 +76,7 @@ export async function searchRssFeedItems(options: SearchRssFeedItemsOptions = {}
   query.append(sql`
         ORDER BY
           CASE WHEN winner_story.official_rss_feed_item_id = rss_feed_items.id THEN 1 ELSE 0 END DESC,
-          COALESCE(rss_feed_items.votes_score_net, 0) DESC,
+          COALESCE(rss_feed_items.votes_score_sort, 0) DESC,
           rss_feed_items.id DESC
         LIMIT 1
       ) winner ON eligible_rss_feed_items.story_id IS NOT NULL

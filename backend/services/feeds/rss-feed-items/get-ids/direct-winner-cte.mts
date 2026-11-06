@@ -9,7 +9,7 @@ export function appendDirectWinnerCTE(query: SQLStatement): void {
       WHERE candidate.story_id IS NOT NULL
       ORDER BY candidate.story_id,
         CASE WHEN stories.official_rss_feed_item_id = candidate.item_id THEN 1 ELSE 0 END DESC,
-        COALESCE(candidate.votes_score_net, 0) DESC,
+        COALESCE(candidate.votes_score_sort, 0) DESC,
         candidate.item_id DESC
     ), direct_rss_feed_items AS (
       SELECT

@@ -4,6 +4,7 @@ import {
   createTestUser,
   overrideDynamicConfigFieldsForTest,
   seedSearchEmbeddingCache,
+  setPostVotesScoreUp,
 } from '@voucha/test-helpers'
 import { postsWorkConfig } from '@services/posts/work-limits'
 import {
@@ -37,6 +38,31 @@ describe('semantic search candidate paging', () => {
       expect(last.results.map(result => result.id)).toEqual(ids.slice(1, 2))
       expect(last.page_info.has_next_page).toBe(false)
       expect(await getPostFacets(user, options)).toEqual({ total_count: 2 })
+    } finally {
+      restore()
+    }
+  })
+
+  it('trims net-zero posts from the fixed semantic window for hot sort', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+      semantic_post_candidate_limit: 2,
+    })
+    try {
+      const user = await createTestUser()
+      const embedding = createSemanticWindowEmbedding()
+      const ids = await insertSemanticWindowPosts(user.id, 3, embedding)
+      await Promise.all(ids.slice(1).map(id => setPostVotesScoreUp(id, 1)))
+      const query = randomUUID()
+      await seedSearchEmbeddingCache(query, embedding)
+      const page = await getPostIds(user, {
+        user_id: user.id,
+        semantic_search_query: query,
+        sort: 'hot',
+        limit: 10,
+      })
+      // The two nearest posts form the window; the net-zero nearest is trimmed afterwards and the
+      // third neighbour stays outside the window instead of replacing it.
+      expect(page.results.map(result => result.id)).toEqual([ids[1]])
     } finally {
       restore()
     }

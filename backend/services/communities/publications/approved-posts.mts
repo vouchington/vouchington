@@ -18,7 +18,6 @@ import {
   communityPostSortCursor,
   communityPostSortHydratedColumn,
   communityPostSortHydratedOrder,
-  communityPostSortJoin,
   communityPostSortOrderLimit,
 } from './approved-posts-sort-sql.mts'
 import {
@@ -75,7 +74,6 @@ export async function searchCommunityPosts(
     JOIN posts ON posts.id = cpr.post_id
     JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
   `)
-  query.append(communityPostSortJoin(sort))
   query.append(sql`
     WHERE cpr.community_id = ${communityId}
       AND posts.community_id = ${communityId}
@@ -111,6 +109,7 @@ export async function searchCommunityPosts(
           AND post_alias.votes_score_net > 0
       )
   `)
+  if (sort === 'hot') query.append(sql` AND posts.votes_score_net > 0`)
   if (options?.post_types && options.post_types.length > 0) {
     query.append(sql` AND posts.post_type = ANY(${options.post_types}::text[])`)
   }

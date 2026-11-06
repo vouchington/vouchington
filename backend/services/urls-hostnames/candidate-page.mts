@@ -18,18 +18,18 @@ export async function readHostnameCandidatePage({
 }): Promise<{ results: ViewHostname[]; page_info: PageInfo }> {
   const sort =
     order === 'score'
-      ? { column: 'votes_score_net', direction: 'DESC' }
+      ? { column: 'votes_score_sort', direction: 'DESC' }
       : { column: 'hostname', direction: 'ASC' }
   values.push(limit + 1)
   const { rows } = await read(
     `/* readHostnameCandidatePage */
     WITH candidate_hostnames AS MATERIALIZED (
-      SELECT id, ${sort.column} FROM url_hostnames
+      SELECT id, ${sort.column}, votes_score_sort AS cursor_score FROM url_hostnames
       WHERE ${filters.join(' AND ')}
       ORDER BY ${sort.column} ${sort.direction}, id ${sort.direction}
       LIMIT $${values.length}
     )
-    SELECT hydrated.* FROM candidate_hostnames candidate
+    SELECT hydrated.*, candidate.cursor_score FROM candidate_hostnames candidate
     JOIN LATERAL (
       SELECT * FROM view_url_hostnames WHERE id = candidate.id LIMIT 1
     ) hydrated ON true
@@ -37,14 +37,14 @@ export async function readHostnameCandidatePage({
     values,
   )
 
-  const all = rows as ViewHostname[]
+  const all = rows as (ViewHostname & { cursor_score: number })[]
   const results = all.slice(0, limit)
   return {
-    results,
+    results: results.map(({ cursor_score: _cursorScore, ...hostname }) => hostname),
     page_info: buildPageInfo(results, {
       hasNextPage: all.length > limit,
       getCursor: h =>
-        order === 'score' ? { score: h.votes_score_net, id: h.id } : { name: h.hostname, id: h.id },
+        order === 'score' ? { score: h.cursor_score, id: h.id } : { name: h.hostname, id: h.id },
     }),
   }
 }

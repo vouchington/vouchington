@@ -17,7 +17,7 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
     rss_feed_items.data,
     ROW_TO_JSON(view_urls.*) AS url,
     -- Primary source feed: enabled feeds first, then discoverable feeds, then by owning
-    -- topic rating (votes_score_net DESC), then earliest-discovered (created_at ASC).
+    -- topic rating (votes_score_sort DESC), then earliest-discovered (created_at ASC).
     ROW_TO_JSON(primary_feed.*) AS rss_feed,
     -- All source feeds that contain this item, as a JSON array.
     -- Order: enabled first, then discoverable first, then owning topic rating DESC, then discovery time ASC.
@@ -40,7 +40,7 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
             'votes_score_net', rel.votes_score_net
           ) AS cat,
           0 AS cat_order,
-          rel.votes_score_net AS cat_score,
+          rel.votes_score_sort AS cat_score,
           COALESCE(mapped_hashtag.category_text, vet.name) AS cat_text
         FROM relation__rss_feed_item__category__topic rel
         JOIN view_embedded_topics vet ON vet.id = rel.object_id
@@ -110,7 +110,7 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
     ON view_urls.id = rss_feed_items.url_id
   -- Pick the highest-ranked source feed.
   -- Rank: enabled feeds first, then discoverable feeds, then owning topic
-  -- votes_score_net DESC, then earliest-discovered (rss_feed_item_sources.created_at ASC)
+  -- votes_score_sort DESC, then earliest-discovered (rss_feed_item_sources.created_at ASC)
   -- as stable tie-breaker.
   -- Uses INNER JOIN LATERAL so items with no source feeds are excluded from the view.
   JOIN LATERAL (
@@ -123,7 +123,7 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
     ORDER BY
       rf.is_enabled DESC,
       rf.is_discoverable DESC,
-      t.votes_score_net DESC NULLS LAST,
+      t.votes_score_sort DESC,
       rfis.created_at ASC
     LIMIT 1
   ) best_source ON true
@@ -137,7 +137,7 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
       ORDER BY
         rf2.is_enabled DESC,
         rf2.is_discoverable DESC,
-        t2.votes_score_net DESC NULLS LAST,
+        t2.votes_score_sort DESC,
         rfis2.created_at ASC
     ) AS rss_feed_sources
     FROM rss_feed_item_sources rfis2

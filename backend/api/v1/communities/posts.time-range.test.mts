@@ -7,6 +7,7 @@ import {
   insertTestCommunityMember,
   insertTestCommunityPostReview,
   insertTestPost,
+  setPostVotesScoreUp,
 } from '@voucha/test-helpers'
 
 describe('GET /api/v1/communities/:slug/posts time range', () => {
@@ -37,6 +38,7 @@ describe('GET /api/v1/communities/:slug/posts time range', () => {
         postId: id,
         submittedById: user.id,
       })
+      await setPostVotesScoreUp(id, 1)
       ids.push(id)
     }
     const request = createRequest()

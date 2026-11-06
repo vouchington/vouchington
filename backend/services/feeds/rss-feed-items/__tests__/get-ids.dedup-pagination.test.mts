@@ -46,7 +46,7 @@ describe('getRssFeedItemFeedIds dedup pagination', () => {
     }
   })
 
-  it('ranks eligible story siblings by score and then UUID without an official item', async () => {
+  it('ranks eligible story siblings by Wilson score and then UUID without an official item', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic()
     const feedId = await createTestRssFeedWithTiming(topic.id)
@@ -61,8 +61,8 @@ describe('getRssFeedItemFeedIds dedup pagination', () => {
       setTestItemStoryId(items[1].id, scoreStory.id),
       setTestItemStoryId(items[2].id, tieStory.id),
       setTestItemStoryId(items[3].id, tieStory.id),
-      setTestRssFeedItemVotes(items[0].id, 3),
-      setTestRssFeedItemVotes(items[1].id, 1),
+      setTestRssFeedItemVotes(items[0].id, 5),
+      setTestRssFeedItemVotes(items[1].id, 100, 90),
     ])
     const page = await getRssFeedItemFeedIds(user, { feed_type: 'follow_rss_feeds', limit: 10 })
     expect(page.results.map(row => row.entity_id).toSorted()).toEqual(

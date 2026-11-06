@@ -6361,7 +6361,7 @@
           "tool": {
             "name": "read_posts",
             "title": "Read Posts",
-            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.\ndescendants: Get a depth-bounded window of replies in id order; page_info paginates that window. Use a returned reply as post_id to reach deeper replies. Deleted or unmoderated replies are content-free placeholders with placeholder_state when needed to preserve a possible valid branch. A missing or not fully public post returns Post not found.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\ntrending: Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.\nsearch: Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.",
+            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.\ndescendants: Get a depth-bounded window of replies in id order; page_info paginates that window. Use a returned reply as post_id to reach deeper replies. Deleted or unmoderated replies are content-free placeholders with placeholder_state when needed to preserve a possible valid branch. A missing or not fully public post returns Post not found.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\ntrending: Get posts with positive net support, ranked by age-decayed vote confidence. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.\nsearch: Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -6474,7 +6474,8 @@
                         },
                         "min_score": {
                           "type": "number",
-                          "minimum": 0
+                          "minimum": 0,
+                          "description": "Minimum age-decayed confidence score."
                         }
                       },
                       "required": [],
@@ -7296,7 +7297,7 @@
           "tool": {
             "name": "read_hostnames",
             "title": "Read Hostnames",
-            "description": "top: List hostnames with at least one positive trust vote, highest net trust first, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic id, slug, or exact name; an unknown topic gives no results.\nsearch: Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or net trust votes (highest first).",
+            "description": "top: List hostnames with at least one positive trust vote, ranked by confidence in trust votes, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic id, slug, or exact name; an unknown topic gives no results.\nsearch: Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or confidence in trust votes (highest first).",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -7347,7 +7348,7 @@
                         "sort": {
                           "type": "string",
                           "enum": ["trust"],
-                          "description": "trust sorts by net trust votes, highest first. Omit it to sort by hostname."
+                          "description": "trust sorts by confidence in trust votes, highest first. Omit it to sort by hostname."
                         },
                         "limit": {
                           "$ref": "#/$defs/S1"

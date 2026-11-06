@@ -10,7 +10,7 @@ export function buildHotScoreExpression(postsAlias = 'posts', referenceDate?: Da
   }
 
   const idColumn = `${postsAlias}.id`
-  const votesScoreColumn = `${postsAlias}.votes_score_net`
+  const votesScoreColumn = `${postsAlias}.votes_score_sort`
   const referenceTimeMs = referenceDate?.getTime()
   if (referenceTimeMs !== undefined && !Number.isSafeInteger(referenceTimeMs)) {
     throw new RangeError('Invalid hot-score reference date')

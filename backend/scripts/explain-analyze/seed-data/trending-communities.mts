@@ -32,7 +32,7 @@ import { seedUuid } from './common.mts'
 // CTE-free, UNION-free SELECT so it pulls up and eligibility.post_id = p.id collapses into an
 // ordinary equijoin, so postsPerCommunity is back to a realistic 200: `plan-search-communities-
 // gate.mts` holds the search-communities* scenarios to indexed-only posts access at this volume.
-const TRENDING_CANDIDATE_POST_INDEX_OFFSET = 20_000
+export const TRENDING_CANDIDATE_POST_INDEX_OFFSET = 20_000
 
 export async function seedTrendingCommunityPostIds(
   communityCount = 5,

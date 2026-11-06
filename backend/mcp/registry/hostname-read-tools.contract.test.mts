@@ -72,7 +72,7 @@ describe('read_hostnames.search and read_hostnames.top — real DB', () => {
         ]),
       ),
     )
-    // Net trust: bravo 7, alpha 4, the topic hostname 3, charlie 2. The blocked one has the most.
+    // Confidence ranks bravo, topic, alpha, charlie; net votes put alpha above topic instead.
     await setUrlHostnameVotes(ids['alpha']!, 5, 1)
     await setUrlHostnameVotes(ids['bravo']!, 9, 2)
     await setUrlHostnameVotes(ids['charlie']!, 2, 0)
@@ -125,10 +125,10 @@ describe('read_hostnames.search and read_hostnames.top — real DB', () => {
       )
     })
 
-    it('sorts by net trust votes, most first', async () => {
+    it('sorts by confidence in trust votes, highest first', async () => {
       const { results } = await search({ sort: 'trust' })
 
-      expect(names({ results })).toEqual(['bravo', 'alpha', 'topic', 'charlie'].map(host))
+      expect(names({ results })).toEqual(['bravo', 'topic', 'alpha', 'charlie'].map(host))
     })
 
     it('keeps only the hostnames of a topic, by id or slug, and none for an unknown topic', async () => {

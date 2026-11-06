@@ -20,7 +20,7 @@ user_contributions AS (
     p.created_by_id AS user_id,
     BOOL_OR(p.post_type = 'data_point') AS has_data_point,
     BOOL_OR(p.post_type = 'review') AS has_review,
-    MAX(p.votes_score_net) AS best_score
+    MAX(p.votes_score_sort) AS best_score
   FROM posts p
   JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
   WHERE p.deleted_at IS NULL
@@ -61,7 +61,7 @@ user_reviews AS (
       SELECT 1 FROM post_review_topic_ratings prt
       WHERE prt.post_id = p.id AND prt.topic_id IN (SELECT id FROM linked_topic_ids)
     )
-  ORDER BY p.created_by_id, p.votes_score_net DESC NULLS LAST, p.id DESC
+  ORDER BY p.created_by_id, p.votes_score_sort DESC NULLS LAST, p.id DESC
 ),
 user_tiers AS (
   SELECT membership.user_id,

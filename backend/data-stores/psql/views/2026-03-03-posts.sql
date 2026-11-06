@@ -56,15 +56,15 @@ CREATE OR REPLACE VIEW view_posts AS
     COALESCE((
       SELECT JSON_AGG(
         TO_JSONB(topics.*)
-        ORDER BY top5.votes_score_net DESC
+        ORDER BY top5.votes_score_sort DESC, top5.created_at DESC, top5.object_id DESC
       )
       FROM (
-        SELECT rel.object_id, rel.votes_score_net
+        SELECT rel.object_id, rel.votes_score_sort, rel.created_at
         FROM relation__post__category__topic rel
         WHERE rel.subject_id = posts.id
           AND rel.deleted_at IS NULL
           AND rel.votes_score_net > 0
-        ORDER BY rel.votes_score_net DESC
+        ORDER BY rel.votes_score_sort DESC, rel.created_at DESC, rel.object_id DESC
         LIMIT 5
       ) top5
       JOIN view_embedded_topics topics ON topics.id = top5.object_id

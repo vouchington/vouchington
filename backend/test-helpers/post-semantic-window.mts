@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import sql from 'sql-template-strings'
 import pgvector from 'pgvector'
+import { v7 as uuidv7 } from 'uuid'
 import { beginTransaction } from '@data-stores/psql'
 
 /** Random direction keeps persistent ANN fixtures apart without duplicate vectors. */
@@ -15,15 +16,21 @@ export async function insertSemanticWindowPosts(
   userId: string,
   count: number,
   embedding: number[],
+  createdAt?: Date,
 ): Promise<string[]> {
+  // Explicit ids pin the creation instant so time-decayed hot scores stay constant across pages.
+  const explicitIds = createdAt
+    ? Array.from({ length: count }, (_, index) => uuidv7({ msecs: createdAt.getTime() + index }))
+    : null
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ id: string }>(sql`/* insertSemanticWindowPosts */
     INSERT INTO posts (
-      post_type, title, markdown, created_by_id, created_via,
+      id, post_type, title, markdown, created_by_id, created_via,
       bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256,
       bedrock_nova_multimodal_v1_embedding
     )
-    SELECT 'discussion', 'Semantic window fixture', 'Semantic window fixture', ${userId}::uuid,
+    SELECT COALESCE((${explicitIds}::uuid[])[ordinal], uuidv7()),
+      'discussion', 'Semantic window fixture', 'Semantic window fixture', ${userId}::uuid,
       'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex'),
       (${embedding.slice(0, 32)}::real[] || ARRAY[ordinal::real / ${count}::real]
         || array_fill(0::real, ARRAY[991]))::vector(1024)

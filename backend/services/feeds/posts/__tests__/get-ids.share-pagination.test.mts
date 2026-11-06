@@ -12,9 +12,12 @@ import {
   createTestTopic,
   insertScoredPostTopicCategoryRelation,
   setPostDeletedForTest,
+  setPostVotesScoreUp,
 } from '@voucha/test-helpers'
 import { getPostFeedIds } from '../get-ids.mts'
 import type { PostFeedOptions } from '../../types.mts'
+import { createTestPostId } from '@voucha/test-helpers/entities/post-ids'
+import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
 
 describe('post share delivery pagination', () => {
   it.each(['new', 'hot'] as const)(
@@ -24,37 +27,56 @@ describe('post share delivery pagination', () => {
       const creator = await createTestUser()
       const sharer = await createTestUser()
       await followUser(viewer, creator)
-      const post = await createTestPost({ user: creator })
-      const sharedIds = []
-      for (const sharedByUserId of [creator.id, sharer.id]) {
-        sharedIds.push(
-          await insertPostFeedShareForTest({
-            recipientUserId: viewer.id,
-            sharedByUserId,
-            postId: post.id,
-          }),
-        )
-      }
-      const expectedIds = [post.id, ...sharedIds].toSorted().toReversed()
-      const delivered = []
-      let after: string | undefined
-      for (const id of expectedIds) {
-        const page = await getPostFeedIds(viewer, {
-          feed_type: 'follow_users',
-          sort,
-          limit: 1,
-          after,
-        })
-        expect(page.results.map(row => row.id)).toEqual([id])
-        expect(page.results[0]?.entity_id).toBe(post.id)
-        delivered.push(page.results[0]!)
-        after = page.page_info.end_cursor ?? undefined
-        expect(page.page_info.has_next_page).toBe(id !== expectedIds.at(-1))
-      }
-      expect(delivered.map(row => row.delivery_type)).toEqual(['share', 'share', 'direct'])
-      for (const feed_type of ['all', 'follow_topics'] as const) {
-        const page = await getPostFeedIds(viewer, { feed_type, sort, limit: 10 })
-        expect(page.results.some(row => row.delivery_type === 'share')).toBe(false)
+      const createdAt = new Date('9999-12-31T23:59:59.000Z')
+      const post =
+        sort === 'hot'
+          ? { id: createTestPostId(createdAt) }
+          : await createTestPost({ user: creator })
+      try {
+        if (sort === 'hot')
+          await insertTestPost({
+            id: post.id,
+            createdAt,
+            createdById: creator.id,
+            title: 'Fixed-age hot delivery target',
+            slug: randomUUID(),
+            markdown: 'Hot delivery target',
+          })
+        await setPostVotesScoreUp(post.id, 1)
+        const sharedIds = []
+        for (const sharedByUserId of [creator.id, sharer.id]) {
+          sharedIds.push(
+            await insertPostFeedShareForTest({
+              recipientUserId: viewer.id,
+              sharedByUserId,
+              postId: post.id,
+            }),
+          )
+        }
+        const expectedIds = [post.id, ...sharedIds].toSorted().toReversed()
+        const delivered = []
+        let after: string | undefined
+        for (const id of expectedIds) {
+          const page = await getPostFeedIds(viewer, {
+            feed_type: 'follow_users',
+            sort,
+            limit: 1,
+            after,
+          })
+          expect(page.results.map(row => row.id)).toEqual([id])
+          expect(page.results[0]?.entity_id).toBe(post.id)
+          delivered.push(page.results[0]!)
+          after = page.page_info.end_cursor ?? undefined
+          expect(page.page_info.has_next_page).toBe(id !== expectedIds.at(-1))
+        }
+        expect(delivered.filter(row => row.delivery_type === 'share')).toHaveLength(2)
+        expect(delivered.filter(row => row.delivery_type === 'direct')).toHaveLength(1)
+        for (const feed_type of ['all', 'follow_topics'] as const) {
+          const page = await getPostFeedIds(viewer, { feed_type, sort, limit: 10 })
+          expect(page.results.some(row => row.delivery_type === 'share')).toBe(false)
+        }
+      } finally {
+        await deleteTestPost(post.id)
       }
     },
   )

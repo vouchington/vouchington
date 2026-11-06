@@ -7,6 +7,11 @@ import { loginAsTestUser } from '../../helpers/auth.mts'
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 
 let postId: string
+let cardSlug = ''
+let cardQuery = ''
+let feedPostId: string
+let feedSlug = ''
+let feedQuery = ''
 let suffix = ''
 
 test.beforeAll(async () => {
@@ -17,6 +22,24 @@ test.beforeAll(async () => {
     slug: `pw-post-hide-${suffix}`,
     createdById: TEST_USER_ID,
     markdown: 'Post hide feature test content.',
+    postType: 'discussion',
+  })
+  cardQuery = `hidecard${randomSuffix()}`
+  cardSlug = `pw-post-hide-card-${cardQuery}`
+  feedQuery = `hidefeed${randomSuffix()}`
+  feedSlug = `pw-post-hide-feed-${feedQuery}`
+  await insertTestPost({
+    title: `Post hide card ${cardQuery}`,
+    slug: cardSlug,
+    createdById: TEST_USER_ID,
+    markdown: 'Post hide card visibility fixture.',
+    postType: 'discussion',
+  })
+  feedPostId = await insertTestPost({
+    title: `Post hide feed ${feedQuery}`,
+    slug: feedSlug,
+    createdById: TEST_USER_ID,
+    markdown: 'This post should disappear from feed after hiding.',
     postType: 'discussion',
   })
 })
@@ -37,25 +60,27 @@ test.describe('Post Hide', () => {
   })
 
   test('card Hide button visible for signed-in users, absent for signed-out', async ({ page }) => {
+    const route = `/discussions?sort=new&q=${encodeURIComponent(cardQuery)}`
+    const card = page
+      .getByTestId('post-card-root')
+      .and(page.locator(`[data-post-slug="${cardSlug}"]`))
     await page.context().clearCookies()
-    await navigateTo(page, '/discussions')
-    await expect(page.getByTestId('hide-button')).toHaveCount(0)
+    await navigateTo(page, route)
+    await expect(card).toBeVisible()
+    await expect(card.getByTestId('hide-button')).toHaveCount(0)
 
     await loginAsTestUser(page)
-    await navigateTo(page, '/discussions')
-    await expect(page.getByTestId('hide-button').first()).toBeVisible()
+    await navigateTo(page, route)
+    await expect(card.getByTestId('hide-button')).toBeVisible()
   })
 
   test('hidden post no longer appears in the new posts feed', async ({ page }) => {
-    // Create a dedicated post for feed visibility test
-    const feedSuffix = randomSuffix()
-    const feedPostId = await insertTestPost({
-      title: `Post Hide Feed Test ${feedSuffix}`,
-      slug: `pw-post-hide-feed-${feedSuffix}`,
-      createdById: TEST_USER_ID,
-      markdown: 'This post should disappear from feed after hiding.',
-      postType: 'discussion',
-    })
+    const route = `/discussions?sort=new&q=${encodeURIComponent(feedQuery)}`
+    const card = page
+      .getByTestId('post-card-root')
+      .and(page.locator(`[data-post-slug="${feedSlug}"]`))
+    await navigateTo(page, route)
+    await expect(card).toBeVisible()
 
     await navigateTo(page, `/discussion/${feedPostId}`)
 
@@ -66,13 +91,7 @@ test.describe('Post Hide', () => {
     // Redirected through authenticated home to the news feed.
     await expect(page).toHaveURL('/feed/news')
 
-    // Navigate to the new posts feed and verify the hidden post is absent
-    await navigateTo(page, '/discussions')
-
-    await expect(
-      page
-        .getByTestId('post-card-title-link')
-        .filter({ hasText: `Post Hide Feed Test ${feedSuffix}` }),
-    ).toHaveCount(0)
+    await navigateTo(page, route)
+    await expect(card).toHaveCount(0)
   })
 })

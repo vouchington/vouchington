@@ -184,3 +184,15 @@ export {
   updatePostUpdatedAt,
   getPostEmbeddingData,
 } from './posts-embeddings.mts'
+
+/** Set weighted vote inputs for score-ordering fixtures. */
+export async function setTestPostVoteScores(
+  postId: string,
+  scoreUp: number,
+  scoreDown: number,
+): Promise<void> {
+  await write(sql`/* setTestPostVoteScores */
+    UPDATE posts SET votes_score_up = ${scoreUp}, votes_score_down = ${scoreDown}
+    WHERE id = ${postId}
+  `)
+}

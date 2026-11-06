@@ -22,9 +22,13 @@ export async function insertRssFeedItemVote(
   `)
 }
 
-export async function setTestRssFeedItemVotes(itemId: string, scoreUp: number): Promise<void> {
+export async function setTestRssFeedItemVotes(
+  itemId: string,
+  scoreUp: number,
+  scoreDown = 0,
+): Promise<void> {
   await write(sql`/* setTestRssFeedItemVotes */
-    UPDATE rss_feed_items SET votes_score_up = ${scoreUp}, votes_score_down = 0
+    UPDATE rss_feed_items SET votes_score_up = ${scoreUp}, votes_score_down = ${scoreDown}
     WHERE id = ${itemId}
   `)
 }

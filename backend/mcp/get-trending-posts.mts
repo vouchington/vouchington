@@ -51,7 +51,7 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get posts that are trending based on time-decay voting. Useful for "what discussions are hot this week?" or "what are the most popular reviews for this card?". Optionally filter by post type or topic.',
+      'Get posts with positive net support, ranked by age-decayed vote confidence. Useful for "what discussions are hot this week?" or "what are the most popular reviews for this card?". Optionally filter by post type or topic.',
     parameters: {
       type: 'object',
       properties: {
@@ -74,7 +74,11 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           description:
             'Maximum number of results to return. Defaults to 20; values over 100 are clamped to 100.',
         },
-        min_score: { type: 'number', minimum: 0 },
+        min_score: {
+          type: 'number',
+          minimum: 0,
+          description: 'Minimum age-decayed confidence score.',
+        },
       },
       required: [],
     },

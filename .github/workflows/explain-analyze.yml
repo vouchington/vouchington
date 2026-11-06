@@ -137,7 +137,8 @@ jobs:
         run: node backend/scripts/seeds/dev-seed.mts
         timeout-minutes: 3
       - name: Seed EXPLAIN data with resource samples
-        timeout-minutes: 3
+        # Full seeds completed just over three minutes in runs 42183283644 and 42184560914.
+        timeout-minutes: 4
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret

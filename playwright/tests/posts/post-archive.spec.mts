@@ -35,7 +35,11 @@ test.describe('Post Archive', () => {
       postType: 'discussion',
     })
 
+    const feedRoute = `/discussions?sort=new&q=${encodeURIComponent(suffix)}`
+    const card = page.getByTestId('post-card-root').and(page.locator(`[data-post-slug="${slug}"]`))
     await loginAsTestUser(page)
+    await navigateTo(page, feedRoute)
+    await expect(card).toBeVisible()
     await navigateTo(page, `/discussion/${postId}/edit`)
 
     await page.getByTestId('post-form-advanced-toggle').click()
@@ -52,8 +56,8 @@ test.describe('Post Archive', () => {
     await navigateTo(page, `/discussion/${postId}`)
     await expect(page.getByTestId('post-detail-heading')).toContainText(title)
 
-    await navigateTo(page, '/discussions')
-    await expect(page.getByTestId('post-card-title-link').filter({ hasText: title })).toHaveCount(0)
+    await navigateTo(page, feedRoute)
+    await expect(card).toHaveCount(0)
 
     await navigateTo(page, `/discussion/${postId}/edit`)
     await page.getByTestId('post-form-advanced-toggle').click()

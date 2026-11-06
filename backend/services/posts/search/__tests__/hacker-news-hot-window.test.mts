@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createTestUserDirect, deleteTestPost, insertTestPost } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  deleteTestPost,
+  insertTestPost,
+  setPostVotesScoreUp,
+} from '@voucha/test-helpers'
 import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
@@ -36,6 +41,7 @@ describe('Hacker News hot elapsed-day cutoff', () => {
             markdown: '',
           }),
         )
+        await setPostVotesScoreUp(ids.at(-1)!, 1)
       }
       await setHackerNewsReferenceFlagsForTest(ids, [])
       const options = {
