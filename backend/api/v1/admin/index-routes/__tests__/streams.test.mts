@@ -19,6 +19,16 @@ describe('Admin SSE stream routes', () => {
       createTestUser(),
     ])
     await Promise.all([import('../postgresql-stream-get.mts'), import('../valkey-stream-get.mts')])
+    // These process-wide Valkey clients initialize lazily; warm both subscriber and publisher
+    // paths before the fork-leak detector records test checkpoints.
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    await captureAdminStream(request, '/api/v1/admin/postgresql/stream', {
+      tickerIntervalMs: 30_000,
+    })
+    await captureAdminStream(request, '/api/v1/admin/valkey/stream', {
+      tickerIntervalMs: 10_000,
+    })
   })
 
   describe('GET /api/v1/admin/postgresql/stream', () => {
