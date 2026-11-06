@@ -26,14 +26,16 @@ export async function autoFollowOnRecommendationApproval(
   let cursor: string | null = null
   // Approval must process the full set in this call; each read and write is bounded.
   for (;;) {
+    // A singleton array preserves the recommendation key in the ordering, so the
+    // global pending-id index cannot satisfy this page's order.
     const pageQuery = sql`/* autoFollowOnRecommendationApproval:findPending */
       SELECT id, user_id
       FROM user_import_requests
-      WHERE topic_recommendation_post_id = ${recommendationPostId}
+      WHERE topic_recommendation_post_id = ANY(${[recommendationPostId]}::uuid[])
         AND followed_at IS NULL
     `
     if (cursor) pageQuery.append(sql` AND id > ${cursor}::uuid`)
-    pageQuery.append(sql` ORDER BY id LIMIT ${batchSize}`)
+    pageQuery.append(sql` ORDER BY topic_recommendation_post_id, id LIMIT ${batchSize}`)
     /* oxlint-disable no-await-in-loop -- the keyset cursor from the preceding page selects this page */
     // no-mistakes-disable-next-line query-reached-per-item: each read selects one validated ID-keyset page; invalid users are passed by the cursor and all pages must be attempted
     const { rows } = await read(pageQuery)
