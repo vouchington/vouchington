@@ -89,6 +89,58 @@ describe('Hacker News hot search bounds', () => {
     }
   })
 
+  it('chooses eligible cohort members before pagination for anonymous, owner, other-user and admin views', async () => {
+    const [owner, other] = await Promise.all([createTestUserDirect(), createTestUserDirect()])
+    if (!owner || !other) throw new Error('Expected hot eligibility viewers')
+    await Promise.all([
+      postsWorkConfig.waitForInitialization(),
+      hackerNewsVisibilityConfig.waitForInitialization(),
+    ])
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+      hacker_news_hot_candidate_limit: 1,
+    })
+    const ids: string[] = []
+    try {
+      const approved = await insertTestPost({
+        createdById: owner.id,
+        createdAt: new Date(Date.now() - 3 * 60_000),
+        title: crypto.randomUUID(),
+        slug: crypto.randomUUID(),
+        markdown: 'Approved cohort fixture',
+        clearanceStatus: 'approved',
+      })
+      ids.push(approved)
+      const pending = await insertTestPost({
+        createdById: owner.id,
+        createdAt: new Date(Date.now() - 2 * 60_000),
+        title: crypto.randomUUID(),
+        slug: crypto.randomUUID(),
+        markdown: 'Pending cohort fixture',
+        clearanceStatus: 'pending',
+      })
+      ids.push(pending)
+      await setHackerNewsReferenceFlagsForTest(ids, [])
+      const options = {
+        user_id: owner.id,
+        has_hacker_news_references: true,
+        sort: 'hot',
+        time_range: '1m',
+        limit: 2,
+      } as const
+      expect((await getPostIds(undefined, options)).results.map(row => row.id)).toEqual([approved])
+      expect((await getPostIds(other, options)).results.map(row => row.id)).toEqual([approved])
+      expect((await getPostIds(owner, options)).results.map(row => row.id)).toEqual([pending])
+      expect(
+        (await getPostIds({ ...other, roles: ['administrator'] }, options)).results.map(
+          row => row.id,
+        ),
+      ).toEqual([pending])
+    } finally {
+      restore()
+      await Promise.all(ids.map(id => deleteTestPost(id)))
+    }
+  })
+
   it('enforces the hard maximum in the SQL limit even if config bypasses admin validation', async () => {
     await postsWorkConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {

@@ -92,8 +92,10 @@ describe('MCP neutral Hacker News facts', () => {
           ['posts:read'],
         )
         expect(
-          (story.items as Array<Record<string, unknown>>).map(row => row.id).toSorted(),
-        ).toEqual(fixture.itemIds.toSorted())
+          (story.items as Array<Record<string, unknown>>)
+            .map(row => row.id)
+            .toSorted((a, b) => String(a).localeCompare(String(b))),
+        ).toEqual(fixture.itemIds.toSorted((a, b) => a.localeCompare(b)))
         for (const row of story.items as Array<Record<string, unknown>>)
           expect(row.hacker_news_references).toEqual(visible ? counts : undefined)
         const feed = await callStructuredMcpTool(

@@ -12,6 +12,7 @@ export function appendPostSearchWhereClause(
   query: SQLStatement,
   {
     currentUser,
+    paginationOnly = false,
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
@@ -20,6 +21,7 @@ export function appendPostSearchWhereClause(
     sort,
   }: {
     currentUser?: BasicUser
+    paginationOnly?: boolean
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
     hasTextSearch: boolean
@@ -29,10 +31,13 @@ export function appendPostSearchWhereClause(
   },
 ): void {
   const filters: SQLStatement[] = []
-  appendBaseFilters(filters, currentUser, options)
-  appendTopicFilters(filters, options)
-  appendSimpleColumnFilters(filters, options)
-  appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })
+  // A materialized eligible cohort already applied these filters in this statement's snapshot.
+  if (!paginationOnly) {
+    appendBaseFilters(filters, currentUser, options)
+    appendTopicFilters(filters, options)
+    appendSimpleColumnFilters(filters, options)
+    appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })
+  }
   appendPartitionAndPaginationFilters(filters, {
     followingRankExpression,
     hasSemanticSearch,

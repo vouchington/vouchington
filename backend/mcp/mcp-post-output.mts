@@ -66,16 +66,18 @@ export async function toMcpPosts(
   posts: Post[],
   { details = false }: { details?: boolean } = {},
 ): Promise<McpPost[]> {
-  const [labeled, references] = await Promise.all([
-    attachPostProvenance(posts, null),
-    (details ? getPostHackerNewsDetails : getPostHackerNewsSummaries)(posts.map(post => post.id)),
-  ])
+  const labeled = await attachPostProvenance(posts, null)
+  const maskedPosts = maskCommentPlaceholders(labeled, null).map(post => post as Post)
+  // Placeholders must not expose links or admit provider work for their hidden content.
+  const references = await (details ? getPostHackerNewsDetails : getPostHackerNewsSummaries)(
+    maskedPosts.flatMap(post => (post.placeholder_state ? [] : [post.id])),
+  )
   return Promise.all(
-    maskCommentPlaceholders(labeled, null).map(async masked => {
-      const post = masked as Post
+    maskedPosts.map(async post => {
       return {
         ...(await toMcpPost(post)),
-        ...(references[post.id] && { hacker_news_references: references[post.id] }),
+        ...(!post.placeholder_state &&
+          references[post.id] && { hacker_news_references: references[post.id] }),
       }
     }),
   )

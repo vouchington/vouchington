@@ -62,6 +62,7 @@ export function buildPostSearchQuery(
     sort,
   })
   appendPostSearchWhereClause(query, {
+    paginationOnly: useHackerNewsHotCandidates,
     currentUser,
     followingRankExpression,
     hasSemanticSearch,
