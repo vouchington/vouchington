@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Breadcrumb IDs are derived from caller-provided breadcrumb items; ast-grep still bans inline calls in data-pw. */
+/* oxlint-disable no-mistakes/playwright-literals -- Breadcrumb IDs interpolate the caller path slug. The slug function stays outside data-pw because ast-grep bans inline calls there. */
 'use client'
 
 import * as React from 'react'
@@ -141,20 +141,18 @@ function Breadcrumbs({ items }: BreadcrumbsProps) {
         {items.map((item, index) => {
           const isLast = index === items.length - 1
           const pathSlug = breadcrumbPathSlug(item.path)
-          const currentTestId = `breadcrumb-current-${pathSlug}`
-          const linkTestId = `breadcrumb-link-${pathSlug}`
           const name = resolveBreadcrumbName(item, t)
 
           return (
             <React.Fragment key={`${name}:${item.path}`}>
               <BreadcrumbItem className={isLast ? 'shrink' : 'shrink-0'}>
                 {isLast ? (
-                  <BreadcrumbPage data-pw={currentTestId}>{name}</BreadcrumbPage>
+                  <BreadcrumbPage data-pw={`breadcrumb-current-${pathSlug}`}>{name}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
                     <Link
                       href={item.path}
-                      data-pw={linkTestId}
+                      data-pw={`breadcrumb-link-${pathSlug}`}
                       prefetch={false}
                     >
                       {name}

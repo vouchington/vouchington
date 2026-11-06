@@ -1,6 +1,5 @@
 'use client'
 
-// oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Privacy toggle call sites pass literal test IDs through this shared row.
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -27,64 +26,42 @@ export function PrivacyToggles({
         <h2 className='text-lg font-semibold'>
           {t('extracted.privacyForm.privacyToggles.marketingCommunications_0f27f490')}
         </h2>
-        <PrivacySwitchRow
-          id='should_receive_third_party_marketing'
-          checked={thirdPartyMarketing}
-          dataPw='third-party-marketing-toggle'
-          disabled={pending.has('should_receive_third_party_marketing')}
-          label='Third-Party Marketing'
-          description='Allow us to share your information with trusted partners for marketing purposes.'
-          onCheckedChange={onMarketingChange}
-        />
+        <div className='flex items-start gap-4'>
+          <Switch
+            id='should_receive_third_party_marketing'
+            checked={thirdPartyMarketing}
+            onCheckedChange={onMarketingChange}
+            disabled={pending.has('should_receive_third_party_marketing')}
+            data-pw='third-party-marketing-toggle'
+          />
+          <div className='space-y-1'>
+            <Label htmlFor='should_receive_third_party_marketing'>Third-Party Marketing</Label>
+            <p className='text-sm text-muted-foreground'>
+              Allow us to share your information with trusted partners for marketing purposes.
+            </p>
+          </div>
+        </div>
       </section>
       <section className='space-y-4'>
         <h2 className='text-lg font-semibold'>
           {t('extracted.privacyForm.privacyToggles.dataProcessing_b40804ab')}
         </h2>
-        <PrivacySwitchRow
-          id='processing_restricted_at'
-          checked={processingRestricted}
-          dataPw='processing-restricted-toggle'
-          disabled={pending.has('processing_restricted_at')}
-          label='Restrict Processing'
-          description='When enabled, your data will be preserved but hidden from search and recommendations.'
-          onCheckedChange={onRestrictProcessingChange}
-        />
+        <div className='flex items-start gap-4'>
+          <Switch
+            id='processing_restricted_at'
+            checked={processingRestricted}
+            onCheckedChange={onRestrictProcessingChange}
+            disabled={pending.has('processing_restricted_at')}
+            data-pw='processing-restricted-toggle'
+          />
+          <div className='space-y-1'>
+            <Label htmlFor='processing_restricted_at'>Restrict Processing</Label>
+            <p className='text-sm text-muted-foreground'>
+              When enabled, your data will be preserved but hidden from search and recommendations.
+            </p>
+          </div>
+        </div>
       </section>
     </>
-  )
-}
-
-function PrivacySwitchRow({
-  checked,
-  dataPw,
-  description,
-  disabled,
-  id,
-  label,
-  onCheckedChange,
-}: {
-  checked: boolean
-  dataPw: string
-  description: string
-  disabled: boolean
-  id: string
-  label: string
-  onCheckedChange: (enabled: boolean) => void
-}) {
-  return (
-    <div className='flex items-start gap-4'>
-      <Switch
-        id={id}
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        disabled={disabled}
-        data-pw={dataPw}
-      />
-      <div className='space-y-1'>
-        <Label htmlFor={id}>{label}</Label>
-        <p className='text-sm text-muted-foreground'>{description}</p>
-      </div>
-    </div>
   )
 }
