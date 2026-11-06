@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { contentHash, seedUuid, seedUuidAtTimestamp } from './common.mts'
+import { STORY_POST_RELATED_URL_PROJECTION_SEED } from './story-post-related-url-projection.mts'
 
 const AT_CAP_TOPIC_START = 9_968
 const AT_CAP_TOPIC_COUNT = 32
@@ -7,6 +8,7 @@ const AT_CAP_ITEMS_PER_TOPIC = 33
 const MAINTENANCE_CHILD_COUNT = 120
 const MAINTENANCE_ITEM_GUID = 'rss-candidate-maintenance-fanout-item'
 const AT_CAP_STORY_ITEM_COUNT = 9
+const PREVIEW_PRIMARY_GUID = 'rss-candidate-story-preview-primary'
 
 export const RSS_AT_CAP_STORY_ID = seedUuid(17, '17')
 export const RSS_AT_CAP_STORY_TOKEN = 'rsscandidatecapstory'
@@ -35,10 +37,25 @@ export async function seedRssFeedCandidateWork(): Promise<void> {
           isoDate,
         },
         topic_id: seedUuid(topicIndex, '04'),
-        rss_feed_id: seedUuid(0, '08'),
+        rss_feed_id: seedUuid(2, '08'),
       }
     },
   )
+  // The heavy viewer proxy-mutes community 0's feed 0. Give its preview story one
+  // positive member on another followed source so winner selection reaches it.
+  const previewPrimaryRow = {
+    id: seedUuidAtTimestamp(now - 1000, 11_000_001),
+    hostname_id: seedUuid(0, '02'),
+    guid: PREVIEW_PRIMARY_GUID,
+    url_id: seedUuid(2500, '03'),
+    data: {
+      title: `RSS story preview ${STORY_POST_RELATED_URL_PROJECTION_SEED.feedSearchToken}`,
+      link: 'https://example.com/rss-candidate-story-preview/primary',
+      isoDate: new Date(now - 5000).toISOString(),
+    },
+    topic_id: seedUuid(3, '04'),
+    rss_feed_id: seedUuid(3, '08'),
+  }
   const maintenanceIsoDate = new Date(now - 380 * 24 * 60 * 60_000).toISOString()
   const maintenanceRepairIsoDate = new Date(now - 30 * 24 * 60 * 60_000).toISOString()
   const maintenanceRow = {
@@ -54,7 +71,7 @@ export async function seedRssFeedCandidateWork(): Promise<void> {
     topic_id: null,
     rss_feed_id: null,
   }
-  const allRows = [...atCapRows, maintenanceRow]
+  const allRows = [...atCapRows, previewPrimaryRow, maintenanceRow]
   const rowsJson = JSON.stringify(allRows)
   await transaction(
     `/* seedRssFeedCandidateWorkIdentities */
@@ -101,6 +118,12 @@ export async function seedRssFeedCandidateWork(): Promise<void> {
     [RSS_AT_CAP_STORY_ID, storyGuids],
   )
   await transaction(
+    `/* seedRssFeedCandidatePreviewPrimary */ UPDATE rss_feed_items
+     SET story_id = $1::uuid, votes_score_up = 1
+     WHERE id = (SELECT id FROM rss_feed_item_guids WHERE guid = $2::text LIMIT 1)`,
+    [STORY_POST_RELATED_URL_PROJECTION_SEED.storyId, PREVIEW_PRIMARY_GUID],
+  )
+  await transaction(
     `/* seedRssFeedCandidateWorkSources */
      INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at)
      SELECT seeded.rss_feed_id, item.id, item.published_at
@@ -117,6 +140,7 @@ export async function seedRssFeedCandidateWork(): Promise<void> {
   )
   const topicRows = [
     ...atCapRows.map(row => ({ guid: row.guid, topic_id: row.topic_id })),
+    { guid: PREVIEW_PRIMARY_GUID, topic_id: previewPrimaryRow.topic_id },
     ...Array.from({ length: MAINTENANCE_CHILD_COUNT }, (_, index) => ({
       guid: MAINTENANCE_ITEM_GUID,
       topic_id: seedUuid(index, '04'),

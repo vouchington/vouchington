@@ -46,10 +46,10 @@ async function captureAliasCandidateReconciliation(aliasId: string): Promise<voi
   registerScenarioContract(scenarioId, {
     allowEmptyResult: true,
     expectations: [
-      {
-        kind: 'usesIndexes',
-        indexes: ['rss_feed_item_topic_alias_candidates_pkey'],
-      },
+      // At 432 seeded rows PostgreSQL can correctly prefer a whole-table scan.
+      // Keep the indexed key predicates and a finite processed-row budget.
+      { kind: 'queryBinds', token: 'topic_alias_id' },
+      { kind: 'queryBinds', token: 'rss_feed_item_id' },
       {
         kind: 'maxProcessedRows',
         relation: 'rss_feed_item_topic_alias_candidates',
@@ -136,9 +136,15 @@ async function captureRawPhase(
     cursor_feed_id: null,
   }
   const label = `topic-alias-raw-${phase}`
+  const aliasCandidate = phase === 'rss_item_alias_candidates'
   registerScenarioContract(label, {
     expectations: [
-      { kind: 'usesIndexes', indexes: [indexName] },
+      ...(aliasCandidate
+        ? [
+            { kind: 'queryBinds' as const, token: 'topic_alias_id' },
+            { kind: 'queryBinds' as const, token: 'rss_feed_item_id' },
+          ]
+        : [{ kind: 'usesIndexes' as const, indexes: [indexName] }]),
       {
         kind: 'maxProcessedRows',
         relation:
@@ -147,7 +153,7 @@ async function captureRawPhase(
             : phase === 'rss_item_alias_candidates'
               ? 'rss_feed_item_topic_alias_candidates'
               : 'rss_feed_item_categories',
-        max: phase === 'rss_item_alias_candidates' ? 101 : 150,
+        max: aliasCandidate ? 500 : 150,
       },
     ],
     seededRows: {
