@@ -165,7 +165,9 @@ describe('Client ID Metadata Documents', () => {
   it('ignores cancellation failures while rejecting an invalid response', async () => {
     const clientId = randomMetadataUrl()
     const body = {
-      cancel: vi.fn<() => Promise<void>>(async () => Promise.reject(new Error('closed'))),
+      cancel: vi.fn<() => Promise<void>>(async () => {
+        throw new Error('closed')
+      }),
     }
     await expect(
       resolveClientIdMetadataDocument(clientId, {

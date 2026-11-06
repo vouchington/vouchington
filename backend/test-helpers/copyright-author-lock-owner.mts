@@ -174,11 +174,9 @@ export async function withTestCopyrightAuthorLock<T>(
   }
   const failures = takeErrors()
   if (failures.length)
-    return Promise.reject(
-      new AggregateError(failures, 'Copyright lock scope or cleanup failed', {
-        cause: failed ? primary : failures[0],
-      }),
-    )
+    throw new AggregateError(failures, 'Copyright lock scope or cleanup failed', {
+      cause: failed ? primary : failures[0],
+    })
   if (failed) {
     const failure = Promise.withResolvers<never>()
     failure.reject(primary)

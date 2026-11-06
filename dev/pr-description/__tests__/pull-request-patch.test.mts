@@ -117,8 +117,12 @@ describe('readPullRequestPatch', () => {
     const diffError = diffFailure()
     await expect(
       readPullRequestPatch(
-        async () => Promise.reject(diffError),
-        async () => Promise.reject(new Error('files unavailable')),
+        async () => {
+          throw diffError
+        },
+        async () => {
+          throw new Error('files unavailable')
+        },
         TARGET,
       ),
     ).rejects.toBe(diffError)
@@ -129,7 +133,9 @@ describe('readPullRequestPatch', () => {
     let calls = 0
     await expect(
       readPullRequestPatch(
-        async () => Promise.reject(parserError),
+        async () => {
+          throw parserError
+        },
         async () => {
           calls += 1
           return '[]'

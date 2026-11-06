@@ -84,7 +84,7 @@ describe('request client information listener', () => {
       headers: validHeaders({ cookie: 'dt=valid' }),
       isEnforced: () => true,
       // oxlint-disable-next-line prefer-promise-reject-errors, typescript/prefer-promise-reject-errors -- The listener normalizes arbitrary verifier rejections.
-      verifyDeviceIdentity: async () => Promise.reject('invalid'),
+      verifyDeviceIdentity: () => Promise.reject('invalid'),
     })
     expect(await response.json()).toEqual({
       message: 'Invalid client information',
@@ -106,7 +106,7 @@ describe('request client information listener', () => {
       headers: validHeaders({ cookie: 'dt=valid' }),
       isEnforced: () => true,
       // oxlint-disable-next-line prefer-promise-reject-errors, typescript/prefer-promise-reject-errors -- Observe-mode logging must accept non-Error verifier failures.
-      verifyDeviceIdentity: async () => Promise.reject('invalid'),
+      verifyDeviceIdentity: () => Promise.reject('invalid'),
     })
     expect(warn).toHaveBeenCalledTimes(2)
     expect(warn).toHaveBeenLastCalledWith(

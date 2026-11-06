@@ -35,7 +35,9 @@ describe('refund reconciliation foundations', () => {
 
     await expect(callRefundProvider('create', async () => 'created')).resolves.toBe('created')
     await expect(
-      callRefundProvider('create', async () => Promise.reject(failure)),
+      callRefundProvider('create', async () => {
+        throw failure
+      }),
     ).rejects.toMatchObject({ cause: failure, name: 'RefundProviderOperationError' })
     expect(
       unwrapRefundProviderOperationError(new RefundProviderOperationError('wrapped', failure)),
