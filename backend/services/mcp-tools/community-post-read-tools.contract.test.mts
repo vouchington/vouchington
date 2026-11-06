@@ -8,6 +8,7 @@ import {
   deleteTestPost,
   insertTestCommunity,
   insertTestCommunityMember,
+  setMarkdownPostVotesForTest,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
@@ -93,6 +94,10 @@ describe('read_community.posts and read_community.pinned_posts — real DB', () 
         is_anonymous: true,
       }),
     }
+    await Promise.all([
+      setMarkdownPostVotesForTest({ postId: posts.two, countUp: 1 }),
+      setMarkdownPostVotesForTest({ postId: posts.four, countUp: 1 }),
+    ])
     await createCommunityPostFixture(author, communityId, text('Unapproved'))
     await setPinnedPosts(owner, communityId, [posts.one, posts.pinnedAnon, posts.three])
   })
