@@ -5089,6 +5089,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
@@ -5116,6 +5119,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6285,6 +6291,9 @@ importers:
       '@services/classifiers':
         specifier: workspace:^
         version: link:../classifiers
+      '@services/comments':
+        specifier: workspace:^
+        version: link:../comments
       '@services/communities':
         specifier: workspace:^
         version: link:../communities

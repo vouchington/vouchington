@@ -69,6 +69,8 @@ export interface Post {
   updated_at: string
   deleted_at: string | null
   deleted_by_id: string | null
+  /** Set when a comment is returned without its text or author: deleted, or not yet cleared. */
+  placeholder_state?: 'deleted' | 'unmoderated'
   archived_at: string | null
   archived_by_id: string | null
   locked_at?: string | null

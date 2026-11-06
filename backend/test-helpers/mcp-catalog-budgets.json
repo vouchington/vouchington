@@ -8,7 +8,7 @@
           "count": 78,
           "list": 261000,
           "core": 112000,
-          "output": 243000
+          "output": 244000
         }
       },
       "Reader": {
@@ -74,7 +74,7 @@
           "count": 4,
           "list": 77000,
           "core": 28000,
-          "output": 74000
+          "output": 75000
         }
       },
       "Reader": {
@@ -114,7 +114,7 @@
           "count": 4,
           "list": 77000,
           "core": 28000,
-          "output": 74000
+          "output": 75000
         }
       },
       "LegalRead": {

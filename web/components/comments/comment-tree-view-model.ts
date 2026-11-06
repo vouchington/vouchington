@@ -1,16 +1,17 @@
 import type { PostsResponseBody } from '@/types/api-responses'
 
-export type CommentTreeViewModel = Pick<
-  PostsResponseBody,
-  | 'results'
-  | 'posts'
-  | 'post_elections'
-  | 'election_votes'
-  | 'markdown_to_html'
-  | 'post_moderations'
-  | 'agent_moderation_elections'
-  | 'bookmarks'
->
+export type CommentTreeViewModel = Partial<Pick<PostsResponseBody, 'posts_metrics'>> &
+  Pick<
+    PostsResponseBody,
+    | 'results'
+    | 'posts'
+    | 'post_elections'
+    | 'election_votes'
+    | 'markdown_to_html'
+    | 'post_moderations'
+    | 'agent_moderation_elections'
+    | 'bookmarks'
+  >
 
 function pickRecords<T>(records: Record<string, T> | undefined, ids: Set<string>) {
   if (!records) return undefined
@@ -34,6 +35,7 @@ export function projectCommentTree(data: PostsResponseBody): CommentTreeViewMode
     })),
     posts: pickRecords(data.posts, postIds) ?? {},
     post_elections: pickRecords(data.post_elections, postIds),
+    posts_metrics: pickRecords(data.posts_metrics, postIds),
     election_votes: pickRecords(data.election_votes, electionVoteIds),
     markdown_to_html: pickRecords(data.markdown_to_html, postIds),
     post_moderations: moderations,

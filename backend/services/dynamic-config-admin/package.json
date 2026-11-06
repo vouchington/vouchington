@@ -47,6 +47,7 @@
     "@services/captcha": "workspace:^",
     "@services/classifier-runs": "workspace:^",
     "@services/classifiers": "workspace:^",
+    "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/community-agent-prompts": "workspace:^",
     "@services/contribution-gating": "workspace:^",

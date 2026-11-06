@@ -31,6 +31,23 @@ describe('PostList', () => {
     expect(screen.getByText('Second Post')).toBeDefined()
   })
 
+  it('keeps a comment the viewer hid, since hide only collapses it in its thread', () => {
+    const [first, second] = Object.values(postListMockData.posts)
+    const dataWithHiddenComment: PostsResponseBody = {
+      ...postListMockData,
+      posts: {
+        ...postListMockData.posts,
+        [first!.id]: { ...first!, post_type: 'comment' },
+      },
+      bookmarks: { [first!.id]: { hide: true }, [second!.id]: { hide: true } },
+    }
+
+    renderWithListStyle(<PostList data={dataWithHiddenComment} />)
+
+    expect(screen.getByText('First Post')).toBeDefined()
+    expect(screen.queryByText('Second Post')).toBeNull()
+  })
+
   it('omits posts hidden during the current session', async () => {
     renderWithListStyle(<PostList data={postListMockData} />)
 

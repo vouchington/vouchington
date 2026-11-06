@@ -138,7 +138,7 @@ describe('read_posts.descendants — real DB', () => {
   })
 
   describe('replies the public cannot see', () => {
-    it('omits a pending reply and its whole subtree, even from its author', async () => {
+    it('lists a pending reply as a placeholder above its valid replies, even for its author', async () => {
       const root = await createTestPost({ user: author })
       const visible = await comment(other, root.id)
       const pending = await comment(other, root.id)
@@ -147,13 +147,18 @@ describe('read_posts.descendants — real DB', () => {
       const deeper = await comment(author, underPending.id)
 
       for (const caller of [author, other]) {
-        const { body, text } = await call(caller, { post_id: root.id })
-        expect(ids(body)).toEqual([visible.id])
-        for (const hidden of [pending, underPending, deeper]) expect(text).not.toContain(hidden.id)
+        const { body } = await call(caller, { post_id: root.id })
+        expect(ids(body)).toEqual([visible.id, pending.id, underPending.id, deeper.id])
+        expect(body.descendants?.[1]).toMatchObject({
+          id: pending.id,
+          placeholder_state: 'unmoderated',
+          title: '',
+          created_by_id: null,
+        })
       }
     })
 
-    it('leaves a deleted reply out while the replies below it stay', async () => {
+    it('lists a deleted reply as a placeholder while the replies below it stay', async () => {
       const root = await createTestPost({ user: author })
       const removed = await comment(other, root.id)
       const reply = await comment(author, removed.id)
@@ -161,8 +166,9 @@ describe('read_posts.descendants — real DB', () => {
 
       const { body, text } = await call(author, { post_id: root.id })
 
-      expect(ids(body)).toEqual([reply.id])
-      expect(body.descendants?.[0]).toMatchObject({ parent_post_id: removed.id })
+      expect(ids(body)).toEqual([removed.id, reply.id])
+      expect(body.descendants?.[0]).toMatchObject({ id: removed.id, placeholder_state: 'deleted' })
+      expect(body.descendants?.[1]).toMatchObject({ parent_post_id: removed.id })
       expect(text).not.toContain(removed.slug)
     })
 
@@ -187,7 +193,7 @@ describe('read_posts.descendants — real DB', () => {
   })
 
   describe('a thread the caller cannot read', () => {
-    it('answers a private, pending, deleted, missing or hidden-ancestor thread as not found', async () => {
+    it('answers a private, pending, deleted or missing thread as not found, and reads a reply under an unmoderated comment', async () => {
       const privateRoot = await createTestPost({
         user: author,
         privacy: 'private',
@@ -209,10 +215,12 @@ describe('read_posts.descendants — real DB', () => {
         deletedRoot.id,
         crypto.randomUUID(),
         'No Such Post!',
-        underHidden.id,
       ]) {
         expect((await call(author, { post_id: postId })).body).toEqual(NOT_FOUND)
       }
+      expect((await call(author, { post_id: underHidden.id })).body).toMatchObject({
+        success: true,
+      })
     })
   })
 })

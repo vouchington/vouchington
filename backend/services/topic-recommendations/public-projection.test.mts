@@ -49,7 +49,11 @@ describe('topic recommendation public output', () => {
       required: string[]
       additionalProperties: boolean
     }
-    const fields = [...PUBLIC_POST_FIELDS, 'topic_recommendation']
+    // A recommendation is a post, never a comment, so it carries no placeholder_state.
+    const fields = [
+      ...PUBLIC_POST_FIELDS.filter(field => field !== 'placeholder_state'),
+      'topic_recommendation',
+    ]
 
     expect(Object.keys(post).toSorted()).toEqual(
       fields.filter(key => key !== 'provenance').toSorted(),
@@ -57,7 +61,7 @@ describe('topic recommendation public output', () => {
     expect(Object.keys(schema.properties).toSorted()).toEqual(fields.toSorted())
     const readPostProperties = mcpPostSchema()['properties'] as Record<string, unknown>
     for (const field of PUBLIC_POST_FIELDS) {
-      if (field === 'post_type') continue
+      if (field === 'post_type' || field === 'placeholder_state') continue
       expect(schema.properties[field]).toEqual(readPostProperties[field])
     }
     expect(schema.required).toContain('topic_recommendation')

@@ -101,7 +101,11 @@ describe('topic recommendation write tools contract — real DB', () => {
       Object.keys(rest.body.post)
         .filter(field => field !== 'provenance')
         .toSorted(),
-    ).toEqual(expectedFields.filter(field => field !== 'provenance').toSorted())
+    ).toEqual(
+      expectedFields
+        .filter(field => field !== 'provenance' && field !== 'placeholder_state')
+        .toSorted(),
+    )
     expect(Object.keys(post).toSorted()).toEqual(Object.keys(rest.body.post).toSorted())
     expect(post).not.toHaveProperty(INTERNAL_POST_COLUMN)
     expect(post.topic_recommendation).toMatchObject({

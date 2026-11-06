@@ -46,18 +46,19 @@ describe('query-builder public_eligibility_only', () => {
     expect(sql).toContain('posts.is_anonymous IS NOT TRUE')
   })
 
-  it('judges the thread of a comment only when comments can be results', () => {
+  it('judges the blocked type of the thread root only when comments can be results', () => {
     const base = { limit: 10, public_eligibility_only: true } as const
+    const rootRule = 'root_post.post_type::text <> ALL'
 
     expect(buildPostSearchQuery(member, { ...base, post_types: ['comment'] }).sql).toContain(
-      'thread_ancestors',
+      rootRule,
     )
     expect(buildPostSearchQuery(member, { ...base, post_types: ['discussion'] }).sql).not.toContain(
-      'thread_ancestors',
+      rootRule,
     )
-    expect(buildPostSearchQuery(member, base).sql).not.toContain('thread_ancestors')
+    expect(buildPostSearchQuery(member, base).sql).not.toContain(rootRule)
     expect(buildPostSearchQuery(member, { limit: 10, post_types: ['comment'] }).sql).not.toContain(
-      'thread_ancestors',
+      rootRule,
     )
   })
 })

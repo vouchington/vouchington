@@ -108,6 +108,7 @@ vi.mock(import('@/lib/api/client/markdown'), () => ({
 
 vi.mock(import('@/lib/api/client/posts'), () => ({
   createPost: vi.fn<VitestLooseMock>(),
+  fetchPostDescendants: vi.fn<VitestLooseMock>(),
 }))
 
 vi.mock(import('@/lib/preferences/storage'), () => ({

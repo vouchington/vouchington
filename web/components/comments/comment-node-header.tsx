@@ -25,6 +25,7 @@ interface CommentNodeHeaderProps {
   isAnonymous: boolean
   isCollapsed: boolean
   isDeleted: boolean
+  isUnmoderated?: boolean
   node: CommentNodeData
   onToggleCollapse: (id: string) => void
   permalink: string
@@ -124,7 +125,7 @@ export function CommentNodeHeader(props: CommentNodeHeaderProps) {
 
 function CommentAuthorAvatar(props: CommentNodeHeaderProps) {
   const { post } = props.node
-  if (props.isDeleted || props.isAnonymous || !post.created_by) return null
+  if (props.isDeleted || props.isUnmoderated || props.isAnonymous || !post.created_by) return null
   return (
     <UserLink
       data-pw='comment-node-header-author-avatar'
@@ -149,6 +150,12 @@ function CommentAuthorName(props: CommentNodeHeaderProps) {
     return (
       <span className='pointer-events-none italic'>
         {t('extracted.comments.commentNodeHeader.deleted_dd5f43ed')}
+      </span>
+    )
+  if (props.isUnmoderated)
+    return (
+      <span className='pointer-events-none italic'>
+        {t('extracted.comments.commentNodeHeader.pendingReview_f1c45f3f')}
       </span>
     )
   if (!props.isAnonymous && post.created_by) {

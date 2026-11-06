@@ -1,14 +1,30 @@
 import { getPostByAnyCached } from './get-cached.mts'
 import type { Post } from './types.mts'
 import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
+import { getDeletedCommentStubs } from './deleted-comment-stubs.mts'
 import { getPostsWithRootsByAnyCached } from './get-cached-with-roots.mts'
 
-export async function getRoutePostByAnyCached(identifier: string) {
+/**
+ * The post a route acts on and its thread root. A deleted comment answers as absent unless the
+ * caller reads it as a placeholder (`includeDeleted`), in which case it comes back as its stub.
+ */
+export async function getRoutePostByAnyCached(
+  identifier: string,
+  { includeDeleted = false }: { includeDeleted?: boolean } = {},
+) {
   const {
-    posts: [post],
+    posts: [loaded],
     roots,
   } = await getPostsWithRootsByAnyCached([identifier])
-  return { post: post ?? null, root: roots.find(root => root?.id === post?.root_post_id) ?? null }
+  if (loaded || !includeDeleted) {
+    return {
+      post: loaded ?? null,
+      root: roots.find(root => root?.id === loaded?.root_post_id) ?? null,
+    }
+  }
+  const stub = (await getDeletedCommentStubs([identifier])).get(identifier.toLowerCase()) ?? null
+  const root = stub?.root_post_id ? await getPostByAnyCached(stub.root_post_id) : null
+  return { post: stub, root }
 }
 
 export function getRouteRootAccessPost(post: Post, loadedRoot?: Post | null): Promise<Post | null> {

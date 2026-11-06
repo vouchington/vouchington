@@ -25,6 +25,7 @@ export const REGISTRY_ORDER = [
   'rss-feed-crawl-config',
   'user-import-export-config',
   'data-retention-config',
+  'comment-placeholder-config',
   'psql-moderation-retention-config',
   'psql-partition-cleanup-config',
   'list-import-config',

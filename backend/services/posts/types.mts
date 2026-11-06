@@ -5,6 +5,7 @@ export type {
   PostBroadcast,
   PostPrivacy,
   Post,
+  CommentPlaceholderState,
   PostMetrics,
   PostElection,
   CreatePostUpdates,

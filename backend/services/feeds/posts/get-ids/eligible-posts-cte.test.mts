@@ -84,4 +84,25 @@ describe('appendEligiblePostsCTE', () => {
     expect(query.values).toContain('topic-1')
     expect(query.values).toContain('alias-1')
   })
+
+  it('exempts comments from the hidden anti-join only when comments are requested', () => {
+    const build = (postTypes: string[] | undefined) => {
+      const query = createEligiblePostsCteBaseQueryForTest()
+      appendEligiblePostsCTE(query, {
+        currentUser,
+        postTypes: postTypes as never,
+        sort: 'new',
+        textSearchQuery: undefined,
+        universalTopicIds: undefined,
+        hashtagTopicIds: undefined,
+        hashtagAliasIds: undefined,
+        hasUnknownHashtag: undefined,
+      })
+      return query.text
+    }
+
+    expect(build(undefined)).not.toContain("posts.post_type = 'comment' OR")
+    expect(build(['discussion'])).not.toContain("posts.post_type = 'comment' OR")
+    expect(build(['comment', 'discussion'])).toContain("posts.post_type = 'comment' OR")
+  })
 })

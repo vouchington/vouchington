@@ -1,7 +1,7 @@
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { attachPostProvenance, attachWrittenPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
-import type { Post } from '@services/posts'
+import { maskCommentPlaceholders, type Post } from '@services/posts'
 import {
   projectPublicPost,
   PUBLIC_POST_FIELDS,
@@ -17,7 +17,7 @@ export type McpPost = PublicPost
 
 /** The published schema of an `McpPost`, from the generated `Post` contract. */
 export function mcpPostSchema() {
-  return closedObject(pickProperties('Post', MCP_POST_FIELDS), ['provenance'])
+  return closedObject(pickProperties('Post', MCP_POST_FIELDS), ['provenance', 'placeholder_state'])
 }
 
 /**
@@ -29,6 +29,8 @@ export function mcpPostSchema() {
  */
 async function toMcpPost(post: Post): Promise<McpPost> {
   const publicPost = projectPublicPost(post)
+  // A placeholder has no user text, so there is nothing to sanitize or wrap as external content.
+  if (publicPost.placeholder_state) return publicPost
   return {
     ...publicPost,
     title: await sanitizePromptInjection(publicPost.title, { isTitle: true }),
@@ -44,7 +46,8 @@ async function toMcpPost(post: Post): Promise<McpPost> {
  * one, so an anonymous post never names its OAuth client. Staff provenance is REST-only.
  */
 export async function toMcpPosts(posts: Post[]): Promise<McpPost[]> {
-  return Promise.all((await attachPostProvenance(posts, null)).map(toMcpPost))
+  const labelled = await attachPostProvenance(posts, null)
+  return Promise.all(maskCommentPlaceholders(labelled, null).map(post => toMcpPost(post as Post)))
 }
 
 /**

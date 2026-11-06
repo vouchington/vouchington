@@ -14,7 +14,7 @@ type ToolResult = { success: true; post: McpPost } | { success: false; error: st
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; comments require a fully public thread. Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.',
+      'Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.',
     parameters: {
       type: 'object',
       properties: {

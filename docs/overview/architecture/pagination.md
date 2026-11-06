@@ -63,9 +63,9 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   shallowest displayed non-root item because `after` walks toward the root; `start_cursor` is the
   deepest. The root is the sole intentional duplicate across pages and sidecars are page-local.
   A request with no paging parameters gets the same default window; there is no unbounded mode.
-  `read_posts` option `ancestors` pages the same way over MCP. MCP checks readability of the whole
-  chain before paging, so a hidden ancestor above the window still hides the reply; REST checks
-  only the root and the returned window.
+  `read_posts` option `ancestors` pages the same way over MCP. REST and MCP read a reply when it
+  and the thread root pass; no ancestor in between can hide it. A deleted or unmoderated ancestor
+  comes back as a placeholder (`placeholder_state`, no text or author) instead of a 404.
 
 ### Messaging Traversal And Query Plans
 

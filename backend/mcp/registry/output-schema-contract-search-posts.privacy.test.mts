@@ -86,7 +86,9 @@ describe('read_posts.search read policy — real DB', () => {
         expect(ids).toEqual(expect.arrayContaining(fixtures.readable.map(post => post.id)))
         // The labels name the leaked fixtures when this fails.
         expect(
-          fixtures.hidden.filter(post => ids.includes(post.id)).map(post => post.label),
+          [...fixtures.hidden, ...fixtures.placeholders]
+            .filter(post => ids.includes(post.id))
+            .map(post => post.label),
         ).toEqual([])
       }
     },
@@ -95,7 +97,7 @@ describe('read_posts.search read policy — real DB', () => {
   it('answers a hidden similar_post_id exactly like an id that matches nothing', async () => {
     for (const caller of [author, admin]) {
       const answers: Record<string, unknown> = {}
-      for (const seed of fixtures.hidden) {
+      for (const seed of [...fixtures.hidden, ...fixtures.placeholders]) {
         answers[seed.label] = await callStructuredMcpTool(
           caller,
           'read_posts',
@@ -105,7 +107,9 @@ describe('read_posts.search read policy — real DB', () => {
       }
 
       expect(answers).toEqual(
-        Object.fromEntries(fixtures.hidden.map(seed => [seed.label, EMPTY_PAGE])),
+        Object.fromEntries(
+          [...fixtures.hidden, ...fixtures.placeholders].map(seed => [seed.label, EMPTY_PAGE]),
+        ),
       )
     }
   })

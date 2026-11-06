@@ -10,7 +10,10 @@ function makeData(): PostsResponseBody {
       'comment-1': { id: 'comment-1' },
       orphan: { id: 'orphan' },
     },
-    posts_metrics: {},
+    posts_metrics: {
+      'comment-1': { id: 'comment-1', count: { children: 2 } },
+      orphan: { id: 'orphan', count: { children: 9 } },
+    },
     markdown_to_html: { 'comment-1': '<p>kept</p>', orphan: '<p>dropped</p>' },
     post_moderations: {
       'comment-1': [{ id: 'moderation-1' }],
@@ -41,8 +44,8 @@ describe('comment tree view model', () => {
     const projected = projectCommentTree(makeData())
     expect(Object.keys(projected.posts)).toEqual(['comment-1'])
     expect(projected.markdown_to_html).toEqual({ 'comment-1': '<p>kept</p>' })
+    expect(Object.keys(projected.posts_metrics ?? {})).toEqual(['comment-1'])
     expect(projected).not.toHaveProperty('page_info')
-    expect(projected).not.toHaveProperty('posts_metrics')
   })
 
   it('keeps only moderation elections and votes referenced by retained comments', () => {

@@ -45,11 +45,11 @@
       },
       "read_community": {
         "measured": {
-          "list": 10787,
+          "list": 10858,
           "core": 4180
         },
         "max": {
-          "list": 11000,
+          "list": 12000,
           "core": 5000
         }
       },
@@ -135,11 +135,11 @@
       },
       "read_posts": {
         "measured": {
-          "list": 9659,
-          "core": 5485
+          "list": 9944,
+          "core": 5699
         },
         "max": {
-          "list": 10000,
+          "list": 11000,
           "core": 6000
         }
       },
@@ -295,7 +295,7 @@
       },
       "create_post": {
         "measured": {
-          "list": 3689,
+          "list": 3760,
           "core": 1978
         },
         "max": {
@@ -305,7 +305,7 @@
       },
       "act_on_post": {
         "measured": {
-          "list": 6561,
+          "list": 6632,
           "core": 4330
         },
         "max": {
@@ -445,7 +445,7 @@
       },
       "start_discussion": {
         "measured": {
-          "list": 2810,
+          "list": 2881,
           "core": 1041
         },
         "max": {
@@ -787,7 +787,7 @@
     "community_moderation": {
       "read_community_moderation": {
         "measured": {
-          "list": 41619,
+          "list": 41690,
           "core": 6917
         },
         "max": {

@@ -215,6 +215,31 @@ describe('CommentPermalink', () => {
     expect(rootTitle).toHaveAttribute('dir', 'rtl')
   })
 
+  it('labels an unmoderated target comment as pending review instead of its author', () => {
+    const rootPost = makeRootPost()
+    const targetComment = makeTargetComment(rootPost, { placeholder_state: 'unmoderated' })
+    const commentsData = makeCommentsData(targetComment)
+
+    render(
+      <CommentPermalink
+        targetCommentId='comment-1'
+        rootPostId='root-1'
+        rootPostType='discussion'
+        rootPost={rootPost}
+        ancestors={commentsData}
+        descendants={{ ...commentsData, results: [] }}
+        isAdmin={false}
+        hideDownCount={false}
+        t={stubT}
+      />,
+    )
+
+    expect(
+      screen.getAllByText('extracted.comments.commentPermalink.pendingReview_f1c45f3f').length,
+    ).toBeGreaterThan(0)
+    expect(screen.queryByText('author')).toBeNull()
+  })
+
   it('renders the localized fallback title on the root post link when untitled', () => {
     const rootPost = makeRootPost({
       title: '',

@@ -6,7 +6,7 @@ import {
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
 import type { PostSearchOptions } from '../types.mts'
-import { buildThreadReadabilityFilter } from './thread-readability.mts'
+import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/metadata'
 
 export function appendBaseFilters(
@@ -49,13 +49,16 @@ export function appendBaseFilters(
       FROM posts root_post
       WHERE root_post.id = COALESCE(posts.root_post_id, posts.id)
         AND `
-    publicEligibility.append(buildPublicPostEligibilityFilter('posts', 'root_post')).append(sql`
+    publicEligibility.append(buildPublicPostEligibilityFilter('posts', 'root_post'))
+    // A reply is readable when it and the thread root are, so only the root's type can block a
+    // comment. Comments are searched only when asked for, so only then does the root need judging.
+    if (public_eligibility_only && post_types?.includes('comment')) {
+      publicEligibility.append(sql`
+        AND (posts.post_type <> 'comment' OR root_post.post_type::text <> ALL(${[...BLOCKED_POST_TYPES]}::text[]))`)
+    }
+    publicEligibility.append(sql`
     )`)
     filters.push(publicEligibility)
-    // Comments are searched only when asked for, so only then does the thread need judging.
-    if (public_eligibility_only && post_types?.includes('comment')) {
-      filters.push(buildThreadReadabilityFilter())
-    }
   }
   if (exclude_for_user_id) appendUserExclusionFilters(filters)
   if (user_id) appendUserFilter(filters, { currentUser: viewer, isAdmin, user_id })

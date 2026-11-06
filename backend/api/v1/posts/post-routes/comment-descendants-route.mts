@@ -3,7 +3,7 @@ import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { getCommentAncestorTargetByAny, resolveCommentAncestorPage } from '@services/comments'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
-import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
+import { getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
@@ -16,7 +16,12 @@ import {
   isPostContentEditable,
 } from '@services/posts/authorization'
 import { labelAndMaskPosts } from '@services/content-provenance'
-import { canViewPostsBatch } from '@services/posts'
+import {
+  canViewPost,
+  getPostsOrDeletedCommentStubs,
+  getCommentReadStateUnderReadableRoot,
+  maskPlaceholderMetrics,
+} from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import app from '../../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
@@ -59,29 +64,34 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   const accessIds = [...new Set([...ancestorIds, targetId])]
   // The root is the first ancestor, so the page batch is the root read. A separate
   // getPostByAnyCached would add a round trip and then repeat that id in the batch.
-  const fetchedPosts = await getPostByAnyCachedBatch(accessIds)
+  const fetchedPosts = await getPostsOrDeletedCommentStubs(accessIds)
   const fetchedPostsById = new Map(
     fetchedPosts.filter(post => post != null).map(post => [post.id, post]),
   )
   const rootPost = rootAncestor ? fetchedPostsById.get(rootAncestor.id) : undefined
   ctx.assert(rootPost, 404, 'Post not found')
   ctx.assert(await getRouteAccessPost(rootPost), 404, 'Post not found')
+  // Nothing below an unreadable root is served, not even a placeholder: every comment in the
+  // thread, placeholder or not, is only as readable as its root.
+  ctx.assert(await canViewPost(currentUser, rootPost), 404, 'Post not found')
   const posts = ancestorIds.flatMap(id => {
     const post = fetchedPostsById.get(id)
     return post ? [post] : []
   })
   const fetchedPostIds = new Set(posts.map(post => post.id))
   ctx.assert(
-    ancestors.every(ancestor => ancestor.deleted_at || fetchedPostIds.has(ancestor.id)),
+    ancestors.every(ancestor => fetchedPostIds.has(ancestor.id)),
     404,
     'Post not found',
   )
+  // A reply is readable when it and the thread root pass. A deleted or unmoderated ancestor comes
+  // back as a placeholder, and so does the target when a valid reply sits below it.
   const targetPost = fetchedPostsById.get(targetId)
-  ctx.assert(targetPost && !targetPost.deleted_at, 404, 'Post not found')
-  const accessPosts = [...fetchedPostsById.values()]
-  const visibility = await canViewPostsBatch(currentUser, accessPosts)
+  ctx.assert(targetPost, 404, 'Post not found')
+  // The root was checked above, so a comment is only classified by its own state.
   ctx.assert(
-    accessPosts.every(post => visibility.get(post.id)),
+    targetPost.post_type !== 'comment' ||
+      (await getCommentReadStateUnderReadableRoot(currentUser, targetPost, rootPost.id)),
     404,
     'Post not found',
   )
@@ -111,6 +121,8 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
       const contentEditNow = Date.now()
       return Object.fromEntries(
         Object.entries(byId).map(([id, post]) => {
+          // A placeholder carries no text or author, so it offers no action.
+          if (post.placeholder_state) return [id, post]
           const canUpdatePost = currentUserCanUpdatePost(currentUser, post)
           return [
             id,
@@ -126,7 +138,9 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
         }),
       )
     }),
-    posts_metrics: getPostMetricsByAnyCachedBatch(ancestorIds).then(indexById),
+    posts_metrics: Promise.all([postsPromise, getPostMetricsByAnyCachedBatch(ancestorIds)]).then(
+      ([posts, metrics]) => indexById(maskPlaceholderMetrics(posts, metrics)),
+    ),
     markdown_to_html: postsPromise.then(async posts => {
       const postsMap = indexById(posts)
       const entities = ancestorIds.flatMap(id => {

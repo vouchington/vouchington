@@ -91,7 +91,12 @@ export function PostList({
         {allResults.map((result, i) => {
           const post = allPosts[result.entity_id ?? result.id]
           if (!post) return null
-          if (allBookmarks[post.id]?.hide || hiddenPostIds.has(post.id)) return null
+          // A hidden comment is only collapsed in its thread; it never leaves a list.
+          if (
+            post.post_type !== 'comment' &&
+            (allBookmarks[post.id]?.hide || hiddenPostIds.has(post.id))
+          )
+            return null
 
           const postModerations = AGENT_EXCLUDED_POST_TYPES.has(post.post_type)
             ? undefined

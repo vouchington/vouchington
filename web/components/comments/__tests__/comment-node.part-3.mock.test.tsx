@@ -86,6 +86,23 @@ describe('CommentNode', () => {
     expect(document.body.textContent).not.toContain('1 negative votes')
   })
 
+  it('asks for the next page of replies from the Load more button', () => {
+    const post = makePost()
+    const onLoadMoreReplies = vi.fn<(id: string) => void>()
+    render(
+      <CommentNode
+        {...defaultProps}
+        node={makeNode(post)}
+        moreRepliesIds={new Set([post.id])}
+        onLoadMoreReplies={onLoadMoreReplies}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /load.?more/i }))
+
+    expect(onLoadMoreReplies).toHaveBeenCalledWith(post.id)
+  })
+
   it('stops click event propagation on permalink and author links in header', () => {
     const post = makePost()
     const onNodeClick = vi.fn<() => void>()

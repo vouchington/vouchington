@@ -1,7 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { postReferenceSchema } from './entity-reference-schema.mts'
 import { COMMENT_ANCESTOR_PAGE_MAX_LIMIT, resolveCommentAncestorPage } from '@services/comments'
-import { getPostByAnyCachedBatch } from '@services/entity-fetch'
+import { getPostsOrDeletedCommentStubs } from '@services/posts'
 import type { BasicUser } from '@services/users/types'
 import createHttpError from 'http-errors'
 import { resolveReadableThread } from './mcp-post-access.mts'
@@ -31,7 +31,7 @@ const LIMIT = COMMENT_ANCESTOR_PAGE_MAX_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. Deleted ancestors are omitted, so parent_post_id may name an unlisted comment. A deleted, missing or not fully public comment returns Post not found.",
+      "Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.",
     parameters: {
       type: 'object',
       properties: {
@@ -65,11 +65,11 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     async (args: ToolArgs): Promise<ToolResult> => {
       const thread = await resolveReadableThread(currentUser, args.post_id)
       if (!thread) return { success: false, error: 'Post not found' }
-      if (thread.ancestors.length === 0) {
+      if (thread.post.post_type !== 'comment') {
         return { success: true, ancestors: [], page_info: EMPTY_PAGE_INFO }
       }
-      // The full chain was checked above, so a hidden ancestor above this window still hides the
-      // reply. The window itself is a bounded read, as in the REST twin.
+      // A reply is readable when it and the root are, so an ancestor in the window is a valid
+      // comment or a placeholder. The window itself is a bounded read, as in the REST twin.
       const page = await resolveCommentAncestorPage({
         after: args.after,
         limit: clampToolLimit(args.limit, LIMIT, LIMIT),
@@ -79,9 +79,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         throw err
       })
       if (!page) return { success: false, error: 'Invalid cursor' }
-      const ids = page.ancestors.filter(node => node.id !== thread.post.id && !node.deleted_at)
+      const ids = page.ancestors.filter(node => node.id !== thread.post.id)
       const loaded = new Map(
-        (await getPostByAnyCachedBatch(ids.map(node => node.id))).flatMap(post =>
+        (await getPostsOrDeletedCommentStubs(ids.map(node => node.id))).flatMap(post =>
           post ? [[post.id, post] as const] : [],
         ),
       )

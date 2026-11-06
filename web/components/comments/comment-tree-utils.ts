@@ -1,4 +1,4 @@
-import type { Post, PostElection, ElectionVote } from '@/types/posts'
+import type { Post, PostElection, PostMetrics, ElectionVote } from '@/types/posts'
 import type { AgentModeration, AgentModerationElection } from '@/types/agents'
 
 type CommentTreeNode = Post & { children: CommentTreeNode[] }
@@ -14,6 +14,8 @@ export interface CommentNodeData {
   moderationElectionVotes?: Record<string, ElectionVote> | undefined
   communityName?: string | undefined
   bookmarks?: Record<string, boolean> | undefined
+  /** Public-eligible direct reply count; the loaded `children` can be fewer. */
+  childrenCount?: number | undefined
 }
 
 export function buildTree(
@@ -54,6 +56,7 @@ export function buildCommentNodeData(
     moderationElections?: Record<string, AgentModerationElection> | undefined
     communityNamesMap?: Record<string, string> | undefined
     bookmarks?: Record<string, Record<string, boolean>> | undefined
+    metrics?: Record<string, PostMetrics> | undefined
   },
 ): CommentNodeData {
   const { children, ...post } = comment
@@ -86,6 +89,7 @@ export function buildCommentNodeData(
       ? options.communityNamesMap?.[comment.community_id]
       : undefined,
     bookmarks: options.bookmarks?.[comment.id],
+    childrenCount: options.metrics?.[comment.id]?.count.children,
   }
 }
 

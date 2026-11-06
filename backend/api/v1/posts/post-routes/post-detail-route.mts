@@ -11,7 +11,8 @@ import { getPostCommunitiesRecord } from '@services/communities/post-communities
 import { getCommunityPostReview } from '@services/communities/publications/get'
 import type { CommunityMemberRole } from '@services/communities/types'
 import {
-  canViewPost,
+  getRequestedPostReadState,
+  maskPlaceholderMetrics,
   currentUserCanDeletePost,
   currentUserCanLockPost,
   currentUserCanUnpublishFromCommunity,
@@ -34,15 +35,41 @@ import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/rou
 app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts/:idOrSlug')
   validateRequestContract(ctx, 'GET:/api/v1/posts/:idOrSlug', { path: ctx.params })
-  const { post, root } = await getRoutePostByAnyCached(ctx.params.idOrSlug!)
+  const { post, root } = await getRoutePostByAnyCached(ctx.params.idOrSlug!, {
+    includeDeleted: true,
+  })
   ctx.assert(post, 404, 'Post not found')
-  ctx.assert(!post.deleted_at, 404, 'Post not found')
 
   const privacyPost = await getRouteAccessPost(post, root)
   ctx.assert(privacyPost, 404, 'Post not found')
-  ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
+  const readState = await getRequestedPostReadState(
+    currentUser,
+    post,
+    post.root_post_id ? root : null,
+  )
+  ctx.assert(readState, 404, 'Post not found')
 
   setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+  if (readState === 'placeholder') {
+    // A deleted or unmoderated comment with a valid reply below it: its place in the thread only.
+    if (ctx.req.method === 'HEAD') {
+      ctx.response.empty()
+      return
+    }
+    const [maskedPlaceholder] = await labelAndMaskPosts([post], currentUser)
+    ctx.setType('json')
+    await ctx.pipeline(
+      streamJsonObject({
+        post: maskedPlaceholder,
+        html: '',
+        author_aside: null,
+        post_metrics: getPostMetricsByAnyCached(post.id).then(
+          metrics => maskPlaceholderMetrics([maskedPlaceholder], [metrics])[0] ?? null,
+        ),
+      }),
+    )
+    return
+  }
 
   const authorId =
     !post.is_anonymous && post.created_by_id && post.created_by_id !== DELETED_USER_ID

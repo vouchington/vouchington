@@ -5,8 +5,7 @@ import {
   getCommentDescendantsPage,
   type CommentDescendantsPage,
 } from '@services/comments'
-import { getPostByAnyCachedBatch } from '@services/entity-fetch'
-import type { Post } from '@services/posts'
+import { getPostsOrDeletedCommentStubs, type Post } from '@services/posts'
 import type { BasicUser } from '@services/users/types'
 import createHttpError from 'http-errors'
 import { resolveReadableThread } from './mcp-post-access.mts'
@@ -29,7 +28,7 @@ const { min, max, default: defaultLimit } = COMMENT_DESCENDANTS_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Get a post's replies in id order. An unreadable reply hides its subtree; a deleted reply is omitted but its descendants remain, so parent_post_id may name an unlisted reply. A deleted, missing or not fully public post returns Post not found.",
+      'Get a depth-bounded window of replies in id order; page_info paginates that window. Use a returned reply as post_id to reach deeper replies. Deleted or unmoderated replies are content-free placeholders with placeholder_state when needed to preserve a possible valid branch. A missing or not fully public post returns Post not found.',
     parameters: {
       type: 'object',
       properties: {
@@ -73,7 +72,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         throw err
       })
       if (!page) return { success: false, error: 'Invalid cursor' }
-      const posts = await getPostByAnyCachedBatch(page.ids)
+      const posts = await getPostsOrDeletedCommentStubs(page.ids)
       return {
         success: true,
         descendants: await toMcpPosts(posts.filter((post): post is Post => Boolean(post))),

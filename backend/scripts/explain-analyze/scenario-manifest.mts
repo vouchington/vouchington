@@ -29,7 +29,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'classifier-human-vote-comparison-community',
   'classifier-human-vote-comparison-post',
   'classifier-human-vote-comparison-rss-feed-item',
-  'comment-ancestors',
+  ...(['comment-ancestors', 'comment-descendants-depth-bound'] as const),
   'comment-tree-best',
   'comment-tree-new',
   'conversation-messages',
