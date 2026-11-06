@@ -239,18 +239,19 @@ jobs:
   check-query-profile-baseline:
     needs: [prep, backend-tests]
     if: ${{ !cancelled() && needs.backend-tests.result == 'success' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 11
+    runs-on: ubuntu-slim
+    timeout-minutes: 6
     permissions:
       contents: read
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
-        timeout-minutes: 5
+        timeout-minutes: 2
+      - uses: actions/setup-node@363be39a57dfa5801e05c6e0c549d622a376cf15 # v7
+        timeout-minutes: 1
         with:
-          deadline-seconds: '270'
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
       - name: Download complete backend-unit query-profile hits
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         timeout-minutes: 3
@@ -280,11 +281,6 @@ jobs:
           fi
           manifests=()
           for ((shard = 1; shard <= expected_shards; shard++)); do
-            manifest="backend-query-profile-hits/backend-query-profile-hits-shard-${shard}.json"
-            if [ ! -s "$manifest" ]; then
-              echo "::error::Missing backend-unit query-profile hit manifest: $manifest" >&2
-              exit 2
-            fi
-            manifests+=("$manifest")
+            manifests+=("backend-query-profile-hits/backend-query-profile-hits-shard-${shard}.json")
           done
-          node backend/test-helpers/api/request-query-profile-stale.mts --manifests "${manifests[@]}"
+          node backend/test-helpers/api/request-query-profile-manifest-check.mts "${manifests[@]}"

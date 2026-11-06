@@ -109,6 +109,15 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('analytics-db-service-test-report.junit.xml')
   })
 
+  it('preserves Vitest failures through the tee pipeline before collecting shard hits', () => {
+    const script = runBackendTestsScript ?? ''
+    const vitestPipeline = '2>&1 | tee backend-unit-output.log'
+
+    expect(script.startsWith('set -o pipefail\n')).toBe(true)
+    expect(script).toContain(vitestPipeline)
+    expect(script.indexOf(' --collect \\')).toBeGreaterThan(script.indexOf(vitestPipeline))
+  })
+
   it('builds email templates without owning backend smoke', () => {
     const setupBackend = workflow.indexOf('actions/setup-backend')
 

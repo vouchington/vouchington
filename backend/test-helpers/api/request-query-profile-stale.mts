@@ -1,6 +1,6 @@
 // Fails when baseline scopes are not observed in complete local or CI profile logs.
 // Usage: node backend/test-helpers/api/request-query-profile-stale.mts <complete-run-log>...
-// CI: --collect <shard/total> <shard-log> <hit-manifest.json>, then --manifests <hit-manifest.json>...
+// CI: --collect <shard/total> <shard-log> <hit-manifest.json>; the fan-in uses request-query-profile-manifest-check.mts.
 // Together, the input logs must contain every backend-unit shard from one complete run.
 // A scope is considered absent only when its matching diagnostic kind was present in the logs.
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -9,10 +9,7 @@ import {
   MIN_STALE_EVIDENCE_LOGS,
   parseRepeatBaseline,
 } from 'vouchington-tooling/request-query-profile'
-import {
-  buildStaleReportFromHitManifests,
-  collectQueryProfileHitManifest,
-} from './request-query-profile-hit-manifest.mts'
+import { collectQueryProfileHitManifest } from './request-query-profile-hit-manifest.mts'
 
 let shutdownDataStores: (() => Promise<void>) | undefined
 try {
@@ -25,16 +22,14 @@ try {
   let resolveRoute: (route: string) => string = () => {
     throw new Error('Request route resolver was not initialized')
   }
-  if (args[0] !== '--manifests') {
-    await import('../s3-test-environment.mts')
-    const { shutdownDataStoresForOneOffCommand } = await import('@data-stores/graceful-shutdown')
-    shutdownDataStores = shutdownDataStoresForOneOffCommand
-    const { onGracefulShutdown: closeValkey } = await import('@data-stores/valkey')
-    const { default: app } = await import('./request-query-profile-registered-routes.mts')
-    const { resolveRequestProfileRoute } = await import('../request-query-profile-route.mts')
-    await closeValkey.waitForInitialization()
-    resolveRoute = route => resolveRequestProfileRoute(app, route)
-  }
+  await import('../s3-test-environment.mts')
+  const { shutdownDataStoresForOneOffCommand } = await import('@data-stores/graceful-shutdown')
+  shutdownDataStores = shutdownDataStoresForOneOffCommand
+  const { onGracefulShutdown: closeValkey } = await import('@data-stores/valkey')
+  const { default: app } = await import('./request-query-profile-registered-routes.mts')
+  const { resolveRequestProfileRoute } = await import('../request-query-profile-route.mts')
+  await closeValkey.waitForInitialization()
+  resolveRoute = route => resolveRequestProfileRoute(app, route)
   if (args[0] === '--collect') {
     if (args.length !== 4) throw new Error('Expected shard/total, shard log, and manifest path')
     const match = /^([1-9]\d*)\/([1-9]\d*)$/u.exec(args[1]!)
@@ -48,20 +43,14 @@ try {
     )
     writeFileSync(args[3]!, `${JSON.stringify(manifest)}\n`)
     process.stdout.write(
-      `shard ${manifest.shard}/${manifest.shardTotal}: ${manifest.routeHits.length} route hits, ${manifest.workerHits.length} worker hits\n`,
+      `shard ${manifest.shard}/${manifest.shardTotal}: ${manifest.missingScopes.length} candidate missing scopes\n`,
     )
   } else {
-    const report =
-      args[0] === '--manifests'
-        ? buildStaleReportFromHitManifests(
-            baseline,
-            args.slice(1).map(path => JSON.parse(readFileSync(path, 'utf8'))),
-          )
-        : buildStaleReport(
-            baseline,
-            args.map(path => readFileSync(path, 'utf8')),
-            resolveRoute,
-          )
+    const report = buildStaleReport(
+      baseline,
+      args.map(path => readFileSync(path, 'utf8')),
+      resolveRoute,
+    )
     const totalScopes = baseline.reduce(
       (total, entry) => total + entry.routes.length + (entry.workers?.length ?? 0),
       0,

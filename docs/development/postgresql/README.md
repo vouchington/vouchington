@@ -69,8 +69,9 @@ checks it every day, so an issue closed elsewhere is still caught. It skips loca
 - **Add an entry** only for a repeat that cannot be fixed in the same PR; prefer fixing it. Link an
   open issue that owns the removal, or make the entry permanent when the code needs the repeat.
 - **Remove an entry** in the PR that removes the repeat. Each successful backend-unit shard uploads
-  the baseline scopes its diagnostics hit. The aggregate job requires every shard's manifest and
+  the baseline scopes its diagnostics missed. The aggregate job requires every shard's manifest and
   fails on stale scopes. Missing or malformed evidence fails without claiming a scope is stale.
+  Staleness is judged on the backend-unit suite only.
 - **Find stale scopes** from one complete local pass or complete Backend workflow run with
   `VITEST_DIAGNOSTICS=1`. Combine all backend-unit shard logs from that pass into one file, then run
   `NODE_ENV=test node backend/test-helpers/api/request-query-profile-stale.mts <run-log>`.

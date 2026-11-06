@@ -3336,9 +3336,6 @@
       # Reporting and full LCOV persistence include a bounded upload retry within the whole-job cap.
       - job: '.github/workflows/tests-backend-unit.yml#backend-tests'
         maxMinutes: 29
-      # Query-profile evidence waits for every backend-unit shard, then checks the complete corpus.
-      - job: '.github/workflows/tests-backend-unit.yml#check-query-profile-baseline'
-        maxMinutes: 11
       # Steps sum to 19m; cap 18m is below it; healthy maximum was 87 seconds across 37
       # GitHub-hosted successes in #2260.
       - job: '.github/workflows/tests-cloudflare-worker.yml#cloudflare-worker-tests'
