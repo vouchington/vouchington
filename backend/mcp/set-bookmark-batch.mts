@@ -90,18 +90,14 @@ export async function setBookmarkTargets(
       imported.set(index, importResult(args.targets[index]!, replay[position]!)),
     )
   const admittedGroups = replay
-    ? groups
-        .map(group => ({
-          ...group,
-          objectIds: accepted
-            .filter(
-              item =>
-                !imported.has(item.index) &&
-                item.value.relation.table_name === group.relation.table_name,
-            )
-            .map(item => item.value.targetId),
-        }))
-        .filter(group => group.objectIds.length > 0)
+    ? groups.flatMap(group => {
+        const objectIds = accepted.flatMap(item =>
+          !imported.has(item.index) && item.value.relation.table_name === group.relation.table_name
+            ? [item.value.targetId]
+            : [],
+        )
+        return objectIds.length > 0 ? [{ ...group, objectIds }] : []
+      })
     : groups
   return withRelationLimitAdmission(currentUser.id, admittedGroups, async () => {
     if (topicIndexes.length > 0 && !replay) {

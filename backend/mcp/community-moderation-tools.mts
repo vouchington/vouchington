@@ -72,14 +72,14 @@ const definitions = [
 
 export const communityModerationGroups = definitions.map(definition => ({
   name: definition.name,
-  options: communityModerationRoutes
-    .filter(route => (definition.methods as readonly string[]).includes(route.method))
-    .map(route => {
-      const endpoint: ToolApiEndpoint = { method: route.method, path: route.path }
-      const parameters = communityModerationInput(endpoint)
-      const handler = handlers[route.option]
-      if (!handler) throw new Error(`Missing community moderation handler: ${route.option}`)
-      return {
+  options: communityModerationRoutes.flatMap(route => {
+    if (!(definition.methods as readonly string[]).includes(route.method)) return []
+    const endpoint: ToolApiEndpoint = { method: route.method, path: route.path }
+    const parameters = communityModerationInput(endpoint)
+    const handler = handlers[route.option]
+    if (!handler) throw new Error(`Missing community moderation handler: ${route.option}`)
+    return [
+      {
         option: route.option,
         source: {
           schema: { description: `${route.method} ${route.path}`, parameters },
@@ -111,8 +111,9 @@ export const communityModerationGroups = definitions.map(definition => ({
             )
           },
         },
-      }
-    }),
+      },
+    ]
+  }),
 }))
 
 export const communityModerationTools = communityModerationGroups.map(group =>
