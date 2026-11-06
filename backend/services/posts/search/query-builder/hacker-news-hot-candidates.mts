@@ -13,9 +13,11 @@ export function buildHackerNewsHotCandidates(
   hasTextSearch: boolean,
   hasSemanticSearch: boolean,
   rankingScoreExpression: SQLStatement | null,
+  decisionInstant: Date,
 ): SQLStatement {
   const query = sql`hacker_news_hot_candidates AS MATERIALIZED (`
   const context = {
+    decisionInstant,
     currentUser,
     followingRankExpression: null,
     hasSemanticSearch,

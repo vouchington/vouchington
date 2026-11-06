@@ -508,7 +508,9 @@ Hiding references suppresses these facts and leaves a requested reference filter
 transports. Pausing external lookups changes freshness independently of presentation.
 
 Personalized feeds apply the reference filter before deduplication and pagination. The web time-range
-cap controls the checkbox interaction without changing the API's accepted time ranges.
+cap controls the checkbox interaction without changing the API's accepted time ranges. HN-filtered hot
+searches retain hot ranking for every range, but the server restricts their eligible cohort to at most
+30 elapsed days; narrower requested windows remain narrower.
 
 Swift and .NET must remove the personal discussions preference and client-side lookup, consume stored
 reference facts, and honor the producer's visibility behavior. Their adoption remains dependent work

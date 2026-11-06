@@ -13,6 +13,7 @@ export function appendPostSearchWhereClause(
   {
     currentUser,
     paginationOnly = false,
+    decisionInstant = new Date(),
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
@@ -22,6 +23,7 @@ export function appendPostSearchWhereClause(
   }: {
     currentUser?: BasicUser
     paginationOnly?: boolean
+    decisionInstant?: Date
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
     hasTextSearch: boolean
@@ -39,6 +41,8 @@ export function appendPostSearchWhereClause(
     appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })
   }
   appendPartitionAndPaginationFilters(filters, {
+    paginationOnly,
+    decisionInstant,
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,

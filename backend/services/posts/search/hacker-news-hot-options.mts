@@ -1,21 +1,25 @@
-import { DEFAULT_POST_SEARCH_TIME_RANGE } from '@modules/feed-query-builders'
+import sql, { type SQLStatement } from 'sql-template-strings'
+import { buildTimeRangeFilter } from '@modules/feed-query-builders'
+import { getTimeRangeLowerBoundDate } from '@modules/feed-query-builders/time-range'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visibility-config'
 import type { PostSearchOptions } from './types.mts'
 
-/** Long-window requests keep their history, using best instead of an unbounded hot ranking. */
-export function normalizeHackerNewsHotSearch(options: PostSearchOptions): PostSearchOptions {
-  if (
-    options.sort !== 'hot' ||
-    options.has_hacker_news_references !== true ||
-    !areHackerNewsReferencesVisible()
-  )
-    return options
-  const timeRange = options.time_range ?? DEFAULT_POST_SEARCH_TIME_RANGE
-  return {
-    ...options,
-    time_range: timeRange,
-    sort: timeRange === '1y' || timeRange === 'all' ? 'best' : 'hot',
-  }
+/** HN hot always ranks within the requested window capped at thirty elapsed days. */
+export function buildPostSearchTimeRangeFilter(
+  options: PostSearchOptions,
+  idColumn: 'posts.id' | 'semantic_vector_post.id',
+  decisionInstant: Date,
+): SQLStatement | null {
+  const timeRange = options.time_range ?? 'all'
+  if (!usesHackerNewsHotCandidates(options))
+    return buildTimeRangeFilter(timeRange, idColumn, decisionInstant)
+  const requested = getTimeRangeLowerBoundDate(timeRange, decisionInstant)
+  const oldestHotTimestamp = decisionInstant.getTime() - 30 * 86_400_000
+  const cutoff = Math.max(requested?.getTime() ?? oldestHotTimestamp, oldestHotTimestamp)
+  return sql`/* hackerNewsHotWindow:fragment */`
+    .append(idColumn)
+    .append(sql` >= ${timestampToUuidv7LowerBound(cutoff)}`)
 }
 
 export function usesHackerNewsHotCandidates(options: PostSearchOptions): boolean {

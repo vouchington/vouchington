@@ -15,10 +15,7 @@ import { isUUID } from '@modules/utils'
 import { DEFAULT_POST_SEARCH_TIME_RANGE } from '@modules/feed-query-builders'
 import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
-import {
-  normalizeHackerNewsHotSearch,
-  usesHackerNewsHotCandidates,
-} from './hacker-news-hot-options.mts'
+import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
 import { postsWorkConfig } from '../work-limits.mts'
 
 type PostSearchResponse = {
@@ -28,9 +25,8 @@ type PostSearchResponse = {
 
 export async function getPostIds(
   currentUser?: BasicUser,
-  input: PostSearchOptions = {},
+  options: PostSearchOptions = {},
 ): Promise<PostSearchResponse> {
-  const options = normalizeHackerNewsHotSearch(input)
   if (usesHackerNewsHotCandidates(options)) await postsWorkConfig.waitForInitialization()
   if (options.similar_rss_feed_item_id !== undefined && !isUUID(options.similar_rss_feed_item_id)) {
     throw createHttpError(400, 'similar_rss_feed_item_id must be a valid UUID')

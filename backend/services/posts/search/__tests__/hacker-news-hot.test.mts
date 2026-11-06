@@ -19,7 +19,7 @@ import {
 } from '../../../../test-helpers/post-semantic-window.mts'
 
 describe('Hacker News hot search bounds', () => {
-  it('pages inside the newest cohort, falls back to best for longer windows, and ignores hidden HN', async () => {
+  it('pages inside the newest hot cohort for every window and ignores hidden HN', async () => {
     const user = await createTestUserDirect()
     if (!user) throw new Error('Expected a hot search test user')
     await Promise.all([
@@ -62,21 +62,21 @@ describe('Hacker News hot search bounds', () => {
       })
       expect(second.results.map(row => row.id)).toEqual([ids[1]])
       expect(second.page_info.has_next_page).toBe(false)
-      for (const time_range of ['1y', 'all'] as const) {
-        const best = await getPostIds(user, { ...options, time_range })
-        expect(best.results.map(row => row.id)).toEqual([ids[2]])
+      for (const time_range of ['1m', '1y', 'all'] as const) {
+        const bounded = await getPostIds(user, { ...options, time_range })
+        expect(bounded.results.map(row => row.id)).toEqual([ids[0]])
         const cursor = decodeUuidCursor(
-          best.page_info.end_cursor!,
+          bounded.page_info.end_cursor!,
           isScoreCursor,
-          'Expected best cursor',
+          'Expected hot cursor',
         )
         expect(Number.isFinite(cursor.score)).toBe(true)
         const next = await getPostIds(user, {
           ...options,
           time_range,
-          after: best.page_info.end_cursor ?? undefined,
+          after: bounded.page_info.end_cursor ?? undefined,
         })
-        expect(next.results.map(row => row.id)).toEqual([ids[0]])
+        expect(next.results.map(row => row.id)).toEqual([ids[1]])
       }
       const restoreHidden = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
         references_visible: false,
