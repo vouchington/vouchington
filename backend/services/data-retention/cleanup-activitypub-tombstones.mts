@@ -10,7 +10,7 @@ const SOURCES = {
 /** Active cycles remain domain facts; each terminal page expires beyond the replay horizon. */
 export async function cleanupActivityPubTerminalIdentities(
   kind: keyof typeof SOURCES,
-  options: { batchSize: number; maxBatches: number; now?: Date },
+  options: { batchSize: number; maxBatches: number; now?: Date; identityIds?: readonly string[] },
 ): Promise<{ deleted: number; hasMore: boolean }> {
   return cleanupActivityPubTerminalIdentityPages(kind, options, beginTransaction)
 }
@@ -18,7 +18,7 @@ export async function cleanupActivityPubTerminalIdentities(
 /** Each caller supplies a real transaction opener; family mapping and bounded SQL stay here. */
 export async function cleanupActivityPubTerminalIdentityPages(
   kind: keyof typeof SOURCES,
-  options: { batchSize: number; maxBatches: number; now?: Date },
+  options: { batchSize: number; maxBatches: number; now?: Date; identityIds?: readonly string[] },
   openTransaction: typeof beginTransaction,
 ): Promise<{ deleted: number; hasMore: boolean }> {
   const cutoff = new Date(
@@ -26,26 +26,33 @@ export async function cleanupActivityPubTerminalIdentityPages(
   )
   return runBoundedBatches(options, async batchSize => {
     await using query = await openTransaction()
-    const deleted = await cleanupActivityPubTerminalIdentityPage(query, kind, cutoff, batchSize)
+    const deleted = await cleanupActivityPubTerminalIdentityPage(
+      query,
+      kind,
+      cutoff,
+      batchSize,
+      options.identityIds,
+    )
     await query.commit()
     return deleted
   })
 }
 
-export async function cleanupActivityPubTerminalIdentityPage(
+async function cleanupActivityPubTerminalIdentityPage(
   query: TransactionQuery,
   kind: keyof typeof SOURCES,
   cutoff: Date,
   batchSize: number,
+  identityIds?: readonly string[],
 ): Promise<number> {
   const source = SOURCES[kind]
   // Cap the physical terminal-identity page before checking or deleting related payload rows.
   const { rows } = await query<{ id: string }>(
     `/* cleanupActivityPubTerminalIdentityPage */
      SELECT id FROM ${source.table}
-     WHERE ${source.timestamp} < $1::timestamptz
+     WHERE ${source.timestamp} < $1::timestamptz${identityIds === undefined ? '' : ' AND id = ANY($3::uuid[])'}
      ORDER BY ${source.timestamp}, id LIMIT $2 FOR UPDATE SKIP LOCKED`,
-    [cutoff, batchSize],
+    identityIds === undefined ? [cutoff, batchSize] : [cutoff, batchSize, identityIds],
   )
   if (rows.length === 0) return 0
   const ids = rows.map(row => row.id)

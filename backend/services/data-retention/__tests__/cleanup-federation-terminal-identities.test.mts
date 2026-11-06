@@ -1,15 +1,21 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import { createTestPost } from '@voucha/test-helpers'
+import {
+  createTestPost,
+  hardDeleteTestPost,
+  deleteOperationalRetainedLikeReferenceForTest,
+} from '@voucha/test-helpers'
 import {
   createFederatedUser,
   createRemoteActorFixture,
 } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
-import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import {
+  withCommittedPostgresTransactionForTest,
+  withPostgresTransactionForTest,
+} from '@voucha/test-helpers/postgres-transaction'
 import {
   readFollowCyclePointerForTest,
   readTerminalActivityIdentitiesForTest,
-  scopeTerminalActivityQueryForTest,
   setTerminalActivityTimeForTest,
 } from '@voucha/test-helpers/activitypub-terminal-identities'
 import { dispatchInboundActivity } from '@services/ap-inbox-activities/dispatch-activity'
@@ -21,7 +27,8 @@ import {
 } from '@services/ap-inbox-activities/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getActorUri, getPostUri } from '@modules/activitypub-uris'
-import { cleanupActivityPubTerminalIdentityPage } from '../cleanup-activitypub-tombstones.mts'
+import { deleteTerminalRetentionFixtureForTest } from '@voucha/test-helpers/terminal-retention-cleanup'
+import { cleanupActivityPubTerminalIdentities } from '../cleanup-activitypub-tombstones.mts'
 
 const activityId = () => `https://remote.example/activities/${randomUUID()}`
 
@@ -30,16 +37,34 @@ describe('finite ActivityPub terminal identity retention', () => {
     'expires only old terminal %s identities from transition time, preserving active cycles',
     async type => {
       const actor = await createRemoteActorFixture()
-      const target =
-        type === 'Follow'
-          ? getActorUri((await createFederatedUser()).id)
-          : getPostUri((await createTestPost()).id)
+      const user = type === 'Follow' ? await createFederatedUser() : null
+      const post = type === 'Like' ? await createTestPost() : null
+      const target = type === 'Follow' ? getActorUri(user!.id) : getPostUri(post!.id)
       const kind = type === 'Follow' ? 'follow' : 'like'
       const [oldId, recentId, activeId] = [activityId(), activityId(), activityId()]
+      const activityIds = [oldId!, recentId!, activeId!]
+      onTestFinished(async () => {
+        if (post) {
+          await hardDeleteTestPost(post.id)
+          await withCommittedPostgresTransactionForTest(query =>
+            Promise.all(
+              activityIds.map(id => deleteOperationalRetainedLikeReferenceForTest(query, id)),
+            ),
+          )
+        }
+        await deleteTerminalRetentionFixtureForTest({
+          actorId: actor.id,
+          actorUri: actor.actor_uri,
+          userId: user?.id ?? post?.created_by_id ?? null,
+          activityIds,
+        })
+      })
       for (const id of [oldId!, recentId!]) {
         await dispatchInboundActivity(actor, { id, type, actor: actor.actor_uri, object: target })
+        const undoId = activityId()
+        activityIds.push(undoId)
         await dispatchInboundActivity(actor, {
-          id: activityId(),
+          id: undoId,
           type: 'Undo',
           actor: actor.actor_uri,
           object: { id, type, object: target },
@@ -55,20 +80,20 @@ describe('finite ActivityPub terminal identity retention', () => {
       const cutoff = new Date(
         now.getTime() - getTerminalActivityIdentityRetentionDays() * 86_400_000,
       )
-      await withPostgresTransactionForTest(async query => {
+      const before = await withCommittedPostgresTransactionForTest(async query => {
         await setTerminalActivityTimeForTest(query, kind, oldId!, new Date(cutoff.getTime() - 1))
         await setTerminalActivityTimeForTest(query, kind, recentId!, cutoff)
-        const before = await readTerminalActivityIdentitiesForTest(query, kind, [
-          oldId!,
-          recentId!,
-          activeId!,
-        ])
-        const scoped = scopeTerminalActivityQueryForTest(
-          query,
-          kind,
-          before.map(row => row.id),
-        )
-        expect(await cleanupActivityPubTerminalIdentityPage(scoped, kind, cutoff, 1)).toBe(1)
+        return readTerminalActivityIdentitiesForTest(query, kind, [oldId!, recentId!, activeId!])
+      })
+      const result = await cleanupActivityPubTerminalIdentities(kind, {
+        batchSize: 1,
+        maxBatches: 1,
+        now,
+        identityIds: before.map(row => row.id),
+      })
+      expect(result.deleted).toBe(1)
+      expect(result.hasMore).toBe(true)
+      await withPostgresTransactionForTest(async query => {
         const after = await readTerminalActivityIdentitiesForTest(query, kind, [
           oldId!,
           recentId!,
@@ -104,6 +129,15 @@ describe('finite ActivityPub terminal identity retention', () => {
     const actor = await createRemoteActorFixture()
     const user = await createFederatedUser()
     const id = activityId()
+    const undoId = activityId()
+    onTestFinished(() =>
+      deleteTerminalRetentionFixtureForTest({
+        actorId: actor.id,
+        actorUri: actor.actor_uri,
+        userId: user.id,
+        activityIds: [id, undoId],
+      }),
+    )
     await dispatchInboundActivity(actor, {
       id,
       type: 'Follow',
@@ -111,26 +145,30 @@ describe('finite ActivityPub terminal identity retention', () => {
       object: getActorUri(user.id),
     })
     await dispatchInboundActivity(actor, {
-      id: activityId(),
+      id: undoId,
       type: 'Undo',
       actor: actor.actor_uri,
       object: { id, type: 'Follow', object: getActorUri(user.id) },
     })
-    const cutoff = new Date(Date.now() - getTerminalActivityIdentityRetentionDays() * 86_400_000)
-    await withPostgresTransactionForTest(async query => {
+    const now = new Date()
+    const cutoff = new Date(now.getTime() - getTerminalActivityIdentityRetentionDays() * 86_400_000)
+    const identity = await withCommittedPostgresTransactionForTest(async query => {
       await setTerminalActivityTimeForTest(query, 'follow', id, new Date(cutoff.getTime() - 1))
       const [identity] = await readTerminalActivityIdentitiesForTest(query, 'follow', [id])
       expect(await readFollowCyclePointerForTest(query, actor.id, user.id)).toMatchObject({
         inbound_follow_activity_row_id: identity!.id,
       })
-      expect(
-        await cleanupActivityPubTerminalIdentityPage(
-          scopeTerminalActivityQueryForTest(query, 'follow', [identity!.id]),
-          'follow',
-          cutoff,
-          1,
-        ),
-      ).toBe(1)
+      return identity!
+    })
+    const result = await cleanupActivityPubTerminalIdentities('follow', {
+      batchSize: 1,
+      maxBatches: 1,
+      now,
+      identityIds: [identity.id],
+    })
+    expect(result.deleted).toBe(1)
+    expect(result.hasMore).toBe(true)
+    await withPostgresTransactionForTest(async query => {
       expect(await readFollowCyclePointerForTest(query, actor.id, user.id)).toEqual({
         subject_id: actor.id,
         object_id: user.id,

@@ -2,9 +2,20 @@ import { existsSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
+vi.mock<typeof import('@vouchington/localization-compiler')>(
+  import('@vouchington/localization-compiler'),
+  async importOriginal => {
+    const original = await importOriginal()
+    return {
+      ...original,
+      openLocalizationDatabase: vi.fn<typeof original.openLocalizationDatabase>(
+        original.openLocalizationDatabase,
+      ),
+    }
+  },
+)
 import { DEFAULT_LOCALIZATION_BOUNDS, type CatalogMessage } from '@vouchington/localization'
 import { headerValue } from './index.mts'
-import { localizationSqlitePath } from './database.mts'
 
 import { queryValues } from './query.mts'
 
@@ -95,6 +106,21 @@ describe('localization service', () => {
     expect(() => context.close()).not.toThrow()
   })
 
+  it('opens the default catalog through the production database entry', async () => {
+    const context = await useSampleCatalog()
+    vi.resetModules()
+    const { openLocalizationDatabase } = await import('@vouchington/localization-compiler')
+    vi.mocked(openLocalizationDatabase).mockClear().mockReturnValueOnce(context.database)
+    vi.stubEnv('LOCALIZATION_SQLITE_PATH', undefined)
+    const { getLocalizationDatabase } = await import('./database.mts')
+
+    getLocalizationDatabase()
+
+    expect(openLocalizationDatabase).toHaveBeenCalledExactlyOnceWith(
+      '/app/localization/catalog.sqlite',
+    )
+  })
+
   it('parses query lists and header values', () => {
     expect(queryValues(undefined)).toEqual([])
     expect(queryValues('nav.*')).toEqual(['nav.*'])
@@ -106,8 +132,6 @@ describe('localization service', () => {
     expect(headerValue(undefined)).toBeUndefined()
     expect(headerValue('etag')).toBe('etag')
     expect(headerValue(['a', 'b'])).toBe('a,b')
-    vi.stubEnv('LOCALIZATION_SQLITE_PATH', undefined)
-    expect(localizationSqlitePath()).toBe('/app/localization/catalog.sqlite')
   })
 })
 
