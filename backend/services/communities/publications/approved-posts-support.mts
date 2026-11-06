@@ -25,12 +25,10 @@ export function encodeCommunityPostCursor(
 
 export function buildCommunityPostHotScoreExpression() {
   const ageFactor = sql`(EXTRACT(EPOCH FROM (uuid_extract_timestamp(posts.id) - TIMESTAMPTZ '2026-01-01 00:00:00+00')) / ${HOT_SORT_HALF_LIFE_SECONDS} * LN(2.0))`
+  // A tiny positive weighted vote can round the generated confidence score to zero.
   const expression = sql`(
     CASE
-      WHEN post_scores.votes_score_net > 0 THEN 1000000000.0 + LN(post_scores.votes_score_net::DOUBLE PRECISION) + `
-  expression.append(ageFactor)
-  expression.append(sql`
-      WHEN post_scores.votes_score_net < 0 THEN -1000000000.0 - LN(ABS(post_scores.votes_score_net)::DOUBLE PRECISION) - `)
+      WHEN posts.votes_score_sort > 0 THEN 1000000000.0 + LN(posts.votes_score_sort::DOUBLE PRECISION) + `
   expression.append(ageFactor)
   expression.append(sql`
       ELSE 0.0

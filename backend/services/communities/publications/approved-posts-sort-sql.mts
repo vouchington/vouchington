@@ -19,20 +19,6 @@ export function communityPostSortColumn(sort: CommunityPostSort): SQLStatement {
   }
 }
 
-/** Join the sort's score expression needs. */
-export function communityPostSortJoin(sort: CommunityPostSort): SQLStatement {
-  switch (sort) {
-    case 'hot':
-      return sql`
-    JOIN posts post_scores ON post_scores.id = posts.id
-  `
-    case 'new':
-      return sql``
-    default:
-      return assertNever(sort, 'Unknown community post sort')
-  }
-}
-
 /** Keyset predicate for the decoded cursor. */
 export function communityPostSortCursor(
   sort: CommunityPostSort,

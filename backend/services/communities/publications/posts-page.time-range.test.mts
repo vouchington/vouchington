@@ -6,6 +6,7 @@ import {
   insertTestCommunityMember,
   insertTestCommunityPostReview,
   insertTestPost,
+  setPostVotesScoreUp,
 } from '@voucha/test-helpers'
 import { getCommunityPostsPage } from './posts-page.mts'
 
@@ -31,6 +32,7 @@ describe('getCommunityPostsPage time range', () => {
         postId,
         submittedById: owner.id,
       })
+      await setPostVotesScoreUp(postId, 1)
       postIds.push(postId)
     }
     return { community, postIds }

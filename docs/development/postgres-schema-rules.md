@@ -96,11 +96,9 @@ recovery follow [One current contract](../../AGENTS.md).
 - Always use `votes_score_sort` for vote-based sorting and `votes_score_net` for vote-based filters.
   Sorting accounts for uncertainty in the vote evidence; filtering tests net weighted support.
   Keeping these roles separate prevents confidence adjustments from changing which rows qualify.
-  Formula-input exceptions retain net-score magnitude:
-  - [Community hot sort](../../backend/services/communities/publications/approved-posts-support.mts)
-    balances vote magnitude against age; a confidence score would leave age dominant.
-  - [Crawl priority](../../backend/data-stores/psql/views/2026-05-07-rss-feed-crawl-inputs.sql)
-    preserves topic votes' influence on crawl tiers alongside follower counts.
+  The sole formula-input exception is
+  [crawl priority](../../backend/data-stores/psql/views/2026-05-07-rss-feed-crawl-inputs.sql):
+  net-score magnitude preserves topic votes' influence on crawl tiers alongside follower counts.
 
 ## R4 — One shape per concept
 
