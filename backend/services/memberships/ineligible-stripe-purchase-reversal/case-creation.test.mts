@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
 import type { StripeInvoiceWithAllPayments } from '@modules/stripe/invoices'
-import { createTestUser, getTestIneligiblePurchaseReversalCase } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUser,
+  getTestIneligiblePurchaseReversalCase,
+} from '@voucha/test-helpers'
 import {
   calculateIneligibleStripePurchaseRefundCap,
   recordIneligibleStripePurchaseCasesForCollision,
