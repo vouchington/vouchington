@@ -56,16 +56,19 @@ export async function searchCommunityMembers(
   }
 
   const roster = memberRosterFilter(options)
-  // The one-row fence and id bound keep a community that holds most of the table
+  // A materialized parameter row keeps a community that holds most of the table
   // on the active-membership index. A bare equality lets a custom plan walk the primary key.
   const afterId =
     cursorName !== undefined && cursorId !== undefined
       ? cursorId
       : '00000000-0000-0000-0000-000000000000'
   const query = sql`/* searchCommunityMembers */
-    WITH membership_page AS MATERIALIZED (
+    WITH requested AS MATERIALIZED (
+      SELECT ${communityId}::uuid AS community_id, ${afterId}::uuid AS after_id
+    ),
+    membership_page AS MATERIALIZED (
       SELECT page.*
-      FROM (SELECT ${communityId}::uuid AS community_id, ${afterId}::uuid AS after_id OFFSET 0) requested
+      FROM requested
       JOIN LATERAL (
         SELECT cm.*
         FROM community_members cm
