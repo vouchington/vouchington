@@ -150,6 +150,9 @@
         // Called by Actions or shell entrypoints rather than imported by another module.
         "validate-vitest-cli-timeouts.mts!",
         "write-coverage-scope.mts!",
+        // Invoked by shepherd-prepare-checkpoint.sh and shepherd-update-checkpoint.sh in
+        // .github/workflows/; Knip skips sourced shell commands rather than following their bodies.
+        "shepherd-checkpoint-cli.mts!",
       ],
       "project": ["**/*.mts", "**/*.mjs"],
       "includeEntryExports": true,

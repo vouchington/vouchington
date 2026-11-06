@@ -19,6 +19,13 @@ const MALICIOUS_PR_TITLE = [
   'injected_output=true',
 ].join('\n')
 
+export function readShepherdStepScript(stepRun: string | undefined): string {
+  const script = /^source "\$GITHUB_WORKSPACE\/(\.github\/workflows\/shepherd-[a-z-]+\.sh)"$/.exec(
+    stepRun?.trim() ?? '',
+  )
+  return script ? readFileSync(script[1]!, 'utf8') : (stepRun ?? '')
+}
+
 export function executeTrustedVersionStep(stepRun: string) {
   const temporaryDirectory = mkdtempSync(join(tmpdir(), 'shepherd-version-'))
   const fakeBinDirectory = join(temporaryDirectory, 'bin')
@@ -43,6 +50,7 @@ export function executeTrustedVersionStep(stepRun: string) {
         ...process.env,
         FAKE_PR_SHEPHERD_VERSION: version,
         GITHUB_OUTPUT: githubOutputPath,
+        GITHUB_WORKSPACE: process.cwd(),
         PATH: `${fakeBinDirectory}:${process.env['PATH'] ?? ''}`,
       },
     })
