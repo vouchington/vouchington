@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import {
   LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS,
   POSTGRES_SCHEMA_GUARDRAIL_ALLOWLIST_FILE,
@@ -62,6 +63,70 @@ export function checkStaleLegacyEditedInPlaceMarkerEntries(
     if (observedLegacyMarkerMigrations.has(file)) continue
     errors.push(
       `::error file=${POSTGRES_SCHEMA_GUARDRAIL_ALLOWLIST_FILE}::stale legacy edited-in-place marker allowlist entry: ${file} -- remove it once the file's marker wording is updated or the file no longer exists`,
+    )
+  }
+}
+
+// A valid base has both wording and stale-entry enforcement: its retired-marker paths are
+// exactly its allowed paths. Reading those committed SQL lines avoids parsing historical TS.
+export function checkLegacyEditedInPlaceMarkerRatchet(
+  repoRoot: string,
+  currentEntries: ReadonlySet<string>,
+  errors: string[],
+  baseRef = process.env.BASE_SHA ?? (process.env.GITHUB_ACTIONS === 'true' ? '' : 'origin/main'),
+): void {
+  if (!baseRef) {
+    errors.push(
+      '::error::legacy marker ratchet requires BASE_SHA in CI; provide the event base commit',
+    )
+    return
+  }
+  const base = spawnSync(
+    'git',
+    ['rev-parse', '--verify', '--end-of-options', `${baseRef}^{commit}`],
+    {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    },
+  )
+  if (base.error || base.status !== 0) {
+    errors.push(
+      `::error file=${POSTGRES_SCHEMA_GUARDRAIL_ALLOWLIST_FILE}::cannot read legacy marker comparison base ${baseRef}; fetch the base commit before running repo-file-policy (CI must provide BASE_SHA)`,
+    )
+    return
+  }
+  const revision = base.stdout.trim()
+  const matches = spawnSync(
+    'git',
+    [
+      'grep',
+      '-l',
+      '-z',
+      '-G',
+      '-e',
+      `^${LEGACY_EDITED_IN_PLACE_MARKER}$`,
+      revision,
+      '--',
+      ':(glob)backend/data-stores/psql/migrations/**/*.sql',
+    ],
+    { cwd: repoRoot, encoding: 'utf8' },
+  )
+  if (matches.error || (matches.status !== 0 && matches.status !== 1)) {
+    errors.push(
+      `::error file=${POSTGRES_SCHEMA_GUARDRAIL_ALLOWLIST_FILE}::cannot inspect legacy markers at comparison base ${baseRef}`,
+    )
+    return
+  }
+  const allowed = new Set(
+    matches.stdout
+      .split('\0')
+      .filter(Boolean)
+      .map(path => path.slice(revision.length + 1)),
+  )
+  for (const file of currentEntries) {
+    if (allowed.has(file)) continue
+    errors.push(
+      `::error file=${POSTGRES_SCHEMA_GUARDRAIL_ALLOWLIST_FILE}::legacy edited-in-place marker allowlist cannot grow: ${file} had no retired marker at ${baseRef}; remove the entry and use the current wording`,
     )
   }
 }
