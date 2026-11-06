@@ -1,17 +1,37 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { appendRssFeedItemTopicMuteFilters } from './topic-mute-filters.mts'
 
-export function buildRssFeedItemSourceMuteFilter(): SQLStatement {
-  return sql`          AND NOT EXISTS (
+export function buildRssFeedItemSourceMuteFilter(eligibilityChildLimit?: number): SQLStatement {
+  const query = sql`          AND NOT EXISTS (
             SELECT 1 FROM excluded_rss_feeds
             WHERE excluded_rss_feeds.rss_feed_id = rfis.rss_feed_id
-          )
+          )`
+  if (eligibilityChildLimit) {
+    query.append(sql`
+          AND (
+            SELECT COUNT(*) FROM (
+              SELECT 1 FROM relation__topic__publisher_type__topic relation
+              WHERE relation.subject_id = rf.topic_id
+              ORDER BY relation.id DESC LIMIT ${eligibilityChildLimit + 1}
+            ) publisher_type_children
+          ) <= ${eligibilityChildLimit}`)
+  }
+  query.append(sql`
           AND NOT EXISTS (
             SELECT 1
             FROM excluded_topics
             WHERE excluded_topics.topic_id = (
               SELECT publisher_type_relation.object_id
-              FROM relation__topic__publisher_type__topic publisher_type_relation
+              FROM `)
+  if (eligibilityChildLimit) {
+    query.append(sql`(
+                SELECT id, subject_id, object_id, deleted_at, votes_score_net
+                FROM relation__topic__publisher_type__topic relation
+                WHERE relation.subject_id = rf.topic_id
+                ORDER BY relation.id DESC LIMIT ${eligibilityChildLimit}
+              ) publisher_type_relation`)
+  } else query.append(sql`relation__topic__publisher_type__topic publisher_type_relation`)
+  query.append(sql`
               JOIN topics publisher_type ON publisher_type.id = publisher_type_relation.object_id
               WHERE publisher_type_relation.subject_id = rf.topic_id
                 AND publisher_type_relation.deleted_at IS NULL
@@ -22,13 +42,16 @@ export function buildRssFeedItemSourceMuteFilter(): SQLStatement {
               LIMIT 1
             )
           )
-`
+`)
+  return query
 }
 
 export function appendRssFeedItemViewerEligibilityFilters(
   query: SQLStatement,
   rssFeedItemId: SQLStatement,
   rssFeedItemUrlId: SQLStatement,
+  eligibilityChildLimit: number,
+  personalized = false,
 ): void {
   query.append(sql`
       AND NOT EXISTS (
@@ -36,7 +59,26 @@ export function appendRssFeedItemViewerEligibilityFilters(
   query.append(rssFeedItemId).append(sql`
       )
   `)
-  appendRssFeedItemTopicMuteFilters(query, rssFeedItemId)
+  appendRssFeedItemTopicMuteFilters(query, rssFeedItemId, eligibilityChildLimit)
+  if (personalized) {
+    query.append(sql`
+      AND NOT EXISTS (
+        SELECT 1 FROM urls target_url
+        JOIN url_hostnames target_hostname ON target_hostname.id = target_url.hostname_id
+        WHERE target_url.id = `)
+    query.append(rssFeedItemUrlId).append(sql`
+          AND (
+            target_hostname.is_blocked
+            OR EXISTS (
+              SELECT 1 FROM excluded_hostnames excluded
+              WHERE target_hostname.reversed_hostname = excluded.reversed_hostname
+                OR target_hostname.reversed_hostname LIKE excluded.reversed_hostname || '.%'
+            )
+          )
+      )
+    `)
+    return
+  }
   query.append(sql`
       AND NOT EXISTS (
         SELECT 1 FROM urls u_excl

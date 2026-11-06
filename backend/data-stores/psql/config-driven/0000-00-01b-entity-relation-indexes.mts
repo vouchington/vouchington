@@ -88,6 +88,15 @@ WHERE deleted_at IS NULL;
     query += `\n${extraIndex}\n`
   }
 
+  if (metadata.table_name === 'relation__rss_feed_item__category__topic_alias') {
+    query += `\n${buildConstraintAddAndValidateSql(
+      'rss_feed_item_topic_alias_candidates',
+      'fk_rss_feed_item_topic_alias_candidates__relation',
+      'FOREIGN KEY (rss_feed_item_id, topic_alias_id) REFERENCES relation__rss_feed_item__category__topic_alias (subject_id, object_id) ON DELETE CASCADE',
+      metadata.table_name,
+    ).join('\n')}\n`
+  }
+
   if (metadata.table_name === 'relation__post__related__url') {
     query += `
 CREATE INDEX IF NOT EXISTS idx_relation__post__related__url__subject__best_positive

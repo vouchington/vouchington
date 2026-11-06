@@ -16,10 +16,34 @@ import {
   enqueueRecoverTopicAliasUnlinks,
   topicAliasUnlinkRecoveryOrdering,
 } from './unlink-topic-alias.mts'
+import { enqueueDispatchFeedCandidates, feedCandidateOrdering } from './feed-candidates.mts'
 import { rssFeedMaintenance } from '../queues.mts'
 import type { RssFeedHardDeleteJobs, RssFeedItemCategoriesJobs } from '../types.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  {
+    schedulerId: 'reconcileRssFeedItemCandidates',
+    registration: 'sequential',
+    repeat: { every: 60_000 },
+    template: {
+      name: 'dispatchRssFeedItemCandidates',
+      data: {},
+      opts: {
+        ...ENQUEUE_BASE_DEFAULTS,
+        priority: PRIORITY_RECOVERY,
+        ordering: feedCandidateOrdering(true),
+      },
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'reconcileRssFeedItemCandidates',
+        schedule: 'every 1m',
+        description: 'Refresh bounded RSS item source and topic candidate projections',
+        trigger: enqueueDispatchFeedCandidates,
+      },
+    ],
+  },
   {
     schedulerId: 'recoverRssFeedHardDeletes',
     registration: 'sequential',

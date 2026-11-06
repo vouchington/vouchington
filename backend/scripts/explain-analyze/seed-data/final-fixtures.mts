@@ -1,4 +1,5 @@
 import { seedIneligibleCollectionPages } from './ineligible-collection-pages.mts'
+import { seedRssFeedCandidateWork } from './rss-feed-candidate-work.mts'
 import { seedLandingPageCandidates } from './landing-page-candidates.mts'
 import { seedSessionLimits } from './session-limits.mts'
 import { seedUploadCleanup } from './upload-cleanup.mts'
@@ -9,4 +10,5 @@ export async function seedFinalExplainFixtures(): Promise<void> {
   await seedLandingPageCandidates()
   await seedSessionLimits()
   await seedIneligibleCollectionPages()
+  await seedRssFeedCandidateWork()
 }

@@ -61,6 +61,7 @@ describe('getRssFeedItemFeedIds', () => {
     const page1 = await getRssFeedItemFeedIds(user, {
       feed_type: 'follow_rss_feeds',
       limit: 2,
+      time_range: 'all',
     })
     const cursor = page1.page_info.end_cursor
     expect(cursor).toBeDefined()
@@ -73,6 +74,7 @@ describe('getRssFeedItemFeedIds', () => {
       feed_type: 'follow_rss_feeds',
       after: cursor,
       limit: 2,
+      time_range: 'all',
     })
 
     const allIds = [...page1.results, ...page2.results].map(row => row.id)

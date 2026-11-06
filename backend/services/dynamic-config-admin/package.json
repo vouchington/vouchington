@@ -66,6 +66,7 @@
     "@services/entity-listener-reconciliation": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/feature-flags": "workspace:^",
+    "@services/feeds": "workspace:^",
     "@services/follower-distributions": "workspace:^",
     "@services/friend-recommendations": "workspace:^",
     "@services/hostname-blocking": "workspace:^",

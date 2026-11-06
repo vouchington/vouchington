@@ -63,6 +63,8 @@ describe('getRssFeedItemFeedIds dedup pagination', () => {
       setTestItemStoryId(items[3].id, tieStory.id),
       setTestRssFeedItemVotes(items[0].id, 5),
       setTestRssFeedItemVotes(items[1].id, 100, 90),
+      setTestRssFeedItemVotes(items[2].id, 1),
+      setTestRssFeedItemVotes(items[3].id, 1),
     ])
     const page = await getRssFeedItemFeedIds(user, { feed_type: 'follow_rss_feeds', limit: 10 })
     expect(page.results.map(row => row.entity_id).toSorted()).toEqual(
@@ -83,6 +85,8 @@ describe('getRssFeedItemFeedIds dedup pagination', () => {
     await Promise.all([
       setTestItemStoryId(official.id, story.id),
       setTestItemStoryId(sibling.id, story.id),
+      setTestRssFeedItemVotes(official.id, 1),
+      setTestRssFeedItemVotes(sibling.id, 1),
     ])
     await processFollowerDistributionChunk(
       (await shareRssFeedItemWithFollowers(sharer, sibling.id)).distribution_id,
@@ -113,6 +117,9 @@ describe('getRssFeedItemFeedIds dedup pagination', () => {
       setTestItemStoryId(itemB.id, story.id),
       setTestItemStoryId(itemC.id, story.id),
       setTestItemStoryId(itemD.id, story.id),
+      setTestRssFeedItemVotes(itemB.id, 1),
+      setTestRssFeedItemVotes(itemC.id, 1),
+      setTestRssFeedItemVotes(itemD.id, 1),
     ])
 
     const fullPage = await getRssFeedItemFeedIds(user, { feed_type: 'follow_rss_feeds', limit: 3 })
@@ -143,6 +150,8 @@ describe('getRssFeedItemFeedIds dedup pagination', () => {
     await Promise.all([
       setTestItemStoryId(officialItem.id, story.id),
       setTestItemStoryId(eligibleSibling.id, story.id),
+      setTestRssFeedItemVotes(officialItem.id, 1),
+      setTestRssFeedItemVotes(eligibleSibling.id, 1),
       setRssFeedItemMediaType(officialItem.id, 'audio'),
     ])
 

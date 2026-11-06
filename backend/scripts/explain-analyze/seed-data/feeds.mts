@@ -40,7 +40,9 @@ export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<v
       const hostnameId = seedUuid(feedIdx % HOSTNAME_COUNT, '02') // feed's URL hostname
       const guid = `seed-item-guid-${idx}`
       const urlId = seedUuid(FEED_URL_COUNT + (idx % ITEM_URL_POOL), '03') // shared item URL pool
-      const isoDate = new Date(Date.now() - idx * 60_000).toISOString()
+      // Spread the 25,000-item corpus across one year so 1m, 1y, and all-time
+      // EXPLAIN scenarios exercise distinct cutoff selectivities.
+      const isoDate = new Date(Date.now() - idx * 25 * 60_000).toISOString()
       const data = JSON.stringify({
         title: `Seed Item ${idx}`,
         link: `https://example.com/${idx}`,
@@ -151,7 +153,8 @@ export async function seedHeavyFollowRelations(): Promise<void> {
   await using topicTransaction = await beginTransaction()
   const topicValues: unknown[] = []
   const topicRows: string[] = []
-  for (let i = 0; i < 200; i++) {
+  // Exercise the configured RSS topic-follow input ceiling with real topic ids.
+  for (let i = 0; i < 10_000; i++) {
     const objectId = seedUuid(i, '04')
     topicValues.push(powerUserId, objectId, powerUserId)
     const base = topicValues.length - 2

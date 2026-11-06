@@ -7,6 +7,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
 import { appendRssFeedItemViewerCTEs } from './get-ids/relation-ctes.mts'
+import { getRssFeedItemPageLimit } from './feed-page-config.mts'
 import {
   appendRssFeedItemViewerEligibilityFilters,
   buildRssFeedItemSourceMuteFilter,
@@ -112,6 +113,7 @@ function buildMemberSelection(
     query,
     sql`rss_feed_items.id`,
     sql`rss_feed_items.url_id`,
+    getRssFeedItemPageLimit('eligibility_child_limit'),
   )
   query.append(sql` LIMIT 1
       ) eligible

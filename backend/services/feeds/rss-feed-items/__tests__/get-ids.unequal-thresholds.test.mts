@@ -108,6 +108,7 @@ describe('getRssFeedItemFeedIds eligibility regressions', () => {
     await Promise.all([
       setTestItemStoryId(official.id, story.id),
       setTestItemStoryId(sibling.id, story.id),
+      setTestRssFeedItemVotes(official.id, 1),
       setTestRssFeedItemVotes(sibling.id, meetingScore),
       addCategoryToRssFeedItem(official.id, topic.id),
       addCategoryToRssFeedItem(sibling.id, topic.id),
@@ -175,6 +176,7 @@ describe('getRssFeedItemFeedIds eligibility regressions', () => {
     await Promise.all([
       setTestItemStoryId(official.id, story.id),
       setTestItemStoryId(sibling.id, story.id),
+      setTestRssFeedItemVotes(official.id, 1),
       setTestRssFeedItemVotes(sibling.id, meetingScore),
     ])
 

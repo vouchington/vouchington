@@ -111,6 +111,19 @@ async function applyAliasCategoryRawPage(
   page: AliasCategoryRawPage,
 ): Promise<number> {
   if (page.rows.length === 0) return 0
+  if (candidate.phase === 'rss_item_alias_candidates') {
+    await using transaction = await beginTransaction()
+    const { rowCount } = await transaction(
+      `/* reconcileAliasFeedCandidates */
+       UPDATE rss_feed_item_topic_alias_candidates
+       SET topic_id = (SELECT topic_id FROM topic_aliases WHERE id = $1::uuid LIMIT 1)
+       WHERE topic_alias_id = $1::uuid AND rss_feed_item_id = ANY($2::uuid[])`,
+      [candidate.topic_alias_id, page.rows.map(row => row.rss_feed_item_id)],
+    )
+    await transaction.commit()
+    return rowCount ?? 0
+  }
+
   if (candidate.phase === 'rss_feed_text_categories') {
     const feeds = page.rows.flatMap(row =>
       row.rss_feed_id

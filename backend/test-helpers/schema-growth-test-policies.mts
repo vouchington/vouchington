@@ -77,6 +77,7 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
   ['remote_actors', sharedParentUuidv7('remote_actor_identities')],
   ['activitypub_post_likes', sharedParentUuidv7('activitypub_post_like_activities')],
   ['rss_feed_items', sharedParentUuidv7('rss_feed_item_guids')],
+  ['rss_feed_item_feed_candidates', sharedParentUuidv7('rss_feed_items')],
   ['classifier_runs', sharedParentUuidv7('classifier_run_identities')],
   ['migrations', naturalOrProviderId('The checked-in migration filename is the key.')],
   ['auth_session_retention_cleanup_cursors', naturalOrProviderId('Finite cleanup-name key.')],
