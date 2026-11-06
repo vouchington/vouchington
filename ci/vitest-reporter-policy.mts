@@ -90,7 +90,7 @@ export function vitestReporterPolicyViolations(
   )
     errors.push('i18n-route-bounds command or environment differs')
   for (const { path, line, env } of commands.filter(
-    ({ line }) => !line.includes('--project i18n-route-bounds'),
+    ({ line: candidateLine }) => !candidateLine.includes('--project i18n-route-bounds'),
   )) {
     if (
       line.includes('--reporter=') ||
