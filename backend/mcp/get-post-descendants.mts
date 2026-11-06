@@ -28,7 +28,7 @@ const { min, max, default: defaultLimit } = COMMENT_DESCENDANTS_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Page immediate-child heads in id order with bounded reply previews. Each response is id-ordered, but pages are not a global descendant-id sequence. Continue with page_info.end_cursor even when a page is short or empty; the cursor advances past inspected heads. has_next_page refers to more heads, not omitted preview replies. To expand any returned comment, call this same option with that comment as post_id. Deleted or unmoderated replies are content-free placeholders when needed to preserve a possible valid branch. A missing or not fully public post returns Post not found.',
+      'Page direct-child heads with bounded previews. IDs sort within each page only. Follow opaque end_cursor even on empty pages; it may skip invisible heads. has_next_page means more heads, not all replies. Open a returned comment as post_id to expand. Deleted or unmoderated replies may be content-free placeholders.',
     parameters: {
       type: 'object',
       properties: {

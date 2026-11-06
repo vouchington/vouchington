@@ -135,8 +135,8 @@
       },
       "read_posts": {
         "measured": {
-          "list": 12827,
-          "core": 5917
+          "list": 12872,
+          "core": 5962
         },
         "max": {
           "list": 14000,
