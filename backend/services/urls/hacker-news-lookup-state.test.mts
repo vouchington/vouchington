@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { insertTestUrl, insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { hackerNewsQueue } from '@queues/hacker-news/queues'
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers'
 import { enqueueMissingHackerNewsLookups } from './hacker-news-lookup-enqueue.mts'
 import {
   getHackerNewsLookupTargets,
@@ -13,6 +14,26 @@ import { getRssFeedItemHackerNewsSummaries } from './hacker-news-sidecars.mts'
 
 // Exercise canonical-chain admission through the real URL store and queue boundary.
 describe('Hacker News lookup state', () => {
+  it('keeps ordinary missing-detail admission on the replica', async () => {
+    const row = await insertTestUrlDirect(
+      null,
+      `https://detail-${randomUUID()}.example.com/article`,
+    )
+    if (!row) throw new Error('Expected a URL fixture')
+    const jobId = `hacker-news__${row.id}`
+    onTestFinished(async () => {
+      await (await hackerNewsQueue.getJob(jobId))?.remove()
+    })
+
+    const observation = await observeTestPostgresQueryPools(
+      '/* getHackerNewsLookupTargets */',
+      () => enqueueMissingHackerNewsLookups([row.id]),
+    )
+
+    expect(observation.pools).toEqual(['read'])
+    expect((await hackerNewsQueue.getJob(jobId))?.data).toEqual({ urlId: row.id })
+  })
+
   it('resolves two hops, admits only the missing canonical once, and skips a completed zero-hit lookup', async () => {
     const suffix = randomUUID()
     const canonical = await insertTestUrlDirect(null, `https://example.com/${suffix}/canonical`)

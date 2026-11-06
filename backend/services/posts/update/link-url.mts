@@ -21,7 +21,7 @@ export async function assessPostLinkEdit(post: Post, changes: UpdatePostChanges)
     assert(isUUID(changes.url_id), 422, 'url_id must be a valid UUID')
     const [destination] = await getCanonicalUrlsByIdBatch([changes.url_id], { readOnly: false })
     assert(destination, 422, 'url_id does not exist')
-    const urls = await assessUrls([destination.url])
+    const urls = await assessUrls([destination.url], { preserveHttp: true })
     assert(urls.length > 0, 422, 'URL is blocked or not allowed')
     // Reuse persistence so mutable hostname policy is checked under ownership locks.
     return { changes: { ...changes, url_id: destination.id }, urls }
