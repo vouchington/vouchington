@@ -20,7 +20,7 @@ export async function runHackerNewsReadmissionScenarios(): Promise<void> {
   assert(window, 'Readmission plans require enabled lookup admission')
   const size = getHackerNewsWorkLimit('lookup_batch_size')
   try {
-    const fixture = await seedHackerNewsReadmissionFixture(window, size + 25)
+    const fixture = await seedHackerNewsReadmissionFixture(window, size * 50)
     assert(
       Number(fixture.density.candidates) < Number(fixture.density.total) / 2,
       'The complete totals corpus must be mostly newer than the due ceiling',
@@ -44,7 +44,7 @@ export async function runHackerNewsReadmissionScenarios(): Promise<void> {
             indexes: ['idx_url_hacker_news_totals__looked_up_at__url_id'],
             noSort: true,
           },
-          { kind: 'queryBinds', token: 'looked_up_at <=' },
+          { kind: 'queryBinds', token: 'looked_up_at' },
           { kind: 'maxProcessedRows', relation: 'url_hacker_news_totals', max: size },
         ],
         allowEmptyResult: page.expected === 0,

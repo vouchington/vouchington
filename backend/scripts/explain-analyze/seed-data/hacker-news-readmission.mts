@@ -3,7 +3,7 @@ import type { buildHackerNewsReadmissionPageQuery } from '@services/urls/hacker-
 type LookupReadmissionWindow = Parameters<typeof buildHackerNewsReadmissionPageQuery>[0]
 import { seedUuid, seedUuidAtTimestamp } from './common.mts'
 
-export const READMISSION_FIXTURE_ROWS = 20_000
+export const READMISSION_FIXTURE_ROWS = 100_000
 const HOSTNAME_ID = seedUuid(620_000, '02')
 
 /** Most lookup facts are fresh; only a small leading timestamp range can need work. */
@@ -43,6 +43,19 @@ export async function seedHackerNewsReadmissionFixture(
       new Date(window.decisionInstant).toISOString(),
       READMISSION_FIXTURE_ROWS,
     ],
+  )
+  // Leave realistic update churn before ANALYZE; ordered plans must not rely on a pristine visibility map.
+  await write(
+    `/* churnHackerNewsReadmissionFixture */
+    UPDATE url_hacker_news_totals SET looked_up_at=looked_up_at+interval '1 microsecond'
+    WHERE url_id IN(SELECT id FROM urls WHERE hostname_id=$1 LIMIT $2)`,
+    [HOSTNAME_ID, READMISSION_FIXTURE_ROWS],
+  )
+  await write(
+    `/* restoreHackerNewsReadmissionFixture */
+    UPDATE url_hacker_news_totals SET looked_up_at=looked_up_at-interval '1 microsecond'
+    WHERE url_id IN(SELECT id FROM urls WHERE hostname_id=$1 LIMIT $2)`,
+    [HOSTNAME_ID, READMISSION_FIXTURE_ROWS],
   )
   await write(
     '/* analyzeHackerNewsReadmissionFixture */ ANALYZE url_hacker_news_totals,urls,url_hostnames',
