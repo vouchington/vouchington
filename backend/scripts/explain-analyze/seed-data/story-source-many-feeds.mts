@@ -69,7 +69,9 @@ export async function seedStoryCarriedByManyFeeds(initiatedById: string): Promis
       `many-feed story seed expected at least ${MANY_FEED_STORY_CARRIERS} sources, found ${count}`,
     )
   }
+  // stories and story_posts stay out of this ANALYZE. Refreshing them changes the later
+  // getStoryById point read off stories_pkey.
   await write(
-    `/* seedStoryCarriedByManyFeeds:analyze */ ANALYZE rss_feed_item_sources, rss_feed_items, stories, story_posts`,
+    `/* seedStoryCarriedByManyFeeds:analyze */ ANALYZE rss_feed_item_sources, rss_feed_items`,
   )
 }
