@@ -29,13 +29,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       actions: read
-      contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
-        with:
-          ref: ${{ github.workflow_sha }}
-          persist-credentials: false
       - name: Check route deployment intent
         timeout-minutes: 2
         id: intent
@@ -43,14 +37,61 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
           SOURCE_WORKFLOW_PATH: ${{ github.event.workflow_run.path }}
-        run: source .github/workflows/dispatch-completed-deploy/check-intent.sh
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: This API-only job deliberately runs without checkout.
+        run: |
+          set -euo pipefail
+          should_dispatch=true
+          intent_job=
+          case "$SOURCE_WORKFLOW_PATH" in
+            .github/workflows/main-backend.yml) intent_job=backend-deploy-intent ;;
+            .github/workflows/main-web.yml) intent_job=web-deploy-intent ;;
+          esac
+          if [ -n "$intent_job" ]; then
+            intent_filter="[.jobs[] | select(.name == \"$intent_job\" and .conclusion == \"success\")] | length"
+            successful_intent_jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs?filter=all&per_page=100" \
+              --jq "$intent_filter")
+            if [ "$successful_intent_jobs" = 0 ]; then should_dispatch=false; fi
+          fi
+          echo "should_dispatch=$should_dispatch" >> "$GITHUB_OUTPUT"
       - name: Map completed source workflow
         timeout-minutes: 2
         id: source
         if: steps.intent.outputs.should_dispatch == 'true'
         env:
           SOURCE_WORKFLOW_PATH: ${{ github.event.workflow_run.path }}
-        run: source .github/workflows/dispatch-completed-deploy/map-source.sh
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: This API-only job deliberately runs without checkout.
+        run: |
+          case "$SOURCE_WORKFLOW_PATH" in
+            .github/workflows/docs-publish.yml)
+              echo 'source_workflow=docs-publish' >> "$GITHUB_OUTPUT"
+              echo 'event_type=vouchington-publish-docs-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-backend.yml)
+              echo 'source_workflow=main-backend' >> "$GITHUB_OUTPUT"
+              echo 'event_type=vouchington-deploy-backend-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-cloudflare-worker.yml)
+              echo 'source_workflow=main-cloudflare-worker' >> "$GITHUB_OUTPUT"
+              echo 'event_type=vouchington-deploy-cloudflare-worker-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-lambdas.yml)
+              echo 'source_workflow=main-lambdas' >> "$GITHUB_OUTPUT"
+              echo 'event_type=vouchington-deploy-lambdas-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-storybook.yml)
+              echo 'source_workflow=main-storybook' >> "$GITHUB_OUTPUT"
+              echo 'event_type=vouchington-publish-storybook-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-web.yml)
+              echo 'source_workflow=main-web' >> "$GITHUB_OUTPUT"
+              echo 'event_type=vouchington-deploy-web-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/sync-articles.yml)
+              echo 'source_workflow=sync-articles' >> "$GITHUB_OUTPUT"
+              echo 'event_type=vouchington-publish-articles-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            *) echo '::error::Unexpected source workflow path.'; exit 1 ;;
+          esac
       - name: Mint vouchington-infra dispatch token
         timeout-minutes: 2
         id: app-token

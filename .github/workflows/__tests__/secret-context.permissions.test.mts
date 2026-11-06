@@ -208,17 +208,17 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(storybookWorkflow).not.toContain('branches:\n      - main')
   })
 
-  it('checks out trusted workflow code before deployment dispatch scripts', () => {
+  it('keeps completed deployment dispatch checkout-free', () => {
     const workflow = read('.github/workflows/dispatch-completed-deploy.yml')
     const dispatch = jobSection(workflow, 'dispatch')
-    expect(dispatch).toContain('ref: ${{ github.workflow_sha }}')
-    expect(dispatch).toContain('persist-credentials: false')
-    expect(dispatch).toContain('      contents: read')
-    expect(dispatch).not.toContain('ref: ${{ github.event.workflow_run.head_sha }}')
-    expect(dispatch.indexOf('actions/checkout@')).toBeGreaterThan(-1)
-    expect(dispatch.indexOf('actions/checkout@')).toBeLessThan(dispatch.indexOf('id: intent'))
-    expect(dispatch).toContain('source .github/workflows/dispatch-completed-deploy/check-intent.sh')
-    expect(dispatch).toContain('source .github/workflows/dispatch-completed-deploy/map-source.sh')
+    expect(dispatch).not.toContain('actions/checkout')
+    expect(dispatch).not.toContain('contents: read')
+    expect(dispatch).not.toContain('source .github/workflows/dispatch-completed-deploy/')
+    expect(dispatch).toContain('SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}')
+    expect(dispatch).toContain(
+      'gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs?filter=all&per_page=100"',
+    )
+    expect(dispatch).toContain('source_workflow=main-backend')
     expect(dispatch).toContain('SOURCE_REVISION: ${{ github.event.workflow_run.head_sha }}')
   })
 
