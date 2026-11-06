@@ -13,8 +13,6 @@ files:
   - '**/*.mts'
   - '**/*.cts'
   - '**/*.ts'
-ignores:
-  - '**/node_modules/**'
 rule:
   any:
     # Any (in)equality comparison that reads argv[1]: `argv[1] === fileURLToPath(import.meta.url)`,

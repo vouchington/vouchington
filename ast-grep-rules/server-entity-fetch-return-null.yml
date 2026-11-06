@@ -13,7 +13,6 @@ files:
   - 'web/lib/api/server/**/*.ts'
 ignores:
   - '**/*.test.ts'
-  - '**/*.spec.ts'
   - '**/__tests__/**'
 utils:
   # A direct null-ish type member: either the bare `null` keyword type, or a `literal_type` node

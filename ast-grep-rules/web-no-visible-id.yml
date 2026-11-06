@@ -11,8 +11,6 @@ ignores:
   - 'web/lib/api/**'
   - 'web/**/*.test.ts'
   - 'web/**/*.test.tsx'
-  - 'web/**/*.spec.ts'
-  - 'web/**/*.spec.tsx'
   - 'web/**/*.stories.tsx'
 constraints:
   A:
