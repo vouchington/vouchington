@@ -105,6 +105,9 @@ export const ANALYZE_TARGETS = [
     'relation__rss_feed_item__category__topic_alias',
     // Triggers populate counts while the community seed runs; it has no direct row-count target.
     'community_search_counts',
+    // ANALYZE leaves the covering recommendation index ineligible for index-only scans, so
+    // idx_user_import_requests__pending_id wins until VACUUM sets the visibility map.
+    'user_import_requests',
   ]),
 ]
 

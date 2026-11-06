@@ -22,5 +22,7 @@ async function seedUserImportApproval(): Promise<void> {
       Array.from({ length: 9 }, (_, index) => seedUuid(65_001 + index * 3, '05')),
     ],
   )
+  // Statistics only. ANALYZE_TARGETS vacuums this table later so the covering index can be
+  // index-only; ANALYZE alone leaves that choice to autovacuum.
   await write(`/* seedUserImportApproval:analyze */ ANALYZE user_import_requests`)
 }

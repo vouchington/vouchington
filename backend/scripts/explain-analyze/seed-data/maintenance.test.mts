@@ -71,6 +71,10 @@ describe('EXPLAIN ANALYZE seed maintenance', () => {
     )
   })
 
+  it('vacuums user import requests before the recommendation index-only scan', () => {
+    expect(ANALYZE_TARGETS).toContain('user_import_requests')
+  })
+
   it('analyzes and reports the seeded spending category tables', () => {
     const targets = [
       { table: 'spending_entries', column: 'id' },
