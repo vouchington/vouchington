@@ -9,7 +9,7 @@ const baseline = parseRepeatBaseline([
     maxCount: 2,
     reason: 'A repeated query is necessary for this test contract.',
     permanent: true,
-    code: 'backend/test-helpers/api/request-query-profile-hit-manifest.test.mts:1',
+    code: 'backend/test-helpers/request-query-profile-hit-manifest.test.mts:1',
     routes: ['GET /observed', 'GET /absent'],
   },
 ])
@@ -38,6 +38,9 @@ describe('query-profile hit manifest', () => {
     expect(() => checkQueryProfileManifests(baseline, [first])).toThrow(
       'Invalid query-profile hit manifest',
     )
+    expect(() =>
+      checkQueryProfileManifests(baseline, [first, { ...second, missingScopes: ['0'] }]),
+    ).toThrow('Invalid query-profile hit manifest')
   })
 
   it('keeps empty-shard absence until a complete corpus provides diagnostic evidence', () => {
@@ -66,7 +69,7 @@ describe('query-profile hit manifest', () => {
         maxCount: 2,
         reason: 'A repeated query is necessary for this test contract.',
         permanent: true,
-        code: 'backend/test-helpers/api/request-query-profile-hit-manifest.test.mts:1',
+        code: 'backend/test-helpers/request-query-profile-hit-manifest.test.mts:1',
         routes: ['GET /one', 'GET /two'],
         workers: [
           { queue: 'queue-a', job: 'one' },

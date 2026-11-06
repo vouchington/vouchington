@@ -9,7 +9,7 @@ import {
   MIN_STALE_EVIDENCE_LOGS,
   parseRepeatBaseline,
 } from 'vouchington-tooling/request-query-profile'
-import { collectQueryProfileHitManifest } from './request-query-profile-hit-manifest.mts'
+import { collectQueryProfileHitManifest } from '../request-query-profile-hit-manifest.mts'
 
 let shutdownDataStores: (() => Promise<void>) | undefined
 try {

@@ -283,4 +283,4 @@ jobs:
           for ((shard = 1; shard <= expected_shards; shard++)); do
             manifests+=("backend-query-profile-hits/backend-query-profile-hits-shard-${shard}.json")
           done
-          node backend/test-helpers/api/request-query-profile-manifest-check.mts "${manifests[@]}"
+          node backend/test-helpers/request-query-profile-manifest-check.mts "${manifests[@]}"

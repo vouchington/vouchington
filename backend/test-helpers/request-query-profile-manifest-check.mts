@@ -55,7 +55,8 @@ export function checkQueryProfileManifests(
       !nonnegativeInteger(manifest.workerProfileCount) ||
       !nonnegativeInteger(manifest.malformedRequestProfileCount) ||
       !nonnegativeInteger(manifest.malformedWorkerProfileCount) ||
-      !Array.isArray(manifest.missingScopes)
+      !Array.isArray(manifest.missingScopes) ||
+      manifest.missingScopes.some(scope => !nonnegativeInteger(scope))
     )
       throw new Error(`Invalid query-profile hit manifest for shard ${index + 1}`)
     minimumEvidenceLogs = manifest.minimumEvidenceLogs
@@ -92,7 +93,7 @@ export function checkQueryProfileManifests(
 if (import.meta.main) {
   try {
     const baseline = JSON.parse(
-      readFileSync(new URL('./request-query-profile-baseline.json', import.meta.url), 'utf8'),
+      readFileSync(new URL('./api/request-query-profile-baseline.json', import.meta.url), 'utf8'),
     ) as BaselineEntry[]
     const result = checkQueryProfileManifests(
       baseline,
