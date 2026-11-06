@@ -7,6 +7,8 @@ import {
 import { reconcileStoryPostRelatedUrlProjection } from '@services/stories/story-post-related-url-projection'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { continueAfterFailure } from '../scenario-failures.mts'
+import { runPostUrlCapacityScenarios } from './post-related-url-capacity.mts'
 import {
   seedStoryProjectionDispatcherWitness,
   removeStoryProjectionDispatcherWitness,
@@ -14,6 +16,8 @@ import {
 
 /** Mutating behavioral witness: run once, outside EXPLAIN's captured statement replay. */
 export async function runStoryProjectionWorkScenarios(): Promise<void> {
+  await continueAfterFailure(runPostUrlCapacityScenarios.name, runPostUrlCapacityScenarios)
+
   console.log('Running: story-projection-global-dispatcher')
   const fixture = await seedStoryProjectionDispatcherWitness()
   const [firstId, secondId, activeId] = fixture.postIds

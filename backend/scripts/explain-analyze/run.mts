@@ -1,6 +1,5 @@
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
-import { runPostUrlCapacityScenarios } from './run-scenarios/post-related-url-capacity.mts'
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
 import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
 import { runSitemapPageScenarios } from './run-scenarios/sitemap-pages.mts'
@@ -29,7 +28,7 @@ import {
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 import { assertSeedAnchorMatches } from './seed-anchor-check.mts'
 import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/seed-anchor.mts'
-import { assertNoScenarioFailures, runStep } from './scenario-failures.mts'
+import { assertNoScenarioFailures, recordScenarioFailure } from './scenario-failures.mts'
 import { assertPlanRegistry } from './plan-expectations.mts'
 import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
@@ -81,6 +80,7 @@ import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-c
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
 import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
+/** Defer the large retention corpus until its own plans, then refresh only its statistics. */
 async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
   await seedAgentModerationRetention()
   await write(`/* analyzeAgentModerationRetention */
@@ -88,12 +88,15 @@ async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
       moderation_training_feedbacks, vote_integrity_flags, moderator_actions,
       moderation_transparency_released_daily_rollups`)
 }
+async function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
+  await result.catch((err: unknown) => recordScenarioFailure(scenario, err))
+}
+
 async function main() {
   prepareOutputDir()
   try {
     assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
     await assertSeedAnchorMatches()
-    await runStep(runPostUrlCapacityScenarios.name, runPostUrlCapacityScenarios())
     await runStep(runSitemapPageScenarios.name, runSitemapPageScenarios())
     await runStep(runStoryProjectionWorkScenarios.name, runStoryProjectionWorkScenarios())
     await runStep(runImageQuarantineScenarios.name, runImageQuarantineScenarios())
