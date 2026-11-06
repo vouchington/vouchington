@@ -115,10 +115,6 @@
       "classification": "public-sql"
     },
     {
-      "path": "backend/services/data-points/search.mts",
-      "classification": "public-sql"
-    },
-    {
       "path": "backend/services/data-points/insights.mts",
       "classification": "public-sql"
     },
@@ -251,6 +247,20 @@
       "reason": "Search assembler delegates its public predicate to base-filters.",
       "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/story-source-query.mts",
+      "classification": "raw-hydrator",
+      "reason": "Story source page assembler. base-filters composes source-bound public eligibility onto the inspected feed window.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/data-point-arms.mts",
+      "classification": "raw-hydrator",
+      "reason": "Each data-point arm appends buildSourceBoundPostEligibilityFilter outside the child LIMIT. The canonical public predicate's story-source view stays out of that lateral scan.",
+      "owner_path": "backend/modules/feed-query-builders/post-publication-eligibility.mts",
+      "owner_classification": "canonical-builder"
     },
     {
       "path": "backend/services/communities/list-items/get.mts",
