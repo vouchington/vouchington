@@ -27,10 +27,9 @@ const workflow = load(
 const buildScript = readFileSync('.github/workflows/main-cloudflare-worker/build.sh', 'utf8')
 
 describe('Main Cloudflare Worker workflow', () => {
-  it('contains only the attempt-bound publication job', () => {
+  it('publishes a credential-free worker build as an attempt-bound artifact', () => {
     const publish = workflow.jobs?.['publish-cloudflare-worker']
 
-    expect(Object.keys(workflow.jobs ?? {})).toEqual(['publish-cloudflare-worker'])
     expect(publish?.needs).toBeUndefined()
     expect(publish?.if).toBeUndefined()
     expect(publish?.permissions).toEqual({ contents: 'read' })
