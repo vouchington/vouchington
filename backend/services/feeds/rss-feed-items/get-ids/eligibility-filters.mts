@@ -1,3 +1,4 @@
+import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visibility-config'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { RssFeedItemFeedOptions } from '../../types.mts'
 import { appendRelatedPostsFilter } from '../query-utils.mts'
@@ -13,6 +14,7 @@ export function appendRssFeedItemEligibilityFilters(
     currentUserId,
     currentUserIsAdministrator,
     hasRelatedPosts,
+    hasHackerNewsReferences,
     mediaTypes,
     textSearchQuery,
     topicIds,
@@ -26,6 +28,7 @@ export function appendRssFeedItemEligibilityFilters(
     currentUserId?: string
     currentUserIsAdministrator: boolean
     hasRelatedPosts: boolean | undefined
+    hasHackerNewsReferences?: boolean
     mediaTypes: string[]
     textSearchQuery: RssFeedItemFeedOptions['text_search_query']
     topicIds: RssFeedItemFeedOptions['topic_ids']
@@ -62,6 +65,11 @@ export function appendRssFeedItemEligibilityFilters(
     currentUserIsAdministrator,
     rssFeedItemUrlId,
   )
+
+  if (areHackerNewsReferencesVisible() && hasHackerNewsReferences !== undefined) {
+    query.append(hasHackerNewsReferences ? sql` AND ` : sql` AND NOT `)
+    query.append(rssFeedItemTable).append(sql`.has_hacker_news_references`)
+  }
 
   if (mediaTypes.length > 0) {
     query

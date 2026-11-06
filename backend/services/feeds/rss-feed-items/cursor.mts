@@ -32,6 +32,7 @@ export function getRssFeedItemFeedCursorScope(
     min_score_follow_rss_feeds: options.min_score_follow_rss_feeds,
     min_score_follow_topics: options.min_score_follow_topics,
     has_related_posts: options.has_related_posts ?? null,
+    has_hacker_news_references: options.has_hacker_news_references ?? null,
     media_types: normalizeArray(options.media_types),
     topic_ids: normalizeArray(options.topic_ids),
     hashtag_topic_ids: normalizeArray(options.hashtag_topic_ids),

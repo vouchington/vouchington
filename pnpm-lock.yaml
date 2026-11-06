@@ -7231,6 +7231,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../urls
       '@services/user-referral-program-links':
         specifier: workspace:^
         version: link:../user-referral-program-links
@@ -7259,9 +7262,6 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../urls
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5

@@ -51,6 +51,7 @@ export type DirectCandidateFilterOptions = {
   currentUserIsAdministrator: boolean
   feedType: RssFeedItemFeedType | undefined
   hasRelatedPosts: boolean | undefined
+  hasHackerNewsReferences?: boolean
   includeDirectItems: boolean
   itemCutoffId: string | null
   mediaTypes: string[]

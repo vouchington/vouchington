@@ -48,7 +48,6 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     `Invalid feed_type. Must be one of: ${VALID_RSS_FEED_ITEM_FEED_TYPES.join(', ')}`,
   )
 
-  // Parse pagination and common filters
   const paginationOptions = parseAndValidatePaginatedRequest(
     ctx,
     'GET:/api/v1/feeds/rss_feed_items/:feed_type',
@@ -57,7 +56,6 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
   )
   const hashtagSearchOptions = await parseHashtagFeedSearchOptions(ctx.query)
 
-  // Parse feed-specific parameters
   const communityParam = ctx.query.community as string | undefined
   const communityScope = await loadOptionalFeedCommunityScope(currentUser, feedType, communityParam)
   const has_related_posts =
@@ -74,6 +72,9 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     feed_type: feedType,
     community_id: communityScope?.community.id,
     ...(has_related_posts !== undefined && { has_related_posts }),
+    ...(ctx.query.has_hacker_news_references !== undefined && {
+      has_hacker_news_references: ctx.query.has_hacker_news_references === 'true',
+    }),
   }
 
   const result = await getRssFeedItemFeedIds(currentUser, options)
@@ -121,7 +122,6 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     return { related_posts_by_url_id, postIds }
   })
 
-  // Build stories record (filter nulls from batch result)
   const storiesRecord: Record<string, unknown> = {}
   for (const story of storiesArr) {
     if (story) storiesRecord[story.id] = story

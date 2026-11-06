@@ -13,7 +13,6 @@ import {
   type StoryMemberPage,
 } from '@services/feeds/rss-feed-items/story-member-pages'
 import { hydrateStoryMemberPage } from '@services/stories/story-page-hydration'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import type { Story } from '@services/stories/types'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
@@ -26,6 +25,7 @@ type StoryPageResponse = { story: Story } & StoryMemberPage &
   Awaited<ReturnType<typeof hydrateStoryMemberPage>>
 
 app.route('/api/v1/stories/:id').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/stories/:id', storyMembersParser, storyMembersQuery)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/stories/:id')
   const storyId = ctx.params.id!
@@ -51,7 +51,6 @@ app.route('/api/v1/stories/:id').get(async (ctx: Context) => {
   )[story.id]!
   const hydrated = await hydrateStoryMemberPage(currentUser, story.id, page.item_ids)
   const output: StoryPageResponse = { story, ...page, ...hydrated }
-  if (!currentUser) ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
   ctx.setType('json')
   await ctx.pipeline(streamJsonObject(apiResponse('GET:/api/v1/stories/:id', output)))
 })
