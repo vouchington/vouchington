@@ -1,5 +1,6 @@
 'use client'
 
+// oxlint-disable no-mistakes/playwright-defaults -- Privacy form call sites pass literal test IDs through this shared select.
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -10,7 +11,6 @@ import {
 } from '@/components/ui/select'
 import type { UserPrivacyAudience } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { DataPw } from '@/components/shared/data-pw'
 
 const AUDIENCE_OPTIONS: UserPrivacyAudience[] = [
   'everyone',
@@ -56,27 +56,27 @@ export function AudienceSelect({
         onValueChange={v => onChange(v as UserPrivacyAudience)}
         disabled={disabled}
       >
-        <DataPw
-          dataPw={triggerTestId}
-          as={SelectTrigger}
+        <SelectTrigger
           id={id}
           className='w-48'
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector is the caller trigger id
+          data-pw={triggerTestId}
         >
           <SelectValue placeholder={t('extracted.my.audienceSelect.selectAudience_e2815050')} />
-        </DataPw>
+        </SelectTrigger>
         <SelectContent>
           {AUDIENCE_OPTIONS.map(opt => {
             const optionTestId = dataPw?.options?.[opt]
 
             return (
-              <DataPw
+              <SelectItem
                 key={opt}
-                dataPw={optionTestId}
-                as={SelectItem}
                 value={opt}
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector is the caller option id
+                data-pw={optionTestId}
               >
                 {audienceLabels[opt]}
-              </DataPw>
+              </SelectItem>
             )
           })}
         </SelectContent>

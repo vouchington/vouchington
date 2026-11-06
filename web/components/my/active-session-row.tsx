@@ -3,7 +3,6 @@ import type { Translator } from '@ts-shared/ui-messages'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { AuthSession } from '@/types/my'
-import { DataPw } from '@/components/shared/data-pw'
 
 export function ActiveSessionRow({
   loading,
@@ -23,10 +22,10 @@ export function ActiveSessionRow({
   revokingGrantId: string | null
 }) {
   return (
-    <DataPw
-      dataPw={`active-session-item-${session.id}`}
-      as='li'
+    <li
       className='rounded-md border p-4'
+      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the session id
+      data-pw={`active-session-item-${session.id}`}
     >
       <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
         <div className='min-w-0 space-y-1'>
@@ -108,6 +107,6 @@ export function ActiveSessionRow({
           {t('settings.activeSessions.signOut')}
         </Button>
       </div>
-    </DataPw>
+    </li>
   )
 }

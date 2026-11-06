@@ -16,7 +16,6 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 import { formatMoney } from '@/lib/money'
 
 import type { Dispatch } from 'react'
-import { DataPw } from '@/components/shared/data-pw'
 import {
   isValidDurationDays,
   type MembershipGrantAction,
@@ -116,11 +115,11 @@ export function MembershipGrantForm({
           </SelectTrigger>
           <SelectContent>
             {state.skuOptions.map(s => (
-              <DataPw
+              <SelectItem
                 key={s.id}
-                dataPw={`memberships-grant-sku-option-${s.id}`}
-                as={SelectItem}
                 value={s.id}
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from SKU row data
+                data-pw={`memberships-grant-sku-option-${s.id}`}
               >
                 {t('extracted.grants.membershipsAdminClient.skuidIntervalPriceCurrency_cc8fbf2b', {
                   skuId: s.id,
@@ -128,7 +127,7 @@ export function MembershipGrantForm({
                   price: formatMoney(s.price, uiLocale),
                   currency: s.price.currency.toUpperCase(),
                 })}
-              </DataPw>
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>

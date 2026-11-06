@@ -19,7 +19,6 @@ import { communityHref } from '@/lib/links/entity-href'
 import type { Community } from '@/types/api-responses'
 import { COMMUNITIES_INTENT } from '@/lib/navigation/intents/product-social'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { DataPw } from '@/components/shared/data-pw'
 
 const bookmarksGroup = COMMUNITIES_INTENT.groups.find(g => g.dataPw === 'sidebar-group-bookmarks')
 
@@ -105,10 +104,8 @@ export function CommunitiesSidebarGroup() {
         </SidebarGroupContent>
       </SidebarGroup>
       {bookmarksGroup && (
-        <DataPw
-          dataPw={bookmarksGroup.dataPw}
-          as={SidebarGroup}
-        >
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- Bookmarks items derived from COMMUNITIES_INTENT config; data-pw values are literal strings in the config.
+        <SidebarGroup data-pw={bookmarksGroup.dataPw}>
           <SidebarGroupLabel>{t(bookmarksGroup.label)}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -118,20 +115,20 @@ export function CommunitiesSidebarGroup() {
                     asChild
                     isActive={pathname === item.href}
                   >
-                    <DataPw
+                    <Link
                       href={item.href}
                       prefetch={false}
-                      dataPw={item.dataPw}
-                      as={Link}
+                      // oxlint-disable-next-line no-mistakes/playwright-literals -- Bookmarks items derived from COMMUNITIES_INTENT config; data-pw values are literal strings in the config.
+                      data-pw={item.dataPw}
                     >
                       <span>{t(item.label)}</span>
-                    </DataPw>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
-        </DataPw>
+        </SidebarGroup>
       )}
       {myCommunities.length > 0 && (
         <SidebarGroup data-pw='sidebar-group-my-communities'>

@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { publicProvenanceLabel } from './provenance-label'
 import { PROVENANCE_TEST_IDS, type ProvenanceTestIdPrefix } from './provenance-test-ids'
-import { DataPw } from '@/components/shared/data-pw'
 
 export interface ProvenanceBadgesProps {
   /** The entity the badges belong to; it sets the `data-pw` ids, such as `post-provenance-badge`. */
@@ -30,14 +29,14 @@ function ProvenanceBadge({
   children: ReactNode
 }) {
   return (
-    <DataPw
-      dataPw={testId}
-      as={Badge}
+    <Badge
       variant={variant}
       className='whitespace-nowrap text-xs'
+      // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- ids come from a literal table keyed by the finite prefix union; a default would add a ghost selector
+      data-pw={testId}
     >
       {children}
-    </DataPw>
+    </Badge>
   )
 }
 

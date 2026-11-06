@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-defaults -- dataPw is a static prop passed from callers with literal values; ast-grep bans dynamic data-pw but this is a safe prop passthrough. */
 'use client'
 
 import { useRef } from 'react'
@@ -6,7 +7,6 @@ import { TextLink } from '@/components/ui/text-link'
 import { PostContentText, type PostContentTextValue } from '@/components/posts/post-content-text'
 import { RssFeedItemTitle } from '@/components/rss-feed-items/rss-feed-item-title'
 import { ExternalLink } from '@/components/ui/external-link'
-import { DataPw } from '@/components/shared/data-pw'
 
 type InteractionKind = 'keyboard' | 'plain' | 'modified'
 
@@ -106,42 +106,43 @@ export function CommandLinkItem({
 
   if (external) {
     return (
-      <DataPw
+      <CommandItem
         asChild
-        dataPw={dataPw}
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- the command search result id comes from the caller
+        data-pw={dataPw}
         onSelect={handleSelect}
-        as={CommandItem}
       >
-        <DataPw
-          dataPw={dataPw}
+        <ExternalLink
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- the command search result id comes from the caller
+          data-pw={dataPw}
           ref={externalAnchorRef}
           href={href}
           rel='noopener noreferrer'
           onClick={captureClickModifier}
-          as={ExternalLink}
         >
           {content}
-        </DataPw>
-      </DataPw>
+        </ExternalLink>
+      </CommandItem>
     )
   }
 
   return (
-    <DataPw
+    <CommandItem
       asChild
-      dataPw={dataPw}
+      // oxlint-disable-next-line no-mistakes/playwright-literals -- the command search result id comes from the caller
+      data-pw={dataPw}
       onSelect={handleSelect}
-      as={CommandItem}
     >
-      <DataPw
-        dataPw={dataPw}
+      <TextLink
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- the command search result id comes from the caller
+        data-pw={dataPw}
         href={href}
+        // Search lists many results; opt out of hover prefetch to avoid wasted bandwidth.
         prefetch={false}
         onClick={captureClickModifier}
-        as={TextLink}
       >
         {content}
-      </DataPw>
-    </DataPw>
+      </TextLink>
+    </CommandItem>
   )
 }

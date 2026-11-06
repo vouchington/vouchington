@@ -9,7 +9,6 @@ import { updateCommunityAutomodSettings } from '@/lib/api/client/community-autom
 import onError, { onSuccess } from '@/lib/on-error'
 import type { Community, CommunityAutomodActionSetting } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { DataPw } from '@/components/shared/data-pw'
 import {
   COMMUNITY_AUTOMOD_ACTIONS,
   communityAutomodActionDescription,
@@ -80,12 +79,12 @@ export function CommunityAutomodActionForm({ community }: CommunityAutomodAction
             key={option}
             className='flex items-start gap-2'
           >
-            <DataPw
-              dataPw={`community-automod-action-${option}`}
-              as={RadioGroupItem}
+            <RadioGroupItem
               id={`community-automod-action-${option}`}
               value={option}
               className='mt-1'
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- static template over the finite automod action enum
+              data-pw={`community-automod-action-${option}`}
             />
             <Label
               htmlFor={`community-automod-action-${option}`}

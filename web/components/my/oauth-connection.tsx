@@ -13,7 +13,6 @@ import { tokenToBody } from '@/lib/auth/oauth-token-body'
 import { ApiError } from '@vouchington/api-client'
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
 import type { OAuthAccountInfo, OAuthProvider } from '@/types/user'
-import { DataPw } from '@/components/shared/data-pw'
 
 const providerLabels: Record<OAuthProvider, string> = {
   facebook: 'Facebook',
@@ -89,14 +88,14 @@ export function OAuthConnection({
     >
       <MfaReauthDialog {...authentication.dialogProps} />
       {separator && <Separator />}
-      <DataPw
-        dataPw={`oauth-connection-${provider}-heading`}
-        as='h2'
+      <h2
         className='flex items-center gap-2 text-lg font-semibold'
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the OAuth provider id
+        data-pw={`oauth-connection-${provider}-heading`}
       >
         <ProviderIcon provider={provider} />
         {label}
-      </DataPw>
+      </h2>
 
       {account ? (
         <div className='flex items-center gap-3 rounded-md border p-4'>

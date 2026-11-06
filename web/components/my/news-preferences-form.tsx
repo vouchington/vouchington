@@ -4,7 +4,6 @@ import { Label } from '@/components/ui/label'
 import { EntityBookmarkButton } from '@/components/shared/entity-bookmark-button'
 import type { Topic } from '@/types/topics'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { DataPw } from '@/components/shared/data-pw'
 
 interface NewsPreferencesFormProps {
   publisherTypes: Topic[]
@@ -27,15 +26,15 @@ export function NewsPreferencesForm({ publisherTypes }: NewsPreferencesFormProps
               key={topic.id}
               className='flex items-center gap-3 py-2'
             >
-              <DataPw
-                dataPw={`news-pref-mute-${topic.slug}`}
-                as={EntityBookmarkButton}
+              <EntityBookmarkButton
                 entityType='topic'
                 entityId={topic.id}
                 preset='mute'
                 aria-label={t('extracted.my.newsPreferencesForm.muteName_f252a4cc', {
                   name: topic.name,
                 })}
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the topic slug
+                data-pw={`news-pref-mute-${topic.slug}`}
               />
               <span className='text-sm'>{topic.name}</span>
             </li>

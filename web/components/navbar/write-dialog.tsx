@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { DataPw } from '@/components/shared/data-pw'
 
 interface WriteDialogProps {
   open: boolean
@@ -74,18 +73,18 @@ export function WriteDialog({ open, onOpenChange }: WriteDialogProps) {
               className='h-auto justify-start'
               asChild
             >
-              <DataPw
-                dataPw={option.dataPw}
-                as={Link}
+              <Link
                 href={option.href}
                 prefetch={false}
                 onClick={() => onOpenChange(false)}
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- Write dialog IDs come from static option data; ast-grep still bans inline calls in data-pw.
+                data-pw={option.dataPw}
               >
                 <div className='flex flex-col items-start gap-0.5 py-1'>
                   <span>{t(option.title)}</span>
                   <span className='text-xs text-muted-foreground'>{t(option.description)}</span>
                 </div>
-              </DataPw>
+              </Link>
             </Button>
           ))}
         </div>

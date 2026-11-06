@@ -1,5 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
-
 import { configure } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
@@ -47,6 +45,7 @@ interface FollowerShareActionsMockProps {
 
 vi.mock(import('@/components/votes/score-vote'), () => ({
   ScoreVote: ({ 'data-pw': dataPw }: { display?: string; 'data-pw'?: string }) => (
+    // oxlint-disable-next-line no-mistakes/playwright-literals -- the test passes this vote selector
     <div data-pw={dataPw ?? 'score-vote'} />
   ),
 }))
@@ -138,6 +137,7 @@ vi.mock(import('@/components/shared/follower-share-actions'), () => ({
       <Button
         type='button'
         aria-label='More actions'
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- the test passes this share-actions selector
         data-pw={dataPw ?? 'follower-share-more-actions-button'}
       />
       {menuLeadingItems}

@@ -16,7 +16,6 @@ import { NAV_INTENTS, findIntentLandingHref } from '@/lib/navigation/intents'
 import { useResolvedIntent } from '@/lib/navigation/intents/nav-intent-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { useFeatureFlags } from '@/lib/feature-flags/use-feature-flags'
-import { DataPw } from '@/components/shared/data-pw'
 
 export function IntentSwitcher({ variant }: { variant: 'navbar' | 'sidebar' }) {
   const t = useTranslations()
@@ -87,15 +86,15 @@ export function IntentSwitcher({ variant }: { variant: 'navbar' | 'sidebar' }) {
               aria-current={isActive ? 'true' : undefined}
               className={cn(isActive && 'font-semibold')}
             >
-              <DataPw
-                dataPw={`intent-switcher-item-${intent.id}`}
-                as={Link}
+              <Link
                 href={landingHref}
                 prefetch={false}
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the intent id
+                data-pw={`intent-switcher-item-${intent.id}`}
               >
                 <Icon className='size-4 shrink-0' />
                 {t(intent.label)}
-              </DataPw>
+              </Link>
             </DropdownMenuItem>
           )
         })}

@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults, no-mistakes/playwright-unique -- moved test support preserves the original post-card doubles, including the shared follower-share-actions id */
+/* oxlint-disable no-mistakes/playwright-defaults, no-mistakes/playwright-unique -- moved test support preserves the original post-card doubles, including the shared follower-share-actions id */
 
 import { configure } from '@testing-library/react'
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
@@ -23,6 +23,7 @@ vi.mock(
           return ({ 'data-pw': dataPw }: { 'data-pw'?: string }) => (
             <Button
               type='button'
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- the test passes this double's selector
               data-pw={dataPw}
             >
               Report

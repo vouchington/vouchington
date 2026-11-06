@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/select'
 import { PUBLISHER_TYPES } from '@/lib/publisher-types'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { DataPw } from '@/components/shared/data-pw'
 
 interface SourcesFilterFormProps {
   defaultPublisherType?: string
@@ -74,14 +73,14 @@ function SourcesFilterFormContent({ defaultPublisherType }: SourcesFilterFormPro
             {t('extracted.topics.sourcesFilterForm.allPublisherTypes_22532c6a')}
           </SelectItem>
           {PUBLISHER_TYPES.map(type => (
-            <DataPw
+            <SelectItem
               key={type.slug}
-              dataPw={`sources-filter-publisher-type-option-${type.slug}`}
-              as={SelectItem}
               value={type.slug}
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the publisher type slug
+              data-pw={`sources-filter-publisher-type-option-${type.slug}`}
             >
               {type.label}
-            </DataPw>
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>

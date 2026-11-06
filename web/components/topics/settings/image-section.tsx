@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, DataPw } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { ImageUploadButton } from '@/components/shared/image-upload-button'
 import { PostImage } from '@/components/shared/post-image'
 import { TopicLogo } from '@/components/shared/topic-logo'
@@ -136,27 +136,27 @@ function ImageRow({
           </div>
         )}
         <div className='flex gap-2'>
-          <DataPw
-            dataPw={`topic-image-${kind}-upload`}
-            as={ImageUploadButton}
+          <ImageUploadButton
             onUploaded={onUploaded}
             onUploadStart={onUploadStart}
             onUploadEnd={onUploadEnd}
             disabled={disabled}
             label={label}
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the image kind
+            data-pw={`topic-image-${kind}-upload`}
           />
           {imageId && (
-            <DataPw
-              dataPw={`topic-image-${kind}-remove`}
-              as={Button}
+            <Button
               type='button'
               variant='outline'
               size='sm'
               disabled={disabled}
               onClick={onRemove}
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the image kind
+              data-pw={`topic-image-${kind}-remove`}
             >
               {removeLabel}
-            </DataPw>
+            </Button>
           )}
         </div>
       </div>

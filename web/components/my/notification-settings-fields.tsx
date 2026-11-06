@@ -7,7 +7,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { DataPw } from '@/components/shared/data-pw'
 
 export function DigestFrequencyField({
   id,
@@ -30,13 +29,13 @@ export function DigestFrequencyField({
         disabled={disabled}
         onValueChange={next => onChange(next as typeof value)}
       >
-        <DataPw
-          dataPw={`${id}-select`}
-          as={SelectTrigger}
+        <SelectTrigger
           id={id}
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- Digest selectors derive stable values from a local discriminated union.
+          data-pw={`${id}-select`}
         >
           <SelectValue placeholder={label} />
-        </DataPw>
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value='none'>Off</SelectItem>
           <SelectItem value='daily'>Daily</SelectItem>

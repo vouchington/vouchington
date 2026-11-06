@@ -7,7 +7,6 @@ import { OAuthCancelledError } from '@vouchington/utils/oauth-popup'
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
 import type { OAuthProvider } from '@/types/user'
 import { ProviderIcon } from './oauth-provider-icons'
-import { DataPw } from '@/components/shared/data-pw'
 
 export interface OAuthButtonProps {
   onToken: (token: OAuthLoginToken) => Promise<void>
@@ -64,15 +63,15 @@ export function ProviderButton({
   const buttonLabel = isSubmitting ? 'Connecting...' : `Continue with ${label}`
 
   return (
-    <DataPw
-      dataPw={`oauth-provider-button-${provider}`}
-      as={Button}
+    <Button
       type='button'
       variant='outline'
       className={`w-full justify-center gap-3 ${buttonClassName}`}
       onClick={signInWithProvider}
       loading={isSubmitting}
       disabled={!auth.isLoaded || isSubmitting || disabled}
+      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the OAuth provider id
+      data-pw={`oauth-provider-button-${provider}`}
     >
       {!isSubmitting && (
         <span className='shrink-0'>
@@ -80,6 +79,6 @@ export function ProviderButton({
         </span>
       )}
       {buttonLabel}
-    </DataPw>
+    </Button>
   )
 }

@@ -15,7 +15,6 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 import { getAdminOAuthClients } from '@/lib/api/server'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import type { OAuthClientVerificationFilter } from '@/types/oauth-apps'
-import { DataPw } from '@/components/shared/data-pw'
 
 export const metadata: Metadata = createNoIndexMetadata('OAuth Apps | Admin')
 
@@ -70,15 +69,15 @@ export default async function AdminOAuthClientsPage({
               variant={filter.value === verification ? 'secondary' : 'outline'}
               size='touchSm'
             >
-              <DataPw
-                dataPw={`admin-oauth-clients-filter-${filter.value}`}
-                as={Link}
+              <Link
                 href={buildPageUrl(filter.value, undefined)}
                 prefetch={false}
                 aria-current={filter.value === verification ? 'page' : undefined}
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from filter config
+                data-pw={`admin-oauth-clients-filter-${filter.value}`}
               >
                 {filter.label}
-              </DataPw>
+              </Link>
             </Button>
           ))}
         </ButtonGroup>

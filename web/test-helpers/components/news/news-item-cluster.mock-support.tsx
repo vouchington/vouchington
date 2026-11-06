@@ -1,5 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
-
 import { configure } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
@@ -108,6 +106,7 @@ vi.mock(
         entityType?: string
         'data-pw'?: string
       }) => (
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- the test passes this vote selector
         <div data-pw={dataPw ?? 'score-vote'}>
           <span data-pw='existing-vote-choice'>{String(existingVoteChoice)}</span>
           <span data-pw='entity-type'>{String(entityType)}</span>

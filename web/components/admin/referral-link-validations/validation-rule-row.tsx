@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import type { ReferralLinkValidationRule } from '@/lib/api/client/referral-link-validations'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ValidationRuleForm } from './validation-rule-form'
-import { DataPw } from '@/components/shared/data-pw'
 
 function RuleTypeLabel({ rule }: { rule: ReferralLinkValidationRule }) {
   const t = useTranslations()
@@ -91,25 +90,25 @@ export function ValidationRuleRow({
         )}
       >
         <div className='flex gap-2'>
-          <DataPw
-            dataPw={`rule-edit-${rule.id}`}
-            as={Button}
+          <Button
             size='sm'
             variant='outline'
             onClick={onEdit}
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the validation rule id
+            data-pw={`rule-edit-${rule.id}`}
           >
             {t('extracted.referralLinkValidations.validationRulesTable.edit_464c4ffd')}
-          </DataPw>
-          <DataPw
-            dataPw={`rule-delete-${rule.id}`}
-            as={Button}
+          </Button>
+          <Button
             size='sm'
             variant='destructive'
             disabled={isDeleting}
             onClick={onDeleteRequest}
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the validation rule id
+            data-pw={`rule-delete-${rule.id}`}
           >
             {t('extracted.referralLinkValidations.validationRulesTable.delete_e2d0a549')}
-          </DataPw>
+          </Button>
         </div>
       </td>
     </tr>

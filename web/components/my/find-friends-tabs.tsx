@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation'
 import { EntityMenubarNav } from '@/components/shared/entity-menubar-nav'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { isActivePath } from '@/lib/utils/path'
-import { DataPw } from '@/components/shared/data-pw'
 
 const TABS: { label: MessageKey; href: string; dataPw: string }[] = [
   {
@@ -37,15 +36,15 @@ export function FindFriendsTabs() {
           key: tab.href,
           active,
           content: (
-            <DataPw
-              dataPw={tab.dataPw}
-              as={Link}
+            <Link
               href={tab.href}
               prefetch={false}
               aria-current={active ? 'page' : undefined}
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from tab config
+              data-pw={tab.dataPw}
             >
               {t(tab.label)}
-            </DataPw>
+            </Link>
           ),
         }
       })}

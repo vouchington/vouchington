@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/select'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { FILTER_CONTROL_HEIGHT } from './filter-control-height'
-import { DataPw } from '@/components/shared/data-pw'
 
 interface SortOption<T extends string = string> {
   label: string
@@ -44,15 +43,15 @@ export function ListFiltersSortSelect<T extends string = string>({
       </SelectTrigger>
       <SelectContent>
         {options.map(option => (
-          <DataPw
+          <SelectItem
             key={option.value}
-            dataPw={`list-filters-sort-option-${option.value}`}
-            as={SelectItem}
             value={option.value}
             title={option.description}
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the option value
+            data-pw={`list-filters-sort-option-${option.value}`}
           >
             {option.label}
-          </DataPw>
+          </SelectItem>
         ))}
       </SelectContent>
     </Select>

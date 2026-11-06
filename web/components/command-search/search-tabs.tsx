@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { SearchTab, SearchTabOption } from '../command-search-data'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { DataPw } from '@/components/shared/data-pw'
 
 interface SearchTabsProps {
   activeTab: SearchTab
@@ -25,13 +24,13 @@ export function SearchTabs({ activeTab, onTabChange, onKeyDown, tabsRef, tabs }:
         {t('extracted.commandSearch.searchTabs.filterByType_51035b5b')}
       </legend>
       {tabs.map(tab => (
-        <DataPw
+        <Button
           key={tab.value}
-          dataPw={`search-tab-${tab.value}`}
-          as={Button}
           type='button'
           variant='ghost'
           size='sm'
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the tab value
+          data-pw={`search-tab-${tab.value}`}
           onClick={() => onTabChange(tab.value)}
           onKeyDown={onKeyDown}
           aria-pressed={activeTab === tab.value}
@@ -43,7 +42,7 @@ export function SearchTabs({ activeTab, onTabChange, onKeyDown, tabsRef, tabs }:
           )}
         >
           {t(tab.label)}
-        </DataPw>
+        </Button>
       ))}
     </fieldset>
   )

@@ -1,5 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
-
 import type { ComponentProps, KeyboardEvent, ReactNode } from 'react'
 import { configure, render } from '@testing-library/react'
 import { vi } from 'vitest'
@@ -54,6 +52,7 @@ vi.mock(
           disabled={disabled}
           id={id}
           aria-label={ariaLabel}
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- the test passes this command input selector
           data-pw={dataPw ?? 'command-input'}
           onChange={event => onValueChange?.(event.target.value)}
           onFocus={onFocus}

@@ -12,7 +12,6 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 import { ProvenanceBadges } from '@/components/provenance/provenance-badges'
 import { CommunityAboutCopy } from './community-about-copy'
 import type JoinButtonComponent from './join-button'
-import { DataPw } from '@/components/shared/data-pw'
 
 const JoinButton = dynamic<Parameters<typeof JoinButtonComponent>[0]>(() => import('./join-button'))
 
@@ -64,15 +63,15 @@ export function CommunityCard({
       <div className='flex items-start justify-between gap-3'>
         <div className='min-w-0 flex-1'>
           <div className='flex flex-wrap items-center gap-2'>
-            <DataPw
-              dataPw={`community-card-link-${community.slug}`}
-              as={Link}
+            <Link
               href={communityHref(community)}
               prefetch={false}
               className='truncate text-base font-semibold hover:underline'
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the community slug
+              data-pw={`community-card-link-${community.slug}`}
             >
               {community.name}
-            </DataPw>
+            </Link>
             {community.visibility === 'private' && (
               <Badge variant='secondary'>
                 {t('extracted.communities.communityCard.private_c63eb672')}

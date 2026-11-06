@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/select'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { NON_SOURCE_TOPIC_TYPE_OPTIONS, TOPIC_TYPE_OPTIONS } from '@/types/topics'
-import { DataPw } from '@/components/shared/data-pw'
 
 export function TopicTypeSection({
   disabled,
@@ -63,14 +62,14 @@ export function TopicTypeSection({
                 ? TOPIC_TYPE_OPTIONS
                 : NON_SOURCE_TOPIC_TYPE_OPTIONS
               ).map(opt => (
-                <DataPw
+                <SelectItem
                   key={opt.value}
-                  dataPw={`topic-type-option-${opt.value}`}
-                  as={SelectItem}
                   value={opt.value}
+                  // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from option list
+                  data-pw={`topic-type-option-${opt.value}`}
                 >
                   {t(opt.label)}
-                </DataPw>
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>

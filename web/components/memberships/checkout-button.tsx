@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-literals -- Checkout button ID interpolates the plan slug; one substitution is the ast-grep limit, so it cannot be a single literal. */
 'use client'
 
 import { useState } from 'react'
@@ -53,6 +52,7 @@ export function CheckoutButton({ planSlug, productId, planName, onCheckout }: Ch
         loading={loading}
         disabled={loading}
         onClick={startCheckout}
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- Checkout button ID interpolates the plan slug; one substitution is the ast-grep limit, so it cannot be a single literal.
         data-pw={`subscribe-to-${planSlug}-button`}
       >
         {loading ? 'Loading...' : `Subscribe to ${planName}`}

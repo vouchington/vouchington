@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { TotpAuthenticator } from '@/types/user'
-import { DataPw } from '@/components/shared/data-pw'
 
 interface AuthenticatorListProps {
   authenticators: TotpAuthenticator[]
@@ -40,11 +39,11 @@ export function AuthenticatorList({
   return (
     <ul className='space-y-2'>
       {authenticators.map(authenticator => (
-        <DataPw
+        <li
           key={authenticator.id}
-          dataPw={`totp-authenticator-item-${authenticator.id}`}
-          as='li'
           className='rounded-md border p-4'
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the authenticator id
+          data-pw={`totp-authenticator-item-${authenticator.id}`}
         >
           {renamingId === authenticator.id ? (
             <form
@@ -153,7 +152,7 @@ export function AuthenticatorList({
               </div>
             </div>
           )}
-        </DataPw>
+        </li>
       ))}
     </ul>
   )

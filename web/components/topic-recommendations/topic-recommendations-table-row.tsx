@@ -14,7 +14,6 @@ import type { TopicRecommendationTablePost } from './topic-recommendation-table-
 import type { PostsResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { PostContentText } from '@/components/posts/post-content-text'
-import { DataPw } from '@/components/shared/data-pw'
 
 interface TopicRecommendationsTableRowProps {
   election?: NonNullable<PostsResponseBody['post_elections']>[string]
@@ -53,9 +52,8 @@ export function TopicRecommendationsTableRow({
   }
 
   return (
-    <DataPw
-      dataPw={`topic-recommendation-row-${recommendation.topic_slug}`}
-      as={TableRow}
+    <TableRow // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the topic slug
+      data-pw={`topic-recommendation-row-${recommendation.topic_slug}`}
     >
       <TableCell>
         <div className='space-y-1'>
@@ -159,6 +157,6 @@ export function TopicRecommendationsTableRow({
           onWithdraw={onWithdraw}
         />
       </TableCell>
-    </DataPw>
+    </TableRow>
   )
 }

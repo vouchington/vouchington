@@ -10,7 +10,6 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 import type { UserMetrics } from '@/types/user'
 import { getActiveTabValue } from './user-detail-tab-active'
 import { buildUserProfileDropdownItems } from './user-detail-tab-definitions'
-import { DataPw } from '@/components/shared/data-pw'
 import {
   getVisibleTopLevelTabs,
   getActiveTopLevelTab,
@@ -51,16 +50,16 @@ export function UserProfileTabs({ usernameOrId, metrics }: UserProfileTabsProps)
           return {
             key: tab.name,
             content: (
-              <DataPw
-                dataPw={`user-profile-tab-${tab.name}`}
-                as={Button}
+              <Button
                 type='button'
                 variant='ghost'
                 size='sm'
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from tab config
+                data-pw={`user-profile-tab-${tab.name}`}
               >
                 {t(tab.label)}
                 <ChevronDown data-icon='inline-end' />
-              </DataPw>
+              </Button>
             ),
             active: tab.name === activeTopLevel,
             dropdownItems: dropdownItems.map(dt => {
@@ -68,16 +67,16 @@ export function UserProfileTabs({ usernameOrId, metrics }: UserProfileTabsProps)
               return {
                 key: dt.value,
                 content: (
-                  <DataPw
-                    dataPw={`user-profile-subpill-${dt.value}`}
-                    as={Link}
+                  <Link
                     href={dt.href}
                     prefetch={false}
                     scroll={false}
                     aria-current={isActive ? 'page' : undefined}
+                    // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from tab config
+                    data-pw={`user-profile-subpill-${dt.value}`}
                   >
                     {dt.label}
-                  </DataPw>
+                  </Link>
                 ),
                 active: isActive,
               }
@@ -88,16 +87,16 @@ export function UserProfileTabs({ usernameOrId, metrics }: UserProfileTabsProps)
         return {
           key: tab.name,
           content: (
-            <DataPw
-              dataPw={`user-profile-tab-${tab.name}`}
-              as={Link}
+            <Link
               href={getTopLevelTabHref(tab, usernameOrId)}
               prefetch={false}
               scroll={false}
               aria-current={tab.name === activeTopLevel ? 'page' : undefined}
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from tab config
+              data-pw={`user-profile-tab-${tab.name}`}
             >
               {t(tab.label)}
-            </DataPw>
+            </Link>
           ),
           active: tab.name === activeTopLevel,
         }

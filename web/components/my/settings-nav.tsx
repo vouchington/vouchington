@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-defaults -- Settings nav IDs come from static table data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import Link from 'next/link'
@@ -6,7 +7,6 @@ import { isActivePath } from '@/lib/utils/path'
 import { EntityMenubarNav, type EntityMenubarItem } from '@/components/shared/entity-menubar-nav'
 import { tabGroups, getActiveTab } from './settings-routes'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { DataPw } from '@/components/shared/data-pw'
 
 export function SettingsNav() {
   const t = useTranslations()
@@ -19,26 +19,26 @@ export function SettingsNav() {
     key: value,
     active: value === activeTab,
     content: (
-      <DataPw
-        dataPw={`settings-nav-${value}-tab`}
-        as='span'
+      <span
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the settings section
+        data-pw={`settings-nav-${value}-tab`}
       >
         {t(label)}
-      </DataPw>
+      </span>
     ),
     dropdownItems: items.map(({ href, label: itemLabel, dataPw }) => ({
       key: href,
       active: isActivePath(pathname, href),
       content: (
-        <DataPw
-          dataPw={dataPw}
-          as={Link}
+        <Link
           href={href}
           prefetch={false}
           aria-current={isActivePath(pathname, href) ? 'page' : undefined}
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- Settings nav IDs come from static table data; ast-grep still bans inline calls in data-pw.
+          data-pw={dataPw}
         >
           {t(itemLabel)}
-        </DataPw>
+        </Link>
       ),
     })),
   }))

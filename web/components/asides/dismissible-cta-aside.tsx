@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { DismissibleAside } from '@/components/asides/dismissible-aside'
-import { DataPw } from '@/components/shared/data-pw'
 
 interface DismissibleCtaAsideProps {
   dismissKey: string
@@ -31,13 +30,13 @@ export function DismissibleCtaAside({
         className='p-4'
         data-pw={dataPw}
       >
-        <DataPw
-          dataPw={`${dataPw}-heading`}
+        <h3
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector adds a heading suffix to the caller selector
+          data-pw={`${dataPw}-heading`}
           className='mb-2 pr-6 text-sm font-semibold'
-          as='h3'
         >
           {title}
-        </DataPw>
+        </h3>
         <p className='mb-3 text-xs text-muted-foreground'>{description}</p>
         <Button
           data-pw='dismissible-cta-aside-action'

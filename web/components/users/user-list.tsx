@@ -16,7 +16,6 @@ import {
   type RelationManagementActionConfig,
 } from './relation-management-action'
 import { UserSearchListItemContent } from './user-search-list-item-content'
-import { DataPw } from '@/components/shared/data-pw'
 
 export function UserListItem({
   user,
@@ -34,9 +33,9 @@ export function UserListItem({
   actions?: ReactNode
 }) {
   return (
-    <DataPw
-      dataPw={`user-card-${user.id}`}
-      as={Card}
+    <Card
+      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the user id
+      data-pw={`user-card-${user.id}`}
       className='p-4'
     >
       <UserSearchListItemContent
@@ -47,7 +46,7 @@ export function UserListItem({
       />
       {context ? <div className='mt-2 text-xs text-muted-foreground'>{context}</div> : null}
       {actions ? <div className='mt-3'>{actions}</div> : null}
-    </DataPw>
+    </Card>
   )
 }
 

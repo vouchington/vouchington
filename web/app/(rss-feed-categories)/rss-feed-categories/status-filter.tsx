@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/select'
 import type { UnmappedCategoryStatus } from '@/types/rss-feed-categories'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { DataPw } from '@/components/shared/data-pw'
 
 export function RssFeedCategoryStatusFilter() {
   return (
@@ -55,14 +54,14 @@ function RssFeedCategoryStatusFilterContent() {
       </SelectTrigger>
       <SelectContent>
         {statusOptions.map(opt => (
-          <DataPw
+          <SelectItem
             key={opt.value}
-            dataPw={`rss-category-status-${opt.value}`}
-            as={SelectItem}
             value={opt.value}
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- static template over finite status enum
+            data-pw={`rss-category-status-${opt.value}`}
           >
             {opt.label}
-          </DataPw>
+          </SelectItem>
         ))}
       </SelectContent>
     </Select>

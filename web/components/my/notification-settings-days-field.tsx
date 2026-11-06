@@ -1,6 +1,5 @@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { DataPw } from '@/components/shared/data-pw'
 
 const DAYS_OF_WEEK = [
   { value: 1, label: 'Mon' },
@@ -32,11 +31,11 @@ export function DaysField({
               key={day.value}
               className='flex items-center gap-2 text-sm'
             >
-              <DataPw
-                dataPw={`moderation-email-day-${day.value}`}
-                as={Checkbox}
+              <Checkbox
                 checked={selected}
                 disabled={disabled || (selected && selectedDays.length === 1)}
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- Static day rows derive stable data-pw values from a local constant table.
+                data-pw={`moderation-email-day-${day.value}`}
                 onCheckedChange={checked => onDayToggle(day.value, checked === true)}
               />
               {day.label}
