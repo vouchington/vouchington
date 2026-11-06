@@ -74,7 +74,8 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         },
         after: {
           type: 'string',
-          description: 'Opaque cursor from this option’s previous page.',
+          description:
+            'Opaque cursor. Pass page_info.end_cursor from the previous response with the same filters while has_next_page is true, including when that page is empty. Stop when has_next_page is false.',
         },
       },
       required: [],
