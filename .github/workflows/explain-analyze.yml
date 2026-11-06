@@ -137,7 +137,10 @@ jobs:
         run: node backend/scripts/seeds/dev-seed.mts
         timeout-minutes: 3
       - name: Seed EXPLAIN data with resource samples
-        timeout-minutes: 3
+        # The calibrated plan-gate corpus finishes in 81–180s on ubuntu-latest.
+        # A 3-minute cap killed runs that had already logged "Seed complete"
+        # (42260355232, 42270896709, 42273394016).
+        timeout-minutes: 5
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
