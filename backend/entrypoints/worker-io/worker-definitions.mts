@@ -1,16 +1,18 @@
 import type { WorkerDefinition } from '@vouchington/worker-runtime'
 
+/** The handlers barrel stays unloaded until the first background job. */
+export function loadBackgroundHandlers() {
+  return import('@workers/background/processors/handlers').then(
+    module => module.BACKGROUND_HANDLERS,
+  )
+}
+
 export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'background',
     load: () =>
       import('@workers/background/workers/create-worker').then(({ createBackgroundWorker }) =>
-        createBackgroundWorker({
-          handlers: () =>
-            import('@workers/background/processors/handlers').then(
-              module => module.BACKGROUND_HANDLERS,
-            ),
-        }),
+        createBackgroundWorker({ handlers: loadBackgroundHandlers }),
       ),
   },
   {

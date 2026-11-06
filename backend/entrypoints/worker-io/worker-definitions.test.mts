@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { WORKER_DEFINITIONS } from './worker-definitions.mts'
+import { BACKGROUND_HANDLERS } from '@workers/background/processors/handlers'
+import { loadBackgroundHandlers, WORKER_DEFINITIONS } from './worker-definitions.mts'
 
 function expectLazyImport(
   loadSource: string,
@@ -33,6 +34,10 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     for (const [queueName, workerDirectory, exportName] of expectedDefinitions) {
       expectLazyImport(byQueue(queueName).load.toString(), workerDirectory, exportName)
     }
+  })
+
+  it('loads the handlers barrel when the deferred loader runs', async () => {
+    await expect(loadBackgroundHandlers()).resolves.toBe(BACKGROUND_HANDLERS)
   })
 
   it('background definition load builds the shared worker over every domain handler', async () => {
