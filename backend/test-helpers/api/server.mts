@@ -125,7 +125,7 @@ export const createRequest = (
 
 export const request = createRequest()
 
-/** Close this worker's API listener after the consuming file's requests have settled. */
+/** Close the shared listener only after all API consumers in its worker have settled. */
 export async function closeApiTestServer(): Promise<void> {
   const state = globalThis as ApiTestServerGlobal
   const current = state[API_TEST_SERVER_STATE_KEY]

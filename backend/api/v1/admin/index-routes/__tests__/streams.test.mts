@@ -1,6 +1,6 @@
 import { ClientRequest } from 'node:http'
-import { afterAll, beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest'
-import { closeApiTestServer, createRequest } from '@voucha/test-helpers/api/server'
+import { beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
@@ -20,8 +20,6 @@ describe('Admin SSE stream routes', () => {
     ])
     await Promise.all([import('../postgresql-stream-get.mts'), import('../valkey-stream-get.mts')])
   })
-
-  afterAll(closeApiTestServer)
 
   describe('GET /api/v1/admin/postgresql/stream', () => {
     it('returns 401 when not authenticated', async () => {
