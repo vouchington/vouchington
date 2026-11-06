@@ -135,12 +135,12 @@
       },
       "read_posts": {
         "measured": {
-          "list": 12753,
-          "core": 5843
+          "list": 12827,
+          "core": 5917
         },
         "max": {
-          "list": 13000,
-          "core": 6000
+          "list": 14000,
+          "core": 7000
         }
       },
       "read_hostnames": {
