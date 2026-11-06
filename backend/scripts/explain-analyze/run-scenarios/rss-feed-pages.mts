@@ -74,8 +74,10 @@ function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type'
 export function registerRssFeedCandidateScenario(
   scenarioId: string,
   feedType?: RssFeedItemFeedOptions['feed_type'],
+  allowEmptyResult = false,
 ): void {
   registerScenarioContract(scenarioId, {
+    allowEmptyResult,
     expectations: feedCandidateExpectations(feedType),
     crossPartition: {
       rss_feed_items: 'The feed ranks recent matching items across the time window.',

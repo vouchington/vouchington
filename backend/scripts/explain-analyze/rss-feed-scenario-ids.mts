@@ -1,4 +1,6 @@
 export const RSS_FEED_SCENARIO_IDS = [
+  'rss-topic-merge-derived-candidates',
+  'rss-topic-merge-alias-candidates',
   'rss-feed-item-feed',
   'rss-feed-item-feed-after',
   'rss-feed-item-feed-1m',

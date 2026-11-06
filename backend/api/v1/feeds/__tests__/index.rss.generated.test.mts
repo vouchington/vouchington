@@ -10,6 +10,7 @@ import {
   setRssFeedItemMediaType,
   insertTestStory,
   setTestItemStoryId,
+  setTestRssFeedItemVotes,
 } from '@voucha/test-helpers'
 import {
   shareRssFeedItemWithFollowers,
@@ -195,6 +196,7 @@ describe('GET /api/v1/feeds/rss_feed_items/:feed_type', () => {
     const story = await insertTestStory()
     await setTestItemStoryId(primaryItemId, story.id)
     await setTestItemStoryId(memberItemId, story.id)
+    await setTestRssFeedItemVotes(primaryItemId, 1)
 
     const request = createRequest()
     await request.authenticateAs(user)

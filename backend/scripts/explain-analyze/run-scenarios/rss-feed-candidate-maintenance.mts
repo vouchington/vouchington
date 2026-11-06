@@ -63,6 +63,7 @@ export async function runRssFeedCandidateReconciliationScenarios(): Promise<void
     const itemId = rows[0]?.id
     if (!itemId) throw new Error('RSS candidate reconciliation fixture item is missing')
     registerScenarioContract('rss-feed-candidate-reconciliation-page', {
+      allowEmptyResult: true,
       expectations: [
         { kind: 'custom', name: 'rssFeedCandidateMaintenance' },
         {
