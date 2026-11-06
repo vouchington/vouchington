@@ -33,10 +33,10 @@ export async function readCommentCandidates(
       SELECT p.id, p.parent_post_id, p.deleted_at, p.approved_at, p.created_by_id
       FROM posts p `
   if (checkRoot) statement.append(sql`JOIN posts access_post ON access_post.id = ${rootId} `)
+  // rootId is non-null; null-safe equality preserves the filter without a root-index sibling scan.
   statement.append(sql`
-      WHERE p.root_post_id = ${rootId}
+      WHERE p.root_post_id IS NOT DISTINCT FROM ${rootId}
         AND p.parent_post_id = ${parentId}
-        AND p.id > ${parentId}
         AND p.post_type = 'comment'`)
   if (afterId) statement.append(sql` AND p.id > ${afterId}`)
   if (checkRoot) {
