@@ -25,6 +25,7 @@ export type AmbiguousStripePurchaseCollisionInvoice = {
   invoiceId: string
   invoiceLineCount: number
   mappedMembershipLineCount: number
+  collision: QualifyingStripeCollision
 }
 
 export async function prepareStripePurchaseCollisionCandidates(
@@ -73,10 +74,22 @@ export function buildStripePurchaseCollisionCaseInputs(
     })
     if (overlapping.length === 0) continue
     if (mappedLines.length !== 1 || invoice.lines.data.length !== 1) {
+      const collision = overlapping
+        .map(({ plan }) => collisions.get(plan)!)
+        .reduce((earliest, candidate) =>
+          candidate.collisionAt.getTime() < earliest.collisionAt.getTime() ||
+          (candidate.collisionAt.getTime() === earliest.collisionAt.getTime() &&
+            (candidate.winningSourceKind < earliest.winningSourceKind ||
+              (candidate.winningSourceKind === earliest.winningSourceKind &&
+                candidate.winningPlan < earliest.winningPlan)))
+            ? candidate
+            : earliest,
+        )
       ambiguousInvoices.push({
         invoiceId: invoice.id,
         invoiceLineCount: invoice.lines.data.length,
         mappedMembershipLineCount: mappedLines.length,
+        collision,
       })
       continue
     }

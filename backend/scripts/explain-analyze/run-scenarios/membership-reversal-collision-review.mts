@@ -24,6 +24,11 @@ export async function runMembershipReversalCollisionReviewScenario(input: {
     invoiceId: 'in_explain_collision_review_replay',
     invoiceLineCount: 2,
     mappedMembershipLineCount: 1,
+    collision: {
+      winningSourceKind: 'direct' as const,
+      winningPlan: 'plus' as const,
+      collisionAt,
+    },
   }
 
   await write(

@@ -17,13 +17,17 @@ export async function recordStripePurchaseCollisionReviews(
       invoice_line_count, mapped_membership_line_count
     )
     SELECT ${work.sourceId}, ${work.lineageId}, ${work.bindingId},
-      input.originating_invoice_id, ${work.winningSourceKind}, ${work.winningPlan},
-      ${work.collisionAt}, input.invoice_line_count, input.mapped_membership_line_count
+      input.originating_invoice_id, input.winning_source_kind, input.winning_plan,
+      input.collision_at, input.invoice_line_count, input.mapped_membership_line_count
     FROM UNNEST(
       ${invoices.map(invoice => invoice.invoiceId)}::TEXT[],
       ${invoices.map(invoice => invoice.invoiceLineCount)}::INTEGER[],
-      ${invoices.map(invoice => invoice.mappedMembershipLineCount)}::INTEGER[]
-    ) AS input(originating_invoice_id, invoice_line_count, mapped_membership_line_count)
+      ${invoices.map(invoice => invoice.mappedMembershipLineCount)}::INTEGER[],
+      ${invoices.map(invoice => invoice.collision.winningSourceKind)}::membership_source_kinds[],
+      ${invoices.map(invoice => invoice.collision.winningPlan)}::membership_plan_slugs[],
+      ${invoices.map(invoice => invoice.collision.collisionAt)}::TIMESTAMPTZ[]
+    ) AS input(originating_invoice_id, invoice_line_count, mapped_membership_line_count,
+      winning_source_kind, winning_plan, collision_at)
     WHERE TRUE
     ORDER BY input.originating_invoice_id
     ON CONFLICT (membership_provider_lineage_id, originating_invoice_id) DO NOTHING
