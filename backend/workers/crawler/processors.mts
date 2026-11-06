@@ -100,7 +100,7 @@ export async function processCrawlerJob(
             skipEmbedResolution,
             skipCreatedEventsForRedirects,
           })
-        } catch (err) {
+        } catch (err_) {
           if (
             importRowId &&
             importDiscoveryGeneration &&
@@ -112,7 +112,7 @@ export async function processCrawlerJob(
               importDiscoveryGeneration,
               null,
             )
-          throw err
+          throw err_
         }
       }
       // Persistence failures leave discovery pending; they are not failed crawls.

@@ -37,11 +37,11 @@ export function useStartStoryDiscussionAction(props: StartStoryDiscussionProps |
           const linkResult = await createLinkPost({ url_id: props.fallbackUrlId })
           publishCreatedPost(linkResult.post)
           return
-        } catch (err) {
-          if (isEmailVerificationRequired(err)) {
+        } catch (err_) {
+          if (isEmailVerificationRequired(err_)) {
             emailRecovery?.openEmailVerificationRecovery()
           } else {
-            toast.error(getApiErrorMessage(err, 'Failed to create discussion'))
+            toast.error(getApiErrorMessage(err_, 'Failed to create discussion'))
           }
         }
       } else if (err instanceof ApiError && err.status === 409) {

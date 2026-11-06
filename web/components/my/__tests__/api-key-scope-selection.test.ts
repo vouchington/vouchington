@@ -10,7 +10,7 @@ import scopeCatalogFixture from '../../../../api-fixtures/v1/responses/shared.sc
 
 const catalog = (scopeCatalogFixture as ScopeCatalogResponse).scopes
 
-function entry(overrides: Partial<ScopeCatalogEntry> & Pick<ScopeCatalogEntry, 'scope'>) {
+function scopeEntry(overrides: Partial<ScopeCatalogEntry> & Pick<ScopeCatalogEntry, 'scope'>) {
   const [resource, action] = overrides.scope.split(':') as [string, 'read' | 'write']
   return {
     resource,
@@ -79,7 +79,10 @@ describe('scopeResourceGroups rows', () => {
 
   it('keeps only scopes offered on the credential surface', () => {
     const rows = scopeResourceGroups(
-      [entry({ scope: 'posts:read', surfaces: ['oauth'] }), entry({ scope: 'cards:read' })],
+      [
+        scopeEntry({ scope: 'posts:read', surfaces: ['oauth'] }),
+        scopeEntry({ scope: 'cards:read' }),
+      ],
       'api-key',
       ['user'],
     ).flatMap(group => group.rows)
@@ -95,9 +98,9 @@ describe('toggleScope', () => {
 
   it('follows prerequisite chains and returns scopes in catalogue order', () => {
     const chain = [
-      entry({ scope: 'a:read' }),
-      entry({ scope: 'b:read', requires: 'a:read' }),
-      entry({ scope: 'c:read', requires: 'b:read' }),
+      scopeEntry({ scope: 'a:read' }),
+      scopeEntry({ scope: 'b:read', requires: 'a:read' }),
+      scopeEntry({ scope: 'c:read', requires: 'b:read' }),
     ]
 
     expect(toggleScope(chain, [], 'c:read', true)).toEqual(['a:read', 'b:read', 'c:read'])

@@ -30,7 +30,7 @@ describe('upsertXAccount', () => {
       .mockRejectedValueOnce(failure)
 
     const err = await upsertXAccount('code', 'https://example.com/callback', 'verifier').catch(
-      (err: unknown) => err,
+      (err_: unknown) => err_,
     )
 
     expect(err).toMatchObject({ status: 502 })

@@ -37,7 +37,7 @@ export async function withPrivateIdentityCacheFill<T>(
   const close = () => (closing ??= dispose())
   onTestFinished(close)
   active = true
-  let result: PromiseSettledResult<T> | undefined
+  let operationResult: PromiseSettledResult<T> | undefined
   let setupFailed = false
   let setupError: unknown
   try {
@@ -82,21 +82,25 @@ export async function withPrivateIdentityCacheFill<T>(
       return result
     })
     void operation.catch(() => {})
-    ;[result] = await Promise.allSettled([operation])
+    ;[operationResult] = await Promise.allSettled([operation])
   } catch (err) {
     setupFailed = true
     setupError = err
   }
   const [cleanup] = await Promise.allSettled([close()])
-  const errors = setupFailed ? [setupError] : result?.status === 'rejected' ? [result.reason] : []
-  if (cleanup?.status === 'rejected') errors.push(cleanup.reason)
-  if (errors.length === 1) throw errors[0]
-  if (errors.length)
-    throw new AggregateError(errors, 'Identity cache operation and cleanup failed', {
-      cause: errors[0],
+  const operationErrors = setupFailed
+    ? [setupError]
+    : operationResult?.status === 'rejected'
+      ? [operationResult.reason]
+      : []
+  if (cleanup?.status === 'rejected') operationErrors.push(cleanup.reason)
+  if (operationErrors.length === 1) throw operationErrors[0]
+  if (operationErrors.length)
+    throw new AggregateError(operationErrors, 'Identity cache operation and cleanup failed', {
+      cause: operationErrors[0],
     })
-  if (result?.status !== 'fulfilled') throw new Error('Missing identity cache result')
-  return result.value
+  if (operationResult?.status !== 'fulfilled') throw new Error('Missing identity cache result')
+  return operationResult.value
 
   async function drain() {
     const errors: unknown[] = []

@@ -23,8 +23,9 @@ const downloadIntegrityCommand = 'node ci/check-workflow-download-integrity.mts'
 
 function downloadIntegrityInvocationErrors(topology: WorkflowTopology): string[] {
   const job = topology.jobs.find(
-    job =>
-      job.workflowId === '.github/workflows/static-code-analysis.yml' && job.key === 'no-mistakes',
+    candidateJob =>
+      candidateJob.workflowId === '.github/workflows/static-code-analysis.yml' &&
+      candidateJob.key === 'no-mistakes',
   )
   const matches =
     job?.steps.flatMap(step =>
@@ -42,8 +43,9 @@ function downloadIntegrityInvocationErrors(topology: WorkflowTopology): string[]
 
 export function noMistakesPolicyInvocationErrors(topology: WorkflowTopology): string[] {
   const job = topology.jobs.find(
-    job =>
-      job.workflowId === '.github/workflows/static-code-analysis.yml' && job.key === 'no-mistakes',
+    candidateJob =>
+      candidateJob.workflowId === '.github/workflows/static-code-analysis.yml' &&
+      candidateJob.key === 'no-mistakes',
   )
   const matches =
     job?.steps.flatMap(step =>

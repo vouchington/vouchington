@@ -40,7 +40,7 @@ export function CopyrightStaffStaydownMatches({
     <section className='space-y-2'>
       <h3 className='font-medium'>Possible re-uploads</h3>
       {notice.staydown_matches.map(match => {
-        const target = notice.targets.find(target => target.id === match.target_id)
+        const target = notice.targets.find(candidate => candidate.id === match.target_id)
         const uploaderLabel = getUserLabel(
           { username: match.uploaded_by_username },
           t('shared.user.deletedUser'),

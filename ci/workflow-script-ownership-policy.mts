@@ -59,10 +59,10 @@ export function workflowScriptOwnershipViolations(
     const scripts = references.get(path) ?? []
     if (scripts.length === 0) continue
     for (const triggerName of ['pull_request', 'push'] as const) {
-      const paths = triggerPaths(workflow, triggerName)
-      if (paths.length === 0) continue
+      const eventPaths = triggerPaths(workflow, triggerName)
+      if (eventPaths.length === 0) continue
       for (const script of scripts) {
-        if (!paths.includes(script))
+        if (!eventPaths.includes(script))
           violations.push(`${path} ${triggerName}.paths missing ${script}`)
       }
     }

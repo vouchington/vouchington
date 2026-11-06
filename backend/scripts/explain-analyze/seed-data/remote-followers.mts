@@ -74,8 +74,8 @@ export async function seedRemoteFollowers(count = REMOTE_FOLLOWER_SEED_COUNT): P
   const targetSpreadRows: string[] = []
   for (let index = 0; index < targetSpreadCount; index++) {
     const remoteActorId = seedUuid(index, REMOTE_FOLLOWER_TABLE_TAG)
-    const targetUserId = seedUuid(index + 1, '01')
-    targetSpreadValues.push(remoteActorId, targetUserId, targetUserId)
+    const spreadUserId = seedUuid(index + 1, '01')
+    targetSpreadValues.push(remoteActorId, spreadUserId, spreadUserId)
     const targetSpreadBase = targetSpreadValues.length - 2
     targetSpreadRows.push(
       `($${targetSpreadBase}, $${targetSpreadBase + 1}, $${targetSpreadBase + 2})`,

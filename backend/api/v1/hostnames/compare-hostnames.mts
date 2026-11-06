@@ -57,7 +57,7 @@ app.route('/api/v1/hostnames/compare').get(async (ctx: Context) => {
     getHostnameElectionByIdCachedBatch(hostnameIds).then(indexById),
     topicIds.length > 0
       ? getTopicByAnyCachedBatch(topicIds)
-          .then(topics => attachTopicProvenance(topics, currentUser))
+          .then(resolvedTopics => attachTopicProvenance(resolvedTopics, currentUser))
           .then(indexById)
       : Promise.resolve({}),
   ])

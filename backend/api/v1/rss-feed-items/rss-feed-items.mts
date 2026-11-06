@@ -130,13 +130,13 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
 
   if (currentUser) {
     const bookmarkGroupsPromise = itemsPromise.then(async items => {
-      const itemIds = items.flatMap(item => (item != null ? [item.id] : []))
+      const bookmarkItemIds = items.flatMap(item => (item != null ? [item.id] : []))
       const feedIds = [...new Set(items.flatMap(item => (item != null ? [item.rss_feed.id] : [])))]
       return {
-        itemIds,
+        itemIds: bookmarkItemIds,
         feedIds,
         maps: await getBookmarkMapsForEntityGroups(currentUser, [
-          { entityTypeName: 'rss_feed_item', entities: itemIds },
+          { entityTypeName: 'rss_feed_item', entities: bookmarkItemIds },
           { entityTypeName: 'rss_feed', entities: feedIds },
         ]),
       }
@@ -166,8 +166,9 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
       r.postIds.length > 0 ? getPostMetricsByAnyCachedBatch(r.postIds).then(indexById) : {},
     )
 
-    output.bookmarks = bookmarkGroupsPromise.then(({ itemIds, maps: [bookmarks] }) =>
-      itemIds.length > 0 ? bookmarks : {},
+    output.bookmarks = bookmarkGroupsPromise.then(
+      ({ itemIds: bookmarkItemIds, maps: [bookmarks] }) =>
+        bookmarkItemIds.length > 0 ? bookmarks : {},
     )
 
     output.election_votes = itemsPromise.then(async items => {

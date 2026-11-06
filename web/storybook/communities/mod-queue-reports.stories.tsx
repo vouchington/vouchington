@@ -98,8 +98,8 @@ function Reports({ reports: initialReports }: { reports: CommunityModerationRepo
           ),
         )
       }}
-      onResolve={report => {
-        setReports(current => current.filter(item => item.id !== report.id))
+      onResolve={resolvedReport => {
+        setReports(current => current.filter(item => item.id !== resolvedReport.id))
       }}
       onSelectionToggle={reportId => {
         setSelectedIds(current => {

@@ -81,10 +81,15 @@ describe('read_community.list_items and read_community.list_item_counts — real
       privacy,
       broadcast: privacy === 'private' ? 'users' : 'everyone',
     })
-  const add = (communityId: string, itemType: ItemType, ids: string[]) =>
+  const add = (targetCommunityId: string, itemType: ItemType, ids: string[]) =>
     Promise.all(
       ids.map((entityId, orderIndex) =>
-        insertTestCommunityListItem({ communityId, itemType, entityId, orderIndex }),
+        insertTestCommunityListItem({
+          communityId: targetCommunityId,
+          itemType,
+          entityId,
+          orderIndex,
+        }),
       ),
     )
 

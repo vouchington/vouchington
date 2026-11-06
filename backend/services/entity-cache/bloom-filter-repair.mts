@@ -40,8 +40,8 @@ export async function addEntityBloomKeys(
     try {
       const removed = await bloomValkeyClient.unlink([target.readyKey])
       if (removed > 0) await target.enqueueRebuild()
-    } catch (err) {
-      onError(err instanceof Error ? err : new Error(String(err)))
+    } catch (err_) {
+      onError(err_ instanceof Error ? err_ : new Error(String(err_)))
     }
   }
 }

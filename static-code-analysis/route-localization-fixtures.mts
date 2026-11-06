@@ -66,9 +66,9 @@ export function createRouteLocalizationFixture() {
   }
   const sourceRouteRows = [
     ...chromeAliases.map(alias => ({ consumer: 'web', pattern: 'web.chrome', alias })),
-    ...Object.entries(memberships).flatMap(([pattern, aliases]) =>
-      aliases.length
-        ? aliases.map(alias => ({ consumer: 'web', pattern, alias }))
+    ...Object.entries(memberships).flatMap(([pattern, routeAliases]) =>
+      routeAliases.length
+        ? routeAliases.map(alias => ({ consumer: 'web', pattern, alias }))
         : [{ consumer: 'web', pattern }],
     ),
   ]

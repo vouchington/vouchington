@@ -270,11 +270,11 @@ describe('metrics', () => {
     })
 
     it('includes rss_feeds_viewed in private counts', async () => {
-      const user = await createTestUser()
+      const feedViewer = await createTestUser()
       const feed = await insertTestRssFeedDirect({})
-      await upsertRecentlyViewed('rss_feed', feed.id, null, user.id)
+      await upsertRecentlyViewed('rss_feed', feed.id, null, feedViewer.id)
 
-      const metrics = await getUserProfileMetricsByAny(user.id, { currentUser: user })
+      const metrics = await getUserProfileMetricsByAny(feedViewer.id, { currentUser: feedViewer })
 
       expect(metrics?.private_count?.rss_feeds_viewed).toBe(1)
     })

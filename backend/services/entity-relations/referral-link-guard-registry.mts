@@ -28,11 +28,11 @@ export function getRegisteredReferralLinkGuard(): ReferralLinkGuard {
 export function createReferralLinkGuardRegistry() {
   let registeredGuard: ReferralLinkGuard | null = null
 
-  function registerReferralLinkGuard(guard: ReferralLinkGuard): void {
+  function registerGuard(guard: ReferralLinkGuard): void {
     registeredGuard = guard
   }
 
-  function getRegisteredReferralLinkGuard(): ReferralLinkGuard {
+  function getRegisteredGuard(): ReferralLinkGuard {
     if (!registeredGuard) {
       throw createCodedError(
         500,
@@ -43,5 +43,8 @@ export function createReferralLinkGuardRegistry() {
     return registeredGuard
   }
 
-  return { registerReferralLinkGuard, getRegisteredReferralLinkGuard }
+  return {
+    registerReferralLinkGuard: registerGuard,
+    getRegisteredReferralLinkGuard: getRegisteredGuard,
+  }
 }

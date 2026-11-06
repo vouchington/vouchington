@@ -61,9 +61,9 @@ export function useSimilarEntities<T>({
     const timeoutId = setTimeout(() => {
       setResult({ query: trimmed, data: null, isLoading: true })
       runFetcher(trimmed, controller.signal)
-        .then(result => {
+        .then(data => {
           if (!controller.signal.aborted) {
-            setResult({ query: trimmed, data: result, isLoading: false })
+            setResult({ query: trimmed, data, isLoading: false })
           }
         })
         .catch((err: unknown) => {

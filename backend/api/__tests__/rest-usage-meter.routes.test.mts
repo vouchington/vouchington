@@ -57,10 +57,10 @@ describe('REST usage metering for a signed-in user', () => {
 
     const request = await withResponseUsageSettlements(
       [user, writer],
-      async (request, writerRequest) => {
-        await request.get(`${BASE}/ok`).expect(200)
+      async (userRequest, writerRequest) => {
+        await userRequest.get(`${BASE}/ok`).expect(200)
         await writerRequest!.post(`${BASE}/write`).send({}).expect(202)
-        return request
+        return userRequest
       },
     )
 

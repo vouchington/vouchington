@@ -17,9 +17,12 @@ describe('pending applications', () => {
   })
 
   it('uses a supplied transaction for both pending application reads', async () => {
-    const owner = await createTestUser()
+    const applicationOwner = await createTestUser()
     const applicant = await createTestUser()
-    const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
+    const community = await insertTestCommunity({
+      createdById: applicationOwner.id,
+      visibility: 'private',
+    })
     await createApplication(applicant.id, WEB_PROVENANCE, community.id, {})
 
     await using query = await beginTransaction()

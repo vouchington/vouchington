@@ -189,7 +189,7 @@ describe('media registry staging retired raw page', () => {
     await processReconcileMediaDeliveryRegistry(third, options, 1, 1)
     expect(await getTestMediaDeliveryRecordSnapshot(outsideRecordId!)).toEqual(before)
 
-    expect(allJobs.map(({ data }) => data)).toContainEqual({
+    expect(allJobs.map(({ data: jobData }) => jobData)).toContainEqual({
       staging: {
         scanBefore,
         after: {

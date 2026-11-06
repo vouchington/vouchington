@@ -160,7 +160,7 @@ describe('bounded import and referral history retention', () => {
       kinds: ['followed_user_import_requests'],
       ...scoped,
       now: new Date(base.getTime() + 100 * day),
-    }).then(result => result.followed_user_import_requests)
+    }).then(cleanupResult => cleanupResult.followed_user_import_requests)
     expect(result).toEqual({ scanned: 2, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('followed_user_import_requests', ids)).toEqual([ids[1]])
   })
@@ -182,7 +182,7 @@ describe('bounded import and referral history retention', () => {
       kinds: ['pending_user_import_requests'],
       ...scoped,
       now: new Date(base.getTime() + 180 * day + 1),
-    }).then(result => result.pending_user_import_requests)
+    }).then(cleanupResult => cleanupResult.pending_user_import_requests)
     expect(result).toEqual({ scanned: 1, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('pending_user_import_requests', ids)).toEqual([ids[1]])
   })

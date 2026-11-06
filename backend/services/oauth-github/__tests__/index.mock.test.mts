@@ -25,7 +25,7 @@ describe('upsertGithubAccount', () => {
       .mockResolvedValueOnce(response([]))
 
     const err = await upsertGithubAccount('code', 'https://example.com/callback').catch(
-      (err: unknown) => err,
+      (err_: unknown) => err_,
     )
 
     expect(err).toMatchObject({ status: 502 })

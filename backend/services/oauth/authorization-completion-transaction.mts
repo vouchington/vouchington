@@ -142,7 +142,7 @@ export async function completeOAuthAuthorizationTransaction(
       }
     }
 
-    const result = await preparePersistedOAuthAccountFlow({
+    const accountFlow = await preparePersistedOAuthAccountFlow({
       provider: authorization.provider,
       account,
       deviceId: options.deviceId,
@@ -155,11 +155,11 @@ export async function completeOAuthAuthorizationTransaction(
     registerPostCommitAction(query, () =>
       enqueueOAuthFriendSyncBestEffort(authorization.provider, account),
     )
-    if (result.mfaRequired) {
+    if (accountFlow.mfaRequired) {
       const durableResult = {
         kind: 'mfa_required' as const,
-        userId: result.userId,
-        loginAttemptId: result.loginAttemptId,
+        userId: accountFlow.userId,
+        loginAttemptId: accountFlow.loginAttemptId,
       }
       await persistCompletionResult(authorization.id, durableResult, query)
       return durableResult
@@ -172,7 +172,7 @@ export async function completeOAuthAuthorizationTransaction(
         provider: authorization.provider,
         providerUserId: account.provider_user_id,
       },
-      userId: result.user.id,
+      userId: accountFlow.user.id,
       deviceId: durableDeviceId(authorization.initiating_device_id),
       sessionId: uuidv7(),
       authOrigin: authorization.callback_mode,

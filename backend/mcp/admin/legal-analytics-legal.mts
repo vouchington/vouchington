@@ -75,9 +75,9 @@ const associationSearch = createAdminTool<{ q: string; after?: string }>({
     const page = await searchCopyrightNoticeAssociationTargets(user, args.q, args.after)
     return {
       ...page,
-      copyright_notices: page.copyright_notices.map(notice => ({
-        ...notice,
-        work_description: stripPersonalDetails(notice.work_description),
+      copyright_notices: page.copyright_notices.map(copyrightNotice => ({
+        ...copyrightNotice,
+        work_description: stripPersonalDetails(copyrightNotice.work_description),
       })),
     }
   },

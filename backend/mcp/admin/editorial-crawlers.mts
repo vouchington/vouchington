@@ -76,11 +76,14 @@ const update = createAdminTool<{ id: string; updates: UpdateCrawlerUpdates }>({
     openWorldHint: false,
   },
   run: async (user, args) => {
-    const updates = { ...args.updates }
-    if (typeof updates.referral_program_id === 'string') {
-      updates.referral_program_id = await entityIdOrMissing('topic', updates.referral_program_id)
+    const crawlerUpdates = { ...args.updates }
+    if (typeof crawlerUpdates.referral_program_id === 'string') {
+      crawlerUpdates.referral_program_id = await entityIdOrMissing(
+        'topic',
+        crawlerUpdates.referral_program_id,
+      )
     }
-    return { crawler: await updateCrawlerForUser(user, args.id, updates) }
+    return { crawler: await updateCrawlerForUser(user, args.id, crawlerUpdates) }
   },
 })
 const referralApi = { method: 'PUT', path: '/api/v1/crawlers/referral-program' } as const

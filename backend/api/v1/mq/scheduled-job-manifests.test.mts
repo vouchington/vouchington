@@ -149,13 +149,13 @@ describe('scheduled job manifest catalog', () => {
 
   it('references only live operator inputs', () => {
     const backfills = new Set(BACKFILL_REGISTRY.map(backfill => backfill.id))
-    const psql = new Set<string>(PSQL_SCHEDULED_ADMIN_JOB_TYPES)
+    const scheduledPsqlTypes = new Set<string>(PSQL_SCHEDULED_ADMIN_JOB_TYPES)
     const blooms = new Set<string>(bloomFilterRebuildInputs())
     const valid = SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
       manifest.jobs.flatMap(job => job.operatorSurfaces),
     ).map(surface => {
       if (surface.kind === 'backfill') return backfills.has(surface.backfillId)
-      if (surface.kind === 'psql') return psql.has(surface.jobType)
+      if (surface.kind === 'psql') return scheduledPsqlTypes.has(surface.jobType)
       if (surface.kind === 'valkey-bloom-filter') return blooms.has(surface.rebuildInput)
       return true
     })

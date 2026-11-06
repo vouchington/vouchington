@@ -95,8 +95,9 @@ export async function onVerificationSessionVerified(
   // must be transitioned out of identity_pending — there is no subsequent lifecycle event
   // that would clear it. Transition to 'failed' so the user can restart.
   if (result.outcome === 'failed' || result.outcome === 'requires_input') {
-    await using transaction = await beginTransaction()
-    const { rowCount } = await transaction(sql`/* onVerificationSessionVerified:extract-failed */
+    await using failureTransaction = await beginTransaction()
+    const { rowCount } =
+      await failureTransaction(sql`/* onVerificationSessionVerified:extract-failed */
         UPDATE users
         SET verification_status = 'failed',
             verification_completed_at = CURRENT_TIMESTAMP,
@@ -107,7 +108,7 @@ export async function onVerificationSessionVerified(
           AND verification_status = 'identity_pending'
           AND pending_verification_session_id = ${sessionId}
       `)
-    await transaction.commit()
+    await failureTransaction.commit()
     if (rowCount) await invalidate.users(userId)
     return
   }

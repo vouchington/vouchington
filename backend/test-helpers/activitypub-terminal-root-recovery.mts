@@ -124,10 +124,10 @@ export async function assertTerminalActivityPubRootRecovery(
         // The sweep must perform WATCH-fenced reactivation for the stable root ID.
         enqueueBulk: enqueueRecoveryBulk,
         // Keep recovery continuations in this isolated queue.
-        enqueueNext: async (data, options) => {
+        enqueueNext: async (data, continuationOptions) => {
           const continuation = await queue.add(scheduled.template.name, data, {
             ...scheduledOptions,
-            ...options,
+            ...continuationOptions,
           })
           if (!continuation) throw new Error('Expected recovery continuation')
           continuationJobs.push(continuation)

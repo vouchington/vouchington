@@ -7,25 +7,23 @@ const {
   sentryConfigCall,
   withSentryConfig,
 } = vi.hoisted(() => {
-  const physicalMemoryBytes = 64 * 1024 ** 3
-  const constrainedMemoryBytes = 13_189_304_320
-  const cpuCount = 24
-  const sentryConfigCall: { nextConfig?: unknown; sentryBuildOptions?: unknown } = {}
+  const memoryLimit = 13_189_304_320
+  const capturedConfig: { nextConfig?: unknown; sentryBuildOptions?: unknown } = {}
   const constrainedProcess = Object.create(process) as NodeJS.Process
   Object.defineProperty(constrainedProcess, 'constrainedMemory', {
-    value: () => constrainedMemoryBytes,
+    value: () => memoryLimit,
   })
   vi.stubGlobal('process', constrainedProcess)
 
   return {
-    constrainedMemoryBytes,
-    cpuCount,
-    physicalMemoryBytes,
-    sentryConfigCall,
+    constrainedMemoryBytes: memoryLimit,
+    cpuCount: 24,
+    physicalMemoryBytes: 64 * 1024 ** 3,
+    sentryConfigCall: capturedConfig,
     withSentryConfig: vi.fn<(nextConfig: unknown, sentryBuildOptions?: unknown) => unknown>(
       (nextConfig, sentryBuildOptions) => {
-        sentryConfigCall.nextConfig = nextConfig
-        sentryConfigCall.sentryBuildOptions = sentryBuildOptions
+        capturedConfig.nextConfig = nextConfig
+        capturedConfig.sentryBuildOptions = sentryBuildOptions
         return nextConfig
       },
     ),

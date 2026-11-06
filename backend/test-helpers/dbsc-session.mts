@@ -34,8 +34,8 @@ export async function createDbscTestSession() {
   }
   const nonce = await createDbscRegistrationOffer(base)
   if (!nonce) throw new Error('DBSC fixture did not receive its credential-completion challenge')
-  async function sign(challenge: string, registration = false, headerJwk?: JWK) {
-    return new SignJWT({ jti: challenge })
+  async function sign(challengeValue: string, registration = false, headerJwk?: JWK) {
+    return new SignJWT({ jti: challengeValue })
       .setProtectedHeader({
         alg: 'ES256',
         typ: 'dbsc+jwt',

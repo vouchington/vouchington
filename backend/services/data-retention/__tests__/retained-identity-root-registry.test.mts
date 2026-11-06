@@ -144,13 +144,17 @@ describe('retained identity cleanup registry', () => {
       async query => {
         await insertTestRetainedIdentityRoot('post', postId, { query })
         await insertTestRetainedIdentityRoot('user', userId, { query })
-        const likeOnly = await insertOperationalRetainedReplayAnchorsForTest(query, postId, userId)
-        await deleteOperationalRetainedFollowReferenceForTest(query, likeOnly.followActivityId)
+        const likeAnchors = await insertOperationalRetainedReplayAnchorsForTest(
+          query,
+          postId,
+          userId,
+        )
+        await deleteOperationalRetainedFollowReferenceForTest(query, likeAnchors.followActivityId)
         return {
           orphan: await insertOperationalRemoteActorIdentityOnlyForTest(query),
           cached: await insertOperationalRemoteActorForTest(query, new Date()),
           anchors: await insertOperationalRetainedReplayAnchorsForTest(query, postId, userId),
-          likeOnly,
+          likeOnly: likeAnchors,
         }
       },
     )

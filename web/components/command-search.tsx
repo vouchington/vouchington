@@ -121,7 +121,7 @@ export function CommandSearch({
       event.preventDefault()
       event.stopPropagation()
       setActiveTab(prev => {
-        const currentIndex = searchTabs.findIndex(t => t.value === prev)
+        const currentIndex = searchTabs.findIndex(tab => tab.value === prev)
         const nextIndex =
           event.key === 'ArrowRight'
             ? (currentIndex + 1) % searchTabs.length

@@ -20,7 +20,7 @@ export function parseMigrationLedger(input: string): LedgerMigration[] {
     })
 }
 
-function checksum(sql: string) {
+function checksumMigrationSql(sql: string) {
   return createHash('sha256').update(sql, 'utf8').digest('hex')
 }
 
@@ -34,7 +34,9 @@ export async function findMigrationLedgerDrift(
       ledger.flatMap(({ id, checksum: recordedChecksum }) => {
         if (!migrationFiles.has(id) || !recordedChecksum) return []
         return [
-          readMigrationFile(migrationsDirectory, id).then(sql => [id, checksum(sql)] as const),
+          readMigrationFile(migrationsDirectory, id).then(
+            sql => [id, checksumMigrationSql(sql)] as const,
+          ),
         ]
       }),
     ),

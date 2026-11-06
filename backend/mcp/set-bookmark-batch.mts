@@ -101,9 +101,9 @@ export async function setBookmarkTargets(
     : groups
   return withRelationLimitAdmission(currentUser.id, admittedGroups, async () => {
     if (topicIndexes.length > 0 && !replay) {
-      let results: ImportTopicResult[]
+      let topicImportResults: ImportTopicResult[]
       try {
-        results = await importTopics(currentUser, getRequestContentProvenance(), names, {
+        topicImportResults = await importTopics(currentUser, getRequestContentProvenance(), names, {
           assertCanCreateTopicRecommendations: () =>
             assertCanContribute(currentUser, {
               membershipPlan: currentUser.membership_plan ?? null,
@@ -124,7 +124,7 @@ export async function setBookmarkTargets(
         )
       }
       topicIndexes.forEach((index, position) => {
-        imported.set(index, importResult(args.targets[index]!, results[position]!))
+        imported.set(index, importResult(args.targets[index]!, topicImportResults[position]!))
       })
     }
 

@@ -29,8 +29,12 @@ export async function writeEntityRelations(
 ): Promise<EntityRelation[]> {
   if (pairs.length === 0) return []
 
-  const objects = pairs.map(pair => pair.object)
-  await assertUrlObjectsAreValid(relation, objects, creator.id, options)
+  await assertUrlObjectsAreValid(
+    relation,
+    pairs.map(pair => pair.object),
+    creator.id,
+    options,
+  )
   const groups = groupPairsBySubject(pairs)
   await assertPostRelatedUrlsAllowedForSubjects(creator, relation, groups, options)
   const query = buildInsertQuery(relation, creator, pairs, options)

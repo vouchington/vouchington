@@ -176,12 +176,12 @@ export async function setPostSpamDetectionResults(
   postId: string,
   results: Array<{ signal: string; score: number; flagged: boolean; details?: unknown }>,
 ): Promise<void> {
-  const flagged = results.some(result => result.flagged)
+  const hasFlaggedSignal = results.some(result => result.flagged)
   await recordTestPostModerationDisposition({
     postId,
     source: 'spam_detection',
-    disposition: flagged ? 'review' : 'pass',
-    reasonCode: flagged ? 'spam_signal' : 'provider_pass',
+    disposition: hasFlaggedSignal ? 'review' : 'pass',
+    reasonCode: hasFlaggedSignal ? 'spam_signal' : 'provider_pass',
     evidence: {
       composite_score: results.reduce((sum, result) => sum + result.score, 0),
       signals: results.map(({ signal, score, flagged }) => ({ signal, score, flagged })),

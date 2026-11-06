@@ -36,8 +36,8 @@ export async function checkTransientRetryPolicy(root: string): Promise<string[]>
   }
   const yaml = paths.flatMap(path =>
     /\.ya?ml$/.test(path) &&
-    ['.github/workflows/', '.github/actions/', 'ci/no-mistakes-workflows/'].some(root =>
-      path.startsWith(root),
+    ['.github/workflows/', '.github/actions/', 'ci/no-mistakes-workflows/'].some(pathPrefix =>
+      path.startsWith(pathPrefix),
     )
       ? [read(path)]
       : [],

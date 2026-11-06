@@ -28,7 +28,7 @@ describe('registered MCP post outputs', () => {
     ]
     const postTools = ALL_TOOLS.filter(tool => tool.meta?.audience === 'user')
       .flatMap(tool => {
-        const group = groups.find(group => group.name === tool.schema.name)
+        const group = groups.find(candidateGroup => candidateGroup.name === tool.schema.name)
         const options = group?.options ?? [{ option: null, source: tool }]
         return options.map(({ option, source }) => ({
           name: option ? `${tool.schema.name}(${option})` : tool.schema.name,

@@ -138,7 +138,7 @@ export default async function AdminModlogPage({
             {data.results.map(result => {
               const action = data.moderator_actions[result.id]
               if (!action) return null
-              const actor = action.actor_user_id ? data.users[action.actor_user_id] : null
+              const actionActor = action.actor_user_id ? data.users[action.actor_user_id] : null
               return (
                 <tr
                   key={action.id}
@@ -152,7 +152,7 @@ export default async function AdminModlogPage({
                   </td>
                   <td className='px-4 py-3 text-sm'>
                     {action.actor_user_id
-                      ? getUserLabel(actor, t('shared.user.deletedUser'))
+                      ? getUserLabel(actionActor, t('shared.user.deletedUser'))
                       : t('extracted.modlog.page.system_7a4d2e63')}
                   </td>
                   <td className='px-4 py-3 text-sm font-mono text-xs'>{action.action_type}</td>

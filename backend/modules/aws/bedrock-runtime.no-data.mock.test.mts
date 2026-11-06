@@ -6,8 +6,8 @@ import './config.mts'
 import './credentials.mts'
 
 const { destroyedClients } = vi.hoisted(() => {
-  const destroyedClients: BedrockRuntimeClient[] = []
-  return { destroyedClients }
+  const clients: BedrockRuntimeClient[] = []
+  return { destroyedClients: clients }
 })
 
 vi.mock<typeof import('@aws-sdk/client-bedrock-runtime')>(

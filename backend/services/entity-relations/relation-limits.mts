@@ -142,16 +142,16 @@ export async function withAvailableRelationCapacity<T>(
   const allowed = new Set(state?.existingObjectIds ?? [])
   let remaining = state?.remaining ?? group.objectIds.length
   const previous = admittedRelations.getStore()?.get(key)
-  for (const id of group.objectIds.map(id => id.toLowerCase())) {
-    if (previous?.ids.has(id) && !allowed.has(id)) {
-      allowed.add(id)
+  for (const objectId of group.objectIds.map(id => id.toLowerCase())) {
+    if (previous?.ids.has(objectId) && !allowed.has(objectId)) {
+      allowed.add(objectId)
       remaining -= 1
     }
   }
-  for (const id of new Set(group.objectIds.map(id => id.toLowerCase()))) {
-    if (allowed.has(id)) continue
+  for (const objectId of new Set(group.objectIds.map(id => id.toLowerCase()))) {
+    if (allowed.has(objectId)) continue
     if (covered || remaining > 0) {
-      allowed.add(id)
+      allowed.add(objectId)
       remaining -= 1
     }
   }

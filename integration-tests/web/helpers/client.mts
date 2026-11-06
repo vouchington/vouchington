@@ -109,7 +109,7 @@ export class WebIntegrationClient {
         idempotent: options.idempotent,
         timeoutMs: options.timeoutMs,
         label: path,
-        acceptResponse: response => response.headers.has('x-request-id'),
+        acceptResponse: candidate => candidate.headers.has('x-request-id'),
       },
     )
 

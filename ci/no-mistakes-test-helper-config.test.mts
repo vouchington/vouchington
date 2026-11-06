@@ -28,7 +28,9 @@ type NoMistakesConfig = {
 describe('no-mistakes test-helper path config', () => {
   it('allows only literal first-layer test-helpers directories', async () => {
     const config = (await resolveConfig({ root: repoRoot, view: 'declared' })) as NoMistakesConfig
-    const rule = config.rules?.find(rule => rule.name === 'banned repository paths')
+    const rule = config.rules?.find(
+      candidateRule => candidateRule.name === 'banned repository paths',
+    )
     const expectedGlobs = [
       '*/*/**/test-helpers/**',
       ...BANNED_TEST_HELPER_DIRECTORY_NAMES.map(directory => `**/${directory}/**`),

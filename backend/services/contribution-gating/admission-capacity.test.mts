@@ -40,7 +40,7 @@ function dailyOnlyPolicy(globalLimit: number, typeLimit: number): ContributionDa
 describe('contribution admission capacity status', () => {
   it('counts daily-only imports in daily capacity but not either short window', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const dailyOnlyPolicy = {
+    const importedDailyOnlyPolicy = {
       kind: 'daily_only' as const,
       global: { limit: 2, windowSeconds: 86_400 },
       type: { limit: 2, windowSeconds: 86_400 },
@@ -62,7 +62,7 @@ describe('contribution admission capacity status', () => {
         idempotencyKey: dailyOnlyKey,
         intent: { request: crypto.randomUUID() },
         source: 'topic_recommendation',
-        policy: dailyOnlyPolicy,
+        policy: importedDailyOnlyPolicy,
         execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'created' })

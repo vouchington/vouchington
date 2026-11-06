@@ -41,7 +41,7 @@ export function useTurnstileToken(actionTag: string): UseTurnstileTokenReturn {
     actionTag,
     siteKey: getTurnstileSiteKey(runtimePublicConfig),
     enabled: !alwaysApprove,
-    onSuccess: token => setChallenge({ actionTag, token }),
+    onSuccess: challengeToken => setChallenge({ actionTag, token: challengeToken }),
     onExpire: () => setChallenge(null),
     onError: () => setChallenge(null),
   })

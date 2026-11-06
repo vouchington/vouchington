@@ -25,13 +25,13 @@ async function createObservedRenewingMembership(
   currentSku: { id: string; membership_provider_product_id: string },
   renewalSku: { membership_provider_product_id: string },
   providerApplicationId: string,
-  renewalEffectiveAt: Date,
+  effectiveAt: Date,
 ) {
   const membership = await createMembership({
     userId,
     plan: 'plus',
     skuId: currentSku.id,
-    expiresAt: renewalEffectiveAt,
+    expiresAt: effectiveAt,
     stripeSubscriptionId: `sub_renewal_${randomUUID()}`,
     providerEnvironment: 'production',
     providerApplicationId,
@@ -40,7 +40,7 @@ async function createObservedRenewingMembership(
     membership_id: membership.id,
     membership_provider_product_id: currentSku.membership_provider_product_id,
     renewal_membership_provider_product_id: renewalSku.membership_provider_product_id,
-    renewal_effective_at: renewalEffectiveAt,
+    renewal_effective_at: effectiveAt,
   })
   return { membership, ...observation }
 }

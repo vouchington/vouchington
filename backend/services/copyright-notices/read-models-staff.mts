@@ -50,9 +50,9 @@ export async function listCopyrightStaffQueue(
   if (queryOptions.query || queryOptions.client) {
     return withTransactionOptions(queryOptions, execute)
   }
-  await using transaction = await beginTransaction()
-  const result = await execute(transaction)
-  await transaction.commit()
+  await using ownedTransaction = await beginTransaction()
+  const result = await execute(ownedTransaction)
+  await ownedTransaction.commit()
   return result
 
   async function execute(transaction: TransactionQuery) {

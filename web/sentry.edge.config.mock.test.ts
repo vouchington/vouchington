@@ -2,11 +2,11 @@ import * as Sentry from '@sentry/nextjs'
 import { describe, expect, it, vi } from 'vitest'
 
 const { sentryInitCall, mockSentryInit } = vi.hoisted(() => {
-  const sentryInitCall: { options?: Parameters<typeof Sentry.init>[0] } = {}
+  const sentryInitState: { options?: Parameters<typeof Sentry.init>[0] } = {}
   return {
-    sentryInitCall,
+    sentryInitCall: sentryInitState,
     mockSentryInit: vi.fn<typeof Sentry.init>(options => {
-      sentryInitCall.options = options
+      sentryInitState.options = options
     }),
   }
 })

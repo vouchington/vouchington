@@ -91,7 +91,7 @@ export function optionArgs(option: string, args: Record<string, unknown> = {}) {
 
 function mcpConfigForTool(name: string) {
   const audience = getRegisteredToolByName(name)?.meta?.audience
-  const config = ALL_MCP_SERVER_CONFIGS.find(config => config.audience === audience)
+  const config = ALL_MCP_SERVER_CONFIGS.find(candidate => candidate.audience === audience)
   if (!config) throw new Error(`No MCP audience for test tool: ${name}`)
   return config
 }

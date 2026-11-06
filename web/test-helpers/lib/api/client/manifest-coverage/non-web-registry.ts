@@ -22,7 +22,7 @@ type CapturedClientCall = ManifestEndpoint
 type ClientApiMock = (path: string, bodyOrOptions?: unknown) => Promise<unknown>
 
 const { capturedClientCalls, mockedClientApi } = vi.hoisted(() => {
-  const capturedClientCalls: CapturedClientCall[] = []
+  const clientCalls: CapturedClientCall[] = []
 
   function capture(
     method: ManifestEndpoint['method'],
@@ -36,7 +36,7 @@ const { capturedClientCalls, mockedClientApi } = vi.hoisted(() => {
     } else if (bodyOrOptions !== undefined) {
       endpoint.requestBody = bodyOrOptions
     }
-    capturedClientCalls.push(endpoint)
+    clientCalls.push(endpoint)
     return Promise.resolve({})
   }
 
@@ -55,7 +55,7 @@ const { capturedClientCalls, mockedClientApi } = vi.hoisted(() => {
   }
 
   return {
-    capturedClientCalls,
+    capturedClientCalls: clientCalls,
     mockedClientApi: {
       get: vi.fn<ClientApiMock>((path, options) => capture('GET', path, options)),
       delete: vi.fn<ClientApiMock>((path, options) =>

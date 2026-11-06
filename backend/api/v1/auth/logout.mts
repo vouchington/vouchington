@@ -57,13 +57,13 @@ app.route('/api/v1/auth/logout').post(async ctx => {
         )
       }
     }
-  } catch (err) {
+  } catch (err_) {
     clearAuthenticationCookies(ctx)
     if (!fallbackRevoked)
       await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch((err: unknown) =>
         onError(err instanceof Error ? err : new Error(String(err))),
       )
-    throw err
+    throw err_
   }
 
   ctx.setStatus(204)

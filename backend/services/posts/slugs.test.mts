@@ -74,7 +74,6 @@ describe('createPostSlug', () => {
     await createPostSlug({ id: postId, title: 'Some Title' }, newSlug, { query })
     await query.commit()
 
-    const { postSlugExists } = await import('./get.mts')
     expect(await postSlugExists(newSlug)).toBe(true)
   })
 

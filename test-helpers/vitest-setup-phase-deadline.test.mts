@@ -27,7 +27,7 @@ describe('withSetupPhaseDeadline', () => {
       1,
     ).then(
       () => undefined,
-      (err: unknown) => err,
+      (err_: unknown) => err_,
     )
 
     expect(err).toBeInstanceOf(SetupPhaseDeadlineError)

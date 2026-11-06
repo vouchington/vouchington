@@ -157,11 +157,11 @@ describe('hostname-block operational retention references', () => {
     const now = new Date()
     const { root, child } = await (async () => {
       await using setup = await beginTransaction()
-      const root = await insertOperationalHostnameBlockForTest(setup, {
+      const rootBlock = await insertOperationalHostnameBlockForTest(setup, {
         feed: false,
         liftedAt: new Date(now.getTime() - 3 * 365 * DAY_MS),
       })
-      const child = await insertOperationalHostnameBlockForTest(setup, {
+      const childBlock = await insertOperationalHostnameBlockForTest(setup, {
         feed: false,
         liftedAt: null,
       })
@@ -169,10 +169,10 @@ describe('hostname-block operational retention references', () => {
         `/* attachLockedOperationalHostnameDescendantForTest */
          UPDATE url_hostname_blocks SET relation_cleanup_root_block_id = $1::uuid
          WHERE id = $2::uuid`,
-        [root.id, child.id],
+        [rootBlock.id, childBlock.id],
       )
       await setup.commit()
-      return { root, child }
+      return { root: rootBlock, child: childBlock }
     })()
     try {
       {

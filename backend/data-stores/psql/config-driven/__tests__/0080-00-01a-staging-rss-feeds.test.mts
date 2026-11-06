@@ -63,7 +63,7 @@ describe('0080-00-01a-staging-rss-feeds environment gate', () => {
       )
     }
     for (const statement of statements.filter(
-      statement => !hostnamePromotions.includes(statement),
+      candidateStatement => !hostnamePromotions.includes(candidateStatement),
     )) {
       expect(statement).toMatch(/^\s*INSERT INTO /i)
     }

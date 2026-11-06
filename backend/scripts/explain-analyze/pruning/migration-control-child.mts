@@ -56,8 +56,8 @@ try {
   await checkpoint('concurrent-application-runners')
   const { assertSerializedMigrationRunner } = await import('./migration-runner-fixture.mts')
   await assertSerializedMigrationRunner(alternate)
-} catch (err) {
-  errors.push(err)
+} catch (err_) {
+  errors.push(err_)
   failedPhase = phase
   try {
     await record('execution-failure', 'failed', { failedPhase })

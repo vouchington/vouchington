@@ -23,8 +23,8 @@ export function RecommendedTopicsAsideContent({
   const [dismissed, setDismissed] = useState<Set<string>>(
     () =>
       new Set(
-        initialTopics.reduce<string[]>((acc, t) => {
-          if (initialBookmarks[t.id]?.['dismiss_recommendation']) acc.push(t.id)
+        initialTopics.reduce<string[]>((acc, topic) => {
+          if (initialBookmarks[topic.id]?.['dismiss_recommendation']) acc.push(topic.id)
           return acc
         }, []),
       ),
@@ -32,15 +32,15 @@ export function RecommendedTopicsAsideContent({
   const [followed, setFollowed] = useState<Set<string>>(
     () =>
       new Set(
-        initialTopics.reduce<string[]>((acc, t) => {
-          if (initialBookmarks[t.id]?.['follow']) acc.push(t.id)
+        initialTopics.reduce<string[]>((acc, topic) => {
+          if (initialBookmarks[topic.id]?.['follow']) acc.push(topic.id)
           return acc
         }, []),
       ),
   )
   const blocked = new Set(
-    initialTopics.reduce<string[]>((acc, t) => {
-      if (initialBookmarks[t.id]?.['block']) acc.push(t.id)
+    initialTopics.reduce<string[]>((acc, topic) => {
+      if (initialBookmarks[topic.id]?.['block']) acc.push(topic.id)
       return acc
     }, []),
   )
@@ -91,7 +91,7 @@ export function RecommendedTopicsAsideContent({
   }
 
   const visibleTopics = initialTopics.filter(
-    t => !dismissed.has(t.id) && !followed.has(t.id) && !blocked.has(t.id),
+    topic => !dismissed.has(topic.id) && !followed.has(topic.id) && !blocked.has(topic.id),
   )
 
   return (

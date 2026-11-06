@@ -34,9 +34,9 @@ import { BACKGROUND_CPU_HANDLERS } from './handlers.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('background-cpu production routing through real GlideMQ', () => {
-  let queue: Queue | undefined
-  let worker: ReturnType<typeof createBackgroundCpuWorker> | undefined
-  let events: QueueEvents | undefined
+  let ownedQueue: Queue | undefined
+  let ownedWorker: ReturnType<typeof createBackgroundCpuWorker> | undefined
+  let ownedEvents: QueueEvents | undefined
   let reservation: ReturnType<typeof acquireContentAnalysisTestReservation> | undefined
   let pauseCleanup: (() => Promise<void>) | undefined
   let cleanup: () => Promise<void>
@@ -54,22 +54,22 @@ describe('background-cpu production routing through real GlideMQ', () => {
             const lease = await reservation
             await lease?.release()
           } finally {
-            worker = undefined
-            queue = undefined
-            events = undefined
+            ownedWorker = undefined
+            ownedQueue = undefined
+            ownedEvents = undefined
           }
         })
         closingResources.defer(async () => {
-          await queue?.close()
+          await ownedQueue?.close()
         })
         closingResources.defer(async () => {
-          await queue?.obliterate({ force: true })
+          await ownedQueue?.obliterate({ force: true })
         })
         closingResources.defer(async () => {
-          await events?.close()
+          await ownedEvents?.close()
         })
         closingResources.defer(async () => {
-          if (worker) await closeAndUnregisterGlideMQInstance(worker)
+          if (ownedWorker) await closeAndUnregisterGlideMQInstance(ownedWorker)
         })
         await Promise.allSettled(mutations)
         await pauseCleanup?.()
@@ -91,14 +91,14 @@ describe('background-cpu production routing through real GlideMQ', () => {
   ) {
     signal.throwIfAborted()
     const prefix = `${workerQueuePrefix}-background-cpu-routing-${randomUUID()}`
-    queue = new Queue(BACKGROUND_CPU_QUEUE_NAME, { connection: workerQueueConnection, prefix })
-    events = new QueueEvents(BACKGROUND_CPU_QUEUE_NAME, {
+    ownedQueue = new Queue(BACKGROUND_CPU_QUEUE_NAME, { connection: workerQueueConnection, prefix })
+    ownedEvents = new QueueEvents(BACKGROUND_CPU_QUEUE_NAME, {
       connection: workerQueueConnection,
       prefix,
       lastEventId: '0',
       blockTimeout: 1_000,
     })
-    worker = createBackgroundCpuWorker({
+    ownedWorker = createBackgroundCpuWorker({
       handlers: BACKGROUND_CPU_HANDLERS,
       domains,
       prefix,
@@ -106,10 +106,10 @@ describe('background-cpu production routing through real GlideMQ', () => {
       blockTimeout: 1_000,
       promotionInterval: 2_500,
     })
-    worker.on('error', () => undefined)
-    await Promise.all([worker.waitUntilReady(), events.waitUntilReady()])
+    ownedWorker.on('error', () => undefined)
+    await Promise.all([ownedWorker.waitUntilReady(), ownedEvents.waitUntilReady()])
     signal.throwIfAborted()
-    return { queue, events, worker }
+    return { queue: ownedQueue, events: ownedEvents, worker: ownedWorker }
   }
 
   describe('while content analysis is running', () => {

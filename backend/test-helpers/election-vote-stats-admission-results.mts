@@ -22,7 +22,7 @@ export async function completeOwnedElectionAdmissions(
     const jobs = await settleAll(attempts.map(item => item.job))
     if (jobs.some(job => !job)) throw new Error(`Missing actual creator job for ${id}`)
     const actualJobs = jobs.filter((job): job is NonNullable<typeof job> => job !== null)
-    for (const job of new Map(actualJobs.map(job => [job.id, job])).values()) {
+    for (const job of new Map(actualJobs.map(queuedJob => [queuedJob.id, queuedJob])).values()) {
       const result = await wait('entity', job.id)
       if (result.failed)
         throw new Error(`Creator job ${job.id} failed`, {
@@ -35,7 +35,7 @@ export async function completeOwnedElectionAdmissions(
   )
   const createdCounts = new Map<string, number>()
   for (const item of creation)
-    for (const id of item.ids.filter(id => targets.has(id)))
+    for (const id of item.ids.filter(candidateId => targets.has(candidateId)))
       createdCounts.set(id, (createdCounts.get(id) ?? 0) + 1)
   if (creation.length !== 2 || [...targets.keys()].some(id => createdCounts.get(id) !== 1))
     throw new Error(
@@ -52,7 +52,7 @@ export async function completeOwnedElectionAdmissions(
   )
   const voteCounts = new Map<string, number>()
   for (const item of votes)
-    for (const id of item.ids.filter(id => targets.has(id)))
+    for (const id of item.ids.filter(candidateId => targets.has(candidateId)))
       voteCounts.set(id, (voteCounts.get(id) ?? 0) + 1)
   const low = ready.targets.lowScoreId
   const high = ready.targets.highScoreId

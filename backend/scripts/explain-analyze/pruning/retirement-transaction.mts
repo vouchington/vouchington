@@ -63,18 +63,18 @@ export async function openRetirementTransaction(deadline: number) {
       const failures: unknown[] = []
       try {
         await Reflect.apply(dispose, transaction, [])
-      } catch (err) {
-        failures.push(err)
+      } catch (err_) {
+        failures.push(err_)
       }
       try {
         ownedClient.release(failures.length > 0)
-      } catch (err) {
-        failures.push(err)
+      } catch (err_) {
+        failures.push(err_)
       }
       try {
         await closePool()
-      } catch (err) {
-        failures.push(err)
+      } catch (err_) {
+        failures.push(err_)
       }
       if (failures.length === 1) throw failures[0]
       if (failures.length > 1)
@@ -111,15 +111,15 @@ export async function openRetirementTransaction(deadline: number) {
     if (client) {
       try {
         client.release(true)
-      } catch (err) {
-        failures.push(err)
+      } catch (err_) {
+        failures.push(err_)
       }
     }
     if (!poolClosed) {
       try {
         await closePool()
-      } catch (err) {
-        failures.push(err)
+      } catch (err_) {
+        failures.push(err_)
       }
     }
     if (failures.length === 1) throw err

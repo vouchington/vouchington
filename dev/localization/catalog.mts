@@ -149,8 +149,8 @@ function row(command: string, args: readonly string[]): Record<string, unknown> 
 }
 function value(args: readonly string[], flag: string): string | undefined {
   const index = args.indexOf(flag)
-  const value = index === -1 ? undefined : args[index + 1]
-  return value === undefined || value.startsWith('--') ? undefined : value
+  const argumentValue = index === -1 ? undefined : args[index + 1]
+  return argumentValue === undefined || argumentValue.startsWith('--') ? undefined : argumentValue
 }
 function required(args: readonly string[], flag: string): string {
   const result = value(args, flag)

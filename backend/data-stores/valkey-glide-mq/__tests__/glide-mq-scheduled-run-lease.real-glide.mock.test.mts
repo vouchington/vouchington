@@ -10,6 +10,29 @@ import { withScheduledRunLease } from '../scheduled-run-lease.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('scheduled run lease recovery', () => {
+  it('releases an admitted lease and propagates a bookkeeping failure', async () => {
+    const name = `lease-bookkeeping-failure-${crypto.randomUUID()}`
+    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
+    const leaseKey = `${base}:run:repeat`
+    const previousKey = `${leaseKey}:previous`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const job = await queue.add('work', {}, { jobId: 'scheduled-root' })
+    if (!job) throw new Error('Expected a scheduled root')
+    Object.assign(job, { schedulerName: 'repeat' })
+    try {
+      await workerQueueCommandClient.hset(previousKey, { invalid: 'previous-lease' })
+      await expect(withScheduledRunLease(name, job, { lockDuration: 20_000 })).rejects.toThrow(
+        /WRONGTYPE/,
+      )
+      expect(await workerQueueCommandClient.get(leaseKey)).toBeNull()
+      expect(await workerQueueCommandClient.get(previousKey)).toBeNull()
+    } finally {
+      await queue.obliterate({ force: true })
+      await workerQueueCommandClient.unlink([leaseKey, previousKey])
+      await queue.close()
+    }
+  })
+
   it('releases a scheduled batch lease when the batch processor fails', async () => {
     const name = `lease-batch-failure-${crypto.randomUUID()}`
     const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`

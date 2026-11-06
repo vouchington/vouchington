@@ -30,7 +30,7 @@ export function areaGateViolations(sources: readonly string[]): string[] {
         isAreaGateJob('Main CI (backend)', gate)
       )
         errors.push(`${workflow}: unrelated gate accepted`)
-      for (const other of workflows.filter(other => other.workflow !== workflow)) {
+      for (const other of workflows.filter(candidate => candidate.workflow !== workflow)) {
         if (isAreaGateJob(other.workflow, gate))
           errors.push(`${other.workflow}: accepts foreign gate ${gate}`)
       }

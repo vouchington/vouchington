@@ -212,12 +212,12 @@ describe('MCP route completeness from baseline facts', () => {
           .map(tool => tool.name)
           .toSorted(),
       ).toEqual(switched.toSorted())
-      for (const entry of sourceEntries.filter(
-        entry => entry.source.meta?.audience === config.audience,
+      for (const sourceEntry of sourceEntries.filter(
+        candidateSourceEntry => candidateSourceEntry.source.meta?.audience === config.audience,
       )) {
-        const published = on.find(tool => tool.name === entry.publicName)
+        const published = on.find(tool => tool.name === sourceEntry.publicName)
         expect(published).toBeDefined()
-        const expected = facts(entry.source, config.audience, entry.publicName)
+        const expected = facts(sourceEntry.source, config.audience, sourceEntry.publicName)
         expect(published!['_meta']!['voucha/requiredScopes'].toSorted()).toEqual(expected.scopes)
         expect(published!.annotations).toEqual(expected.annotations)
       }

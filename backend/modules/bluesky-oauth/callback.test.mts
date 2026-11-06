@@ -16,7 +16,7 @@ describe('completeBlueskyCallback', () => {
     const failure = await completeBlueskyCallback(
       async () => client,
       new URLSearchParams({ code: 'aborted' }),
-    ).catch((err: unknown) => err)
+    ).catch((err_: unknown) => err_)
     expect(failure).toMatchObject({
       status: 502,
       message: 'Bluesky OAuth provider request timed out',

@@ -48,11 +48,11 @@ function readTopicFiles(): TopicCsvFile[] {
 
 async function importerFailures(topicFiles: readonly TopicCsvFile[]): Promise<string[]> {
   const validator = await importTopicValidator()
-  const failures: string[] = []
+  const topicFailures: string[] = []
   for (const topicFile of topicFiles) {
     const headerRow = topicFile.rows[0]
     if (!headerRow) continue
-    failures.push(
+    topicFailures.push(
       ...unknownTopicColumnFailures(
         topicFile.file,
         validator.validateTopicHeaders(Object.keys(headerRow)),
@@ -65,14 +65,14 @@ async function importerFailures(topicFiles: readonly TopicCsvFile[]): Promise<st
     )
   }
   const shippedRows = topicFiles.flatMap(topicFile => topicFile.rows)
-  failures.push(
+  topicFailures.push(
     ...invalidTopicRowFailures(
       'catalog',
       shippedRows,
       validator.validateTopicRows(shippedRows).rows,
     ),
   )
-  return failures
+  return topicFailures
 }
 
 async function importTopicValidator(): Promise<TopicValidator> {

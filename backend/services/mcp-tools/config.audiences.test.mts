@@ -125,8 +125,8 @@ describe('MCP server audience isolation through HTTP', () => {
   )(
     '$target.audience rejects foreign $source.audience scopes at authorization',
     async ({ source, target }) => {
-      const scope = listScopesForAudience(source.audience, 'oauth').find(scope =>
-        scope.endsWith(':read'),
+      const scope = listScopesForAudience(source.audience, 'oauth').find(candidateScope =>
+        candidateScope.endsWith(':read'),
       )!
       await expect(
         createTestPendingOAuthAuthorization(user, { audience: target.audience, scope }),

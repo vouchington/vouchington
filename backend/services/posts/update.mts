@@ -7,7 +7,7 @@ import { recomputePostHackerNewsFlag } from './hacker-news-flags.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Post, UpdatePostChanges } from './types.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { createPostSlug } from './slugs.mts'
 import { getPostByAny } from './get.mts'
 import createHttpError from 'http-errors'
@@ -56,7 +56,7 @@ export const updatePost = async (
   let syncHashtagCategories = false
   async function updatePostInTransaction() {
     await using query = await beginTransaction()
-    async function updatePostRows(query: TransactionQuery) {
+    async function updatePostRows() {
       if (assessment.urls) {
         normalizedChanges = await persistPostLinkEdit(
           query,
@@ -183,7 +183,7 @@ export const updatePost = async (
       if (changes.url_id !== undefined) await recomputePostHackerNewsFlag(post.id, options)
       return getPostByAny(post.id, options)
     }
-    const result = await updatePostRows(query)
+    const result = await updatePostRows()
     await query.commit()
     return result
   }

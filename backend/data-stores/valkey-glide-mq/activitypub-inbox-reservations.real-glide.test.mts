@@ -145,8 +145,8 @@ describe('ActivityPub inbox reservations', () => {
       expect(job).toBeTruthy()
       const runningWorker = new Worker<{ secret: string }, void>(
         queueName,
-        async (job: Job<{ secret: string }, void>) => {
-          if (job.id === jobId) throw new Error('terminal signed-delivery failure')
+        async (runningJob: Job<{ secret: string }, void>) => {
+          if (runningJob.id === jobId) throw new Error('terminal signed-delivery failure')
         },
         { connection: workerQueueConnection, prefix, blockTimeout: 100 },
       )

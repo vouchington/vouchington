@@ -157,7 +157,7 @@ describe('allocateReversalCaseTargets with an immutable case cap', () => {
   })
 
   it('does not invent a provider observation when none was supplied', () => {
-    const [target] = allocateReversalCaseTargets(
+    const [selectedTarget] = allocateReversalCaseTargets(
       {
         currency: 'usd',
         providerApplicationId: 'voucha-web',
@@ -177,8 +177,8 @@ describe('allocateReversalCaseTargets with an immutable case cap', () => {
       ],
       new Map(),
     )
-    expect(target).toMatchObject({ amountMinorUnits: 500, qualifyingAmountMinorUnits: 500 })
-    expect(target).not.toHaveProperty('providerObservedAmountMinorUnits')
+    expect(selectedTarget).toMatchObject({ amountMinorUnits: 500, qualifyingAmountMinorUnits: 500 })
+    expect(selectedTarget).not.toHaveProperty('providerObservedAmountMinorUnits')
   })
 
   it('subtracts succeeded external refunds from the immutable case cap', () => {
@@ -245,9 +245,11 @@ describe('allocateReversalCaseTargets with an immutable case cap', () => {
       new Map(),
     )
 
-    expect(targets.map(target => target.chargeId)).toEqual(['ch_family_first'])
-    expect(targets.map(target => target.amountMinorUnits)).toEqual([1])
-    expect(targets.reduce((total, target) => total + target.amountMinorUnits, 0)).toBe(1)
+    expect(targets.map(allocatedTarget => allocatedTarget.chargeId)).toEqual(['ch_family_first'])
+    expect(targets.map(allocatedTarget => allocatedTarget.amountMinorUnits)).toEqual([1])
+    expect(
+      targets.reduce((total, allocatedTarget) => total + allocatedTarget.amountMinorUnits, 0),
+    ).toBe(1)
   })
 
   it('keeps a later payment refund out of an earlier fixed allocation', () => {

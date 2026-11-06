@@ -31,7 +31,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const community: Community = {
+const communityFixture: Community = {
   __entity_type: 'community',
   id: communities[0]!.id,
   name: communities[0]!.name,
@@ -75,7 +75,7 @@ function ActiveSettings({ community }: { community: Community }) {
 }
 
 export const Active: Story = {
-  args: { community },
+  args: { community: communityFixture },
   render: args => <ActiveSettings community={args.community} />,
 }
 
@@ -98,7 +98,7 @@ function ArchivedSettings({ community }: { community: Community }) {
 export const Archived: Story = {
   args: {
     community: {
-      ...community,
+      ...communityFixture,
       archived_at: '2026-06-01T00:00:00.000Z',
       archived_by_id: storyCurrentUser.id,
     },

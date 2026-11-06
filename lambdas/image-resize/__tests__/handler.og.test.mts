@@ -77,7 +77,10 @@ describe('handler.og', () => {
         ),
       captureCacheWriteError: vi.fn<(error: unknown) => void>(),
       authorizeDependencies: vi.fn<LambdaHandlerDependencies['authorizeDependencies']>(
-        async dependencies => ({ states: dependencies.map(() => 'unknown'), cacheable: true }),
+        async mediaDependencies => ({
+          states: mediaDependencies.map(() => 'unknown'),
+          cacheable: true,
+        }),
       ),
     }
 

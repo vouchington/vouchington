@@ -51,7 +51,7 @@ describe('migration initializer fault project', () => {
       readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8'),
     ) as { jobs: Record<string, { steps: Array<{ name?: string; run?: string }> }> }
     const step = workflow.jobs['backend-tests']!.steps.find(
-      step => step.name === 'Run backend tests',
+      candidate => candidate.name === 'Run backend tests',
     )
     expect(workflowStepScript(step?.run)).toContain(
       '--project backend-mocks --project backend-migration-initializers ',

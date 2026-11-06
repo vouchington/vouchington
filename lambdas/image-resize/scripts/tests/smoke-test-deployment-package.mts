@@ -110,12 +110,12 @@ function signedOgEvent() {
 
 // Each invocation is a fresh process, like a cold start.
 function invokePackagedHandler(
-  root: string,
+  scratchRoot: string,
   taskDir: string,
   event: ReturnType<typeof signedOgEvent>,
   expectedStatus: number,
 ): HandlerResponse {
-  const responsePath = join(root, `response-${expectedStatus}.json`)
+  const responsePath = join(scratchRoot, `response-${expectedStatus}.json`)
   const program = `
     const { writeFileSync } = await import('node:fs')
     const { handler } = await import(${JSON.stringify(pathToFileURL(join(taskDir, 'index.mjs')).href)})
