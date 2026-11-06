@@ -38,4 +38,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_copy_rss_feed_item_source_story_id`: `CREATE TRIGGER trigger_copy_rss_feed_item_source_story_id BEFORE INSERT OR UPDATE OF story_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_copy_rss_feed_item_source_story_id()`
+- `trigger_copy_rss_feed_item_source_story_id`: `CREATE TRIGGER trigger_copy_rss_feed_item_source_story_id BEFORE INSERT OR UPDATE OF story_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_ensure_rss_feed_item_source_story_id()`
