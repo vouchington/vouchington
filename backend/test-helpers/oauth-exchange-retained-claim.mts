@@ -18,6 +18,13 @@ import {
   type createOAuthActorCleanupReceipt,
 } from './oauth-exchange-actor-owner.mts'
 
+/**
+ * `Job.retry` parks the failed job until the worker's next promotion tick.
+ * Five receipts and the unarmed continuation's second worker share one test
+ * budget, so a missed tick stays short.
+ */
+const retainedClaimPromotionIntervalMs = 50
+
 /** Real failed job/claim join before recovery and actual public retry; never infer admission from a requested bulk position. */
 export async function recoverTestRetainedOAuthClaim(
   authorizationId: string,
@@ -65,7 +72,7 @@ export async function recoverTestRetainedOAuthClaim(
               throw err
             }
           },
-          { ...options, blockTimeout: 100, promotionInterval: 1000 },
+          { ...options, blockTimeout: 100, promotionInterval: retainedClaimPromotionIntervalMs },
         ),
     )
     firstWorker.on('error', err => {
@@ -120,7 +127,7 @@ export async function recoverTestRetainedOAuthClaim(
             name,
             (job: Job<OAuthAuthorizationExchangeJobData>) =>
               owner.run(() => processOAuthAuthorizationExchangeJob(job)),
-            { ...options, blockTimeout: 100, promotionInterval: 1000 },
+            { ...options, blockTimeout: 100, promotionInterval: retainedClaimPromotionIntervalMs },
           ),
       )
       secondWorker.on('error', err => {
