@@ -1,4 +1,5 @@
 import type { AccountType } from '@ts-shared/utils/account-type'
+import type { HackerNewsReferenceCounts } from '@/types/hacker-news'
 /* oxlint-disable max-lines -- community API response contracts stay colocated for cross-fixture exactness checks */
 import type * as Api from './shared'
 import type { PublicUrl } from './urls-onboarding-and-trends'
@@ -88,6 +89,7 @@ export interface CommunityPostsResponseBody {
   pinned_post_ids?: string[]
   communities?: Record<string, Pick<Community, 'id' | 'name' | 'slug'>>
   post_link_embeds?: Record<string, UrlEmbed>
+  post_hacker_news_references?: Record<string, HackerNewsReferenceCounts>
 }
 
 export type {
