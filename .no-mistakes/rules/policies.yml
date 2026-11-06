@@ -4589,7 +4589,7 @@
 - name: production exports are not kept only for tests
   rule: production-exports-only-used-by-tests
   scope: repository
-  severity: advisory
+  severity: error
   options:
     ignoreExportsUsedInFile: true
     productionRoots:
