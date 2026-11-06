@@ -240,8 +240,14 @@ async function readEngagementRecipients(
             OR s.claimed_at >= CURRENT_TIMESTAMP - ${claimHours}::integer * INTERVAL '1 hour'
           )
       )
-      AND (${userIds ?? null}::uuid[] IS NULL OR u.id = ANY(${userIds ?? null}::uuid[]))
-    ORDER BY (
+    `,
+    )
+  // A null array is not a filter. Binding `$1 IS NULL OR id = ANY($2)` makes a generic
+  // plan treat the page as selective, then coin-flip the follow-table join.
+  if (userIds !== undefined) query.append(sql` AND u.id = ANY(${userIds}::uuid[])`)
+  query
+    .append(
+      sql` ORDER BY (
       SELECT s.claimed_at
       FROM user_engagement_email_sends s
       WHERE s.user_id = u.id AND s.email_type = `,
