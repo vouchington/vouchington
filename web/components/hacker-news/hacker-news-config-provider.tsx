@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { getHackerNewsConfigClient } from '@/lib/api/client/hacker-news-config'
 import type { HackerNewsConfig } from '@/lib/hacker-news-config'
@@ -14,21 +14,28 @@ export function HackerNewsConfigProvider({
   initialConfig: HackerNewsConfig
   children: ReactNode
 }) {
-  const [config, setConfig] = useState(initialConfig)
-  const current = useRef(initialConfig)
+  const [snapshot, setSnapshot] = useState({ initialConfig, config: initialConfig })
+  if (
+    snapshot.initialConfig.references_visible !== initialConfig.references_visible ||
+    snapshot.initialConfig.post_time_range_cap !== initialConfig.post_time_range_cap
+  ) {
+    setSnapshot({ initialConfig, config: initialConfig })
+  }
+  const config = snapshot.config
   const router = useRouter()
   useEffect(() => {
     let active = true
+    let current = initialConfig
     async function refresh() {
       try {
         const next = await getHackerNewsConfigClient()
         if (!active) return
         if (
-          next.references_visible !== current.current.references_visible ||
-          next.post_time_range_cap !== current.current.post_time_range_cap
+          next.references_visible !== current.references_visible ||
+          next.post_time_range_cap !== current.post_time_range_cap
         ) {
-          current.current = next
-          setConfig(next)
+          current = next
+          setSnapshot({ initialConfig, config: next })
           router.refresh()
         }
       } catch {
@@ -43,7 +50,7 @@ export function HackerNewsConfigProvider({
       active = false
       clearInterval(timer)
     }
-  }, [router])
+  }, [router, initialConfig])
   return (
     <HackerNewsConfigContext.Provider value={config}>{children}</HackerNewsConfigContext.Provider>
   )

@@ -1,5 +1,6 @@
 import '@/test-helpers/i18n/mock-json-messages'
-import { act, render, screen } from '@testing-library/react'
+import { useState } from 'react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { HackerNewsConfigProvider } from '../hacker-news-config-provider'
@@ -41,6 +42,44 @@ describe('Hacker News runtime visibility', () => {
     expect(screen.queryByText('Seen on Hacker News · 1')).not.toBeInTheDocument()
     expect(nav.refresh).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenCalledOnce()
+    fetchMock.mockRestore()
+  })
+})
+
+function PersistentPlayer() {
+  const [playing, setPlaying] = useState(false)
+  return (
+    <button
+      type='button'
+      onClick={() => setPlaying(true)}
+    >
+      {playing ? 'Playing episode' : 'Play episode'}
+    </button>
+  )
+}
+
+describe('server configuration refresh', () => {
+  it('updates server configuration without resetting descendant state', () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}))
+    const view = render(
+      <HackerNewsConfigProvider
+        initialConfig={{ references_visible: true, post_time_range_cap: '1y' }}
+      >
+        <PersistentPlayer />
+        <HackerNewsFilterToggle />
+      </HackerNewsConfigProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Play episode' }))
+    view.rerender(
+      <HackerNewsConfigProvider
+        initialConfig={{ references_visible: false, post_time_range_cap: '1m' }}
+      >
+        <PersistentPlayer />
+        <HackerNewsFilterToggle />
+      </HackerNewsConfigProvider>,
+    )
+    expect(screen.getByRole('button', { name: 'Playing episode' })).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
     fetchMock.mockRestore()
   })
 })

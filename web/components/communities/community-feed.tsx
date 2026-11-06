@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { HackerNewsReferencesProvider } from '@/components/hacker-news/hacker-news-references-context'
 import { Pin } from 'lucide-react'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -40,6 +41,7 @@ export function CommunityFeed({
   const posts = mergeRecords(pages, page => page.posts)
   const metrics = mergeRecords(pages, page => page.posts_metrics)
   const communities = mergeRecords(pages, page => page.communities ?? {})
+  const hackerNewsReferences = mergeRecords(pages, page => page.post_hacker_news_references ?? {})
   const linkEmbeds = mergeRecords(pages, page => page.post_link_embeds ?? {})
 
   const pinnedPosts = pinnedPostIds.flatMap(id => (data.posts[id] ? [data.posts[id]] : []))
@@ -66,7 +68,7 @@ export function CommunityFeed({
   }
 
   return (
-    <>
+    <HackerNewsReferencesProvider references={hackerNewsReferences}>
       {contributeActions}
       {pinnedPosts.length > 0 && (
         <div className='space-y-3'>
@@ -118,7 +120,7 @@ export function CommunityFeed({
           })}
         </div>
       </InfiniteScroll>
-    </>
+    </HackerNewsReferencesProvider>
   )
 }
 

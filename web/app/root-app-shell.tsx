@@ -67,10 +67,7 @@ export function RootAppShell({
         catalog={uiMessages}
       >
         <RuntimePublicConfigProvider config={runtimePublicConfig}>
-          <HackerNewsConfigProvider
-            key={`${hackerNewsConfig.references_visible}:${hackerNewsConfig.post_time_range_cap}`}
-            initialConfig={hackerNewsConfig}
-          >
+          <HackerNewsConfigProvider initialConfig={hackerNewsConfig}>
             <ThemeProvider>
               <TooltipProvider delayDuration={0}>
                 <ListStyleProvider>
