@@ -7,6 +7,8 @@ import {
 import { reconcileStoryPostRelatedUrlProjection } from '@services/stories/story-post-related-url-projection'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { continueAfterFailure } from '../scenario-failures.mts'
+import { runPostUrlCapacityScenarios } from './post-related-url-capacity.mts'
 import {
   seedStoryProjectionDispatcherWitness,
   removeStoryProjectionDispatcherWitness,
@@ -14,6 +16,8 @@ import {
 
 /** Mutating behavioral witness: run once, outside EXPLAIN's captured statement replay. */
 export async function runStoryProjectionWorkScenarios(): Promise<void> {
+  await continueAfterFailure(runPostUrlCapacityScenarios.name, runPostUrlCapacityScenarios)
+
   console.log('Running: story-projection-global-dispatcher')
   const fixture = await seedStoryProjectionDispatcherWitness()
   const [firstId, secondId, activeId] = fixture.postIds
@@ -50,6 +54,20 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
     await releaseStoryPostRelatedUrlProjectionWork(reclaimed)
     await releaseStoryPostRelatedUrlProjectionWork(rotated)
     await releaseStoryPostRelatedUrlProjectionWork(heldSecond)
+
+    // Each empty snapshot first completes eligibility without publishing or pruning.
+    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
+      processed: 0,
+      continue: true,
+    })
+    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
+      processed: 0,
+      continue: true,
+    })
+    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
+      processed: 0,
+      continue: true,
+    })
 
     // NULL source/relation high-water marks are genuine empty snapshots, not skipped effects.
     assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
@@ -126,9 +144,9 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
         {
           kind: 'usesIndexes',
           indexes: ['idx_story_post_relate_url_project_jobs__last_claimed_at_post_id'],
-          noSort: true,
         },
         { kind: 'maxProcessedRows', relation: 'story_post_related_url_projection_jobs', max: 4 },
+        { kind: 'custom', name: 'storyProjectionClaimCandidates' },
       ],
       seededRows: { story_post_related_url_projection_jobs: 2000 },
     })

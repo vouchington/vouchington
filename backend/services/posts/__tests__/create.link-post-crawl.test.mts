@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { relationLimitsConfig } from '@services/entity-relations/relation-limits'
+import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
+import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { createPost } from '../create.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
+  getEntityRelation,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import {
@@ -70,6 +75,30 @@ describe('create.link-post-crawl', () => {
     await expect(getTestPostCreationSourceUrlId(post.id)).resolves.toBe(sourceUrlId)
 
     expect(await crawledUrlIds(ownedUrlIds)).toContain(canonicalUrlId)
+  })
+
+  it('counts the creation source URL against the related URL limit', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(relationLimitsConfig, { post_related_url: 1 }),
+    )
+    const canonicalUrlId = await createTestUrlWithHostname()
+    const { urlString } = await createTestRedirectUrl({ canonicalUrlId })
+    const sourceUrlId = (await getUrlByAnyCached(urlString))!.id
+    const otherUrlId = await createTestUrlWithHostname()
+    ownedUrlIds.push(canonicalUrlId, sourceUrlId, otherUrlId)
+    const post = await createPost(user, WEB_PROVENANCE, { post_type: 'link', url: urlString })
+    const relation = getEntityRelationMetadataOrThrow({
+      subjectType: 'post',
+      predicate: 'related',
+      objectType: 'url',
+    })
+    expect(
+      await getEntityRelation('relation__post__related__url', post.id, sourceUrlId),
+    ).toHaveLength(1)
+    await expect(
+      upsertEntityRelation(user, relation, { id: post.id }, [{ id: otherUrlId }]),
+    ).rejects.toMatchObject({ status: 409, code: 'RELATION_LIMIT_REACHED' })
   })
 
   it('AC#2: enqueues recovery crawl work for a link post created with a pre-existing url_id', async () => {

@@ -65,7 +65,8 @@ export async function runRelationPublicationMutation<
     if (topicIds.length > 0) await lockTopicRssFeedAttachmentLifecycles(query, topicIds)
     const capturePublication = options?.capturePublication !== false
     const postScopeIds = [
-      ...(capturePublication && isPostScopedPublicationRelationTable(relationTable)
+      ...((capturePublication || relationTable === 'relation__post__related__url') &&
+      isPostScopedPublicationRelationTable(relationTable)
         ? subjectIds
         : []),
       ...(options?.postMutationGuard?.postIds ?? []),

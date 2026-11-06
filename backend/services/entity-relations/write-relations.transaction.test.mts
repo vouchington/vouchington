@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import '@voucha/test-helpers/entity-url-guard-registrations'
 import {
   beginTransaction,
   createTestPost,
@@ -11,6 +12,8 @@ import {
 } from '@voucha/test-helpers'
 import { createEntityRelationElectionTarget } from '../elections-votes/entity-relation/target.mts'
 import { getEntityRelationElectionByTargetCachedBatch } from '../entity-fetch/get.mts'
+import { lockPostPublicationPostScopes } from '@services/post-publication'
+import { assertPostRelatedUrlsAllowed } from './assert-post-related-urls-allowed.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import {
   insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction,
@@ -155,6 +158,13 @@ async function rollbackRelatedUrlRelationWrite(
   urlId: string,
 ): Promise<void> {
   await using query = await beginTransaction()
+  await lockPostPublicationPostScopes(query, [postId])
+  const relation = getEntityRelationMetadataOrThrow({
+    subjectType: 'post',
+    predicate: 'related',
+    objectType: 'url',
+  })
+  await assertPostRelatedUrlsAllowed(creator, relation, { id: postId }, [{ id: urlId }], { query })
   const written = await insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction(
     query,
     creator,

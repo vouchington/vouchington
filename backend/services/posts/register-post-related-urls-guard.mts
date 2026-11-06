@@ -1,4 +1,5 @@
 import type { BasicUser } from '@voucha/types/entities/user'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { registerPostRelatedUrlsGuard } from '@services/entity-relations/post-related-urls-guard-registry'
 import { assertCommunityNoLinksAllowed } from '@services/communities/restrictions/enforce'
 import { getPostByAny } from './get.mts'
@@ -7,8 +8,9 @@ async function guardPostRelatedUrls(
   creator: BasicUser,
   postId: string,
   urlIds: string[],
+  options?: QueryOptions,
 ): Promise<void> {
-  const post = await getPostByAny(postId)
+  const post = await getPostByAny(postId, options)
   const communityId = post?.community_id
   if (!communityId) return
 
@@ -17,6 +19,7 @@ async function guardPostRelatedUrls(
       assertCommunityNoLinksAllowed({
         communityId,
         currentUser: creator,
+        options,
         updates: { url_id: urlId },
       }),
     ),

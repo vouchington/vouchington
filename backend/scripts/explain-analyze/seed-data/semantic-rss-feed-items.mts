@@ -3,6 +3,7 @@ import { seedUuid } from './common.mts'
 
 const SEMANTIC_RSS_ITEM_COUNT = 256
 const SEMANTIC_STORY_PAIR_COUNT = 32
+const UNLINKED_STORY_COUNT = 1002
 
 /**
  * Adds a bounded, deterministic vector-search cohort to the normal RSS seed.
@@ -25,6 +26,13 @@ async function seedSemanticStories(query: TransactionQuery): Promise<void> {
   const rows: string[] = []
   for (let index = 0; index < SEMANTIC_STORY_PAIR_COUNT; index++) {
     values.push(seedUuid(100_000 + index, '17'), `Seed semantic story ${index}`)
+    const base = values.length - 1
+    rows.push(`($${base}::uuid, $${base + 1}::text)`)
+  }
+  // Keep point and relation lookups selective against a representative story corpus.
+  // These stories intentionally have no post, RSS item, or official-item links.
+  for (let index = 0; index < UNLINKED_STORY_COUNT; index++) {
+    values.push(seedUuid(300_000 + index, '17'), `Seed unlinked story ${index}`)
     const base = values.length - 1
     rows.push(`($${base}::uuid, $${base + 1}::text)`)
   }

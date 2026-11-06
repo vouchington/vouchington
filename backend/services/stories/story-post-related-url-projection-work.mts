@@ -41,8 +41,10 @@ export async function markStoryPostRelatedUrlProjection(
           sweep_upper_bound_relation_id = EXCLUDED.sweep_upper_bound_relation_id,
           relation_snapshot_at = EXCLUDED.relation_snapshot_at,
           cursor_source_id = NULL,
+          eligibility_completed_at = NULL,
           source_completed_at = NULL,
           cursor_prune_id = NULL,
+          limit_reached_capacity = NULL,
           lease_token = NULL, leased_at = NULL, lease_expires_at = NULL`,
     [
       postId,
@@ -68,28 +70,10 @@ export async function markStoryPostRelatedUrlProjection(
   )
 }
 
-export async function claimStoryPostRelatedUrlProjectionWork(): Promise<ProjectionWork | null> {
-  const { rows } = await write<ProjectionWork>(
-    `/* claimStoryPostRelatedUrlProjection */
-      WITH available AS (
-        SELECT post_id FROM story_post_related_url_projection_jobs
-        WHERE lease_expires_at IS NULL OR lease_expires_at <= clock_timestamp()
-        ORDER BY last_claimed_at NULLS FIRST, post_id LIMIT 1
-      )
-      UPDATE story_post_related_url_projection_jobs work
-      SET lease_token = uuidv7(), leased_at = clock_timestamp(),
-          last_claimed_at = clock_timestamp(),
-          lease_expires_at = clock_timestamp() + ($1::integer * INTERVAL '1 second')
-      FROM available
-      WHERE work.post_id = available.post_id
-        AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= clock_timestamp())
-      RETURNING work.post_id, work.story_id, work.generation, work.sweep_upper_bound_source_id,
-        work.sweep_upper_bound_relation_id, work.relation_snapshot_at, work.cursor_source_id,
-        work.source_completed_at, work.cursor_prune_id, work.lease_token`,
-    [LEASE_SECONDS],
-  )
-  return rows[0] ?? null
-}
+export {
+  claimStoryPostRelatedUrlProjectionWork,
+  hasClaimableStoryPostRelatedUrlProjectionWork,
+} from './story-post-related-url-projection-claim.mts'
 
 export async function releaseStoryPostRelatedUrlProjectionWork(
   work: ProjectionWork,
@@ -116,17 +100,6 @@ export async function renewStoryPostRelatedUrlProjectionWorkLease(
     [LEASE_SECONDS, work.post_id, work.generation, work.lease_token],
   )
   return rowCount === 1
-}
-
-/** Checks for other unleased durable jobs before the dispatcher schedules one bounded follow-up. */
-export async function hasClaimableStoryPostRelatedUrlProjectionWork(): Promise<boolean> {
-  const { rows } = await write(
-    `/* hasClaimableStoryPostRelatedUrlProjection */
-      SELECT 1 FROM story_post_related_url_projection_jobs
-      WHERE lease_expires_at IS NULL OR lease_expires_at <= clock_timestamp()
-      LIMIT 1`,
-  )
-  return rows.length > 0
 }
 
 export async function isStoryPostRelatedUrlProjectionWorkCurrent(

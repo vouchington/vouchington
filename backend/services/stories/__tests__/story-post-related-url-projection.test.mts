@@ -51,7 +51,7 @@ describe('story post related URL projection', () => {
       let maxPageSize = 0
       let observedReceiptCount: number | undefined
       const iterationLimit =
-        Math.ceil(itemCount / getStoriesWorkLimit('post_related_url_projection_page_size')) + 10
+        2 * Math.ceil(itemCount / getStoriesWorkLimit('post_related_url_projection_page_size')) + 10
       for (let iteration = 0; iteration < iterationLimit; iteration += 1) {
         const result = await processOwnedStoryProjectionPage(post.id)
         maxPageSize = Math.max(maxPageSize, result.processed)
@@ -65,7 +65,7 @@ describe('story post related URL projection', () => {
       expect(maxPageSize).toBeLessThanOrEqual(
         getStoriesWorkLimit('post_related_url_projection_page_size'),
       )
-      expect(processed).toBe(itemCount)
+      expect(processed).toBe(2 * itemCount)
       expect(observedReceiptCount).toBe(1)
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([url!.id])
       await expect(getTestStoryPostProjectionReceiptCount(post.id)).resolves.toBe(0)

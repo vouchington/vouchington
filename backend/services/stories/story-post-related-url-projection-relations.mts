@@ -1,3 +1,4 @@
+import { pruneObsoleteStoryPostRelatedUrlsForReplacement } from './story-post-related-url-projection-replacements.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { assertPostRelatedUrlsAllowed } from '@services/entity-relations/assert-post-related-urls-allowed'
@@ -10,11 +11,10 @@ import '@services/elections-votes/entity-relation/register-election-vote-handler
 import '@services/posts/register-post-related-urls-guard'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { getSystemUserByUsername } from '@services/users/system-users'
-import { containsReferralLinks } from '@services/referral-program-link-validations/contains-referral-links'
+import { findUnsafeStoryPostRelatedUrlProjectionUrls } from './story-post-related-url-projection-replacement-safety.mts'
 import { markStoryPostRelatedUrlProjectionInvalidationRequired } from './story-post-related-url-projection-invalidation.mts'
 import {
   lockPostScopeAndCheckProjectionWork,
-  lockProjectionEligibilityAndFindBlockedUrls,
   recordProjectionCrawlRequirements,
 } from './story-post-related-url-projection-relation-safety.mts'
 import type { ProjectionWork, SourceRow } from './story-post-related-url-projection-types.mts'
@@ -100,32 +100,37 @@ async function writePendingRelations(work: ProjectionWork, rows: SourceRow[]): P
   } as never
   const objects: Array<{ id: string }> = []
   for (const row of rows) objects.push({ id: row.url_id })
-  await assertPostRelatedUrlsAllowed(creator, relation, { id: work.post_id }, objects)
   await using transactionQuery = await beginTransaction()
   await transactionQuery(
     `/* markStoryPostRelatedUrlProjectionRelationWrite */
         SELECT set_config('voucha.story_post_related_url_projection_write', 'true', true)`,
   )
-  const blockedUrlIds = await lockProjectionEligibilityAndFindBlockedUrls(
+  const ineligibleUrlIds = await findUnsafeStoryPostRelatedUrlProjectionUrls(
     transactionQuery,
-    sourceRowUrlIds(rows),
+    work.post_id,
+    rows,
   )
   if (!(await lockPostScopeAndCheckProjectionWork(transactionQuery, work))) return false
-  const sourceUrls: string[] = []
-  for (const row of rows) sourceUrls.push(row.url)
-  const { matched_urls: referralMatches } = await containsReferralLinks(sourceUrls, {
-    query: transactionQuery,
-  })
-  const referralUrls = new Set<string>()
-  for (const match of referralMatches) referralUrls.add(match.url)
-  const ineligibleUrlIds = new Set(blockedUrlIds)
-  for (const row of rows) {
-    if (referralUrls.has(row.url)) ineligibleUrlIds.add(row.url_id)
-  }
   const allowedUrlIds: string[] = []
   for (const object of objects) {
     if (!ineligibleUrlIds.has(object.id)) allowedUrlIds.push(object.id)
   }
+  const ineligiblePageUrlIds = new Set(
+    objects.map(object => object.id).filter(id => ineligibleUrlIds.has(id)),
+  )
+  if (ineligiblePageUrlIds.size > 0)
+    await recordProjectionCrawlRequirements(transactionQuery, work, [], ineligiblePageUrlIds)
+  // ast-grep-ignore: no-three-sequential-awaits -- The single capacity check must observe obsolete-row removal before the prevalidated insert on this locked transaction.
+  await pruneObsoleteStoryPostRelatedUrlsForReplacement(transactionQuery, work, storyTeller.id, [
+    ...ineligibleUrlIds,
+  ])
+  await assertPostRelatedUrlsAllowed(
+    creator,
+    relation,
+    { id: work.post_id },
+    allowedUrlIds.map(id => ({ id })),
+    { query: transactionQuery },
+  )
   const internalRelations = await insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction(
     transactionQuery,
     creator,
@@ -140,12 +145,7 @@ async function writePendingRelations(work: ProjectionWork, rows: SourceRow[]): P
   await recordPostRelatedUrlPublicationChanges(transactionQuery, newlyActiveSubjectIds)
   if (newlyActiveSubjectIds.length > 0)
     await markStoryPostRelatedUrlProjectionInvalidationRequired(transactionQuery, work)
-  await recordProjectionCrawlRequirements(
-    transactionQuery,
-    work,
-    internalRelations,
-    ineligibleUrlIds,
-  )
+  await recordProjectionCrawlRequirements(transactionQuery, work, internalRelations, new Set())
   await transactionQuery.commit()
   await Promise.all([
     maintainBookmarkBloomForRelations(relation, internalRelations),

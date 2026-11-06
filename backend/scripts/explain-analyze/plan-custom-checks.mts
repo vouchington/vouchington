@@ -22,6 +22,7 @@ import {
 } from './plan-custom/search-communities.mts'
 import { assertSemanticPostCandidatePlan } from './plan-custom/semantic-post.mts'
 import { assertStoryMemberPagePlan } from './plan-custom/story-member-pages.mts'
+import { assertStoryProjectionClaimCandidates } from './plan-custom/story-projection-claim.mts'
 import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-custom/topic-viewer-counts.mts'
 import { assertTrendingCommunitiesIsCandidateBounded } from './plan-custom/trending-communities.mts'
 import { assertCorePlanCheck } from './plan-custom/core-special.mts'
@@ -51,6 +52,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   searchCommunityMemberCandidates: assertSearchCommunityMemberCandidates,
   semanticPost: assertSemanticPostCandidatePlan,
   storyMemberPages: assertStoryMemberPagePlan,
+  storyProjectionClaimCandidates: assertStoryProjectionClaimCandidates,
   topicViewerCandidateBind: assertTopicViewerCountsDiscussionsUsesCandidateBind,
   trendingCommunities: assertTrendingCommunitiesIsCandidateBounded,
   universalTopicCandidates: result => assertCorePlanCheck('universalTopicCandidates', result),

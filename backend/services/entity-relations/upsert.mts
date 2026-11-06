@@ -16,8 +16,10 @@ import {
   toPublicEntityRelations,
 } from './upsert-helpers.mts'
 import type { TransactionQuery } from '@data-stores/psql'
-import { assertEntityRelationUpsertAllowed } from './assert-upsert-allowed.mts'
-import { assertPublisherTypeObjectsAreValidInTransaction } from './assert-publisher-type-relation.mts'
+import {
+  assertEntityRelationUpsertAllowed,
+  assertEntityRelationUpsertAllowedInTransaction,
+} from './assert-upsert-allowed.mts'
 import { enqueueBulkFollowNotification } from '@queues/notifications/enqueues'
 import { enqueueBulkDistributeActivity } from '@queues/activitypub/enqueues/delivery'
 import { enqueueBulkReconcileBlueskyFollow } from '@queues/bluesky-follow-propagation/enqueues'
@@ -63,11 +65,12 @@ export const upsertEntityRelation = async (
       objects.map(object => object.id),
       relation.subject_type === 'user' ? [subject.id] : [],
       async transactionQuery => {
-        await assertPublisherTypeObjectsAreValidInTransaction(
+        await assertEntityRelationUpsertAllowedInTransaction(
           transactionQuery,
           relation,
           subject,
           objects,
+          relationOptions,
         )
         const { rows } = await transactionQuery(query)
         return rows as InternalEntityRelationMutationResult[]
@@ -144,12 +147,7 @@ export const upsertEntityRelation = async (
     reversePairs,
     relationOptions,
   )
-  const run = async (
-    transactionQuery: TransactionQuery,
-  ): Promise<{
-    relations: InternalEntityRelationMutationResult[]
-    reverseRelations: InternalEntityRelationMutationResult[]
-  }> => {
+  const run = async (transactionQuery: TransactionQuery) => {
     await lockBidirectionalRelationMutation(
       transactionQuery,
       relation.table_name,

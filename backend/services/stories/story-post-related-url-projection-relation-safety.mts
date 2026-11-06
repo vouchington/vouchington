@@ -55,7 +55,8 @@ export async function lockProjectionEligibilityAndFindBlockedUrls(
   urlIds: readonly string[],
 ): Promise<Set<string>> {
   await lockReferralLinkEligibility(query, 'shared')
-  return lockAndFindBlockedProjectionUrlIds(query, urlIds)
+  await lockStoryPostRelatedUrlProjectionHostnameBlocks(query, urlIds)
+  return findBlockedStoryPostRelatedUrlProjectionUrls(query, urlIds)
 }
 
 export async function lockPostScopeAndCheckProjectionWork(
@@ -66,17 +67,21 @@ export async function lockPostScopeAndCheckProjectionWork(
   return isStoryPostRelatedUrlProjectionWorkCurrent(work, query, true)
 }
 
-async function lockAndFindBlockedProjectionUrlIds(
+export async function lockStoryPostRelatedUrlProjectionHostnameBlocks(
   query: TransactionQuery,
   urlIds: readonly string[],
-): Promise<Set<string>> {
+): Promise<void> {
   await query(
     `/* lockStoryPostRelatedUrlProjectionHostnameBlocks */
       WITH RECURSIVE url_targets AS (
         SELECT DISTINCT hostname.hostname
-        FROM urls url
-        JOIN url_hostnames hostname ON hostname.id = url.hostname_id
-        WHERE url.id = ANY($1::uuid[])
+        FROM (SELECT DISTINCT id FROM unnest($1::uuid[]) input(id)) requested
+        CROSS JOIN LATERAL (
+          SELECT hostname_id FROM urls WHERE id = requested.id LIMIT 1
+        ) url
+        CROSS JOIN LATERAL (
+          SELECT hostname FROM url_hostnames WHERE id = url.hostname_id LIMIT 1
+        ) hostname
       ), hostname_suffixes AS (
         SELECT hostname FROM url_targets
         UNION ALL
@@ -84,22 +89,35 @@ async function lockAndFindBlockedProjectionUrlIds(
         FROM hostname_suffixes
         WHERE position('.' IN hostname) > 0
       ), candidates AS (
-        SELECT DISTINCT candidate.id
-        FROM url_hostnames candidate
-        JOIN hostname_suffixes suffix ON suffix.hostname = candidate.hostname
+        SELECT candidate.id
+        FROM (SELECT DISTINCT hostname FROM hostname_suffixes) suffix
+        CROSS JOIN LATERAL (
+          SELECT id FROM url_hostnames WHERE hostname = suffix.hostname LIMIT 1
+        ) candidate
       )
       SELECT pg_advisory_xact_lock(hashtextextended(id::text, 0))
       FROM candidates
       ORDER BY id`,
     [urlIds],
   )
+}
+
+/** Read-only safety for existing active URLs; only the current source page holds host locks. */
+export async function findBlockedStoryPostRelatedUrlProjectionUrls(
+  query: TransactionQuery,
+  urlIds: readonly string[],
+): Promise<Set<string>> {
   const { rows } = await query<{ url_id: string }>(
     `/* findBlockedStoryPostRelatedUrlProjectionUrls */
       WITH RECURSIVE url_targets AS (
         SELECT url.id AS url_id, hostname.hostname
-        FROM urls url
-        JOIN url_hostnames hostname ON hostname.id = url.hostname_id
-        WHERE url.id = ANY($1::uuid[])
+        FROM (SELECT DISTINCT id FROM unnest($1::uuid[]) input(id)) requested
+        CROSS JOIN LATERAL (
+          SELECT id, hostname_id FROM urls WHERE id = requested.id LIMIT 1
+        ) url
+        CROSS JOIN LATERAL (
+          SELECT hostname FROM url_hostnames WHERE id = url.hostname_id LIMIT 1
+        ) hostname
       ), hostname_suffixes AS (
         SELECT url_id, hostname FROM url_targets
         UNION ALL
@@ -109,7 +127,9 @@ async function lockAndFindBlockedProjectionUrlIds(
       )
       SELECT DISTINCT suffix.url_id
       FROM hostname_suffixes suffix
-      JOIN url_hostnames candidate ON candidate.hostname = suffix.hostname
+      CROSS JOIN LATERAL (
+        SELECT is_blocked FROM url_hostnames WHERE hostname = suffix.hostname LIMIT 1
+      ) candidate
       WHERE candidate.is_blocked`,
     [urlIds],
   )
