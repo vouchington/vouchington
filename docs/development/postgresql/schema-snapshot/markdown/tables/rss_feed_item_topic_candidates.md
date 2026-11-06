@@ -34,5 +34,4 @@ _none_
 - `rss_feed_item_topic_candidates_pkey`: `CREATE UNIQUE INDEX rss_feed_item_topic_candidates_pkey ON public.rss_feed_item_topic_candidates USING btree (rss_feed_item_id, topic_id)`
 
 **Triggers:**
-
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.rss_feed_item_topic_candidates FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
+_none_
