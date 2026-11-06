@@ -1,46 +1,55 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, renderHook } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, screen } from '@testing-library/react'
 import {
   makeClusterItem,
   makeClusterResult,
-  setClusterMockViewerId,
+  renderClusterList,
 } from '@/test-helpers/components/news/news-item-cluster-list.mock-support'
 import { getStoryMemberPage } from '@/lib/api/client/stories'
-import { useNewsItemClusters } from '@/components/news/use-news-item-clusters'
+import { NewsItemClusterList } from '@/components/news/news-item-cluster-list'
+import { FeedStyleProvider } from '@/lib/preferences/feed-style-context'
 import type { RssFeedItemsFeedResponseBody, StoryPageResponse } from '@/types/rss-feed-items'
-import { HackerNewsReferenceRefreshGenerationContext } from '@/components/hacker-news/hacker-news-config-context'
 
 vi.mock(import('@/lib/api/client/stories'), async importOriginal => ({
   ...(await importOriginal()),
   getStoryMemberPage: vi.fn<VitestLooseMock>(),
 }))
 
-describe('NewsItemClusterList reference refresh', () => {
+describe('NewsItemClusterList', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getStoryMemberPage).mockReset()
     localStorage.clear()
-    setClusterMockViewerId(null)
   })
-  afterEach(() => vi.restoreAllMocks())
 
-  it('refreshes retained continuation pages and Hacker News counts after server acknowledgement', async () => {
-    const first = makeClusterItem('item-1', 'Primary')
-    const peer = makeClusterItem('item-2', 'Peer')
-    const page: RssFeedItemsFeedResponseBody = {
-      results: [makeClusterResult(first.id, 'story-1')],
-      rss_feed_items: { [first.id]: first },
+  it('retains the first preview, sidecars, and continuation cursor when the preview config shrinks on refresh', async () => {
+    const primary = makeClusterItem('item-1', 'First Primary')
+    const a = makeClusterItem('item-2', 'Preview A')
+    const b = makeClusterItem('item-3', 'Preview B')
+    const c = makeClusterItem('item-4', 'Preview C')
+    const d = makeClusterItem('item-5', 'Appended D')
+    const firstPage: RssFeedItemsFeedResponseBody = {
+      results: [makeClusterResult(primary.id, 'story-1')],
+      rss_feed_items: {
+        [primary.id]: primary,
+        [a.id]: a,
+        [b.id]: b,
+        [c.id]: c,
+      },
       rss_feed_item_elections: {},
+      rss_feed_item_thumbnail_url: {
+        [b.id]: '/sideload/preview-b.jpg',
+        [c.id]: '/sideload/preview-c.jpg',
+      },
       story_member_pages: {
         'story-1': {
-          item_ids: [],
-          page_info: { has_next_page: true, start_cursor: null, end_cursor: 'preview-cursor' },
+          item_ids: [a.id, b.id, c.id],
+          page_info: { has_next_page: true, start_cursor: 'start', end_cursor: 'preview-3' },
         },
       },
-      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      page_info: { has_next_page: false, start_cursor: 'feed-start', end_cursor: null },
     }
-    const continuation: StoryPageResponse = {
+    const appendedPage: StoryPageResponse = {
       story: {
         id: 'story-1',
         title: null,
@@ -48,13 +57,10 @@ describe('NewsItemClusterList reference refresh', () => {
         published_at: null,
         official_rss_feed_item_id: null,
       },
-      item_ids: [peer.id],
-      page_info: { has_next_page: false, start_cursor: 'preview-cursor', end_cursor: null },
-      rss_feed_items: { [peer.id]: peer },
+      item_ids: [d.id],
+      page_info: { has_next_page: true, start_cursor: 'appended', end_cursor: 'after-d' },
+      rss_feed_items: { [d.id]: d },
       rss_feed_item_elections: {},
-      rss_feed_item_hacker_news_references: {
-        [peer.id]: { story_count: 1, comment_count: 0 },
-      },
       rss_feed_item_embeds: {},
       rss_feed_item_thumbnail_url: {},
       rss_feed_item_content_html: {},
@@ -66,135 +72,59 @@ describe('NewsItemClusterList reference refresh', () => {
       election_votes: {},
       rss_feed_bookmarks: {},
     }
-    const refreshedContinuation: StoryPageResponse = {
-      ...continuation,
-      rss_feed_item_hacker_news_references: {
-        [peer.id]: { story_count: 7, comment_count: 2 },
-      },
-    }
-    vi.mocked(getStoryMemberPage)
-      .mockResolvedValueOnce(continuation)
-      .mockResolvedValueOnce(refreshedContinuation)
-    let generation = 0
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <HackerNewsReferenceRefreshGenerationContext.Provider value={generation}>
-        {children}
-      </HackerNewsReferenceRefreshGenerationContext.Provider>
-    )
-    const { result, rerender } = renderHook(() => useNewsItemClusters(page, '', {}), { wrapper })
-    await act(async () => result.current.handleLoadStoryMore('story-1'))
-    act(() => result.current.handleExpandedStoryIdsChange(new Set(['story-1'])))
-    generation = 1
-    await act(async () => rerender())
+    const request = vi
+      .mocked(getStoryMemberPage)
+      .mockResolvedValueOnce(appendedPage)
+      .mockResolvedValueOnce({
+        ...appendedPage,
+        item_ids: [],
+        rss_feed_items: {},
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      })
+    const { rerender } = renderClusterList(firstPage)
+    const toggle = screen.getByRole('button', { name: /3\+ related articles/i })
+    expect(toggle).toHaveTextContent('3+ related articles')
+    fireEvent.click(toggle)
+    expect(toggle).toHaveTextContent('3+ related articles')
+    const previewBCard = screen.getByText('Preview B').closest('[data-pw="news-item-card"]')
+    expect(previewBCard).not.toBeNull()
+    expect(previewBCard?.querySelector('img')).toHaveAttribute('src', '/sideload/preview-b.jpg')
 
-    expect(getStoryMemberPage).toHaveBeenLastCalledWith('story-1', {
-      after: 'preview-cursor',
-      excludeItemId: first.id,
-    })
-    expect(result.current.visibleClusters[0]?.storyItems.map(item => item.id)).toEqual([peer.id])
-    expect(result.current.expandedStoryIds).toEqual(new Set(['story-1']))
-    expect(result.current.allHackerNewsReferences[peer.id]).toEqual({
-      story_count: 7,
-      comment_count: 2,
-    })
-  })
-
-  it('replays a pending first story page and discards its stale response', async () => {
-    const first = makeClusterItem('item-1', 'Primary')
-    const stalePeer = makeClusterItem('item-2', 'Stale peer')
-    const freshPeer = makeClusterItem('item-3', 'Fresh peer')
-    const laterPeer = makeClusterItem('item-4', 'Later peer')
-    const page: RssFeedItemsFeedResponseBody = {
-      results: [makeClusterResult(first.id, 'story-1')],
-      rss_feed_items: { [first.id]: first },
-      rss_feed_item_elections: {},
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /load more/i })))
+    expect(toggle).toHaveTextContent('4+ related articles')
+    const refreshedPage: RssFeedItemsFeedResponseBody = {
+      ...firstPage,
+      rss_feed_items: { [primary.id]: primary, [a.id]: a },
+      rss_feed_item_thumbnail_url: {},
       story_member_pages: {
         'story-1': {
-          item_ids: [],
-          page_info: { has_next_page: true, start_cursor: null, end_cursor: 'preview-cursor' },
+          item_ids: [a.id],
+          page_info: { has_next_page: true, start_cursor: 'changed', end_cursor: 'preview-1' },
         },
       },
-      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     }
-    const makeContinuation = (
-      item: typeof stalePeer,
-      storyCount: number,
-      endCursor: string | null,
-      hasNextPage: boolean,
-    ): StoryPageResponse => ({
-      story: {
-        id: 'story-1',
-        title: null,
-        cluster_reason: null,
-        published_at: null,
-        official_rss_feed_item_id: null,
-      },
-      item_ids: [item.id],
-      page_info: { has_next_page: hasNextPage, start_cursor: null, end_cursor: endCursor },
-      rss_feed_items: { [item.id]: item },
-      rss_feed_item_elections: {},
-      rss_feed_item_hacker_news_references: {
-        [item.id]: { story_count: storyCount, comment_count: 0 },
-      },
-      rss_feed_item_embeds: {},
-      rss_feed_item_thumbnail_url: {},
-      rss_feed_item_content_html: {},
-      related_posts_by_url_id: {},
-      story_post_ids: {},
-      posts: {},
-      posts_metrics: {},
-      bookmarks: {},
-      election_votes: {},
-      rss_feed_bookmarks: {},
-    })
-    const staleResponse = makeContinuation(stalePeer, 1, 'stale-cursor', true)
-    const freshResponse = makeContinuation(freshPeer, 8, 'fresh-cursor', true)
-    const laterResponse = makeContinuation(laterPeer, 9, null, false)
-    let resolveStale!: (response: StoryPageResponse) => void
-    const pendingStale = new Promise<StoryPageResponse>(resolve => {
-      resolveStale = resolve
-    })
-    vi.mocked(getStoryMemberPage)
-      .mockReturnValueOnce(pendingStale)
-      .mockResolvedValueOnce(freshResponse)
-      .mockResolvedValueOnce(laterResponse)
-    let generation = 0
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <HackerNewsReferenceRefreshGenerationContext.Provider value={generation}>
-        {children}
-      </HackerNewsReferenceRefreshGenerationContext.Provider>
+    rerender(
+      <FeedStyleProvider>
+        <NewsItemClusterList data={refreshedPage} />
+      </FeedStyleProvider>,
     )
-    const { result, rerender } = renderHook(() => useNewsItemClusters(page, '', {}), { wrapper })
-    let staleRequest!: Promise<void>
-    act(() => {
-      staleRequest = result.current.handleLoadStoryMore('story-1')
-    })
-
-    generation = 1
-    await act(async () => rerender())
-    expect(result.current.visibleClusters[0]?.storyItems.map(item => item.id)).toEqual([
-      freshPeer.id,
+    const cards = document.querySelectorAll(
+      '[data-pw="news-item-cluster-related-panel"] [data-pw="news-item-card"]',
+    )
+    expect([...cards].map(card => card.getAttribute('data-rss-item-id'))).toEqual([
+      a.id,
+      b.id,
+      c.id,
+      d.id,
     ])
-    expect(result.current.allHackerNewsReferences[freshPeer.id]).toEqual({
-      story_count: 8,
-      comment_count: 0,
+    expect(toggle).toHaveTextContent('4+ related articles')
+    expect(screen.getByText('Preview B').closest('[data-pw="news-item-card"]')).toBe(previewBCard)
+    expect(previewBCard?.querySelector('img')).toHaveAttribute('src', '/sideload/preview-b.jpg')
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /load more/i })))
+    expect(request).toHaveBeenNthCalledWith(2, 'story-1', {
+      after: 'after-d',
+      excludeItemId: primary.id,
     })
-
-    await act(async () => {
-      resolveStale(staleResponse)
-      await staleRequest
-    })
-    expect(result.current.visibleClusters[0]?.storyItems.map(item => item.id)).toEqual([
-      freshPeer.id,
-    ])
-    await act(async () => result.current.handleLoadStoryMore('story-1'))
-    expect(getStoryMemberPage).toHaveBeenLastCalledWith('story-1', {
-      after: 'fresh-cursor',
-      excludeItemId: first.id,
-    })
-    expect(result.current.visibleClusters[0]?.storyItems.map(item => item.id)).toEqual([
-      freshPeer.id,
-      laterPeer.id,
-    ])
+    expect(toggle).toHaveTextContent('4 related articles')
   })
 })
