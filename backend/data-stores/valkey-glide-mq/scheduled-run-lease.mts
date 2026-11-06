@@ -33,13 +33,13 @@ export async function withScheduledRunLease(
   let entry: string | Uint8Array | null = null
   try {
     entry = await workerQueueCommandClient.hget(`${baseKey}:schedulers`, scheduler)
-  } catch (err) {
+  } catch (err_) {
     // Scheduler metadata only narrows the lease TTL. Admission must still record a
     // colliding tick while the current holder is live, even if this read fails.
     try {
-      onError(err instanceof Error ? err : new Error(String(err)))
-    } catch (err_) {
-      console.error('scheduled_interval_reporting_failed', err_)
+      onError(err_ instanceof Error ? err_ : new Error(String(err_)))
+    } catch (err) {
+      console.error('scheduled_interval_reporting_failed', err)
     }
   }
   const interval = scheduleInterval(entry)
@@ -62,14 +62,14 @@ export async function withScheduledRunLease(
         expiry: { type: TimeUnit.Milliseconds, count: Math.max(ttl * 2, (interval ?? ttl) * 2) },
       })
       return release
-    } catch (err) {
+    } catch (err_) {
       try {
         await release()
-      } catch (err_) {
+      } catch (err) {
         // A failed cleanup must not hide the bookkeeping failure that triggered it.
-        console.error('scheduled_lease_bookkeeping_release_failed', err_)
+        console.error('scheduled_lease_bookkeeping_release_failed', err)
       }
-      throw err
+      throw err_
     }
   }
   const decision = Number(
@@ -88,11 +88,11 @@ export async function withScheduledRunLease(
   if (decision === 3) {
     try {
       await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'deferred_admitted', 1)
-    } catch (err) {
+    } catch (err_) {
       try {
-        onError(err instanceof Error ? err : new Error(String(err)))
-      } catch (err_) {
-        console.error('scheduled_overlap_metric_reporting_failed', err_)
+        onError(err_ instanceof Error ? err_ : new Error(String(err_)))
+      } catch (err) {
+        console.error('scheduled_overlap_metric_reporting_failed', err)
       }
     }
     console.info('deferred_admitted', { queue, scheduler, jobId: job.id })
