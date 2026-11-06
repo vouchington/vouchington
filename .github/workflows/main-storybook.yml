@@ -8,6 +8,7 @@ on:
       - 'ci/cleanup-artifacts-pattern-matcher.mts'
       - 'ci/cleanup-artifacts-patterns.json'
       - '.github/workflows/main-storybook.yml'
+      - '.github/workflows/main-storybook/build.sh'
       - '.github/workflows/storybook.yml'
       - '.github/workflows/storybook/*.sh'
       - '.github/actions/**'
@@ -50,12 +51,7 @@ jobs:
           deadline-seconds: '150'
       - name: Build and protect Storybook artifact
         timeout-minutes: 5
-        run: |
-          set -euo pipefail
-          STORYBOOK_BASE_PATH=/ pnpm run build:storybook
-          node ci/storybook-pages.mts protect web/storybook-static
-          mkdir -p delivery
-          mv web/storybook-static delivery/storybook
+        run: source .github/workflows/main-storybook/build.sh
       - name: Publish the protected Storybook artifact
         timeout-minutes: 1
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
