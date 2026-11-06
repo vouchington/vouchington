@@ -187,7 +187,6 @@ async function main() {
     writeResults()
   }
 }
-
 async function run(): Promise<void> {
   try {
     await main()

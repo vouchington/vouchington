@@ -58,7 +58,9 @@ function postShareSeedRows(
 }
 
 export async function seedPostFeedShares(
-  identities: PostShareSeedIdentities = {
+  providedIdentities?: PostShareSeedIdentities,
+): Promise<void> {
+  const identities = providedIdentities ?? {
     recipientIds: [seedUuid(0, '01'), seedUuid(1, '01')],
     sharedById: seedUuid(2, '01'),
     emptyRecipientId: seedUuid(POST_SHARE_EMPTY_USER_INDEX, '01'),
@@ -66,10 +68,9 @@ export async function seedPostFeedShares(
       seedUuid(FIRST_TARGET_POST_INDEX + index, '05'),
     ),
     deliveryIdBase: 1_000_000,
-  },
-): Promise<void> {
+  }
   console.log('Seeding repeated post feed share targets...')
-  await seedPostFeedHotStats()
+  if (!providedIdentities) await seedPostFeedHotStats()
   await using transaction = await beginTransaction()
   for (const [recipientIndex, targetCount, deliveriesPerTarget] of [
     [0, POST_SHARE_SPARSE_TARGET_COUNT, POST_SHARE_SPARSE_DELIVERIES_PER_TARGET],

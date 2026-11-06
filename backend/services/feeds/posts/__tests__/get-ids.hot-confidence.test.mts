@@ -4,6 +4,8 @@ import {
   createRandomString,
   deleteTestPost,
   createTestUser,
+  createTestPost,
+  hidePost,
   followUser,
   insertPostFeedShareForTest,
   insertTestPost,
@@ -63,5 +65,35 @@ describe('hot post feed', () => {
     } finally {
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
+  })
+
+  it('keeps the hidden-comment exemption without bypassing positive-net hot eligibility', async () => {
+    const viewer = await createTestUser()
+    const author = await createTestUser()
+    await followUser(viewer, author)
+    const root = await createTestPost({ user: author })
+    const comments = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        createTestPost({ user: author, post_type: 'comment', parent_post_id: root.id }),
+      ),
+    )
+    await Promise.all([
+      ...comments.map(comment => hidePost(viewer, comment)),
+      setTestPostVoteScores(comments[0]!.id, 1, 0),
+      setTestPostVoteScores(comments[1]!.id, 1, 1),
+      setTestPostVoteScores(comments[2]!.id, 1, 2),
+    ])
+    const options = {
+      feed_type: 'follow_users' as const,
+      post_types: ['comment' as const],
+      min_score_follow_users: -10,
+      limit: 10,
+    }
+    const recent = await getPostFeedIds(viewer, { ...options, sort: 'new' })
+    expect(recent.results.map(row => row.entity_id).toSorted()).toEqual(
+      comments.map(comment => comment.id).toSorted(),
+    )
+    const hot = await getPostFeedIds(viewer, { ...options, sort: 'hot' })
+    expect(hot.results.map(row => row.entity_id)).toEqual([comments[0]!.id])
   })
 })
