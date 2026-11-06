@@ -34,15 +34,26 @@ export async function reconcilePostModerationWork(
     1,
     Math.min(Math.trunc(limit), getPostClearanceWorkLimit('reconciliation_batch_size')),
   )
-  const { rows } = await write<{
-    row_kind: 'due' | 'exhausted' | 'continuation'
-    post_id: string
-    version_id: string
-    through_id: string
-    source: AutomatedPostModerationSource
-  }>(
-    `/* reconcilePostModerationWork */
-      WITH version_page AS MATERIALIZED (
+  const versionPage = postIds
+    ? `WITH version_page AS MATERIALIZED (
+        SELECT version.version_id, version.post_id, version.content_sha256, version.deadline_at,
+          version.through_id
+        FROM unnest($3::uuid[]) AS requested(post_id)
+        JOIN LATERAL (
+          SELECT version.id AS version_id, version.post_id, version.content_sha256, version.deadline_at,
+            COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond')) AS through_id
+          FROM post_moderation_versions version
+          WHERE version.post_id = requested.post_id
+            AND version.policy_revision = $2
+            AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
+            AND ($4::uuid IS NULL OR version.id > $4::uuid OR version.id = $4::uuid)
+          ORDER BY version.id
+          LIMIT $1 + 1
+        ) version ON TRUE
+        ORDER BY version.version_id
+        LIMIT $1 + 1
+      )`
+    : `WITH version_page AS MATERIALIZED (
         SELECT version.id AS version_id, version.post_id, version.content_sha256, version.deadline_at,
           COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond')) AS through_id
         FROM post_moderation_versions version
@@ -52,7 +63,16 @@ export async function reconcilePostModerationWork(
           AND ($3::uuid[] IS NULL OR version.post_id = ANY($3::uuid[]))
         ORDER BY version.id
         LIMIT $1 + 1
-      ), expanded AS MATERIALIZED (
+      )`
+  const { rows } = await write<{
+    row_kind: 'due' | 'exhausted' | 'continuation'
+    post_id: string
+    version_id: string
+    through_id: string
+    source: AutomatedPostModerationSource
+  }>(
+    `/* reconcilePostModerationWork */
+      ${versionPage}, expanded AS MATERIALIZED (
         SELECT version_page.version_id, source.source::post_moderation_sources AS source,
           version_page.post_id, version_page.deadline_at, version_page.through_id
         FROM version_page

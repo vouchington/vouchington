@@ -1,4 +1,5 @@
 import { beginTransaction, write } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 import { seedPostId, seedUser } from '../run-support.mts'
 
 export const SELECTED_DISTRIBUTION_ID = '019e0000-7d02-7000-8000-000000000001'
@@ -37,6 +38,29 @@ export async function deleteSavedRssItems(): Promise<void> {
     `/* cleanupDeletedParentSavedItems */
      DELETE FROM relation__user__save__rss_feed_item WHERE subject_id = $1`,
     [seedUser.id],
+  )
+}
+
+export async function seedDeletedParentModerationVersion(): Promise<void> {
+  await write(
+    `/* seedDeletedParentModerationVersion */
+     INSERT INTO post_moderation_versions (post_id, content_sha256, policy_revision, deadline_at)
+     SELECT post.id, post.llm_moderation_content_sha256, $2, CURRENT_TIMESTAMP + INTERVAL '1 day'
+     FROM posts post
+     WHERE post.id = $1
+       AND post.deleted_at IS NULL
+       AND post.llm_moderation_content_sha256 IS NOT NULL
+     ON CONFLICT DO NOTHING`,
+    [seedPostId, POST_MODERATION_POLICY_REVISION],
+  )
+}
+
+export async function deleteDeletedParentModerationVersion(): Promise<void> {
+  await write(
+    `/* cleanupDeletedParentModerationVersion */
+     DELETE FROM post_moderation_versions
+     WHERE post_id = $1 AND policy_revision = $2`,
+    [seedPostId, POST_MODERATION_POLICY_REVISION],
   )
 }
 

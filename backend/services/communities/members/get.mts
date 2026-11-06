@@ -56,11 +56,13 @@ export async function searchCommunityMembers(
   }
 
   const roster = memberRosterFilter(options)
+  // The scalar initplan keeps a community that holds most of the table on the
+  // active-membership index. A bare equality lets a custom plan walk the primary key.
   const query = sql`/* searchCommunityMembers */
     WITH membership_page AS MATERIALIZED (
       SELECT cm.*
       FROM community_members cm
-      WHERE cm.community_id = ${communityId}
+      WHERE cm.community_id = (SELECT ${communityId}::uuid)
         AND cm.removed_at IS NULL
   `
   if (options?.role) query.append(sql` AND cm.role = ${options.role}`)
@@ -68,8 +70,6 @@ export async function searchCommunityMembers(
   if (cursorName !== undefined && cursorId !== undefined) {
     query.append(sql` AND cm.id > ${cursorId}`)
   }
-  // Order by the active-membership index so a community that holds most of the table
-  // still stops at LIMIT instead of walking the primary key.
   query.append(sql`
       ORDER BY cm.community_id ASC, cm.id ASC
       LIMIT ${limit + 1}

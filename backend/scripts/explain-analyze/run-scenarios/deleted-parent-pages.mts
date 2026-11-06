@@ -22,8 +22,10 @@ import {
   COMMUNITY_MEMBERSHIP_CAP_USER_ID,
 } from '../seed-data/community-membership-caps.mts'
 import {
+  deleteDeletedParentModerationVersion,
   deleteSavedRssItems,
   deleteSelectedRecipients,
+  seedDeletedParentModerationVersion,
   seedSavedRssItems,
   seedSelectedRecipients,
   SELECTED_DISTRIBUTION_ID,
@@ -125,25 +127,29 @@ export async function runDeletedParentPageScenarios(): Promise<void> {
       },
       undefined,
       'getNextRecipientBatch:selected',
-      { afterCapture: deleteSelectedRecipients },
     )
   } finally {
     await deleteSelectedRecipients()
   }
 
-  registerScenarioContract('deleted-parent-moderation-versions', {
-    expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_post_moderation_versions__post_id__id'] },
-      { kind: 'maxProcessedRows', relation: 'post_moderation_versions', max: 20 },
-      { kind: 'maxProcessedRows', relation: 'posts', max: 10 },
-    ],
-  })
-  await runAndCapture(
-    'deleted-parent-moderation-versions',
-    () => reconcilePostModerationWork(10, [seedPostId]),
-    undefined,
-    'reconcilePostModerationWork',
-  )
+  await seedDeletedParentModerationVersion()
+  try {
+    registerScenarioContract('deleted-parent-moderation-versions', {
+      expectations: [
+        { kind: 'usesIndexes', indexes: ['idx_post_moderation_versions__post_id__id'] },
+        { kind: 'maxProcessedRows', relation: 'post_moderation_versions', max: 20 },
+        { kind: 'maxProcessedRows', relation: 'posts', max: 10 },
+      ],
+    })
+    await runAndCapture(
+      'deleted-parent-moderation-versions',
+      () => reconcilePostModerationWork(10, [seedPostId]),
+      undefined,
+      'reconcilePostModerationWork',
+    )
+  } finally {
+    await deleteDeletedParentModerationVersion()
+  }
 }
 
 function selectedDistribution(): DistributionRow {
