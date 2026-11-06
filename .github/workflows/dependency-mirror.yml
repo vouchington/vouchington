@@ -31,15 +31,7 @@ jobs:
         timeout-minutes: 2
         env:
           REGCTL_PATH: ${{ runner.temp }}/regctl-v0.11.7-linux-amd64
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --location --connect-timeout 10 --max-time 90 \
-            https://github.com/regclient/regclient/releases/download/v0.11.7/regctl-linux-amd64 \
-            --output "$REGCTL_PATH"
-          printf '%s  %s\n' \
-            '3737fbbdd791e04e7a831640b681f3397a376498e80e2ad9b1b2d27296f239bc' \
-            "$REGCTL_PATH" | sha256sum --check
-          chmod 755 "$REGCTL_PATH"
+        run: source "$GITHUB_WORKSPACE/.github/workflows/dependency-mirror-install-regctl.sh"
 
       - name: Stage and publish reviewed image digests
         timeout-minutes: 26
@@ -47,11 +39,7 @@ jobs:
           REGCTL: ${{ runner.temp }}/regctl-v0.11.7-linux-amd64
           GHCR_TOKEN: ${{ github.token }}
           GHCR_OWNER: ${{ github.repository_owner }}
-        run: |
-          set -euo pipefail
-          : "${REGCTL:?Missing checksum-verified regctl path}"
-          : "${GHCR_TOKEN:?Missing GHCR write token}"
-          bash ci/dependency-mirror/sync.sh ci/dependency-mirror/images.json
+        run: source "$GITHUB_WORKSPACE/.github/workflows/dependency-mirror-publish.sh"
 
       - name: Report mirror failure
         if: failure()
