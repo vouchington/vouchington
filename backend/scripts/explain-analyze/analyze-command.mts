@@ -1,11 +1,13 @@
 import type { ExplainResult } from '@data-stores/psql'
 import {
   analyzeResult,
-  confirmsRepeatedWalFingerprint,
   functionCallReports,
   getResourcePressureFingerprints,
-  isCheckpointSensitiveWalFingerprint,
 } from './plan-warnings.mts'
+import {
+  confirmsRepeatedWalFingerprint,
+  isCheckpointSensitiveWalFingerprint,
+} from './repeated-wal.mts'
 import {
   RESOURCE_PRESSURE_BASELINE,
   type ResourcePressureBaseline,
