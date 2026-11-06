@@ -1,9 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import '@services/elections-votes/entity-relation/register-election-vote-handler'
 import '@services/urls/register-blocked-hostname-guard'
 import '@services/referral-program-link-validations'
 import './register-post-related-urls-guard.mts'
 import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
+import { getUrlById } from '@services/urls/get'
+import { webRiskConfig } from '@services/web-risk/config'
+import { getLatestPostLinkRevisionForTest } from '@voucha/test-helpers/entities/post-revisions'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
@@ -26,6 +29,7 @@ import {
 } from '@voucha/test-helpers/hacker-news-flag-state'
 import { recomputePostHackerNewsFlags } from './hacker-news-flags.mts'
 import { updatePost } from './update.mts'
+import { getPostByAny } from './get.mts'
 
 const relation = getEntityRelationMetadataOrThrow({
   subjectType: 'post',
@@ -63,6 +67,40 @@ describe('post Hacker News flag upkeep', () => {
     expect(await assertFlag(post.id, false)).toEqual({
       state: { stored: false, expected: false },
       value: false,
+    })
+  })
+
+  it('assesses and persists a submitted link before recomputing its flag', async () => {
+    await webRiskConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(webRiskConfig, { enabled: false }))
+    const user = await createTestUser()
+    const referenced = await referencedUrl()
+    const destination = await getUrlById(referenced, { readOnly: false })
+    if (!destination) throw new Error('Expected referenced URL')
+    const original = await createTestUrlWithHostname()
+    const post = await createRealPost({ user, post_type: 'link', url_id: original })
+    await updatePost(user, post, { url: destination.url })
+    expect((await getPostByAny(post.id))?.url_id).toBe(referenced)
+    expect(await getLatestPostLinkRevisionForTest(post.id)).toEqual({
+      before: original,
+      after: referenced,
+    })
+    expect(await getPostHackerNewsFlagStateForTest(post.id)).toEqual({
+      stored: true,
+      expected: true,
+    })
+  })
+
+  it('rejects an invalid submitted link without changing its flag', async () => {
+    const user = await createTestUser()
+    const urlId = await referencedUrl()
+    const post = await createRealPost({ user, post_type: 'link', url_id: urlId })
+    await expect(updatePost(user, post, { url: 'http://example.com/' })).rejects.toThrow(
+      'url must be a valid https URL',
+    )
+    expect(await getPostHackerNewsFlagStateForTest(post.id)).toEqual({
+      stored: true,
+      expected: true,
     })
   })
 

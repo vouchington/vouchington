@@ -38,6 +38,18 @@ export async function getLatestPostCategoryRevisionForTest(
   return rows[0]?.category_change
 }
 
+export async function getLatestPostLinkRevisionForTest(
+  postId: string,
+): Promise<{ before: string | null; after: string } | undefined> {
+  const { rows } = await write<{ change: { before: string | null; after: string } }>(sql`
+    /* getLatestPostLinkRevisionForTest */
+    SELECT changes->'url_id' AS change FROM post_revisions
+    WHERE post_id = ${postId} AND revision_type = 'update' AND changes ? 'url_id'
+    ORDER BY id DESC LIMIT 1
+  `)
+  return rows[0]?.change
+}
+
 export async function getPostArchiveRevisionsForTest(postId: string): Promise<PostRevision[]> {
   const { rows } = await write<PostRevision>(sql`/* getPostArchiveRevisionsForTest */
     SELECT id, post_id, revision_type, revised_by_id, changes, created_at
