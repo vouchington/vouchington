@@ -1,8 +1,10 @@
 import { getVisibleCommentDescendantIdsPage } from '@services/comments'
+import { getCommentDescendantReadLimits } from '@services/comments/placeholder-config'
 import { write } from '@data-stores/psql'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import {
+  COMMENT_DESCENDANT_QUERY_ANNOTATIONS,
   assertExactIds,
   assertPageSize,
   assertScenarioReadBudget,
@@ -19,10 +21,11 @@ type DescendantPage = {
 }
 
 function register(id: string, maxProcessedRows: number, reason: string): void {
+  const maxQueryRows = Math.min(maxProcessedRows, getCommentDescendantReadLimits().maxRows)
   registerScenarioContract(id, {
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'posts', max: maxProcessedRows },
-      { kind: 'maxBitmapIndexRows', max: maxProcessedRows },
+      { kind: 'maxProcessedRows', relation: 'posts', max: maxQueryRows },
+      { kind: 'maxBitmapIndexRows', max: maxQueryRows },
     ],
     // Empty leaf probes are part of a real nonempty page, whose exact ids are checked below.
     allowEmptyResult: true,
@@ -33,7 +36,7 @@ function register(id: string, maxProcessedRows: number, reason: string): void {
 }
 
 function captureServiceSql(id: string, operation: () => Promise<unknown>): Promise<void> {
-  return runAndCapture(id, operation, undefined, 'getVisibleCommentDescendantIdsPage')
+  return runAndCapture(id, operation, undefined, COMMENT_DESCENDANT_QUERY_ANNOTATIONS)
 }
 
 export async function runCommentDescendantPartitionedPages(): Promise<void> {
@@ -61,7 +64,7 @@ export async function runCommentDescendantPartitionedPages(): Promise<void> {
       limit: 100,
     }),
   )
-  assertScenarioReadBudget('comment-descendants-partitioned-head-page', 500, 110)
+  assertScenarioReadBudget('comment-descendants-partitioned-head-page', 500)
   const afterId = firstHeadPage.lastInspectedHeadId ?? firstHeadPage.results.at(-1)
   if (!afterId) throw new Error('The first descendant page must expose an inspected cursor head')
   const continuationPage = (await getVisibleCommentDescendantIdsPage(
@@ -93,7 +96,7 @@ export async function runCommentDescendantPartitionedPages(): Promise<void> {
       throw new Error('The continuation after 100 of 101 heads must return only the final head')
     return page
   })
-  assertScenarioReadBudget('comment-descendants-partitioned-head-continuation', 500, 5)
+  assertScenarioReadBudget('comment-descendants-partitioned-head-continuation', 500)
   register(
     'comment-descendants-partitioned-wide-preview',
     500,
@@ -114,7 +117,7 @@ export async function runCommentDescendantPartitionedPages(): Promise<void> {
       throw new Error('The wide preview must expose its first head and its pending child')
     return page
   })
-  assertScenarioReadBudget('comment-descendants-partitioned-wide-preview', 500, 110)
+  assertScenarioReadBudget('comment-descendants-partitioned-wide-preview', 500)
 
   const wideBoundary = await verifyWideBoundaryExpansion(fixture)
   register(
@@ -133,7 +136,7 @@ export async function runCommentDescendantPartitionedPages(): Promise<void> {
       throw new Error('The first wide-boundary expansion must return an empty cursor page')
     return page
   })
-  assertScenarioReadBudget('comment-descendants-partitioned-boundary-empty-expansion', 500, 110)
+  assertScenarioReadBudget('comment-descendants-partitioned-boundary-empty-expansion', 500)
   register(
     'comment-descendants-partitioned-boundary-expansion',
     50,
@@ -150,7 +153,7 @@ export async function runCommentDescendantPartitionedPages(): Promise<void> {
       throw new Error('The sixth wide-boundary expansion must reveal the valid reply')
     return page
   })
-  assertScenarioReadBudget('comment-descendants-partitioned-boundary-expansion', 50, 5)
+  assertScenarioReadBudget('comment-descendants-partitioned-boundary-expansion', 50)
 
   register(
     'comment-descendants-partitioned-boundary-lookdown',
@@ -180,5 +183,5 @@ export async function runCommentDescendantPartitionedPages(): Promise<void> {
       throw new Error('The bounded lookdown must preserve the unresolved boundary placeholder')
     return page
   })
-  assertScenarioReadBudget('comment-descendants-partitioned-boundary-lookdown', 100, 10)
+  assertScenarioReadBudget('comment-descendants-partitioned-boundary-lookdown', 100)
 }

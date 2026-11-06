@@ -20,7 +20,7 @@ describe('read_posts.descendants database failure', () => {
     const args = { post_id: post.id }
 
     const { result, error } = await withPostgresQueryFailureForTest(
-      '/* getVisibleCommentDescendantIdsPage */',
+      '/* getVisibleCommentDescendantIdsPage:heads */',
       () =>
         callRejectedMcpTool(caller, 'read_posts', optionArgs('descendants', args), ['posts:read']),
     )

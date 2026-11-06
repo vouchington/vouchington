@@ -3,6 +3,10 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { COMMENT_DESCENDANT_DEPTH_ROOT_ID } from '../seed-data/comment-descendant-depth.mts'
+import {
+  COMMENT_DESCENDANT_QUERY_ANNOTATIONS,
+  assertScenarioReadBudget,
+} from './comment-descendant-page-budget.mts'
 
 export async function runCommentDescendantDepthScenario(): Promise<void> {
   registerScenarioContract('comment-descendants-depth-bound', {
@@ -23,6 +27,7 @@ export async function runCommentDescendantDepthScenario(): Promise<void> {
         { limit: 100 },
       ),
     undefined,
-    'getVisibleCommentDescendantIdsPage',
+    COMMENT_DESCENDANT_QUERY_ANNOTATIONS,
   )
+  assertScenarioReadBudget('comment-descendants-depth-bound', 100)
 }
