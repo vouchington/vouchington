@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { stableStringify } from '@modules/utils/stable-stringify'
-import { writeSchemaSnapshot } from '../generate.mts'
+import { publishSchemaSnapshot } from '../publish.mts'
 import { renderSchemaMarkdown } from '../render-markdown.mts'
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 import type { PostgresCatalog } from 'no-mistakes'
@@ -46,7 +46,7 @@ describe('schema snapshot and no-mistakes catalog share one check flow', () => {
 
   it('writes the catalog beside schema.json and accepts both in check mode', async () => {
     const root = await tempRoot()
-    await writeSchemaSnapshot({ snapshot, markdown, catalog, root })
+    await publishSchemaSnapshot({ snapshot, markdown, catalog, root })
 
     await expect(readFile(join(root, 'schema.json'), 'utf8')).resolves.toBe(
       stableStringify(snapshot),
@@ -55,22 +55,22 @@ describe('schema snapshot and no-mistakes catalog share one check flow', () => {
       catalog,
     )
     await expect(
-      writeSchemaSnapshot({ snapshot, markdown, catalog, root, check: true }),
+      publishSchemaSnapshot({ snapshot, markdown, catalog, root, check: true }),
     ).resolves.toBeUndefined()
   })
 
   it('leaves the catalog alone when the caller supplies none', async () => {
     const root = await tempRoot()
-    await writeSchemaSnapshot({ snapshot, markdown, root })
+    await publishSchemaSnapshot({ snapshot, markdown, root })
 
     await expect(readFile(join(root, NO_MISTAKES_CATALOG_FILE), 'utf8')).rejects.toThrow(/ENOENT/)
   })
 
   it('fails check mode when only the catalog is stale', async () => {
     const root = await tempRoot()
-    await writeSchemaSnapshot({ snapshot, markdown, catalog, root })
+    await publishSchemaSnapshot({ snapshot, markdown, catalog, root })
     await writeFile(join(root, NO_MISTAKES_CATALOG_FILE), '{"coverage":"complete"}\n')
-    const check = () => writeSchemaSnapshot({ snapshot, markdown, catalog, root, check: true })
+    const check = () => publishSchemaSnapshot({ snapshot, markdown, catalog, root, check: true })
 
     await expect(check()).rejects.toThrow(join(root, NO_MISTAKES_CATALOG_FILE))
     await expect(check()).rejects.toThrow(/db:snapshot:update/)
@@ -80,9 +80,9 @@ describe('schema snapshot and no-mistakes catalog share one check flow', () => {
 
   it('fails check mode when only schema.json is stale', async () => {
     const root = await tempRoot()
-    await writeSchemaSnapshot({ snapshot, markdown, catalog, root })
+    await publishSchemaSnapshot({ snapshot, markdown, catalog, root })
     await writeFile(join(root, 'schema.json'), '{}\n')
-    const check = () => writeSchemaSnapshot({ snapshot, markdown, catalog, root, check: true })
+    const check = () => publishSchemaSnapshot({ snapshot, markdown, catalog, root, check: true })
 
     await expect(check()).rejects.toThrow(join(root, 'schema.json'))
     await expect(check()).rejects.not.toBeInstanceOf(AggregateError)
@@ -91,16 +91,16 @@ describe('schema snapshot and no-mistakes catalog share one check flow', () => {
 
   it('reports every stale generated file in one error, and one update fixes both', async () => {
     const root = await tempRoot()
-    await writeSchemaSnapshot({ snapshot, markdown, catalog, root })
+    await publishSchemaSnapshot({ snapshot, markdown, catalog, root })
     await writeFile(join(root, 'schema.json'), '{}\n')
     await writeFile(join(root, NO_MISTAKES_CATALOG_FILE), '{}\n')
-    const check = () => writeSchemaSnapshot({ snapshot, markdown, catalog, root, check: true })
+    const check = () => publishSchemaSnapshot({ snapshot, markdown, catalog, root, check: true })
 
     await expect(check()).rejects.toBeInstanceOf(AggregateError)
     await expect(check()).rejects.toThrow(join(root, 'schema.json'))
     await expect(check()).rejects.toThrow(join(root, NO_MISTAKES_CATALOG_FILE))
 
-    await writeSchemaSnapshot({ snapshot, markdown, catalog, root })
+    await publishSchemaSnapshot({ snapshot, markdown, catalog, root })
     await expect(check()).resolves.toBeUndefined()
   })
 })
