@@ -69948,7 +69948,7 @@
         "idx_membership_stripe_purchase_collision_work_items__collision": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_membership_stripe_purchase_collision_work_items__collision ON public.membership_stripe_purchase_collision_work_items USING btree (membership_source_id, membership_provider_lineage_id, collision_at, winning_source_kind, winning_plan)",
+          "definition": "CREATE UNIQUE INDEX idx_membership_stripe_purchase_collision_work_items__collision ON public.membership_stripe_purchase_collision_work_items USING btree (membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id, winning_source_kind, winning_plan, collision_at)",
           "includedColumns": [],
           "keys": [
             {
@@ -69966,11 +69966,11 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "collision_at",
+              "column": "membership_lineage_binding_id",
               "descending": false,
-              "expression": "collision_at",
+              "expression": "membership_lineage_binding_id",
               "nullsFirst": false,
-              "opclass": "timestamptz_ops"
+              "opclass": "uuid_ops"
             },
             {
               "column": "winning_source_kind",
@@ -69985,6 +69985,13 @@
               "expression": "winning_plan",
               "nullsFirst": false,
               "opclass": "enum_ops"
+            },
+            {
+              "column": "collision_at",
+              "descending": false,
+              "expression": "collision_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
             }
           ],
           "predicate": null,

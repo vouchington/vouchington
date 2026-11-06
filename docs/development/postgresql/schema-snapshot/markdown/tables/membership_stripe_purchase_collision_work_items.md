@@ -34,7 +34,7 @@ _none_
 **Indexes:**
 
 - `idx_membership_stripe_purchase_collision_work_items__binding`: `CREATE INDEX idx_membership_stripe_purchase_collision_work_items__binding ON public.membership_stripe_purchase_collision_work_items USING btree (membership_lineage_binding_id, membership_provider_lineage_id)`
-- `idx_membership_stripe_purchase_collision_work_items__collision`: `CREATE UNIQUE INDEX idx_membership_stripe_purchase_collision_work_items__collision ON public.membership_stripe_purchase_collision_work_items USING btree (membership_source_id, membership_provider_lineage_id, collision_at, winning_source_kind, winning_plan)`
+- `idx_membership_stripe_purchase_collision_work_items__collision`: `CREATE UNIQUE INDEX idx_membership_stripe_purchase_collision_work_items__collision ON public.membership_stripe_purchase_collision_work_items USING btree (membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id, winning_source_kind, winning_plan, collision_at)`
 - `membership_stripe_purchase_collision_work_items_pkey`: `CREATE UNIQUE INDEX membership_stripe_purchase_collision_work_items_pkey ON public.membership_stripe_purchase_collision_work_items USING btree (id)`
 
 **Triggers:**
