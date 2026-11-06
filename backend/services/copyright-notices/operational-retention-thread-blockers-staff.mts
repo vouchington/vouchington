@@ -30,9 +30,8 @@ function staffPageSql(
   batchSize: number,
 ): SQLStatement {
   const after = childId ?? '00000000-0000-0000-0000-000000000000'
-  switch (phase) {
-    case 'territorial_receipts':
-      return sql`/* scanCopyrightThreadTerritorialReceiptBlockers */
+  if (phase === 'territorial_receipts')
+    return sql`/* scanCopyrightThreadTerritorialReceiptBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, copyright_notice_id, jurisdiction
@@ -43,8 +42,8 @@ function staffPageSql(
         SELECT page.id,
           notice.current_territorial_decision_identity_id IS NULL AS blocked
         FROM page JOIN copyright_notices notice ON notice.id = page.copyright_notice_id`
-    case 'territorial_redress':
-      return sql`/* scanCopyrightThreadTerritorialRedressBlockers */
+  if (phase === 'territorial_redress')
+    return sql`/* scanCopyrightThreadTerritorialRedressBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, copyright_territorial_decision_id, staff_disposition
@@ -59,8 +58,8 @@ function staffPageSql(
               AND page.staff_disposition = 'revoke'))
         ) AS blocked FROM page
         JOIN copyright_notices notice ON notice.id = ${noticeId}`
-    case 'restrictions':
-      return sql`/* scanCopyrightThreadRestrictionBlockers */
+  if (phase === 'restrictions')
+    return sql`/* scanCopyrightThreadRestrictionBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, lifted_at, human_reviewed_at FROM copyright_restrictions
@@ -74,8 +73,8 @@ function staffPageSql(
               AND match.reviewed_at IS NULL
           WHERE entry.copyright_restriction_id = page.id LIMIT 1
         )) AS blocked FROM page`
-    case 'submissions':
-      return sql`/* scanCopyrightThreadSubmissionBlockers */
+  if (phase === 'submissions')
+    return sql`/* scanCopyrightThreadSubmissionBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, kind FROM copyright_notice_submissions
@@ -93,8 +92,8 @@ function staffPageSql(
             SELECT 1 FROM copyright_notice_legal_hold_assessments assessment
             WHERE assessment.copyright_notice_submission_id = page.id LIMIT 1)
           ELSE false END AS blocked FROM page`
-    case 'legal_hold_assessments':
-      return sql`/* scanCopyrightThreadHoldAssessmentBlockers */
+  if (phase === 'legal_hold_assessments')
+    return sql`/* scanCopyrightThreadHoldAssessmentBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, copyright_notice_submission_id, is_from_original_claimant,
@@ -113,15 +112,13 @@ function staffPageSql(
           )) AS blocked FROM page
         JOIN copyright_notice_submissions submission
           ON submission.id = page.copyright_notice_submission_id`
-    case 'action_work_items':
-      return sql`/* scanCopyrightThreadActionBlockers */
+  if (phase === 'action_work_items')
+    return sql`/* scanCopyrightThreadActionBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, state FROM copyright_notice_action_work_items
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         ) SELECT id, state = 'failed' AS blocked FROM page`
-    default:
-      throw new Error(`Unexpected copyright staff blocker phase: ${phase}`)
-  }
+  throw new Error(`Unexpected copyright staff blocker phase: ${phase}`)
 }

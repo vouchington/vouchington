@@ -145,40 +145,37 @@ export async function listResidualCandidate(
   lowerBoundId: string | null,
 ): Promise<Candidate[]> {
   const params = [cursorId, cutoffId, lowerBoundId]
-  switch (kind) {
-    case 'pending_user_import_requests': {
-      const { rows } = await query<Candidate>(
-        `/* listResidualPendingImportHistoryCandidate */
+  if (kind === 'pending_user_import_requests') {
+    const { rows } = await query<Candidate>(
+      `/* listResidualPendingImportHistoryCandidate */
          SELECT id FROM user_import_requests WHERE id < $1::uuid AND id < $2::uuid
            AND id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND followed_at IS NULL ORDER BY id LIMIT 1 FOR UPDATE`,
-        params,
-      )
-      return rows
-    }
-    case 'referral_attribution_scrub': {
-      const { rows } = await query<Candidate>(
-        `/* listResidualReferralScrubCandidate */
+      params,
+    )
+    return rows
+  }
+  if (kind === 'referral_attribution_scrub') {
+    const { rows } = await query<Candidate>(
+      `/* listResidualReferralScrubCandidate */
          SELECT id FROM session_referral_attributions WHERE id < $1::uuid AND id < $2::uuid
            AND id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND (landing_url IS NOT NULL OR utm_source IS NOT NULL OR utm_medium IS NOT NULL
              OR utm_campaign IS NOT NULL OR utm_content IS NOT NULL)
          ORDER BY id LIMIT 1 FOR UPDATE`,
-        params,
-      )
-      return rows
-    }
-    case 'referral_attribution_expiry': {
-      const { rows } = await query<Candidate>(
-        `/* listResidualReferralExpiryCandidate */
+      params,
+    )
+    return rows
+  }
+  if (kind === 'referral_attribution_expiry') {
+    const { rows } = await query<Candidate>(
+      `/* listResidualReferralExpiryCandidate */
          SELECT id FROM session_referral_attributions WHERE id < $1::uuid AND id < $2::uuid
            AND id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
          ORDER BY id LIMIT 1 FOR UPDATE`,
-        params,
-      )
-      return rows
-    }
-    default:
-      return []
+      params,
+    )
+    return rows
   }
+  return []
 }

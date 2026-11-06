@@ -86,7 +86,7 @@ describe('friend sync worker account identities', () => {
     )
   })
 
-  for (const config of providers) {
+  for (const [index, config] of providers.entries()) {
     it(`resolves a ${config.provider} UUID to its external identity before syncing`, async () => {
       const owner = await createTestUser()
       const providerUserId =
@@ -121,7 +121,31 @@ describe('friend sync worker account identities', () => {
       ).rejects.toThrow(`${config.jobName}: ${config.accountIdKey} is required`)
       expect(fetchSpy).not.toHaveBeenCalled()
     })
+
+    it(`rejects a mismatched ${config.provider} ordering key and job name`, async () => {
+      const otherJobName = providers[(index + 1) % providers.length]!.jobName
+      await expect(
+        findYourFriendsQueue.add(otherJobName, {} as never, {
+          attempts: 1,
+          removeOnComplete: true,
+          removeOnFail: true,
+          ordering: { key: config.orderingKey },
+        }),
+      ).rejects.toThrow(`find-your-friends ${config.orderingKey} job ${otherJobName} not found`)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
   }
+
+  it('rejects a sync job without an ordering key', async () => {
+    await expect(
+      findYourFriendsQueue.add('syncXFriends', {} as never, {
+        attempts: 1,
+        removeOnComplete: true,
+        removeOnFail: true,
+      }),
+    ).rejects.toThrow('Unknown ordering key: undefined')
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
 
   it('ignores a deleted account generation instead of calling the provider', async () => {
     const owner = await createTestUser()

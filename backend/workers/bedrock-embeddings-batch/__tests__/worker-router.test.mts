@@ -270,6 +270,11 @@ describe('bedrock embeddings batch worker processor', () => {
     await expect(
       processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'unknown')),
     ).rejects.toThrow('Unknown ordering key: unknown')
+    await expect(
+      processBedrockEmbeddingsBatchJob({ data: {}, name: 'unexpected', opts: {} } as Job<
+        Record<string, unknown>
+      >),
+    ).rejects.toThrow('Unknown ordering key: undefined')
   })
 })
 

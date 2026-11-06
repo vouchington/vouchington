@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTestTopic, createTestUser } from '@voucha/test-helpers'
+import { beginTransaction, createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import {
   createHistoryRetentionWindow,
@@ -22,6 +22,7 @@ import {
 import { getReferralClickLog } from '../../attribution/click-log.mts'
 import { streamReferralAttributions } from '../../account-data-requests/stream-consents.mts'
 import { cleanupHistories } from '../cleanup-histories.mts'
+import { listResidualCandidate, type HistoryKind } from '../cleanup-histories-candidates.mts'
 
 const day = 24 * 60 * 60 * 1000
 
@@ -39,6 +40,17 @@ async function createRecommendationPost(userId: string): Promise<string> {
 }
 
 describe('bounded import and referral history retention', () => {
+  it.each<HistoryKind>([
+    'pending_user_import_requests',
+    'referral_attribution_scrub',
+    'referral_attribution_expiry',
+    'dynamic_configuration_revisions',
+  ])('keeps the %s residual probe below the zero cursor', async kind => {
+    await using transaction = await beginTransaction()
+    const zeroId = '00000000-0000-0000-0000-000000000000'
+    expect(await listResidualCandidate(transaction, kind, zeroId, zeroId, null)).toEqual([])
+  })
+
   it('keeps scrub progress across passes and catches late rows behind the cursor', async () => {
     const lock = await acquireHistoryRetentionSweepTestLock()
     const priorCursor = await snapshotHistoryCursorForTest('referral_attribution_scrub')

@@ -38,42 +38,43 @@ async function findStatementViolation(
   depth: number,
   schemaFacts: InsertSchemaFacts,
 ): Promise<string | null> {
-  switch (statement.kind) {
-    case 'insert':
-      return findInsertViolation(statement.insert, statement.sql, depth, schemaFacts)
-    case 'select':
-      return findNestedViolations(statement.query.nestedStatements, depth, schemaFacts)
-    case 'wrapper':
-      if (statement.wrapper.wrapperKind === 'functionDeclaration') return null
-      if (
-        statement.wrapper.wrapperKind === 'explain' &&
-        statement.wrapper.execution === 'nonExecuting'
-      ) {
-        return null
-      }
-      if (!statement.wrapper.complete || statement.wrapper.diagnostics.length > 0) {
-        return statement.sql.trim()
-      }
-      return findStatementsViolation(statement.wrapper.statements, depth, schemaFacts)
-    case 'doBlock':
-      if (!statement.block.complete || statement.block.diagnostics.length > 0) {
-        return statement.sql.trim()
-      }
-      return findStatementsViolation(statement.block.statements, depth, schemaFacts)
-    case 'literalExecute':
-      if (!statement.execute.complete || statement.execute.diagnostics.length > 0) {
-        return statement.sql.trim()
-      }
-      return findStatementsViolation(statement.execute.statements, depth, schemaFacts)
-    case 'conditional':
-      for (const branch of statement.branches) {
-        const violation = await findStatementsViolation(branch.statements, depth, schemaFacts)
-        if (violation !== null) return violation
-      }
+  if (statement.kind === 'insert')
+    return findInsertViolation(statement.insert, statement.sql, depth, schemaFacts)
+  if (statement.kind === 'select')
+    return findNestedViolations(statement.query.nestedStatements, depth, schemaFacts)
+  if (statement.kind === 'wrapper') {
+    if (
+      statement.wrapper.wrapperKind === 'functionDeclaration' ||
+      (statement.wrapper.wrapperKind === 'explain' &&
+        statement.wrapper.execution === 'nonExecuting')
+    ) {
       return null
-    default:
-      return null
+    }
+    if (!statement.wrapper.complete || statement.wrapper.diagnostics.length > 0) {
+      return statement.sql.trim()
+    }
+    return findStatementsViolation(statement.wrapper.statements, depth, schemaFacts)
   }
+  const nested =
+    statement.kind === 'doBlock'
+      ? statement.block
+      : statement.kind === 'literalExecute'
+        ? statement.execute
+        : null
+  if (nested) {
+    if (!nested.complete || nested.diagnostics.length > 0) {
+      return statement.sql.trim()
+    }
+    return findStatementsViolation(nested.statements, depth, schemaFacts)
+  }
+  if (statement.kind === 'conditional') {
+    for (const branch of statement.branches) {
+      const violation = await findStatementsViolation(branch.statements, depth, schemaFacts)
+      if (violation !== null) return violation
+    }
+    return null
+  }
+  return null
 }
 
 async function findStatementsViolation(

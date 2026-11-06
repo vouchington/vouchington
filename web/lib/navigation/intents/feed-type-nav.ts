@@ -31,7 +31,10 @@ export function feedTypeNav(
       return { intent: 'podcasts', listTitleKey: 'nav.podcasts', listPath: '/podcasts' }
     case 'mixed':
       return SOURCES_NAV
-    default:
-      return { intent: 'news', listTitleKey: 'nav.newsSources', listPath: '/news-sources' }
+    case 'article':
+    case null:
+    case undefined:
+      break
   }
+  return { intent: 'news', listTitleKey: 'nav.newsSources', listPath: '/news-sources' }
 }

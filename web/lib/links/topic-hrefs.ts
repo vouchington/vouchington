@@ -71,8 +71,11 @@ export function topicTabForPostType(postType: PostType | undefined): TopicTab | 
     case 'blog_post': {
       return 'posts'
     }
-    default: {
-      return undefined
-    }
+    case 'comment':
+    case 'link':
+    case 'topic_recommendation':
+    case undefined:
+      break
   }
+  return undefined
 }

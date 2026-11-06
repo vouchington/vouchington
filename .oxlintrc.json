@@ -561,7 +561,7 @@
     "typescript/restrict-plus-operands": "error",
     "typescript/return-await": "error",
     "typescript/strict-boolean-expressions": "off",
-    "typescript/switch-exhaustiveness-check": "off",
+    "typescript/switch-exhaustiveness-check": "error",
     "typescript/unified-signatures": "error",
     "typescript/use-unknown-in-catch-callback-variable": "error",
     "typescript/no-unnecessary-type-arguments": "error",

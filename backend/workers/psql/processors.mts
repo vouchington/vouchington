@@ -168,7 +168,14 @@ export default async function processPsql(
     }
     case 'reconcileVoteDrift':
       return reconcilePostVoteDrift()
-    default:
-      throw new Error(`Unknown job: ${jobName}`)
+    case 'aiRetentionContinuation':
+    case 'cleanupDeletedConversations':
+    case 'cleanupOperationalTombstones':
+    case 'cleanupTerminalActivityIdentities':
+    case 'copyright.account-clock-sync':
+    case 'copyright.case-purge':
+    case 'moderationRetentionCleanup':
+      break
   }
+  throw new Error(`Unknown job: ${jobName}`)
 }

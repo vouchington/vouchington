@@ -41,30 +41,21 @@ const invalidateFollowMetrics = async (
   entityIds: string[],
 ) => {
   try {
-    switch (entityTypeName) {
-      case 'topic':
-        await Promise.all([
-          enqueueBulkRefreshTopicMetricsById(entityIds),
-          /* c8 ignore next -- lint-only explicit enqueue disposition. */
-          enqueueBulkRefreshUserMetricsById([userId]),
-        ])
-        break
-      case 'post':
-        await Promise.all([
-          enqueueBulkRefreshPostMetricsById(entityIds),
-          /* c8 ignore next -- lint-only explicit enqueue disposition. */
-          enqueueBulkRefreshUserMetricsById([userId]),
-        ])
-        break
-      case 'user':
-        await enqueueBulkRefreshUserMetricsById([userId, ...entityIds])
-        break
-      case 'rss_feed':
-        await enqueueBulkRefreshUserMetricsById([userId])
-        break
-      default:
-        break
-    }
+    if (entityTypeName === 'topic')
+      await Promise.all([
+        enqueueBulkRefreshTopicMetricsById(entityIds),
+        /* c8 ignore next -- lint-only explicit enqueue disposition. */
+        enqueueBulkRefreshUserMetricsById([userId]),
+      ])
+    else if (entityTypeName === 'post')
+      await Promise.all([
+        enqueueBulkRefreshPostMetricsById(entityIds),
+        /* c8 ignore next -- lint-only explicit enqueue disposition. */
+        enqueueBulkRefreshUserMetricsById([userId]),
+      ])
+    else if (entityTypeName === 'user')
+      await enqueueBulkRefreshUserMetricsById([userId, ...entityIds])
+    else if (entityTypeName === 'rss_feed') await enqueueBulkRefreshUserMetricsById([userId])
   } catch (err) {
     onError(err as Error)
   }

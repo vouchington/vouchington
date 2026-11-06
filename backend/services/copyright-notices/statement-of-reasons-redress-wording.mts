@@ -38,7 +38,9 @@ function copyrightRedressRouteText(route: CopyrightStatementFields['redress'][nu
         route.path!,
         'if you believe the image was removed by mistake or misidentification; see the timing above',
       )
-    default:
-      return copyrightRouteSentence(route.label, route.path!)
+    case 'designated_agent':
+    case 'new_notice':
+      break
   }
+  return copyrightRouteSentence(route.label, route.path!)
 }

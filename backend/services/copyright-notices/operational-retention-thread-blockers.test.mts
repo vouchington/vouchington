@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { beginTransaction } from '@voucha/test-helpers'
 import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
 import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
 import { createTestTerritorialRestrictionScene } from '@voucha/test-helpers/copyright-territorial-restriction-fixtures'
@@ -22,6 +23,9 @@ import {
 } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import type { BlockerCursor } from './operational-retention-thread-blockers-state.mts'
+import { readCopyrightThreadBusinessPage } from './operational-retention-thread-blockers-business.mts'
+import { readCopyrightThreadScreeningPage } from './operational-retention-thread-blockers-screening.mts'
+import { readCopyrightThreadStaffPage } from './operational-retention-thread-blockers-staff.mts'
 
 const initialCursor: BlockerCursor = {
   phase: null,
@@ -45,6 +49,22 @@ async function walkEnforcement(noticeId: string) {
 }
 
 describe('bounded copyright thread blocker proof', () => {
+  it('rejects a completed phase when passed to a specialized blocker reader', async () => {
+    await using transaction = await beginTransaction()
+    const noticeId = crypto.randomUUID()
+    const cursor: BlockerCursor = { ...initialCursor, phase: 'done' }
+
+    await expect(
+      readCopyrightThreadBusinessPage(transaction, noticeId, new Date(), 1, cursor),
+    ).rejects.toThrow('Unexpected copyright business blocker phase: done')
+    await expect(readCopyrightThreadStaffPage(transaction, noticeId, 1, cursor)).rejects.toThrow(
+      'Unexpected copyright staff blocker phase: done',
+    )
+    await expect(
+      readCopyrightThreadScreeningPage(transaction, noticeId, 1, cursor),
+    ).rejects.toThrow('Unexpected copyright screening blocker phase: done')
+  })
+
   it('uses retained redress result after the challenged decision history expires', async () => {
     const scene = await createTestExpiredTerritorialDecisionHistory('restrict')
     const cursor: BlockerCursor = {
