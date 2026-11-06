@@ -3,7 +3,7 @@ import { v7 as uuidv7 } from 'uuid'
 import { CreateModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { Worker } from 'glide-mq'
 import { throwRateLimited } from '@vouchington/queue-errors'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
@@ -16,6 +16,7 @@ import {
 } from '@services/bedrock-embeddings/batch/config'
 import { getBatchIdByJobArn } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
 import { getCpuProviderCooldownRemainingMs } from '@services/bedrock-embeddings/provider-cooldown'
+import { acquireEmbeddingCreationCooldown } from '@voucha/test-helpers/embedding-creation-cooldown'
 import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
@@ -50,13 +51,19 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
 )
 
 describe('creation admission on real GlideMQ', () => {
+  beforeEach(() => {
+    vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
+    vi.stubEnv('ENVIRONMENT', 'staging')
+  })
   afterEach(() => vi.unstubAllEnvs())
 
   // no-mistakes-timeout-reason: real GlideMQ worker drain for creation cooldown recheck after S3 upload
-  it('rechecks shared cooldown after S3 upload before submitting a creation batch', async () => {
-    vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
-    vi.stubEnv('ENVIRONMENT', 'staging')
+  it('rechecks shared cooldown after S3 upload before submitting a creation batch', async ({
+    signal,
+  }) => {
     const fixture = await acquireEmbeddingQuotaFixture()
+    const cooldown = await acquireEmbeddingCreationCooldown(signal)
+    cooldown.beforeRelease(() => fixture.close())
     const owned = createOwnedEmbeddingQueue(
       fixture,
       'cooldown_during_upload',
@@ -158,6 +165,7 @@ describe('creation admission on real GlideMQ', () => {
       if (!image) throw new Error('Expected image cooldown job')
       await owned.waitFor(image.id, 'delay-changed')
       expect(imageAttempts).toBe(1)
+      await cooldown.witnessOwnWrite()
       expect(
         await getCpuProviderCooldownRemainingMs('bedrock-embeddings:creation'),
       ).toBeGreaterThan(0)
@@ -168,15 +176,26 @@ describe('creation admission on real GlideMQ', () => {
       const delayedTopic = await owned.queue.getJob(topic.id)
       expect(delayedTopic?.data).toEqual({ cursor })
       expect(delayedTopic?.opts.deduplication).toEqual(topic.opts.deduplication)
-      await waitForRealGlideEvent(owned.waitFor(topic.id, 'completed'), 'cooldown topic completion')
-      await waitForRealGlideEvent(owned.waitFor(image.id, 'completed'), 'cooldown image completion')
+      const topicCompleted = waitForRealGlideEvent(
+        owned.waitFor(topic.id, 'completed'),
+        'cooldown topic completion',
+      )
+      const imageCompleted = waitForRealGlideEvent(
+        owned.waitFor(image.id, 'completed'),
+        'cooldown image completion',
+      )
+      await cooldown.expire()
+      await cooldown.promote(topic, topicCompleted)
+      await cooldown.promote(image, imageCompleted)
+      await topicCompleted
+      await imageCompleted
       expect(vi.mocked(BedrockControlClient.send)).toHaveBeenCalledExactlyOnceWith(
         expect.any(CreateModelInvocationJobCommand),
       )
       expect(await getBatchIdByJobArn(jobArn)).toBeTruthy()
     } finally {
       releaseUpload.resolve()
-      await fixture.close()
+      await cooldown.close()
     }
   }, 30_000)
 })
