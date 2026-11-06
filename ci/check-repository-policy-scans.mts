@@ -9,6 +9,7 @@ import { checkWorkerSecretExemptPaths } from './check-worker-secret-exempt-paths
 import { checkWorkflowArtifactPolicy } from './check-workflow-artifact-policy.mts'
 import { checkBuildWebTargetsContractPolicy } from './check-build-web-targets-contract-policy.mts'
 import { checkScheduledPromptIndexPolicy } from './check-scheduled-prompt-index-policy.mts'
+import { checkWorkflowCachePnpmPolicy } from './check-workflow-cache-pnpm-policy.mts'
 
 /** Run live repository policies once in the dedicated static CI job. */
 export async function checkRepositoryPolicyScans(root: string): Promise<void> {
@@ -25,6 +26,7 @@ export async function checkRepositoryPolicyScans(root: string): Promise<void> {
     ...checkWorkerSecretExemptPaths(root),
     ...checkBuildWebTargetsContractPolicy(root),
     ...checkScheduledPromptIndexPolicy(root),
+    ...checkWorkflowCachePnpmPolicy(root),
   ]
   if (violations.length > 0) {
     throw new Error(violations.join('\n'))
