@@ -5,7 +5,7 @@ import { BankAccountMoneyInput } from '../bank-account-money-input'
 import type { Money } from '@ts-shared/money'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { mergeMessages } from '@/lib/i18n/use-translations'
-import { esMessages, frMessages, ptMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { esMessages, frMessages, ptMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 describe('BankAccountMoneyInput', () => {
   mergeMessages('es', esMessages)

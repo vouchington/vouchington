@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { StatusPage } from '../status-page'
 import type { useTranslations } from '@/lib/i18n/use-translations'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 describe('StatusPage', () => {
   let t: ReturnType<typeof useTranslations>

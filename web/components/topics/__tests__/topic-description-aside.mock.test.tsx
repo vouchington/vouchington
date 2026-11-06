@@ -4,7 +4,7 @@ import { createTranslator } from '@ts-shared/ui-messages'
 import { TopicDescriptionAside } from '@/components/topics/topic-description-aside'
 import type { TopicContentUpdate } from '@/types/topics'
 import type { useTranslations } from '@/lib/i18n/use-translations'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 vi.mock(
   import('@/components/shared/markdown-content'),

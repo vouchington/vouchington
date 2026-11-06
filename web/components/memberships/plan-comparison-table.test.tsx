@@ -5,7 +5,7 @@ import { createTranslator, type Translator } from '@ts-shared/ui-messages'
 import { PlanComparisonTable } from './plan-comparison-table'
 import type { MembershipBenefitCatalog, MembershipPlanSku } from '@/types/api-responses'
 import plansFixture from '../../../api-fixtures/v1/responses/native.memberships.plans.default.json'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <TooltipProvider>{children}</TooltipProvider>

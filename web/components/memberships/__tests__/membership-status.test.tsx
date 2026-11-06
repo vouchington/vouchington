@@ -4,7 +4,7 @@ import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { mergeMessages } from '@/lib/i18n/use-translations'
 import type { SubscriptionMembership } from '@/types/api-responses'
 import { MembershipStatus } from '../membership-status'
-import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 const membership: SubscriptionMembership = {
   __entity_type: 'membership',

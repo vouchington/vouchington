@@ -6,7 +6,7 @@ import NewsSourcesPage from '../news-sources/import-export/page'
 import PodcastsPage from '../podcasts/import-export/page'
 import SourcesPage from '../sources/import-export/page'
 import TopicsPage from '../topics/import-export/page'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 vi.mock(import('@/lib/seo/metadata'), () => ({
   createNoIndexMetadata: vi.fn<VitestLooseMock>(() => ({})),

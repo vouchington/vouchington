@@ -8,7 +8,7 @@ import {
   esMessages,
   frMessages,
   ptMessages,
-} from '@ts-shared/ui-messages/locale-catalogs'
+} from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 vi.mock(import('@/lib/api/client/currencies'), () => ({
   fetchCurrencies: vi.fn<VitestLooseMock>().mockResolvedValue({ results: [] }),

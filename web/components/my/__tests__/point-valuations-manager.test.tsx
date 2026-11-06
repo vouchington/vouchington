@@ -14,7 +14,7 @@ import { PointValuationsManager } from '../point-valuations-manager'
 
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { mergeMessages } from '@/lib/i18n/use-translations'
-import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 describe('PointValuationsManager Integration Flow', () => {
   beforeEach(() => {

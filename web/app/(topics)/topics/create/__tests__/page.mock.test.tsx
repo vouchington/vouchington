@@ -8,7 +8,7 @@ import { createTopic } from '@/lib/api/client/topics'
 import { checkAvailability } from '@/lib/api/client/availability'
 import { ApiError } from '@vouchington/api-client'
 import { NON_SOURCE_TOPIC_TYPE_OPTIONS } from '@/types/topics'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 const mockToastError = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const mockToastSuccess = vi.hoisted(() => vi.fn<VitestLooseMock>())

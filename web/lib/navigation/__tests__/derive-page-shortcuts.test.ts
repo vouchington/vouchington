@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { NAV_INTENTS } from '../intents'
 import { DERIVED_PAGE_SHORTCUTS } from '../derive-page-shortcuts'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 describe('DERIVED_PAGE_SHORTCUTS parity', () => {
   let t: ReturnType<typeof createTranslator>

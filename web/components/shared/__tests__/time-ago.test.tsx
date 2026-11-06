@@ -3,7 +3,7 @@ import { render, screen, act } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { TimeAgo } from '../time-ago'
 import { formatAbsolute, formatRelative } from '../time-ago-format'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 const boundaryInstants = [
   { boundary: 'UTC midnight', instant: '2026-04-10T23:59:59.999Z' },

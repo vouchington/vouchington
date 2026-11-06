@@ -4,7 +4,7 @@ import { createTranslator } from '@ts-shared/ui-messages'
 import { UserProfileLinks } from '../profile-links'
 import type { useTranslations } from '@/lib/i18n/use-translations'
 import type { ProfileLink } from '@/types/user'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 function makeLink(overrides: Partial<ProfileLink> = {}): ProfileLink {
   return {

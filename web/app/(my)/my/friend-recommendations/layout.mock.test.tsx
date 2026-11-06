@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 vi.mock(import('@/components/my/settings-page-header'), () => ({
   SettingsPageHeader: ({ title }: { title: string }) => <h1>{title}</h1>,

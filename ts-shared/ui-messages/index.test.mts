@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTranslator, type MessageKey } from './index.mts'
 import { catalogTreeForLocale } from './load-catalog-json.mts'
-import { enMessages } from './locale-catalogs.mts'
+import { enMessages } from '../test-helpers/locale-catalogs.mts'
 
 describe('createTranslator', () => {
   const t = createTranslator('en', enMessages)

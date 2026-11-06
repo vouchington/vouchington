@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { computeCrawlOutcome } from '@/components/topics/manage-source/crawl-outcome'
 import { getCrawlOutcomeMessage } from './topic-source-crawl-detail-helpers'
-import { enMessages, esMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages, esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 function translateOutcome(responseCode: number, itemCount?: number): string {
   const outcome = computeCrawlOutcome(
