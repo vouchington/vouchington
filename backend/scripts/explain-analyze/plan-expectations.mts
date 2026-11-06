@@ -21,6 +21,8 @@ export type PlanExpectation =
 
 export interface ScenarioPlanContract {
   expectations: readonly PlanExpectation[]
+  /** Capture the first changes to pages after a checkpoint, including full-page images in WAL. */
+  walCaptureCondition?: 'cold'
   /** Preserve an indexed access-path requirement even with a smaller setup corpus. */
   forbidSequentialScans?: readonly string[]
   /** A negative-match probe can prove that indexed candidates skip a large nonmatching seed. */

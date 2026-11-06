@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createExplainWalCaptureFixture } from '@voucha/test-helpers/explain-wal-capture'
 import { captureScenarioTwice } from './capture-passes.mts'
 import { registerScenarioContract } from './plan-expectations.mts'
 
@@ -53,6 +54,41 @@ describe('EXPLAIN function-call capture', () => {
         ]),
       )
       expect((result.plan as { Plan: { 'Actual Rows': number } }).Plan['Actual Rows']).toBe(1)
+    }
+  })
+
+  it('captures cold WAL in both passes and plan modes while preserving rollback', async () => {
+    const scenarioId = 'post-url-replacement-maximum'
+    registerScenarioContract(scenarioId, { expectations: [], walCaptureCondition: 'cold' })
+    const fixture = await createExplainWalCaptureFixture(scenarioId)
+    const { input } = fixture
+    try {
+      const cold = await fixture.captureCold()
+      const walFpi = (plan: unknown) => (plan as { Plan: { 'WAL FPI': number } }).Plan['WAL FPI']
+      expect(walFpi(cold.plan)).toBeGreaterThan(0)
+      const first: Awaited<ReturnType<typeof captureScenarioTwice>>[number][] = []
+      const second = await captureScenarioTwice(
+        [
+          { ...input, planCacheMode: 'force_custom_plan' },
+          { ...input, planCacheMode: 'force_generic_plan' },
+        ],
+        result => first.push(result),
+      )
+      expect(first).toHaveLength(2)
+      expect(second).toHaveLength(2)
+      for (const result of [...first, ...second]) {
+        expect(walFpi(result.plan)).toBeGreaterThan(0)
+        expect((result.plan as { Plan: { 'Actual Rows': number } }).Plan['Actual Rows']).toBe(1)
+      }
+      expect([...first, ...second].map(result => result.plan_cache_mode)).toEqual([
+        'force_custom_plan',
+        'force_generic_plan',
+        'force_custom_plan',
+        'force_generic_plan',
+      ])
+      expect(await fixture.readMarkdown()).toBe('')
+    } finally {
+      await fixture.cleanup()
     }
   })
 })
