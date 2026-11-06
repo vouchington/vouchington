@@ -108,46 +108,13 @@ jobs:
         timeout-minutes: 8
       - name: Allocate ports
         timeout-minutes: 1
-        run: |
-          # One call keeps every app and collector port distinct.
-          set -euo pipefail
-          PORTS=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 6)
-          read -r PORT NEXT_PORT IMAGE_LAMBDA_PORT WORKER_PORT OTEL_HTTP_PORT OTEL_GRPC_PORT <<< "$PORTS"
-          if [ -z "$PORT" ] || [ -z "$NEXT_PORT" ] || [ -z "$IMAGE_LAMBDA_PORT" ] || [ -z "$WORKER_PORT" ] || [ -z "$OTEL_HTTP_PORT" ] || [ -z "$OTEL_GRPC_PORT" ]; then
-            echo "::error::Failed to allocate ports"
-            exit 1
-          fi
-          {
-            echo "PORT=$PORT"
-            echo "NEXT_PORT=$NEXT_PORT"
-            echo "IMAGE_LAMBDA_PORT=$IMAGE_LAMBDA_PORT"
-            echo "WORKER_PORT=$WORKER_PORT"
-            echo "OTEL_HTTP_PORT=$OTEL_HTTP_PORT"
-            echo "OTEL_GRPC_PORT=$OTEL_GRPC_PORT"
-            echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:$OTEL_HTTP_PORT"
-          } >> "$GITHUB_ENV"
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-playwright-allocate-ports.sh"
       - name: Start OTel collector
         if: inputs.otel_enabled
         timeout-minutes: 2
         env:
           SHARD: ${{ matrix.shard }}
-        run: |
-          set -euo pipefail
-          echo "Starting OTel collector"
-          mkdir -p "$RUNNER_TEMP/otel-output"
-          chmod 0777 "$RUNNER_TEMP/otel-output"
-          COLLECTOR_NAME="voucha-otel-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${SHARD}"
-          docker run -d --name "$COLLECTOR_NAME" \
-            -p "127.0.0.1:$OTEL_HTTP_PORT:4318" \
-            -p "127.0.0.1:$OTEL_GRPC_PORT:4317" \
-            -v "$PWD/dev/otel/collector-config-ci.yaml:/etc/otelcol-contrib/config.yaml:ro" \
-            -v "$RUNNER_TEMP/otel-output:/otel-output" \
-            ghcr.io/vouchington/dependency-otel:0.153.0@sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa
-          sleep 2
-          if [ "$(docker inspect -f '{{.State.Running}}' "$COLLECTOR_NAME")" != "true" ]; then
-            docker logs "$COLLECTOR_NAME" || true
-            exit 1
-          fi
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-playwright-start-otel-collector.sh"
       - name: Set image origin
         timeout-minutes: 1
         run: echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"
@@ -156,16 +123,7 @@ jobs:
         timeout-minutes: 5
       - name: Create cloudflare worker dev vars
         timeout-minutes: 1
-        run: |
-          CF_WORKER_SECRET=$(openssl rand -hex 32)
-          {
-            echo "BACKEND_ORIGIN=http://localhost:$PORT"
-            echo "WEB_ORIGIN=http://localhost:$NEXT_PORT"
-            echo 'CSP_BROWSER_UPLOAD_ORIGINS=["https://test-images.s3.us-west-2.amazonaws.com","https://test-images.s3.dualstack.us-west-2.amazonaws.com"]'
-            echo "CF_WORKER_SECRET=$CF_WORKER_SECRET"
-            echo "CACHE_PLACEHOLDER_NONCE=$(openssl rand -hex 32)"
-          } > cloudflare-worker/.dev.vars
-          echo "CF_WORKER_SECRET=$CF_WORKER_SECRET" >> "$GITHUB_ENV"
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-playwright-create-cloudflare-worker-dev-vars.sh"
       - name: Run database migrations
         working-directory: backend
         run: node data-stores/psql/migrate.mts
@@ -178,16 +136,7 @@ jobs:
           web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
       - name: Compile localization catalog
         timeout-minutes: 3
-        run: |
-          if [ -d /dev/shm ]; then
-            export TMPDIR=/dev/shm
-            sqlite_path="/dev/shm/vouchington-catalog-$$.sqlite"
-          else
-            sqlite_path="${RUNNER_TEMP}/vouchington-catalog.sqlite"
-          fi
-          echo "Compiling localization catalog to $sqlite_path"
-          node backend/services/localization/compile-cli.mts --source localization/catalog --output "$sqlite_path"
-          echo "LOCALIZATION_SQLITE_PATH=$sqlite_path" >> "$GITHUB_ENV"
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-playwright-compile-localization-catalog.sh"
       - name: Clear stale Playwright JUnit report
         timeout-minutes: 1
         run: rm -f test-report.junit.xml
@@ -210,35 +159,7 @@ jobs:
           CI_SHARD: ${{ matrix.shard }}/${{ needs.shards.outputs.shard-total }}
           CI_PROJECT: playwright
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-report.junit.xml
-        run: |
-          set -euo pipefail
-          if [ -r /proc/meminfo ]; then
-            # sleep's output is discarded so the trap never waits on a pipe.
-            # Monitor mode puts the loop in its own process group: killing only
-            # the subshell leaves sleep behind, and the runner's orphan cleanup
-            # can sit on "Terminate orphan process: (sleep)" until the job cap
-            # cancels a shard whose tests already passed.
-            set -m
-            (while sleep 30 >/dev/null 2>&1; do
-              awk '/^(MemAvailable|SwapFree):/ { printf "%s %d MiB ", $1, $2 / 1024 } END { print "" }' /proc/meminfo
-              ps -eo rss=,comm= --sort=-rss | head -3 | awk '{ printf "  %d MiB %s\n", $1 / 1024, $2 }'
-            done) &
-            sampler=$!
-            trap 'status=$?; kill -KILL -- -"$sampler" 2>/dev/null || kill -KILL "$sampler" 2>/dev/null || true; exit "$status"' EXIT
-          fi
-          python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 480 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
-          # `trace: 'on-first-retry'` (playwright/config/shared-config.mts) writes a
-          # trace.zip only for a test's first retry attempt, so its presence under
-          # test-results/ is a direct signal that something retried in this shard —
-          # a flake if the retry then passed, a confirmed failure otherwise. Surface
-          # it as a step output so future alerting can key off retries directly
-          # instead of inferring them from the job's overall conclusion.
-          if find test-results -name 'trace.zip' -print -quit 2>/dev/null | grep -q .; then
-            echo "retried=true" >> "${GITHUB_OUTPUT:-/dev/null}"
-          else
-            echo "retried=false" >> "${GITHUB_OUTPUT:-/dev/null}"
-          fi
-          exit "$test_exit"
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-playwright-run-playwright-tests.sh"
       - name: Stop OTel collector
         if: ${{ always() && inputs.otel_enabled }}
         timeout-minutes: 1

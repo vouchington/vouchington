@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs'
 import { basename, join, relative } from 'node:path'
 
 import { parse as parseJsonc } from 'jsonc-parser'
+import { parse as parseYaml } from 'yaml'
+import { workflowStepScript } from './workflow-step-script.mts'
 
 import {
   allowedWorkspaceIgnoreDependencies,
@@ -28,7 +30,31 @@ export function checkKnipDependencyPolicy(root: string): void {
   const readTracked = (path: string): string | undefined => {
     if (contentCache.has(path)) return contentCache.get(path)
     try {
-      const content = readFileSync(join(root, path), 'utf8')
+      const source = readFileSync(join(root, path), 'utf8')
+      let content = source
+      if (path.startsWith('.github/workflows/') && /\.ya?ml$/.test(path)) {
+        const workflow = parseYaml(source) as {
+          jobs?: Record<string, { steps?: Array<{ run?: string }> }>
+        }
+        const scripts = Object.values(workflow?.jobs ?? {}).flatMap(job =>
+          (job.steps ?? []).flatMap(step =>
+            step.run
+              ? [
+                  workflowStepScript(step.run, script => {
+                    assert(
+                      files.includes(script),
+                      `Knip evidence script must be tracked: ${script}`,
+                    )
+                    const body = readTracked(script)
+                    assert(body !== undefined, `Knip evidence script is missing: ${script}`)
+                    return body
+                  }),
+                ]
+              : [],
+          ),
+        )
+        content = [source, ...scripts].join('\n')
+      }
       contentCache.set(path, content)
       return content
     } catch (err) {

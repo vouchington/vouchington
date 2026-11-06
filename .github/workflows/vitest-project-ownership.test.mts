@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
+import { parse as load } from 'yaml'
 import { VITEST_OWNERSHIP } from '../../ci/vitest/project-ownership.mts'
 import { shardedJobPolicies } from '../../ci/vitest/project-ownership-registry.mts'
 import {
@@ -8,6 +9,7 @@ import {
   toolingWorkflowProjectNames,
 } from '../../test-helpers/vitest-config/tooling-project-registry.mts'
 import { shellLogicalLines } from '../../ci/workflow-shell-policy.mts'
+import { workflowStepScript } from '../../ci/workflow-step-script.mts'
 
 // Validates the model in ci/vitest/project-ownership.mts against the real `--project` commands in
 // .github/workflows/tests-*.yml / storybook.yml, across all four invocation forms. See
@@ -17,15 +19,26 @@ function workflowFile(name: string): string {
   return readFileSync(`.github/workflows/${name}`, 'utf8')
 }
 
+function workflowRunScripts(name: string): string[] {
+  const workflow = load(workflowFile(name)) as {
+    jobs?: Record<string, { steps?: Array<{ run?: string }> }>
+  }
+  return Object.values(workflow.jobs ?? {}).flatMap(job =>
+    (job.steps ?? []).flatMap(step => (step.run ? [workflowStepScript(step.run)] : [])),
+  )
+}
+
 // Extracts every `--project <name>` token from physical lines that actually invoke `vitest run` —
 // deliberately excludes `tsc --noEmit --project <path>/tsconfig.json` steps (present in
 // tests-lambdas.yml, tests-backend-modules.yml, tests-cloudflare-worker.yml), which share the
 // `--project` flag name but are a different tool's step entirely.
 function literalProjectsInvokedBy(workflowFileName: string): Set<string> {
   const projects = new Set<string>()
-  for (const line of shellLogicalLines(workflowFile(workflowFileName))) {
-    if (!line.includes('vitest run')) continue
-    for (const match of line.matchAll(/--project[ =]([^\s]+)/g)) projects.add(match[1])
+  for (const script of workflowRunScripts(workflowFileName)) {
+    for (const line of shellLogicalLines(script)) {
+      if (!line.includes('vitest run')) continue
+      for (const match of line.matchAll(/--project[ =]([^\s]+)/g)) projects.add(match[1])
+    }
   }
   return projects
 }
