@@ -1870,6 +1870,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_retained_copyright_notice_identity_r
  LANGUAGE plpgsql
 ```
 
+## `fn_update_rss_feed_item_source_story_id`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_source_story_id()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_rss_feed_item_sources_story_id`
 
 ```sql

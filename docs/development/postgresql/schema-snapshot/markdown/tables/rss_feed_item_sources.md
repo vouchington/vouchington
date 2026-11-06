@@ -38,4 +38,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_copy_rss_feed_item_source_story_id`: `CREATE TRIGGER trigger_copy_rss_feed_item_source_story_id BEFORE INSERT OR UPDATE OF story_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_ensure_rss_feed_item_source_story_id()`
+- `trigger_ensure_rss_feed_item_source_story_id`: `CREATE TRIGGER trigger_ensure_rss_feed_item_source_story_id BEFORE UPDATE OF story_id ON public.rss_feed_item_sources FOR EACH ROW WHEN ((pg_trigger_depth() = 0)) EXECUTE FUNCTION fn_ensure_rss_feed_item_source_story_id()`
+- `trigger_update_rss_feed_item_source_story_id`: `CREATE TRIGGER trigger_update_rss_feed_item_source_story_id AFTER INSERT ON public.rss_feed_item_sources REFERENCING NEW TABLE AS inserted FOR EACH STATEMENT EXECUTE FUNCTION fn_update_rss_feed_item_source_story_id()`
