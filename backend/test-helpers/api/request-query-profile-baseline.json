@@ -230,11 +230,7 @@
     "code": "backend/services/entity-relations/assert-upsert-allowed.mts:45",
     "routes": [
       "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/posts",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/mcp tools/call add_entity_relation",
-      "POST /api/v1/mcp tools/call create_post"
+      "POST /api/v1/mcp"
     ]
   },
   {
