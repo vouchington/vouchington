@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS membership_stripe_purchase_collision_work_items (
   membership_lineage_binding_id UUID NOT NULL,
   winning_source_kind membership_source_kinds NOT NULL
     CHECK (winning_source_kind IN ('direct', 'family')),
-  winning_plan membership_plan_slugs NOT NULL,
+  winning_plan membership_plan_slugs NOT NULL CHECK (winning_plan IN ('plus', 'pro')),
   collision_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
@@ -44,6 +44,61 @@ COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.winning_source
 COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.winning_plan IS 'Winning plan snapshot used to preserve family tier precedence during deferred discovery.';
 COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.collision_at IS 'Winning membership effective time used for immutable overlap refund caps.';
 COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.created_at IS 'Work insertion time derived from its UUIDv7 identity; recovery orders by id.';
+
+-- Unresolved staff decisions are separate from retryable discovery work. Never guess a
+-- multi-line invoice's refundable amount or keep polling Stripe for deterministic ambiguity.
+CREATE TABLE IF NOT EXISTS membership_stripe_purchase_collision_reviews (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  membership_source_id UUID NOT NULL,
+  membership_provider_lineage_id UUID NOT NULL,
+  membership_lineage_binding_id UUID NOT NULL,
+  originating_invoice_id TEXT NOT NULL CHECK (
+    char_length(originating_invoice_id) BETWEEN 1 AND 255
+    AND originating_invoice_id = TRIM(originating_invoice_id)
+  ),
+  winning_source_kind membership_source_kinds NOT NULL
+    CHECK (winning_source_kind IN ('direct', 'family')),
+  winning_plan membership_plan_slugs NOT NULL CHECK (winning_plan IN ('plus', 'pro')),
+  collision_at TIMESTAMPTZ NOT NULL,
+  invoice_line_count INTEGER NOT NULL CHECK (invoice_line_count > 1),
+  mapped_membership_line_count INTEGER NOT NULL CHECK (
+    mapped_membership_line_count > 0 AND mapped_membership_line_count <= invoice_line_count
+  ),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_reviews__invoice
+  ON membership_stripe_purchase_collision_reviews (membership_provider_lineage_id, originating_invoice_id);
+CREATE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_reviews__source
+  ON membership_stripe_purchase_collision_reviews (membership_source_id, membership_provider_lineage_id);
+CREATE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_reviews__binding
+  ON membership_stripe_purchase_collision_reviews (membership_lineage_binding_id, membership_provider_lineage_id);
+ALTER TABLE membership_stripe_purchase_collision_reviews
+  ADD CONSTRAINT fk_membership_stripe_purchase_collision_reviews__source
+  FOREIGN KEY (membership_source_id, membership_provider_lineage_id)
+  REFERENCES membership_sources (id, membership_provider_lineage_id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_stripe_purchase_collision_reviews
+  VALIDATE CONSTRAINT fk_membership_stripe_purchase_collision_reviews__source;
+ALTER TABLE membership_stripe_purchase_collision_reviews
+  ADD CONSTRAINT fk_membership_stripe_purchase_collision_reviews__binding
+  FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id)
+  REFERENCES membership_lineage_bindings (id, membership_provider_lineage_id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_stripe_purchase_collision_reviews
+  VALIDATE CONSTRAINT fk_membership_stripe_purchase_collision_reviews__binding;
+CREATE TRIGGER trigger_membership_stripe_purchase_collision_reviews_guard
+  BEFORE UPDATE ON membership_stripe_purchase_collision_reviews
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+COMMENT ON TABLE membership_stripe_purchase_collision_reviews IS 'Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation or audit history.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.id IS 'UUIDv7 staff-review identity; bounded staff inspection orders by this key.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_source_id IS 'Retained losing Stripe source; this evidence does not authorize a deleted owner.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_provider_lineage_id IS 'Canonical Stripe lineage identifying the subscription and provider context for staff investigation.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_lineage_binding_id IS 'Retained binding authorized when the collision was captured.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.originating_invoice_id IS 'Exact external Stripe invoice identity requiring staff allocation review.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.winning_source_kind IS 'Immutable winning source kind captured with the deferred collision.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.winning_plan IS 'Immutable supported winning plan captured with the deferred collision.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.collision_at IS 'Captured collision time retained for staff after discovery work completes.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.invoice_line_count IS 'Observed total invoice line count that made automatic allocation ambiguous.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.mapped_membership_line_count IS 'Observed number of invoice lines mapped to membership plans.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.created_at IS 'Review insertion timestamp derived from its UUIDv7 identity.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (

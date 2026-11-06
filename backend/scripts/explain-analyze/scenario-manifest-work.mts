@@ -55,6 +55,8 @@ export const BOUNDED_WORK_SCENARIOS = [
   'membership-reversal-case-retention-resumed-after-blocked',
   'membership-reversal-case-creation',
   'membership-reversal-collision-work-insert',
+  'membership-reversal-collision-review-insert',
+  'membership-reversal-collision-review-replay',
   'membership-reversal-collision-work-existing',
   'membership-reversal-collision-work-load',
   'membership-reversal-collision-work-upper-bound',

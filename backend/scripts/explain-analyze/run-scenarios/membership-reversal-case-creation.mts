@@ -1,6 +1,7 @@
 import { runMembershipReversalCollisionFactScenarios } from './membership-reversal-collision-facts.mts'
 import { seedMembershipReversalCollisionWorkNoise } from './membership-reversal-collision-noise.mts'
 import { runMembershipReversalCollisionWorkScenarios } from './membership-reversal-collision-work.mts'
+import { runMembershipReversalCollisionReviewScenario } from './membership-reversal-collision-review.mts'
 import { seedMembershipReversalPlanNoise } from './membership-reversal-case-noise.mts'
 import { runMembershipReversalSelectorScenarios } from './membership-reversal-case-selectors.mts'
 import { randomUUID } from 'node:crypto'
@@ -169,5 +170,6 @@ export async function runMembershipReversalCaseCreationScenario(): Promise<void>
   )
   const target = await seedMembershipReversalCollisionWorkNoise({ prefix, source, sourceIdentity })
   await runMembershipReversalCollisionWorkScenarios({ userId, source, sourceIdentity, target })
+  await runMembershipReversalCollisionReviewScenario({ source, sourceIdentity, target })
   await runMembershipReversalCollisionFactScenarios({ userId, source, sourceIdentity })
 }

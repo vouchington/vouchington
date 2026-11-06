@@ -21,6 +21,12 @@ export type StripePurchaseCollisionCandidate = {
   mappedLines: MappedLine[]
 }
 
+export type AmbiguousStripePurchaseCollisionInvoice = {
+  invoiceId: string
+  invoiceLineCount: number
+  mappedMembershipLineCount: number
+}
+
 export async function prepareStripePurchaseCollisionCandidates(
   options: StripePurchaseCollisionWork,
 ): Promise<StripePurchaseCollisionCandidate[]> {
@@ -51,10 +57,10 @@ export function buildStripePurchaseCollisionCaseInputs(
   collisions: ReadonlyMap<MembershipPlanSlug, QualifyingStripeCollision>,
 ): {
   caseInputs: PreparedIneligibleStripePurchaseCaseInput[]
-  rejectedInvoiceId: string | null
+  ambiguousInvoices: AmbiguousStripePurchaseCollisionInvoice[]
 } {
   const caseInputs: PreparedIneligibleStripePurchaseCaseInput[] = []
-  let rejectedInvoiceId: string | null = null
+  const ambiguousInvoices: AmbiguousStripePurchaseCollisionInvoice[] = []
   for (const { invoice, mappedLines } of candidates) {
     const overlapping = mappedLines.filter(({ line, plan }) => {
       const collision = collisions.get(plan)
@@ -67,7 +73,11 @@ export function buildStripePurchaseCollisionCaseInputs(
     })
     if (overlapping.length === 0) continue
     if (mappedLines.length !== 1 || invoice.lines.data.length !== 1) {
-      rejectedInvoiceId ??= invoice.id
+      ambiguousInvoices.push({
+        invoiceId: invoice.id,
+        invoiceLineCount: invoice.lines.data.length,
+        mappedMembershipLineCount: mappedLines.length,
+      })
       continue
     }
     const { priceId, plan } = overlapping[0]!
@@ -80,7 +90,7 @@ export function buildStripePurchaseCollisionCaseInputs(
       collisionAt: collision.collisionAt,
     })
   }
-  return { caseInputs, rejectedInvoiceId }
+  return { caseInputs, ambiguousInvoices }
 }
 
 export async function getMappedStripeMembershipInvoiceLines(

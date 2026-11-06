@@ -14,6 +14,11 @@ import {
   mutateTestReversalCaseOperation,
 } from '../../../test-helpers/data-stores/psql/membership-reversal-cases.mts'
 
+import {
+  insertTestStripeCollisionWork,
+  mutateTestStripeCollisionWork,
+} from '../../../test-helpers/stripe-collision-schema.mts'
+
 describe('membership ineligible purchase reversal case schema', () => {
   afterAll(async () => {
     await onGracefulShutdown()
@@ -33,6 +38,14 @@ describe('membership ineligible purchase reversal case schema', () => {
     )
     await expect(deleteTestReversalCaseOperation(fixture.caseId)).rejects.toThrow(
       'membership_ineligible_purchase_reversal_case_operations rows are append-only',
+    )
+  })
+
+  it('rejects updates to captured collision work', async () => {
+    const fixture = await createReversalCaseFixture()
+    const workId = await insertTestStripeCollisionWork(fixture)
+    await expect(mutateTestStripeCollisionWork(workId)).rejects.toThrow(
+      'membership_stripe_purchase_collision_work_items rows are append-only',
     )
   })
 

@@ -13,6 +13,7 @@ import {
   chooseEarliestQualifyingStripeCollision,
   getEarliestCapturedStripeCollisions,
 } from './collision-resolution.mts'
+import { recordStripePurchaseCollisionReviews } from './collision-review.mts'
 import {
   completeStripePurchaseCollisionWork,
   loadStripePurchaseCollisionWork,
@@ -24,7 +25,6 @@ export async function processStripePurchaseCollisionWork(workId: string): Promis
   if (!work) return
   const candidates = await prepareStripePurchaseCollisionCandidates(work)
   let caseInputs: PreparedIneligibleStripePurchaseCaseInput[]
-  let rejectedInvoiceId: string | null
   {
     await using transaction = await beginTransaction()
     const purchasePlans = [
@@ -41,12 +41,12 @@ export async function processStripePurchaseCollisionWork(workId: string): Promis
       collisions,
     )
     caseInputs = prepared.caseInputs
-    rejectedInvoiceId = prepared.rejectedInvoiceId
     await recordPreparedIneligibleStripePurchaseCasesForCollision(
       caseInputs,
       { id: work.sourceId, lineageId: work.lineageId, bindingId: work.bindingId },
       transaction,
     )
+    await recordStripePurchaseCollisionReviews(prepared.ambiguousInvoices, work, transaction)
     await transaction.commit()
   }
   await mapWithConcurrency(caseInputs, 1, async input => {
@@ -56,7 +56,5 @@ export async function processStripePurchaseCollisionWork(workId: string): Promis
       providerEnvironment: work.sourceIdentity.environment,
     })
   })
-  if (rejectedInvoiceId !== null)
-    throw new Error(`Stripe invoice ${rejectedInvoiceId} has ambiguous membership purchase lines`)
   await completeStripePurchaseCollisionWork(workId)
 }

@@ -16,6 +16,10 @@ export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
     'One immutable row per unfinished source-binding collision; successful invoice-case reconciliation deletes it, so storage tracks outstanding collision work.',
   ],
   [
+    'membership_stripe_purchase_collision_reviews',
+    'One current unresolved staff review per lineage/invoice; automatic discovery completes without rescheduling deterministic ambiguity, and explicit staff disposition removes the review.',
+  ],
+  [
     'membership_purchase_intents',
     'Live launch replays remain; failed or unlaunched intents with expiry over 30 days ago and no verification reference are deleted by bounded UUIDv7 keyset cleanup.',
   ],

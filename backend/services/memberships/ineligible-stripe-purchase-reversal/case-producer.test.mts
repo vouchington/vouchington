@@ -8,7 +8,10 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
 import { beginTransaction, getTestIneligiblePurchaseReversal } from '@voucha/test-helpers'
-import { readTestStripePurchaseCollisionWork } from '@voucha/test-helpers/stripe-purchase-collision-work'
+import {
+  readTestStripePurchaseCollisionReview,
+  readTestStripePurchaseCollisionWork,
+} from '@voucha/test-helpers/stripe-purchase-collision-work'
 import { getIneligiblePurchaseReversalCase } from './case-read.mts'
 import {
   recordIneligibleStripePurchaseCollisionWork,
@@ -64,18 +67,14 @@ describe('durable ineligible Stripe purchase case producer', () => {
     },
   )
 
-  it('reconciles valid siblings while ambiguous invoice work remains retryable', async () => {
+  it('reconciles valid siblings and records ambiguous invoices once for staff review', async () => {
     const fixture = await setupProducer('plus', true)
-    fixture.oldLines.forEach((line, index) => {
-      line.id = `${fixture.oldInvoice.id}_${index}`
-      line.period = { start, end }
-    })
+    makeOldInvoiceAmbiguous(fixture)
     const workId = await recordWork(fixture, 'direct', start)
     const jobId = `stripe-purchase-collision__${workId}`
     onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
     await (await memberships.getJob(jobId))?.remove()
-    const message = `Stripe invoice ${fixture.oldInvoice.id} has ambiguous membership purchase lines`
-    await expect(processStripePurchaseCollisionWork(workId)).rejects.toThrow(message)
+    await processStripePurchaseCollisionWork(workId)
     await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toMatchObject({
       refundCapMinorUnits: 100,
     })
@@ -87,13 +86,55 @@ describe('durable ineligible Stripe purchase case producer', () => {
     ).resolves.toBeNull()
     await expect(
       readTestStripePurchaseCollisionWork(fixture.sourceId, collisionAt),
-    ).resolves.toMatchObject({ id: workId })
+    ).resolves.toBeNull()
+    await expect(
+      readTestStripePurchaseCollisionReview(fixture.sourceId, fixture.oldInvoice.id),
+    ).resolves.toMatchObject({
+      membership_source_id: fixture.sourceId,
+      originating_invoice_id: fixture.oldInvoice.id,
+      winning_source_kind: 'direct',
+      winning_plan: 'plus',
+      collision_at: collisionAt,
+      invoice_line_count: 2,
+      mapped_membership_line_count: 2,
+    })
     expect(fixture.createRefund).toHaveBeenCalledTimes(1)
-    await expect(processStripePurchaseCollisionWork(workId)).rejects.toThrow(message)
+    await processStripePurchaseCollisionWork(workId)
     expect(fixture.createRefund).toHaveBeenCalledTimes(1)
+    expect(fixture.invoicesList).toHaveBeenCalledTimes(2)
+  })
+
+  it('completes ambiguous-only work with one invoice listing across two calls', async () => {
+    const fixture = await setupProducer('plus', true)
+    makeOldInvoiceAmbiguous(fixture)
+    fixture.invoicesList.mockResolvedValue({ data: [fixture.oldInvoice], has_more: false })
+    const workId = await recordWork(fixture, 'direct', start)
+    const jobId = `stripe-purchase-collision__${workId}`
+    onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
+    await (await memberships.getJob(jobId))?.remove()
+
+    await processStripePurchaseCollisionWork(workId)
+    await expect(
+      readTestStripePurchaseCollisionReview(fixture.sourceId, fixture.oldInvoice.id),
+    ).resolves.toMatchObject({
+      membership_source_id: fixture.sourceId,
+      originating_invoice_id: fixture.oldInvoice.id,
+      invoice_line_count: 2,
+      mapped_membership_line_count: 2,
+    })
     await expect(
       readTestStripePurchaseCollisionWork(fixture.sourceId, collisionAt),
-    ).resolves.toMatchObject({ id: workId })
+    ).resolves.toBeNull()
+    await expect(
+      getIneligiblePurchaseReversalCase({
+        ...fixture.lookup,
+        originatingInvoiceId: fixture.oldInvoice.id,
+      }),
+    ).resolves.toBeNull()
+    await processStripePurchaseCollisionWork(workId)
+    expect(fixture.invoicesList).toHaveBeenCalledTimes(1)
+    expect(fixture.createRefund).not.toHaveBeenCalled()
+    expect(fixture.cancel).not.toHaveBeenCalled()
   })
 
   it('retains committed work when Stripe invoice listing fails', async () => {
@@ -237,4 +278,11 @@ async function recordWork(
   if (!workId) throw new Error('Expected Stripe purchase collision work')
   await query.commit()
   return workId
+}
+
+function makeOldInvoiceAmbiguous(fixture: Awaited<ReturnType<typeof setupProducer>>): void {
+  fixture.oldLines.forEach((line, index) => {
+    line.id = `${fixture.oldInvoice.id}_${index}`
+    line.period = { start, end }
+  })
 }

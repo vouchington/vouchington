@@ -353,8 +353,10 @@ A bounded recovery sweep re-admits pending identities after a crash or queue los
 run before the short case-write transaction; cancellation and refunds use the existing financial
 operation ledger after commit. Work is removed only after reconciliation succeeds. Queue locks
 own execution; repeated reads and unique invoice cases make overlapping deliveries safe.
-An ambiguous invoice keeps the collision work pending for operator recovery while valid sibling
-cases commit and reconcile independently.
+Ambiguous invoices become durable staff-review records while valid sibling cases commit and
+reconcile independently. Discovery then completes; staff review does not poll Stripe. Transient
+provider failures retain retryable work. Reviews preserve the retained source, binding, invoice
+identity and observed ambiguity until explicit staff disposition; they do not authorize a refund.
 
 | Failure mode                     | Detectable state                                                 | Recovery and idempotency                                                   | Evidence                                                                                  |
 | -------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
@@ -372,3 +374,9 @@ by their persisted financial operation and use its existing provider idempotency
 uses the existing terminal-state convergence check. Distinct collisions may inspect the same
 subscription, but unique lineage/invoice cases preserve the first immutable cap and all later
 attempts reconcile that case. Current producers, workers, and canonical schema share one contract.
+
+The first committed invoice case remains authoritative. Earliest-collision lookup covers facts
+visible to its statement, but an earlier provider event can commit after a later event has
+already frozen that invoice's cap. This rare commit-order inversion is accepted: replay must
+not rewrite a financial snapshot or increase an already allocated refund. Staff can inspect
+the retained evidence rather than treating provider timestamps as a global commit order.
