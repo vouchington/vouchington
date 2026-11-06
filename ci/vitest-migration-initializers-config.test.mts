@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import picomatch from 'picomatch'
 import { parse as parseYaml } from 'yaml'
-import { workflowStepScript } from '../.github/test-helpers/workflow-step-script.mts'
+import { workflowStepScript } from './workflow-step-script.mts'
 import { describe, expect, it } from 'vitest'
 import config from '../vitest.config.mts'
 

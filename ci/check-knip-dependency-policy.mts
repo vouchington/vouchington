@@ -5,7 +5,7 @@ import { basename, join, relative } from 'node:path'
 
 import { parse as parseJsonc } from 'jsonc-parser'
 import { parse as parseYaml } from 'yaml'
-import { workflowStepScript } from '../.github/test-helpers/workflow-step-script.mts'
+import { workflowStepScript } from './workflow-step-script.mts'
 
 import {
   allowedWorkspaceIgnoreDependencies,

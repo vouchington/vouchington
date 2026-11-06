@@ -1,4 +1,4 @@
-import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
+import { workflowStepScript } from '../../ci/workflow-step-script.mts'
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'

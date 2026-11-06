@@ -4,7 +4,7 @@ import { posix } from 'node:path'
 
 import picomatch from 'picomatch'
 import { parse as load } from 'yaml'
-import { workflowStepScript } from './workflow-step-script.mts'
+import { workflowStepScript } from '../../ci/workflow-step-script.mts'
 
 // Rule: a tracked file that a path-gated job's steps reference must trigger that job.
 // Limits: only the first level is followed (files named by a step, action, or reusable workflow);

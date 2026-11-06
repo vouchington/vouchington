@@ -1,4 +1,4 @@
-import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
+import { workflowStepScript } from '../../ci/workflow-step-script.mts'
 import {
   chmodSync,
   existsSync,

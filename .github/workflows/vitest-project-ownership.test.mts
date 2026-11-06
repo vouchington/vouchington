@@ -9,7 +9,7 @@ import {
   toolingWorkflowProjectNames,
 } from '../../test-helpers/vitest-config/tooling-project-registry.mts'
 import { shellLogicalLines } from '../../ci/workflow-shell-policy.mts'
-import { workflowStepScript } from '../test-helpers/workflow-step-script.mts'
+import { workflowStepScript } from '../../ci/workflow-step-script.mts'
 
 // Validates the model in ci/vitest/project-ownership.mts against the real `--project` commands in
 // .github/workflows/tests-*.yml / storybook.yml, across all four invocation forms. See
