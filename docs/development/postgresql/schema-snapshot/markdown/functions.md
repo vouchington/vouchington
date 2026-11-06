@@ -258,14 +258,6 @@ CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_id
  LANGUAGE plpgsql
 ```
 
-## `fn_ensure_rss_feed_item_source_story_id`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ensure_rss_feed_item_source_story_id()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_ensure_topic_merge_participant_not_reserved`
 
 ```sql
@@ -1866,22 +1858,6 @@ CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_retained_copyright_notice_identity_residual()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_update_rss_feed_item_source_story_id`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_source_story_id()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_update_rss_feed_item_sources_story_id`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_sources_story_id()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
