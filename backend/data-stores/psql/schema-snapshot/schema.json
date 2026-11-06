@@ -16757,6 +16757,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_communities__live_public_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_communities__live_public_id ON public.communities USING btree (id DESC) WHERE ((deleted_at IS NULL) AND (archived_at IS NULL) AND (visibility = 'public'::privacy_types))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (archived_at IS NULL) AND (visibility = 'public'::privacy_types))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_communities__profile_image": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -92401,6 +92421,53 @@
             }
           ],
           "predicate": "(creation_source_url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__data_point_community": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__data_point_community ON ONLY public.posts USING btree (community_id, id DESC) WHERE ((post_type = 'data_point'::post_types) AND (community_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((post_type = 'data_point'::post_types) AND (community_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__data_point_no_community": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__data_point_no_community ON ONLY public.posts USING btree (id DESC) WHERE ((post_type = 'data_point'::post_types) AND (community_id IS NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((post_type = 'data_point'::post_types) AND (community_id IS NULL) AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

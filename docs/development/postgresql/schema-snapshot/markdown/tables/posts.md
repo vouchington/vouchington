@@ -147,6 +147,8 @@ _none_
 - `idx_posts__created_by_rejected_at_id`: `CREATE INDEX idx_posts__created_by_rejected_at_id ON ONLY public.posts USING btree (created_by_id, rejected_at DESC, id DESC) WHERE ((rejected_at IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__created_via_oauth_client_id`: `CREATE INDEX idx_posts__created_via_oauth_client_id ON ONLY public.posts USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_posts__creation_source_url_id`: `CREATE INDEX idx_posts__creation_source_url_id ON ONLY public.posts USING btree (creation_source_url_id) WHERE (creation_source_url_id IS NOT NULL)`
+- `idx_posts__data_point_community`: `CREATE INDEX idx_posts__data_point_community ON ONLY public.posts USING btree (community_id, id DESC) WHERE ((post_type = 'data_point'::post_types) AND (community_id IS NOT NULL) AND (deleted_at IS NULL))`
+- `idx_posts__data_point_no_community`: `CREATE INDEX idx_posts__data_point_no_community ON ONLY public.posts USING btree (id DESC) WHERE ((post_type = 'data_point'::post_types) AND (community_id IS NULL) AND (deleted_at IS NULL))`
 - `idx_posts__data_point_vertical`: `CREATE INDEX idx_posts__data_point_vertical ON ONLY public.posts USING btree (data_point_vertical, id DESC) WHERE ((data_point_vertical IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__deleted_by_id`: `CREATE INDEX idx_posts__deleted_by_id ON ONLY public.posts USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_posts__hacker_news_references__id`: `CREATE INDEX idx_posts__hacker_news_references__id ON ONLY public.posts USING btree (id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))`
