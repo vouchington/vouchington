@@ -29,7 +29,9 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   whose order is the membership key. Saved posts, personal lists, community lists, and entity
   relations read one keyset page of live membership rows first, then test the targets for that
   page. A page can be shorter than the requested limit, including empty, while `has_next_page` is
-  true and `end_cursor` is the last membership key inspected. Preserve filter inputs on every
+  true and `end_cursor` is the last membership key inspected. That continuation is best effort:
+  the cursor can name a row the viewer was not shown. Decoding the opaque cursor can reveal that
+  such a row exists and its sort key, not its content. Preserve filter inputs on every
   continuation request and reject a cursor whose encoded query or sort shape is incompatible.
 - Relevance-ranked RSS search uses the same rule with a score, microsecond publication timestamp,
   and UUID keyset. Its opaque scope binds normalized semantic query input, effective filters, and
