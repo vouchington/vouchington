@@ -1,5 +1,6 @@
 import { SEMANTIC_POST_SEARCH_SETTINGS } from '@services/posts/search/execute-query'
 import { searchStorySourcePosts } from '@services/posts/search/story-source-page'
+import { STORY_SOURCE_OWNER_PROBE_LIMIT } from '@services/posts/work-limits'
 import { seedStoryCarriedByManyFeeds } from '../seed-data/story-source-many-feeds.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
@@ -115,22 +116,32 @@ function storySourcePlanContract() {
 
 function storySourceManyFeedsPlanContract() {
   const contract = storySourcePlanContract()
+  const probeSlack = STORY_SOURCE_OWNER_PROBE_LIMIT
   return {
     ...contract,
-    expectations: contract.expectations.map(expectation => {
-      if (
-        expectation.kind === 'maxProcessedRows' &&
-        expectation.relation === 'rss_feed_item_sources'
-      ) {
-        return { ...expectation, max: 900 }
-      }
-      if (expectation.kind === 'usesIndexes') {
-        return {
-          ...expectation,
-          indexes: [...expectation.indexes, 'idx_rss_feed_item_sources__story_feed_item'],
+    expectations: [
+      ...contract.expectations.map(expectation => {
+        if (expectation.kind === 'maxProcessedRows' && expectation.relation === 'rss_feeds') {
+          return { ...expectation, max: expectation.max + probeSlack }
         }
-      }
-      return expectation
-    }),
+        if (
+          expectation.kind === 'maxProcessedRows' &&
+          expectation.relation === 'rss_feed_item_sources'
+        ) {
+          return { ...expectation, max: 900 + probeSlack }
+        }
+        if (expectation.kind === 'maxProcessedRows' && expectation.relation === 'rss_feed_items') {
+          return { ...expectation, max: expectation.max + probeSlack }
+        }
+        if (expectation.kind === 'usesIndexes') {
+          return {
+            ...expectation,
+            indexes: [...expectation.indexes, 'idx_rss_feed_item_sources__story_feed_item'],
+          }
+        }
+        return expectation
+      }),
+      { kind: 'custom' as const, name: 'storyOwnerProbeCap' },
+    ],
   }
 }

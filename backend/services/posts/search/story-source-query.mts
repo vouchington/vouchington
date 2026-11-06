@@ -3,12 +3,8 @@ import { appendStorySourcePageFilters } from './query-builder/where-clause.mts'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions } from './types.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import {
-  appendChildLateral,
-  appendLaterFeedSlice,
-  appendStoryOwnership,
-  resumeBounds,
-} from './story-source-child.mts'
+import { appendChildLateral, appendLaterFeedSlice, resumeBounds } from './story-source-child.mts'
+import { appendStoryOwnership } from './story-source-ownership.mts'
 import type { StoryCursor, StoryFeedBounds } from './story-source-types.mts'
 
 export function buildStorySourcePageQuery(input: {

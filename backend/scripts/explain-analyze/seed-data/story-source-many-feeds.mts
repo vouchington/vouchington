@@ -2,15 +2,24 @@ import { write } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
 const MANY_FEED_STORY_CARRIERS = 1_000
+const INVISIBLE_SOURCES_ABOVE_OWNER = 1_000
 
-/** One story on the newest visible feed plus 1000 older feeds. The owner probe must stop at one source. */
+/** One visible owner, 1000 older visible carriers, and 1000 deleted items ranked above that owner. */
 export async function seedStoryCarriedByManyFeeds(initiatedById: string): Promise<void> {
   const storyId = seedUuid(900_000, '17')
   const postId = seedUuid(900_000, '05')
-  const newest = await write<{ feed_id: string; item_id: string }>(
-    `/* seedStoryCarriedByManyFeeds:newest */ SELECT src.rss_feed_id AS feed_id, src.rss_feed_item_id AS item_id
+  const newest = await write<{
+    feed_id: string
+    item_id: string
+    hostname_id: string
+    url_id: string
+  }>(
+    `/* seedStoryCarriedByManyFeeds:newest */ SELECT src.rss_feed_id AS feed_id,
+       src.rss_feed_item_id AS item_id, url.hostname_id, item.url_id
      FROM rss_feed_item_sources src
      JOIN rss_feeds feed ON feed.id = src.rss_feed_id
+     JOIN urls url ON url.id = feed.rss_feed_url_id
+     JOIN rss_feed_items item ON item.id = src.rss_feed_item_id AND item.deleted_at IS NULL
      WHERE feed.is_enabled AND feed.is_discoverable AND feed.deleted_at IS NULL
      ORDER BY feed.id DESC, src.rss_feed_item_id DESC
      LIMIT 1`,
@@ -44,6 +53,29 @@ export async function seedStoryCarriedByManyFeeds(initiatedById: string): Promis
      WHERE rss_feed_id = $1::uuid AND rss_feed_item_id = $2::uuid`,
     [row.feed_id, row.item_id],
   )
+  // Deleted items on the owner feed get newer ids, so the story index ranks them first.
+  // Their old published_at keeps them out of the page's child window.
+  await write(
+    `/* seedStoryCarriedByManyFeeds:invisible */ WITH guids AS (
+       INSERT INTO rss_feed_item_guids (url_hostname_id, guid)
+       SELECT $1::uuid, 'many-feed-invisible-' || gs.n
+       FROM generate_series(1, $2::int) AS gs(n)
+       ON CONFLICT (url_hostname_id, guid) DO NOTHING
+       RETURNING id
+     ),
+     items AS (
+       INSERT INTO rss_feed_items (
+         id, url_id, data, deleted_at, story_id, bedrock_nova_multimodal_v1_content_sha256)
+       SELECT guids.id, $3::uuid, '{"title":"Invisible story source"}'::jsonb,
+         '2000-01-01T00:00:00Z', $4::uuid, decode(repeat('cd', 32), 'hex')
+       FROM guids
+       RETURNING id
+     )
+     INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at)
+     SELECT $5::uuid, items.id, '1999-01-01T00:00:00Z'
+     FROM items`,
+    [row.hostname_id, INVISIBLE_SOURCES_ABOVE_OWNER, row.url_id, storyId, row.feed_id],
+  )
   await write(
     `/* seedStoryCarriedByManyFeeds:post */ INSERT INTO posts (
        id, created_via, post_type, title,
@@ -67,6 +99,21 @@ export async function seedStoryCarriedByManyFeeds(initiatedById: string): Promis
   if (count < MANY_FEED_STORY_CARRIERS) {
     throw new Error(
       `many-feed story seed expected at least ${MANY_FEED_STORY_CARRIERS} sources, found ${count}`,
+    )
+  }
+  const rankedAbove = await write<{ count: string }>(
+    `/* seedStoryCarriedByManyFeeds:above */ SELECT COUNT(*)::text AS count
+     FROM rss_feed_item_sources src
+     JOIN rss_feed_items item ON item.id = src.rss_feed_item_id
+     WHERE src.story_id = $1::uuid
+       AND item.deleted_at IS NOT NULL
+       AND (src.rss_feed_id, src.rss_feed_item_id) > ($2::uuid, $3::uuid)`,
+    [storyId, row.feed_id, row.item_id],
+  )
+  const above = Number(rankedAbove.rows[0]?.count ?? 0)
+  if (above < INVISIBLE_SOURCES_ABOVE_OWNER) {
+    throw new Error(
+      `many-feed story seed expected at least ${INVISIBLE_SOURCES_ABOVE_OWNER} invisible sources above the owner, found ${above}`,
     )
   }
   // stories and story_posts stay out of this ANALYZE. Refreshing them changes the later

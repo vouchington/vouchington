@@ -140,45 +140,6 @@ function appendFeedIdUpperBound(query: SQLStatement, cursor: StoryCursor | null)
   else query.append(sql`TRUE`)
 }
 
-/** Newest visible feed at least this new, then the greatest item id, owns the story. */
-export function appendStoryOwnership(query: SQLStatement, staff: boolean): void {
-  query.append(sql`
-    sources AS (
-      SELECT source_rows.feed_id, source_rows.feed_ord, source_rows.item_id,
-        source_rows.published_at, source_rows.phase, source_rows.child_rank,
-        CASE
-          WHEN source_rows.story_post_id IS NOT NULL
-           AND owner.feed_id = source_rows.feed_id
-           AND owner.item_id = source_rows.item_id
-          THEN source_rows.story_post_id ELSE NULL
-        END AS post_id
-      FROM source_rows
-      LEFT JOIN LATERAL (
-        SELECT probe.feed_id, probe.item_id
-        FROM (SELECT 1 AS present WHERE source_rows.story_post_id IS NOT NULL) wanted
-        JOIN LATERAL (
-          SELECT owner_src.rss_feed_id AS feed_id, owner_src.rss_feed_item_id AS item_id
-          FROM rss_feed_item_sources owner_src
-          JOIN rss_feed_items owner_item
-            ON owner_item.id = owner_src.rss_feed_item_id
-           AND owner_item.deleted_at IS NULL
-          JOIN rss_feeds owner_feed
-            ON owner_feed.id = owner_src.rss_feed_id
-           AND owner_feed.deleted_at IS NULL`)
-  if (!staff) {
-    query.append(sql`
-           AND owner_feed.is_enabled AND owner_feed.is_discoverable`)
-  }
-  query.append(sql`
-          WHERE owner_src.story_id = source_rows.story_id
-            AND owner_src.rss_feed_id >= source_rows.feed_id
-          ORDER BY owner_src.rss_feed_id DESC, owner_src.rss_feed_item_id DESC
-          LIMIT 1
-        ) probe ON TRUE
-      ) owner ON TRUE
-    )`)
-}
-
 export function resumeBounds(cursor: StoryCursor): StoryFeedBounds & { published: SQLStatement } {
   if (!cursor.item_id) throw createHttpError(400, 'Invalid cursor')
   if (cursor.phase === 'missing') {

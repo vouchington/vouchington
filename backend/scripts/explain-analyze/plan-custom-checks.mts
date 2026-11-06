@@ -21,6 +21,7 @@ import {
 } from './plan-custom/search-communities.mts'
 import { assertSemanticPostCandidatePlan } from './plan-custom/semantic-post.mts'
 import { assertStoryMemberPagePlan } from './plan-custom/story-member-pages.mts'
+import { assertStoryOwnerProbeCap } from './plan-custom/story-owner-probe.mts'
 import { assertStoryProjectionClaimCandidates } from './plan-custom/story-projection-claim.mts'
 import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-custom/topic-viewer-counts.mts'
 import { assertTrendingCommunitiesIsCandidateBounded } from './plan-custom/trending-communities.mts'
@@ -50,6 +51,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   searchCommunityMemberCandidates: assertSearchCommunityMemberCandidates,
   semanticPost: assertSemanticPostCandidatePlan,
   storyMemberPages: assertStoryMemberPagePlan,
+  storyOwnerProbeCap: assertStoryOwnerProbeCap,
   storyProjectionClaimCandidates: assertStoryProjectionClaimCandidates,
   topicViewerCandidateBind: assertTopicViewerCountsDiscussionsUsesCandidateBind,
   trendingCommunities: assertTrendingCommunitiesIsCandidateBounded,

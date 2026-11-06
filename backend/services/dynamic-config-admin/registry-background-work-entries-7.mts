@@ -40,6 +40,8 @@ export const backgroundWorkRegistryEntries7 = {
       story_source_page_size:
         'Feeds read for one story search page. Staff also include disabled and non-discoverable feeds.',
       story_source_child_limit: 'Items read from each feed on a story search page.',
+      story_source_owner_probe_limit:
+        'Sources the story owner probe may read before visibility. The current source owns the story when none of them is visible.',
       data_point_community_page_size:
         'Live public communities read for one data-point search page.',
       data_point_child_limit: 'Data points read from each parent on a data-point search page.',
