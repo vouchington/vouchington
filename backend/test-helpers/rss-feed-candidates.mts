@@ -89,6 +89,24 @@ export async function setCandidateAliasClaim(itemId: string, aliasId: string, sc
     ON CONFLICT (subject_id, object_id) DO UPDATE SET votes_score_up = EXCLUDED.votes_score_up`)
 }
 
+export async function addCandidateTopicBallot(itemId: string, topicId: string, voterId: string) {
+  await write(sql`/* addCandidateTopicBallot */
+    INSERT INTO relation__rss_feed_item__category__topic__votes
+      (subject_id, entity_relation_id, user_id, score)
+    SELECT subject_id, id, ${voterId}, 1
+    FROM relation__rss_feed_item__category__topic
+    WHERE subject_id = ${itemId} AND object_id = ${topicId}`)
+}
+
+export async function addCandidateAliasBallot(itemId: string, aliasId: string, voterId: string) {
+  await write(sql`/* addCandidateAliasBallot */
+    INSERT INTO relation__rss_feed_item__category__topic_alias__votes
+      (subject_id, entity_relation_id, user_id, score)
+    SELECT subject_id, id, ${voterId}, 1
+    FROM relation__rss_feed_item__category__topic_alias
+    WHERE subject_id = ${itemId} AND object_id = ${aliasId}`)
+}
+
 export async function setCandidateVotes(itemId: string, up: number, down: number) {
   await write(sql`/* setCandidateVotes */ UPDATE rss_feed_items
     SET votes_score_up = ${up}, votes_score_down = ${down} WHERE id = ${itemId}`)

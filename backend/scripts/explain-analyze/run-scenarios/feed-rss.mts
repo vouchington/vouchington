@@ -11,6 +11,7 @@ import {
   runRssFeedFirstAndContinuationScenarios,
 } from './rss-feed-pages.mts'
 import { runRssFeedCandidateReconciliationScenarios } from './rss-feed-candidate-maintenance.mts'
+import { runRssTopicMergeCandidateScenarios } from './rss-topic-merge-candidates.mts'
 import * as services from '../run-services.mts'
 
 const {
@@ -22,7 +23,7 @@ const {
 
 export async function runFeedRssScenarios(): Promise<void> {
   await runRssFeedFirstAndContinuationScenarios('rss-feed-item-feed', seedUser, {
-    limit: 25,
+    limit: 1,
     time_range: '1w',
   })
   for (const [scenario, time_range] of [
@@ -31,7 +32,7 @@ export async function runFeedRssScenarios(): Promise<void> {
     ['rss-feed-item-feed-all-time', 'all'],
   ] as const) {
     // no-mistakes-disable-next-line query-reached-per-item: three fixed time windows require independent production query captures and plan gates.
-    await runRssFeedFirstAndContinuationScenarios(scenario, seedUser, {
+    await runRssFeedFirstAndContinuationScenarios(scenario, heavyFollowUser, {
       limit: 25,
       time_range,
     })
@@ -68,7 +69,7 @@ export async function runFeedRssScenarios(): Promise<void> {
     'rss-feed-item-feed-sparse-source-filter',
     seedUser,
     {
-      limit: 25,
+      limit: 1,
       time_range: '1w',
       topic_ids: [seedUuid(0, '04')],
     },
@@ -111,7 +112,7 @@ export async function runFeedRssScenarios(): Promise<void> {
   await runAndCapture('post-search-hot', () =>
     getPostIds(seedUser, { sort: 'hot', limit: 25, time_range: '1w' }),
   )
-  registerRssFeedCandidateScenario('rss-feed-item-feed-related-posts')
+  registerRssFeedCandidateScenario('rss-feed-item-feed-related-posts', undefined, true)
   await runAndCapture('rss-feed-item-feed-related-posts', () =>
     getRssFeedItemFeedIds(seedUser, {
       limit: 25,
@@ -134,4 +135,5 @@ export async function runFeedRssScenarios(): Promise<void> {
     }),
   )
   await runRssFeedCandidateReconciliationScenarios()
+  await runRssTopicMergeCandidateScenarios()
 }

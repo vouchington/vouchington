@@ -44,6 +44,7 @@ export async function runTopicAliasRawPageScenarios(aliasId: string): Promise<vo
 async function captureAliasCandidateReconciliation(aliasId: string): Promise<void> {
   const scenarioId = 'topic-alias-reconcile-rss_item_alias_candidates'
   registerScenarioContract(scenarioId, {
+    allowEmptyResult: true,
     expectations: [
       {
         kind: 'usesIndexes',

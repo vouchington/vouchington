@@ -6,4 +6,5 @@ export const derivedReferences = [
   ['classifier_run_candidates', 'topic_id'],
   ['topic_classifier_results', 'topic_id'],
   ['autotagger_agent_run_topics', 'topic_id'],
+  ['rss_feed_item_topic_candidates', 'topic_id'],
 ] as const
