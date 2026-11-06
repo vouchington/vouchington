@@ -3,7 +3,7 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export const SEMANTIC_POST_CANDIDATE_LIMIT = 1000
 export const STORY_SOURCE_OWNER_PROBE_LIMIT = 32
-export const STORY_SOURCE_OWNER_PROBE_MAX = 128
+const STORY_SOURCE_OWNER_PROBE_MAX = 128
 
 const defaultFields = {
   hacker_news_hot_candidate_limit: 1000,
