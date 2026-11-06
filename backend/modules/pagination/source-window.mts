@@ -44,11 +44,6 @@ export function walkSourceWindow<TItem, TResult, TCursor>(args: {
       const item = pageItems[itemIndex]!
       const accepted = args.accept(item)
       const moreAfter = itemIndex < pageItems.length - 1 || childFull || moreParents
-      if (accepted && results.length >= args.resultLimit) {
-        hasNextPage = true
-        stopped = true
-        break
-      }
       if (accepted) {
         if (!start) start = parent.openCursor(item)
         results.push(accepted)

@@ -87,4 +87,36 @@ describe('walkSourceWindow', () => {
     expect(walked.resume).toBe('a:2')
     expect(walked.start).toBe('a:2')
   })
+
+  it('returns nothing when the result limit is zero', () => {
+    const walked = walkSourceWindow({
+      parents: [parent('a', [{ id: '1', ok: true }])],
+      childLimit: 1,
+      resultLimit: 0,
+      parentHasMore: true,
+      accept: item => item.id,
+    })
+
+    expect(walked).toEqual({ results: [], hasNextPage: false, resume: null, start: null })
+  })
+
+  it('clears the cursor when the last inspected row fills the result limit', () => {
+    const walked = walkSourceWindow({
+      parents: [
+        parent('a', [
+          { id: '1', ok: true },
+          { id: '2', ok: true },
+        ]),
+      ],
+      childLimit: 2,
+      resultLimit: 2,
+      parentHasMore: false,
+      accept: item => (item.ok ? item.id : null),
+    })
+
+    expect(walked.results).toEqual(['1', '2'])
+    expect(walked.hasNextPage).toBe(false)
+    expect(walked.resume).toBeNull()
+    expect(walked.start).toBe('a:1')
+  })
 })
