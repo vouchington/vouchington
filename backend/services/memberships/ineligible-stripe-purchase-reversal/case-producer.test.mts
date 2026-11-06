@@ -1,3 +1,4 @@
+import { setupStripeCollisionProducer as setupProducer } from '@voucha/test-helpers/stripe-collision-producer'
 import { enqueueRecoverStripePurchaseCollisions } from '@queues/memberships/enqueues'
 import { processMembershipJob } from '../../../workers/memberships/processors/process-job.mts'
 import type { Job } from 'glide-mq'
@@ -5,20 +6,14 @@ import type { RecoverStripePurchaseCollisionsData } from '@queues/memberships/ty
 import { recoverStripePurchaseCollisions } from '../../../workers/memberships/processors/stripe-purchase-collisions.mts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import * as stripeClient from '@modules/stripe/client'
 import { memberships } from '@queues/memberships/queues'
-import {
-  beginTransaction,
-  createTestSku,
-  createTestUser,
-  getTestIneligiblePurchaseReversal,
-} from '@voucha/test-helpers'
-import { createMembership } from '../create.mts'
-import { getMembershipSourceIdByMembershipId } from '@services/memberships'
+import { beginTransaction, getTestIneligiblePurchaseReversal } from '@voucha/test-helpers'
 import { readTestStripePurchaseCollisionWork } from '@voucha/test-helpers/stripe-purchase-collision-work'
-import { getStripeMembershipSourceIdentity } from '../create-types.mts'
 import { getIneligiblePurchaseReversalCase } from './case-read.mts'
-import { recordIneligibleStripePurchaseCollisionWork } from './collision-work.mts'
+import {
+  recordIneligibleStripePurchaseCollisionWork,
+  completeStripePurchaseCollisionWork,
+} from './collision-work.mts'
 import { processStripePurchaseCollisionWork } from './process-collision-work.mts'
 
 const start = 1_740_000_000
@@ -28,34 +23,46 @@ const collisionAt = new Date(start * 1_000)
 describe('durable ineligible Stripe purchase case producer', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('processes committed collision work and creates its reversal case', async () => {
-    const fixture = await setupProducer('plus')
-    const workId = await recordWork(fixture, 'direct', start)
-    const jobId = `stripe-purchase-collision__${workId}`
-    onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
-    const job = await memberships.getJob(jobId)
-    expect(job).not.toBeNull()
-    await job?.remove()
+  it.each([
+    [false, false],
+    [true, false],
+    [false, true],
+  ] as const)(
+    'processes history: %s, concurrent completion during listing: %s',
+    async (history, concurrentCompletion) => {
+      const fixture = await setupProducer('plus', history)
+      const workId = await recordWork(fixture, 'direct', start)
+      const jobId = `stripe-purchase-collision__${workId}`
+      onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
+      const job = await memberships.getJob(jobId)
+      expect(job).not.toBeNull()
+      await job?.remove()
 
-    await processStripePurchaseCollisionWork(workId)
+      if (concurrentCompletion)
+        fixture.invoicesList.mockImplementationOnce(async () => {
+          await completeStripePurchaseCollisionWork(workId)
+          return { data: [fixture.invoice], has_more: false }
+        })
+      await processStripePurchaseCollisionWork(workId)
 
-    expect(fixture.cancel).toHaveBeenCalledWith(fixture.subscriptionId)
-    expect(fixture.createRefund).toHaveBeenCalledWith(
-      expect.objectContaining({ charge: fixture.chargeId, amount: 100 }),
-      expect.anything(),
-    )
-    await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toMatchObject({
-      winningSourceKind: 'direct',
-      refundCapMinorUnits: 100,
-    })
-    await expect(
-      getTestIneligiblePurchaseReversal(fixture.subscriptionId, 'production'),
-    ).resolves.toMatchObject({
-      completed_at: expect.any(Date),
-      provider_refund_id: fixture.refundId,
-      receipt_amount_minor_units: '100',
-    })
-  })
+      expect(fixture.cancel).toHaveBeenCalledWith(fixture.subscriptionId)
+      expect(fixture.createRefund).toHaveBeenCalledWith(
+        expect.objectContaining({ charge: fixture.chargeId, amount: 100 }),
+        expect.anything(),
+      )
+      await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toMatchObject({
+        winningSourceKind: 'direct',
+        refundCapMinorUnits: 100,
+      })
+      await expect(
+        getTestIneligiblePurchaseReversal(fixture.subscriptionId, 'production'),
+      ).resolves.toMatchObject({
+        completed_at: expect.any(Date),
+        provider_refund_id: fixture.refundId,
+        receipt_amount_minor_units: '100',
+      })
+    },
+  )
 
   it('retains committed work when Stripe invoice listing fails', async () => {
     const fixture = await setupProducer('plus')
@@ -198,88 +205,4 @@ async function recordWork(
   if (!workId) throw new Error('Expected Stripe purchase collision work')
   await query.commit()
   return workId
-}
-
-async function setupProducer(plan: 'plus' | 'pro') {
-  const user = await createTestUser()
-  const suffix = randomUUID()
-  const applicationId = `producer-${suffix}`
-  const subscriptionId = `sub_${suffix}`
-  const chargeId = `ch_${suffix}`
-  const refundId = `re_${suffix}`
-  const invoiceId = `in_${suffix}`
-  const sku = await createTestSku({ plan, provider_application_id: applicationId })
-  const lines = [
-    {
-      id: `il_${suffix}`,
-      currency: 'usd',
-      pricing: { price_details: { price: sku.stripe_price_id } },
-      period: { start, end },
-    },
-  ]
-  const invoice = {
-    id: invoiceId,
-    status: 'paid',
-    total: 100,
-    currency: 'usd',
-    created: start,
-    payments: {
-      has_more: false,
-      data: [{ status: 'paid', amount_paid: 100, payment: { type: 'charge', charge: chargeId } }],
-    },
-  }
-  const cancel = vi.fn<VitestLooseMock>().mockResolvedValue({})
-  const createRefund = vi
-    .fn<VitestLooseMock>()
-    .mockResolvedValue({ id: refundId, amount: 100, currency: 'usd', status: 'succeeded' })
-  const invoicesList = vi
-    .fn<VitestLooseMock>()
-    .mockResolvedValue({ data: [invoice], has_more: false })
-  vi.spyOn(stripeClient, 'getStripeClient').mockReturnValue({
-    invoices: {
-      list: invoicesList,
-      listLineItems: vi.fn<VitestLooseMock>().mockResolvedValue({ data: lines, has_more: false }),
-    },
-    refunds: {
-      list: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false }),
-      create: createRefund,
-    },
-    disputes: { list: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false }) },
-    subscriptions: { cancel },
-  } as unknown as ReturnType<typeof stripeClient.getStripeClient>)
-  const sourceIdentity = getStripeMembershipSourceIdentity({
-    stripeSubscriptionId: subscriptionId,
-    providerApplicationId: applicationId,
-  })
-  const stripeMembership = await createMembership({
-    userId: user.id,
-    plan,
-    skuId: sku.id,
-    stripeSubscriptionId: subscriptionId,
-    providerApplicationId: applicationId,
-    providerEnvironment: 'production',
-    effectiveAt: new Date(start * 1_000),
-    expiresAt: new Date('2040-01-01T00:00:00.000Z'),
-  })
-  const sourceId = await getMembershipSourceIdByMembershipId(stripeMembership.id)
-  if (!sourceId) throw new Error('Expected Stripe membership source id')
-  const lookup = {
-    originatingInvoiceId: invoiceId,
-    providerEnvironment: 'production' as const,
-    providerApplicationId: applicationId,
-  }
-  return {
-    userId: user.id,
-    sourceIdentity,
-    sourceId,
-    invoice,
-    lines,
-    cancel,
-    createRefund,
-    invoicesList,
-    subscriptionId,
-    chargeId,
-    refundId,
-    lookup,
-  }
 }

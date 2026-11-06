@@ -46,8 +46,8 @@ export async function recordIneligibleStripePurchaseCollisionWork(
       ${source.id}, ${source.lineageId}, ${source.bindingId},
       ${options.winningSourceKind}, ${options.winningPlan}, ${options.collisionAt}
     )
-    ON CONFLICT (membership_source_id, membership_provider_lineage_id, collision_at,
-      winning_source_kind, winning_plan)
+    ON CONFLICT (membership_source_id, membership_provider_lineage_id,
+      membership_lineage_binding_id, winning_source_kind, winning_plan, collision_at)
       DO NOTHING
     RETURNING id
   `)
@@ -61,6 +61,7 @@ export async function recordIneligibleStripePurchaseCollisionWork(
     SELECT id FROM membership_stripe_purchase_collision_work_items
     WHERE membership_source_id = ${source.id}
       AND membership_provider_lineage_id = ${source.lineageId}
+      AND membership_lineage_binding_id = ${source.bindingId}
       AND collision_at = ${options.collisionAt}
       AND winning_source_kind = ${options.winningSourceKind}
       AND winning_plan = ${options.winningPlan}

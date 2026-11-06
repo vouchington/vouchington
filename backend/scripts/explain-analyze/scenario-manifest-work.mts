@@ -61,6 +61,8 @@ export const BOUNDED_WORK_SCENARIOS = [
   'membership-reversal-collision-work-page',
   'membership-reversal-collision-work-complete',
   'membership-reversal-collision-catalog',
+  'membership-reversal-collision-earliest',
+  'membership-reversal-collision-captured-source',
 
   'membership-reversal-case-read',
   'membership-reversal-case-locked-read',

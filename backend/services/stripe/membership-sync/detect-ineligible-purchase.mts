@@ -4,13 +4,19 @@ import { getStripeCustomer } from '@modules/stripe/customers'
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
 import { getStripePurchaseIntentOwner } from '@services/memberships'
 import { getMembershipWorkLimit } from '@services/memberships/work-limits'
-import { recordIneligibleStripePurchaseCaseForCollision } from '@services/memberships/ineligible-stripe-purchase-reversal/case-creation'
+import { recordPreparedIneligibleStripePurchaseCasesForCollision } from '@services/memberships/ineligible-stripe-purchase-reversal/case-creation'
+import { chooseEarliestQualifyingStripeCollision } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-resolution'
 import { getMappedStripeMembershipInvoiceLines } from '@services/memberships/ineligible-stripe-purchase-reversal/case-producer'
-import { isHigherMembershipPlan } from '@services/memberships/plan-ranking'
 import { getDirectMembershipSourceAdmission } from '@services/memberships/direct-source-authority'
+import { createProviderMembershipSource } from '@services/memberships/provider-source'
 import type { StripeMembershipApplicationContext } from '@services/memberships/create-types'
 import { getStripeMembershipSourceIdentity } from './source-identity.mts'
-import sql from 'sql-template-strings'
+import {
+  buildGetBoundStripeSubscriptionOwnerForCollisionQuery,
+  buildGetWinningMembershipForStripePurchaseQuery,
+  buildLockStripePurchaseOwnerForCollisionQuery,
+  getExistingCapturedStripeSource,
+} from './captured-collision-source.mts'
 
 export async function detectIneligibleStripePurchaseFromInvoicePayment(
   invoiceId: string,
@@ -78,94 +84,69 @@ export async function detectIneligibleStripePurchaseFromInvoicePayment(
     sourceIdentity,
     transaction,
   )
-  if (
-    admission.accepted ||
-    (admission.currentSourceKind !== 'family' &&
-      (admission.currentSourceKind !== 'direct' || admission.currentProvider === 'stripe'))
-  ) {
-    await transaction.commit()
-    return false
-  }
-  const { rows } = await transaction(
-    buildGetWinningMembershipForStripePurchaseQuery(userId, new Date(line.period.start * 1_000)),
-  )
-  const winner = rows[0] as
+  const currentCanWin =
+    !admission.accepted &&
+    (admission.currentSourceKind === 'family' ||
+      (admission.currentSourceKind === 'direct' && admission.currentProvider !== 'stripe'))
+  const currentRows = currentCanWin
+    ? (
+        await transaction(
+          buildGetWinningMembershipForStripePurchaseQuery(
+            userId,
+            new Date(line.period.start * 1_000),
+          ),
+        )
+      ).rows
+    : []
+  const current = currentRows[0] as
     | { sourceKind: 'direct' | 'family'; plan: 'plus' | 'pro'; effectiveAt: Date }
     | undefined
-  if (!winner || (winner.sourceKind === 'family' && isHigherMembershipPlan(plan, winner.plan))) {
+  const capturedSource = await getExistingCapturedStripeSource(
+    { userId, sourceIdentity, customerId, purchasePlan: plan },
+    transaction,
+  )
+  if (!current && !capturedSource) {
     await transaction.commit()
     return false
   }
-  const created = await recordIneligibleStripePurchaseCaseForCollision(
-    {
-      userId,
-      sourceIdentity: { ...sourceIdentity, providerAccountId: customerId },
-      invoice,
-      stripePriceId,
-      winningSourceKind: winner.sourceKind,
-      collisionAt: winner.effectiveAt,
-    },
+  const fullSourceIdentity = {
+    ...sourceIdentity,
+    providerAccountId: capturedSource ? capturedSource.providerAccountId : customerId,
+  }
+  const source =
+    capturedSource ??
+    (await createProviderMembershipSource(
+      { userId, sourceKind: 'direct', sourceIdentity: fullSourceIdentity },
+      transaction,
+    ))
+  const winner = chooseEarliestQualifyingStripeCollision(
+    capturedSource ?? undefined,
+    current
+      ? {
+          winningSourceKind: current.sourceKind,
+          winningPlan: current.plan,
+          collisionAt: current.effectiveAt,
+        }
+      : null,
+    plan,
+  )
+  if (!winner) {
+    await transaction.commit()
+    return false
+  }
+  const created = await recordPreparedIneligibleStripePurchaseCasesForCollision(
+    [
+      {
+        sourceIdentity: fullSourceIdentity,
+        invoice,
+        stripePriceId,
+        winningSourceKind: winner.winningSourceKind,
+        collisionAt: winner.collisionAt,
+      },
+    ],
+    source,
     transaction,
   )
   await transaction.commit()
-  return created
-}
-
-export function buildGetWinningMembershipForStripePurchaseQuery(
-  userId: string,
-  periodStartedAt: Date,
-) {
-  return sql`/* getWinningMembershipForStripePurchase */
-    SELECT source.source_kind AS "sourceKind",
-      (SELECT product.plan FROM membership_products product
-        WHERE product.id = membership.membership_product_id) AS plan,
-      membership.effective_at AS "effectiveAt"
-    FROM memberships membership
-    INNER JOIN membership_sources source ON source.id = membership.membership_source_id
-    LEFT JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id
-    LEFT JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
-    WHERE membership.user_id = ${userId}
-      AND membership.projection_ended_at IS NULL
-      AND membership.cancelled_at IS NULL AND membership.expired_at IS NULL
-      AND membership.paused_at IS NULL
-      AND (membership.expires_at IS NULL OR membership.expires_at > ${periodStartedAt})
-      AND (source.source_kind = 'family'
-        OR (source.source_kind = 'direct' AND context.provider IN ('apple_app_store', 'google_play', 'microsoft_store')))
-    LIMIT 1 FOR SHARE OF membership, source
-  `
-}
-
-export function buildLockStripePurchaseOwnerForCollisionQuery(userId: string) {
-  return sql`/* detectIneligibleStripePurchaseFromInvoicePayment:lockUser */
-    SELECT id FROM users WHERE id = ${userId} FOR UPDATE`
-}
-
-export function buildGetBoundStripeSubscriptionOwnerForCollisionQuery(
-  sourceIdentity: {
-    environment: 'test' | 'production'
-    applicationId: string
-    providerLineageId: string
-  },
-  customerId: string,
-) {
-  return sql`/* getBoundStripeSubscriptionOwnerForCollision */
-    SELECT source.user_id AS "userId"
-    FROM membership_provider_contexts context
-    INNER JOIN membership_provider_lineages lineage
-      ON lineage.membership_provider_context_id = context.id
-    INNER JOIN membership_lineage_bindings binding
-      ON binding.membership_provider_lineage_id = lineage.id
-    INNER JOIN membership_sources source
-      ON source.membership_provider_lineage_id = lineage.id
-      AND source.user_id = binding.user_id
-    INNER JOIN users account ON account.id = source.user_id
-    WHERE context.provider = 'stripe'
-      AND context.environment = ${sourceIdentity.environment}
-      AND context.application_id = ${sourceIdentity.applicationId}
-      AND lineage.provider_lineage_id = ${sourceIdentity.providerLineageId}
-      AND lineage.provider_account_id = ${customerId}
-      AND binding.source_kind = 'direct' AND binding.released_at IS NULL
-      AND source.source_kind = 'direct'
-    LIMIT 1
-  `
+  return created.includes(invoice.id)
 }

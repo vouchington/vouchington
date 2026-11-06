@@ -1,3 +1,4 @@
+import { runMembershipReversalCollisionFactScenarios } from './membership-reversal-collision-facts.mts'
 import { seedMembershipReversalCollisionWorkNoise } from './membership-reversal-collision-noise.mts'
 import { runMembershipReversalCollisionWorkScenarios } from './membership-reversal-collision-work.mts'
 import { seedMembershipReversalPlanNoise } from './membership-reversal-case-noise.mts'
@@ -168,4 +169,5 @@ export async function runMembershipReversalCaseCreationScenario(): Promise<void>
   )
   const target = await seedMembershipReversalCollisionWorkNoise({ prefix, source, sourceIdentity })
   await runMembershipReversalCollisionWorkScenarios({ userId, source, sourceIdentity, target })
+  await runMembershipReversalCollisionFactScenarios({ userId, source, sourceIdentity })
 }

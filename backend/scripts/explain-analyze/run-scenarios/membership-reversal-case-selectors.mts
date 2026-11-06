@@ -6,7 +6,7 @@ import {
   buildGetBoundStripeSubscriptionOwnerForCollisionQuery,
   buildGetWinningMembershipForStripePurchaseQuery,
   buildLockStripePurchaseOwnerForCollisionQuery,
-} from '@services/stripe/membership-sync/detect-ineligible-purchase'
+} from '@services/stripe/membership-sync/captured-collision-source'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 

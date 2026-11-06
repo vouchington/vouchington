@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS membership_stripe_purchase_collision_work_items (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_work_items__collision
   ON membership_stripe_purchase_collision_work_items (
-    membership_source_id, membership_provider_lineage_id, collision_at,
-    winning_source_kind, winning_plan
+    membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
+    winning_source_kind, winning_plan, collision_at
   );
 CREATE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_work_items__binding
   ON membership_stripe_purchase_collision_work_items (
