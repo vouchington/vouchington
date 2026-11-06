@@ -89,10 +89,8 @@ async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
   await seedAgentModerationRetention()
   await write(`/* analyzeAgentModerationRetention */
     ANALYZE posts, agent_moderations, agent_moderation_votes,
-      moderation_training_feedbacks, vote_integrity_flags, moderator_actions,
-      moderation_transparency_released_daily_rollups`)
+      moderation_training_feedbacks, vote_integrity_flags, moderator_actions, moderation_transparency_released_daily_rollups`)
 }
-
 async function main() {
   prepareOutputDir()
   try {
@@ -174,7 +172,6 @@ async function main() {
     await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios)
     await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
     await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
-    // The large partitioned corpus runs after every ordinary plan.
     await runStep(runCommentDescendantPartitionedPages.name, runCommentDescendantPartitionedPages)
     const runErrors: unknown[] = []
     try {

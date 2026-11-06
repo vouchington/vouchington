@@ -28,7 +28,7 @@ const { min, max, default: defaultLimit } = COMMENT_DESCENDANTS_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Page direct-child heads with bounded previews. IDs sort within each page only. Follow opaque end_cursor even on empty pages; it may skip invisible heads. has_next_page means more heads, not all replies. Open a returned comment as post_id to expand. Deleted or unmoderated replies may be content-free placeholders.',
+      'Page direct-child heads with bounded previews. IDs sort per page. Follow opaque end_cursor on empty pages; it may skip unseen heads. has_next_page means more heads, not all replies. Expand returned comments via post_id. Deleted or unmoderated replies are placeholders.',
     parameters: {
       type: 'object',
       properties: {
