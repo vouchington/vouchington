@@ -52,9 +52,15 @@ describe('QueuesPage', () => {
   })
 
   it('renders the shared inline error alert when refresh fails after jobs loaded', async () => {
+    let rejectRefresh: (error: Error) => void = () => {}
     mockFetchScheduledJobs
       .mockResolvedValueOnce({ jobs: [createScheduledJob()] })
-      .mockRejectedValueOnce(new Error('Refresh failed'))
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectRefresh = reject
+          }),
+      )
 
     render(<QueuesPage />)
 
@@ -69,8 +75,12 @@ describe('QueuesPage', () => {
     await waitFor(() => {
       expect(mockFetchScheduledJobs).toHaveBeenCalledTimes(2)
     })
+    expect(screen.getByText('Refreshing...')).toBeInTheDocument()
+    expect(screen.queryByText('Refresh failed')).not.toBeInTheDocument()
 
-    expect(screen.getByText('Refresh failed')).toBeInTheDocument()
+    rejectRefresh(new Error('Refresh failed'))
+
+    expect(await screen.findByText('Refresh failed')).toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { name: 'Error Loading Scheduled Jobs' }),
     ).not.toBeInTheDocument()
