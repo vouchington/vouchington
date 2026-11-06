@@ -23,8 +23,6 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
     'hostname_path_boilerplate_removal_urls',
     'Pure join table keyed by boilerplate removal and URL.',
   ],
-  ['categories__related_categories', 'Pure relation table; relation timing is not queried.'],
-  ['categories__related_topics', 'Pure relation table; relation timing is not queried.'],
   [
     'community_agent_prompts',
     'Extension table keyed by agent_prompts.id; timestamps live on the base prompt.',
@@ -45,11 +43,7 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
   ['community_post_reviews', 'Review lifecycle timestamps model moderation state.'],
   ['currencies', 'Static lookup table.'],
   ['migrations', 'Internal migration ledger.'],
-  ['pending_user_import_requests', 'Pending request table keyed by provider request ID.'],
   ['retailer_countries', 'Pure retailer-country join table.'],
-  ['rss_feed_followers_by_session', 'Session follow join table without entity lifecycle.'],
-  ['rss_feed_followers_by_user', 'User follow join table without entity lifecycle.'],
-  ['totp_recovery_codes', 'Recovery code lifecycle is represented by used_at.'],
   ...SOCIAL_GRAPH_TABLES_WITHOUT_CREATED_AT,
 ])
 

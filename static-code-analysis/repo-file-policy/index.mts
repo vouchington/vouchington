@@ -17,7 +17,10 @@ import { checkMigrationSqlGuard } from './migration-sql-guard.mts'
 import { checkExtraGeneratedColumnsFreshness } from './extra-generated-columns-freshness.mts'
 import { checkUuidv7CreatedAtDdl } from './uuidv7-created-at-ddl-guard.mts'
 import { checkModerationHistoryGuard } from './moderation-history-guard.mts'
-import { checkStaleSchemaAllowlistEntries } from './schema-allowlist-freshness.mts'
+import {
+  checkSchemaAllowlistFreshness,
+  schemaAllowlistModules,
+} from './schema-allowlist-freshness.mts'
 import { checkRouteAdminSurfaceGuard } from './route-admin-surface-guard.mts'
 import { checkFiniteEnumRippleGuard } from './finite-enum-ripple-guard.mts'
 import { checkSchemaDocDriftGuard } from './schema-doc-drift-guard.mts'
@@ -96,7 +99,7 @@ export async function checkRepoFilePolicy(
   checkSplitMarkdownCanonicalLinkGuard(ctx.repoRoot, trackedFiles, errors)
   await checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
   await checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
-  checkStaleSchemaAllowlistEntries(ctx.repoRoot, trackedFiles, schema, errors)
+  checkSchemaAllowlistFreshness(trackedFiles, schema, schemaAllowlistModules, errors)
   checkRouteAdminSurfaceGuard(ctx.repoRoot, trackedFileSet, errors, options.remaining)
   checkFiniteEnumRippleGuard(ctx, errors, trackedFiles)
   checkSchemaDocDriftGuard(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)

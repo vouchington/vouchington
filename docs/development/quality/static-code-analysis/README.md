@@ -93,6 +93,8 @@ SQL paths at that base: existing wording and stale-entry checks make those paths
 the base allowlist without executing or parsing historical TypeScript. It does not establish that
 any migration was never staged; existing legacy markers stay until their provenance is resolved.
 
+Schema test allowlists are checked against the current snapshot from their evaluated exports. This catches removed tables and columns even when an exception is composed through a spread; newly tracked allowlist modules must join the freshness check before they can pass policy.
+
 ## PostgreSQL Conflict Ordering
 
 `postgres-conflict-ordering` and `postgres-lock-ordering` (catalog-backed `no-mistakes` rules over the generated [catalog](../../postgresql/schema-snapshot/README.md#no-mistakes-catalog)) require a multi-row UPSERT's conflict target and source `ORDER BY` to begin with the same unique-index key sequence, and multi-row row locks to follow the same prefix, so concurrent writers acquire locks in one order and cannot deadlock. Dynamic SQL that reaches the parser fails closed. Tests, fixtures, migrations, views, and manual scripts are outside the production paths.
