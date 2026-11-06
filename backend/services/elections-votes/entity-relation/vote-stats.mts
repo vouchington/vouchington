@@ -156,7 +156,7 @@ export function enqueuePostNotificationReconciliationIfUpdated(
 export async function updateEntityRelationElectionVoteStats(
   target: EntityRelationElectionTarget,
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- replica aggregation, mutation, and follow-up side effects are ordered
+  // ast-grep-ignore: no-three-sequential-awaits -- replica aggregate output feeds persistence; await persistence before cache invalidation, then settle invalidation before publisher and notification follow-ups
   const stats = await aggregateElectionVoteStatsFromReplica(
     getEntityRelationElectionConfig(target.relationTable),
     target.entityRelationId,
@@ -171,7 +171,7 @@ export async function updateEntityRelationElectionVoteStats(
 export async function updateEntityRelationElectionVoteStatsFromPrimary(
   target: EntityRelationElectionTarget,
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- read-after-write aggregation, stats persistence, then cache invalidation are ordered
+  // ast-grep-ignore: no-three-sequential-awaits -- primary aggregate output feeds persistence; await persistence before cache invalidation, then settle invalidation before publisher and notification follow-ups
   const stats = await aggregateElectionVoteStatsFromPrimary(
     getEntityRelationElectionConfig(target.relationTable),
     target.entityRelationId,

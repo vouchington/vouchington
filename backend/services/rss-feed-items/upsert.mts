@@ -132,7 +132,7 @@ export async function upsertRssFeedItems(
     STORY_CLUSTERING_CLASSIFIER_SLUG,
   ])
   const changedSourceRows = buildRssFeedItemSourceInputs(rows, feedItemsByGuid)
-  // ast-grep-ignore: no-three-sequential-awaits -- source rows, projection restart, and category snapshots share one transaction.
+  // ast-grep-ignore: no-three-sequential-awaits -- persist source rows before projection restart; finish restart before category snapshot writes, and admit publication follow-ups only after commit
   const insertedSourceRows = await upsertRssFeedItemSources(txQuery, rssFeedId, [
     ...unchangedUnlinkedSourceRows,
     ...changedSourceRows,

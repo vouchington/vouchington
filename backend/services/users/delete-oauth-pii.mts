@@ -5,7 +5,7 @@ export async function sanitizeOAuthAccountPii(
   userId: string,
   query: TransactionQuery,
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
+  // ast-grep-ignore: no-three-sequential-awaits -- finish each provider PII erasure before the next provider update samples its unlink timestamp; complete all seven sanitization writes before returning to deletion
   await query(sql`/* sanitizeOAuthAccountPii */
     UPDATE facebook_accounts
     SET user_id = NULL,

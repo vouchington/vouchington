@@ -102,7 +102,7 @@ export async function applyCrawlChunkBatchUpdates(items: BatchUpdateItem[]): Pro
       `COPY ${tempTable} (crawl_id, order_index, content_sha256, embedding, input_token_count) FROM STDIN WITH (FORMAT CSV)`,
     ),
   )
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
+  // ast-grep-ignore: no-three-sequential-awaits -- COPY must populate temporary rows before embedding-cache and chunk writes; complete the cache upsert before chunk mutation, and both writes before commit
   await pipeline(Readable.from(generateCrawlChunkCsvRows(parsed)), copyStream)
 
   await query(

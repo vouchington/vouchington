@@ -35,7 +35,7 @@ export function createVoteStatsUpdater(
 ) {
   return async function updateEntityVoteStats(entityId: string): Promise<void> {
     // Intentionally replica-sourced + delayed; see aggregateElectionVoteStatsFromReplica docstring and #7352.
-    // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
+    // ast-grep-ignore: no-three-sequential-awaits -- persist aggregate stats before invalidating their cache; settle invalidation before afterUpdate reads current state or admits follow-up jobs
     const stats = await aggregateElectionVoteStatsFromReplica(config, entityId)
     await updateElectionStatsIfChanged(config, entityId, stats)
     await options.invalidate(entityId)

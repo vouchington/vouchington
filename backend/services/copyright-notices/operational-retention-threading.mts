@@ -141,7 +141,7 @@ async function sweepPage(
   }
   // The marker and first irreversible delete commit together. Old-source replay cannot
   // recreate a removed reference between pages; a fresh source remains admissible.
-  // ast-grep-ignore: no-three-sequential-awaits -- the replay fence must precede bounded child deletion, then its cursor must record committed progress.
+  // ast-grep-ignore: no-three-sequential-awaits -- persist the retirement cutoff before deleting thread evidence so replay is fenced; save the cursor from the completed delete page progress
   await transaction(sql`/* retireCopyrightCaseThread */
     INSERT INTO copyright_notice_email_thread_retirements
       (copyright_notice_id, retired_before_intake_bound)

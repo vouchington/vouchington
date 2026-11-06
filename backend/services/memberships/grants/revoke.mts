@@ -146,7 +146,7 @@ async function revokeGrantInTransaction(
       },
     }
   }
-  // ast-grep-ignore: no-three-sequential-awaits -- closing, auditing/outboxing, and promotion are ordered writes in one transaction
+  // ast-grep-ignore: no-three-sequential-awaits -- close active grant and source state before revoke audit and outbox writes; finish revoked projection accounting before activating the next grant or fallback
   await closeActiveGrant(grant.id, grant.membership_source_id, revokedAt, query)
   await recordMembershipChange({
     membershipId: membership.id,

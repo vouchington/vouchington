@@ -19,7 +19,7 @@ export async function publishPersistedDeliveryRecord(
     throw new Error(
       `Media delivery generation changed while publishing ${record.media_delivery_registry_record_id}`,
     )
-  // ast-grep-ignore: no-three-sequential-awaits -- invalidate only after edge publication succeeds, then acknowledge only after invalidation succeeds
+  // ast-grep-ignore: no-three-sequential-awaits -- publish the registry generation at the edge before purging its delivery path; write the completion receipt only after purge succeeds
   await putMediaDeliveryRegistryRecord({
     deliveryKey: getImagePlacementDeliveryKey({
       placementId: record.placement_id,

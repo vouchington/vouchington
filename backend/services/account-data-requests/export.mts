@@ -37,7 +37,7 @@ const BOOKMARK_CSV_HEADER_LINE = 'object_id,predicate,created_at\n'
 
 /** Writes all export CSVs into exportDir. */
 export async function writeExportFiles(userId: string, exportDir: string): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- serial CSV writes keep each cursor drain exclusive
+  // ast-grep-ignore: no-three-sequential-awaits -- mkdir must create the output directory before CSV writes; finish each cursor-backed file pipeline and release its cursor before starting the next file
   await mkdir(exportDir)
   await writeCsvFromGenerator(join(exportDir, 'profile.csv'), streamProfile(userId))
   await writeCsvFromGenerator(join(exportDir, 'posts.csv'), streamPosts(userId))

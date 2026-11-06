@@ -38,7 +38,7 @@ export async function deleteCopyrightCaseFinalTail(
       WHERE id = ${initialLinks[0].copyright_notice_email_intake_id}::uuid`)
   }
 
-  // ast-grep-ignore: no-three-sequential-awaits -- fixed replay anchors delete in FK order, with each table's permit set before its DELETE.
+  // ast-grep-ignore: no-three-sequential-awaits -- set each replay-anchor table permit before its guarded DELETE; finish each FK-ordered deletion before authorizing the next table
   await query(sql`/* scopeCopyrightCaseFinalFormIntake */
     SELECT set_config('app.copyright_case_purge_table', ${COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER[2]}, true)`)
   await query(sql`/* deleteCopyrightCaseFinalFormIntake */
@@ -60,7 +60,7 @@ export async function deleteCopyrightCaseFinalTail(
 
   // The final result remains on the case through every earlier page. Null the
   // current FK only inside the same transaction that removes its case root.
-  // ast-grep-ignore: no-three-sequential-awaits -- the root pointer cut precedes decision-identity and root deletion in one transaction.
+  // ast-grep-ignore: no-three-sequential-awaits -- set the notice permit before cutting current decision FK pointers; remove decision identities after that cut, then delete the notice root
   await query(sql`/* scopeCopyrightCaseFinalNoticePointer */
     SELECT set_config('app.copyright_case_purge_table', 'copyright_notices', true)`)
   await query(sql`/* cutCopyrightCaseFinalNoticePointer */

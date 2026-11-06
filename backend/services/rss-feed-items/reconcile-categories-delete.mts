@@ -49,7 +49,7 @@ export async function deleteStaleCategoriesAndRetractVotes(
       ) SELECT * FROM stale_categories`,
     [itemIds, categoryItemIds, categoryTexts],
   )
-  // ast-grep-ignore: no-three-sequential-awaits -- retract stale votes before recording the resulting story and alias publication work.
+  // ast-grep-ignore: no-three-sequential-awaits -- retract unsupported category votes before capturing resulting story eligibility; finish story publication work before scheduling affected alias publication
   await retractUnsupportedCategorizerVotes(staleCategories, query)
   await recordStoryPublicationChangesForCategoryTopics(
     query,

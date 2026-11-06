@@ -83,7 +83,7 @@ async function unpublishInTransaction(
     { query },
   )
   if ((rowCount ?? 0) === 0) return 'already-removed'
-  // ast-grep-ignore: no-three-sequential-awaits -- review history, publication capture, and moderator audit must commit in causal order
+  // ast-grep-ignore: no-three-sequential-awaits -- persist unpublish review history before publication capture, then record moderator audit after both unpublish effects complete
   await write(
     sql`/* recordAgentPublicationReviewChange */
       INSERT INTO community_post_review_changes (
