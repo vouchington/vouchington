@@ -81,6 +81,11 @@ while `has_next_page` is true. It describes more heads, not complete previews; o
 comment through the same descendants operation reaches replies beyond its preview budget. REST
 and MCP share cursor parsing, runtime limit bounds and this ordering contract.
 
+**Known, accepted gap:** The best-effort `end_cursor` can identify the last inspected row even
+when it was filtered out as hidden, deleted, blocked or otherwise ineligible. Decoding the opaque
+cursor can reveal that such a row exists and its sort key (such as an ID or timestamp), but not its
+content.
+
 ### Messaging Traversal And Query Plans
 
 - Direct-message inbox cursors for `/api/v1/my/messages` contain the exact PostgreSQL microsecond
