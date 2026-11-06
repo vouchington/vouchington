@@ -18,6 +18,7 @@ import {
   createPostLinkEditFixtureForTest,
   blockPostLinkDestinationForTest,
   persistAssessedPostLinkEditForTest,
+  persistPostLinkWhileCanonicalRewriteForTest,
 } from '@voucha/test-helpers/post-link-edits'
 
 describe('post link URL-ID policy', () => {
@@ -48,6 +49,34 @@ describe('post link URL-ID policy', () => {
       stored: true,
       expected: true,
     })
+  })
+
+  it('fences a concurrent canonical rewrite before it can invert alias and terminal row locks', async () => {
+    const { user, post } = await createPostLinkEditFixtureForTest()
+    const suffix = randomUUID()
+    const alias = await insertTestUrlDirect(null, `https://a-alias-${suffix}.example.com/article`)
+    const terminal = await insertTestUrlDirect(
+      null,
+      `https://z-terminal-${suffix}.example.com/article`,
+    )
+    if (!alias || !terminal) throw new Error('Expected ordered alias and terminal URLs')
+    const nextDestination = await createTestUrlWithHostname()
+    await setCanonicalUrl(alias.id, terminal.id)
+    const assessment = await assessPostLinkEdit(post, { url: alias.url })
+    if (!assessment.urls) throw new Error('Expected an assessed alias and terminal')
+
+    expect(
+      await persistPostLinkWhileCanonicalRewriteForTest(
+        user.id,
+        assessment.changes,
+        assessment.urls,
+        terminal.id,
+        nextDestination,
+      ),
+    ).toEqual({ selectedId: terminal.id, rewrittenId: nextDestination })
+    expect((await getUrlById(alias.id, { readOnly: false }))?.canonical_url_id).toBe(
+      nextDestination,
+    )
   })
 
   it.each([false, true])(

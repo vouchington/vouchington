@@ -1,3 +1,4 @@
+import { lockCanonicalUrlRewrites } from './canonical-lock.mts'
 import { hackerNewsReferenceMaxValues } from './hacker-news-reference-limits.mts'
 import { enqueueMissingHackerNewsLookups } from './hacker-news-lookup-enqueue.mts'
 import { enqueueHackerNewsFlagsBestEffort } from '@queues/hacker-news-flags/enqueues'
@@ -36,9 +37,7 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
 
   // Canonical rewrites can otherwise observe uncommitted chains and create cycles or chains
   // beyond the readers' two-hop bound. Serialize only this short database transaction.
-  await query(
-    `/* lockCanonicalUrlRewrites */ SELECT pg_advisory_xact_lock(hashtextextended('url-canonicalization', 0))`,
-  )
+  await lockCanonicalUrlRewrites(query)
 
   // Check for circular reference using recursive CTE
   // Pattern from: /backend/services/posts/search/query-builder.mts:58-79
