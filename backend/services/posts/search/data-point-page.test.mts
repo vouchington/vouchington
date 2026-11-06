@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { encodeCursor } from '@modules/pagination'
 import {
   insertTestCardTopicsWithDataPoints,
   type CardTopicDataPointFixture,
@@ -6,7 +7,22 @@ import {
 } from '@voucha/test-helpers/entities/card-topic-data-points'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { postsWorkConfig } from '@services/posts/work-limits'
-import { searchDataPoints } from './data-point-page.mts'
+import { searchDataPoints, type SearchDataPointsOptions } from './data-point-page.mts'
+
+/** Least uuid above `id`. `post_id < bound` keeps `id` and drops every newer row. */
+function exclusiveUpperUuid(id: string): string {
+  const hex = id.replaceAll('-', '').split('')
+  for (let index = hex.length - 1; index >= 0; index -= 1) {
+    const digit = Number.parseInt(hex[index] ?? '0', 16) + 1
+    if (digit < 16) {
+      hex[index] = digit.toString(16)
+      const next = hex.join('')
+      return `${next.slice(0, 8)}-${next.slice(8, 12)}-${next.slice(12, 16)}-${next.slice(16, 20)}-${next.slice(20)}`
+    }
+    hex[index] = '0'
+  }
+  throw new Error('data-point fixture id has no greater uuid')
+}
 
 const suffix = crypto.randomUUID().slice(0, 8)
 
@@ -61,15 +77,35 @@ const dataPoints: readonly CardTopicDataPointFixture[] = [
 describe('searchDataPoints', () => {
   let topicId: string
   let otherTopicId: string
+  let fixtureAfter: string
 
   beforeAll(async () => {
     const seeded = await insertTestCardTopicsWithDataPoints({ topics, dataPoints })
     topicId = seeded.topicIds[0]
     otherTopicId = seeded.topicIds[1]
+    const newest = seeded.postIds.reduce((max, id) => (id > max ? id : max))
+    fixtureAfter = encodeCursor({
+      phase: 'null',
+      parent_open: true,
+      community_id: null,
+      post_id: exclusiveUpperUuid(newest),
+    })
   })
 
+  async function collectMatches(options: SearchDataPointsOptions, minimum: number) {
+    const matches = []
+    let after: string | undefined = fixtureAfter
+    for (let pageNumber = 0; pageNumber < 200 && matches.length < minimum; pageNumber += 1) {
+      const page = await searchDataPoints({ ...options, after })
+      matches.push(...page.results)
+      if (!page.page_info.has_next_page) break
+      after = page.page_info.end_cursor ?? undefined
+    }
+    return matches
+  }
+
   it('returns data points filtered by topic_id', async () => {
-    const { results } = await searchDataPoints({ topic_id: topicId })
+    const results = await collectMatches({ topic_id: topicId }, 4)
     expect(results.length).toBeGreaterThanOrEqual(4)
     // Should not include other topic's data points
     const otherTopicResults = results.filter(r =>
@@ -79,33 +115,33 @@ describe('searchDataPoints', () => {
   })
 
   it('returns data points filtered by vertical', async () => {
-    const { results } = await searchDataPoints({ topic_id: topicId, vertical: 'bank_account' })
+    const results = await collectMatches({ topic_id: topicId, vertical: 'bank_account' }, 1)
     expect(results.length).toBeGreaterThanOrEqual(1)
     expect(results.every(r => r.data_point_vertical === 'bank_account')).toBe(true)
   })
 
   it('returns data points filtered by result', async () => {
-    const { results } = await searchDataPoints({ topic_id: topicId, result: 'approved' })
+    const results = await collectMatches({ topic_id: topicId, result: 'approved' }, 1)
     expect(results.length).toBeGreaterThanOrEqual(1)
     expect(results.every(r => r.structured_data?.result === 'approved')).toBe(true)
   })
 
   it('returns data points filtered by credit_score_range', async () => {
-    const { results } = await searchDataPoints({
-      topic_id: topicId,
-      credit_score_range: '670-739',
-    })
+    const results = await collectMatches({ topic_id: topicId, credit_score_range: '670-739' }, 1)
     expect(results.length).toBeGreaterThanOrEqual(1)
     expect(results.every(r => r.structured_data?.credit_score_range === '670-739')).toBe(true)
   })
 
   it('combines multiple filters', async () => {
-    const { results } = await searchDataPoints({
-      topic_id: topicId,
-      vertical: 'credit_card',
-      result: 'denied',
-      credit_score_range: '580-669',
-    })
+    const results = await collectMatches(
+      {
+        topic_id: topicId,
+        vertical: 'credit_card',
+        result: 'denied',
+        credit_score_range: '580-669',
+      },
+      1,
+    )
     expect(results.length).toBeGreaterThanOrEqual(1)
     expect(results.every(r => r.data_point_vertical === 'credit_card')).toBe(true)
     expect(results.every(r => r.structured_data?.result === 'denied')).toBe(true)
@@ -132,8 +168,8 @@ describe('searchDataPoints', () => {
     })
     try {
       const seen = new Set<string>()
-      let after: string | undefined
-      for (let pageNumber = 0; pageNumber < 6; pageNumber += 1) {
+      let after: string | undefined = fixtureAfter
+      for (let pageNumber = 0; pageNumber < 200 && seen.size < 4; pageNumber += 1) {
         const page = await searchDataPoints({ topic_id: topicId, after })
         for (const row of page.results) {
           expect(seen.has(row.id)).toBe(false)
@@ -150,7 +186,7 @@ describe('searchDataPoints', () => {
   })
 
   it('returns required fields on each result', async () => {
-    const { results } = await searchDataPoints({ topic_id: topicId, limit: 1 })
+    const results = await collectMatches({ topic_id: topicId, limit: 1 }, 1)
     expect(results.length).toBeGreaterThanOrEqual(1)
     const r = results[0]
     expect(r).toHaveProperty('id')
