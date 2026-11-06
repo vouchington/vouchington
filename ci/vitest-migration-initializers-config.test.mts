@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs'
 import picomatch from 'picomatch'
+import { parse as parseYaml } from 'yaml'
+import { workflowStepScript } from '../.github/test-helpers/workflow-step-script.mts'
 import { describe, expect, it } from 'vitest'
 import config from '../vitest.config.mts'
 
@@ -45,7 +47,14 @@ describe('migration initializer fault project', () => {
   })
 
   it('executes the project in the real automatic backend-unit command', () => {
-    const workflow = readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8')
-    expect(workflow).toContain('--project backend-mocks --project backend-migration-initializers ')
+    const workflow = parseYaml(
+      readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8'),
+    ) as { jobs: Record<string, { steps: Array<{ name?: string; run?: string }> }> }
+    const step = workflow.jobs['backend-tests']!.steps.find(
+      step => step.name === 'Run backend tests',
+    )
+    expect(workflowStepScript(step?.run)).toContain(
+      '--project backend-mocks --project backend-migration-initializers ',
+    )
   })
 })
