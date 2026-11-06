@@ -24,7 +24,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_ca
   ON membership_ineligible_purchase_reversal_cases (membership_provider_lineage_id, originating_invoice_id);
 CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__binding
   ON membership_ineligible_purchase_reversal_cases (membership_lineage_binding_id, membership_provider_lineage_id);
-CREATE INDEX IF NOT EXISTS idx_membership_reversal_cases__originating_invoice
+CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__invoice_id
   ON membership_ineligible_purchase_reversal_cases (originating_invoice_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membershi_ineligibl_purchase_reversal_cases__source_lineage

@@ -17,16 +17,18 @@ export async function handleInvoicePaymentPaid(
 ): Promise<void> {
   const invoiceId = getStripeObjectId(eventData.invoice)
   if (!invoiceId) return
+  const lookup = {
+    originatingInvoiceId: invoiceId,
+    providerApplicationId: applicationContext.applicationId,
+    providerEnvironment,
+  }
+  if (await reconcileRecordedIneligibleStripePurchaseReversal(lookup)) return
   await detectIneligibleStripePurchaseFromInvoicePayment(
     invoiceId,
     providerEnvironment,
     applicationContext,
   )
-  await reconcileRecordedIneligibleStripePurchaseReversal({
-    originatingInvoiceId: invoiceId,
-    providerApplicationId: applicationContext.applicationId,
-    providerEnvironment,
-  })
+  await reconcileRecordedIneligibleStripePurchaseReversal(lookup)
 }
 
 export async function handleInvoicePaid(

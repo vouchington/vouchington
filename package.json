@@ -146,7 +146,6 @@
     "@vouchington/localization-compiler": "^0.3.0",
     "@vouchington/postgres": "^0.4.0",
     "@vouchington/session-jwt": "^0.0.3",
-    "@vouchington/utils": "^0.11.1",
     "@vouchington/worker-runtime": "^0.3.1",
     "agent-blackboard": "^0.7.0",
     "coverage-check": "^0.18.0",
