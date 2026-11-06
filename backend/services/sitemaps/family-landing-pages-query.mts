@@ -171,6 +171,7 @@ export function buildLandingPageSourceQuery(options?: {
         )
       LIMIT 1
     ) u ON TRUE
+    ORDER BY landing_page.id DESC
   `)
   return query
 }
