@@ -61,6 +61,9 @@ describe('merge-queue ejection workflow', () => {
     for (const step of checkouts) {
       expect(step.with).toEqual({ ref: '${{ github.sha }}', 'persist-credentials': false })
     }
+    expect(
+      workflow.jobs.escalate?.steps?.some(step => step.uses?.startsWith('actions/checkout@')),
+    ).toBe(false)
     expect(text).not.toMatch(/github\.event\.pull_request\.head\.(?:ref|repo)/u)
     expect(text).not.toMatch(/github\.head_ref|refs\/pull\//u)
   })
@@ -84,6 +87,7 @@ describe('merge-queue ejection workflow', () => {
             : { contents: 'read' }
       expect(job.permissions).toEqual(expected)
     }
+    expect(workflow.jobs.escalate?.permissions).not.toHaveProperty('contents')
     expect(workflow.jobs['comment-session']?.steps?.at(-1)?.uses).toEqual(
       expect.stringMatching(
         /^vouchington\/vouchington-tooling\/\.github\/actions\/comment-harness-session@[0-9a-f]{40}$/u,
