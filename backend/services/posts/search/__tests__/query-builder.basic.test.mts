@@ -240,4 +240,31 @@ describe('query-builder (basic)', () => {
 
     expect(query.values).toContain(100)
   })
+
+  it('writes closed story and data-point filters as literals', () => {
+    const known = buildPostSearchQuery(undefined, {
+      post_types: ['data_point'],
+      data_point_vertical: 'bank_account',
+      data_point_result: 'pending',
+      data_point_credit_score_range: '300-579',
+      data_point_topic_ids: ['019e0000-ee00-7000-8000-000000000001'],
+    })
+    expect(known.sql).toContain("posts.post_type = 'data_point'")
+    expect(known.sql).toContain("posts.data_point_vertical = 'bank_account'")
+    expect(known.sql).toContain("posts.structured_data->>'result' = 'pending'")
+    expect(known.sql).toContain("posts.structured_data->>'credit_score_range' = '300-579'")
+    expect(known.sql).toContain("'019e0000-ee00-7000-8000-000000000001'::uuid")
+    expect(known.values).not.toContain('bank_account')
+    expect(known.values).not.toContain('pending')
+    expect(known.values).not.toContain('300-579')
+
+    const unknown = buildPostSearchQuery(undefined, {
+      post_types: ['discussion'],
+      data_point_vertical: 'mortgage',
+      data_point_topic_ids: ['not-a-uuid'],
+    })
+    expect(unknown.values).toContain('discussion')
+    expect(unknown.values).toContain('mortgage')
+    expect(unknown.values).toContain('not-a-uuid')
+  })
 })
