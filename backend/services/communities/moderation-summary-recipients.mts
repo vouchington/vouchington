@@ -86,6 +86,8 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
           WHERE cpr.community_id = c.id
             AND cpr.approved_at IS NULL
             AND cpr.rejected_at IS NULL
+            -- Pending is the same set as searchPendingPosts, which is what idx_comm_post_reviews__pending covers.
+            AND cpr.unpublished_at IS NULL
         )
         OR EXISTS (
           SELECT 1
