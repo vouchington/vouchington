@@ -164,12 +164,12 @@ async function main() {
     await runStep(runRetentionStagePageScenarios.name, runRetentionStagePageScenarios())
     await runStep(runEmbeddingReconciliationScenarios.name, runEmbeddingReconciliationScenarios())
     await runStep(runStripeEventRecoveryScenario.name, runStripeEventRecoveryScenario())
-    await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios())
     const runMembershipRenewalSelection = runMembershipRenewalSelectionScenario
     await runStep(runMembershipRenewalSelection.name, runMembershipRenewalSelection())
     const measureReferralCache = runPrioritizedReferralCacheMeasurement
     await runStep(measureReferralCache.name, measureReferralCache())
     await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios())
+    await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios())
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)

@@ -47,6 +47,7 @@ const SCHEDULED_JOB_API_ORDER = [
   'googlePlayOidcTrustRefresh',
   'microsoftStoreSourceRecovery',
   'membershipVerificationRecovery',
+  'recoverStripePurchaseCollisions',
   'dispatchMembershipRefundReconciliation',
   'dispatchMembershipPauseCollection',
   'stripeCatalogReconciliation',

@@ -37,3 +37,8 @@ export * from './enqueues/refund-reconciliation.mts'
 export { enqueueSyncMembershipPauseCollection } from './enqueues/pause-collection.mts'
 export { enqueueExpireElapsedMemberships } from './enqueues/grant-expiry.mts'
 export { enqueueReconcileStripeMembershipCatalog } from './enqueues/stripe-catalog.mts'
+export {
+  enqueueBulkProcessStripePurchaseCollisions,
+  enqueueProcessStripePurchaseCollisionBestEffort,
+  enqueueRecoverStripePurchaseCollisions,
+} from './enqueues/stripe-purchase-collisions.mts'

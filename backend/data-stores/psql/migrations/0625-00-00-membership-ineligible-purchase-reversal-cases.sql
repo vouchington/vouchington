@@ -1,9 +1,112 @@
+-- Collision facts would disappear when the losing membership projection retires. Keep the
+-- financial work in the same transaction; GlideMQ owns execution locks and crash recovery.
+CREATE TABLE IF NOT EXISTS membership_stripe_purchase_collision_work_items (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  membership_source_id UUID NOT NULL,
+  membership_provider_lineage_id UUID NOT NULL,
+  membership_lineage_binding_id UUID NOT NULL,
+  winning_source_kind membership_source_kinds NOT NULL
+    CHECK (winning_source_kind IN ('direct', 'family')),
+  winning_plan membership_plan_slugs NOT NULL CHECK (winning_plan IN ('plus', 'pro')),
+  collision_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_work_items__collision
+  ON membership_stripe_purchase_collision_work_items (
+    membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
+    winning_source_kind, winning_plan, collision_at
+  );
+CREATE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_work_items__binding
+  ON membership_stripe_purchase_collision_work_items (
+    membership_lineage_binding_id, membership_provider_lineage_id
+  );
+ALTER TABLE membership_stripe_purchase_collision_work_items
+  ADD CONSTRAINT fk_membership_stripe_purchase_collision_work_items__source
+  FOREIGN KEY (membership_source_id, membership_provider_lineage_id)
+  REFERENCES membership_sources (id, membership_provider_lineage_id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_stripe_purchase_collision_work_items
+  VALIDATE CONSTRAINT fk_membership_stripe_purchase_collision_work_items__source;
+ALTER TABLE membership_stripe_purchase_collision_work_items
+  ADD CONSTRAINT fk_membership_stripe_purchase_collision_work_items__binding
+  FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id)
+  REFERENCES membership_lineage_bindings (id, membership_provider_lineage_id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_stripe_purchase_collision_work_items
+  VALIDATE CONSTRAINT fk_membership_stripe_purchase_collision_work_items__binding;
+CREATE TRIGGER trigger_membership_stripe_purchase_collision_work_items_guard
+  BEFORE UPDATE ON membership_stripe_purchase_collision_work_items
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+COMMENT ON TABLE membership_stripe_purchase_collision_work_items IS 'Immutable financial collision facts captured with membership projection. Pending rows recover lost queue admissions and terminal failures; completion deletes them after cases and reconciliation succeed.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.id IS 'UUIDv7 work identity used by bounded recovery and stable GlideMQ admission.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.membership_source_id IS 'Retained losing Stripe source whose invoices must be inspected outside membership transactions.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.membership_provider_lineage_id IS 'Canonical provider lineage shared by the retained source and binding.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.membership_lineage_binding_id IS 'Retained binding authorized at collision capture; it does not authorize access by a deleted user.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.winning_source_kind IS 'Winning direct native or family source at the captured collision.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.winning_plan IS 'Winning plan snapshot used to preserve family tier precedence during deferred discovery.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.collision_at IS 'Winning membership effective time used for immutable overlap refund caps.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.created_at IS 'Work insertion time derived from its UUIDv7 identity; recovery orders by id.';
+
+-- Unresolved staff decisions are separate from retryable discovery work. Never guess a
+-- multi-line invoice's refundable amount or keep polling Stripe for deterministic ambiguity.
+CREATE TABLE IF NOT EXISTS membership_stripe_purchase_collision_reviews (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  membership_source_id UUID NOT NULL,
+  membership_provider_lineage_id UUID NOT NULL,
+  membership_lineage_binding_id UUID NOT NULL,
+  originating_invoice_id TEXT NOT NULL CHECK (
+    char_length(originating_invoice_id) BETWEEN 1 AND 255
+    AND originating_invoice_id = TRIM(originating_invoice_id)
+  ),
+  winning_source_kind membership_source_kinds NOT NULL
+    CHECK (winning_source_kind IN ('direct', 'family')),
+  winning_plan membership_plan_slugs NOT NULL CHECK (winning_plan IN ('plus', 'pro')),
+  collision_at TIMESTAMPTZ NOT NULL,
+  invoice_line_count INTEGER NOT NULL CHECK (invoice_line_count > 1),
+  mapped_membership_line_count INTEGER NOT NULL CHECK (
+    mapped_membership_line_count > 0 AND mapped_membership_line_count <= invoice_line_count
+  ),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_reviews__invoice
+  ON membership_stripe_purchase_collision_reviews (membership_provider_lineage_id, originating_invoice_id);
+CREATE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_reviews__source
+  ON membership_stripe_purchase_collision_reviews (membership_source_id, membership_provider_lineage_id);
+CREATE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_reviews__binding
+  ON membership_stripe_purchase_collision_reviews (membership_lineage_binding_id, membership_provider_lineage_id);
+ALTER TABLE membership_stripe_purchase_collision_reviews
+  ADD CONSTRAINT fk_membership_stripe_purchase_collision_reviews__source
+  FOREIGN KEY (membership_source_id, membership_provider_lineage_id)
+  REFERENCES membership_sources (id, membership_provider_lineage_id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_stripe_purchase_collision_reviews
+  VALIDATE CONSTRAINT fk_membership_stripe_purchase_collision_reviews__source;
+ALTER TABLE membership_stripe_purchase_collision_reviews
+  ADD CONSTRAINT fk_membership_stripe_purchase_collision_reviews__binding
+  FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id)
+  REFERENCES membership_lineage_bindings (id, membership_provider_lineage_id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_stripe_purchase_collision_reviews
+  VALIDATE CONSTRAINT fk_membership_stripe_purchase_collision_reviews__binding;
+CREATE TRIGGER trigger_membership_stripe_purchase_collision_reviews_guard
+  BEFORE UPDATE ON membership_stripe_purchase_collision_reviews
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+COMMENT ON TABLE membership_stripe_purchase_collision_reviews IS 'Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation or audit history.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.id IS 'UUIDv7 staff-review identity; bounded staff inspection orders by this key.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_source_id IS 'Retained losing Stripe source; this evidence does not authorize a deleted owner.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_provider_lineage_id IS 'Canonical Stripe lineage identifying the subscription and provider context for staff investigation.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_lineage_binding_id IS 'Retained binding authorized when the collision was captured.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.originating_invoice_id IS 'Exact external Stripe invoice identity requiring staff allocation review.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.winning_source_kind IS 'Immutable winning source kind captured with the deferred collision.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.winning_plan IS 'Immutable supported winning plan captured with the deferred collision.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.collision_at IS 'Captured collision time retained for staff after discovery work completes.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.invoice_line_count IS 'Observed total invoice line count that made automatic allocation ambiguous.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.mapped_membership_line_count IS 'Observed number of invoice lines mapped to membership plans.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.created_at IS 'Review insertion timestamp derived from its UUIDv7 identity.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   id UUID CONSTRAINT pk_mipr_cases PRIMARY KEY DEFAULT uuidv7(),
   membership_source_id UUID NOT NULL,
   membership_provider_lineage_id UUID NOT NULL,
   membership_lineage_binding_id UUID NOT NULL,
+  originating_invoice_id TEXT NOT NULL CONSTRAINT chk_mipr_cases__originating_invoice_id CHECK (char_length(originating_invoice_id) BETWEEN 1 AND 255 AND originating_invoice_id = TRIM(originating_invoice_id)),
   stripe_price_id TEXT NOT NULL,
   winning_source_kind membership_source_kinds NOT NULL,
   qualifying_amount_minor_units BIGINT NOT NULL CONSTRAINT chk_memb_ineli_purch_rever_cases__qualifying_amount_minor_units CHECK (qualifying_amount_minor_units BETWEEN 0 AND 9007199254740991),
@@ -15,13 +118,16 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT chk_membersh_ineligibl_purchase_reversal_cases__stripe_price_id CHECK (char_length(stripe_price_id) BETWEEN 1 AND 255 AND stripe_price_id = TRIM(stripe_price_id)),
   CHECK (refund_cap_minor_units <= qualifying_amount_minor_units),
-  CHECK (period_ends_at >= period_started_at),
-  CHECK (winning_source_kind <> 'family' OR period_ends_at > period_started_at)
+  CHECK (period_ends_at >= period_started_at)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__binding
-  ON membership_ineligible_purchase_reversal_cases (membership_lineage_binding_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__invoice
+  ON membership_ineligible_purchase_reversal_cases (membership_provider_lineage_id, originating_invoice_id);
+CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__binding
+  ON membership_ineligible_purchase_reversal_cases (membership_lineage_binding_id, membership_provider_lineage_id);
+CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__invoice_id
+  ON membership_ineligible_purchase_reversal_cases (originating_invoice_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membershi_ineligibl_purchase_reversal_cases__source_lineage
   ON membership_ineligible_purchase_reversal_cases (membership_source_id, membership_provider_lineage_id);
@@ -34,9 +140,6 @@ CREATE INDEX IF NOT EXISTS idx_member_inelig_purchase_reversal_cases__collision_
 CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__currency
   ON membership_ineligible_purchase_reversal_cases (currency_code);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_membership_lineage_bindings__lineage_origin
-  ON membership_lineage_bindings (membership_provider_lineage_id, originating_invoice_id, id)
-  WHERE originating_invoice_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_case_operations (
@@ -127,6 +230,8 @@ COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.membership_provi
   'Provider lineage shared by the case source, binding, and reversal operations.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.membership_lineage_binding_id IS
   'Immutable lineage binding whose collision this case records.';
+COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.originating_invoice_id IS
+  'Stripe invoice identifying the qualifying purchase within its provider lineage.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.stripe_price_id IS
   'Stripe Price identifier for the ineligible qualifying purchase.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_cases.winning_source_kind IS

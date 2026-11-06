@@ -40,8 +40,8 @@ export async function createCompletedFiscalLedgerOperation(
       VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`})
       RETURNING id, membership_provider_context_id
     ), binding AS (
-      INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id, source_kind, originating_invoice_id)
-      SELECT id, ${user.id}, 'direct', ${`in_${randomUUID()}`} FROM lineage RETURNING id, membership_provider_lineage_id
+      INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id, source_kind)
+      SELECT id, ${user.id}, 'direct' FROM lineage RETURNING id, membership_provider_lineage_id
     ), source AS (
       INSERT INTO membership_sources (user_id, source_kind, membership_provider_lineage_id)
       SELECT ${user.id}, 'direct', id FROM lineage RETURNING id, membership_provider_lineage_id
@@ -70,6 +70,7 @@ export async function createCompletedFiscalLedgerOperation(
     caseId = await insertTestReversalCase({
       bindingId: binding_id,
       membershipProviderLineageId: lineage_id,
+      originatingInvoiceId: `in_${randomUUID()}`,
       sourceId: source_id,
       stripePriceId: `price-${randomUUID()}`,
       qualifyingAmountMinorUnits: 100,

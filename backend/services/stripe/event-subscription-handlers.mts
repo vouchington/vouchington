@@ -7,6 +7,7 @@ import {
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from '@services/memberships/reconcile-recorded-ineligible-stripe-purchase-reversal'
+import { detectIneligibleStripePurchaseFromInvoicePayment } from './membership-sync/detect-ineligible-purchase.mts'
 import { getStripeObjectId, getStripeObjectString } from '@vouchington/stripe'
 
 export async function handleInvoicePaymentPaid(
@@ -16,11 +17,18 @@ export async function handleInvoicePaymentPaid(
 ): Promise<void> {
   const invoiceId = getStripeObjectId(eventData.invoice)
   if (!invoiceId) return
-  await reconcileRecordedIneligibleStripePurchaseReversal({
+  const lookup = {
     originatingInvoiceId: invoiceId,
     providerApplicationId: applicationContext.applicationId,
     providerEnvironment,
-  })
+  }
+  if (await reconcileRecordedIneligibleStripePurchaseReversal(lookup)) return
+  await detectIneligibleStripePurchaseFromInvoicePayment(
+    invoiceId,
+    providerEnvironment,
+    applicationContext,
+  )
+  await reconcileRecordedIneligibleStripePurchaseReversal(lookup)
 }
 
 export async function handleInvoicePaid(

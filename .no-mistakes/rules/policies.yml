@@ -4446,6 +4446,13 @@
       - pattern: _(history|change_logs|audit_logs)$
         message: 'use the R4 shapes: _revisions, _changes, _work_items or _cursors'
     allow:
+      - object: table:membership_stripe_purchase_collision_work_items
+        reason: >-
+          Immutable Stripe collision facts must commit before entitlement projection retires the
+          losing source. GlideMQ owns discovery retries and execution locks; existing financial
+          operations fence provider effects. Unique invoice cases make duplicate discovery safe.
+          Completion deletes facts only after reconciliation succeeds. The dedicated rule below
+          enforces this payment outbox shape without duplicating queue lease state.
       - object: table:post_moderation_retention_post_work_items
         reason: >-
           This per-post idempotent database-only recheck is serialized by the post row and its
@@ -4471,6 +4478,41 @@
       - object: table:media_delivery_registry_changes
         reason: This change ledger permits only a guarded, aged, superseded transition delete;
           its exact shape and trigger are checked by the dedicated rule below.
+- name: Stripe collision facts use immutable payment outbox shape
+  rule: postgres-table-shape
+  scope: repository
+  options:
+    schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+    shapes:
+      - name: stripe-collision-payment-outbox
+        tablePattern: ^membership_stripe_purchase_collision_work_items$
+        requiredColumns:
+          - name: id
+            type: uuid
+            nullable: false
+          - name: membership_source_id
+            type: uuid
+            nullable: false
+          - name: membership_provider_lineage_id
+            type: uuid
+            nullable: false
+          - name: membership_lineage_binding_id
+            type: uuid
+            nullable: false
+          - name: winning_source_kind
+            type: membership_source_kinds
+            nullable: false
+          - name: winning_plan
+            type: membership_plan_slugs
+            nullable: false
+          - name: collision_at
+            type: timestamp with time zone
+            nullable: false
+        forbiddenColumns: [updated_at, lease_token, lease_expires_at, attempt_count, available_at]
+        requiredTriggers:
+          - function: fn_reject_mutation
+            timing: before
+            events: [update]
 - name: stripe event ledger uses its scoped fiscal retention guard
   rule: postgres-table-shape
   scope: repository

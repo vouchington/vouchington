@@ -1,4 +1,5 @@
 import type { QueryExecutor } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
 import {
   getMembershipByStripeSubscriptionId,
@@ -7,6 +8,8 @@ import {
 } from '@services/memberships'
 import { lockMembershipUser } from '@services/memberships/lock-user'
 import { isHigherMembershipPlan } from '@services/memberships/plan-ranking'
+import { getDirectMembershipSourceAdmission } from '@services/memberships/direct-source-authority'
+import { recordIneligibleStripePurchaseCollisionWork } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-work'
 import type { StripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import type { Membership } from '@services/memberships/types'
 import { recordStripeMembershipProviderFactsInTransaction } from '../membership-provider-facts.mts'
@@ -84,13 +87,41 @@ export async function syncOrCreateStripeMembershipInTransaction(
     values.status !== 'past_due'
   )
     return
-  if (
-    existingUserMembership &&
-    !hasElapsedFiniteMembership(existingUserMembership) &&
-    (existingUserMembership.stripe_subscription_id ||
-      !isHigherMembershipPlan(values.plan, existingUserMembership.plan))
-  )
-    return
+  if (existingUserMembership && !hasElapsedFiniteMembership(existingUserMembership)) {
+    const admission = await getDirectMembershipSourceAdmission(
+      userId,
+      values.plan,
+      sourceIdentity,
+      query,
+    )
+    if (
+      !admission.accepted &&
+      (admission.currentSourceKind === 'family' ||
+        (admission.currentSourceKind === 'direct' && admission.currentProvider !== 'stripe'))
+    ) {
+      const { rows } = await query(
+        buildGetStripeCollisionWinnerEffectiveAtQuery(existingUserMembership.id, userId),
+      )
+      const winner = rows[0] as { effectiveAt: Date } | undefined
+      if (!winner) throw new Error('Winning membership projection disappeared during collision')
+      await recordIneligibleStripePurchaseCollisionWork(
+        {
+          userId,
+          sourceIdentity: { ...sourceIdentity, providerAccountId: customerId },
+          winningSourceKind: admission.currentSourceKind,
+          winningPlan: existingUserMembership.plan,
+          collisionAt: winner.effectiveAt,
+        },
+        query,
+      )
+      return
+    }
+    if (
+      existingUserMembership.stripe_subscription_id ||
+      !isHigherMembershipPlan(values.plan, existingUserMembership.plan)
+    )
+      return
+  }
   await createStripeMembershipSource(
     eventId,
     userId,
@@ -102,6 +133,16 @@ export async function syncOrCreateStripeMembershipInTransaction(
     query,
     observedAt,
   )
+}
+
+export function buildGetStripeCollisionWinnerEffectiveAtQuery(
+  membershipId: string,
+  userId: string,
+) {
+  return sql`/* getStripeCollisionWinnerEffectiveAt */
+        SELECT effective_at AS "effectiveAt" FROM memberships
+        WHERE id = ${membershipId} AND user_id = ${userId}
+        FOR SHARE`
 }
 
 function hasElapsedFiniteMembership(membership: Membership | null): boolean {

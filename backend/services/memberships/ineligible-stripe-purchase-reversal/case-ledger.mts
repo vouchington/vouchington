@@ -54,7 +54,7 @@ export async function getLockedIneligiblePurchaseReversalCase(
       reversal_case.membership_provider_lineage_id AS "membershipProviderLineageId",
       reversal_case.membership_lineage_binding_id AS "membershipLineageBindingId",
       provider_context.environment AS "providerEnvironment", provider_context.application_id AS "providerApplicationId",
-      lineage.provider_lineage_id AS "subscriptionId", binding.originating_invoice_id AS "originatingInvoiceId",
+      lineage.provider_lineage_id AS "subscriptionId", reversal_case.originating_invoice_id AS "originatingInvoiceId",
       reversal_case.stripe_price_id AS "stripePriceId", reversal_case.winning_source_kind AS "winningSourceKind",
       reversal_case.qualifying_amount_minor_units::TEXT AS "qualifyingAmountMinorUnits",
       reversal_case.refund_cap_minor_units::TEXT AS "refundCapMinorUnits", reversal_case.currency_code AS currency,
@@ -70,7 +70,7 @@ export async function getLockedIneligiblePurchaseReversalCase(
       AND provider_context.application_id = ${options.providerApplicationId}
       AND lineage.provider_lineage_id = ${options.subscriptionId}
       AND binding.source_kind = 'direct'
-      AND binding.originating_invoice_id = ${options.originatingInvoiceId}
+      AND reversal_case.originating_invoice_id = ${options.originatingInvoiceId}
       AND NOT fn_membership_reversal_case_expired(reversal_case.id)
     FOR UPDATE OF reversal_case, binding, lineage
   `)

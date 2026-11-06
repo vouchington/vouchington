@@ -1,6 +1,7 @@
 export const REGISTRY_ORDER = [
   'paged-dispatch-work-config',
   'membership-verification-queue-config',
+  'membership-stripe-purchase-collision-queue-config',
   'feature-flags',
   'membership-billing',
   'request-client-info',

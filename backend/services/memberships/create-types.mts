@@ -46,11 +46,6 @@ export type CreateProviderMembershipSourceOptions = {
   userId: string
   sourceKind: MembershipProviderSourceKind
   sourceIdentity: MembershipProviderSourceIdentity
-  /**
-   * Stripe's originating invoice is immutable once observed for a direct lineage. Other
-   * providers must not use this Stripe-only field.
-   */
-  stripeOriginatingInvoiceId?: string
 }
 
 type CreateMembershipBase = {
@@ -64,7 +59,6 @@ type CreateMembershipBase = {
   observedAt?: Date
   terminalEffectiveAt?: Date
   stripeCustomerId?: string | null
-  stripeOriginatingInvoiceId?: string
   providerEnvironment?: 'test' | 'production'
   providerApplicationId?: string
   grantedById?: string | null

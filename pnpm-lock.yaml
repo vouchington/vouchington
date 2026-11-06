@@ -3912,6 +3912,9 @@ importers:
       '@vouchington/rss-parser':
         specifier: ^0.1.0
         version: 0.1.0
+      '@vouchington/utils':
+        specifier: ^0.11.1
+        version: 0.11.1
       '@workers/openai-moderation':
         specifier: workspace:^
         version: link:../workers/openai-moderation

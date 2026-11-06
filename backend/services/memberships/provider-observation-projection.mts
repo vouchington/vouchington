@@ -9,6 +9,7 @@ import { membershipProjectionWithEntitlementEffects } from './entitlement-effect
 import { insertMembershipProjection, upsertMembershipSourceState } from './projections/create.mts'
 import { reconcileSourceProjection, type PriorMembership } from './reconcile-source-projection.mts'
 import { retireCurrentMembershipProjection } from './create/retire-current-projection.mts'
+import { recordDisplacedStripePurchaseCollisionWork } from './ineligible-stripe-purchase-reversal/collision-work.mts'
 import {
   getCurrentProviderProjection,
   getLatestProviderSourceProjection,
@@ -108,7 +109,10 @@ async function projectAdvancedProviderObservation(
   const prior = await getCurrentProviderProjection(options.userId, query)
   const project = !isTerminalMembershipStatus(observation.status) && observation.status !== 'paused'
   if (!project) return { membershipId: null, projected: false }
-  if (prior) await retireCurrentMembershipProjection(options.userId, query)
+  if (prior) {
+    await recordDisplacedStripeCollisionForObservation(options.userId, observation, query)
+    await retireCurrentMembershipProjection(options.userId, query)
+  }
   const membership = await insertMembershipProjection(
     options.userId,
     sourceId,
@@ -147,8 +151,10 @@ async function reconcileProviderSourceProjection(
 ): Promise<{ membershipId: string; projected: boolean }> {
   const entitles =
     !isTerminalMembershipStatus(observation.status) && observation.status !== 'paused'
-  if (entitles && prior.projection_ended_at !== null)
+  if (entitles && prior.projection_ended_at !== null) {
+    await recordDisplacedStripeCollisionForObservation(options.userId, observation, query)
     await retireCurrentMembershipProjection(options.userId, query)
+  }
   const membership = await reconcileSourceProjection(
     {
       prior,
@@ -170,4 +176,22 @@ async function reconcileProviderSourceProjection(
   if (isTerminalMembershipStatus(observation.status) || observation.status === 'paused')
     await restoreFallbackAfterCurrentAccessEndsInTransaction(options.userId, membership.id, query)
   return membershipProjectionWithEntitlementEffects(query, membership.id, membership.projected)
+}
+
+async function recordDisplacedStripeCollisionForObservation(
+  userId: string,
+  observation: VerifiedProviderObservation,
+  query: QueryExecutor,
+): Promise<void> {
+  if (observation.sourceKind !== 'family' && observation.sourceIdentity.provider === 'stripe')
+    return
+  await recordDisplacedStripePurchaseCollisionWork(
+    {
+      userId,
+      winningSourceKind: observation.sourceKind,
+      winningPlan: observation.plan,
+      collisionAt: observation.effectiveAt,
+    },
+    query,
+  )
 }
