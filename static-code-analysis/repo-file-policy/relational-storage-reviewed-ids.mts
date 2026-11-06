@@ -21,6 +21,14 @@ function reviewed(reason: string, keys: readonly string[]): ReviewedIds {
 // Opaque ids with no owning row to reference: client tokens, traversal cursors, protocol ids.
 export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
   ...REVIEWED_RETENTION_CURSOR_IDS,
+  [
+    'rss_feed_item_candidate_reconciliations.cursor_feed_id',
+    'Last scanned source key is a deletion-stable page position; the source may disappear before reconciliation resumes.',
+  ],
+  [
+    'rss_feed_item_candidate_reconciliations.cursor_topic_id',
+    'Last scanned topic key is a deletion-stable page position; the topic may disappear before reconciliation resumes.',
+  ],
   ...reviewed(
     'Persisted retention keyset bound; the referenced row can be deleted before the next page and must not be a foreign key.',
     [

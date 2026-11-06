@@ -27,8 +27,10 @@ import {
   insertTestUrl,
 } from '../../../backend/test-helpers/index.mts'
 
-// Must exceed FEED_PAGE_LIMIT (25) to ensure has_next_page is true
-const ITEM_COUNT = 30
+// The feed endpoint caps each followed source independently. Keep this fixture
+// above the page limit even after that per-source cap is applied.
+const SOURCE_COUNT = 4
+const ITEMS_PER_SOURCE = 8
 
 test.describe('InfiniteScroll — no eager second-page fetch on initial load', () => {
   let testUserId: string
@@ -40,36 +42,39 @@ test.describe('InfiniteScroll — no eager second-page fetch on initial load', (
     if (!testUser) throw new Error('createTestUser returned null')
     testUserId = testUser.id
 
-    const topic = await createTestTopic({
-      user: testUser,
-      name: `PW Scroll Feed Topic ${suffix}`,
-      slug: `pw-scroll-feed-topic-${suffix}`,
-      topic_type: 'topic',
-    })
-
-    const feed = await insertTestRssFeed(topic.id, `scroll-feed-${suffix}`)
-    await followRssFeed(testUser, feed.id)
-
-    // Insert ITEM_COUNT items so the feed response has has_next_page = true
-    for (let i = 0; i < ITEM_COUNT; i++) {
-      const pathname = `/scroll-article-${suffix}-${i}.html`
-      const url = `https://${feed.hostname}${pathname}`
-      const urlId = await insertTestUrl({ url, hostnameId: feed.hostnameId })
-
-      const guid = `pw-scroll-item-${suffix}-${i}`
-      const contentSha256 = createHash('sha256').update(guid).digest()
-      await insertTestRssFeedItem({
-        rssFeedId: feed.id,
-        urlId,
-        guid,
-        itemData: {
-          title: `Scroll Test Article ${i} — ${suffix}`,
-          link: url,
-          description: `Test article ${i} for no-eager-fetch regression`,
-          pub_date: new Date(Date.now() - i * 60_000).toISOString(),
-        },
-        contentSha256,
+    for (let sourceIndex = 0; sourceIndex < SOURCE_COUNT; sourceIndex++) {
+      const topic = await createTestTopic({
+        user: testUser,
+        name: `PW Scroll Feed Topic ${sourceIndex} ${suffix}`,
+        slug: `pw-scroll-feed-topic-${sourceIndex}-${suffix}`,
+        topic_type: 'topic',
       })
+      const feed = await insertTestRssFeed(topic.id, `scroll-feed-${sourceIndex}-${suffix}`)
+      await followRssFeed(testUser, feed.id)
+
+      // Each source supplies exactly its current per-source cap; together the
+      // four followed sources still leave an extra row beyond FEED_PAGE_LIMIT.
+      for (let itemIndex = 0; itemIndex < ITEMS_PER_SOURCE; itemIndex++) {
+        const itemKey = `${sourceIndex}-${itemIndex}`
+        const pathname = `/scroll-article-${suffix}-${itemKey}.html`
+        const url = `https://${feed.hostname}${pathname}`
+        const urlId = await insertTestUrl({ url, hostnameId: feed.hostnameId })
+
+        const guid = `pw-scroll-item-${suffix}-${itemKey}`
+        const contentSha256 = createHash('sha256').update(guid).digest()
+        await insertTestRssFeedItem({
+          rssFeedId: feed.id,
+          urlId,
+          guid,
+          itemData: {
+            title: `Scroll Test Article ${itemKey} — ${suffix}`,
+            link: url,
+            description: 'Test article for no-eager-fetch regression',
+            pub_date: new Date(Date.now() - itemIndex * 60_000).toISOString(),
+          },
+          contentSha256,
+        })
+      }
     }
 
     const seededPage = await getRssFeedItemFeedIds(testUser, {
@@ -103,7 +108,8 @@ test.describe('InfiniteScroll — no eager second-page fetch on initial load', (
     await navigateTo(page, '/feed/news/sources')
 
     await expect(page.getByTestId('news-item-card').first()).toBeVisible()
-    // Sentinel being present confirms has_next_page=true (30 items > FEED_PAGE_LIMIT)
+    // Sentinel being present confirms has_next_page=true (32 bounded source
+    // items > FEED_PAGE_LIMIT).
     await expect(page.getByTestId('infinite-scroll-sentinel')).toBeVisible()
     // requestIdleCallback fires after all pending microtasks and RAF callbacks
     await waitForBelowFoldHydration(page)

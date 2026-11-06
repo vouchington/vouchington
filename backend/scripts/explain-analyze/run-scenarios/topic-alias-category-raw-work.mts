@@ -65,11 +65,9 @@ async function captureAliasCandidateReconciliation(aliasId: string): Promise<voi
         function: 'fn_update_rss_feed_item_topic_candidate_memberships',
         max: 500,
       },
-      {
-        kind: 'maxFunctionCalls',
-        function: 'fn_update_rss_feed_item_topic_candidate_count',
-        max: 1_000,
-      },
+      // EXPLAIN replays this UPDATE after the callback has already moved the alias. A replay
+      // with unchanged topic IDs calls the membership helper but skips its count helper.
+      // Each membership call can change at most two counts, so its 500-call cap bounds both.
     ],
   })
   const originalTopicId = seedUuid(2499, '04')

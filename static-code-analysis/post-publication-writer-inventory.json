@@ -186,6 +186,10 @@
       "reason": "called inside captured RSS source upsert"
     },
     {
+      "path": "backend/services/rss-feed-items/reconcile-feed-candidate.mts",
+      "reason": "repairs denormalized RSS candidate sort timestamps from canonical item publication state; it does not mutate publication eligibility or story-post projections, whose changes are captured by the originating RSS item writers"
+    },
+    {
       "path": "backend/services/rss-feeds/create-source-helpers.mts",
       "reason": "new feed setup has no existing story-post projection"
     },

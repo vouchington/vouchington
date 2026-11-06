@@ -26,7 +26,15 @@ export function assertRssFeedCandidateMaintenanceIndexes(result: ExplainResult):
       typeof node['Index Name'] === 'string' ? [node['Index Name']] : [],
     ),
   )
-  const missing = expected.filter(index => !indexes.has(index))
+  // The generic UPDATE plan may drive the same bounded keys from either side of the pair.
+  const topicUpdateUsesReverseIndex =
+    queryName === 'updateCandidateReconciliationTopics' &&
+    indexes.has('idx_rss_feed_item_topic_candidates__topic')
+  const missing = expected.filter(
+    index =>
+      !indexes.has(index) &&
+      !(index === 'rss_feed_item_topic_candidates_pkey' && topicUpdateUsesReverseIndex),
+  )
   if (missing.length > 0)
     throw new Error(
       `${result.name} must use RSS candidate maintenance index(es) ${missing.join(', ')}`,
