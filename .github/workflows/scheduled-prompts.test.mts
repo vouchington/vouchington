@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
@@ -22,7 +22,8 @@ const workflow = load(readFileSync('.github/workflows/scheduled-prompts.yml', 'u
 describe('scheduled-prompts workflow', () => {
   it('runs prompt selection through system bash without Bash 4 helpers', () => {
     const selectStep = workflow.jobs?.['select-prompt']?.steps?.find(step => step.id === 'select')
-    expect(selectStep?.run).toBeTruthy()
+    const scriptPath = '.github/workflows/scheduled-prompts/select-prompt.sh'
+    expect(selectStep?.run).toBe(`source ${scriptPath}`)
 
     const cwd = mkdtempSync(join(tmpdir(), 'scheduled-prompts-'))
     const outputFile = join(cwd, 'github-output.txt')
@@ -30,6 +31,8 @@ describe('scheduled-prompts workflow', () => {
     const binDir = join(cwd, 'bin')
 
     try {
+      mkdirSync(join(cwd, '.github/workflows/scheduled-prompts'), { recursive: true })
+      writeFileSync(join(cwd, scriptPath), readFileSync(resolve(scriptPath), 'utf8'))
       mkdirSync(promptDir, { recursive: true })
       mkdirSync(binDir)
       mkdirSync(join(promptDir, '00-directory.md'))
