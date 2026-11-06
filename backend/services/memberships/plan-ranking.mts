@@ -27,5 +27,5 @@ function getMembershipPlanRank(plan: MembershipPlanSlug): number {
 }
 
 function assertNeverMembershipPlan(plan: never): never {
-  throw new Error(`Unhandled membership plan: ${plan}`)
+  throw new Error(`Unhandled membership plan: ${String(plan)}`)
 }

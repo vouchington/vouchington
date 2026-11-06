@@ -83,6 +83,29 @@ describe('MembershipRefundForm reconciliation', () => {
     vi.useRealTimers()
   })
 
+  it('reports an unsupported cancellation status without clearing the refund attempt', async () => {
+    mockCreateMembershipRefund.mockResolvedValue({
+      outcome: 'completed',
+      refund: { id: 'refund-operation-id' },
+      cancellation_status: 'unsupported',
+    })
+    const { container } = renderRefundForm()
+
+    fireEvent.submit(container.querySelector('form')!)
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(mockToastError).toHaveBeenCalledWith(
+      'Unsupported refund cancellation status: unsupported',
+    )
+    expect(mockToastSuccess).not.toHaveBeenCalled()
+    expect(
+      sessionStorage.getItem('voucha:membership-refund-attempt:v2:admin-1:user-1'),
+    ).not.toBeNull()
+    expect(onReload).not.toHaveBeenCalled()
+  })
+
   it('locks and persists the exact request when the refund is still reconciling', async () => {
     mockCreateMembershipRefund.mockResolvedValue({
       outcome: 'reconciling',

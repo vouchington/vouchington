@@ -48,7 +48,7 @@ export function processLanguageDetection(
       return detectTopicLanguage(id)
     default: {
       const _exhaustive: never = entityType
-      throw new Error(`Unknown language detection entity type: ${_exhaustive}`)
+      throw new Error(`Unknown language detection entity type: ${String(_exhaustive)}`)
     }
   }
 }
@@ -161,7 +161,7 @@ export async function processLanguageDetectionBackfill(
     }
     default: {
       const _exhaustive: never = jobName
-      throw new Error(`Unknown backfill job: ${_exhaustive}`)
+      throw new Error(`Unknown backfill job: ${String(_exhaustive)}`)
     }
   }
   // An exactly full page may have no successor; one empty retained pass closes the sweep.
@@ -179,7 +179,7 @@ function assertKnownLanguageDetectionBackfillJob(jobName: LanguageDetectionBackf
       return
     default: {
       const _exhaustive: never = jobName
-      throw new Error(`Unknown backfill job: ${_exhaustive}`)
+      throw new Error(`Unknown backfill job: ${String(_exhaustive)}`)
     }
   }
 }

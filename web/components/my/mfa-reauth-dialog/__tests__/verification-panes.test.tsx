@@ -4,8 +4,26 @@ import {
   EmailVerificationPane,
   TotpVerificationPane,
 } from '@/components/my/mfa-reauth-dialog/verification-panes'
+import { MethodSelector } from '@/components/my/mfa-reauth-dialog/method-selector'
+import type { ReauthMethod } from '@/components/my/mfa-reauth-dialog/methods'
 
 describe('MFA re-authentication verification panes', () => {
+  it('rejects an unsupported method from a malformed method list', () => {
+    expect(() =>
+      render(
+        <MethodSelector
+          loading={false}
+          method={undefined}
+          methods={['unsupported' as ReauthMethod]}
+          setEmailCode={() => {}}
+          setEmailSent={() => {}}
+          setMethod={() => {}}
+          setSentToEmail={() => {}}
+        />,
+      ),
+    ).toThrow('Unsupported reauthentication method: unsupported')
+  })
+
   it('labels the authenticator code input with the visible instruction', () => {
     render(
       <TotpVerificationPane

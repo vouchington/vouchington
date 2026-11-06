@@ -118,7 +118,7 @@ async function entityInserter(table: LanguageDetectionEntityTable) {
           markdown: text,
         })
       default:
-        throw new Error(`Unsupported language backfill table: ${table}`)
+        throw new Error(`Unsupported language backfill table: ${String(table)}`)
     }
   }
 }

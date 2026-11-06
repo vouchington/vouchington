@@ -11,14 +11,9 @@ import {
 
 type RecentlyViewedPageRow = Awaited<ReturnType<typeof searchRecentlyViewedPage>>[number]
 
-// Use randomized prefixes so tests are idempotent on a shared Redis.
-function randomEntityType(): string {
-  return `test-topic-${crypto.randomUUID().slice(0, 8)}`
-}
-
 describe('searchRecentlyViewed — session-only', () => {
   it('returns ids in most-recent-first order for session-only queries', async () => {
-    const entityType = randomEntityType() as never
+    const entityType = 'topic'
     const sessionId = crypto.randomUUID()
     const id1 = crypto.randomUUID()
     const id2 = crypto.randomUUID()
@@ -34,7 +29,7 @@ describe('searchRecentlyViewed — session-only', () => {
 
 describe('searchRecentlyViewed — user+session merge', () => {
   it('merges session and user ZSETs and deduplicates by max score', async () => {
-    const entityType = randomEntityType() as never
+    const entityType = 'topic'
     const userId = crypto.randomUUID()
     const sessionId = crypto.randomUUID()
     const id1 = crypto.randomUUID()
@@ -60,7 +55,7 @@ describe('searchRecentlyViewed — user+session merge', () => {
 
 describe('searchRecentlyViewed — limit', () => {
   it('respects the limit parameter', async () => {
-    const entityType = randomEntityType() as never
+    const entityType = 'topic'
     const sessionId = crypto.randomUUID()
     const ids = Array.from({ length: 5 }, () => crypto.randomUUID())
 
@@ -75,7 +70,7 @@ describe('searchRecentlyViewed — limit', () => {
 
 describe('upsertRecentlyViewed — user-only mode', () => {
   it('inserts to user ZSET when sessionId is empty string', async () => {
-    const entityType = randomEntityType() as never
+    const entityType = 'topic'
     const userId = crypto.randomUUID()
     const id1 = crypto.randomUUID()
 
@@ -86,7 +81,7 @@ describe('upsertRecentlyViewed — user-only mode', () => {
   })
 
   it('trims the oldest entry at the production retention limit and keeps a TTL', async () => {
-    const entityType = randomEntityType() as never
+    const entityType = 'topic'
     const userId = crypto.randomUUID()
     const key = `recently-viewed:user:${entityType}:${userId}`
     const ids = Array.from({ length: RECENTLY_VIEWED_ZSET_LIMIT }, () => crypto.randomUUID())
@@ -117,7 +112,7 @@ describe('upsertRecentlyViewed — user-only mode', () => {
 
 describe('searchRecentlyViewedPage', () => {
   it('pages a user history without skipping or repeating entries', async () => {
-    const entityType = randomEntityType() as never
+    const entityType = 'topic'
     const userId = crypto.randomUUID()
     const ids = Array.from({ length: 5 }, () => crypto.randomUUID())
     const key = `recently-viewed:user:${entityType}:${userId}`
@@ -143,7 +138,7 @@ describe('searchRecentlyViewedPage', () => {
   })
 
   it('continues a tied score in reverse member order before older scores', async () => {
-    const entityType = randomEntityType() as never
+    const entityType = 'topic'
     const userId = crypto.randomUUID()
     const key = `recently-viewed:user:${entityType}:${userId}`
     const older = '00000000-0000-4000-8000-000000000001'
@@ -170,7 +165,7 @@ describe('searchRecentlyViewedPage', () => {
   })
 
   it('follows the original cursor score when that member is viewed again', async () => {
-    const entityType = randomEntityType() as never
+    const entityType = 'topic'
     const userId = crypto.randomUUID()
     const key = `recently-viewed:user:${entityType}:${userId}`
     const older = '00000000-0000-4000-8000-000000000001'
@@ -194,7 +189,7 @@ describe('searchRecentlyViewedPage', () => {
   })
 
   it('continues past a cursor member that is no longer stored', async () => {
-    const entityType = randomEntityType() as never
+    const entityType = 'topic'
     const userId = crypto.randomUUID()
     const key = `recently-viewed:user:${entityType}:${userId}`
     const older = '00000000-0000-4000-8000-000000000001'

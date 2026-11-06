@@ -92,6 +92,6 @@ export async function flushConcern(
     }
 
     default:
-      throw createHttpError(400, `Invalid concern: ${concern}`)
+      throw createHttpError(400, `Invalid concern: ${String(concern)}`)
   }
 }

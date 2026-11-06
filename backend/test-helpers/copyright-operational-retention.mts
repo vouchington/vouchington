@@ -29,7 +29,7 @@ function operationalTable(kind: OperationalKind | 'email_thread_tokens'): string
     case 'email_thread_tokens':
       return 'copyright_notice_email_thread_tokens'
     default:
-      throw new Error(`Unknown copyright operational kind: ${kind}`)
+      throw new Error(`Unknown copyright operational kind: ${String(kind)}`)
   }
 }
 

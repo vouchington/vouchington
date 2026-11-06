@@ -59,7 +59,9 @@ export function onFatalError(err: Error): void {
 function reportError(err: Error, logToConsole: boolean): void {
   if (!err) return
   if (!(err instanceof Error)) {
-    throw new Error(`onError expects an Error instance, received: ${typeof err} with value: ${err}`)
+    throw new Error(
+      `onError expects an Error instance, received: ${typeof err} with value: ${String(err)}`,
+    )
   }
   if (messageIgnoresRegex.test(err.message)) return
   const extendedErr = err as ExtendedError

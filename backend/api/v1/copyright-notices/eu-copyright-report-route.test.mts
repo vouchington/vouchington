@@ -20,7 +20,7 @@ const end = '2026-02-01T00:00:00.000Z'
 function reportPath(format?: string, periodStart = start, periodEnd = end): string {
   const params = new URLSearchParams({ period_start: periodStart, period_end: periodEnd })
   if (format) params.set('format', format)
-  return `/api/v1/copyright-eu-reports?${params}`
+  return `/api/v1/copyright-eu-reports?${params.toString()}`
 }
 
 describe('DSA copyright transparency report GET', () => {

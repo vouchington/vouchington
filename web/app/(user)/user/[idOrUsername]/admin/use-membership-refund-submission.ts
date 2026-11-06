@@ -105,7 +105,7 @@ export function useMembershipRefundSubmission(options: {
             return
           default: {
             const unsupportedStatus: never = response.cancellation_status
-            throw new Error(`Unsupported refund cancellation status: ${unsupportedStatus}`)
+            throw new Error(`Unsupported refund cancellation status: ${String(unsupportedStatus)}`)
           }
         }
       } catch (err) {

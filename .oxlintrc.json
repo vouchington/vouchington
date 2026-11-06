@@ -572,7 +572,7 @@
     "typescript/no-unnecessary-type-parameters": "error",
     "typescript/no-misused-spread": "error",
     "typescript/no-unnecessary-type-conversion": "error",
-    "typescript/restrict-template-expressions": "off",
+    "typescript/restrict-template-expressions": "error",
     "unicorn/no-new-array": "off", // Policy: Array(length) is allowed for explicit preallocation.
     "no-useless-escape": "error",
     "no-ex-assign": "error",

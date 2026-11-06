@@ -23,7 +23,7 @@ export async function copyExistingEmbeddings(
   options: EmbeddingReconciliationOptions = {},
 ): Promise<EmbeddingReconciliationPage> {
   if (tableName !== 'posts' && tableName !== 'topics' && tableName !== 'rss_feed_items') {
-    throw new Error(`Invalid table name: ${tableName}`)
+    throw new Error(`Invalid table name: ${String(tableName)}`)
   }
   const configuredPageSize = getEmbeddingReconciliationPageSize()
   const requestedLimit = options.limit ?? configuredPageSize

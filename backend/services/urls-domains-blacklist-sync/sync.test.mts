@@ -18,6 +18,7 @@ import { createFetchSafeTestServer } from '@voucha/test-helpers/fetch-safe-test-
 import { ReplicaBehindError } from './replica-freshness.mts'
 import * as replicaSourceVersion from './replica-source-version.mts'
 import { syncBlacklistSourceById } from './sync.mts'
+import { sentryCaptureExceptionMock as captureException } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 type SeenRequest = {
   method: string | undefined
@@ -75,6 +76,18 @@ function respondValidated(domain: string) {
 describe('syncBlacklistSourceById', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('reports a non-Error fetch failure without marking the source fetched', async () => {
+    const { url } = await serveSource((_request, response) => response.end())
+    const sourceUrl = url('/list.txt')
+    const sourceId = await createSource('url', sourceUrl)
+    captureException.mockClear()
+    vi.spyOn(undici, 'fetch').mockRejectedValueOnce('transport-down')
+
+    await expect(syncBlacklistSourceById(sourceId)).resolves.toBeUndefined()
+    expect(captureException).toHaveBeenCalledWith(expect.any(Error), expect.anything())
+    await expect(getTestBlacklistSourceLastFetchedAt(sourceId)).resolves.toBeNull()
   })
 
   it('sends production request options, then conditional validators, and a 304 keeps the synced domains', async () => {

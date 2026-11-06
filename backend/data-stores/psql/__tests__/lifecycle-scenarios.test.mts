@@ -132,7 +132,7 @@ async function runModerationAppealScenario(
         typeof err === 'object' && err !== null && 'status' in err ? err.status : undefined,
       )
     if (status !== 403)
-      throw new Error(`Expected moderator suspension acceptance to fail with 403, got ${status}`)
+      throw new Error(`Expected 403 from moderator acceptance, got ${String(status)}`)
     const persisted = await getModerationAppealByIdFromPrimary(appeal.id)
     return observeServerBoundary(
       { status: persisted!.status, viewerRole: 'moderator' },
