@@ -9,6 +9,7 @@ import type { PostsListResponseBody } from '@/types/api-responses'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
 import type { RelationManagementActionConfig } from './relation-management-action'
 import { UserPostRelationList } from './user-post-relation-list'
+import { useHackerNewsReferenceRefresh } from '@/components/hacker-news/use-hacker-news-reference-refresh'
 
 interface PaginatedUserPostRelationListProps {
   data: PostsListResponseBody
@@ -25,8 +26,16 @@ export function PaginatedUserPostRelationList({
   emptyDescription,
   relationAction,
 }: PaginatedUserPostRelationListProps) {
+  const pagination = usePaginatedList(data, endpoint, {})
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
-    usePaginatedList(data, endpoint, {})
+    pagination
+  const retryReferenceRefresh = useHackerNewsReferenceRefresh(
+    pagination.refreshLoadedPages,
+    endpoint,
+    {},
+    pagination.fetchError,
+    pagination.resetKey,
+  )
   const { remove: removePost, removedIds } = useQueryScopedRemovals(
     getPaginatedQueryKey(endpoint, {}),
   )
@@ -38,7 +47,7 @@ export function PaginatedUserPostRelationList({
     <InfiniteScroll
       hasNextPage={canLoadMore}
       endCursor={endCursor}
-      onLoadMore={loadMore}
+      onLoadMore={retryReferenceRefresh.handleLoadMore(loadMore)}
       loadingMore={loadingMore}
       fetchError={fetchError}
       clearError={clearError}

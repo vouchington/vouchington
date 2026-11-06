@@ -18,6 +18,7 @@ import { RssItemNavProvider } from '@/lib/rss-item-nav-provider'
 import { RSS_ITEM_HIDDEN_EVENT } from '@/lib/rss-item-modal'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { HackerNewsReferencesProvider } from '@/components/hacker-news/hacker-news-references-context'
+import { useHackerNewsReferenceRefresh } from '@/components/hacker-news/use-hacker-news-reference-refresh'
 
 interface NewsItemListProps {
   data: RssFeedItemsFeedResponseBody
@@ -37,8 +38,16 @@ export function NewsItemList({
 }: NewsItemListProps) {
   const t = useTranslations()
   const { feedStyle } = useFeedStyle()
+  const pagination = usePaginatedList(data, nextPageEndpoint, nextPageParams)
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
-    usePaginatedList(data, nextPageEndpoint, nextPageParams)
+    pagination
+  const referenceRefresh = useHackerNewsReferenceRefresh(
+    pagination.refreshLoadedPages,
+    nextPageEndpoint,
+    nextPageParams,
+    pagination.fetchError,
+    pagination.resetKey,
+  )
   const [hiddenItemIds, setHiddenItemIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -93,7 +102,7 @@ export function NewsItemList({
       <InfiniteScroll
         hasNextPage={canLoadMore}
         endCursor={endCursor}
-        onLoadMore={loadMore}
+        onLoadMore={referenceRefresh.handleLoadMore(loadMore)}
         loadingMore={loadingMore}
         fetchError={fetchError}
         clearError={clearError}

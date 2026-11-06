@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation'
 import { getHackerNewsConfigClient } from '@/lib/api/client/hacker-news-config'
 import type { HackerNewsConfig } from '@/lib/hacker-news-config'
 
-import { HackerNewsConfigContext } from './hacker-news-config-context'
+import {
+  HackerNewsConfigContext,
+  HackerNewsReferenceRefreshGenerationContext,
+} from './hacker-news-config-context'
 
 export function HackerNewsConfigProvider({
   initialConfig,
@@ -14,12 +17,54 @@ export function HackerNewsConfigProvider({
   initialConfig: HackerNewsConfig
   children: ReactNode
 }) {
-  const [snapshot, setSnapshot] = useState({ initialConfig, config: initialConfig })
-  if (
+  const [snapshot, setSnapshot] = useState({
+    initialConfig,
+    serverConfig: initialConfig,
+    config: initialConfig,
+    referenceRefreshGeneration: 0,
+    pendingHiddenVisibilityCycle: false,
+  })
+  const serverConfigChanged = snapshot.serverConfig !== initialConfig
+  const serverValuesChanged =
     snapshot.initialConfig.references_visible !== initialConfig.references_visible ||
     snapshot.initialConfig.post_time_range_cap !== initialConfig.post_time_range_cap
-  ) {
-    setSnapshot({ initialConfig, config: initialConfig })
+  const serverVisibilityChanged =
+    snapshot.initialConfig.references_visible !== initialConfig.references_visible
+  const acknowledgeHiddenCycle =
+    serverConfigChanged &&
+    snapshot.pendingHiddenVisibilityCycle &&
+    snapshot.config.references_visible &&
+    initialConfig.references_visible
+  if (serverValuesChanged) {
+    const referenceRefreshGeneration =
+      initialConfig.references_visible && (serverVisibilityChanged || acknowledgeHiddenCycle)
+        ? snapshot.referenceRefreshGeneration + 1
+        : snapshot.referenceRefreshGeneration
+    setSnapshot({
+      initialConfig,
+      serverConfig: initialConfig,
+      // A range-only server update cannot undo a newer polled visibility setting.
+      config: serverVisibilityChanged
+        ? initialConfig
+        : { ...initialConfig, references_visible: snapshot.config.references_visible },
+      referenceRefreshGeneration,
+      pendingHiddenVisibilityCycle:
+        referenceRefreshGeneration > snapshot.referenceRefreshGeneration
+          ? false
+          : snapshot.pendingHiddenVisibilityCycle,
+    })
+  } else if (serverConfigChanged) {
+    const referenceRefreshGeneration = acknowledgeHiddenCycle
+      ? snapshot.referenceRefreshGeneration + 1
+      : snapshot.referenceRefreshGeneration
+    setSnapshot(previous => ({
+      ...previous,
+      serverConfig: initialConfig,
+      referenceRefreshGeneration,
+      pendingHiddenVisibilityCycle: acknowledgeHiddenCycle
+        ? false
+        : previous.pendingHiddenVisibilityCycle,
+    }))
   }
   const config = snapshot.config
   const initialReferencesVisible = initialConfig.references_visible
@@ -40,8 +85,14 @@ export function HackerNewsConfigProvider({
           next.references_visible !== current.references_visible ||
           next.post_time_range_cap !== current.post_time_range_cap
         if (changed) {
+          const observedHiddenCycle = current.references_visible && !next.references_visible
           current = next
-          setSnapshot({ initialConfig: serverConfig, config: next })
+          setSnapshot(previous => ({
+            ...previous,
+            config: next,
+            pendingHiddenVisibilityCycle:
+              previous.pendingHiddenVisibilityCycle || observedHiddenCycle,
+          }))
         }
         if (
           changed ||
@@ -64,6 +115,10 @@ export function HackerNewsConfigProvider({
     }
   }, [router, initialReferencesVisible, initialPostTimeRangeCap])
   return (
-    <HackerNewsConfigContext.Provider value={config}>{children}</HackerNewsConfigContext.Provider>
+    <HackerNewsReferenceRefreshGenerationContext.Provider
+      value={snapshot.referenceRefreshGeneration}
+    >
+      <HackerNewsConfigContext.Provider value={config}>{children}</HackerNewsConfigContext.Provider>
+    </HackerNewsReferenceRefreshGenerationContext.Provider>
   )
 }

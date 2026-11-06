@@ -16,6 +16,7 @@ import { useState } from 'react'
 import type { PostsResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { HackerNewsReferencesProvider } from '@/components/hacker-news/hacker-news-references-context'
+import { useHackerNewsReferenceRefresh } from '@/components/hacker-news/use-hacker-news-reference-refresh'
 
 const AGENT_EXCLUDED_POST_TYPES = new Set(['article', 'blog_post'])
 
@@ -50,8 +51,16 @@ export function PostList({
   }
   // nextPageEndpoint defaults to '' when absent; the !!nextPageEndpoint guard below and
   // the hook's own !endpoint guard together ensure pagination is a no-op in that case.
+  const pagination = usePaginatedList(data, nextPageEndpoint, nextPageParams)
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
-    usePaginatedList(data, nextPageEndpoint, nextPageParams)
+    pagination
+  const referenceRefresh = useHackerNewsReferenceRefresh(
+    pagination.refreshLoadedPages,
+    nextPageEndpoint,
+    nextPageParams,
+    pagination.fetchError,
+    pagination.resetKey,
+  )
 
   const allResults = mergePageResultsById(pages)
   const allPosts = mergeRecords(pages, page => page.posts)
@@ -86,7 +95,7 @@ export function PostList({
     <InfiniteScroll
       hasNextPage={canLoadMore}
       endCursor={endCursor}
-      onLoadMore={loadMore}
+      onLoadMore={referenceRefresh.handleLoadMore(loadMore)}
       loadingMore={loadingMore}
       fetchError={fetchError}
       clearError={clearError}

@@ -17,6 +17,7 @@ vi.mock(
   () =>
     ({
       useAuth: () => ({ isAuthenticated: true }),
+      useOptionalAuth: () => ({ currentUser: null, isAuthenticated: true }),
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 

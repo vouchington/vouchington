@@ -7,6 +7,7 @@ import {
   setClusterMockViewerId,
 } from '@/test-helpers/components/news/news-item-cluster-list.mock-support'
 import { getStoryMemberPage } from '@/lib/api/client/stories'
+import { getPaginatedPage } from '@/lib/api/client'
 import { useNewsItemClusters } from '@/components/news/use-news-item-clusters'
 import type { RssFeedItemsFeedResponseBody, StoryPageResponse } from '@/types/rss-feed-items'
 
@@ -162,6 +163,7 @@ describe('NewsItemClusterList', () => {
     })
     vi.mocked(getStoryMemberPage).mockReturnValue(pending)
     setClusterMockViewerId('viewer-one')
+    vi.mocked(getPaginatedPage).mockResolvedValueOnce(page)
     const { result, rerender } = renderHook(() => useNewsItemClusters(page, '/feed', {}))
     let inFlight!: Promise<void>
     act(() => {

@@ -7,6 +7,7 @@ import { HackerNewsConfigProvider } from '../hacker-news-config-provider'
 import { HackerNewsFilterToggle } from '../hacker-news-filter-toggle'
 import { HackerNewsReferenceLabel } from '../hacker-news-reference-label'
 import { HackerNewsReferencesProvider } from '../hacker-news-references-context'
+import { useHackerNewsReferenceRefreshGeneration } from '../hacker-news-config-context'
 
 vi.mock(
   import('next/navigation'),
@@ -71,6 +72,99 @@ function PersistentPlayer() {
 }
 
 describe('server configuration refresh', () => {
+  it('starts reference refresh only when the server acknowledges visibility', async () => {
+    nav.reset()
+    vi.useFakeTimers()
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () =>
+        Response.json({ references_visible: true, post_time_range_cap: '1y' }),
+      )
+    function Generation() {
+      return <output>{useHackerNewsReferenceRefreshGeneration()}</output>
+    }
+    try {
+      const view = render(
+        <HackerNewsConfigProvider
+          initialConfig={{ references_visible: false, post_time_range_cap: '1y' }}
+        >
+          <Generation />
+        </HackerNewsConfigProvider>,
+      )
+      expect(screen.getByText('0')).toBeInTheDocument()
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(screen.getByText('0')).toBeInTheDocument()
+      expect(nav.refresh).toHaveBeenCalledOnce()
+      view.rerender(
+        <HackerNewsConfigProvider
+          initialConfig={{ references_visible: true, post_time_range_cap: '1y' }}
+        >
+          <Generation />
+        </HackerNewsConfigProvider>,
+      )
+      expect(screen.getByText('1')).toBeInTheDocument()
+    } finally {
+      fetchMock.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  it('waits for a server acknowledgement after visibility cycles off and on between renders', async () => {
+    nav.reset()
+    vi.useFakeTimers()
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        Response.json({ references_visible: false, post_time_range_cap: '1y' }),
+      )
+      .mockResolvedValueOnce(Response.json({ references_visible: true, post_time_range_cap: '1y' }))
+    function Generation() {
+      return <output>{useHackerNewsReferenceRefreshGeneration()}</output>
+    }
+    try {
+      const view = render(
+        <HackerNewsConfigProvider
+          initialConfig={{ references_visible: true, post_time_range_cap: '1y' }}
+        >
+          <Generation />
+        </HackerNewsConfigProvider>,
+      )
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(screen.getByText('0')).toBeInTheDocument()
+
+      view.rerender(
+        <HackerNewsConfigProvider
+          initialConfig={{ references_visible: true, post_time_range_cap: '1y' }}
+        >
+          <Generation />
+        </HackerNewsConfigProvider>,
+      )
+      expect(screen.getByText('0')).toBeInTheDocument()
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000)
+      })
+      expect(screen.getByText('0')).toBeInTheDocument()
+      expect(nav.refresh).toHaveBeenCalledTimes(2)
+
+      view.rerender(
+        <HackerNewsConfigProvider
+          initialConfig={{ references_visible: true, post_time_range_cap: '1y' }}
+        >
+          <Generation />
+        </HackerNewsConfigProvider>,
+      )
+      expect(screen.getByText('1')).toBeInTheDocument()
+    } finally {
+      fetchMock.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
   it('retries a stale server snapshot on the next poll without refetching on same-value renders', async () => {
     nav.reset()
     vi.useFakeTimers()
