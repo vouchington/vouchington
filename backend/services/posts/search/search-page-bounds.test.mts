@@ -245,5 +245,23 @@ describe('search page bounds', () => {
     expect(staff.sql).toContain('is_enabled = FALSE')
     expect(staff.sql).not.toContain('is_discoverable')
     expect(staff.sql).not.toContain('view_rss_feed_current_states')
+
+    const publicOnly = buildStorySourcePageQuery({
+      currentUser: {
+        __entity_type: 'user',
+        id: ID,
+        roles: ['moderator'],
+        account_type: null,
+      },
+      options: { post_types: ['story'], public_eligibility_only: true },
+      cursor: null,
+      hasSemanticSearch: false,
+      hasTextSearch: false,
+      pageSize: 25,
+      childLimit: 5,
+    })
+    expect(publicOnly.sql).toContain('is_discoverable')
+    expect(publicOnly.sql).not.toContain('is_enabled = FALSE')
+    expect(publicOnly.sql).not.toContain('view_rss_feed_current_states')
   })
 })
