@@ -1,7 +1,6 @@
 import { encodeCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
 import { dataPointLimitLiteral } from './data-point-arms.mts'
-import { storyLimitLiteral } from './story-source-child.mts'
 import { assembleDataPointPage } from './data-point-assemble.mts'
 import { decodeDataPointCursor } from './data-point-cursor.mts'
 import { buildDataPointPageQuery } from './data-point-query.mts'
@@ -38,12 +37,6 @@ describe('search page bounds', () => {
     expect(() => dataPointLimitLiteral(0)).toThrow(/outside its configured bound/)
     expect(dataPointLimitLiteral(1)).toBe('1')
     expect(dataPointLimitLiteral(101)).toBe('101')
-  })
-
-  it('rejects a story page limit outside the configured bound', () => {
-    expect(() => storyLimitLiteral(0)).toThrow(/outside its configured bound/)
-    expect(storyLimitLiteral(1)).toBe('1')
-    expect(storyLimitLiteral(101)).toBe('101')
   })
 
   it('rejects malformed data-point cursors', () => {
@@ -219,6 +212,8 @@ describe('search page bounds', () => {
     })
     expect(stories.sql).toContain('similar_rss_feed_item_embedding')
     expect(stories.sql).toContain('is_discoverable')
+    expect(stories.sql).toContain('LIMIT 26')
+    expect(stories.sql).toContain('LIMIT 6')
     expect(stories.values).toContain(ID)
 
     const filtered = buildDataPointPageQuery(

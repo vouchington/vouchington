@@ -3,7 +3,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { StoryCursor, StoryFeedBounds } from './story-source-types.mts'
 
 /** A bound from DynamicConfig, inlined so a generic plan sees the same LIMIT as a custom plan. */
-export function storyLimitLiteral(value: number): string {
+function storyLimitLiteral(value: number): string {
   if (!Number.isSafeInteger(value) || value < 1 || value > 101) {
     throw new Error('story page limit is outside its configured bound')
   }
