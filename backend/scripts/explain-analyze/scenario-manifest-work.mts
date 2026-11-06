@@ -104,6 +104,8 @@ export const BOUNDED_WORK_SCENARIOS = [
   'import-retention-parent',
   'user-import-approval-first-page',
   'user-import-approval-continuation',
+  'user-import-approval-first-page-vacuumed',
+  'user-import-approval-continuation-vacuumed',
   'import-retention-child-continuation',
   'request-attempt-retention-continuation',
   'request-attempt-retention-delete',

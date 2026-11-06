@@ -59,6 +59,11 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
 - Bounded-claim fixtures need a ready backlog large enough to distinguish an ordered index page
   from scanning all eligible work. A small eligible queue can legitimately favor a bitmap scan
   and sort even with accurate statistics; that choice does not establish unbounded backlog work.
+- Approval-page plans cover both recently written and vacuumed import requests. Visibility-map
+  changes affect the cost of the covering recommendation index; the selector must keep its
+  recommendation-scoped access path even when heap visits are required. A global pending-request
+  scan can preserve ID order while reading unrelated recommendations, so ordering alone does not
+  establish bounded work.
 
 ## Loader decisions
 
