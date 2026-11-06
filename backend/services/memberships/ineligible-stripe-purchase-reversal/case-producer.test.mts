@@ -1,3 +1,5 @@
+import { enqueueRecoverStripePurchaseCollisions } from '@queues/memberships/enqueues'
+import { processMembershipJob } from '../../../workers/memberships/processors/process-job.mts'
 import type { Job } from 'glide-mq'
 import type { RecoverStripePurchaseCollisionsData } from '@queues/memberships/types'
 import { recoverStripePurchaseCollisions } from '../../../workers/memberships/processors/stripe-purchase-collisions.mts'
@@ -135,6 +137,19 @@ describe('durable ineligible Stripe purchase case producer', () => {
     const after = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
     onTestFinished(async () => {
       for (const id of [...pages, taskId]) await (await memberships.getJob(id))?.remove()
+    })
+    const upperPage = await enqueueRecoverStripePurchaseCollisions(
+      { after: 'ffffffff-ffff-7fff-bfff-ffffffffffff' },
+      {
+        jobId: `test-collision-upper-${randomUUID()}`,
+        deduplication: { id: randomUUID(), mode: 'simple' },
+      },
+    )
+    if (!upperPage) throw new Error('Expected bounded recovery task')
+    pages.push(upperPage.id)
+    await processMembershipJob(upperPage)
+    await expect(memberships.getJob(upperPage.id)).resolves.toMatchObject({
+      data: { through: expect.any(String), dispatchReceipt: { result: { enqueued: 0 } } },
     })
     const sweep = async () => {
       const job = await memberships.add(

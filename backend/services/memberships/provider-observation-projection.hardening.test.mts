@@ -1,3 +1,4 @@
+import { processMembershipJob } from '../../workers/memberships/processors/process-job.mts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as stripeClient from '@modules/stripe/client'
@@ -68,7 +69,8 @@ describe('deferred Stripe purchase collision work', () => {
     await retireTestMembershipProviderProduct(fixture.stripeSku.membership_provider_product_id)
     calls.invoicesList.mockResolvedValue({ data: [fixture.invoice], has_more: false })
     calls.invoiceLines.mockResolvedValue({ data: fixture.lines, has_more: false })
-    await processStripePurchaseCollisionWork(work.id)
+    if (!job) throw new Error('Expected deferred task')
+    await processMembershipJob(job)
 
     const reversalCase = await getIneligiblePurchaseReversalCase({
       originatingInvoiceId: fixture.invoice.id,
