@@ -30,6 +30,14 @@ type Workflow = {
 }
 
 const workflow = readFileSync('.github/workflows/checks-static.yml', 'utf8')
+const backendContractsScript = readFileSync(
+  '.github/workflows/checks-static-backend-contracts.sh',
+  'utf8',
+)
+const apiSnapshotScript = readFileSync(
+  '.github/workflows/checks-static-api-snapshot-git-state.sh',
+  'utf8',
+)
 const parsed = load(workflow) as Workflow
 
 function jobSection(jobName: string): string {
@@ -118,13 +126,14 @@ describe('checks-static workflow', () => {
     const apiFixtureSnapshots = steps.find(
       step => step.name === 'Check canonical API snapshot git state',
     )
+    expect(compilation?.run).toBe('source .github/workflows/checks-static-backend-contracts.sh')
     expect(
-      compilation?.run?.startsWith(
-        'pnpm run backend-row-contracts:check\npnpm run api-fixtures:check\nexport NODE_ENV=test\n',
+      backendContractsScript.startsWith(
+        '#!/usr/bin/env bash\n\npnpm run backend-row-contracts:check\npnpm run api-fixtures:check\nexport NODE_ENV=test\n',
       ),
     ).toBe(true)
-    expect(compilation?.run).not.toContain('services.valkey')
-    expect(compilation?.run?.trim().split('\n').slice(-6)).toEqual([
+    expect(backendContractsScript).not.toContain('services.valkey')
+    expect(backendContractsScript.trim().split('\n').slice(-6)).toEqual([
       'node ci/check-live-mcp-catalog.mjs',
       'node ci/check-topic-merge-foreign-keys.mts',
       'node ci/validate-generated-ddl-inserts.mts',
@@ -136,17 +145,20 @@ describe('checks-static workflow', () => {
       numberField(apiFixtureSnapshots?.['timeout-minutes'], 'snapshot Git guard'),
     )
     expect(
-      steps.filter(step => step.run?.includes('pnpm run backend-row-contracts:check')),
+      steps.filter(step => step.run?.includes('checks-static-backend-contracts.sh')),
     ).toHaveLength(1)
     expect(apiFixtureSnapshots).toMatchObject({
-      run: `git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json
-untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json)"
-if [ -n "$untracked_generated_files" ]; then
-  echo "::error::Generated API fixture files are untracked:"
-  printf '%s\\n' "$untracked_generated_files"
-  exit 1
-fi\n`,
+      run: 'source .github/workflows/checks-static-api-snapshot-git-state.sh',
     })
+    expect(apiSnapshotScript).toContain(
+      'git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json',
+    )
+    expect(apiSnapshotScript).toContain(
+      'git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json',
+    )
+    expect(apiSnapshotScript).toContain('if [ -n "$untracked_generated_files" ]; then')
+    expect(apiSnapshotScript).toContain('Generated API fixture files are untracked:')
+    expect(apiSnapshotScript).toContain('exit 1')
     expect(parsed.jobs?.['static-backend']?.services?.valkey).toBeUndefined()
     expect(steps.some(step => step.uses === './.github/actions/start-valkey')).toBe(true)
     expect(parsed.jobs?.['static-backend']?.services?.postgres).toBeUndefined()
@@ -160,16 +172,14 @@ fi\n`,
       'S3_BUCKET_USER_EXPORTS',
       'S3_BUCKET_QUARANTINE',
     ]) {
-      expect(compilation?.run).toContain(`export ${name}=test-`)
+      expect(backendContractsScript).toContain(`export ${name}=test-`)
     }
-    expect(steps.filter(step => step.run?.includes('check-live-mcp-catalog.mjs'))).toHaveLength(1)
-    expect(
-      steps.filter(step => step.run?.includes('pnpm run mcp:catalog -- --check')),
-    ).toHaveLength(1)
-    expect(apiFixtureSnapshots?.run).not.toContain('pnpm')
-    expect(apiFixtureSnapshots?.run).not.toContain('vitest')
-    expect(apiFixtureSnapshots?.run).not.toContain('api-fixtures:generate')
-    expect(apiFixtureSnapshots?.run).not.toContain('openapi:generate')
+    expect(backendContractsScript).toContain('node ci/check-live-mcp-catalog.mjs')
+    expect(backendContractsScript).toContain('pnpm run mcp:catalog -- --check')
+    expect(apiSnapshotScript).not.toContain('pnpm')
+    expect(apiSnapshotScript).not.toContain('vitest')
+    expect(apiSnapshotScript).not.toContain('api-fixtures:generate')
+    expect(apiSnapshotScript).not.toContain('openapi:generate')
     expect(
       job.indexOf('- name: Check PostgreSQL contracts, API fixtures, and MCP catalog'),
     ).toBeGreaterThan(job.indexOf('- name: Check backend dependencies'))
@@ -178,7 +188,7 @@ fi\n`,
 
   it('owns the web pages-router, dependency, build, and smoke checks lifted from tests-web.yml', () => {
     const job = jobSection('static-web')
-    expect(job).toContain('Pages Router directory found')
+    expect(job).toContain('source .github/workflows/checks-static-no-next-pages-router.sh')
     expect(job).toContain(
       'pnpm exec depcruise --config web/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content web',
     )
