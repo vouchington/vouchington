@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { listUserRemovedPosts } from '@services/communities/publications/list-user-removed.mts'
+import { listUserRemovedPosts } from '@services/communities/publications/list-user-removed'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
