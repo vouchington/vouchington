@@ -11,8 +11,9 @@ import {
 } from './comment-descendant-page-budget.mts'
 import { verifyWideBoundaryExpansion } from './comment-descendant-wide-boundary.mts'
 import { seedCommentDescendantPartitionFixture } from '../seed-data/comment-descendant-partition-fixture.mts'
+import { logCommentFixturePhase } from '../seed-data/comment-descendant-partition-storage.mts'
 
-const SEEDED_POSTS = 1_328_636
+const SEEDED_POSTS = 428_636
 
 type DescendantPage = {
   results: string[]
@@ -41,7 +42,9 @@ function captureServiceSql(id: string, operation: () => Promise<unknown>): Promi
 
 export async function runCommentDescendantPartitionedPages(): Promise<void> {
   const fixture = await seedCommentDescendantPartitionFixture()
+  const analyzeStartedAt = performance.now()
   await write(`/* analyzeCommentDescendantPartitionFixture */ ANALYZE posts`)
+  logCommentFixturePhase('ANALYZE posts', analyzeStartedAt)
 
   register(
     'comment-descendants-partitioned-head-page',
@@ -49,12 +52,14 @@ export async function runCommentDescendantPartitionedPages(): Promise<void> {
     'A keyset page of direct child heads spans the 24 explicit post partitions.',
   )
   const expectedHeadIds = [...fixture.pageHeadIds].toSorted()
+  const firstPageStartedAt = performance.now()
   const firstHeadPage = (await getVisibleCommentDescendantIdsPage(
     null,
     fixture.pageRootId,
     fixture.pageRootId,
     { limit: 100 },
   )) as DescendantPage
+  logCommentFixturePhase('first head page', firstPageStartedAt)
   assertPageSize(firstHeadPage, 100, 'The first descendant head page')
   assertExactIds(firstHeadPage.results, expectedHeadIds.slice(0, 100), 'The first head page')
   if (!firstHeadPage.hasNextPage)

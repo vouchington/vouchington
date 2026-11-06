@@ -1,5 +1,5 @@
 import { beginTransaction, read } from '@data-stores/psql'
-import { seedUuid } from './common.mts'
+import { seedUuid, seedUuidAtTimestamp } from './common.mts'
 
 export interface CommentRow {
   id: string
@@ -40,6 +40,27 @@ export async function insertCommentRows(
 export function partitionName(monthStart: number): string {
   const date = new Date(monthStart)
   return `posts__explain_4990_comment_page_${date.getUTCFullYear()}_${String(date.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+export async function createCommentPartitions(
+  query: Awaited<ReturnType<typeof beginTransaction>>,
+  months: readonly number[],
+): Promise<void> {
+  for (const month of months) {
+    const from = seedUuidAtTimestamp(month, 0)
+    const to = seedUuidAtTimestamp(addUtcMonths(month, 1), 0)
+    // no-mistakes-disable-next-line query-reached-per-item: create the fixed 24 monthly partitions in the isolated EXPLAIN database
+    await query(
+      `/* seedCommentDescendantPartition:partition */ CREATE TABLE IF NOT EXISTS ${partitionName(month)} PARTITION OF posts
+       FOR VALUES FROM ('${from}'::uuid) TO ('${to}'::uuid)`,
+    )
+  }
+}
+
+export function logCommentFixturePhase(phase: string, startedAt: number): number {
+  const now = performance.now()
+  console.log(`Comment descendant fixture ${phase}: ${Math.round(now - startedAt)} ms`)
+  return now
 }
 
 export async function assertNoLeftoverCommentPartitions(): Promise<void> {

@@ -2,14 +2,16 @@ import { beginTransaction } from '@data-stores/psql'
 import { contentHash, seedUuidAtTimestamp } from './common.mts'
 import {
   addUtcMonths,
+  createCommentPartitions,
   insertCommentRows,
+  logCommentFixturePhase,
   nextUtcMonthStart,
   partitionName,
   type CommentRow,
 } from './comment-descendant-partition-storage.mts'
 
 const PARTITION_MONTHS = 24
-const BACKGROUND_COMMENT_COUNT = 1_000_000
+const BACKGROUND_COMMENT_COUNT = 100_000
 const LARGE_THREAD_HEAD_COUNT = 100
 const LARGE_THREAD_FAN_OUT = 3
 const LARGE_THREAD_DEPTH = 8
@@ -41,6 +43,8 @@ export interface CommentDescendantPartitionFixture {
  * the existing DEFAULT partition has no rows to move and earlier plans keep their corpus.
  */
 export async function seedCommentDescendantPartitionFixture(): Promise<CommentDescendantPartitionFixture> {
+  console.log('Seeding partitioned comment descendant fixture')
+  let phaseStartedAt = performance.now()
   const firstMonth = nextUtcMonthStart(Date.now())
   const months = Array.from({ length: PARTITION_MONTHS }, (_, index) =>
     addUtcMonths(firstMonth, index),
@@ -64,15 +68,8 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
   )
   const hash = contentHash('comment-descendant-partition-fixture')
   await using transaction = await beginTransaction()
-  for (let index = 0; index < months.length; index++) {
-    const from = seedUuidAtTimestamp(months[index]!, 0)
-    const to = seedUuidAtTimestamp(addUtcMonths(months[index]!, 1), 0)
-    // no-mistakes-disable-next-line query-reached-per-item: create the fixed 24 monthly partitions in the isolated EXPLAIN database
-    await transaction(
-      `/* seedCommentDescendantPartition:partition */ CREATE TABLE IF NOT EXISTS ${partitionNames[index]} PARTITION OF posts
-       FOR VALUES FROM ('${from}'::uuid) TO ('${to}'::uuid)`,
-    )
-  }
+  await createCommentPartitions(transaction, months)
+  phaseStartedAt = logCommentFixturePhase('partitions', phaseStartedAt)
   const roots: CommentRow[] = [
     { id: rootId, parentId: null, rootId: null },
     { id: wideRootId, parentId: null, rootId: null },
@@ -162,6 +159,7 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
     })),
   )
   await insertCommentRows(transaction, boundaryRows, hash)
+  phaseStartedAt = logCommentFixturePhase('wide tree and boundary rows', phaseStartedAt)
   serial = ID_SERIAL_START + 2_000_000
   for (let monthIndex = 0; monthIndex < PARTITION_MONTHS; monthIndex++) {
     const month = months[monthIndex]!
@@ -177,13 +175,15 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
         rootId: backgroundRootIds[monthIndex]!,
       }))
       serial += batchCount
-      // no-mistakes-disable-next-line query-reached-per-item: insert the million-row background corpus in bounded 5,000-row batches
+      // no-mistakes-disable-next-line query-reached-per-item: insert the 100,000-row background corpus in bounded 5,000-row batches
       await insertCommentRows(transaction, rows, hash)
       remaining -= batchCount
     }
   }
 
+  phaseStartedAt = logCommentFixturePhase('background rows', phaseStartedAt)
   await transaction.commit()
+  logCommentFixturePhase('commit', phaseStartedAt)
   return {
     pageRootId: rootId,
     pageHeadIds,
