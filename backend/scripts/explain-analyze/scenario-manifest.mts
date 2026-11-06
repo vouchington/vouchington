@@ -26,6 +26,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'post-search-similar-rss-relevance',
   ...(['post-search-semantic-new', 'post-search-semantic-relevance'] as const),
   ...(['post-search-semantic-new-1m', 'post-search-hybrid-new'] as const),
+  'post-search-semantic-hot',
   'post-search-hybrid-relevance',
   'classifier-human-vote-comparison-classifier',
   'classifier-human-vote-comparison-community',

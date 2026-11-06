@@ -37,7 +37,7 @@ export function buildSemanticPostCandidates(
     hasTextSearch,
     options: candidateOptions,
     rankingScoreExpression: null,
-    sort: options.sort === 'hot' ? ('hot' as const) : ('new' as const),
+    sort: 'new' as const,
   }
   appendPostSearchSelectAndJoins(query, context)
   appendPostSearchWhereClause(query, context)
