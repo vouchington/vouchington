@@ -128,6 +128,7 @@ async function writePendingRelations(work: ProjectionWork, rows: SourceRow[]): P
   }
   if (ineligibleUrlIds.size > 0)
     await recordProjectionCrawlRequirements(transactionQuery, work, [], ineligibleUrlIds)
+  // ast-grep-ignore: no-three-sequential-awaits -- Capacity must observe obsolete-row removal before the guarded insertion on this locked transaction.
   await pruneObsoleteStoryPostRelatedUrlsForReplacement(transactionQuery, work, storyTeller.id)
   await assertPostRelatedUrlsAllowed(
     creator,
