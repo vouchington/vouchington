@@ -137,9 +137,14 @@ export function findSchemaAllowlistEntryErrors(
       )
       continue
     }
-    const tableSnapshot = schema.tables[match[1]!]
+    const table = match[1]!
     const column = match[2]
-    if (tableSnapshot === undefined || (column && tableSnapshot.columns[column] === undefined)) {
+    // Bracket access would see inherited keys such as constructor and could throw.
+    const tableSnapshot = Object.hasOwn(schema.tables, table) ? schema.tables[table] : undefined
+    if (
+      tableSnapshot === undefined ||
+      (column !== undefined && !Object.hasOwn(tableSnapshot.columns, column))
+    ) {
       errors.add(`stale PostgreSQL schema allowlist entry: ${entry}`)
     }
   }
