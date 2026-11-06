@@ -19,7 +19,11 @@ import {
   setCandidateHidden,
   insertCandidateInOneStatement,
 } from '@voucha/test-helpers/rss-feed-candidates'
-import { getCandidateReconciliation } from './candidate-reconciliation-state.mts'
+import {
+  getCandidateReconciliation,
+  getCandidateReconciliationPage,
+  getCandidateReconciliationUpperBound,
+} from './candidate-reconciliation-state.mts'
 import { reconcileRssFeedItemCandidatePage } from './reconcile-feed-candidate.mts'
 
 describe('RSS feed candidate projections', () => {
@@ -82,6 +86,33 @@ describe('RSS feed candidate projections', () => {
     await setCandidateTopicClaim(item.id, topic.id, 1)
     await deleteCandidateItem(item.id)
     expect((await readCandidateFixture(item.id, [feed])).topics).toEqual([])
+  })
+
+  it('reads an owned reconciliation row through the bounded UUID keyset page', async () => {
+    let itemId: string | undefined
+    onTestFinished(async () => {
+      if (itemId) await deleteCandidateItem(itemId)
+    })
+    const feed = await createTestRssFeedWithTiming((await createTestTopic()).id)
+    const item = await createTestRssFeedItemWithUrl(feed)
+    itemId = item.id
+    await setCandidatePublication(item.id, new Date(Date.now() - 60_000))
+
+    expect(await getCandidateReconciliationUpperBound()).not.toBeNull()
+    expect(
+      await getCandidateReconciliationPage({
+        afterId: uuidImmediatelyBefore(item.id),
+        throughId: item.id,
+        limit: 1,
+      }),
+    ).toEqual([item.id])
+    expect(
+      await getCandidateReconciliationPage({
+        afterId: item.id,
+        throughId: item.id,
+        limit: 1,
+      }),
+    ).toEqual([])
   })
 
   it('persists bounded source/topic progress, resets on a new date, and completes retried work', async () => {
@@ -148,3 +179,14 @@ describe('RSS feed candidate projections', () => {
     expect(hidden.topics.every(row => row.sort_at === null)).toBe(true)
   })
 })
+
+function uuidImmediatelyBefore(id: string): string {
+  const previous = (BigInt(`0x${id.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
+  return [
+    previous.slice(0, 8),
+    previous.slice(8, 12),
+    previous.slice(12, 16),
+    previous.slice(16, 20),
+    previous.slice(20),
+  ].join('-')
+}
