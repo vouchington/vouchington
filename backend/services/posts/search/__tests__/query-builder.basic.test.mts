@@ -266,5 +266,29 @@ describe('query-builder (basic)', () => {
     expect(unknown.values).toContain('discussion')
     expect(unknown.values).toContain('mortgage')
     expect(unknown.values).toContain('not-a-uuid')
+
+    for (const result of ['counter_offer', 'retention_offer', 'sign_up_bonus', 'offer']) {
+      const query = buildPostSearchQuery(undefined, {
+        post_types: ['data_point'],
+        data_point_result: result,
+      })
+      expect(query.sql).toContain(`posts.structured_data->>'result' = '${result}'`)
+      expect(query.values).not.toContain(result)
+    }
+    for (const range of ['580-669', '670-739', '740-799', '800-850']) {
+      const query = buildPostSearchQuery(undefined, {
+        post_types: ['data_point'],
+        data_point_credit_score_range: range,
+      })
+      expect(query.sql).toContain(`posts.structured_data->>'credit_score_range' = '${range}'`)
+      expect(query.values).not.toContain(range)
+    }
+    const open = buildPostSearchQuery(undefined, {
+      post_types: ['data_point'],
+      data_point_result: 'unlisted',
+      data_point_credit_score_range: 'not-a-bracket',
+    })
+    expect(open.values).toContain('unlisted')
+    expect(open.values).toContain('not-a-bracket')
   })
 })
