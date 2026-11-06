@@ -57,9 +57,9 @@ describe('EXPLAIN function-call capture', () => {
     }
   })
 
-  it('conditions each recorded WAL capture while preserving rollback and both plan modes', async () => {
+  it('captures cold WAL in both passes and plan modes while preserving rollback', async () => {
     const scenarioId = 'post-url-replacement-maximum'
-    registerScenarioContract(scenarioId, { expectations: [], walCaptureCondition: 'warm' })
+    registerScenarioContract(scenarioId, { expectations: [], walCaptureCondition: 'cold' })
     const fixture = await createExplainWalCaptureFixture(scenarioId)
     const { input } = fixture
     try {
@@ -77,7 +77,7 @@ describe('EXPLAIN function-call capture', () => {
       expect(first).toHaveLength(2)
       expect(second).toHaveLength(2)
       for (const result of [...first, ...second]) {
-        expect(walFpi(result.plan)).toBe(0)
+        expect(walFpi(result.plan)).toBeGreaterThan(0)
         expect((result.plan as { Plan: { 'Actual Rows': number } }).Plan['Actual Rows']).toBe(1)
       }
       expect([...first, ...second].map(result => result.plan_cache_mode)).toEqual([

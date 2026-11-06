@@ -104,14 +104,10 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
       }),
     )
   }
-  if (contract.walCaptureCondition === 'warm') {
-    // A fresh checkpoint makes the warmup absorb full-page images; the immediately following
-    // capture measures the same query without a checkpoint intervening. Repeat for every mode/pass.
+  if (contract.walCaptureCondition === 'cold') {
+    // Include full-page images from the first changes to pages after a checkpoint in the measured
+    // capture. Repeat for every mode/pass so the WAL gate sees the cold condition each time.
     await write('/* explainWalCaptureCheckpoint */ CHECKPOINT')
-    await explainAnalyze(input.name, input.text, input.values, {
-      localSettings: input.localSettings,
-      planCacheMode: input.planCacheMode,
-    })
   }
   const result = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: input.localSettings,
