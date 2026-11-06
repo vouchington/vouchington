@@ -126,20 +126,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
         shell: bash
         run: |
-          if [[ "$EVENT_NAME" == pull_request || "$EVENT_NAME" == merge_group ]]; then
-            # A pull request compares its own layer (HEAD^1, the synthetic-merge parent); a merge
-            # group compares the combined base and head.
-            range=HEAD^1
-            if [[ "$EVENT_NAME" == merge_group ]]; then
-              git fetch --no-tags --depth=1 origin "$BASE_SHA"
-              range="$BASE_SHA"
-            fi
-            if git diff --quiet "$range" HEAD -- pnpm-lock.yaml pnpm-workspace.yaml static-code-analysis/dependency-license-policy; then
-              echo 'skipped: no dependency input changed'
-              exit 0
-            fi
-          fi
-          pnpm run dependency-license-policy
+          source "$GITHUB_WORKSPACE/.github/workflows/static-code-analysis-dependency-license-policy.sh"
         timeout-minutes: 5
       - name: Check Trivy policy
         run: pnpm exec vouchington trivy-policy --cleanup-url-prefix https://github.com/vouchington/vouchington/issues/
@@ -180,12 +167,7 @@ jobs:
         timeout-minutes: 2
       - name: Verify no dependency changes needed
         timeout-minutes: 1
-        run: |
-          if ! git diff --exit-code; then
-            echo "::error::Static analysis produced changes. Run the documented local checks and commit the results."
-            git diff --stat
-            exit 1
-          fi
+        run: source "$GITHUB_WORKSPACE/.github/workflows/static-code-analysis-verify-clean-worktree.sh"
 
   no-mistakes:
     runs-on: ubuntu-latest
@@ -211,19 +193,7 @@ jobs:
         run: node ci/check-workflow-download-integrity.mts
         timeout-minutes: 2
       - name: Check Storybook component coverage
-        run: >-
-          pnpm exec vouchington story-coverage
-          --root .
-          --component-root web/components/
-          --story-root web/storybook/
-          --alias @/=web/
-          --source-extension .tsx
-          --source-extension .ts
-          --component-extension .tsx
-          --marker "['\"]data-pw['\"]|data-pw="
-          --story-pattern "[.]stories[.](ts|tsx)$"
-          --exclusions web/storybook/__tests__/component-story-exclusions.json
-          --exclusions-label web/storybook/__tests__/component-story-exclusions.json
+        run: source "$GITHUB_WORKSPACE/.github/workflows/static-code-analysis-story-coverage.sh"
         timeout-minutes: 2
       - name: Check no-mistakes use in Vitest tests
         run: node ci/check-no-mistakes-test-policy.mts
@@ -245,9 +215,4 @@ jobs:
         timeout-minutes: 2
       - name: Verify no dependency changes needed
         timeout-minutes: 1
-        run: |
-          if ! git diff --exit-code; then
-            echo "::error::Static analysis produced changes. Run the documented local checks and commit the results."
-            git diff --stat
-            exit 1
-          fi
+        run: source "$GITHUB_WORKSPACE/.github/workflows/static-code-analysis-verify-clean-worktree.sh"

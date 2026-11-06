@@ -1,10 +1,11 @@
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
+import { parse as parseYaml } from 'yaml'
 import { assertWorkflowCommandDrift, getCiLocalTargets } from './ci-local.mts'
 import type { CiLocalTarget } from './ci-local/types.mts'
 
@@ -120,6 +121,47 @@ describe('ci-local', () => {
 
       expect(() => assertWorkflowCommandDrift({ static: target }, dir)).toThrow(
         'ci-local drift: multi-line drift test command was not found',
+      )
+    })
+
+    it('keeps the registered dependency-license helper connected to the workflow after checkout', async () => {
+      const repoRoot = fileURLToPath(new URL('..', import.meta.url))
+      const command = getCiLocalTargets().static.commands.find(
+        entry => entry.description === 'dependency license policy',
+      )
+      const source = command?.source
+      expect(source).toBeDefined()
+      if (!source) throw new Error('Missing dependency-license command source')
+      expect(source.workflow).toMatch(/^\.github\/workflows\/[^/]+\.sh$/)
+      const workflow = parseYaml(
+        await readFile(join(repoRoot, '.github/workflows/static-code-analysis.yml'), 'utf8'),
+      ) as {
+        jobs: Record<
+          string,
+          {
+            steps: Array<{
+              name?: string
+              run?: string
+              uses?: string
+              if?: string
+              with?: Record<string, unknown>
+            }>
+          }
+        >
+      }
+      const steps = workflow.jobs['static-code-analysis']!.steps
+      const dependencyStep = steps.findIndex(step => step.name === 'Dependency license policy')
+      const checkout = steps.findIndex(
+        step =>
+          step.uses?.startsWith('actions/checkout@') &&
+          step.if === undefined &&
+          step.with?.path === undefined &&
+          step.with?.repository === undefined,
+      )
+      expect(checkout).toBeGreaterThanOrEqual(0)
+      expect(dependencyStep).toBeGreaterThan(checkout)
+      expect(steps[dependencyStep]?.run?.trim()).toBe(
+        `source "$GITHUB_WORKSPACE/${source.workflow}"`,
       )
     })
 
