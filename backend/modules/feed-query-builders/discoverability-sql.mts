@@ -36,18 +36,3 @@ export function itemHasDiscoverableSourceSql(
   stmt.append(sourceEligibility).append(sql`)`)
   return stmt
 }
-
-/** Staff story search still requires a live feed, including a disabled or non-discoverable one. */
-export function storyItemSourceSql(itemColumnSql: string, staff = false): SQLStatement {
-  if (!staff) return itemHasDiscoverableSourceSql(itemColumnSql)
-  const stmt = sql`EXISTS (
-    SELECT 1
-    FROM rss_feed_item_sources rfis
-    JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
-    WHERE rfis.rss_feed_item_id = `
-  stmt.append(itemColumnSql)
-  stmt.append(sql`
-      AND rf.deleted_at IS NULL
-  )`)
-  return stmt
-}

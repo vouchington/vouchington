@@ -17,7 +17,6 @@ export function appendBaseFilters(
     include_topic_recommendations,
     post_types,
     public_eligibility_only,
-    story_id,
     user_id,
   }: PostSearchOptions,
 ): boolean {
@@ -40,7 +39,6 @@ export function appendBaseFilters(
       buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
         currentUserId: viewer.id,
         isAdministrator: isAdmin,
-        storySourceStaff: seesHiddenStoryFeeds(viewer, { post_types, story_id }),
       }),
     ).append(sql`
     )`)
@@ -65,15 +63,6 @@ export function appendBaseFilters(
   if (exclude_for_user_id) appendUserExclusionFilters(filters)
   if (user_id) appendUserFilter(filters, { currentUser: viewer, isAdmin, user_id })
   return isAdmin
-}
-
-function seesHiddenStoryFeeds(
-  viewer: BasicUser,
-  { post_types, story_id }: Pick<PostSearchOptions, 'post_types' | 'story_id'>,
-): boolean {
-  const storyOnly = post_types?.length === 1 && post_types[0] === 'story' && story_id === undefined
-  if (!storyOnly) return false
-  return viewer.roles.includes('administrator') || viewer.roles.includes('moderator')
 }
 
 function appendUserExclusionFilters(filters: SQLStatement[]): void {

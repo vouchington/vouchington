@@ -249,13 +249,6 @@
       "owner_classification": "mixed-discovery-sql"
     },
     {
-      "path": "backend/services/posts/search/data-point-arms.mts",
-      "classification": "raw-hydrator",
-      "reason": "Each data-point arm appends buildSourceBoundPostEligibilityFilter outside the child LIMIT. The canonical public predicate's story-source view stays out of that lateral scan.",
-      "owner_path": "backend/modules/feed-query-builders/post-publication-eligibility.mts",
-      "owner_classification": "canonical-builder"
-    },
-    {
       "path": "backend/services/communities/list-items/get.mts",
       "classification": "raw-hydrator",
       "reason": "List item reader delegates its post eligibility predicates to item-type-sql.",

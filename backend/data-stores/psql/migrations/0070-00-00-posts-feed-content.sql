@@ -434,6 +434,46 @@ CREATE INDEX IF NOT EXISTS idx_posts__data_point_vertical
   ON posts (data_point_vertical, id DESC)
   WHERE data_point_vertical IS NOT NULL AND deleted_at IS NULL;
 
+-- Story and data-point search read one post type in id order, including the 30-day id bound.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__post_type__id
+  ON posts (post_type, id DESC)
+  WHERE deleted_at IS NULL AND post_type IN ('story', 'data_point');
+
+-- Best rank for one story or data-point type. id is in the key so the time bound and cursor stay on the index.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__post_type__votes_score_sort__id
+  ON posts (post_type, votes_score_sort DESC, id DESC)
+  WHERE deleted_at IS NULL AND post_type IN ('story', 'data_point');
+
+-- Best rank inside one data-point vertical.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__data_point_vertical__votes_score_sort__id
+  ON posts (data_point_vertical, votes_score_sort DESC, id DESC)
+  WHERE data_point_vertical IS NOT NULL AND deleted_at IS NULL;
+
+-- Result filter in id order, then by best rank.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__structured_data__result__id
+  ON posts ((structured_data->>'result'), id DESC)
+  WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__structured_data__result__votes_score_sort__id
+  ON posts ((structured_data->>'result'), votes_score_sort DESC, id DESC)
+  WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
+
+-- Credit-score filter in id order, then by best rank.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__structured_data__credit_score_range__id
+  ON posts ((structured_data->>'credit_score_range'), id DESC)
+  WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__credit_score_range__votes_score_sort__id
+  ON posts ((structured_data->>'credit_score_range'), votes_score_sort DESC, id DESC)
+  WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
+
 -- expression index for querying by topic_id stored inside structured_data
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__structured_data__topic_id

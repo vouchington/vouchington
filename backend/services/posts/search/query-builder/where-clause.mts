@@ -57,9 +57,22 @@ export function appendPostSearchWhereClause(
 }
 
 function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchOptions): void {
-  if (options.post_types?.length) filters.push(sql`posts.post_type = ANY(${options.post_types})`)
+  const postTypes = options.post_types
+  if (postTypes?.length === 1) {
+    filters.push(sql`posts.post_type = ${postTypes[0]}`)
+  } else if (postTypes?.length) {
+    filters.push(sql`posts.post_type = ANY(${postTypes})`)
+  }
   if (options.data_point_vertical) {
     filters.push(sql`posts.data_point_vertical = ${options.data_point_vertical}`)
+  }
+  if (options.data_point_result) {
+    filters.push(sql`posts.structured_data->>'result' = ${options.data_point_result}`)
+  }
+  if (options.data_point_credit_score_range) {
+    filters.push(
+      sql`posts.structured_data->>'credit_score_range' = ${options.data_point_credit_score_range}`,
+    )
   }
   if (options.story_id) {
     filters.push(sql`EXISTS (

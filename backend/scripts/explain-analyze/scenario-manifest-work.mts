@@ -187,9 +187,7 @@ export const BOUNDED_WORK_SCENARIOS = [
 ] as const
 
 export const SEARCH_PAGE_SCENARIO_IDS = [
-  'search-data-points',
   'search-data-points-filtered-page',
-  'search-data-points-live-page',
   'story-search-best',
   'story-search-hot',
   'story-search-new',

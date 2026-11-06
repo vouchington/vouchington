@@ -37,9 +37,6 @@ export const backgroundWorkRegistryEntries7 = {
         'Review succession candidate page size for posts processing.',
       profile_post_count_cap:
         'Maximum profile review, discussion, and comment rows counted for one viewer. Past this, the profile shows the cap with a plus.',
-      data_point_community_page_size:
-        'Live public communities read for one data-point search page.',
-      data_point_child_limit: 'Data points read from each parent on a data-point search page.',
     },
   }),
   'remote-actors-work-config': defineBoundedWorkNamespace({

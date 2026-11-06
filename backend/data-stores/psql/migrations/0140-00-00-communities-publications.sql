@@ -105,11 +105,6 @@ CREATE OR REPLACE TRIGGER trigger_communities_updated_at
 CREATE UNIQUE INDEX IF NOT EXISTS idx_communities__slug ON communities (slug) WHERE deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__search_name ON communities (name, id) WHERE deleted_at IS NULL;
--- Live public communities in id order, so a data-point page can stop at LIMIT.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_communities__live_public_id
-  ON communities (id DESC)
-  WHERE deleted_at IS NULL AND archived_at IS NULL AND visibility = 'public';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__archived_at ON communities (archived_at) WHERE archived_at IS NOT NULL AND deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -586,18 +581,6 @@ ALTER TABLE posts VALIDATE CONSTRAINT fk_posts_community_id;
 -- RI-usable index for the community_id FK (existing composite indexes have community_id in a non-leading position)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__community_id ON posts (community_id, id) WHERE community_id IS NOT NULL;
-
--- Data-point search pages read a bounded newest slice per community, then community-less posts.
--- These follow idx_posts__community_id so the publication keyset keeps that index's partition name.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__data_point_community
-  ON posts (community_id, id DESC)
-  WHERE post_type = 'data_point' AND community_id IS NOT NULL AND deleted_at IS NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__data_point_no_community
-  ON posts (id DESC)
-  WHERE post_type = 'data_point' AND community_id IS NULL AND deleted_at IS NULL;
 
 -- community_pinned_posts
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
