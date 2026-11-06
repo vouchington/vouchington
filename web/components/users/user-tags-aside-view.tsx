@@ -99,27 +99,27 @@ export function UserTagsAsideView({
           />
         )}
       </div>
-      {relations.length > 0 ? (
-        <InfiniteScroll
-          hasNextPage={pagination.hasNextPage}
-          endCursor={pagination.endCursor}
-          onLoadMore={handleLoadMore}
-          loadingMore={pagination.loadingMore}
-          fetchError={pagination.fetchError}
-          clearError={pagination.clearError}
-          resetKey={pagination.resetKey}
-        >
+      <InfiniteScroll
+        hasNextPage={pagination.hasNextPage}
+        endCursor={pagination.endCursor}
+        onLoadMore={handleLoadMore}
+        loadingMore={pagination.loadingMore}
+        fetchError={pagination.fetchError}
+        clearError={pagination.clearError}
+        resetKey={pagination.resetKey}
+      >
+        {relations.length > 0 ? (
           <UserTagsList
             relations={relations}
             electionVotes={merged.election_votes}
             canManageUserTags={canManageUserTags}
           />
-        </InfiniteScroll>
-      ) : (
-        <div className='text-sm text-muted-foreground'>
-          {t('extracted.users.userTagsAsideView.noUserTagsYet_71772144')}
-        </div>
-      )}
+        ) : (
+          <div className='text-sm text-muted-foreground'>
+            {t('extracted.users.userTagsAsideView.noUserTagsYet_71772144')}
+          </div>
+        )}
+      </InfiniteScroll>
     </Card>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { usePaginatedList } from '@/hooks/use-paginated-list'
+import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { EmptyState } from '@/components/shared/empty-state'
 import { CommunityListItemCard } from './community-list-item-card'
@@ -33,7 +34,10 @@ export function CommunityListItemsList({
     mergedData.community_list_items[r.id] != null ? [mergedData.community_list_items[r.id]!] : [],
   )
 
-  if (items.length === 0) {
+  if (
+    items.length === 0 &&
+    !pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor })
+  ) {
     return (
       <EmptyState
         icon='inbox'

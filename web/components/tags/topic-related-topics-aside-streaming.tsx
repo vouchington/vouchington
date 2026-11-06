@@ -5,6 +5,7 @@ import { TopicRelatedTopicsAsideContent } from './topic-related-topics-aside-con
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { Topic } from '@/types/topics'
 import type { EntityRelationsResponse } from '@/lib/api/entity-relations'
+import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 
 interface TopicRelatedTopicsAsideStreamingProps {
   topic: Topic
@@ -22,7 +23,7 @@ export function TopicRelatedTopicsAsideStreaming({
     const rel = entity_relations[r.id]
     return rel ? [rel] : []
   })
-  if (relations.length === 0) return null
+  if (relations.length === 0 && !pageHasContinuation(response.page_info)) return null
   return (
     <TopicRelatedTopicsAsideContent
       topic={topic}
