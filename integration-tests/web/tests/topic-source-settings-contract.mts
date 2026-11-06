@@ -17,33 +17,38 @@ describe('typed source management contracts', () => {
   beforeEach(() => {
     client = new WebIntegrationClient(workerOrigin, traceOrigin, artifactsDir)
   })
-  it('renders about settings for typed non-source topics', async () => {
+
+  const seededAboutTopics = [
+    ['card', SEEDED_IDS.topic],
+    ['rewards-program', SEEDED_IDS.rewardsProgram],
+    ['rewards-program-status', SEEDED_IDS.rewardsProgramStatus],
+    ['referral-program', SEEDED_IDS.referralProgram],
+    ['topic', SEEDED_IDS.genericTopic],
+  ] as const
+
+  async function loadAboutSettings(slug: string, id: string) {
+    return client.loadPage(`/${slug}/${id}/settings/about`, `source-guard-${slug}-about`, {
+      userAgent: PLAYWRIGHT_CHROME_UA,
+    })
+  }
+
+  function expectAboutSettings(html: string, url: string): void {
+    expect(parseHtml(html, url).querySelector('[data-pw="topic-settings-about"]')).toBeTruthy()
+  }
+
+  it.each(seededAboutTopics)('renders about settings for a %s topic', async (slug, id) => {
+    await authenticateAdminWithVerifiedMfa(client)
+    const about = await loadAboutSettings(slug, id)
+    expect(about.response.status).toBe(200)
+    expectAboutSettings(about.html, about.response.url)
+  })
+
+  it('renders about settings for a bank account topic', async () => {
     await authenticateAdminWithVerifiedMfa(client)
     const bankAccount = await createTestTopic({ topic_type: 'bank_account' })
-    const options = { userAgent: PLAYWRIGHT_CHROME_UA }
-
-    await Promise.all(
-      [
-        ['bank-account', bankAccount.id],
-        ['card', SEEDED_IDS.topic],
-        ['rewards-program', SEEDED_IDS.rewardsProgram],
-        ['rewards-program-status', SEEDED_IDS.rewardsProgramStatus],
-        ['referral-program', SEEDED_IDS.referralProgram],
-        ['topic', SEEDED_IDS.genericTopic],
-      ].map(async ([slug, id]) => {
-        const about = await client.loadPage(
-          `/${slug}/${id}/settings/about`,
-          `source-guard-${slug}-about`,
-          options,
-        )
-        expect(about.response.status).toBe(200)
-        expect(
-          parseHtml(about.html, about.response.url).querySelector(
-            '[data-pw="topic-settings-about"]',
-          ),
-        ).toBeTruthy()
-      }),
-    )
+    const about = await loadAboutSettings('bank-account', bankAccount.id)
+    expect(about.response.status).toBe(200)
+    expectAboutSettings(about.html, about.response.url)
   })
 
   it('rejects source settings for typed non-source topics', async () => {
