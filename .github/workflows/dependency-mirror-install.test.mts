@@ -40,7 +40,7 @@ exit 2
         },
       ).then(
         () => 0,
-        (err: Error & { code: number }) => err.code,
+        (err: unknown) => (err as Error & { code: number }).code,
       )
 
       expect(result).toBe(curlExit || 1)
