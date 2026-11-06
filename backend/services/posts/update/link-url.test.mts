@@ -50,6 +50,104 @@ describe('post link URL-ID policy', () => {
     })
   })
 
+  it.each([false, true])(
+    'rejects a raw alias to a blocked terminal with two hops: %s',
+    async twoHops => {
+      const { user, originalId, post } = await createPostLinkEditFixtureForTest()
+      const source = await createTestUrlWithHostname()
+      const destination = await createTestUrlWithHostname()
+      if (twoHops) {
+        await linkTwoHopCanonicalUrlForTest(source, await createTestUrlWithHostname(), destination)
+      } else {
+        await setCanonicalUrl(source, destination)
+      }
+      const alias = await getUrlById(source, { readOnly: false })
+      if (!alias) throw new Error('Expected an alias URL')
+      await blockPostLinkDestinationForTest(destination)
+      await expect(updatePost(user, post, { url: alias.url })).rejects.toMatchObject({
+        status: 400,
+        message: expect.stringMatching(/^Domain is blocked:/),
+      })
+      expect((await getPostByAny(post.id))?.url_id).toBe(originalId)
+    },
+  )
+
+  it('rechecks a raw alias terminal hostname blocked after assessment', async () => {
+    const { user, post } = await createPostLinkEditFixtureForTest()
+    const source = await createTestUrlWithHostname()
+    const destination = await createTestUrlWithHostname()
+    await setCanonicalUrl(source, destination)
+    const alias = await getUrlById(source, { readOnly: false })
+    if (!alias) throw new Error('Expected an alias URL')
+    const assessment = await assessPostLinkEdit(post, { url: alias.url })
+    if (!assessment.urls) throw new Error('Expected an assessed raw alias')
+    await blockPostLinkDestinationForTest(destination)
+    await expect(
+      persistAssessedPostLinkEditForTest(user.id, assessment.changes, assessment.urls),
+    ).rejects.toMatchObject({ status: 422 })
+  })
+
+  it.each(['alias', 'terminal'])(
+    'rejects a raw alias whose %s retargets after assessment',
+    async target => {
+      const { user, post } = await createPostLinkEditFixtureForTest()
+      const source = await createTestUrlWithHostname()
+      const destination = await createTestUrlWithHostname()
+      const nextDestination = await createTestUrlWithHostname()
+      await setCanonicalUrl(source, destination)
+      const alias = await getUrlById(source, { readOnly: false })
+      if (!alias) throw new Error('Expected an alias URL')
+      const assessment = await assessPostLinkEdit(post, { url: alias.url })
+      if (!assessment.urls) throw new Error('Expected an assessed raw alias')
+      await blockPostLinkDestinationForTest(nextDestination)
+      await setCanonicalUrl(target === 'alias' ? source : destination, nextDestination)
+      await expect(
+        persistAssessedPostLinkEditForTest(user.id, assessment.changes, assessment.urls),
+      ).rejects.toMatchObject({ status: 422, message: 'URL destination changed; retry the edit' })
+    },
+  )
+
+  it('rejects an unassessed canonical target inserted with a previously unknown raw URL', async () => {
+    const { user, post } = await createPostLinkEditFixtureForTest()
+    const href = `https://raw-appeared-${randomUUID()}.example.com/article`
+    const assessment = await assessPostLinkEdit(post, { url: href })
+    if (!assessment.urls) throw new Error('Expected an assessed new URL')
+    const alias = await insertTestUrlDirect(null, href)
+    if (!alias) throw new Error('Expected the concurrently inserted alias')
+    const destination = await createTestUrlWithHostname()
+    await blockPostLinkDestinationForTest(destination)
+    await setCanonicalUrl(alias.id, destination)
+    await expect(
+      persistAssessedPostLinkEditForTest(user.id, assessment.changes, assessment.urls),
+    ).rejects.toMatchObject({ status: 422, message: 'URL destination changed; retry the edit' })
+  })
+
+  it('accepts a healthy raw two-hop alias while preserving its HTTP terminal and reference flag', async () => {
+    const { user, post } = await createPostLinkEditFixtureForTest()
+    const source = await createTestUrlWithHostname()
+    const destination = await insertTestUrlDirect(
+      null,
+      `http://raw-terminal-${randomUUID()}.example.com/article`,
+      { preserveHttp: true },
+    )
+    if (!destination) throw new Error('Expected an HTTP terminal URL')
+    await linkTwoHopCanonicalUrlForTest(source, await createTestUrlWithHostname(), destination.id)
+    const alias = await getUrlById(source, { readOnly: false })
+    if (!alias) throw new Error('Expected an alias URL')
+    await insertHackerNewsReferencesForTest({
+      url_id: destination.id,
+      story_count: 1,
+      comment_count: 0,
+    })
+    await updatePost(user, post, { url: alias.url })
+    expect((await getPostByAny(post.id, { readOnly: false }))?.url_id).toBe(destination.id)
+    expect((await getUrlById(destination.id, { readOnly: false }))?.url).toBe(destination.url)
+    expect(await getPostHackerNewsFlagStateForTest(post.id)).toEqual({
+      stored: true,
+      expected: true,
+    })
+  })
+
   it('rejects a blocked existing destination without changing the post link', async () => {
     const { user, originalId, post } = await createPostLinkEditFixtureForTest()
     const destination = await createTestUrlWithHostname()
