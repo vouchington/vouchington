@@ -1,10 +1,11 @@
+import { write } from '@data-stores/psql'
 import { readPostsForDayPage } from '@services/sitemaps/daily-queries'
 import {
   readLandingSitemapSourcePage,
   readSitemapFamilyPage,
 } from '@services/sitemaps/family-queries'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { runAndCapture } from '../run-support.mts'
+import { runAndCapture, seedUser } from '../run-support.mts'
 import { postSeedTimestampMs, seedUuid } from '../seed-data/common.mts'
 
 /** Existing representative seeds exercise both source bounds and expanded topic URLs. */
@@ -47,9 +48,14 @@ export async function runSitemapPageScenarios(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'users', max: 40 },
     ],
   })
-  await runAndCapture('sitemap-landing-pages-page', () =>
-    readLandingSitemapSourcePage({ limit: 11 }),
-  )
+  await seedExplainLandingPage()
+  try {
+    await runAndCapture('sitemap-landing-pages-page', () =>
+      readLandingSitemapSourcePage({ limit: 11 }),
+    )
+  } finally {
+    await deleteExplainLandingPage()
+  }
 
   registerScenarioContract('sitemap-post-day-page', {
     expectations: [{ kind: 'maxProcessedRows', relation: 'posts', max: 5000 }],
@@ -60,4 +66,22 @@ export async function runSitemapPageScenarios(): Promise<void> {
     if (page.length === 0 || page.length > 11)
       throw new Error('Missing bounded sitemap post-day source page')
   })
+}
+
+async function seedExplainLandingPage(): Promise<void> {
+  await write(
+    `/* seedExplainLandingPage */
+     INSERT INTO user_landing_pages (user_id, title, slug, is_default)
+     VALUES ($1, 'Explain landing page', 'explain-landing', TRUE)
+     ON CONFLICT DO NOTHING`,
+    [seedUser.id],
+  )
+}
+
+async function deleteExplainLandingPage(): Promise<void> {
+  await write(
+    `/* cleanupExplainLandingPage */
+     DELETE FROM user_landing_pages WHERE user_id = $1 AND slug = 'explain-landing'`,
+    [seedUser.id],
+  )
 }

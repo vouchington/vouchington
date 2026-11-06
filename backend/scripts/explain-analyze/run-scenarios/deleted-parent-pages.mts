@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import { searchCommunityMembers } from '@services/communities/members/get'
 import { listUserMemberCommunities } from '@services/communities/members/member-communities'
 import { getNextRecipientBatch } from '@services/follower-distributions/process-state'
@@ -21,8 +21,13 @@ import {
   COMMUNITY_MEMBERSHIP_CAP_COMMUNITY_ID,
   COMMUNITY_MEMBERSHIP_CAP_USER_ID,
 } from '../seed-data/community-membership-caps.mts'
-
-const SELECTED_DISTRIBUTION_ID = '019e0000-7d02-7000-8000-000000000001'
+import {
+  deleteSavedRssItems,
+  deleteSelectedRecipients,
+  seedSavedRssItems,
+  seedSelectedRecipients,
+  SELECTED_DISTRIBUTION_ID,
+} from './deleted-parent-page-seeds.mts'
 
 export async function runDeletedParentPageScenarios(): Promise<void> {
   registerScenarioContract('deleted-parent-community-members', {
@@ -72,12 +77,17 @@ export async function runDeletedParentPageScenarios(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: 80 },
     ],
   })
-  await runAndCapture(
-    'deleted-parent-saved-items',
-    () => getRssFeedItemRelationRows(RSS_FEED_ITEM_LIST_TABLES.saved, seedUser.id, 26, {}),
-    undefined,
-    'getRssFeedItemRelationRows',
-  )
+  await seedSavedRssItems()
+  try {
+    await runAndCapture(
+      'deleted-parent-saved-items',
+      () => getRssFeedItemRelationRows(RSS_FEED_ITEM_LIST_TABLES.saved, seedUser.id, 26, {}),
+      undefined,
+      'getRssFeedItemRelationRows',
+    )
+  } finally {
+    await deleteSavedRssItems()
+  }
 
   const { rows: sourceItems } = await read<{ id: string }>(
     `/* explainDeletedParentSourceItem */ SELECT rss_feed_item_id AS id
@@ -150,33 +160,4 @@ function selectedDistribution(): DistributionRow {
     failed_at: null,
     created_at: new Date('2026-01-01T00:00:00.000Z'),
   }
-}
-
-async function seedSelectedRecipients(): Promise<void> {
-  await write(
-    `/* seedDeletedParentRecipients */
-     INSERT INTO follower_distributions (id, sender_user_id, action, audience, post_id)
-     VALUES ($1, $2, 'post_send', 'selected_followers', $3)
-     ON CONFLICT (id) DO NOTHING`,
-    [SELECTED_DISTRIBUTION_ID, seedUser.id, seedPostId],
-  )
-  await write(
-    `/* seedDeletedParentRecipientRows */
-     INSERT INTO follower_distribution_selected_recipients (distribution_id, recipient_user_id)
-     SELECT $1, user_id FROM unnest($2::uuid[]) AS recipient(user_id)
-     ON CONFLICT DO NOTHING`,
-    [SELECTED_DISTRIBUTION_ID, [seedUser.id]],
-  )
-}
-
-async function deleteSelectedRecipients(): Promise<void> {
-  await write(
-    `/* cleanupDeletedParentRecipients */
-     DELETE FROM follower_distribution_selected_recipients WHERE distribution_id = $1`,
-    [SELECTED_DISTRIBUTION_ID],
-  )
-  await write(
-    `/* cleanupDeletedParentDistribution */ DELETE FROM follower_distributions WHERE id = $1`,
-    [SELECTED_DISTRIBUTION_ID],
-  )
 }

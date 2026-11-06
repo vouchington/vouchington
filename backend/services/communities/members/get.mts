@@ -68,15 +68,21 @@ export async function searchCommunityMembers(
   if (cursorName !== undefined && cursorId !== undefined) {
     query.append(sql` AND cm.id > ${cursorId}`)
   }
+  // Order by the active-membership index so a community that holds most of the table
+  // still stops at LIMIT instead of walking the primary key.
   query.append(sql`
-      ORDER BY cm.id ASC
+      ORDER BY cm.community_id ASC, cm.id ASC
       LIMIT ${limit + 1}
     )
     SELECT cm.*, (member_user.id IS NOT NULL) AS kept
     FROM membership_page cm
-    LEFT JOIN users member_user
-      ON member_user.id = cm.user_id
-     AND member_user.deleted_at IS NULL
+    LEFT JOIN LATERAL (
+      SELECT live_user.id, live_user.community_memberships_visibility
+      FROM users live_user
+      WHERE live_user.id = cm.user_id
+        AND live_user.deleted_at IS NULL
+      LIMIT 1
+    ) member_user ON TRUE
   `)
   appendMemberRosterVisibilityFilter(query, roster, options?.currentUser ?? null)
   query.append(sql` ORDER BY cm.id ASC`)
