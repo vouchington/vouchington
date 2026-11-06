@@ -89,7 +89,7 @@ async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
       moderation_transparency_released_daily_rollups`)
 }
 async function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
-  await result.catch(err => recordScenarioFailure(scenario, err))
+  await result.catch((err: unknown) => recordScenarioFailure(scenario, err))
 }
 
 async function main() {
