@@ -34,6 +34,9 @@ export const BASELINE_FINGERPRINTS = [
   'post-search-hybrid-new|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-hybrid-relevance|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-semantic-new|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
+  // PR #4972 accepts the 30-day exact-sort path; clean a9d793 and PR captures both use it.
+  // Keep this control explicit rather than depending on unrelated planner-cost near ties.
+  'post-search-semantic-new-1m|0|buildPostSearchQuery:force_custom_plan|force_custom_plan:posts',
   'post-search-semantic-new-1m|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-semantic-relevance|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'recommended-topics|0|buildRecommendationQuery:force_custom_plan|force_custom_plan:topics',
