@@ -4,6 +4,7 @@ import {
   deleteTestPost,
   insertTestPost,
   setPostVotesScoreUp,
+  seedSearchEmbeddingCache,
 } from '@voucha/test-helpers'
 import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -12,6 +13,10 @@ import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibilit
 import { getPostIds } from '../get-ids.mts'
 import { buildPostSearchQuery } from '../query-builder.mts'
 import { postsWorkConfig } from '../../work-limits.mts'
+import {
+  createSemanticWindowEmbedding,
+  insertSemanticWindowPosts,
+} from '../../../../test-helpers/post-semantic-window.mts'
 
 describe('Hacker News hot search bounds', () => {
   it('pages inside the newest cohort, falls back to best for longer windows, and ignores hidden HN', async () => {
@@ -140,6 +145,54 @@ describe('Hacker News hot search bounds', () => {
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
   })
+
+  it.each(['text', 'semantic', 'hybrid'] as const)(
+    'pages hot %s search from the projected cohort',
+    async mode => {
+      const user = await createTestUserDirect()
+      if (!user) throw new Error('Expected a hot ranking test user')
+      await Promise.all([
+        postsWorkConfig.waitForInitialization(),
+        hackerNewsVisibilityConfig.waitForInitialization(),
+      ])
+      const embedding = createSemanticWindowEmbedding()
+      const ids = await insertSemanticWindowPosts(user.id, 2, embedding)
+      const query = crypto.randomUUID()
+      await seedSearchEmbeddingCache(query, embedding)
+      await setHackerNewsReferenceFlagsForTest(ids, [])
+      const expected = ids.toSorted((a, b) => b.localeCompare(a))
+      const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+        hacker_news_hot_candidate_limit: 2,
+      })
+      const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
+        references_visible: true,
+      })
+      try {
+        const options = {
+          user_id: user.id,
+          has_hacker_news_references: true,
+          sort: 'hot',
+          time_range: '1m',
+          limit: 1,
+          ...(mode !== 'semantic' ? { text_search_query: 'fixture' } : {}),
+          ...(mode !== 'text' ? { semantic_search_query: query } : {}),
+        } as const
+        const first = await getPostIds(user, options)
+        expect(first.results.map(row => row.id)).toEqual(expected.slice(0, 1))
+        expect(first.page_info.has_next_page).toBe(true)
+        const second = await getPostIds(user, {
+          ...options,
+          after: first.page_info.end_cursor ?? undefined,
+        })
+        expect(second.results.map(row => row.id)).toEqual(expected.slice(1))
+        expect(second.page_info.has_next_page).toBe(false)
+      } finally {
+        restoreVisibility()
+        restoreCap()
+        await Promise.all(ids.map(id => deleteTestPost(id)))
+      }
+    },
+  )
 
   it('enforces the hard maximum in the SQL limit even if config bypasses admin validation', async () => {
     await postsWorkConfig.waitForInitialization()

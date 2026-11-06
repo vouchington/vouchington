@@ -47,7 +47,15 @@ export function buildPostSearchQuery(
   if (hasSemanticSearch) ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch))
   const useHackerNewsHotCandidates = usesHackerNewsHotCandidates(options)
   if (useHackerNewsHotCandidates) {
-    ctes.push(buildHackerNewsHotCandidates(currentUser, options, hasTextSearch, hasSemanticSearch))
+    ctes.push(
+      buildHackerNewsHotCandidates(
+        currentUser,
+        options,
+        hasTextSearch,
+        hasSemanticSearch,
+        rankingScoreExpression,
+      ),
+    )
   }
   appendCtes(query, ctes)
   appendPostSearchSelectAndJoins(query, {
@@ -58,7 +66,10 @@ export function buildPostSearchQuery(
     hasSemanticSearch,
     hasTextSearch,
     options,
-    rankingScoreExpression,
+    rankingScoreExpression:
+      useHackerNewsHotCandidates && rankingScoreExpression
+        ? sql`posts.ranking_score`
+        : rankingScoreExpression,
     sort,
   })
   appendPostSearchWhereClause(query, {

@@ -12,6 +12,7 @@ export function buildHackerNewsHotCandidates(
   options: PostSearchOptions,
   hasTextSearch: boolean,
   hasSemanticSearch: boolean,
+  rankingScoreExpression: SQLStatement | null,
 ): SQLStatement {
   const query = sql`hacker_news_hot_candidates AS MATERIALIZED (`
   const context = {
@@ -27,10 +28,14 @@ export function buildHackerNewsHotCandidates(
       vote_score_lt: undefined,
       hot_score_lt: undefined,
     },
-    rankingScoreExpression: null,
+    rankingScoreExpression,
     sort: 'new' as const,
   }
-  appendPostSearchSelectAndJoins(query, { ...context, useSemanticCandidates: hasSemanticSearch })
+  appendPostSearchSelectAndJoins(query, {
+    ...context,
+    includeHotCandidateColumns: true,
+    useSemanticCandidates: hasSemanticSearch,
+  })
   appendPostSearchWhereClause(query, context)
   appendPostSearchOrderAndLimit(query, {
     ...context,
