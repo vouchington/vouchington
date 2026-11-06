@@ -176,6 +176,61 @@ describe('static workflow ops scan', () => {
       '.github/workflows/initialize-smoke-test/prepare-postgres.sh',
     ])
 
+    const rangeScript = 'HEAD_SHA="$(git rev-parse HEAD)"\ngit merge-base origin/main "$HEAD_SHA"\n'
+    const docsScript = 'git diff --name-only "$MERGE_QUEUE_BASE_SHA" "$MERGE_QUEUE_HEAD_SHA"\n'
+    const rangePath = join(workflows, 'ci-detect-changes/merge-queue-range.sh')
+    const docsPath = join(workflows, 'ci-detect-changes/docs-check.sh')
+    await mkdir(join(workflows, 'ci-detect-changes'), { recursive: true })
+    await writeFile(rangePath, rangeScript)
+    await writeFile(docsPath, docsScript)
+    const extractedWorkflow = validCiDetectChanges
+      .replace(
+        'run: |\n          HEAD_SHA="$(git rev-parse HEAD)"\n          git merge-base origin/main "$HEAD_SHA"',
+        'run: source .github/workflows/ci-detect-changes/merge-queue-range.sh',
+      )
+      .replace(
+        'run: git diff --name-only "$MERGE_QUEUE_BASE_SHA" "$MERGE_QUEUE_HEAD_SHA"',
+        'run: source .github/workflows/ci-detect-changes/docs-check.sh',
+      )
+    expect(extractedWorkflow).not.toBe(validCiDetectChanges)
+    await writeFile(ciDetectChangesPath, extractedWorkflow)
+    await exec('git', ['-C', root, 'add', '.github/workflows'])
+    expect(checkWorkflowOpsPolicy(root)).toEqual([])
+    expect((await exec(process.execPath, [checkerPath, root])).stdout).toBe(
+      'Workflow ops policies passed.\n',
+    )
+
+    await writeFile(
+      rangePath,
+      rangeScript.replace('git rev-parse HEAD', 'git rev-parse origin/main'),
+    )
+    expect(checkWorkflowOpsPolicy(root)).toEqual([
+      'ci-detect-changes must resolve the merge queue head from HEAD',
+    ])
+    await expect(exec(process.execPath, [checkerPath, root])).rejects.toMatchObject({
+      code: 1,
+      stderr: 'ci-detect-changes must resolve the merge queue head from HEAD\n',
+    })
+    await writeFile(rangePath, rangeScript)
+
+    await writeFile(docsPath, 'git diff --name-only HEAD^1 HEAD\n')
+    expect(checkWorkflowOpsPolicy(root)).toEqual([
+      'ci-detect-changes docs check must use the resolved base/head pair',
+    ])
+    await writeFile(docsPath, docsScript)
+    await exec('git', [
+      '-C',
+      root,
+      'rm',
+      '--cached',
+      '.github/workflows/ci-detect-changes/merge-queue-range.sh',
+    ])
+    expect(() => checkWorkflowOpsPolicy(root)).toThrow(
+      'Missing workflow revision script: .github/workflows/ci-detect-changes/merge-queue-range.sh',
+    )
+    await exec('git', ['-C', root, 'add', '.github/workflows/ci-detect-changes'])
+    expect(checkWorkflowOpsPolicy(root)).toEqual([])
+
     await writeFile(
       join(workflows, 'fix-main.yml'),
       'name: Fix Main\non:\n  workflow_run:\n    workflows: [Nightly, "Dispatch completed deploy"]\njobs: {}\n',

@@ -78,6 +78,38 @@ describe('PR compare revision pairs', () => {
     ).toEqual([])
   })
 
+  it('inspects revision comparisons inside an extracted workflow script', () => {
+    const workflows = {
+      '.github/workflows/ci-detect-changes.yml': mergeQueueWorkflowFixture,
+      '.github/workflows/compare.yml': {
+        jobs: {
+          compare: {
+            steps: [
+              {
+                env: { BASE_SHA: PR_BASE_SHA, MERGE_SHA },
+                run: 'source .github/workflows/ci-detect-changes/trusted-context.sh',
+              },
+            ],
+          },
+        },
+      },
+    } satisfies Record<string, OpsWorkflow>
+    const sources = {
+      '.github/workflows/ci-detect-changes.yml': 'fixture workflow',
+      '.github/workflows/ci-detect-changes/trusted-context.sh': 'echo "$BASE_SHA" "$MERGE_SHA"',
+    }
+    expect(prRevisionPairViolations(workflows, sources)).toEqual([])
+    expect(
+      prRevisionPairViolations(workflows, {
+        ...sources,
+        '.github/workflows/ci-detect-changes/trusted-context.sh':
+          'git diff "$BASE_SHA" "$MERGE_SHA"',
+      }),
+    ).toEqual([
+      '.github/workflows/compare.yml#compare step 0: git compare mixes pull_request.base.sha with github.sha (git diff "$BASE_SHA" "$MERGE_SHA")',
+    ])
+  })
+
   it('pins one merge-queue range and reuses it for docs and both path filters', () => {
     const workflow = mergeQueueWorkflowFixture
     const steps = workflow.jobs?.['detect-changes']?.steps ?? []
@@ -89,9 +121,9 @@ describe('PR compare revision pairs', () => {
       MERGE_QUEUE_HEAD_SHA: '${{ steps.merge-queue-range.outputs.head }}',
     })
     expect(range.if).toBe("github.event_name == 'merge_group'")
-    expect(stepScript(range)).toContain('git rev-parse HEAD')
-    expect(stepScript(range)).toContain('git merge-base origin/main "$HEAD_SHA"')
-    expect(stepScript(step)).toContain(
+    expect(range.run).toContain('git rev-parse HEAD')
+    expect(range.run).toContain('git merge-base origin/main "$HEAD_SHA"')
+    expect(step.run).toContain(
       'git diff --name-only "$MERGE_QUEUE_BASE_SHA" "$MERGE_QUEUE_HEAD_SHA"',
     )
     // Both inputs are empty outside merge groups, so on pull requests paths-filter reads the PR API

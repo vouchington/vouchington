@@ -29,7 +29,11 @@ export function checkWorkflowOpsPolicy(root: string): string[] {
   const sources = Object.fromEntries(
     [
       ...paths,
-      ...(trackedWorkflowPaths.includes(smokePostgresScriptPath) ? [smokePostgresScriptPath] : []),
+      ...trackedWorkflowPaths.filter(
+        path =>
+          path === smokePostgresScriptPath ||
+          (path.startsWith('.github/workflows/ci-detect-changes/') && path.endsWith('.sh')),
+      ),
     ].map(path => [path, readFileSync(join(root, path), 'utf8')]),
   ) as Record<string, string>
   const workflows = Object.fromEntries(

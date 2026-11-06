@@ -4,6 +4,21 @@ import type { WorkflowDocuments, WorkflowSources } from './workflow-ops-policy.m
 const prBaseSha = '${{ github.event.pull_request.base.sha }}'
 const mergeSha = '${{ github.sha }}'
 
+const extractedCiScripts = new Map<string, string>(
+  ['merge-queue-range', 'docs-check', 'trusted-context', 'areas'].map(name => {
+    const path = `.github/workflows/ci-detect-changes/${name}.sh`
+    return [`source ${path}`, path] as const
+  }),
+)
+
+function stepScript(run: string | undefined, sources: WorkflowSources): string | undefined {
+  const path = run ? extractedCiScripts.get(run) : undefined
+  if (!path) return run
+  const source = sources[path]
+  if (source === undefined) throw new Error(`Missing workflow revision script: ${path}`)
+  return source
+}
+
 function includesValue(value: unknown, fragment: string): boolean {
   return typeof value === 'string' && value.includes(fragment)
 }
@@ -47,8 +62,9 @@ export function prRevisionPairViolations(
             `${label}: TOPOLOGY_BASE_SHA is pull_request.base.sha while TOPOLOGY_HEAD_SHA is github.sha`,
           )
         }
-        if (!step.run || baseVars.length === 0 || mergeVars.length === 0) continue
-        for (const line of gitCompareLines(step.run)) {
+        const script = stepScript(step.run, sources)
+        if (!script || baseVars.length === 0 || mergeVars.length === 0) continue
+        for (const line of gitCompareLines(script)) {
           if (
             baseVars.some(name => envUsesVar(line, name)) &&
             mergeVars.some(name => envUsesVar(line, name))
@@ -80,13 +96,13 @@ export function prRevisionPairViolations(
     violations.push('ci-detect-changes docs check must use the shared merge-queue base and head')
   if (range?.if !== "github.event_name == 'merge_group'")
     violations.push('ci-detect-changes merge queue range must run only for merge_group')
-  if (!includesValue(range?.run, 'git rev-parse HEAD'))
+  if (!includesValue(stepScript(range?.run, sources), 'git rev-parse HEAD'))
     violations.push('ci-detect-changes must resolve the merge queue head from HEAD')
-  if (!includesValue(range?.run, 'git merge-base origin/main "$HEAD_SHA"'))
+  if (!includesValue(stepScript(range?.run, sources), 'git merge-base origin/main "$HEAD_SHA"'))
     violations.push('ci-detect-changes must resolve the merge queue base from origin/main')
   if (
     !includesValue(
-      docs?.run,
+      stepScript(docs?.run, sources),
       'git diff --name-only "$MERGE_QUEUE_BASE_SHA" "$MERGE_QUEUE_HEAD_SHA"',
     )
   )
