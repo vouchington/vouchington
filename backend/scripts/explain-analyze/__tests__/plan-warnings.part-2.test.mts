@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { functionCallReports, getResourcePressureFingerprints } from '../plan-warnings.mts'
+import {
+  analyzeResult,
+  functionCallReports,
+  getResourcePressureFingerprints,
+} from '../plan-warnings.mts'
 import type { ExplainResult } from '@data-stores/psql'
 
 function makeResult(plan: unknown, opts?: Partial<ExplainResult>): ExplainResult {
@@ -15,6 +19,47 @@ function makeResult(plan: unknown, opts?: Partial<ExplainResult>): ExplainResult
 }
 
 describe('getResourcePressureFingerprints', () => {
+  it('uses the scenario WAL limit for node and aggregate pressure after JSON serialization', () => {
+    const limit = 20 * 1024 * 1024
+    const scenarioId = 'post-url-replacement-maximum'
+    const single = (bytes: number) =>
+      makeResult(
+        { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': bytes } },
+        { scenario_id: scenarioId },
+      )
+    const roundTripped = JSON.parse(JSON.stringify(single(limit - 1))) as ExplainResult
+    expect(getResourcePressureFingerprints(roundTripped)).toEqual([])
+    expect(analyzeResult(roundTripped).resourcePressure).toEqual([])
+    expect(getResourcePressureFingerprints(single(limit))).toEqual(['ModifyTable:-:wal'])
+    expect(analyzeResult(single(limit)).resourcePressure).toHaveLength(1)
+
+    const aggregate = (bytes: number) =>
+      makeResult(
+        {
+          Plan: {
+            'Node Type': 'ModifyTable',
+            'WAL Bytes': bytes,
+            Plans: [
+              { 'Node Type': 'Insert', 'WAL Bytes': Math.floor(bytes / 2) },
+              { 'Node Type': 'Insert', 'WAL Bytes': Math.ceil(bytes / 2) },
+            ],
+          },
+        },
+        { scenario_id: scenarioId },
+      )
+    expect(getResourcePressureFingerprints(aggregate(limit - 1))).toEqual([])
+    expect(getResourcePressureFingerprints(aggregate(limit))).toEqual(['query:wal-aggregate'])
+  })
+
+  it('retains the default WAL limit for missing or different scenario identities', () => {
+    const plan = { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': 11 * 1024 * 1024 } }
+    for (const scenario_id of [undefined, 'post-url-replacement-default']) {
+      const result = makeResult(plan, { scenario_id })
+      expect(getResourcePressureFingerprints(result)).toEqual(['ModifyTable:-:wal'])
+      expect(analyzeResult(result).resourcePressure).toHaveLength(1)
+    }
+  })
+
   it('reports a query-level aggregate fingerprint when WAL is split across siblings below the per-node threshold', () => {
     // Each modifying child stays under HIGH_WAL_BYTES_THRESHOLD on its own, but their shared
     // ancestor's cumulative total (as Postgres reports it) crosses it.

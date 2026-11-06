@@ -86,4 +86,33 @@ describe('explain analyze paired results', () => {
     const normal = { ...result, plan: { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': 1 } } }
     expect(() => analyzePairedResults('fixture.json', [result], [normal], {})).toThrow('wal')
   })
+
+  it('enforces the scoped WAL budget without allowing other pressure', () => {
+    const limit = 20 * 1024 * 1024
+    const result = {
+      name: 'replacement-query',
+      scenario_id: 'post-url-replacement-maximum',
+      query_text: 'UPDATE users SET markdown = markdown',
+      plan: { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': limit - 1 } },
+      execution_time_ms: 1,
+      planning_time_ms: 1,
+      timestamp: new Date().toISOString(),
+    }
+    const analyze = (candidate: typeof result) =>
+      analyzePairedResults('fixture.json', [candidate], [candidate], {})
+    expect(() => analyze(JSON.parse(JSON.stringify(result)) as typeof result)).not.toThrow()
+    expect(() =>
+      analyze({ ...result, plan: { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': limit } } }),
+    ).toThrow('wal')
+    for (const pressure of [
+      { 'Temp Read Blocks': 1 },
+      { 'Temp Written Blocks': 1 },
+      { 'Sort Space Type': 'Disk' },
+      { 'Hash Batches': 2 },
+    ]) {
+      expect(() =>
+        analyze({ ...result, plan: { Plan: { ...result.plan.Plan, ...pressure } } }),
+      ).toThrow('pressure')
+    }
+  })
 })
