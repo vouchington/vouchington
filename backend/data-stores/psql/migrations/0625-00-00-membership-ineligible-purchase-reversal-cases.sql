@@ -1,3 +1,50 @@
+-- Collision facts would disappear when the losing membership projection retires. Keep the
+-- financial work in the same transaction; GlideMQ owns execution locks and crash recovery.
+CREATE TABLE IF NOT EXISTS membership_stripe_purchase_collision_work_items (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  membership_source_id UUID NOT NULL,
+  membership_provider_lineage_id UUID NOT NULL,
+  membership_lineage_binding_id UUID NOT NULL,
+  winning_source_kind membership_source_kinds NOT NULL
+    CHECK (winning_source_kind IN ('direct', 'family')),
+  winning_plan membership_plan_slugs NOT NULL,
+  collision_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_work_items__collision
+  ON membership_stripe_purchase_collision_work_items (
+    membership_source_id, membership_provider_lineage_id, collision_at,
+    winning_source_kind, winning_plan
+  );
+CREATE INDEX IF NOT EXISTS idx_membership_stripe_purchase_collision_work_items__binding
+  ON membership_stripe_purchase_collision_work_items (
+    membership_lineage_binding_id, membership_provider_lineage_id
+  );
+ALTER TABLE membership_stripe_purchase_collision_work_items
+  ADD CONSTRAINT fk_membership_stripe_purchase_collision_work_items__source
+  FOREIGN KEY (membership_source_id, membership_provider_lineage_id)
+  REFERENCES membership_sources (id, membership_provider_lineage_id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_stripe_purchase_collision_work_items
+  VALIDATE CONSTRAINT fk_membership_stripe_purchase_collision_work_items__source;
+ALTER TABLE membership_stripe_purchase_collision_work_items
+  ADD CONSTRAINT fk_membership_stripe_purchase_collision_work_items__binding
+  FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id)
+  REFERENCES membership_lineage_bindings (id, membership_provider_lineage_id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_stripe_purchase_collision_work_items
+  VALIDATE CONSTRAINT fk_membership_stripe_purchase_collision_work_items__binding;
+CREATE TRIGGER trigger_membership_stripe_purchase_collision_work_items_guard
+  BEFORE UPDATE ON membership_stripe_purchase_collision_work_items
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+COMMENT ON TABLE membership_stripe_purchase_collision_work_items IS 'Immutable financial collision facts captured with membership projection. Pending rows recover lost queue admissions and terminal failures; completion deletes them after cases and reconciliation succeed.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.id IS 'UUIDv7 work identity used by bounded recovery and stable GlideMQ admission.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.membership_source_id IS 'Retained losing Stripe source whose invoices must be inspected outside membership transactions.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.membership_provider_lineage_id IS 'Canonical provider lineage shared by the retained source and binding.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.membership_lineage_binding_id IS 'Retained binding authorized at collision capture; it does not authorize access by a deleted user.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.winning_source_kind IS 'Winning direct native or family source at the captured collision.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.winning_plan IS 'Winning plan snapshot used to preserve family tier precedence during deferred discovery.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.collision_at IS 'Winning membership effective time used for immutable overlap refund caps.';
+COMMENT ON COLUMN membership_stripe_purchase_collision_work_items.created_at IS 'Work insertion time derived from its UUIDv7 identity; recovery orders by id.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   id UUID CONSTRAINT pk_mipr_cases PRIMARY KEY DEFAULT uuidv7(),

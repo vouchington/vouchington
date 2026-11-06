@@ -1,3 +1,5 @@
+import { seedMembershipReversalCollisionWorkNoise } from './membership-reversal-collision-noise.mts'
+import { runMembershipReversalCollisionWorkScenarios } from './membership-reversal-collision-work.mts'
 import { seedMembershipReversalPlanNoise } from './membership-reversal-case-noise.mts'
 import { runMembershipReversalSelectorScenarios } from './membership-reversal-case-selectors.mts'
 import { randomUUID } from 'node:crypto'
@@ -16,7 +18,8 @@ import { seedLedgerOperations } from './payment-ledger-retention-seed.mts'
 export async function runMembershipReversalCaseCreationScenario(): Promise<void> {
   const userId = mintUUIDv7()
   const suffix = randomUUID()
-  await seedMembershipReversalPlanNoise(`mr${suffix.slice(0, 8)}`)
+  const prefix = `mr${suffix.slice(0, 8)}`
+  await seedMembershipReversalPlanNoise(prefix)
   await write(
     `/* seedReversalCaseReadUser */ INSERT INTO users (id, username) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
     [seedUser.id, seedUser.username],
@@ -163,4 +166,6 @@ export async function runMembershipReversalCaseCreationScenario(): Promise<void>
     sourceIdentity,
     `cus_${suffix}`,
   )
+  const target = await seedMembershipReversalCollisionWorkNoise({ prefix, source, sourceIdentity })
+  await runMembershipReversalCollisionWorkScenarios({ userId, source, sourceIdentity, target })
 }

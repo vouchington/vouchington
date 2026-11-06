@@ -1,30 +1,42 @@
+import type { Job } from 'glide-mq'
+import type { RecoverStripePurchaseCollisionsData } from '@queues/memberships/types'
+import { recoverStripePurchaseCollisions } from '../../../workers/memberships/processors/stripe-purchase-collisions.mts'
 import { randomUUID } from 'node:crypto'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as stripeClient from '@modules/stripe/client'
+import { memberships } from '@queues/memberships/queues'
 import {
   beginTransaction,
   createTestSku,
   createTestUser,
   getTestIneligiblePurchaseReversal,
 } from '@voucha/test-helpers'
+import { createMembership } from '../create.mts'
+import { getMembershipSourceIdByMembershipId } from '@services/memberships'
+import { readTestStripePurchaseCollisionWork } from '@voucha/test-helpers/stripe-purchase-collision-work'
 import { getStripeMembershipSourceIdentity } from '../create-types.mts'
 import { getIneligiblePurchaseReversalCase } from './case-read.mts'
-import { recordIneligibleStripePurchasesForWinner } from './case-producer.mts'
+import { recordIneligibleStripePurchaseCollisionWork } from './collision-work.mts'
+import { processStripePurchaseCollisionWork } from './process-collision-work.mts'
 
 const start = 1_740_000_000
 const end = start + 100
+const collisionAt = new Date(start * 1_000)
 
-describe('ineligible Stripe purchase case producer', () => {
+describe('durable ineligible Stripe purchase case producer', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('reconciles a native winner’s case after commit and persists its refund receipt', async () => {
+  it('processes committed collision work and creates its reversal case', async () => {
     const fixture = await setupProducer('plus')
-    await using query = await beginTransaction()
-    await expect(
-      recordIneligibleStripePurchasesForWinner(fixture.options('direct', start), query),
-    ).resolves.toBe(1)
-    expect(fixture.cancel).not.toHaveBeenCalled()
-    await query.commit()
+    const workId = await recordWork(fixture, 'direct', start)
+    const jobId = `stripe-purchase-collision__${workId}`
+    onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
+    const job = await memberships.getJob(jobId)
+    expect(job).not.toBeNull()
+    await job?.remove()
+
+    await processStripePurchaseCollisionWork(workId)
+
     expect(fixture.cancel).toHaveBeenCalledWith(fixture.subscriptionId)
     expect(fixture.createRefund).toHaveBeenCalledWith(
       expect.objectContaining({ charge: fixture.chargeId, amount: 100 }),
@@ -43,44 +55,135 @@ describe('ineligible Stripe purchase case producer', () => {
     })
   })
 
-  it('rejects a mixed membership and unrelated invoice without writing a case', async () => {
+  it('retains committed work when Stripe invoice listing fails', async () => {
     const fixture = await setupProducer('plus')
-    fixture.lines.push({
-      ...fixture.lines[0]!,
-      pricing: { price_details: { price: `price_unrelated_${randomUUID()}` } },
-    })
-    await using query = await beginTransaction()
+    const providerError = new Error('temporary Stripe outage')
+    fixture.invoicesList.mockRejectedValue(providerError)
+    const workId = await recordWork(fixture, 'direct', start)
+    const jobId = `stripe-purchase-collision__${workId}`
+    onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
+    const job = await memberships.getJob(jobId)
+    expect(job).not.toBeNull()
+    await job?.remove()
+
+    await expect(processStripePurchaseCollisionWork(workId)).rejects.toBe(providerError)
     await expect(
-      recordIneligibleStripePurchasesForWinner(fixture.options('direct', start), query),
-    ).rejects.toThrow('ambiguous membership purchase lines')
-    await query.rollback()
-    await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toBeNull()
+      readTestStripePurchaseCollisionWork(fixture.sourceId, collisionAt),
+    ).resolves.toMatchObject({ id: workId })
   })
 
-  it('keeps a higher-tier Stripe purchase eligible against a family winner', async () => {
+  it('completes work without a case when a higher-tier purchase remains eligible', async () => {
     const fixture = await setupProducer('pro')
-    await using query = await beginTransaction()
-    await expect(
-      recordIneligibleStripePurchasesForWinner(fixture.options('family', start), query),
-    ).resolves.toBe(0)
-    await query.commit()
+    const workId = await recordWork(fixture, 'family', start)
+    const jobId = `stripe-purchase-collision__${workId}`
+    onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
+    await (await memberships.getJob(jobId))?.remove()
+
+    await processStripePurchaseCollisionWork(workId)
+
     expect(fixture.createRefund).not.toHaveBeenCalled()
     expect(fixture.cancel).not.toHaveBeenCalled()
     await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toBeNull()
+    await expect(
+      readTestStripePurchaseCollisionWork(fixture.sourceId, collisionAt),
+    ).resolves.toBeNull()
   })
 
-  it('does not reverse a purchase whose period ended before the collision', async () => {
+  it('completes work without a case when the purchase period ended before collision', async () => {
     const fixture = await setupProducer('plus')
-    await using query = await beginTransaction()
-    await expect(
-      recordIneligibleStripePurchasesForWinner(fixture.options('direct', end), query),
-    ).resolves.toBe(0)
-    await query.commit()
+    const workId = await recordWork(fixture, 'direct', end)
+    const jobId = `stripe-purchase-collision__${workId}`
+    onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
+    await (await memberships.getJob(jobId))?.remove()
+
+    await processStripePurchaseCollisionWork(workId)
+
     expect(fixture.createRefund).not.toHaveBeenCalled()
     expect(fixture.cancel).not.toHaveBeenCalled()
     await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toBeNull()
+    await expect(
+      readTestStripePurchaseCollisionWork(fixture.sourceId, new Date(end * 1_000)),
+    ).resolves.toBeNull()
+  })
+  it('retries after case commit without duplicating the financial outcome', async () => {
+    const fixture = await setupProducer('plus')
+    const workId = await recordWork(fixture, 'direct', start)
+    const jobId = `stripe-purchase-collision__${workId}`
+    onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
+    await (await memberships.getJob(jobId))?.remove()
+    const outage = new Error('cancellation unavailable after case commit')
+    fixture.cancel.mockRejectedValueOnce(outage)
+    await expect(processStripePurchaseCollisionWork(workId)).rejects.toBe(outage)
+    const committed = await getIneligiblePurchaseReversalCase(fixture.lookup)
+    expect(committed).toMatchObject({ refundCapMinorUnits: 100 })
+    await expect(
+      readTestStripePurchaseCollisionWork(fixture.sourceId, collisionAt),
+    ).resolves.toMatchObject({ id: workId })
+    await processStripePurchaseCollisionWork(workId)
+    await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toEqual(committed)
+    expect(fixture.createRefund).toHaveBeenCalledTimes(1)
+  })
+
+  it('recovers lost admission and deduplicates replay from durable work', async () => {
+    const fixture = await setupProducer('plus')
+    const workId = await recordWork(fixture, 'direct', start)
+    expect(await recordWork(fixture, 'direct', start)).toBe(workId)
+    const taskId = `stripe-purchase-collision__${workId}`
+    const pages: string[] = []
+    // A predecessor confines the recovery page to this test-owned immutable UUID.
+    const hex = (BigInt(`0x${workId.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
+    const after = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+    onTestFinished(async () => {
+      for (const id of [...pages, taskId]) await (await memberships.getJob(id))?.remove()
+    })
+    const sweep = async () => {
+      const job = await memberships.add(
+        'recoverStripePurchaseCollisions',
+        { after, through: workId },
+        {
+          jobId: `test-collision-recovery-${randomUUID()}`,
+        },
+      )
+      if (!job) throw new Error('Expected recovery job')
+      pages.push(job.id)
+      return recoverStripePurchaseCollisions(job as Job<RecoverStripePurchaseCollisionsData>)
+    }
+    await (await memberships.getJob(taskId))?.remove()
+    await expect(sweep()).resolves.toEqual({ enqueued: 1 })
+    await Promise.all([sweep(), sweep()])
+    await expect(memberships.getJob(taskId)).resolves.toMatchObject({
+      name: 'processStripePurchaseCollisionWork',
+      data: { workId },
+      opts: { removeOnComplete: true, removeOnFail: true },
+    })
+    await (await memberships.getJob(taskId))?.remove()
+    await processStripePurchaseCollisionWork(workId)
+    await expect(sweep()).resolves.toEqual({ enqueued: 0 })
+    await expect(memberships.getJob(taskId)).resolves.toBeNull()
+    expect(fixture.createRefund).toHaveBeenCalledTimes(1)
   })
 })
+
+async function recordWork(
+  fixture: Awaited<ReturnType<typeof setupProducer>>,
+  winningSourceKind: 'direct' | 'family',
+  collision: number,
+): Promise<string> {
+  await using query = await beginTransaction()
+  const workId = await recordIneligibleStripePurchaseCollisionWork(
+    {
+      userId: fixture.userId,
+      sourceIdentity: fixture.sourceIdentity,
+      winningSourceKind,
+      winningPlan: 'plus',
+      collisionAt: new Date(collision * 1_000),
+    },
+    query,
+  )
+  if (!workId) throw new Error('Expected Stripe purchase collision work')
+  await query.commit()
+  return workId
+}
 
 async function setupProducer(plan: 'plus' | 'pro') {
   const user = await createTestUser()
@@ -93,6 +196,7 @@ async function setupProducer(plan: 'plus' | 'pro') {
   const sku = await createTestSku({ plan, provider_application_id: applicationId })
   const lines = [
     {
+      id: `il_${suffix}`,
       currency: 'usd',
       pricing: { price_details: { price: sku.stripe_price_id } },
       period: { start, end },
@@ -113,12 +217,13 @@ async function setupProducer(plan: 'plus' | 'pro') {
   const createRefund = vi
     .fn<VitestLooseMock>()
     .mockResolvedValue({ id: refundId, amount: 100, currency: 'usd', status: 'succeeded' })
+  const invoicesList = vi
+    .fn<VitestLooseMock>()
+    .mockResolvedValue({ data: [invoice], has_more: false })
   vi.spyOn(stripeClient, 'getStripeClient').mockReturnValue({
     invoices: {
-      list: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [invoice], has_more: false }),
-      listLineItems: vi
-        .fn<VitestLooseMock>()
-        .mockImplementation(async () => ({ data: lines, has_more: false })),
+      list: invoicesList,
+      listLineItems: vi.fn<VitestLooseMock>().mockResolvedValue({ data: lines, has_more: false }),
     },
     refunds: {
       list: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false }),
@@ -131,25 +236,35 @@ async function setupProducer(plan: 'plus' | 'pro') {
     stripeSubscriptionId: subscriptionId,
     providerApplicationId: applicationId,
   })
+  const stripeMembership = await createMembership({
+    userId: user.id,
+    plan,
+    skuId: sku.id,
+    stripeSubscriptionId: subscriptionId,
+    providerApplicationId: applicationId,
+    providerEnvironment: 'production',
+    effectiveAt: new Date(start * 1_000),
+    expiresAt: new Date('2040-01-01T00:00:00.000Z'),
+  })
+  const sourceId = await getMembershipSourceIdByMembershipId(stripeMembership.id)
+  if (!sourceId) throw new Error('Expected Stripe membership source id')
   const lookup = {
     originatingInvoiceId: invoiceId,
     providerEnvironment: 'production' as const,
     providerApplicationId: applicationId,
   }
   return {
+    userId: user.id,
+    sourceIdentity,
+    sourceId,
+    invoice,
     lines,
     cancel,
     createRefund,
+    invoicesList,
     subscriptionId,
     chargeId,
     refundId,
     lookup,
-    options: (winningSourceKind: 'direct' | 'family', collision: number) => ({
-      userId: user.id,
-      sourceIdentity,
-      winningSourceKind,
-      winningPlan: 'plus' as const,
-      collisionAt: new Date(collision * 1000),
-    }),
   }
 }

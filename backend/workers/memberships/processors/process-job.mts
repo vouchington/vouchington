@@ -32,6 +32,8 @@ import { processSendRenewalPriceIncreaseEmail } from './send-renewal-price-incre
 import { processStripeEvent, recoverStripeEvents } from './stripe-event.mts'
 import { recoverMembershipVerifications } from './verification-recovery.mts'
 import { processMembershipVerificationJob } from './process-verification-job.mts'
+import { recoverStripePurchaseCollisions } from './stripe-purchase-collisions.mts'
+import { processStripePurchaseCollisionWork } from '@services/memberships/ineligible-stripe-purchase-reversal/process-collision-work'
 
 async function dispatchMembershipPauseCollection(): Promise<void> {
   const leases = await dispatchDuePauseCollectionWork()
@@ -56,6 +58,12 @@ export function processMembershipJob(job: Job): Promise<void> {
 
 async function dispatchMembershipJob(job: Job): Promise<void> {
   switch (job.name as MembershipsJobs) {
+    case 'recoverStripePurchaseCollisions':
+      await recoverStripePurchaseCollisions(job)
+      return
+    case 'processStripePurchaseCollisionWork':
+      await processStripePurchaseCollisionWork((job.data as { workId: string }).workId)
+      return
     case 'deliverMembershipEntitlementEffects':
       await deliverPendingMembershipEntitlementEffects()
       return

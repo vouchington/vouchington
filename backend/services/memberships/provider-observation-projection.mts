@@ -9,7 +9,7 @@ import { membershipProjectionWithEntitlementEffects } from './entitlement-effect
 import { insertMembershipProjection, upsertMembershipSourceState } from './projections/create.mts'
 import { reconcileSourceProjection, type PriorMembership } from './reconcile-source-projection.mts'
 import { retireCurrentMembershipProjection } from './create/retire-current-projection.mts'
-import { recordDisplacedStripePurchaseCases } from './ineligible-stripe-purchase-reversal/case-producer.mts'
+import { recordDisplacedStripePurchaseCollisionWork } from './ineligible-stripe-purchase-reversal/collision-work.mts'
 import {
   getCurrentProviderProjection,
   getLatestProviderSourceProjection,
@@ -111,7 +111,7 @@ async function projectAdvancedProviderObservation(
   if (!project) return { membershipId: null, projected: false }
   if (prior) {
     if (observation.sourceKind === 'family' || observation.sourceIdentity.provider !== 'stripe')
-      await recordDisplacedStripePurchaseCases(
+      await recordDisplacedStripePurchaseCollisionWork(
         {
           userId: options.userId,
           winningSourceKind: observation.sourceKind,
@@ -162,7 +162,7 @@ async function reconcileProviderSourceProjection(
     !isTerminalMembershipStatus(observation.status) && observation.status !== 'paused'
   if (entitles && prior.projection_ended_at !== null) {
     if (observation.sourceKind === 'family' || observation.sourceIdentity.provider !== 'stripe')
-      await recordDisplacedStripePurchaseCases(
+      await recordDisplacedStripePurchaseCollisionWork(
         {
           userId: options.userId,
           winningSourceKind: observation.sourceKind,

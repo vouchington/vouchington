@@ -4,6 +4,7 @@ import { landingPageLimitsRegistryEntry } from './registry-landing-page-limits.m
 import {
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
+  membershipPurchaseCollisionQueueRegistryEntry,
 } from './registry-paged-dispatch-entry.mts'
 import { REGISTRY_ORDER } from '@voucha/config/dynamic-config-registry-order'
 import { paginationRegistryEntries } from './registry-pagination-entries.mts'
@@ -35,6 +36,7 @@ const unorderedRegistryEntries = [
   landingPageLimitsRegistryEntry,
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
+  membershipPurchaseCollisionQueueRegistryEntry,
   ...paginationRegistryEntries,
   ...backgroundWorkEntries1,
   ...backgroundWorkEntries2,

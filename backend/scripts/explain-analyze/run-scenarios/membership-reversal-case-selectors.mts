@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { mapWithConcurrency } from '@vouchington/utils/async'
-import { buildGetDisplacedStripeSourceForCollisionQuery } from '@services/memberships/ineligible-stripe-purchase-reversal/case-producer'
+import { buildGetDisplacedStripeSourceForCollisionQuery } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-work'
 import { buildGetStripeCollisionWinnerEffectiveAtQuery } from '@services/stripe/membership-sync/sync-or-create'
 import {
   buildGetBoundStripeSubscriptionOwnerForCollisionQuery,

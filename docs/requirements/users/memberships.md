@@ -31,6 +31,12 @@ amount. A zero-length purchase period also uses the full qualifying amount. This
 the Stripe purchase is rejected because another source already wins or another source later wins
 coverage during an existing Stripe purchase period.
 
+Winning provider projections persist pending Stripe collision facts in the same transaction as
+entitlement changes. Stripe invoice discovery and financial reconciliation run independently, so
+an unavailable payment provider cannot roll back native or family access. Bounded recovery
+re-admits pending work after a lost queue admission or exhausted retry. Captured source and binding
+identities remain valid financial references after account deletion; they do not authorize access.
+
 ## Contents
 
 - <a id="refunds-renewal-notifications-admin-grants-feature-flag-and-agent-prompt-slots"></a>[Refunds, Renewal Notifications, Admin Grants, Feature Flag, and Agent Prompt Slots](reference-memberships-refunds.md)

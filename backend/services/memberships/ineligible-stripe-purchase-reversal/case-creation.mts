@@ -4,13 +4,20 @@ import sql from 'sql-template-strings'
 import type { StripeMembershipSourceIdentity } from '../create-types.mts'
 import { createProviderMembershipSource } from '../provider-source.mts'
 
-export type IneligibleStripePurchaseCaseInput = {
-  userId: string
+export type PreparedIneligibleStripePurchaseCaseInput = {
   sourceIdentity: StripeMembershipSourceIdentity
   invoice: StripeInvoiceWithAllPayments
   stripePriceId: string
   winningSourceKind: 'direct' | 'family'
   collisionAt: Date
+}
+export type IneligibleStripePurchaseCaseInput = PreparedIneligibleStripePurchaseCaseInput & {
+  userId: string
+}
+export type IneligibleStripePurchaseSource = {
+  id: string
+  lineageId: string
+  bindingId: string
 }
 
 export function calculateIneligibleStripePurchaseRefundCap(
@@ -60,6 +67,16 @@ export async function recordIneligibleStripePurchaseCasesForCollision(
     { userId: first.userId, sourceKind: 'direct', sourceIdentity: first.sourceIdentity },
     query,
   )
+  return recordPreparedIneligibleStripePurchaseCasesForCollision(inputs, source, query)
+}
+
+export async function recordPreparedIneligibleStripePurchaseCasesForCollision(
+  inputs: readonly PreparedIneligibleStripePurchaseCaseInput[],
+  source: IneligibleStripePurchaseSource,
+  query: QueryExecutor,
+): Promise<string[]> {
+  const cases = inputs.map(prepareIneligibleStripePurchaseCase).filter(value => value !== null)
+  if (cases.length === 0) return []
   const { rows } = await query(sql`/* recordIneligibleStripePurchaseCaseForCollision */
     INSERT INTO membership_ineligible_purchase_reversal_cases (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
@@ -92,7 +109,7 @@ export async function recordIneligibleStripePurchaseCasesForCollision(
   return (rows as Array<{ invoiceId: string }>).map(row => row.invoiceId)
 }
 
-function prepareIneligibleStripePurchaseCase(input: IneligibleStripePurchaseCaseInput) {
+function prepareIneligibleStripePurchaseCase(input: PreparedIneligibleStripePurchaseCaseInput) {
   const { invoice, sourceIdentity } = input
   const invoiceCustomerId =
     typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id

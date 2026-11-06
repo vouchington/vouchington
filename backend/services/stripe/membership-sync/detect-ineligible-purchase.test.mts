@@ -1,13 +1,19 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import {
   beginTransaction,
   createTestNativeMembershipProviderProduct,
   createTestUnprojectedProviderObservation,
   createTestSku,
 } from '@voucha/test-helpers'
+import { readTestStripePurchaseCollisionWork } from '@voucha/test-helpers/stripe-purchase-collision-work'
 import { getIneligiblePurchaseReversalCase } from '@services/memberships/ineligible-stripe-purchase-reversal/case-read'
+import { completeStripePurchaseCollisionWork } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-work'
 import { projectVerifiedProviderMembershipObservation } from '@services/memberships/provider-observation-projection'
+import { createProviderMembershipSource } from '@services/memberships/provider-source'
+import { getMembershipSourceIdByMembershipId } from '@services/memberships'
+import * as stripeClient from '@modules/stripe/client'
 import { setupPurchase } from '@voucha/test-helpers/stripe-reversal-detection'
 import { syncOrCreateStripeMembershipInTransaction } from './sync-or-create.mts'
 import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
@@ -110,14 +116,14 @@ describe('ineligible Stripe purchase detection', () => {
     ['google_play', 'pro', 'direct'],
     ['microsoft_store', 'pro', 'direct'],
   ] as const)(
-    'records the purchase when sync rejects it against %s',
+    'defers purchase inspection when sync rejects it against %s',
     async (winner, plan, sourceKind) => {
       const fixture = await setupPurchase(start, end, winner, plan)
-      const secondInvoiceId = fixture.addInvoice()
       const sourceIdentity = getStripeMembershipSourceIdentity({
         stripeSubscriptionId: fixture.subscriptionId,
         providerApplicationId: fixture.lookup.providerApplicationId,
       })
+      const invoicesList = vi.mocked(stripeClient.getStripeClient().invoices.list)
       await using query = await beginTransaction()
       await syncOrCreateStripeMembershipInTransaction(
         {
@@ -143,29 +149,33 @@ describe('ineligible Stripe purchase detection', () => {
         },
         query,
       )
+      expect(invoicesList).not.toHaveBeenCalled()
       await expect(
         getLockedIneligiblePurchaseReversalCase(
           { ...fixture.lookup, subscriptionId: fixture.subscriptionId },
           query,
         ),
-      ).resolves.toMatchObject({ refundCapMinorUnits: 1001, winningSourceKind: sourceKind })
-      await expect(
-        getLockedIneligiblePurchaseReversalCase(
-          {
-            ...fixture.lookup,
-            originatingInvoiceId: secondInvoiceId,
-            subscriptionId: fixture.subscriptionId,
-          },
-          query,
-        ),
-      ).resolves.toMatchObject({ refundCapMinorUnits: 1001, winningSourceKind: sourceKind })
-      await query.rollback()
+      ).resolves.toBeNull()
+      const source = await createProviderMembershipSource(
+        { userId: fixture.userId, sourceKind: 'direct', sourceIdentity },
+        query,
+      )
+      await query.commit()
+      const work = await readTestStripePurchaseCollisionWork(source.id, new Date(start * 1000))
+      expect(work).toMatchObject({ winning_source_kind: sourceKind, winning_plan: 'plus' })
+      if (!work) throw new Error('Expected committed Stripe purchase collision work')
+      onTestFinished(async () => {
+        await (await memberships.getJob(`stripe-purchase-collision__${work.id}`))?.remove()
+        await completeStripePurchaseCollisionWork(work.id)
+      })
+      expect(invoicesList).not.toHaveBeenCalled()
+      await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toBeNull()
     },
   )
 
-  it('records the displaced Stripe purchase when a higher-tier family observation wins', async () => {
+  it('defers the displaced Stripe purchase when a higher-tier family observation wins', async () => {
     const fixture = await setupPurchase(null, end)
-    await createMembership({
+    const stripeMembership = await createMembership({
       userId: fixture.userId,
       plan: 'plus',
       skuId: fixture.skuId,
@@ -193,6 +203,9 @@ describe('ineligible Stripe purchase detection', () => {
       effectiveAt: new Date((start + 30) * 1000),
       expiresAt: new Date('2040-01-01T00:00:00Z'),
     })
+    const sourceId = await getMembershipSourceIdByMembershipId(stripeMembership.id)
+    if (!sourceId) throw new Error('Expected Stripe source for displacement')
+    const invoicesList = vi.mocked(stripeClient.getStripeClient().invoices.list)
     await using query = await beginTransaction()
     const result = await projectVerifiedProviderMembershipObservation(
       {
@@ -202,13 +215,23 @@ describe('ineligible Stripe purchase detection', () => {
       { query },
     )
     expect(result.projected).toBe(true)
+    expect(invoicesList).not.toHaveBeenCalled()
     await expect(
       getLockedIneligiblePurchaseReversalCase(
         { ...fixture.lookup, subscriptionId: fixture.subscriptionId },
         query,
       ),
-    ).resolves.toMatchObject({ refundCapMinorUnits: 700, winningSourceKind: 'family' })
-    await query.rollback()
+    ).resolves.toBeNull()
+    await query.commit()
+    const work = await readTestStripePurchaseCollisionWork(sourceId, new Date((start + 30) * 1000))
+    expect(work).toMatchObject({ winning_source_kind: 'family', winning_plan: 'pro' })
+    if (!work) throw new Error('Expected committed Stripe displacement work')
+    onTestFinished(async () => {
+      await (await memberships.getJob(`stripe-purchase-collision__${work.id}`))?.remove()
+      await completeStripePurchaseCollisionWork(work.id)
+    })
+    expect(invoicesList).not.toHaveBeenCalled()
+    await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toBeNull()
   })
 
   it.each(['apple_app_store', 'google_play', 'microsoft_store'] as const)(

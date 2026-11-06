@@ -9,7 +9,7 @@ import {
 import { lockMembershipUser } from '@services/memberships/lock-user'
 import { isHigherMembershipPlan } from '@services/memberships/plan-ranking'
 import { getDirectMembershipSourceAdmission } from '@services/memberships/direct-source-authority'
-import { recordIneligibleStripePurchasesForWinner } from '@services/memberships/ineligible-stripe-purchase-reversal/case-producer'
+import { recordIneligibleStripePurchaseCollisionWork } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-work'
 import type { StripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import type { Membership } from '@services/memberships/types'
 import { recordStripeMembershipProviderFactsInTransaction } from '../membership-provider-facts.mts'
@@ -104,7 +104,7 @@ export async function syncOrCreateStripeMembershipInTransaction(
       )
       const winner = rows[0] as { effectiveAt: Date } | undefined
       if (!winner) throw new Error('Winning membership projection disappeared during collision')
-      await recordIneligibleStripePurchasesForWinner(
+      await recordIneligibleStripePurchaseCollisionWork(
         {
           userId,
           sourceIdentity: { ...sourceIdentity, providerAccountId: customerId },
