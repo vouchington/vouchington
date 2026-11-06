@@ -2,6 +2,10 @@
 // These fingerprints appeared in both captures; remove each entry when its scan is fixed.
 // PR #3018 removed 48 story-hydration rss_feeds/topics fingerprints after keyed RSS feed
 // hydration passed paired custom/generic captures (2026-10-17T02-25-09-194Z).
+// CI 42237827391 paired captures replaced five RSS category scans with candidate-index reads
+// and dropped the recommendation/user-metrics scans below. Its 10k-follow fixture owns 80% of
+// the 12.5k-row global topic-follow relation; custom post-feed plans scan it once (~0.7ms),
+// while generic plans use the subject index. Remove these six entries when density changes.
 export const BASELINE_FINGERPRINTS = [
   // The bounded hostname candidate probes one small recent crawl partition.
   'crawler-boilerplate-candidates|0|searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId:force_custom_plan|force_custom_plan:crawls',
@@ -29,6 +33,12 @@ export const BASELINE_FINGERPRINTS = [
   'mv-rss-feed-crawl-tiers-refresh|0|mv-rss-feed-crawl-tiers-refresh:force_generic_plan|force_generic_plan:topics',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_custom_plan|force_custom_plan:notifications',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_generic_plan|force_generic_plan:notifications',
+  'post-feed-heavy-all|0|getPostFeedIds:heavy-all:force_custom_plan|force_custom_plan:relation__user__follow__topic',
+  'post-feed-heavy-follow-topics|0|getPostFeedIds:heavy-follow-topics:force_custom_plan|force_custom_plan:relation__user__follow__topic',
+  'post-feed-heavy-follows|0|getPostFeedIds:heavy:force_custom_plan|force_custom_plan:relation__user__follow__topic',
+  'post-feed-heavy-hot|0|getPostFeedIds:heavy-hot:force_custom_plan|force_custom_plan:relation__user__follow__topic',
+  'post-feed-shares-disabled-all|0|getPostFeedIds:force_custom_plan|force_custom_plan:relation__user__follow__topic',
+  'post-feed-shares-disabled-follow_topics|0|getPostFeedIds:force_custom_plan|force_custom_plan:relation__user__follow__topic',
   'post-search-following-new-heavy-follows|0|buildPostSearchQuery:following-new-heavy:force_generic_plan|force_generic_plan:posts',
   'post-search-hot|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-hybrid-new|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
@@ -40,12 +50,6 @@ export const BASELINE_FINGERPRINTS = [
   'post-search-semantic-new-1m|0|buildPostSearchQuery:force_custom_plan|force_custom_plan:posts',
   'post-search-semantic-new-1m|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-semantic-relevance|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
-  'recommended-topics|0|buildRecommendationQuery:force_custom_plan|force_custom_plan:topics',
-  'rss-feed-item-feed-heavy-all|0|getRssFeedItemFeedIds:heavy-all:force_custom_plan|force_custom_plan:rss_feed_item_categories',
-  'rss-feed-item-feed-heavy-follow-topics|0|getRssFeedItemFeedIds:heavy-follow-topics:force_custom_plan|force_custom_plan:rss_feed_item_categories',
-  'rss-feed-item-feed-heavy-follows-after|0|getRssFeedItemFeedIds:heavy:force_custom_plan|force_custom_plan:rss_feed_item_categories',
-  'rss-feed-item-feed-heavy-follows|0|getRssFeedItemFeedIds:heavy:force_custom_plan|force_custom_plan:rss_feed_item_categories',
-  'rss-feed-item-feed-heavy-story-skew|0|getRssFeedItemFeedIds:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'search-admin-users-email|0|searchAdminUsers:email:force_custom_plan|force_custom_plan:users',
   'search-admin-users-email|0|searchAdminUsers:email:force_generic_plan|force_generic_plan:users',
   'search-admin-users-uuid|0|searchAdminUsers:uuid:force_generic_plan|force_generic_plan:users',
@@ -58,5 +62,4 @@ export const BASELINE_FINGERPRINTS = [
   'trending-topics|0|getTrendingTopics:force_custom_plan|force_custom_plan:topics',
   'trending-topics|0|getTrendingTopics:force_generic_plan|force_generic_plan:topics',
   'user-metrics-batch|0|getUserMetricsByAnyBatch:force_generic_plan|force_generic_plan:relation__user__follow__rss_feed',
-  'user-metrics-batch|0|getUserMetricsByAnyBatch:force_generic_plan|force_generic_plan:relation__user__follow__topic',
 ] as const
