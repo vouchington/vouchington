@@ -7,7 +7,6 @@ import { assertAdminEmailIndexPlan } from './plan-custom/admin-email.mts'
 import { assertClassifierHumanVoteComparisonPlanIfApplicable } from './plan-custom/classifier-human-vote-comparison.mts'
 import { assertCopyrightStatementFactsIsTargetBounded } from './plan-custom/copyright-statement-facts.mts'
 import { assertClaimantMisuseCursorSeek } from './plan-custom/claimant-misuse-cursor.mts'
-import { assertCommentDescendantDepthBound } from './plan-custom/comment-descendant-depth.mts'
 import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-custom/embedding-reconciliation.mts'
 import { assertPaginationPlanShape } from './plan-custom/pagination-gates.mts'
 import { assertPostCreationBypassPointRead } from './plan-custom/post-creation-bypass.mts'
@@ -38,7 +37,6 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   classifierBatch: assertClassifierHumanVoteComparisonPlanIfApplicable,
   copyrightFacts: assertCopyrightStatementFactsIsTargetBounded,
   claimantMisuseCursorSeek: assertClaimantMisuseCursorSeek,
-  commentDescendantDepthBound: assertCommentDescendantDepthBound,
   embeddingFirstPost: assertEmbeddingReconciliationPlanIfApplicable,
   paginationSpecial: assertPaginationPlanShape,
   postCreationBypassPointRead: assertPostCreationBypassPointRead,

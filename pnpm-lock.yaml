@@ -7995,6 +7995,9 @@ importers:
       '@queues/article-sync':
         specifier: workspace:^
         version: link:../../queues/article-sync
+      '@services/comments':
+        specifier: workspace:^
+        version: link:../comments
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
@@ -8010,6 +8013,9 @@ importers:
       '@services/feeds':
         specifier: workspace:^
         version: link:../feeds
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/stories':
         specifier: workspace:^
         version: link:../stories

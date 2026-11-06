@@ -393,6 +393,14 @@
     "routes": ["POST /api/v1/posts"]
   },
   {
+    "annotation": "getVisibleCommentDescendantIdsPage",
+    "maxCount": 1401,
+    "reason": "Top-down previews use dependent indexed parent/id probes: the next frontier and remaining per-head/total budget come from preceding results, and the head cursor stops on the inspected head. Hard config maxima bound one head-page query, at most heads plus child rows parent probes, and one boundary lookup per head; EXPLAIN gates bound the reads inside each probe.",
+    "permanent": true,
+    "code": "backend/services/comments/descendant-ids.mts:64",
+    "routes": ["GET /api/v1/posts/:idOrSlug/descendants", "POST /api/v1/mcp"]
+  },
+  {
     "annotation": "grantConsent",
     "maxCount": null,
     "reason": "Revoke the active consent before inserting its replacement to satisfy the unique active user/type constraint",

@@ -62,27 +62,29 @@ describe('read_posts.descendants — real DB', () => {
   })
 
   describe('pagination', () => {
-    it('walks every reply in id order with round-tripped cursors', async () => {
+    it('pages heads and expands their previews through the same option', async () => {
       const root = await createTestPost({ user: author })
       const replies = []
       for (let index = 0; index < 5; index += 1) replies.push(await comment(other, root.id))
-      replies.push(await comment(author, replies[0]!.id))
-      const expected = replies.map(reply => reply.id).toSorted()
+      const nested = await comment(author, replies[0]!.id)
+      const expected = [replies[0]!.id, nested.id, ...replies.slice(1).map(reply => reply.id)]
 
       const seen: unknown[] = []
       let after: string | undefined
       let pages = 0
-      do {
+      for (let index = 0; index < 3; index += 1) {
         const { body } = await call(author, { post_id: root.slug, limit: 2, after })
         seen.push(...(ids(body) ?? []))
-        expect(body.descendants).toHaveLength(2)
         expect(body.page_info?.start_cursor).toEqual(expect.any(String))
         after = body.page_info?.has_next_page ? (body.page_info.end_cursor ?? undefined) : undefined
         pages += 1
-      } while (after)
+      }
 
       expect(pages).toBe(3)
       expect(seen).toEqual(expected)
+      expect(after).toBeUndefined()
+      const expanded = await call(author, { post_id: replies[0]!.id, limit: 2 })
+      expect(ids(expanded.body)).toEqual([nested.id])
     })
 
     it('returns the whole thread in one page by default, with no next page', async () => {
@@ -125,7 +127,7 @@ describe('read_posts.descendants — real DB', () => {
       }
     })
 
-    it.each([0, 201, 1.5])(
+    it.each([0, -1, 1.5])(
       'rejects the out-of-range limit %s before calling the tool',
       async limit => {
         const root = await createTestPost({ user: author })

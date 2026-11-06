@@ -73,6 +73,14 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   and the thread root pass; no ancestor in between can hide it. A deleted or unmoderated ancestor
   comes back as a placeholder (`placeholder_state`, no text or author) instead of a 404.
 
+Comment descendants page inspected immediate-child heads and attach bounded previews. Each
+response orders its returned ids, but continuation is by head rather than by every descendant id.
+Unlike a visible-row collection, placeholder filtering may leave a short or empty page with a
+cursor: `end_cursor` identifies the last inspected head, not necessarily a returned row. Continue
+while `has_next_page` is true. It describes more heads, not complete previews; opening a returned
+comment through the same descendants operation reaches replies beyond its preview budget. REST
+and MCP share cursor parsing, runtime limit bounds and this ordering contract.
+
 ### Messaging Traversal And Query Plans
 
 - Direct-message inbox cursors for `/api/v1/my/messages` contain the exact PostgreSQL microsecond

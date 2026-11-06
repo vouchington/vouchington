@@ -81,6 +81,8 @@ import { runModerationReportContextScenarios } from './run-scenarios/moderation-
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
+import { runCommentDescendantPartitionedPages } from './run-scenarios/comment-descendant-partitioned-pages.mts'
+import { assertNoLeftoverCommentPartitions } from './seed-data/comment-descendant-partition-storage.mts'
 import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
 /** Defer the large retention corpus until its own plans, then refresh only its statistics. */
 async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
@@ -96,6 +98,7 @@ async function main() {
   try {
     assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
     await assertSeedAnchorMatches()
+    await assertNoLeftoverCommentPartitions()
     await runStep(runSitemapPageScenarios.name, runSitemapPageScenarios)
     await runStep(runStoryProjectionWorkScenarios.name, runStoryProjectionWorkScenarios)
     await runStep(runImageQuarantineScenarios.name, runImageQuarantineScenarios)
@@ -171,6 +174,8 @@ async function main() {
     await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios)
     await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
     await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
+    // The large partitioned corpus runs after every ordinary plan.
+    await runStep(runCommentDescendantPartitionedPages.name, runCommentDescendantPartitionedPages)
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)

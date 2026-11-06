@@ -1,4 +1,5 @@
 import { VOTE_SCORE_SCENARIO_IDS } from './vote-score-scenario-ids.mts'
+import { COMMENT_SCENARIO_IDS } from './comment-scenario-ids.mts'
 import { INGESTION_PAGE_SCENARIO_IDS } from './ingestion-page-scenario-ids.mts'
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
@@ -32,9 +33,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'classifier-human-vote-comparison-community',
   'classifier-human-vote-comparison-post',
   'classifier-human-vote-comparison-rss-feed-item',
-  ...(['comment-ancestors', 'comment-descendants-depth-bound'] as const),
-  'comment-tree-best',
-  'comment-tree-new',
+  ...COMMENT_SCENARIO_IDS,
   'conversation-messages',
   'direct-message-inbox-page',
   'community-activity-digest-aggregation',

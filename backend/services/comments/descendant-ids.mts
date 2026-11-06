@@ -1,28 +1,39 @@
-import { read } from '@data-stores/psql'
-import { buildDirectPostEligibilityFilter } from '@modules/feed-query-builders'
+/* oxlint-disable no-await-in-loop -- each indexed probe depends on the remaining row budget and the prior parent frontier. */
+import { beginTransaction, readPool } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import { isModerationStaff } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import createError from 'http-errors'
 import sql from 'sql-template-strings'
-import { getCommentDescendantMaxDepth, getCommentLookDownLimits } from './placeholder-config.mts'
-import { buildCommentIsValidSql, buildLookDownKeepLateral } from './placeholder-sql.mts'
+import {
+  readBoundaryPlaceholderKeeps,
+  readCommentCandidates,
+  type CommentCandidate,
+} from './descendant-probe.mts'
+import {
+  getCommentDescendantMaxDepth,
+  getCommentDescendantReadLimits,
+} from './placeholder-config.mts'
+
+type PreviewNode = CommentCandidate & { depth: number }
 
 /**
- * One id-ordered page of the comments below `startId` that the viewer can read. A reply is readable
- * when the thread root is. A deleted or unmoderated comment is a placeholder: it is returned only
- * when a valid reply sits below it or a look-down bound prevents a definite answer. Valid rows
- * in the walk seed one climb to their parents without another table read. A hidden or depth-boundary
- * placeholder, below which the walk loaded nothing, asks a bounded look-down. The walk does not
- * descend through a comment the viewer hid, but it returns the hidden comment; expanding it starts
- * a new walk from that comment.
+ * Inspect one bounded page of direct-child heads, then preview a bounded number of descendants
+ * below each kept head. The continuation key belongs to the last inspected head, even when that
+ * head was filtered or its preview was shorter than the requested result limit. Opening any
+ * returned comment starts the same bounded service from that comment.
  */
 export async function getVisibleCommentDescendantIdsPage(
   currentUser: PrivateUser | null,
   rootId: string,
   startId: string,
   options: { limit: number; afterId?: string },
-): Promise<{ results: string[]; hasNextPage: boolean }> {
+): Promise<{
+  results: string[]
+  hasNextPage: boolean
+  firstInspectedHeadId: string | null
+  lastInspectedHeadId: string | null
+}> {
   if (!isUUID(rootId)) throw createError(422, 'Invalid rootId')
   if (!isUUID(startId)) throw createError(422, 'Invalid startId')
   if (options.afterId && !isUUID(options.afterId)) throw createError(422, 'Invalid cursor')
@@ -31,90 +42,107 @@ export async function getVisibleCommentDescendantIdsPage(
     currentUserId: currentUser?.id ?? null,
     isModerationStaff: isModerationStaff(currentUser),
   }
-  const rootReadable = buildDirectPostEligibilityFilter('access_post', 'access_post', eligibility)
+  const limits = getCommentDescendantReadLimits()
   const maxDepth = getCommentDescendantMaxDepth()
-  const hiddenOf = (alias: string) =>
-    currentUser
-      ? sql`EXISTS (
-          SELECT 1 FROM relation__user__hide__post hidden
-          WHERE hidden.subject_id = ${currentUser.id}
-            AND hidden.object_id = `.append(`${alias}.id`).append(sql` AND hidden.deleted_at IS NULL
-        )`)
-      : sql`false`
-  const query = sql`/* getVisibleCommentDescendantIdsPage */
-    WITH RECURSIVE descendants AS (
-      SELECT p.id, p.parent_post_id, p.deleted_at, p.approved_at, p.created_by_id,
-        1 AS depth, `
-    .append(hiddenOf('p'))
-    .append(
-      sql` AS is_hidden
-      FROM posts p
-      JOIN posts access_post ON access_post.id = ${rootId}
-      WHERE p.root_post_id = ${rootId}
-        AND p.parent_post_id = ${startId}
-        AND p.post_type = 'comment'
-        AND `,
-    )
-    .append(rootReadable)
-    .append(
-      sql`
-      UNION ALL
-      SELECT child.id, child.parent_post_id, child.deleted_at, child.approved_at,
-        child.created_by_id, parent.depth + 1 AS depth, `,
-    )
-    .append(hiddenOf('child'))
-    .append(
-      sql` AS is_hidden
-      FROM posts child
-      JOIN descendants parent ON child.parent_post_id = parent.id
-      WHERE child.root_post_id = ${rootId}
-        AND child.post_type = 'comment'
-        AND NOT parent.is_hidden
-        AND parent.depth < ${maxDepth}
-    ),
-    walk AS MATERIALIZED (
-      SELECT descendants.* FROM descendants`,
-    )
-  if (options.afterId) query.append(sql` WHERE descendants.id > ${options.afterId}`)
-  // Seeds are valid rows, plus a hidden or depth-boundary placeholder whose replies the walk did
-  // not load. Only those placeholders need a look-down; the climb keeps all other ancestors.
-  query.append(sql`
-    ),
-    seeds AS (
-      SELECT walk.id, walk.parent_post_id
-      FROM walk
-      `)
-  query.append(
-    buildLookDownKeepLateral(
-      'walk.id',
+  const headLimit = Math.min(options.limit, limits.maxHeads)
+  await using transaction = await beginTransaction({ client: readPool })
+  await transaction(sql`/* getVisibleCommentDescendantIdsPage:transaction */
+    SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY`)
+  const heads = await readCommentCandidates(transaction, {
+    rootId,
+    parentId: startId,
+    limit: headLimit + 1,
+    afterId: options.afterId,
+    checkRoot: true,
+    currentUserId: currentUser?.id ?? null,
+    eligibility,
+  })
+
+  const results: string[] = []
+  let inspectedHeads = 0
+  let childRowsRead = 0
+  for (const head of heads.slice(0, headLimit)) {
+    // no-mistakes-disable-next-line query-reached-per-item: the runtime head cap bounds probes, and each preview spends the remaining per-head and total child-row budgets.
+    const preview = await readHeadPreview({
+      head,
       rootId,
+      currentUserId: currentUser?.id ?? null,
       eligibility,
-      getCommentLookDownLimits(),
-      sql`(walk.is_hidden OR walk.depth = ${maxDepth}) AND NOT `.append(
-        buildCommentIsValidSql('walk', eligibility),
-      ),
-    ),
-  )
-  query.append(sql`
-      WHERE `)
-  query.append(buildCommentIsValidSql('walk', eligibility))
-  query.append(sql` OR COALESCE(look_down_result.keep, false)`)
-  query.append(sql`
-    ),
-    kept AS (
-      SELECT id, parent_post_id FROM seeds
-      UNION
-      SELECT walk.id, walk.parent_post_id
-      FROM walk
-      JOIN kept ON walk.id = kept.parent_post_id
-    )
-    SELECT kept.id
-    FROM kept
-    ORDER BY kept.id ASC
-    LIMIT ${options.limit + 1}`)
-  const { rows } = await read<{ id: string }>(query.text, query.values)
-  return {
-    results: rows.slice(0, options.limit).map(row => row.id),
-    hasNextPage: rows.length > options.limit,
+      maxDepth,
+      maxChildren: Math.min(limits.maxChildrenPerHead, limits.maxRows - childRowsRead),
+      query: transaction,
+    })
+    childRowsRead += preview.childRowsRead
+    inspectedHeads += 1
+    results.push(...preview.ids.slice(0, options.limit - results.length))
+    if (results.length >= options.limit || childRowsRead >= limits.maxRows) break
   }
+  await transaction.commit()
+  return {
+    results: results.toSorted(),
+    hasNextPage: inspectedHeads < heads.length,
+    firstInspectedHeadId: inspectedHeads > 0 ? heads[0]!.id : null,
+    lastInspectedHeadId: heads[inspectedHeads - 1]?.id ?? null,
+  }
+}
+
+async function readHeadPreview(input: {
+  head: CommentCandidate
+  rootId: string
+  currentUserId: string | null
+  eligibility: { currentUserId: string | null; isModerationStaff: boolean }
+  maxDepth: number
+  maxChildren: number
+  query: Parameters<typeof readCommentCandidates>[0]
+}): Promise<{ ids: string[]; childRowsRead: number }> {
+  const { head, rootId, currentUserId, eligibility, maxDepth, maxChildren, query } = input
+  const nodes: PreviewNode[] = [{ ...head, depth: 1 }]
+  const boundaries = new Set<string>()
+  let nextParent = 0
+  let childRowsRead = 0
+  // Each probe uses the parent/id index and a remaining-row LIMIT. A truncated parent's own
+  // permalink restarts this service, so no uninspected child needs a continuation here.
+  while (nextParent < nodes.length) {
+    const parent = nodes[nextParent++]!
+    if (parent.is_hidden || parent.depth >= maxDepth || childRowsRead >= maxChildren) {
+      boundaries.add(parent.id)
+      continue
+    }
+    const remaining = maxChildren - childRowsRead
+    // no-mistakes-disable-next-line query-reached-per-item: each dependent parent/id probe uses LIMIT remaining from the configured per-head and total child-row budgets.
+    const children = await readCommentCandidates(query, {
+      rootId,
+      parentId: parent.id,
+      limit: remaining,
+      checkRoot: false,
+      currentUserId,
+      eligibility,
+    })
+    childRowsRead += children.length
+    if (children.length === remaining) boundaries.add(parent.id)
+    for (const child of children) nodes.push({ ...child, depth: parent.depth + 1 })
+  }
+  const boundaryPlaceholders: string[] = []
+  const byId = new Map<string, PreviewNode>()
+  const kept = new Set<string>()
+  for (const node of nodes) {
+    byId.set(node.id, node)
+    if (node.is_valid) kept.add(node.id)
+    else if (boundaries.has(node.id)) boundaryPlaceholders.push(node.id)
+  }
+  const boundaryKeeps = await readBoundaryPlaceholderKeeps(
+    query,
+    rootId,
+    boundaryPlaceholders,
+    eligibility,
+  )
+  for (const id of boundaryKeeps) kept.add(id)
+  for (const id of [...kept]) {
+    let parentId = byId.get(id)?.parent_post_id
+    while (parentId && byId.has(parentId) && !kept.has(parentId)) {
+      kept.add(parentId)
+      parentId = byId.get(parentId)?.parent_post_id
+    }
+  }
+  return { ids: [...kept].toSorted(), childRowsRead }
 }

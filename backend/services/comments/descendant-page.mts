@@ -9,11 +9,10 @@ export const COMMENT_DESCENDANTS_LIMIT = { min: 1, max: 200, default: 100 } as c
 export type CommentDescendantsPage = { ids: string[]; pageInfo: PageInfo }
 
 /**
- * One cursor page of the comments a viewer can see below `post`, in id order. A deleted or
+ * One cursor page of direct-child heads below `post`, each with a bounded child preview. A deleted or
  * unmoderated comment is returned as a content-free placeholder when a valid reply sits below it
- * or the bounded look-down cannot rule one out. Each walk has a relative depth bound; opening a
- * comment starts a new window. Cursors are scoped to the thread and post, never to a viewer, and a cursor from another post
- * fails with the 400 "Invalid cursor format".
+ * or the bounded look-down cannot rule one out. Opening any comment starts a new window. Cursors
+ * resume after an inspected head and are scoped to this version, thread, and post, never to a viewer.
  */
 export async function getCommentDescendantsPage(
   currentUser: PrivateUser | null,
@@ -21,23 +20,26 @@ export async function getCommentDescendantsPage(
   options: { limit: number; after?: string },
 ): Promise<CommentDescendantsPage> {
   const rootId = post.root_post_id ?? post.id
-  const scope = `comment-descendants:${rootId}:${post.id}`
+  const scope = `comment-descendants-v2:${rootId}:${post.id}`
   const afterId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format').id
     : undefined
-  const { results, hasNextPage } = await getVisibleCommentDescendantIdsPage(
-    currentUser,
-    rootId,
-    post.id,
-    { limit: options.limit, afterId },
-  )
-  const last = results.at(-1)
+  const { results, hasNextPage, firstInspectedHeadId, lastInspectedHeadId } =
+    await getVisibleCommentDescendantIdsPage(currentUser, rootId, post.id, {
+      limit: options.limit,
+      afterId,
+    })
   return {
     ids: results,
     pageInfo: {
       has_next_page: hasNextPage,
-      end_cursor: hasNextPage && last ? encodeScopedUuidCursor(last, scope) : null,
-      start_cursor: results[0] ? encodeScopedUuidCursor(results[0], scope) : null,
+      end_cursor:
+        hasNextPage && lastInspectedHeadId
+          ? encodeScopedUuidCursor(lastInspectedHeadId, scope)
+          : null,
+      start_cursor: firstInspectedHeadId
+        ? encodeScopedUuidCursor(firstInspectedHeadId, scope)
+        : null,
     },
   }
 }

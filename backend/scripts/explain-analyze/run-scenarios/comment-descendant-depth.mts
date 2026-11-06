@@ -1,11 +1,14 @@
 import { getVisibleCommentDescendantIdsPage } from '@services/comments'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { COMMENT_DESCENDANT_DEPTH_ROOT_ID } from '../seed-data/comment-descendant-depth.mts'
 
 export async function runCommentDescendantDepthScenario(): Promise<void> {
   registerScenarioContract('comment-descendants-depth-bound', {
-    expectations: [{ kind: 'custom', name: 'commentDescendantDepthBound' }],
+    expectations: [{ kind: 'maxProcessedRows', relation: 'posts', max: 100 }],
+    forbidSequentialScans: ['posts'],
+    seededRows: { posts: SEEDED_ROWS_BY_RELATION.posts! + 936 },
     crossPartition: {
       posts: 'A comment thread may contain replies from later UUIDv7 post partitions.',
     },

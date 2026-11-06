@@ -8,8 +8,13 @@ describe('comment placeholder registry entry', () => {
       Object.keys(commentPlaceholderConfig.defaultFields).toSorted(),
     )
     expect(commentPlaceholderRegistryEntry.fields.descendant_max_depth).toMatchObject({
-      minValue: 7,
+      minValue: 1,
       maxValue: 20,
+      integer: true,
+    })
+    expect(commentPlaceholderRegistryEntry.fields.descendant_max_children_per_head).toMatchObject({
+      minValue: 1,
+      maxValue: 500,
       integer: true,
     })
     expect(commentPlaceholderRegistryEntry.access.update_roles).toEqual(['developer'])

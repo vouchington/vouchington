@@ -11,7 +11,7 @@ import createHttpError from 'http-errors'
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
-import { clampToolLimit } from './search-system.mts'
+import { parseCommentDescendantPagination } from '@services/search-params/comment-descendant-pagination'
 
 type ToolArgs = {
   post_id: string
@@ -28,7 +28,7 @@ const { min, max, default: defaultLimit } = COMMENT_DESCENDANTS_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get a depth-bounded window of replies in id order; page_info paginates that window. Use a returned reply as post_id to reach deeper replies. Deleted or unmoderated replies are content-free placeholders with placeholder_state when needed to preserve a possible valid branch. A missing or not fully public post returns Post not found.',
+      'Page immediate-child heads in id order with bounded reply previews. Each response is id-ordered, but pages are not a global descendant-id sequence. Continue with page_info.end_cursor even when a page is short or empty; the cursor advances past inspected heads. has_next_page refers to more heads, not omitted preview replies. To expand any returned comment, call this same option with that comment as post_id. Deleted or unmoderated replies are content-free placeholders when needed to preserve a possible valid branch. A missing or not fully public post returns Post not found.',
     parameters: {
       type: 'object',
       properties: {
@@ -36,8 +36,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         limit: {
           type: 'integer',
           minimum: min,
-          maximum: max,
-          description: `Replies per page, from ${min} to ${max} (default: ${defaultLimit})`,
+          description: `Maximum replies returned per page, clamped to the runtime limit up to ${max} (static default: ${defaultLimit}). A preview may return fewer.`,
         },
         after: { type: 'string' },
       },
@@ -64,10 +63,13 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       if (!thread) return { success: false, error: 'Post not found' }
       // The signed-out page is the owner's page minus what private visibility adds (see
       // resolveReadableThread), and its cursors are scoped to the thread, never to a viewer.
-      const page = await getCommentDescendantsPage(null, thread.post, {
-        limit: clampToolLimit(args.limit, defaultLimit, max),
-        after: args.after,
-      }).catch((err: unknown) => {
+      const page = await (async () => {
+        const pagination = parseCommentDescendantPagination({
+          limit: args.limit,
+          after: args.after,
+        })
+        return getCommentDescendantsPage(null, thread.post, pagination)
+      })().catch((err: unknown) => {
         if (createHttpError.isHttpError(err) && err.status === 400) return null
         throw err
       })
