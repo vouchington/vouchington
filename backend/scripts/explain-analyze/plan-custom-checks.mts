@@ -13,7 +13,7 @@ import { assertPostCreationBypassPointRead } from './plan-custom/post-creation-b
 import { assertPostShareEligibilityIsTargetBounded } from './plan-custom/post-share-targets.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/remote-followers.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-custom/review-succession.mts'
-import { assertRssFeedCandidatesAreSetBased } from './plan-custom/rss-feed-candidates.mts'
+import { assertRssFeedPageWorkloadIsBounded } from './plan-custom/rss-feed-page-workload.mts'
 import { assertRssRecencyLateCursorPlan } from './plan-custom/rss-recency-cursor.mts'
 import {
   assertSearchCommunitiesEligibilityIsIndexed,
@@ -43,7 +43,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   postShareTargets: assertPostShareEligibilityIsTargetBounded,
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
   reviewSuccession: assertReviewSuccessionCandidatePlanIfApplicable,
-  rssFeedCandidates: assertRssFeedCandidatesAreSetBased,
+  rssFeedPageWorkload: assertRssFeedPageWorkloadIsBounded,
   rssHardDeleteRecoverySeek: assertRssHardDeleteRecoverySeek,
   rssRecencyCursor: assertRssRecencyLateCursorPlan,
   searchCommunitiesEligibility: assertSearchCommunitiesEligibilityIsIndexed,
