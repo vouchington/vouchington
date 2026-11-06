@@ -1541,10 +1541,6 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  owner_table TEXT := 'retained_' || family::text || '_identities';\n  pinned_id UUID;\nBEGIN\n  -- Cleanup can remove an orphan between the conflict and key-share reads.\n  -- Retry until this transaction pins the retained owner.\n  LOOP\n    EXECUTE format('INSERT INTO %I (id) VALUES ($1) ON CONFLICT (id) DO NOTHING', owner_table)\n      USING identity_id;\n    EXECUTE format('SELECT id FROM %I WHERE id = $1 FOR KEY SHARE', owner_table)\n      INTO pinned_id USING identity_id;\n    EXIT WHEN pinned_id IS NOT NULL;\n  END LOOP;\nEND;\n$function$\n",
       "returnsSet": false
     },
-    "fn_ensure_rss_feed_item_source_story_id()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_rss_feed_item_source_story_id()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  SELECT items.story_id INTO NEW.story_id\n  FROM rss_feed_items items\n  WHERE items.id = NEW.rss_feed_item_id;\n  RETURN NEW;\nEND;\n$function$\n",
-      "returnsSet": false
-    },
     "fn_ensure_topic_merge_participant_not_reserved()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_participant_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM topic_merge_operations merge_operation\n    WHERE (merge_operation.source_topic_id = OLD.id\n        OR merge_operation.destination_topic_id = OLD.id)\n      AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n      AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n        (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n         COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n  ) THEN\n    RAISE EXCEPTION USING ERRCODE = 'V0409',\n      MESSAGE = 'Topic merge is in progress',\n      DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', OLD.id)::TEXT;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
@@ -2339,14 +2335,6 @@
     },
     "fn_update_retained_copyright_notice_identity_residual()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_retained_copyright_notice_identity_residual()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE retained_copyright_notice_identities SET case_deleted_at = clock_timestamp() WHERE id = OLD.id;\n  RETURN NULL;\nEND;\n$function$\n",
-      "returnsSet": false
-    },
-    "fn_update_rss_feed_item_source_story_id()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_source_story_id()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE rss_feed_item_sources AS sources\n  SET story_id = items.story_id\n  FROM inserted\n  JOIN rss_feed_items AS items ON items.id = inserted.rss_feed_item_id\n  WHERE sources.rss_feed_id = inserted.rss_feed_id\n    AND sources.rss_feed_item_id = inserted.rss_feed_item_id\n    AND sources.story_id IS DISTINCT FROM items.story_id;\n  RETURN NULL;\nEND;\n$function$\n",
-      "returnsSet": false
-    },
-    "fn_update_rss_feed_item_sources_story_id()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_sources_story_id()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE rss_feed_item_sources\n  SET story_id = NEW.story_id\n  WHERE rss_feed_item_id = NEW.id\n    AND story_id IS DISTINCT FROM NEW.story_id;\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_rss_feed_items_search_vector()": {
@@ -130766,7 +130754,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 4
         },
         "published_at": {
           "comment": "Publication timestamp captured when this feed-to-item association is first observed. Production ingestion applies the item UUIDv7 clamp to this feed payload's sanitized publication dates and preserves an existing association on conflict.",
@@ -130797,28 +130785,10 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "story_id": {
-          "comment": "Story copied from the item so a page can stop at the newest visible source. The item remains the source of truth.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4
         }
       },
       "comment": "Join table: which RSS feeds contain which items. An item (unique per hostname+guid) can appear in multiple feeds from the same domain.",
       "foreignKeys": {
-        "fk_rss_feed_item_sources_story_id": {
-          "columns": ["story_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "stories",
-          "validated": true
-        },
         "rss_feed_item_sources_rss_feed_id_fkey": {
           "columns": ["rss_feed_id"],
           "onDelete": "CASCADE",
@@ -130942,47 +130912,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_rss_feed_item_sources__story_feed_item": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_sources__story_feed_item ON public.rss_feed_item_sources USING btree (story_id, rss_feed_id DESC, rss_feed_item_id DESC) WHERE (story_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "story_id",
-              "descending": false,
-              "expression": "story_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "rss_feed_id",
-              "descending": true,
-              "expression": "rss_feed_id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "rss_feed_item_id",
-              "descending": true,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(story_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "rss_feed_item_sources_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -131021,14 +130950,7 @@
         "columns": ["rss_feed_id", "rss_feed_item_id"]
       },
       "relationKind": "table",
-      "triggers": {
-        "trigger_ensure_rss_feed_item_source_story_id": {
-          "definition": "CREATE TRIGGER trigger_ensure_rss_feed_item_source_story_id BEFORE UPDATE OF story_id ON public.rss_feed_item_sources FOR EACH ROW WHEN ((pg_trigger_depth() = 0)) EXECUTE FUNCTION fn_ensure_rss_feed_item_source_story_id()"
-        },
-        "trigger_update_rss_feed_item_source_story_id": {
-          "definition": "CREATE TRIGGER trigger_update_rss_feed_item_source_story_id AFTER INSERT ON public.rss_feed_item_sources REFERENCING NEW TABLE AS inserted FOR EACH STATEMENT EXECUTE FUNCTION fn_update_rss_feed_item_source_story_id()"
-        }
-      },
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "rss_feed_item_unmapped_category_counts": {
@@ -132512,9 +132434,6 @@
         },
         "trigger_rss_feed_items_updated_at": {
           "definition": "CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        },
-        "trigger_sync_rss_feed_item_source_story_id": {
-          "definition": "CREATE TRIGGER trigger_sync_rss_feed_item_source_story_id AFTER UPDATE OF story_id ON public.rss_feed_items FOR EACH ROW WHEN ((old.story_id IS DISTINCT FROM new.story_id)) EXECUTE FUNCTION fn_update_rss_feed_item_sources_story_id()"
         },
         "trigger_sync_rss_feed_items_search_vector": {
           "definition": "CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_items_search_vector()"
