@@ -14,7 +14,7 @@ import { checkWorkflowCachePnpmPolicy } from './check-workflow-cache-pnpm-policy
 import { checkWorkflowAreaCoveragePolicy } from './check-workflow-area-coverage-policy.mts'
 import { checkVitestProjectCommandPolicy } from './check-vitest-project-command-policy.mts'
 import { checkVitestReporterPolicy } from './check-vitest-reporter-policy.mts'
-import { toolingWorkflowProjectNames } from '../test-helpers/vitest-config/tooling-project-registry.mts'
+import { buildToolingVitestArgs } from './tooling-test-runner.mts'
 
 /** Run live repository policies once in the dedicated static CI job. */
 export async function checkRepositoryPolicyScans(root: string): Promise<void> {
@@ -22,6 +22,9 @@ export async function checkRepositoryPolicyScans(root: string): Promise<void> {
   checkWorkflowArtifactPolicy(root)
   await checkPostgresOrderingPolicy(root)
 
+  const toolingWorkflowProjectNames = buildToolingVitestArgs(['--workflow-projects']).filter(
+    (_argument, index, args) => args[index - 1] === '--project',
+  )
   const violations = [
     ...checkWorkflowSafetyPolicy(root),
     ...checkWorkflowOpsPolicy(root),
