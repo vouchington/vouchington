@@ -505,6 +505,32 @@ COMMENT ON COLUMN rss_feed_item_sources.created_at IS 'When this feed-to-item as
 COMMENT ON COLUMN rss_feed_item_sources.published_at IS 'Publication timestamp captured when this feed-to-item association is first observed. Production ingestion applies the item UUIDv7 clamp to this feed payload''s sanitized publication dates and preserves an existing association on conflict.';
 COMMENT ON COLUMN rss_feed_item_sources.story_id IS 'Story copied from the item so a page can stop at the newest visible source. The item remains the source of truth.';
 
+-- One update for the whole insert. A per-row lookup pushed the explain seed past its cap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_update_rss_feed_item_source_story_id()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE rss_feed_item_sources AS sources
+  SET story_id = items.story_id
+  FROM inserted
+  JOIN rss_feed_items AS items ON items.id = inserted.rss_feed_item_id
+  WHERE sources.rss_feed_id = inserted.rss_feed_id
+    AND sources.rss_feed_item_id = inserted.rss_feed_item_id
+    AND sources.story_id IS DISTINCT FROM items.story_id;
+  RETURN NULL;
+END;
+$$;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_update_rss_feed_item_source_story_id
+AFTER INSERT ON rss_feed_item_sources
+REFERENCING NEW TABLE AS inserted
+FOR EACH STATEMENT
+EXECUTE FUNCTION fn_update_rss_feed_item_source_story_id();
+
+-- A direct edit of the copy is overwritten from the item. Nested updates already copied it.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_ensure_rss_feed_item_source_story_id()
 RETURNS TRIGGER
@@ -519,9 +545,10 @@ END;
 $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_copy_rss_feed_item_source_story_id
-BEFORE INSERT OR UPDATE OF story_id ON rss_feed_item_sources
+CREATE OR REPLACE TRIGGER trigger_ensure_rss_feed_item_source_story_id
+BEFORE UPDATE OF story_id ON rss_feed_item_sources
 FOR EACH ROW
+WHEN (pg_trigger_depth() = 0)
 EXECUTE FUNCTION fn_ensure_rss_feed_item_source_story_id();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
