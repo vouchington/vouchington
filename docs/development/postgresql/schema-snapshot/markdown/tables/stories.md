@@ -40,3 +40,4 @@ _none_
 **Triggers:**
 
 - `trigger_stories_updated_at`: `CREATE TRIGGER trigger_stories_updated_at BEFORE UPDATE ON public.stories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_story_official_feed_candidates`: `CREATE TRIGGER trigger_story_official_feed_candidates AFTER INSERT OR DELETE OR UPDATE OF official_rss_feed_item_id, deleted_at ON public.stories FOR EACH ROW EXECUTE FUNCTION fn_project_story_official_feed_candidates()`

@@ -11,6 +11,7 @@ Not partitioned — growth: unbounded.
 | `rss_feed_id`      | `uuid`                     | no       |                     |          |           |           | The RSS feed that contains this item.                                                                                                                                                                                                         |
 | `rss_feed_item_id` | `uuid`                     | no       |                     |          |           |           | The RSS feed item.                                                                                                                                                                                                                            |
 | `published_at`     | `timestamp with time zone` | yes      |                     |          |           |           | Publication timestamp captured when this feed-to-item association is first observed. Production ingestion applies the item UUIDv7 clamp to this feed payload's sanitized publication dates and preserves an existing association on conflict. |
+| `item_sort_at`     | `timestamp with time zone` | yes      |                     |          |           |           | Projected current canonical item publication time, distinct from first-observed source payload publication; NULL for a hidden item. Corrections are refreshed in bounded pages.                                                               |
 | `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this feed-to-item association was first observed (during crawl).                                                                                                                                                                         |
 
 **Primary key:** `PRIMARY KEY (rss_feed_id, rss_feed_item_id)`
@@ -30,8 +31,11 @@ _none_
 
 - `idx_rss_feed_item_sources__feed_published_item`: `CREATE INDEX idx_rss_feed_item_sources__feed_published_item ON public.rss_feed_item_sources USING btree (rss_feed_id, published_at DESC, rss_feed_item_id DESC) WHERE (published_at IS NOT NULL)`
 - `idx_rss_feed_item_sources__item_feed`: `CREATE INDEX idx_rss_feed_item_sources__item_feed ON public.rss_feed_item_sources USING btree (rss_feed_item_id, rss_feed_id)`
+- `idx_rss_feed_item_sources__item_sort`: `CREATE INDEX idx_rss_feed_item_sources__item_sort ON public.rss_feed_item_sources USING btree (rss_feed_id, item_sort_at DESC, rss_feed_item_id DESC) WHERE (item_sort_at IS NOT NULL)`
 - `idx_rss_feed_item_sources__missing_published_at`: `CREATE INDEX idx_rss_feed_item_sources__missing_published_at ON public.rss_feed_item_sources USING btree (rss_feed_id, rss_feed_item_id) WHERE (published_at IS NULL)`
 - `rss_feed_item_sources_pkey`: `CREATE UNIQUE INDEX rss_feed_item_sources_pkey ON public.rss_feed_item_sources USING btree (rss_feed_id, rss_feed_item_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_rss_feed_latest_item_sort`: `CREATE TRIGGER trigger_rss_feed_latest_item_sort AFTER INSERT OR DELETE OR UPDATE OF item_sort_at, rss_feed_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_latest_item_sort()`
+- `trigger_rss_feed_source_item_sort`: `CREATE TRIGGER trigger_rss_feed_source_item_sort BEFORE INSERT OR UPDATE OF item_sort_at, rss_feed_item_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_source_item_sort()`
