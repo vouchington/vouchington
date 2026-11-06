@@ -50,10 +50,6 @@ export function buildDataPointPageQuery(
     needsUnion = true
   }
   if (openCommunity) {
-    if (needsUnion)
-      query.append(sql`
-      UNION ALL
-      `)
     appendCommunityArm(query, {
       fromSql: sql`communities community`,
       whereSql: sql`WHERE community.id = ${openCommunity.community_id}::uuid
