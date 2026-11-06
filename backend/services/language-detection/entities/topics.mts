@@ -30,7 +30,6 @@ export async function detectTopicLanguage(topicId: string): Promise<void> {
     if (existing.equals(detectionKey)) return
   }
 
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const output = await runDetection(text, null)
 
   await write(sql`/* detectTopicLanguage:update */
@@ -44,5 +43,5 @@ export async function detectTopicLanguage(topicId: string): Promise<void> {
       AND name IS NOT DISTINCT FROM ${topic.name}
       AND markdown IS NOT DISTINCT FROM ${topic.markdown}
   `)
-  await invalidate.topics(topicId)
+  return invalidate.topics(topicId)
 }

@@ -145,7 +145,7 @@ export async function deleteUser(
   const requestedById = currentUser?.id ?? user.id
 
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- the copyright check must follow the deletion lock and precede the privacy fence
+  // ast-grep-ignore: no-three-sequential-awaits -- Deletion establishment locks the account/publication scope and returns request/target; the copyright guard must reject protected evidence before privacy-fence writes.
   const deletion = await establishUserDeletionRequest(query, user, requestedById)
   await assertCopyrightEvidenceAllowsDeletion(query, user.id)
   await applyUserDeletionPrivacyFence(query, deletion.request.id, deletion.target, requestedById)

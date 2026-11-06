@@ -150,7 +150,7 @@ async function createAuthenticatedCopyrightSubmission(
   `)
   const submission = rows[0]
   assert(submission, 500, 'Copyright submission was not created')
-  // ast-grep-ignore: no-three-sequential-awaits -- the lifecycle event insert must precede the clock advance in this locked transaction.
+  // ast-grep-ignore: no-three-sequential-awaits -- write submission targets, request receipt, and received event before sampling legal activity; create delivery intent after those case facts complete
   await transaction(sql`/* createCopyrightSubmission:scopeAndReceipt */
     WITH inserted_targets AS (
       INSERT INTO copyright_notice_submission_targets (

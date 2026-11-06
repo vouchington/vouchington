@@ -29,7 +29,6 @@ export async function detectUserLanguage(userId: string): Promise<void> {
   }
 
   // Users have no declared language for their bio
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const output = await runDetection(text, null)
 
   await write(sql`/* detectUserLanguage:update */
@@ -42,5 +41,5 @@ export async function detectUserLanguage(userId: string): Promise<void> {
     WHERE id = ${userId}
       AND COALESCE(markdown, '') IS NOT DISTINCT FROM ${user.markdown}
   `)
-  await invalidate.users(userId)
+  return invalidate.users(userId)
 }

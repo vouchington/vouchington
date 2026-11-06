@@ -67,7 +67,7 @@ export async function addPostRating(
   await using query = await beginTransaction()
   await lockTopicRssFeedAttachmentLifecycle(query, input.topic_id)
   await assertReviewTopicsAllowReviews([input.topic_id], { query })
-  // ast-grep-ignore: no-three-sequential-awaits -- publication advisory lock must precede the post row lock and dependent rating reads.
+  // ast-grep-ignore: no-three-sequential-awaits -- Take the publication advisory lock before the post row lock, then reject an exceeded rating limit before inserting the rating.
   await lockPostPublication(query, post.id)
   await lockPostRatingMutation(query, post.id)
   await assertRatingCountBelowLimit(query, post.id, review_topic_ratings_max_items)
@@ -85,7 +85,7 @@ export async function addPostRating(
     if (pgError.code === '23503') throw createHttpError(422, 'Topic not found')
     throw err
   }
-  // ast-grep-ignore: no-three-sequential-awaits -- rating validation, revision, and publication capture are ordered transaction writes
+  // ast-grep-ignore: no-three-sequential-awaits -- assertRatingsNotAllSame must reject invalid rating state before createPostRevision writes its audit and publication capture records the accepted ratings.
   await assertRatingsNotAllSame(query, post.id)
   await createPostRevision(
     post.id,
@@ -171,7 +171,7 @@ export async function updatePostRating(
   const result = await write(updateQuery, { query })
   assert(result.rowCount && result.rowCount > 0, 404, 'Rating not found')
 
-  // ast-grep-ignore: no-three-sequential-awaits -- rating validation, revision, and publication capture are ordered transaction writes
+  // ast-grep-ignore: no-three-sequential-awaits -- assertRatingsNotAllSame must reject invalid rating state before createPostRevision writes its audit and publication capture records the accepted ratings.
   await assertRatingsNotAllSame(query, post.id)
   await createPostRevision(
     post.id,

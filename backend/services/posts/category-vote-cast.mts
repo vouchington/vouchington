@@ -4,6 +4,7 @@ import { upsertEntityRelation } from '@services/entity-relations'
 import type { EntityRelationMetadata } from '@services/entity-relations/metadata'
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
 import type { PrivateUser } from '@services/users/types'
+import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
 
 type RelationRef = { id?: string }
 type Vote = { entityId: string; score: 0 | 1 }
@@ -15,13 +16,18 @@ const relationWriteOptions = {
 }
 
 /** Reads alias rows sync already wrote. Inserts only aliases that are still missing. */
-export async function loadActorAliasRelations(
+export async function loadActorCategoryVoteInputs(
   query: TransactionQuery,
   relation: EntityRelationMetadata,
   actor: PrivateUser,
   postId: string,
-): Promise<Array<{ id: string }>> {
+): Promise<{
+  activeAliasRelations: Array<{ id: string }>
+  removedAliasRelations: Array<{ id: string }>
+  topicIds: string[]
+}> {
   const statement = sql`/* castPostCategoryVotesInTransaction.aliases */
+    WITH actor_alias_relations AS (
     SELECT source.topic_alias_id, relation.id
     FROM post_topic_alias_sources source
     LEFT JOIN `
@@ -31,11 +37,42 @@ export async function loadActorAliasRelations(
       AND relation.object_id = source.topic_alias_id
       AND relation.deleted_at IS NULL
     WHERE source.post_id = ${postId}
-      AND source.contributor_user_id = ${actor.id}`)
-  const { rows } = await write<{ topic_alias_id: string; id: string | null }>(statement, { query })
-  const missing = rows.flatMap(row => (row.id ? [] : [row.topic_alias_id]))
-  const existing = rows.flatMap(row => (row.id ? [{ id: row.id }] : []))
-  if (missing.length === 0) return existing
+      AND source.contributor_user_id = ${actor.id}),
+    removed_alias_relations AS (SELECT relation.id FROM `)
+  statement.append(relation.table_name)
+  statement.append(sql` relation JOIN LATERAL (SELECT score FROM `)
+  statement.append(getEntityRelationVoteTableName(relation))
+  statement.append(sql` vote
+      WHERE vote.entity_relation_id = relation.id AND vote.user_id = ${actor.id}
+      ORDER BY vote.id DESC LIMIT 1) current_vote ON current_vote.score > 0
+    WHERE relation.subject_id = ${postId}
+      AND NOT EXISTS (SELECT 1 FROM post_topic_alias_sources source
+        WHERE source.post_id = relation.subject_id AND source.topic_alias_id = relation.object_id
+          AND source.contributor_user_id = ${actor.id})),
+    topic_ids AS (
+      SELECT topic_id FROM post_explicit_topic_categories WHERE post_id = ${postId}
+      UNION
+      SELECT topic_id FROM post_data_point_topics WHERE post_id = ${postId}
+    )
+    SELECT COALESCE((
+      SELECT jsonb_agg(jsonb_build_object('topic_alias_id', topic_alias_id, 'id', id))
+      FROM actor_alias_relations
+    ), '[]'::jsonb) AS actor_alias_relations,
+      ARRAY(SELECT id FROM removed_alias_relations) AS removed_alias_relation_ids,
+      ARRAY(SELECT topic_id FROM topic_ids) AS topic_ids`)
+  const { rows } = await write<{
+    actor_alias_relations: Array<{ topic_alias_id: string; id: string | null }>
+    removed_alias_relation_ids: string[]
+    topic_ids: string[]
+  }>(statement, { query })
+  const aliases = rows[0]!.actor_alias_relations
+  const inputs = {
+    removedAliasRelations: rows[0]!.removed_alias_relation_ids.map(id => ({ id })),
+    topicIds: rows[0]!.topic_ids,
+  }
+  const missing = aliases.flatMap(row => (row.id ? [] : [row.topic_alias_id]))
+  const existing = aliases.flatMap(row => (row.id ? [{ id: row.id }] : []))
+  if (missing.length === 0) return { ...inputs, activeAliasRelations: existing }
   const inserted = await upsertEntityRelation(
     actor,
     relation,
@@ -43,7 +80,13 @@ export async function loadActorAliasRelations(
     missing.map(id => ({ id })),
     { query, ...relationWriteOptions },
   )
-  return [...existing, ...inserted.flatMap(row => (row.id ? [{ id: row.id }] : []))]
+  return {
+    ...inputs,
+    activeAliasRelations: [
+      ...existing,
+      ...inserted.flatMap(row => (row.id ? [{ id: row.id }] : [])),
+    ],
+  }
 }
 
 /** Reads topic rows sync already wrote. Data-point topics are inserted here when sync had none. */

@@ -83,7 +83,7 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
   `)
   const lift = lifts[0]
   assert(lift, 500, 'Copyright restriction lift was not recorded')
-  // ast-grep-ignore: no-three-sequential-awaits -- the immutable event precedes the restore intent, claimant notice, and confirmation effects in one transaction.
+  // ast-grep-ignore: no-three-sequential-awaits -- record the restriction-lift event before restore intent and claimant notice writes; apply confirmation effects after those reversal obligations complete
   await transaction(sql`/* liftCopyrightRestrictionWithoutSetter:event */
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id, copyright_restriction_id

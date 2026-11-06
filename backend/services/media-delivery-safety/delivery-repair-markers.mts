@@ -66,7 +66,7 @@ export async function reconcileDeliveryRepairMarker(marker: DeliveryRepairMarker
   `)
   const record = rows[0]
   if (!record) return
-  // ast-grep-ignore: no-three-sequential-awaits -- retain the placement fence before legal authority proof and fresh registry staging
+  // ast-grep-ignore: no-three-sequential-awaits -- The placement mutation lock must fence the authorization read; its allowed result selects the new registry delivery state before the repair marker is consumed.
   await lockImageDeliveryMutation(transaction, {
     placementIds: [record.placement_id],
     placementOnly: true,

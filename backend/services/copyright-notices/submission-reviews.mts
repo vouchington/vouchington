@@ -191,7 +191,7 @@ export async function reviewCopyrightAppeal(
     reviewIds.push(rows[0].id)
     if (decision.action === 'reverse') reversalRestrictionIds.push(decision.restrictionId)
   }
-  // ast-grep-ignore: no-three-sequential-awaits -- the delivery build takes the notice lock before the consequences write incident and staydown rows from the reviewed restrictions, and the lifecycle event follows both in that lock order
+  // ast-grep-ignore: no-three-sequential-awaits -- delivery construction must take notice locks before confirmation consequences write incident and staydown rows; record the lifecycle event before completed-outcome deliveries
   const noticeDeliveries = await buildCopyrightReviewOutcomeDeliveries(firstReviews, transaction)
   const staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
     appeal.copyright_notice_id,

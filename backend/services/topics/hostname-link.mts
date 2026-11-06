@@ -129,9 +129,8 @@ export async function linkHostnameToSourceTopic(
   options: QueryOptions = {},
 ): Promise<void> {
   return withTopicHostnameTransaction(options, async query => {
-    // ast-grep-ignore: no-three-sequential-awaits -- ownership locks precede clearing the old claim, which must precede assigning the new primary hostname.
+    // ast-grep-ignore: no-three-sequential-awaits -- Topic/hostname ownership locks must precede the RSS attachment lifecycle fence; clearing the previous claim and setting the primary hostname follow both.
     await lockTopicHostnameOwnership(query, [topicId], [hostnameId])
-    // ast-grep-ignore: no-three-sequential-awaits -- attachment must follow hostname ownership and precede the guarded hostname writes.
     await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     await clearOtherHostnameLinks(topicId, hostnameId, { query })
     await updateTopicHostnameId(topicId, hostnameId, query)
@@ -145,7 +144,6 @@ export async function setTopicHostnameLink(
   options: QueryOptions = {},
 ): Promise<void> {
   return withTopicHostnameTransaction(options, async query => {
-    // ast-grep-ignore: no-three-sequential-awaits -- ownership then attachment must precede validation and the guarded hostname writes.
     await lockTopicHostnameOwnership(query, [topicId], hostnameId ? [hostnameId] : [])
     await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     const transaction = { query }

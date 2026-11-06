@@ -36,7 +36,6 @@ export async function updateCommunityInTransaction(input: {
 async function applyLockedCommunityUpdate(
   input: Parameters<typeof updateCommunityInTransaction>[0],
 ) {
-  // ast-grep-ignore: no-three-sequential-awaits -- retain surface owner fences before the physical community row lock and its dependent update
   const surfaces = await prepublishChangedCommunitySurfaces(input)
   for (const surface of surfaces) {
     // oxlint-disable-next-line no-await-in-loop -- admission was declared and locked as one owner batch.

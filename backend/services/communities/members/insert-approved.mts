@@ -10,7 +10,6 @@ export async function insertApprovedCommunityMember(
   approvedById: string,
   options: QueryOptions,
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- capacity must be checked before admission; only a successful membership insertion consumes pending invitations
   await assertCommunityMembershipCapacity(userId, communityId, options)
   await writeCommunityMembershipMutation(
     sql`/* insertApprovedCommunityMember */
@@ -21,5 +20,5 @@ export async function insertApprovedCommunityMember(
     { userIds: [userId], communityIds: [communityId] },
     options,
   )
-  await deletePendingInvitesForMember(communityId, userId, options)
+  return deletePendingInvitesForMember(communityId, userId, options)
 }

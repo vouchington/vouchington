@@ -65,7 +65,7 @@ async function createDistribution(
   await using query = await beginTransaction()
   const target = await validateTarget(currentUser, input, query)
   const options = eagerOptions ?? parseSendFollowersInput((input.options as () => unknown)())
-  // ast-grep-ignore: no-three-sequential-awaits -- target.id keys the lock, the guard result gates the distribution insert, and that insert's id feeds the recipient insert; the lock stays its own statement so the guard reads after the previous holder committed
+  // ast-grep-ignore: no-three-sequential-awaits -- The target-keyed advisory lock must finish before assertCanDistribute rereads quota/audience; its recipient ids and the inserted distribution id feed recipient rows.
   await query(sql`/* createDistribution:lock */
     SELECT pg_advisory_xact_lock(hashtext(${dedupLockKey(currentUser.id, input.action, target.id)}))
   `)

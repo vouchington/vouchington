@@ -7,7 +7,7 @@ export async function persistDomainDiff(
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
 ): Promise<{ domainsAdded: number }> {
-  // ast-grep-ignore: no-three-sequential-awaits -- existing parent policy must be locked before child creation, then inheritance and feed rows follow in one transaction.
+  // ast-grep-ignore: no-three-sequential-awaits -- Lock existing affected hostname/ancestor rows before child creation; inheritance must read parent policy in a fresh statement after the lock wait.
   await lockExistingAffectedHostnames(query)
   await query(
     `/* syncDomainsWithDatabase */

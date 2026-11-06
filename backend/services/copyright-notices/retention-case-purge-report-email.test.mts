@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@voucha/test-helpers'
+import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import { describe, expect, it } from 'vitest'
 import {
   createTestEuParticipantCase,
@@ -179,6 +180,36 @@ describe('copyright case report coverage', () => {
     expect(await readCopyrightCaseThreadPurgeState(second.id)).toEqual({
       intake: false,
       link: false,
+      receipt: true,
+    })
+  })
+
+  it('propagates an intake deletion failure and lets the owner roll back both thread rows', async () => {
+    const scene = await createRetentionMinimalCase()
+    const intake = await createUnparsedCopyrightEmailIntake()
+    expect(
+      await linkCopyrightEmailIntakeToNotice({
+        intakeId: intake.id,
+        noticeId: scene.noticeId,
+        linkKind: 'thread',
+      }),
+    ).toBe(true)
+    const failure = new Error('injected final intake deletion failure')
+    await using query = await beginTransaction()
+    await expect(
+      deleteCopyrightCaseEmailThreadLinkPage(
+        rejectQuery(
+          query,
+          statement => statement.includes('/* deleteCopyrightCaseEmailThreadIntake */'),
+          failure,
+        ),
+        scene.noticeId,
+      ),
+    ).rejects.toBe(failure)
+    await query.rollback()
+    expect(await readCopyrightCaseThreadPurgeState(intake.id)).toEqual({
+      intake: true,
+      link: true,
       receipt: true,
     })
   })

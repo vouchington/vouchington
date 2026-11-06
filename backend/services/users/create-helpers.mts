@@ -27,7 +27,7 @@ export const createUser = async ({
 }: CreateUserOptions & { referrerId?: string | null }): Promise<PrivateUser> => {
   if (oauthAccount) {
     await using query = await beginTransaction()
-    // ast-grep-ignore: no-three-sequential-awaits -- user creation must stay ordered in one transaction
+    // ast-grep-ignore: no-three-sequential-awaits -- create the user before linking OAuth and granting signup consents; finish both writes before loading the private user and committing
     const id = await createUserId({ query }, referrerId)
     await connectOAuthAccountToUser(
       oauthAccount.provider,

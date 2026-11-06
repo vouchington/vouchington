@@ -39,7 +39,7 @@ export async function createTopicRecommendationRelations(
   const hrefs = [...hostnames.map(hostname => `https://${hostname.hostname}/`), ...typedUrls]
   if (hrefs.length === 0) return []
   const assessed = options.assessedUrls ?? (await assessUrls(hrefs))
-  // ast-grep-ignore: no-three-sequential-awaits -- topic ownership precedes resolving transaction-private hostname ids, then the resolved hostname ownership set is locked.
+  // ast-grep-ignore: no-three-sequential-awaits -- Topic ownership must precede resolving private hostname ids; those ids select hostname ownership locks before conflict checks and URL writes.
   await lockTopicHostnameMutations(options.query, [topic.id])
   const resolved = await prepareUrlHostnamesForOwnedMutation(currentUser.id, hrefs, options.query)
   await lockHostnameOwnership(options.query, [

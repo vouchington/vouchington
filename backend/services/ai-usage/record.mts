@@ -45,14 +45,12 @@ export interface RecordAiUsageOptions {
 export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void> {
   if (options.createdAt && needsAiUsageMonthCreation(options.createdAt, new Date())) {
     if (options.query) {
-      // ast-grep-ignore: no-three-sequential-awaits -- FK parent locks must precede partition DDL, and the INSERT must follow creation in the same transaction.
       const tierId = await lockAiUsageForeignKeyParents(options.query, options)
       await ensureAiUsageMonthForWrite(options.query, options.createdAt)
-      await insertAiUsage(options, options.query, tierId)
-      return
+      return insertAiUsage(options, options.query, tierId)
     }
     await using transaction = await beginTransaction()
-    // ast-grep-ignore: no-three-sequential-awaits -- FK parent locks must precede partition DDL, and the INSERT must follow creation before commit.
+    // ast-grep-ignore: no-three-sequential-awaits -- FK-parent/table locks must precede monthly partition DDL; the usage INSERT consumes the created partition and registered tier id.
     const tierId = await lockAiUsageForeignKeyParents(transaction, options)
     await ensureAiUsageMonthForWrite(transaction, options.createdAt)
     await insertAiUsage(options, transaction, tierId)

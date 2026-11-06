@@ -142,7 +142,6 @@ async function createSource(
   }
 
   assertWithinFeedBudget(signal)
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   await assertContributionLimit?.()
   assertWithinFeedBudget(signal)
 

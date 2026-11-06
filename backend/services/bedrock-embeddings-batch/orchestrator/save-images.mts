@@ -31,7 +31,6 @@ export async function applyImageBatchUpdates(items: ImageBatchUpdateItem[]): Pro
 
   // Lock image rows in ascending id order before updating their vectors.
   const imageEntityIds = items.map(item => item.entity_id)
-  // ast-grep-ignore: no-three-sequential-awaits
   await query(
     `/* applyImageBatchUpdates lockRows */
       SELECT id FROM images

@@ -20,14 +20,22 @@ export async function assertEntityRelationUpsertAllowed(
   objects: Array<UpsertEntityTypes | EntityIdentifier>,
   options?: UpsertEntityRelationsOptions,
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- guards intentionally run in their established order
-  await assertTopicParentRelationsAreValid(relation, subject, objects)
-  await assertUrlObjectsAreValid(relation, objects, creator?.id ?? null, options)
-  await assertPublisherTypeObjectsAreValid(relation, subject, objects)
-  await assertUserTagObjectsAreValid(relation, objects)
-  await assertPostRelatedUrlsAllowed(creator, relation, subject, objects, options)
+  if (relation.object_type === 'url') {
+    await assertUrlObjectsAreValid(relation, objects, creator?.id ?? null, options)
+    if (relation.subject_type === 'post' && relation.predicate === 'related') {
+      await assertPostRelatedUrlsAllowed(creator, relation, subject, objects, options)
+    }
+  } else if (relation.object_type === 'topic') {
+    if (relation.subject_type === 'topic' && relation.predicate === 'parent') {
+      await assertTopicParentRelationsAreValid(relation, subject, objects)
+    } else if (relation.subject_type === 'topic' && relation.predicate === 'publisher_type') {
+      await assertPublisherTypeObjectsAreValid(relation, subject, objects)
+    } else if (relation.subject_type === 'user' && relation.predicate === 'category') {
+      await assertUserTagObjectsAreValid(relation, objects)
+    }
+  }
   if (relation.table_name === 'relation__post__related__url') return
-  await assertRelationLimit(
+  return assertRelationLimit(
     relation,
     subject.id,
     objects.map(object => object.id),

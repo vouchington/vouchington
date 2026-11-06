@@ -49,7 +49,6 @@ export async function applyBatchUpdates(
   // Without this, a concurrent transaction that already holds an entity row lock and then
   // needs an embedding lock can deadlock with us if we hold the embedding lock first.
   const entityIds = items.map(item => item.entity_id)
-  // ast-grep-ignore: no-three-sequential-awaits
   await query(
     `/* applyBatchUpdates lockRows */
       /* deadlock-safe: ORDER BY id is the primary key of every EMBEDDING_TABLES entry; the interpolated name hides that from the rule */
