@@ -24,7 +24,8 @@ export function buildStorySourcePageQuery(input: {
   const resumeSlot = input.cursor?.feed_open ? 1 : 0
   const laterPage = input.pageSize - resumeSlot
   const laterLimit = laterPage + 1
-  const staff = seesNonPublicStoryFeeds(input.currentUser)
+  const staff =
+    seesNonPublicStoryFeeds(input.currentUser) && input.options.public_eligibility_only !== true
   const filters: SQLStatement[] = []
   appendStorySourcePageFilters(filters, {
     currentUser: input.currentUser,
