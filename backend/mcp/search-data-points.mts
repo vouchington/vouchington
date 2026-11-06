@@ -1,6 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import { searchDataPoints } from '@services/posts/search/data-point-page'
+import { getPostByAnyCachedBatch } from '@services/entity-fetch'
+import { getPostIds } from '@services/posts/search/get-ids'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import {
   DATA_POINT_VERTICALS,
@@ -109,23 +110,47 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         return { success: false, error: 'Topic not found' }
       }
 
+      const requestedLimit = args.limit ?? 25
+      const limit = Math.min(Math.max(requestedLimit, 1), 25)
       const page = await findPageOrNull(args.after, () =>
-        searchDataPoints({
-          topic_id: topic?.id,
-          vertical: args.vertical,
-          result: args.result,
-          credit_score_range: args.credit_score_range,
-          limit: args.limit,
+        getPostIds(undefined, {
+          post_types: ['data_point'],
+          sort: 'new',
+          data_point_topic_ids: topic === undefined ? undefined : [topic.id],
+          data_point_vertical: args.vertical,
+          data_point_result: args.result,
+          data_point_credit_score_range: args.credit_score_range,
+          limit,
           after: args.after,
         }),
       )
       if (!page) return INVALID_CURSOR_RESULT
 
+      const posts = await getPostByAnyCachedBatch(page.results.map(result => result.id))
+      const byId = new Map(posts.flatMap(post => (post ? [[post.id, post] as const] : [])))
       const sanitizedResults = await Promise.all(
-        page.results.map(async result => ({
-          ...result,
-          title: await sanitizePromptInjection(result.title, { isTitle: true }),
-        })),
+        page.results
+          .flatMap(result => {
+            const post = byId.get(result.id)
+            if (!post) return []
+            return [
+              {
+                id: post.id,
+                title: post.title,
+                data_point_vertical: post.data_point_vertical ?? null,
+                structured_data:
+                  post.structured_data &&
+                  typeof post.structured_data === 'object' &&
+                  !Array.isArray(post.structured_data)
+                    ? (post.structured_data as Record<string, unknown>)
+                    : {},
+              },
+            ]
+          })
+          .map(async result => ({
+            ...result,
+            title: await sanitizePromptInjection(result.title, { isTitle: true }),
+          })),
       )
 
       return {

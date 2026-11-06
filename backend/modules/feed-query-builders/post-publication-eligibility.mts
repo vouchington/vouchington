@@ -24,7 +24,6 @@ export type ViewerPostDiscoveryEligibilityOptions = {
   currentUserId: string
   includeArchivedCommunities?: boolean
   isAdministrator: boolean
-  storySourceStaff?: boolean
 }
 
 /** Builds recipient-independent state for notification reconciliation. */
@@ -75,7 +74,6 @@ function buildAnonymousPostEligibilityFilter(
   rootAlias: string,
   options: PublicPostEligibilityOptions | undefined,
   requireUnarchived: boolean,
-  includeStorySource = true,
 ): SQLStatement {
   assertSafeSqlAlias(candidateAlias)
   assertSafeSqlAlias(rootAlias)
@@ -101,44 +99,8 @@ function buildAnonymousPostEligibilityFilter(
     .append(
       buildCommunityAccessClause(rootAlias, null, options?.includeArchivedCommunities !== true),
     )
-  if (includeStorySource) {
-    statement.append(sql` AND `).append(buildStorySourceAccessClause(rootAlias))
-  }
-  return statement.append(sql`)`)
-}
-
-/**
- * Eligibility for a page that already read a live discoverable source, or that
- * only reads non-story posts. The story-source EXISTS reads RSS state through
- * `view_rss_feed_current_states`; keeping it here would scan that view per child.
- */
-export function buildSourceBoundPostEligibilityFilter(
-  candidateAlias: string,
-  rootAlias: string,
-  viewer: { currentUserId: string; isAdministrator: boolean } | null,
-): SQLStatement {
-  if (!viewer) {
-    return buildAnonymousPostEligibilityFilter(candidateAlias, rootAlias, undefined, true, false)
-  }
-  const directEligibility = buildPostAccessEligibilityFilter(
-    candidateAlias,
-    rootAlias,
-    {
-      currentUserId: viewer.currentUserId,
-      isModerationStaff: viewer.isAdministrator,
-      requireActiveCommunity: true,
-    },
-    false,
-  )
-  const statement = sql`(`
-    .append(directEligibility)
     .append(sql` AND `)
-    .append(buildDiscoveryStateClause(candidateAlias, rootAlias))
-  if (!viewer.isAdministrator) {
-    statement
-      .append(sql` AND `)
-      .append(buildRootDiscoveryAudienceAccessClause(rootAlias, viewer.currentUserId))
-  }
+    .append(buildStorySourceAccessClause(rootAlias))
   return statement.append(sql`)`)
 }
 
@@ -152,7 +114,6 @@ export function buildViewerPostDiscoveryEligibilityFilter(
     currentUserId: options.currentUserId,
     isModerationStaff: options.isAdministrator,
     requireActiveCommunity: options.includeArchivedCommunities !== true,
-    storySourceStaff: options.storySourceStaff,
   })
   const statement = sql`(`
     .append(directEligibility)

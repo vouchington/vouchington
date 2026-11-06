@@ -26,6 +26,8 @@ type PostSearchFilterOptions = {
   semantic_search_query?: string // Embedding similarity search
   post_types?: PostType[] // Filter by post type
   data_point_vertical?: string // Filter data_point posts by vertical (e.g. 'credit_card', 'bank_account')
+  data_point_result?: string // Filter data_point posts by structured_data.result
+  data_point_credit_score_range?: string // Filter data_point posts by structured_data.credit_score_range
   story_id?: string // Filter posts linked to a specific story
   has_hacker_news_references?: boolean // Posts whose URL is seen or mentioned on Hacker News (true) or not (false)
   include_topic_recommendations?: boolean // Internal opt-in for dedicated recommendation flows

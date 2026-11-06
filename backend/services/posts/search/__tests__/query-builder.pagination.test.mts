@@ -209,44 +209,40 @@ describe('query-builder (pagination and moderation)', () => {
     expect(query.sql).toContain('approved_at IS NOT NULL')
   })
 
-  it('lets staff story search include a hidden live feed', () => {
+  it('keeps a moderator story search on the discoverable source clause', () => {
     const userId = '123e4567-e89b-12d3-a456-426614174000'
     const moderator = buildPostSearchQuery(
       { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
       { post_types: ['story'] },
     )
     expect(moderator.sql).toContain('story_posts post_story')
-    expect(moderator.sql).toContain('rf.deleted_at IS NULL')
-    expect(moderator.sql).not.toContain('is_discoverable')
+    expect(moderator.sql).toContain('rss_feed_items story_item')
+    expect(moderator.sql).toContain('is_discoverable')
+    expect(moderator.sql).toContain('posts.post_type = ')
+    expect(moderator.sql).not.toContain('post_type = ANY')
+  })
 
+  it('keeps administrator, public-only, and story lookup search on the shared clause', () => {
+    const userId = '123e4567-e89b-12d3-a456-426614174000'
     const administrator = buildPostSearchQuery(
       { id: userId, roles: ['administrator'] } as unknown as PrivateUser,
       { post_types: ['story'] },
     )
-    expect(administrator.sql).toContain('story_posts post_story')
-    expect(administrator.sql).toContain('rf.deleted_at IS NULL')
-    expect(administrator.sql).not.toContain('is_discoverable')
+    expect(administrator.sql).not.toContain('story_posts')
     expect(administrator.sql).not.toContain('approved_at IS NOT NULL')
-  })
-
-  it('keeps mixed, public-only, and story lookup search on the public source filter', () => {
-    const userId = '123e4567-e89b-12d3-a456-426614174000'
-    const mixed = buildPostSearchQuery(
-      { id: userId, roles: ['administrator'] } as unknown as PrivateUser,
-      {},
-    )
-    expect(mixed.sql).not.toContain('story_posts')
 
     const publicOnly = buildPostSearchQuery(
       { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
       { post_types: ['story'], public_eligibility_only: true },
     )
+    expect(publicOnly.sql).toContain('story_posts post_story')
     expect(publicOnly.sql).toContain('is_discoverable')
 
     const lookup = buildPostSearchQuery(
       { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
       { post_types: ['story'], story_id: userId },
     )
+    expect(lookup.sql).toContain('story_posts post_story')
     expect(lookup.sql).toContain('is_discoverable')
   })
 })

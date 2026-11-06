@@ -13,7 +13,7 @@ const {
   getRevenue,
   getTopicDataPointInsights,
   getUserBookmarkCounts,
-  searchDataPoints,
+  getPostIds,
   searchTopicAliases,
   updateTopicRatingStats,
 } = services
@@ -38,45 +38,26 @@ export async function runEntityTailScenarios(): Promise<void> {
     searchTopicAliases({ prefixQuery: 'seed', limit: 25 }),
   )
 
-  // Data point search — JSONB + EXISTS subquery
-  registerScenarioContract('search-data-points', {
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'communities', max: 80 },
-      { kind: 'maxProcessedRows', relation: 'posts', max: 2000 },
-      { kind: 'usesIndexes', indexes: ['idx_communities__live_public_id'] },
-    ],
-    crossPartition: {
-      posts: 'A data-point page reads child posts that can sit in more than one id partition.',
-    },
-  })
-  await runAndCapture('search-data-points', () =>
-    searchDataPoints({ topic_id: seedTopicId, limit: 25 }),
-  )
+  // Seeded data points are credit_card, so this vertical matches none of them.
   registerScenarioContract('search-data-points-filtered-page', {
+    allowEmptyResult: true,
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'communities', max: 80 },
-      { kind: 'maxProcessedRows', relation: 'posts', max: 2000 },
-      { kind: 'usesIndexes', indexes: ['idx_communities__live_public_id'] },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 500 },
+      { kind: 'usesIndexes', indexes: ['idx_posts__data_point_vertical'] },
     ],
     crossPartition: {
       posts:
-        'A filtered data-point page still reads the unfiltered child window across id partitions.',
+        'A selective data-point vertical reads the 30-day id window, which can span id partitions.',
     },
   })
   await runAndCapture('search-data-points-filtered-page', () =>
-    searchDataPoints({ vertical: 'bank_account', limit: 25 }),
+    getPostIds(undefined, {
+      post_types: ['data_point'],
+      data_point_vertical: 'bank_account',
+      sort: 'new',
+      limit: 21,
+    }),
   )
-  registerScenarioContract('search-data-points-live-page', {
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'communities', max: 80 },
-      { kind: 'maxProcessedRows', relation: 'posts', max: 2000 },
-      { kind: 'usesIndexes', indexes: ['idx_communities__live_public_id'] },
-    ],
-    crossPartition: {
-      posts: 'A data-point page reads child posts that can sit in more than one id partition.',
-    },
-  })
-  await runAndCapture('search-data-points-live-page', () => searchDataPoints({ limit: 25 }))
 
   // User bookmark counts — dynamic UNION ALL of COUNT queries across bookmark tables
   await runAndCapture('user-bookmark-counts', () => getUserBookmarkCounts(seedUser.id))
