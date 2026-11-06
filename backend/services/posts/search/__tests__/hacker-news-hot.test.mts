@@ -18,6 +18,9 @@ import {
   insertSemanticWindowPosts,
 } from '../../../../test-helpers/post-semantic-window.mts'
 
+// Future-dated posts do not decay, so hot cursors stay stable across SQL NOW() calls.
+const NON_DECAYING_INSTANT = Date.parse('9999-12-31T23:59:59Z')
+
 describe('Hacker News hot search bounds', () => {
   it('pages inside the newest hot cohort for every window and ignores hidden HN', async () => {
     const user = await createTestUserDirect()
@@ -34,11 +37,10 @@ describe('Hacker News hot search bounds', () => {
       references_visible: true,
     })
     try {
-      // Zero-score cohort members keep their cursor stable across SQL NOW() calls.
-      for (const [index, score] of [0, 0, 100].entries()) {
+      for (const [index, score] of [1, 1, 100].entries()) {
         const id = await insertTestPost({
           createdById: user.id,
-          createdAt: new Date(Date.now() - (index + 1) * 3_600_000),
+          createdAt: new Date(NON_DECAYING_INSTANT - (index + 1) * 3_600_000),
           title: `HN hot bound ${crypto.randomUUID()}`,
           slug: `hn-hot-bound-${crypto.randomUUID()}`,
           markdown: 'Hacker News hot cohort fixture',
@@ -115,6 +117,7 @@ describe('Hacker News hot search bounds', () => {
         clearanceStatus: 'approved',
       })
       ids.push(approved)
+      await setPostVotesScoreUp(approved, 1)
       const pending = await insertTestPost({
         createdById: owner.id,
         createdAt: new Date(Date.now() - 2 * 60_000),
@@ -124,6 +127,16 @@ describe('Hacker News hot search bounds', () => {
         clearanceStatus: 'pending',
       })
       ids.push(pending)
+      await setPostVotesScoreUp(pending, 1)
+      const zeroNet = await insertTestPost({
+        createdById: owner.id,
+        createdAt: new Date(Date.now() - 60_000),
+        title: crypto.randomUUID(),
+        slug: crypto.randomUUID(),
+        markdown: 'Net-zero cohort fixture',
+        clearanceStatus: 'approved',
+      })
+      ids.push(zeroNet)
       await setHackerNewsReferenceFlagsForTest(ids, [])
       const options = {
         user_id: owner.id,
@@ -156,7 +169,13 @@ describe('Hacker News hot search bounds', () => {
         hackerNewsVisibilityConfig.waitForInitialization(),
       ])
       const embedding = createSemanticWindowEmbedding()
-      const ids = await insertSemanticWindowPosts(user.id, 2, embedding)
+      const ids = await insertSemanticWindowPosts(
+        user.id,
+        2,
+        embedding,
+        new Date(NON_DECAYING_INSTANT),
+      )
+      await Promise.all(ids.map(id => setPostVotesScoreUp(id, 1)))
       const query = crypto.randomUUID()
       await seedSearchEmbeddingCache(query, embedding)
       await setHackerNewsReferenceFlagsForTest(ids, [])

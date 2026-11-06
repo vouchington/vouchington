@@ -36,7 +36,7 @@ export function appendPostSearchWhereClause(
   // A materialized eligible cohort already applied these filters in this statement's snapshot.
   if (!paginationOnly) {
     appendBaseFilters(filters, currentUser, options)
-    if (sort === 'hot') filters.push(sql`posts.votes_score_net > 0`)
+    if (options.sort === 'hot') filters.push(sql`posts.votes_score_net > 0`)
     appendTopicFilters(filters, options)
     appendSimpleColumnFilters(filters, options)
     appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })
