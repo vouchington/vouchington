@@ -1,65 +1,42 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
-
-import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import {
-  workflowHasMainPushTrigger,
-  workflowRunSubscriptions,
-  workflowTriggerNames,
-} from '../test-helpers/workflow-fixtures.mts'
-import { fixMain, fixMainPrompt, parsedMain } from '../test-helpers/fix-main.fixtures.mts'
+import { fixMainSubscriptionViolations, type OpsWorkflow } from '../../ci/workflow-ops-policy.mts'
+import { fixMainPrompt, parsedMain } from '../test-helpers/fix-main.fixtures.mts'
 
-type Workflow = {
-  name?: string
-  on?: unknown
-}
-
-const workflowDir = '.github/workflows'
-const recoveryOnlyWorkflowNames = ['Dispatch completed deploy']
-const workflowPaths = readdirSync(workflowDir).flatMap(file =>
-  file.endsWith('.yml') || file.endsWith('.yaml') ? [join(workflowDir, file)] : [],
-)
-
-function readWorkflow(path: string): Workflow {
-  return load(readFileSync(path, 'utf8')) as Workflow
-}
-
-function mainPushWorkflowNames(): string[] {
-  return workflowPaths.flatMap(path => {
-    const workflow = readWorkflow(path)
-    if (!workflowHasMainPushTrigger(workflow) || !workflow.name) return []
-    return [workflow.name]
-  })
-}
-
-function nightlyRecoveryWorkflowNames(): string[] {
-  return workflowPaths.flatMap(path => {
-    const workflow = readWorkflow(path)
-    const triggers = workflowTriggerNames(workflow.on)
-    if (
-      workflow.name !== 'Nightly' ||
-      !triggers.includes('schedule') ||
-      !triggers.includes('workflow_dispatch')
-    ) {
-      return []
-    }
-    return [workflow.name]
-  })
-}
+const subscriptionFixtures = {
+  '.github/workflows/main.yml': {
+    name: 'Main CI (backend)',
+    on: { push: { branches: ['main'] } },
+  },
+  '.github/workflows/release.yml': {
+    name: 'Release CI',
+    on: { push: { branches: ['release'] } },
+  },
+  '.github/workflows/nightly.yml': {
+    name: 'Nightly',
+    on: { schedule: [{ cron: '0 0 * * *' }], workflow_dispatch: {} },
+  },
+  '.github/workflows/fix-main.yml': {
+    on: {
+      workflow_run: {
+        workflows: ['Main CI (backend)', 'Nightly', 'Dispatch completed deploy'],
+      },
+    },
+  },
+} satisfies Record<string, OpsWorkflow>
 
 describe('fix-main workflow', () => {
   it('subscribes to main push workflows, Nightly, and the completed-deploy dispatcher', () => {
-    const on = load(fixMain) as Workflow
-    const subscribed = workflowRunSubscriptions(on.on)
-    const expected = [
-      ...mainPushWorkflowNames(),
-      ...nightlyRecoveryWorkflowNames(),
-      ...recoveryOnlyWorkflowNames,
-    ]
-
-    expect(expected.length).toBeGreaterThan(0)
-    expect([...subscribed].toSorted()).toEqual([...expected].toSorted())
+    expect(fixMainSubscriptionViolations(subscriptionFixtures)).toEqual([])
+    expect(
+      fixMainSubscriptionViolations({
+        ...subscriptionFixtures,
+        '.github/workflows/fix-main.yml': {
+          on: { workflow_run: { workflows: ['Nightly', 'Dispatch completed deploy'] } },
+        },
+      }),
+    ).toEqual([
+      '.github/workflows/fix-main.yml workflow_run subscriptions differ: Dispatch completed deploy, Nightly',
+    ])
   })
 
   it('finds related open PRs or issues before dispatching, without gating on them', () => {
