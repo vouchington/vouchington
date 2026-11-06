@@ -2341,6 +2341,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_retained_copyright_notice_identity_residual()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE retained_copyright_notice_identities SET case_deleted_at = clock_timestamp() WHERE id = OLD.id;\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
     },
+    "fn_update_rss_feed_item_source_story_id()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_source_story_id()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE rss_feed_item_sources AS sources\n  SET story_id = items.story_id\n  FROM inserted\n  JOIN rss_feed_items AS items ON items.id = inserted.rss_feed_item_id\n  WHERE sources.rss_feed_id = inserted.rss_feed_id\n    AND sources.rss_feed_item_id = inserted.rss_feed_item_id\n    AND sources.story_id IS DISTINCT FROM items.story_id;\n  RETURN NULL;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
     "fn_update_rss_feed_item_sources_story_id()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_sources_story_id()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE rss_feed_item_sources\n  SET story_id = NEW.story_id\n  WHERE rss_feed_item_id = NEW.id\n    AND story_id IS DISTINCT FROM NEW.story_id;\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
@@ -131018,8 +131022,11 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copy_rss_feed_item_source_story_id": {
-          "definition": "CREATE TRIGGER trigger_copy_rss_feed_item_source_story_id BEFORE INSERT OR UPDATE OF story_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_ensure_rss_feed_item_source_story_id()"
+        "trigger_ensure_rss_feed_item_source_story_id": {
+          "definition": "CREATE TRIGGER trigger_ensure_rss_feed_item_source_story_id BEFORE UPDATE OF story_id ON public.rss_feed_item_sources FOR EACH ROW WHEN ((pg_trigger_depth() = 0)) EXECUTE FUNCTION fn_ensure_rss_feed_item_source_story_id()"
+        },
+        "trigger_update_rss_feed_item_source_story_id": {
+          "definition": "CREATE TRIGGER trigger_update_rss_feed_item_source_story_id AFTER INSERT ON public.rss_feed_item_sources REFERENCING NEW TABLE AS inserted FOR EACH STATEMENT EXECUTE FUNCTION fn_update_rss_feed_item_source_story_id()"
         }
       },
       "uniqueConstraints": {}
