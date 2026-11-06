@@ -1,10 +1,10 @@
+import { TOPIC_RECOMMENDATION_POST_SCHEMA } from './topic-recommendation-tool-support.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getPostsByAnyBatch } from '@services/posts'
 import {
   searchTopicRecommendations,
   type TopicRecommendationStatus,
 } from '@services/topic-recommendations'
-import type { PublicTopicRecommendationPost } from '@services/topic-recommendations/public-projection'
 import type { BasicUser } from '@services/users/types'
 import { pageInfoSchema, pageInputProperties, type McpPageLimit } from './mcp-read-output.mts'
 import {
@@ -19,7 +19,7 @@ import { clampToolLimit } from './search-system.mts'
 import {
   listedRecommendations,
   toMcpRecommendations,
-  MCP_TOPIC_RECOMMENDATION_READ_SCHEMA,
+  type McpTopicRecommendationPost,
 } from './topic-recommendation-read-output.mts'
 
 type ToolArgs = { status?: TopicRecommendationStatus; q?: string; limit?: number; after?: string }
@@ -34,7 +34,7 @@ type ToolResult =
   | {
       success: true
       results: RecommendationReference[]
-      posts: Record<string, PublicTopicRecommendationPost>
+      posts: Record<string, McpTopicRecommendationPost>
       page_info: SearchPageInfo
     }
   | InvalidCursorResult
@@ -82,7 +82,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           post_type: { const: 'topic_recommendation' },
         }),
       },
-      posts: { type: 'object', additionalProperties: MCP_TOPIC_RECOMMENDATION_READ_SCHEMA },
+      posts: { type: 'object', additionalProperties: TOPIC_RECOMMENDATION_POST_SCHEMA },
       page_info: pageInfoSchema(),
     }),
   },
