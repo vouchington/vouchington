@@ -1,4 +1,4 @@
-import { buildAbsoluteUrl, SITE_NAME } from './constants'
+import { buildAbsoluteUrl } from './constants'
 import type { JsonLd as StructuredDataValue } from '@vouchington/utils/json-ld'
 
 interface CommentSchema {
@@ -36,9 +36,8 @@ function buildAuthor(
   authorName: string | null | undefined,
   authorUrl: string | undefined,
 ): Record<string, unknown> {
-  if (!authorName) {
-    return { author: { '@type': 'Organization', name: SITE_NAME, url: buildAbsoluteUrl('/') } }
-  }
+  // Anonymous and unidentified posts omit author so the page is not credited to Voucha.
+  if (!authorName) return {}
   const absoluteAuthorUrl = authorUrl ? buildAbsoluteUrl(authorUrl) : undefined
   return {
     author: {
