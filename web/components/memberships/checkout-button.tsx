@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Checkout button ID derives from the plan slug prop; ast-grep still bans inline calls in data-pw. */
+/* oxlint-disable no-mistakes/playwright-literals -- Checkout button ID interpolates the plan slug; one substitution is the ast-grep limit, so it cannot be a single literal. */
 'use client'
 
 import { useState } from 'react'
@@ -15,7 +15,6 @@ interface CheckoutButtonProps {
 export function CheckoutButton({ planSlug, productId, planName, onCheckout }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const buttonTestId = `subscribe-to-${planSlug}-button`
 
   async function startCheckout() {
     setLoading(true)
@@ -54,7 +53,7 @@ export function CheckoutButton({ planSlug, productId, planName, onCheckout }: Ch
         loading={loading}
         disabled={loading}
         onClick={startCheckout}
-        data-pw={buttonTestId}
+        data-pw={`subscribe-to-${planSlug}-button`}
       >
         {loading ? 'Loading...' : `Subscribe to ${planName}`}
       </Button>
