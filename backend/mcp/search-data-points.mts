@@ -129,28 +129,24 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       const posts = await getPostByAnyCachedBatch(page.results.map(result => result.id))
       const byId = new Map(posts.flatMap(post => (post ? [[post.id, post] as const] : [])))
       const sanitizedResults = await Promise.all(
-        page.results
-          .flatMap(result => {
-            const post = byId.get(result.id)
-            if (!post) return []
-            return [
-              {
-                id: post.id,
-                title: post.title,
-                data_point_vertical: post.data_point_vertical ?? null,
-                structured_data:
-                  post.structured_data &&
-                  typeof post.structured_data === 'object' &&
-                  !Array.isArray(post.structured_data)
-                    ? (post.structured_data as Record<string, unknown>)
-                    : {},
-              },
-            ]
-          })
-          .map(async result => ({
-            ...result,
-            title: await sanitizePromptInjection(result.title, { isTitle: true }),
-          })),
+        page.results.flatMap(result => {
+          const post = byId.get(result.id)
+          if (!post) return []
+          const structuredData =
+            post.structured_data &&
+            typeof post.structured_data === 'object' &&
+            !Array.isArray(post.structured_data)
+              ? (post.structured_data as Record<string, unknown>)
+              : {}
+          return [
+            sanitizePromptInjection(post.title, { isTitle: true }).then(title => ({
+              id: post.id,
+              title,
+              data_point_vertical: post.data_point_vertical ?? null,
+              structured_data: structuredData,
+            })),
+          ]
+        }),
       )
 
       return {
