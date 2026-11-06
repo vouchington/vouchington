@@ -22,8 +22,14 @@ export async function seedPosts(count = 10_000): Promise<void> {
       const batchIndex = i / 500
       await diagnostics.operation('batch', batchIndex, async () => {
         const batch = Math.min(500, count - i)
-        const values: unknown[] = []
-        const rows: string[] = []
+        const ids: string[] = []
+        const postTypes: string[] = []
+        const titles: string[] = []
+        const markdowns: string[] = []
+        const userIds: string[] = []
+        const hashes: Buffer[] = []
+        const verticals: (string | null)[] = []
+        const structuredDataValues: (string | null)[] = []
         for (let j = 0; j < batch; j++) {
           const idx = i + j
           const id = seedUuid(idx, '05')
@@ -42,33 +48,30 @@ export async function seedPosts(count = 10_000): Promise<void> {
                 ],
               })
             : null
-          values.push(
-            id,
-            postType,
-            title,
-            markdown,
-            userId,
-            hash,
-            hash,
-            dataPointVertical,
-            structuredData,
-          )
-          const base = values.length - 8
-          rows.push(
-            `($${base}::uuid, $${base + 1}::post_types, $${base + 2}::text, $${base + 3}::text, $${base + 4}::uuid, $${base + 5}::bytea, $${base + 6}::bytea, $${base + 7}::text, $${base + 8}::jsonb)`,
-          )
+          ids.push(id)
+          postTypes.push(postType)
+          titles.push(title)
+          markdowns.push(markdown)
+          userIds.push(userId)
+          hashes.push(hash)
+          verticals.push(dataPointVertical)
+          structuredDataValues.push(structuredData)
         }
         const { rows: changedPosts } = await diagnostics.operation('insert', batchIndex, () =>
           query<{ id: string; change_id: string }>(
             `/* seedExplainData */
              WITH seeded AS MATERIALIZED (
                SELECT input.id, input.post_type, input.title, input.markdown,
-                 input.created_by_id, input.embedding_hash, input.moderation_hash,
-                 input.data_point_vertical, input.structured_data, uuidv7() AS change_id
-               FROM (VALUES ${rows.join(', ')}) AS input (
-                 id, post_type, title, markdown, created_by_id, embedding_hash,
-                 moderation_hash, data_point_vertical, structured_data
-               )
+                 input.created_by_id, input.hash AS embedding_hash,
+                 input.hash AS moderation_hash, input.data_point_vertical,
+                 input.structured_data, input.ordinal, uuidv7() AS change_id
+               FROM UNNEST($1::uuid[], $2::post_types[], $3::text[], $4::text[],
+                 $5::uuid[], $6::bytea[], $7::text[], $8::jsonb[])
+                 WITH ORDINALITY AS input (
+                   id, post_type, title, markdown, created_by_id, hash,
+                   data_point_vertical, structured_data, ordinal
+                 )
+               ORDER BY input.ordinal
              ), changed AS (
                INSERT INTO posts (
                  created_via, id, post_type, title, markdown, created_by_id,
@@ -79,7 +82,7 @@ export async function seedPosts(count = 10_000): Promise<void> {
                    embedding_hash, moderation_hash, data_point_vertical, structured_data,
                    1, uuid_extract_timestamp(change_id), uuid_extract_timestamp(change_id)
                  FROM seeded
-               WHERE TRUE
+               WHERE TRUE ORDER BY ordinal
                ON CONFLICT (id) DO UPDATE SET
                  clearance_version = posts.clearance_version + 1,
                  clearance_changed_at = EXCLUDED.clearance_changed_at,
@@ -95,7 +98,7 @@ export async function seedPosts(count = 10_000): Promise<void> {
              )
              SELECT changed.id, seeded.change_id
              FROM seeded JOIN changed ON seeded.id = changed.id`,
-            values,
+            [ids, postTypes, titles, markdowns, userIds, hashes, verticals, structuredDataValues],
           ),
         )
         // The history author trigger must see the post, so append history in a separate statement.
