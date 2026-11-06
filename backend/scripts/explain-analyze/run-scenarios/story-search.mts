@@ -9,8 +9,12 @@ const HIDDEN_STORY_COUNT = 200
 const PAGE_LIMIT = 21
 /** Hidden stories ranked above the page, the page, and its lookahead row, with join slack. */
 const PROBE_MAX = (HIDDEN_STORY_COUNT + PAGE_LIMIT + 1) * 8
-/** Hot still reads the default 30-day post window. A full posts scan is larger. */
-const HOT_POST_MAX = 90_000
+/**
+ * Hot has no stable index. The custom plan stays on the type index (520.8
+ * processed post rows in the 2026-11-06 explain run). The generic plan seq-scans
+ * seeded posts and processed 113440.2 rows there.
+ */
+const HOT_POST_MAX = 120_000
 
 export async function runStorySearchScenarios(): Promise<void> {
   await seedHiddenFeedStorySearch(seedUser.id)

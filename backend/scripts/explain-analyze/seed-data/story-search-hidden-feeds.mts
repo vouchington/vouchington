@@ -32,7 +32,8 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
   for (let index = 0; index < STORY_COUNT; index += 1) {
     const hidden = index < HIDDEN_STORY_COUNT
     postIds.push(seedUuidAtTimestamp(anchorMs + (STORY_COUNT - index) * 60_000, 910_000 + index))
-    itemIds.push(seedUuid(index, 'bb'))
+    // Current ids stay after the fixture's oldest rss item, which the rate-limit seed reads.
+    itemIds.push(seedUuidAtTimestamp(Date.now(), 930_000 + index))
     storyIds.push(seedUuid(index, 'bc'))
     titles.push(hidden ? 'Hidden feed story' : 'Visible feed story')
     votes.push(hidden ? 400 : 40)
