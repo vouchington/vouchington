@@ -16,7 +16,7 @@ import {
   type PrivatePostCollectionCursor,
 } from './private-collection-pagination.mts'
 
-export type VisiblePostCollectionRow = { entity_id: string; created_us: number }
+type VisiblePostCollectionRow = { entity_id: string; created_us: number }
 
 export type VisiblePostCollectionPage = {
   /** Eligible rows inside the raw membership window, in keyset order. */
