@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return { hasError: true }
   }
 
-  render(): ReactNode {
+  override render(): ReactNode {
     return this.state.hasError ? this.props.fallback : this.props.children
   }
 }

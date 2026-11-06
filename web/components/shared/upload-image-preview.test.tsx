@@ -11,8 +11,8 @@ describe('local upload preview', () => {
     vi.stubGlobal(
       'URL',
       class extends URL {
-        static createObjectURL = create
-        static revokeObjectURL = revoke
+        static override createObjectURL = create
+        static override revokeObjectURL = revoke
       },
     )
   })
