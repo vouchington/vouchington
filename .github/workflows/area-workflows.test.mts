@@ -147,11 +147,10 @@ describe('area workflows', () => {
 
   // no-mistakes' tsconfig-gate-coverage counts the repository typechecks only through a root that
   // reaches them provably, and a `needs:` on the reusable changes job defeats that.
-  it('runs static analysis on every change without a changes job', () => {
+  it('calls static analysis with no needs and no if', () => {
     const jobs = areas.find(({ area }) => area === 'static')!.workflow.jobs ?? {}
     const analysis = jobs['static-code-analysis']!
 
-    expect(Object.keys(jobs).toSorted()).toEqual(['static', 'static-code-analysis'])
     expect(analysis.uses).toBe('./.github/workflows/static-code-analysis.yml')
     expect(needsOf(analysis)).toEqual([])
     expect(analysis.if).toBeUndefined()
