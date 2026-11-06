@@ -1,23 +1,35 @@
 import { describe, expect, it } from 'vitest'
 import {
-  POST_SHARE_DENSE_DELIVERIES_PER_TARGET,
-  POST_SHARE_DENSE_TARGET_COUNT,
-  POST_SHARE_SPARSE_DELIVERIES_PER_TARGET,
-  POST_SHARE_SPARSE_TARGET_COUNT,
-  postShareSeedRows,
-} from './post-feed-shares.mts'
+  createOwnedPostShareSeedFixture,
+  readOwnedPostShareSeedRows,
+} from '@voucha/test-helpers/explain-post-share-seed-fixture'
+import { seedPostFeedShares } from './post-feed-shares.mts'
 
 describe('post feed share EXPLAIN fixtures', () => {
-  it('deduplicates repeated deliveries into the declared sparse and dense target counts', () => {
-    for (const [recipient, targetCount, repeats] of [
-      [0, POST_SHARE_SPARSE_TARGET_COUNT, POST_SHARE_SPARSE_DELIVERIES_PER_TARGET],
-      [1, POST_SHARE_DENSE_TARGET_COUNT, POST_SHARE_DENSE_DELIVERIES_PER_TARGET],
-    ] as const) {
-      const rows = postShareSeedRows(recipient, targetCount, repeats)
-      expect(rows).toHaveLength(targetCount * repeats)
-      expect(new Set(rows.map(row => row.postId)).size).toBe(targetCount)
-      expect(new Set(rows.map(row => row.id)).size).toBe(rows.length)
-      expect(rows.every(row => row.id.replaceAll('-', '').at(12) === '7')).toBe(true)
-    }
+  it('persists repeated deliveries under the declared sparse and dense owned targets', async () => {
+    const identities = await createOwnedPostShareSeedFixture()
+    await seedPostFeedShares(identities)
+    const { rows, follows } = await readOwnedPostShareSeedRows(identities)
+    const sparse = rows.filter(row => row.recipient_user_id === identities.recipientIds[0])
+    const dense = rows.filter(row => row.recipient_user_id === identities.recipientIds[1])
+    expect(rows).toHaveLength(4064)
+    expect(sparse).toHaveLength(64)
+    expect(new Set(sparse.map(row => row.post_id)).size).toBe(8)
+    expect(new Set(sparse.map(row => row.id)).size).toBe(64)
+    expect(sparse.every(row => row.id.replaceAll('-', '').at(12) === '7')).toBe(true)
+    expect(dense).toHaveLength(4000)
+    expect(new Set(dense.map(row => row.post_id)).size).toBe(1000)
+    expect(new Set(dense.map(row => row.id)).size).toBe(4000)
+    expect(dense.every(row => row.id.replaceAll('-', '').at(12) === '7')).toBe(true)
+    expect(rows.every(row => row.shared_by_id === identities.sharedById)).toBe(true)
+    expect(rows.every(row => identities.targetPostIds.includes(row.post_id))).toBe(true)
+    expect(rows.filter(row => row.recipient_user_id === identities.emptyRecipientId)).toEqual([])
+    expect(follows).toEqual([
+      {
+        subject_id: identities.emptyRecipientId,
+        object_id: identities.sharedById,
+        created_by_id: identities.emptyRecipientId,
+      },
+    ])
   })
 })

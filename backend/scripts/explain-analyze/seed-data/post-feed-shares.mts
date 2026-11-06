@@ -3,12 +3,21 @@ import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts
 
 export const POST_SHARE_SPARSE_TARGET_COUNT = 8
 export const POST_SHARE_DENSE_TARGET_COUNT = 1000
-export const POST_SHARE_SPARSE_DELIVERIES_PER_TARGET = 8
-export const POST_SHARE_DENSE_DELIVERIES_PER_TARGET = 4
+const POST_SHARE_SPARSE_DELIVERIES_PER_TARGET = 8
+const POST_SHARE_DENSE_DELIVERIES_PER_TARGET = 4
 export const POST_SHARE_EMPTY_USER_INDEX = 19_999
 const FIRST_TARGET_POST_INDEX = 60_000
 
-export function postShareSeedRows(
+type PostShareSeedIdentities = {
+  recipientIds: readonly [string, string]
+  sharedById: string
+  emptyRecipientId: string
+  targetPostIds: readonly string[]
+  deliveryIdBase: number
+}
+
+function postShareSeedRows(
+  identities: PostShareSeedIdentities,
   recipientIndex: number,
   targetCount: number,
   deliveriesPerTarget: number,
@@ -16,21 +25,34 @@ export function postShareSeedRows(
   return Array.from({ length: targetCount * deliveriesPerTarget }, (_, deliveryIndex) => {
     const sortAtMs = postSeedTimestampMs(0) - deliveryIndex * 1000
     return {
-      id: seedUuidAtTimestamp(sortAtMs, 1_000_000 + recipientIndex * 10_000 + deliveryIndex),
-      postId: seedUuid(FIRST_TARGET_POST_INDEX + (deliveryIndex % targetCount), '05'),
+      id: seedUuidAtTimestamp(
+        sortAtMs,
+        identities.deliveryIdBase + recipientIndex * 10_000 + deliveryIndex,
+      ),
+      postId: identities.targetPostIds[deliveryIndex % targetCount]!,
       sortAt: new Date(sortAtMs),
     }
   })
 }
 
-export async function seedPostFeedShares(): Promise<void> {
+export async function seedPostFeedShares(
+  identities: PostShareSeedIdentities = {
+    recipientIds: [seedUuid(0, '01'), seedUuid(1, '01')],
+    sharedById: seedUuid(2, '01'),
+    emptyRecipientId: seedUuid(POST_SHARE_EMPTY_USER_INDEX, '01'),
+    targetPostIds: Array.from({ length: POST_SHARE_DENSE_TARGET_COUNT }, (_, index) =>
+      seedUuid(FIRST_TARGET_POST_INDEX + index, '05'),
+    ),
+    deliveryIdBase: 1_000_000,
+  },
+): Promise<void> {
   console.log('Seeding repeated post feed share targets...')
   await using transaction = await beginTransaction()
   for (const [recipientIndex, targetCount, deliveriesPerTarget] of [
     [0, POST_SHARE_SPARSE_TARGET_COUNT, POST_SHARE_SPARSE_DELIVERIES_PER_TARGET],
     [1, POST_SHARE_DENSE_TARGET_COUNT, POST_SHARE_DENSE_DELIVERIES_PER_TARGET],
   ] as const) {
-    const rows = postShareSeedRows(recipientIndex, targetCount, deliveriesPerTarget)
+    const rows = postShareSeedRows(identities, recipientIndex, targetCount, deliveriesPerTarget)
     await transaction(
       `/* seedExplainData */ INSERT INTO post_feed_shares
         (recipient_user_id, id, shared_by_id, post_id, sort_at)
@@ -39,8 +61,8 @@ export async function seedPostFeedShares(): Promise<void> {
          AS delivery(id, post_id, sort_at)
        ON CONFLICT DO NOTHING`,
       [
-        seedUuid(recipientIndex, '01'),
-        seedUuid(2, '01'),
+        identities.recipientIds[recipientIndex],
+        identities.sharedById,
         rows.map(row => row.id),
         rows.map(row => row.postId),
         rows.map(row => row.sortAt),
@@ -50,7 +72,7 @@ export async function seedPostFeedShares(): Promise<void> {
   await transaction(
     `/* seedExplainData */ INSERT INTO relation__user__follow__user
       (subject_id, object_id, created_by_id) VALUES ($1, $2, $1) ON CONFLICT DO NOTHING`,
-    [seedUuid(POST_SHARE_EMPTY_USER_INDEX, '01'), seedUuid(2, '01')],
+    [identities.emptyRecipientId, identities.sharedById],
   )
   await transaction.commit()
 }
