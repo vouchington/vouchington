@@ -111,8 +111,10 @@ stopped at a setup step.
 - **Resource-pressure baseline** (temp I/O, spills, multi-batch hashes, excess WAL) is keyed by exact
   query/node/relation fingerprint, so a new fingerprint fails even if the warning total is
   unchanged. Excess WAL fails only when both captures show it: a checkpoint can add full page
-  images to one capture without a plan change. Temp spills and hash batches still fail from the
-  first capture. Add an entry only after inspecting the plan and deciding the pressure is intentional.
+  images to one capture without a plan change. A per-node WAL fingerprint and the query-wide
+  aggregate are that same threshold, so pressure that moves between those two reports still fails.
+  Temp spills and hash batches still fail from the first capture. Add an entry only after inspecting
+  the plan and deciding the pressure is intentional.
 - **CI identity gotcha.** CI always runs compare mode, so identities carry the plan mode suffix and
   a baseline key ending in `auto` is silently inert in CI. A real entry needs both the custom and
   generic keys; copy the identity from a CI artifact rather than local output.

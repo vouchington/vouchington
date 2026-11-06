@@ -81,6 +81,26 @@ describe('explain analyze paired results', () => {
     expect(() => analyzePairedResults('fixture.json', [cold], [cold], {})).toThrow('Sort:-:wal')
   })
 
+  it('rejects WAL pressure when a node fingerprint and the query aggregate trade places', () => {
+    const nodePressure = modifyTableWal(11, 5)
+    const aggregatePressure = modifyTableWal(9, 5)
+    expect(() =>
+      analyzePairedResults('fixture.json', [nodePressure], [aggregatePressure], {}),
+    ).toThrow('ModifyTable:-:wal')
+    expect(() =>
+      analyzePairedResults('fixture.json', [aggregatePressure], [nodePressure], {}),
+    ).toThrow('query:wal-aggregate')
+  })
+
+  it('allows one-capture aggregate WAL and pressure that moves between nodes', () => {
+    const aggregate = modifyTableWal(6, 6)
+    const calm = modifyTableWal(2, 2)
+    expect(() => analyzePairedResults('fixture.json', [aggregate], [calm], {})).not.toThrow()
+    expect(() =>
+      analyzePairedResults('fixture.json', [walResult(11)], [walResult(11, 'Hash')], {}),
+    ).not.toThrow()
+  })
+
   it('still rejects first-capture temp pressure when the repeat is clean', () => {
     const spilling = {
       name: 'spilling-query',
@@ -129,7 +149,7 @@ describe('explain analyze paired results', () => {
   })
 })
 
-function walResult(megabytes: number) {
+function walResult(megabytes: number, nodeType = 'Sort') {
   return {
     name: 'wal-query',
     scenario_id: 'wal-scenario',
@@ -137,10 +157,24 @@ function walResult(megabytes: number) {
     plan_cache_mode: 'auto' as const,
     query_text: 'UPDATE relation SET deleted_at = now()',
     plan: {
-      Plan: { 'Node Type': 'Sort', 'WAL Bytes': megabytes * 1024 * 1024 },
+      Plan: { 'Node Type': nodeType, 'WAL Bytes': megabytes * 1024 * 1024 },
     },
     execution_time_ms: 1,
     planning_time_ms: 1,
     timestamp: '2026-11-06T00:00:00.000Z',
+  }
+}
+
+function modifyTableWal(exclusiveMegabytes: number, childMegabytes: number) {
+  const bytes = 1024 * 1024
+  return {
+    ...walResult(exclusiveMegabytes, 'ModifyTable'),
+    plan: {
+      Plan: {
+        'Node Type': 'ModifyTable',
+        'WAL Bytes': (exclusiveMegabytes + childMegabytes) * bytes,
+        Plans: [{ 'Node Type': 'Insert', 'WAL Bytes': childMegabytes * bytes }],
+      },
+    },
   }
 }

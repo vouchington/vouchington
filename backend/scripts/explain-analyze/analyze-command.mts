@@ -1,8 +1,10 @@
 import type { ExplainResult } from '@data-stores/psql'
 import {
   analyzeResult,
+  confirmsRepeatedWalFingerprint,
   functionCallReports,
   getResourcePressureFingerprints,
+  isCheckpointSensitiveWalFingerprint,
 } from './plan-warnings.mts'
 import {
   RESOURCE_PRESSURE_BASELINE,
@@ -30,13 +32,10 @@ function assertResultsPresent(results: readonly ExplainResult[]): void {
   }
 }
 
-function isCheckpointSensitiveWalFingerprint(fingerprint: string): boolean {
-  return fingerprint === 'query:wal-aggregate' || fingerprint.endsWith(':wal')
-}
-
 // WAL bytes include checkpoint full-page images, so one capture can cross the threshold while the
-// repeated capture of the same plan does not. Fail only when both captures show that fingerprint.
-// A missing repeat stays fail-closed. Temp, spill, and hash-batch fingerprints still use the first.
+// repeated capture of the same plan does not. Fail when both captures show that fingerprint, or
+// when a node fingerprint and `query:wal-aggregate` trade places. A missing repeat stays
+// fail-closed. Temp, spill, and hash-batch fingerprints still use the first capture.
 function assertNoDisallowedRegressions(
   results: readonly ExplainResult[],
   repeatedResults: readonly ExplainResult[],
@@ -57,8 +56,7 @@ function assertNoDisallowedRegressions(
       .filter(
         fingerprint =>
           !isCheckpointSensitiveWalFingerprint(fingerprint) ||
-          repeatedWal === undefined ||
-          repeatedWal.has(fingerprint),
+          confirmsRepeatedWalFingerprint(fingerprint, repeatedWal),
       )
       .map(fingerprint => `${identity}=${fingerprint}`)
   })

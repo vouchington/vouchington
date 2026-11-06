@@ -123,6 +123,23 @@ export function getResourcePressureFingerprints(result: ExplainResult): string[]
   return fingerprints.toSorted()
 }
 
+export function isCheckpointSensitiveWalFingerprint(fingerprint: string): boolean {
+  return fingerprint === 'query:wal-aggregate' || fingerprint.endsWith(':wal')
+}
+
+// Those two reports are one query-wide threshold. The paired gate treats a transition between
+// them as repeated pressure. A missing repeat stays fail-closed, and a different node does not
+// confirm this fingerprint: checkpoint images can land on different nodes in each capture.
+export function confirmsRepeatedWalFingerprint(
+  fingerprint: string,
+  repeated: ReadonlySet<string> | undefined,
+): boolean {
+  if (repeated === undefined || repeated.has(fingerprint)) return true
+  return fingerprint === 'query:wal-aggregate'
+    ? [...repeated].some(entry => entry.endsWith(':wal'))
+    : repeated.has('query:wal-aggregate')
+}
+
 export function analyzeResult(result: ExplainResult): QueryWarnings {
   const nodes = collectNodes(result.plan)
   const walThreshold = walThresholdForResult(result)
