@@ -166,12 +166,5 @@ export function appendEligiblePostsSelect(
 }
 
 function hotScoreEligibilityFilter(sort: string): SQLStatement {
-  switch (sort) {
-    case 'hot':
-      return sql`posts.votes_score_net > 0`
-    case 'new':
-      return sql`TRUE`
-    default:
-      throw new Error(`Unknown post feed sort: ${sort}`)
-  }
+  return sort === 'hot' ? sql`posts.votes_score_net > 0` : sql`TRUE`
 }
