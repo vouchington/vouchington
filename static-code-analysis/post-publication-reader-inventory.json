@@ -249,6 +249,13 @@
       "owner_classification": "mixed-discovery-sql"
     },
     {
+      "path": "backend/services/posts/search/story-source-child.mts",
+      "classification": "raw-hydrator",
+      "reason": "Story page slice. The owning-feed probe reads story_posts only to skip stories with no post; story-source-query owns eligibility.",
+      "owner_path": "backend/services/posts/search/story-source-query.mts",
+      "owner_classification": "raw-hydrator"
+    },
+    {
       "path": "backend/services/posts/search/story-source-query.mts",
       "classification": "raw-hydrator",
       "reason": "Story source page assembler. base-filters composes source-bound public eligibility onto the inspected feed window.",
