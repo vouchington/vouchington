@@ -16,20 +16,17 @@ export function importCommunityListPostsSourceSql(
   limit: number,
   delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string },
 ): SQLStatement {
-  // One requested community drives a lateral keyset. A generic plan of the bare primary key
-  // walks newer rows from other communities before this community's page.
+  // Membership ids are NOT NULL. ORDER BY id DESC is NULLS FIRST, which the primary key
+  // already supplies by scanning backward, so a generic plan walks newer rows from other
+  // communities. NULLS LAST matches idx_community_list_posts__community_id__id instead.
   const statement = sql`/* importCommunityListPostsSource */
     WITH source_page AS MATERIALIZED (
       SELECT item.post_id
-      FROM (SELECT ${communityId}::uuid AS community_id) requested
-      JOIN LATERAL (
-        SELECT post_id
-        FROM community_list_posts item
-        WHERE item.community_id = requested.community_id
-          AND item.removed_at IS NULL
-        ORDER BY item.id DESC
-        LIMIT ${limit}
-      ) item ON TRUE
+      FROM community_list_posts item
+      WHERE item.community_id = ${communityId}::uuid
+        AND item.removed_at IS NULL
+      ORDER BY item.id DESC NULLS LAST
+      LIMIT ${limit}
     )
     SELECT ${targetListId}::uuid, picked.id
     FROM (

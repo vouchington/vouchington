@@ -124,9 +124,10 @@ CREATE INDEX IF NOT EXISTS idx_community_list_posts__community_id__order_index__
   WHERE removed_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- Live membership keyset for import, newest id first.
+-- Live membership keyset for import, newest id first. NULLS LAST does not match a
+-- backward primary-key scan, so a generic plan cannot walk newer rows from other communities.
 CREATE INDEX IF NOT EXISTS idx_community_list_posts__community_id__id
-  ON community_list_posts (community_id, id DESC)
+  ON community_list_posts (community_id, id DESC NULLS LAST)
   WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_posts__post ON community_list_posts (post_id);
