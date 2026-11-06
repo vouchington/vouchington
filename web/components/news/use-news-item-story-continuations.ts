@@ -40,10 +40,12 @@ export function useNewsItemStoryContinuations({
       ? storyState
       : { key, viewerId, byStory: {} }
   if (currentStoryState !== storyState) setStoryState(currentStoryState)
+  const latestStoryState = useRef(storyState)
   const latestSelections = useRef(selections)
   useLayoutEffect(() => {
     latestSelections.current = selections
-  }, [selections])
+    latestStoryState.current = storyState
+  }, [selections, storyState])
 
   async function refreshStoryPages(
     storyId: string,
@@ -71,6 +73,13 @@ export function useNewsItemStoryContinuations({
     }
   }
 
+  function markFailed(storyId: string, selection: FirstStorySelection, scope: typeof requestScope) {
+    if (requestScopeRef.current !== scope) return
+    setStoryState(previous =>
+      updateStory(previous, scope, storyId, selection.primaryId, { loading: false, error: true }),
+    )
+  }
+
   /* oxlint-disable react-you-might-not-need-an-effect/no-event-handler -- synchronize external story pages when the server acknowledges changed reference visibility */
   useEffect(() => {
     if (generation === 0) return
@@ -81,11 +90,14 @@ export function useNewsItemStoryContinuations({
         (state.pages.length > 0 || state.loading),
     )
     void (async () => {
-      for (const [storyId, state] of storiesToRefresh) {
+      for (const [storyId] of storiesToRefresh) {
         if (requestScopeRef.current !== scope) return
         if (scope.active.has(storyId)) continue
         const selection = selections.get(storyId)
         if (!selection) continue
+        // Size from current state: a page may have loaded while earlier stories replayed.
+        const state = latestStoryState.current.byStory[storyId]
+        if (state?.primaryId !== selection.primaryId) continue
         scope.active.add(storyId)
         const pageCount = Math.max(1, state.pages.length)
         scope.pendingRefresh.set(storyId, { primaryId: selection.primaryId, pageCount })
@@ -99,14 +111,7 @@ export function useNewsItemStoryContinuations({
           // oxlint-disable-next-line no-await-in-loop -- serialize retained stories to bound refresh concurrency
           await refreshStoryPages(storyId, selection, pageCount, scope)
         } catch {
-          if (requestScopeRef.current === scope) {
-            setStoryState(previous =>
-              updateStory(previous, scope, storyId, selection.primaryId, {
-                loading: false,
-                error: true,
-              }),
-            )
-          }
+          markFailed(storyId, selection, scope)
         } finally {
           scope.active.delete(storyId)
         }
@@ -137,14 +142,7 @@ export function useNewsItemStoryContinuations({
       try {
         await refreshStoryPages(storyId, selection, pendingRefresh.pageCount, scope)
       } catch {
-        if (requestScopeRef.current === scope) {
-          setStoryState(previous =>
-            updateStory(previous, scope, storyId, selection.primaryId, {
-              loading: false,
-              error: true,
-            }),
-          )
-        }
+        markFailed(storyId, selection, scope)
       } finally {
         scope.active.delete(storyId)
       }
@@ -182,14 +180,7 @@ export function useNewsItemStoryContinuations({
         })
       })
     } catch {
-      if (requestScopeRef.current === scope) {
-        setStoryState(previous =>
-          updateStory(previous, scope, storyId, selection.primaryId, {
-            loading: false,
-            error: true,
-          }),
-        )
-      }
+      markFailed(storyId, selection, scope)
     } finally {
       scope.active.delete(storyId)
     }
