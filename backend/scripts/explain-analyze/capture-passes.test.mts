@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { explainAnalyze, write } from '@data-stores/psql'
-import { createTestUserDirect } from '@voucha/test-helpers/entities/users-direct'
+import { createExplainWalCaptureFixture } from '@voucha/test-helpers/explain-wal-capture'
 import { captureScenarioTwice } from './capture-passes.mts'
 import { registerScenarioContract } from './plan-expectations.mts'
 
@@ -59,24 +58,12 @@ describe('EXPLAIN function-call capture', () => {
   })
 
   it('conditions each recorded WAL capture while preserving rollback and both plan modes', async () => {
-    const user = await createTestUserDirect()
     const scenarioId = 'post-url-replacement-maximum'
     registerScenarioContract(scenarioId, { expectations: [], walCaptureCondition: 'warm' })
-    const input = {
-      name: 'wal-condition-test',
-      text: `/* walConditionTest */ UPDATE users SET markdown = $2
-        WHERE id = $1 AND current_setting('application_name') = $3 RETURNING id`,
-      values: [user.id, 'temporary change', 'wal-condition-test'],
-      scenarioId,
-      captureIndex: 0,
-      localSettings: { application_name: 'wal-condition-test' },
-    }
+    const fixture = await createExplainWalCaptureFixture(scenarioId)
+    const { input } = fixture
     try {
-      await write('/* walConditionTestCheckpoint */ CHECKPOINT')
-      const cold = await explainAnalyze(input.name, input.text, input.values, {
-        localSettings: input.localSettings,
-        planCacheMode: 'force_custom_plan',
-      })
+      const cold = await fixture.captureCold()
       const walFpi = (plan: unknown) => (plan as { Plan: { 'WAL FPI': number } }).Plan['WAL FPI']
       expect(walFpi(cold.plan)).toBeGreaterThan(0)
       const first: Awaited<ReturnType<typeof captureScenarioTwice>>[number][] = []
@@ -99,13 +86,9 @@ describe('EXPLAIN function-call capture', () => {
         'force_custom_plan',
         'force_generic_plan',
       ])
-      const { rows } = await write(
-        '/* walConditionTestRead */ SELECT markdown FROM users WHERE id = $1',
-        [user.id],
-      )
-      expect(rows[0]?.markdown).toBe('')
+      expect(await fixture.readMarkdown()).toBe('')
     } finally {
-      await write('/* walConditionTestCleanup */ DELETE FROM users WHERE id = $1', [user.id])
+      await fixture.cleanup()
     }
   })
 })
