@@ -208,7 +208,9 @@ function completion(worker: Worker, id?: string) {
     waitForRealGlideEvent(
       seen.has(jobId)
         ? Promise.resolve(seen.get(jobId)!)
-        : new Promise<Job>(resolve => waiting.set(jobId, resolve)),
+        : new Promise<Job>(resolve => {
+            waiting.set(jobId, resolve)
+          }),
       `job ${jobId} completion`,
       10_000,
     )
