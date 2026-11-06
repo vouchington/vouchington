@@ -1,6 +1,6 @@
 import { assertWhitelistedSqlIdentifier, read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { sliceRawKeysetPage } from '@modules/pagination'
+import { sliceRawKeysetPage, sortMembershipKeysetRows } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
 import { isModerationStaff } from '@services/users/authorization'
 import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
@@ -41,8 +41,8 @@ function assertPostRelationTableName(tableName: string): PostRelationTableName {
 /**
  * Pages live membership rows first. `limit` is the page size; the statement reads one extra
  * membership key as the has-more probe. Target visibility is applied to that page, so `rows`
- * can be shorter than `limit`. The materialized membership page is already in keyset order;
- * the outer statement does not sort it again.
+ * can be shorter than `limit`. The driving page is limited in keyset order and the outer
+ * statement does not sort it. The read restores that order in code before slicing the page.
  */
 export async function getVisiblePostCollectionRows(
   currentUser: PrivateUser | null,
@@ -101,11 +101,13 @@ export async function getVisiblePostCollectionRows(
     created_us: string
     eligible: boolean
   }>(query, options)
-  const fetched = rows.map(row => ({
-    entity_id: row.entity_id,
-    created_us: Number(row.created_us),
-    eligible: row.eligible,
-  }))
+  const fetched = sortMembershipKeysetRows(
+    rows.map(row => ({
+      entity_id: row.entity_id,
+      created_us: Number(row.created_us),
+      eligible: row.eligible,
+    })),
+  )
   const { window, hasMore } = sliceRawKeysetPage(fetched, limit)
   const visibleRows: VisiblePostCollectionRow[] = []
   for (const row of window) if (row.eligible) visibleRows.push(toVisibleRow(row))
