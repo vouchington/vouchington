@@ -24,6 +24,7 @@ export async function processStripePurchaseCollisionWork(workId: string): Promis
   if (!work) return
   const candidates = await prepareStripePurchaseCollisionCandidates(work)
   let caseInputs: PreparedIneligibleStripePurchaseCaseInput[]
+  let rejectedInvoiceId: string | null
   {
     await using transaction = await beginTransaction()
     const purchasePlans = [
@@ -34,7 +35,13 @@ export async function processStripePurchaseCollisionWork(workId: string): Promis
       const collision = chooseEarliestQualifyingStripeCollision(collisions.get(plan), work, plan)
       if (collision) collisions.set(plan, collision)
     }
-    caseInputs = buildStripePurchaseCollisionCaseInputs(candidates, work.sourceIdentity, collisions)
+    const prepared = buildStripePurchaseCollisionCaseInputs(
+      candidates,
+      work.sourceIdentity,
+      collisions,
+    )
+    caseInputs = prepared.caseInputs
+    rejectedInvoiceId = prepared.rejectedInvoiceId
     await recordPreparedIneligibleStripePurchaseCasesForCollision(
       caseInputs,
       { id: work.sourceId, lineageId: work.lineageId, bindingId: work.bindingId },
@@ -49,5 +56,7 @@ export async function processStripePurchaseCollisionWork(workId: string): Promis
       providerEnvironment: work.sourceIdentity.environment,
     })
   })
+  if (rejectedInvoiceId !== null)
+    throw new Error(`Stripe invoice ${rejectedInvoiceId} has ambiguous membership purchase lines`)
   await completeStripePurchaseCollisionWork(workId)
 }

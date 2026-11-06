@@ -345,7 +345,7 @@ cannot retain sensitive bodies or consume capacity indefinitely. Sensitive envel
 after terminal failure as well as completion, so retry exhaustion can
 discard a delivery that was already acknowledged.
 
-### Stripe purchase collisions
+## Stripe purchase collisions
 
 Membership projection commits immutable collision work before queue admission. That work captures
 the displaced source, its binding, and the winning entitlement facts that projection would erase.
@@ -353,6 +353,8 @@ A bounded recovery sweep re-admits pending identities after a crash or queue los
 run before the short case-write transaction; cancellation and refunds use the existing financial
 operation ledger after commit. Work is removed only after reconciliation succeeds. Queue locks
 own execution; repeated reads and unique invoice cases make overlapping deliveries safe.
+An ambiguous invoice keeps the collision work pending for operator recovery while valid sibling
+cases commit and reconcile independently.
 
 | Failure mode                     | Detectable state                                                 | Recovery and idempotency                                                   | Evidence                                                                                  |
 | -------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |

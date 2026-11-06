@@ -49,8 +49,13 @@ export function buildStripePurchaseCollisionCaseInputs(
   candidates: readonly StripePurchaseCollisionCandidate[],
   sourceIdentity: StripeMembershipSourceIdentity,
   collisions: ReadonlyMap<MembershipPlanSlug, QualifyingStripeCollision>,
-): PreparedIneligibleStripePurchaseCaseInput[] {
-  return candidates.flatMap(({ invoice, mappedLines }) => {
+): {
+  caseInputs: PreparedIneligibleStripePurchaseCaseInput[]
+  rejectedInvoiceId: string | null
+} {
+  const caseInputs: PreparedIneligibleStripePurchaseCaseInput[] = []
+  let rejectedInvoiceId: string | null = null
+  for (const { invoice, mappedLines } of candidates) {
     const overlapping = mappedLines.filter(({ line, plan }) => {
       const collision = collisions.get(plan)
       if (!collision) return false
@@ -60,21 +65,22 @@ export function buildStripePurchaseCollisionCaseInputs(
         (line.period.end === line.period.start && collisionAt > line.period.start * 1_000)
       )
     })
-    if (overlapping.length === 0) return []
-    if (mappedLines.length !== 1 || invoice.lines.data.length !== 1)
-      throw new Error(`Stripe invoice ${invoice.id} has ambiguous membership purchase lines`)
+    if (overlapping.length === 0) continue
+    if (mappedLines.length !== 1 || invoice.lines.data.length !== 1) {
+      rejectedInvoiceId ??= invoice.id
+      continue
+    }
     const { priceId, plan } = overlapping[0]!
     const collision = collisions.get(plan)!
-    return [
-      {
-        sourceIdentity,
-        invoice,
-        stripePriceId: priceId,
-        winningSourceKind: collision.winningSourceKind,
-        collisionAt: collision.collisionAt,
-      },
-    ]
-  })
+    caseInputs.push({
+      sourceIdentity,
+      invoice,
+      stripePriceId: priceId,
+      winningSourceKind: collision.winningSourceKind,
+      collisionAt: collision.collisionAt,
+    })
+  }
+  return { caseInputs, rejectedInvoiceId }
 }
 
 export async function getMappedStripeMembershipInvoiceLines(

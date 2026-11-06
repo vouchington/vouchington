@@ -90,6 +90,8 @@ export async function setupStripeCollisionProducer(plan: 'plus' | 'pro', history
     sourceId,
     invoice,
     lines,
+    oldInvoice,
+    oldLines,
     cancel,
     createRefund,
     invoicesList,

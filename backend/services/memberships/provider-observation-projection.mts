@@ -110,16 +110,7 @@ async function projectAdvancedProviderObservation(
   const project = !isTerminalMembershipStatus(observation.status) && observation.status !== 'paused'
   if (!project) return { membershipId: null, projected: false }
   if (prior) {
-    if (observation.sourceKind === 'family' || observation.sourceIdentity.provider !== 'stripe')
-      await recordDisplacedStripePurchaseCollisionWork(
-        {
-          userId: options.userId,
-          winningSourceKind: observation.sourceKind,
-          winningPlan: observation.plan,
-          collisionAt: observation.effectiveAt,
-        },
-        query,
-      )
+    await recordDisplacedStripeCollisionForObservation(options.userId, observation, query)
     await retireCurrentMembershipProjection(options.userId, query)
   }
   const membership = await insertMembershipProjection(
@@ -161,16 +152,7 @@ async function reconcileProviderSourceProjection(
   const entitles =
     !isTerminalMembershipStatus(observation.status) && observation.status !== 'paused'
   if (entitles && prior.projection_ended_at !== null) {
-    if (observation.sourceKind === 'family' || observation.sourceIdentity.provider !== 'stripe')
-      await recordDisplacedStripePurchaseCollisionWork(
-        {
-          userId: options.userId,
-          winningSourceKind: observation.sourceKind,
-          winningPlan: observation.plan,
-          collisionAt: observation.effectiveAt,
-        },
-        query,
-      )
+    await recordDisplacedStripeCollisionForObservation(options.userId, observation, query)
     await retireCurrentMembershipProjection(options.userId, query)
   }
   const membership = await reconcileSourceProjection(
@@ -194,4 +176,22 @@ async function reconcileProviderSourceProjection(
   if (isTerminalMembershipStatus(observation.status) || observation.status === 'paused')
     await restoreFallbackAfterCurrentAccessEndsInTransaction(options.userId, membership.id, query)
   return membershipProjectionWithEntitlementEffects(query, membership.id, membership.projected)
+}
+
+async function recordDisplacedStripeCollisionForObservation(
+  userId: string,
+  observation: VerifiedProviderObservation,
+  query: QueryExecutor,
+): Promise<void> {
+  if (observation.sourceKind !== 'family' && observation.sourceIdentity.provider === 'stripe')
+    return
+  await recordDisplacedStripePurchaseCollisionWork(
+    {
+      userId,
+      winningSourceKind: observation.sourceKind,
+      winningPlan: observation.plan,
+      collisionAt: observation.effectiveAt,
+    },
+    query,
+  )
 }

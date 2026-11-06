@@ -64,6 +64,38 @@ describe('durable ineligible Stripe purchase case producer', () => {
     },
   )
 
+  it('reconciles valid siblings while ambiguous invoice work remains retryable', async () => {
+    const fixture = await setupProducer('plus', true)
+    fixture.oldLines.forEach((line, index) => {
+      line.id = `${fixture.oldInvoice.id}_${index}`
+      line.period = { start, end }
+    })
+    const workId = await recordWork(fixture, 'direct', start)
+    const jobId = `stripe-purchase-collision__${workId}`
+    onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
+    await (await memberships.getJob(jobId))?.remove()
+    const message = `Stripe invoice ${fixture.oldInvoice.id} has ambiguous membership purchase lines`
+    await expect(processStripePurchaseCollisionWork(workId)).rejects.toThrow(message)
+    await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toMatchObject({
+      refundCapMinorUnits: 100,
+    })
+    await expect(
+      getIneligiblePurchaseReversalCase({
+        ...fixture.lookup,
+        originatingInvoiceId: fixture.oldInvoice.id,
+      }),
+    ).resolves.toBeNull()
+    await expect(
+      readTestStripePurchaseCollisionWork(fixture.sourceId, collisionAt),
+    ).resolves.toMatchObject({ id: workId })
+    expect(fixture.createRefund).toHaveBeenCalledTimes(1)
+    await expect(processStripePurchaseCollisionWork(workId)).rejects.toThrow(message)
+    expect(fixture.createRefund).toHaveBeenCalledTimes(1)
+    await expect(
+      readTestStripePurchaseCollisionWork(fixture.sourceId, collisionAt),
+    ).resolves.toMatchObject({ id: workId })
+  })
+
   it('retains committed work when Stripe invoice listing fails', async () => {
     const fixture = await setupProducer('plus')
     const providerError = new Error('temporary Stripe outage')
