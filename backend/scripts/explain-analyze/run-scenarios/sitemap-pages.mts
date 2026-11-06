@@ -5,6 +5,7 @@ import {
   readSitemapFamilyPage,
 } from '@services/sitemaps/family-queries'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { runDeletedParentPageScenarios } from './deleted-parent-pages.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { postSeedTimestampMs, seedUuid } from '../seed-data/common.mts'
 
@@ -66,6 +67,9 @@ export async function runSitemapPageScenarios(): Promise<void> {
     if (page.length === 0 || page.length > 11)
       throw new Error('Missing bounded sitemap post-day source page')
   })
+
+  // Same order as the runner: deleted-parent pages follow the sitemap source pages.
+  await runDeletedParentPageScenarios()
 }
 
 async function seedExplainLandingPage(): Promise<void> {
