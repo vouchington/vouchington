@@ -124,27 +124,33 @@ function appendFeedIdUpperBound(query: SQLStatement, cursor: StoryCursor | null)
 export function appendOwningSource(query: SQLStatement, staff: boolean): void {
   query.append(sql`
       LEFT JOIN LATERAL (
-        SELECT owner_src.rss_feed_id AS feed_id, owner_item.id AS item_id
-        -- no-mistakes-disable-next-line postgres-required-predicates: the owning source is the newest visible feed of this story, and story_id is the indexed key across item id partitions
-        FROM rss_feed_items owner_item
-        JOIN rss_feed_item_sources owner_src
-          ON owner_src.rss_feed_item_id = owner_item.id
-         AND owner_src.rss_feed_id >= feed.id
-        WHERE owner_item.story_id = item.story_id
-          AND owner_item.deleted_at IS NULL
-          AND EXISTS (
-            SELECT 1
-            FROM rss_feeds owner_feed
-            WHERE owner_feed.id = owner_src.rss_feed_id
-              AND owner_feed.deleted_at IS NULL`)
+        SELECT candidate.feed_id, candidate.item_id
+        FROM (
+          SELECT
+            owner_src.rss_feed_id AS feed_id,
+            owner_item.id AS item_id,
+            (
+              SELECT owner_feed.id
+              FROM rss_feeds owner_feed
+              WHERE owner_feed.id = owner_src.rss_feed_id
+                AND owner_feed.deleted_at IS NULL`)
   if (!staff) {
     query.append(sql`
-              AND owner_feed.is_enabled
-              AND owner_feed.is_discoverable`)
+                AND owner_feed.is_enabled
+                AND owner_feed.is_discoverable`)
   }
   query.append(sql`
-          )
-        ORDER BY owner_src.rss_feed_id DESC, owner_item.id DESC
+            ) AS visible_feed_id
+          -- no-mistakes-disable-next-line postgres-required-predicates: the owning source is the newest visible feed of this story, and story_id is the indexed key across item id partitions
+          FROM rss_feed_items owner_item
+          JOIN rss_feed_item_sources owner_src
+            ON owner_src.rss_feed_item_id = owner_item.id
+           AND owner_src.rss_feed_id >= feed.id
+          WHERE owner_item.story_id = item.story_id
+            AND owner_item.deleted_at IS NULL
+        ) candidate
+        WHERE candidate.visible_feed_id IS NOT NULL
+        ORDER BY candidate.feed_id DESC, candidate.item_id DESC
         LIMIT 1
       ) owner ON item.id IS NOT NULL`)
 }
