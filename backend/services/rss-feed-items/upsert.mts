@@ -1,3 +1,4 @@
+import { recomputeRssFeedItemHackerNewsFlags } from './hacker-news-flags.mts'
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { randomUUID } from 'node:crypto'
 import type { RssFeedItemToUpsert } from './types.mts'
@@ -120,6 +121,10 @@ export async function upsertRssFeedItems(
     // eslint-disable-next-line no-await-in-loop -- sequential content chunks retain the transaction's canonical key order.
     rows.push(...(await upsertRssFeedItemContent(txQuery, identityRows, chunk)))
   }
+  await recomputeRssFeedItemHackerNewsFlags(
+    rows.map(row => row.id),
+    { query: txQuery },
+  )
   // The durable request is what the classifier sweep recovers from, so tagging and story clustering
   // never depend on a dispatcher enqueue or on a classifier's configuration resolving here.
   await requestRssFeedItemClassifierRuns(txQuery, rssFeedItemIdsOf(rows), [

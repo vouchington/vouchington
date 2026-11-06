@@ -115,13 +115,15 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/voteWeightMembershipExpirations',
   'background/voteWeightFamilySourceChanges',
   'background/voteWeightDirtyMarkers',
+  'hacker-news-flags/repairHackerNewsFlags',
+  'hacker-news-flags/readmitHackerNewsLookups',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('imports the registered manifests and exact scheduled jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(13)
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(15)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

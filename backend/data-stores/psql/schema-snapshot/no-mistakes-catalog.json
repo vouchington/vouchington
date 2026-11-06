@@ -103214,6 +103214,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__related__url__positive_reverse": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__positive_reverse ON ONLY public.relation__post__related__url USING btree (object_id, subject_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__url__positive_score__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -131831,10 +131863,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_rss_feed_items__url_id": {
+        "idx_rss_feed_items__url_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_items__url_id ON ONLY public.rss_feed_items USING btree (url_id)",
+          "definition": "CREATE INDEX idx_rss_feed_items__url_id__id ON ONLY public.rss_feed_items USING btree (url_id, id)",
           "immediate": true,
           "keys": [
             {
@@ -131842,6 +131874,15 @@
               "column": "url_id",
               "descending": false,
               "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -146517,6 +146558,38 @@
         }
       },
       "indexes": {
+        "idx_url_hacker_news_totals__looked_up_at__url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hacker_news_totals__looked_up_at__url_id ON public.url_hacker_news_totals USING btree (looked_up_at, url_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "looked_up_at",
+              "descending": false,
+              "expression": "looked_up_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "url_hacker_news_totals_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -148619,10 +148692,10 @@
         }
       },
       "indexes": {
-        "idx_urls__canonical_url_id": {
+        "idx_urls__canonical_url_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__canonical_url_id ON public.urls USING btree (canonical_url_id) WHERE (canonical_url_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_urls__canonical_url_id__id ON public.urls USING btree (canonical_url_id, id) WHERE (canonical_url_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -148630,6 +148703,15 @@
               "column": "canonical_url_id",
               "descending": false,
               "expression": "canonical_url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true

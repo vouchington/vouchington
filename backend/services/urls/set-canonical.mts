@@ -1,4 +1,9 @@
-import { read, beginTransaction } from '@data-stores/psql'
+import { lockCanonicalUrlRewrites } from './canonical-lock.mts'
+import { hackerNewsReferenceMaxValues } from './hacker-news-reference-limits.mts'
+import { enqueueMissingHackerNewsLookups } from './hacker-news-lookup-enqueue.mts'
+import { enqueueHackerNewsFlagsBestEffort } from '@queues/hacker-news-flags/enqueues'
+import { write, beginTransaction, registerPostCommitAction } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql/types'
 
 export class CircularCanonicalReferenceError extends Error {
   readonly code = 'CIRCULAR_CANONICAL_REFERENCE'
@@ -13,23 +18,30 @@ export class CircularCanonicalReferenceError extends Error {
 
 const MAX_CANONICAL_CHAIN_DEPTH = 10
 
-async function getCanonicalCycleUrls(urlId: string, canonicalUrlId: string) {
-  const urlData = await read<{ id: string; url: string }>(
+async function getCanonicalCycleUrls(urlId: string, canonicalUrlId: string, query: QueryExecutor) {
+  const urlData = await query<{ id: string; url: string }>(
     `/* getCanonicalCycleUrls */ SELECT id, url FROM urls WHERE id = ANY($1)`,
     [[urlId, canonicalUrlId]],
   )
   return new Map(urlData.rows.map((row: { id: string; url: string }) => [row.id, row.url]))
 }
 
-export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Promise<void> => {
+/** Returns the canonical target after commit so callers can schedule a fresh lookup for it. */
+export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Promise<string> => {
   // Prevent self-reference
   if (urlId === canonicalUrlId) {
     throw new Error('URL cannot be its own canonical')
   }
 
+  await using query = await beginTransaction()
+
+  // Canonical rewrites can otherwise observe uncommitted chains and create cycles or chains
+  // beyond the readers' two-hop bound. Serialize only this short database transaction.
+  await lockCanonicalUrlRewrites(query)
+
   // Check for circular reference using recursive CTE
   // Pattern from: /backend/services/posts/search/query-builder.mts:58-79
-  const cycleCheck = await read(
+  const cycleCheck = await query(
     `/* setCanonicalUrl */
     WITH RECURSIVE url_chain AS (
       SELECT id, canonical_url_id, 0 AS depth
@@ -50,7 +62,7 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
   )
 
   if (cycleCheck.rows.length > 0) {
-    const urlMap = await getCanonicalCycleUrls(urlId, canonicalUrlId)
+    const urlMap = await getCanonicalCycleUrls(urlId, canonicalUrlId, query)
     const sourceUrl = urlMap.get(urlId) || urlId
     const targetUrl = urlMap.get(canonicalUrlId) || canonicalUrlId
 
@@ -58,20 +70,9 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
   }
 
   // Resolve the final canonical target (in case canonicalUrlId itself has a canonical)
-  const resolved = await read(
-    `/* resolveCanonicalTarget */ WITH RECURSIVE chain AS (
-      SELECT id, canonical_url_id, 0 AS depth FROM urls WHERE id = $1
-      UNION ALL
-      SELECT u.id, u.canonical_url_id, c.depth + 1
-      FROM urls u JOIN chain c ON u.id = c.canonical_url_id
-      WHERE c.canonical_url_id IS NOT NULL AND c.depth < $2
-    ) SELECT id FROM chain WHERE canonical_url_id IS NULL ORDER BY depth DESC LIMIT 1`,
-    [canonicalUrlId, MAX_CANONICAL_CHAIN_DEPTH],
-  )
-  const finalCanonicalId = resolved.rows[0]?.id ?? canonicalUrlId
+  const finalCanonicalId = await resolveCanonicalTarget(canonicalUrlId, query)
 
   // Atomically set canonical_url_id and flatten any back-references
-  await using query = await beginTransaction()
   {
     await query(
       `/* setCanonicalUrl */
@@ -89,6 +90,65 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
       UPDATE urls SET canonical_url_id = $1 WHERE canonical_url_id = $2 AND id != $3`,
       [finalCanonicalId, urlId, urlId],
     )
+
+    // The URL row lock also fences refreshes: the writer locks that row before writing totals
+    // and skips URLs that gained a canonical. Each source holds at most 25 rows per item table.
+    // Take the totals lock before item locks, matching refreshes and retention.
+    // ast-grep-ignore: no-three-sequential-awaits -- totals must lock before child deletion on the same transaction connection.
+    await query(
+      `/* removeCanonicalSourceHackerNewsTotals */
+      DELETE FROM url_hacker_news_totals WHERE url_id = $1`,
+      [urlId],
+    )
+    await query(
+      `/* removeCanonicalSourceHackerNewsStories */
+      WITH candidates AS (
+        SELECT url_id, hacker_news_item_id FROM url_hacker_news_stories
+        WHERE url_id = $1 ORDER BY hacker_news_item_id LIMIT $2
+      )
+      DELETE FROM url_hacker_news_stories AS stories
+      USING candidates
+      WHERE stories.url_id = candidates.url_id
+        AND stories.hacker_news_item_id = candidates.hacker_news_item_id`,
+      [urlId, hackerNewsReferenceMaxValues.stories_per_url],
+    )
+    await query(
+      `/* removeCanonicalSourceHackerNewsComments */
+      WITH candidates AS (
+        SELECT url_id, hacker_news_item_id FROM url_hacker_news_comments
+        WHERE url_id = $1 ORDER BY hacker_news_item_id LIMIT $2
+      )
+      DELETE FROM url_hacker_news_comments AS comments
+      USING candidates
+      WHERE comments.url_id = candidates.url_id
+        AND comments.hacker_news_item_id = candidates.hacker_news_item_id`,
+      [urlId, hackerNewsReferenceMaxValues.comments_per_url],
+    )
   }
+  registerPostCommitAction(query, async () => {
+    await enqueueHackerNewsFlagsBestEffort([urlId, canonicalUrlId, finalCanonicalId])
+  })
   await query.commit()
+
+  // Another canonical rewrite can retarget this URL after commit. Read the primary, and let
+  // lookup workers resolve again when they execute a queued lookup.
+  const resolvedId = await resolveCanonicalTarget(urlId, write)
+  await enqueueMissingHackerNewsLookups([resolvedId], { query: write })
+  return resolvedId
+}
+
+async function resolveCanonicalTarget(urlId: string, query: QueryExecutor): Promise<string> {
+  const resolved = await query<{ id: string }>(
+    `/* resolveCanonicalTarget */ WITH RECURSIVE chain AS (
+      SELECT id, canonical_url_id, 0 AS depth FROM urls WHERE id = $1
+      UNION ALL
+      SELECT u.id, u.canonical_url_id, c.depth + 1
+      FROM urls u JOIN chain c ON u.id = c.canonical_url_id
+      WHERE c.canonical_url_id IS NOT NULL AND c.depth < $2
+    ) SELECT id FROM chain WHERE canonical_url_id IS NULL ORDER BY depth DESC LIMIT 1`,
+    [urlId, MAX_CANONICAL_CHAIN_DEPTH],
+  )
+  const resolvedId = resolved.rows[0]?.id
+  if (!resolvedId) throw new Error(`Cannot resolve canonical URL for ${urlId}`)
+  return resolvedId
 }

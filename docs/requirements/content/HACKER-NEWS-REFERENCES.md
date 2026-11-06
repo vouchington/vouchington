@@ -33,8 +33,9 @@ collections, so later pages retain the same presentation as the first page.
 - Each reference is a link out to the Hacker News item. Voucha does not copy comment text, post on
   Hacker News, or run an agent there.
 - Lists can be filtered to items that have references. For posts, the filter uses the same link
-  and highest-ranked positively voted related URLs shown on the card; references on other related
-  URLs do not make the post match.
+  and fixed top ten positively voted related URLs in card order; references on other related
+  URLs do not make the post match. The shared card membership bound stays fixed because changing
+  it independently would make the stored flag disagree with the card.
 
 ## Operational controls
 
@@ -43,10 +44,13 @@ ignores the list filter; it leaves stored references, lookups, and retention int
 maximum time range is separately configurable to limit filter cost.
 
 Pausing lookups leaves stored references visible and retention active. Jobs that reach a worker
-while paused finish without fetching and are not replayed automatically. Re-enabling does not run
-a catch-up sweep: later detail views admit missing or sufficiently old references, and subsequent qualifying URL
-or canonical changes can admit work again. A previously fresh URL whose refresh was dropped waits
-until it is old enough or another qualifying event occurs; an unattended URL can remain stale. A request already in
+while paused finish without fetching. Re-enabling does not backfill URLs whose initial lookup was
+missed: later detail views or qualifying URL changes admit those normally. For URLs already looked
+up and still within the automatic refresh window, an independent bounded scan re-admits due work
+from persisted lookup time. This recovers refreshes dropped while paused or after terminal provider
+failure; recovery waits for that scan to reach the URL and for queue capacity. The scan carries a
+fixed upper bound and saves each page position, so a large corpus does not make one job unbounded.
+Delayed refresh jobs remain an optimization, not the only recovery path. A request already in
 flight may finish; incomplete results are discarded when pulling has been disabled.
 
 Backend configuration propagates through Valkey notifications with a periodic refresh fallback.

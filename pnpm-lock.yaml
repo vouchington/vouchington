@@ -1360,6 +1360,9 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../modules/structured-decisions
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../queues/hacker-news-flags
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents
@@ -1836,6 +1839,12 @@ importers:
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../../queues/find-your-friends
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
@@ -1896,6 +1905,12 @@ importers:
       '@workers/find-your-friends':
         specifier: workspace:^
         version: link:../../workers/find-your-friends
+      '@workers/hacker-news':
+        specifier: workspace:^
+        version: link:../../workers/hacker-news
+      '@workers/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../workers/hacker-news-flags
       '@workers/memberships':
         specifier: workspace:^
         version: link:../../workers/memberships
@@ -3213,6 +3228,36 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+
+  backend/queues/hacker-news:
+    dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
+
+  backend/queues/hacker-news-flags:
+    dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
 
   backend/queues/heartbeat:
     dependencies:
@@ -6109,6 +6154,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@services/ap-inbox-activities':
         specifier: workspace:^
         version: link:../ap-inbox-activities
@@ -6145,6 +6193,9 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../urls
       '@services/user-import-export':
         specifier: workspace:^
         version: link:../user-import-export
@@ -6243,6 +6294,12 @@ importers:
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../../queues/find-your-friends
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
@@ -9799,6 +9856,9 @@ importers:
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../entity-listener-reconciliation
+      '@services/web-risk':
+        specifier: workspace:^
+        version: link:../web-risk
       '@ts-shared/cache':
         specifier: workspace:^
         version: link:../../../ts-shared/cache
@@ -9969,6 +10029,12 @@ importers:
       '@queues/follower-distributions':
         specifier: workspace:^
         version: link:../../queues/follower-distributions
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../../queues/heartbeat
@@ -11715,6 +11781,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
       '@modules/search-utils':
         specifier: workspace:^
         version: link:../../modules/search-utils
@@ -11724,6 +11793,12 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
       '@services/crawlers':
         specifier: workspace:^
         version: link:../crawlers
@@ -11754,6 +11829,12 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/utils':
+        specifier: ^0.11.1
+        version: 0.11.1
+      htmlparser2:
+        specifier: ^10.1.0
+        version: 10.1.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11763,6 +11844,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      undici:
+        specifier: ^8.12.3
+        version: 8.12.3
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -11776,9 +11860,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-      undici:
-        specifier: ^8.12.3
-        version: 8.12.3
 
   backend/services/urls-domains-blacklist:
     dependencies:
@@ -14140,6 +14221,9 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../../services/entity-fetch
@@ -14210,6 +14294,65 @@ importers:
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+
+  backend/workers/hacker-news:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../../services/urls
+      glide-mq:
+        specifier: ^0.20.0
+        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@queues/heartbeat':
+        specifier: workspace:^
+        version: link:../../queues/heartbeat
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+      '@workers/heartbeat':
+        specifier: workspace:^
+        version: link:../heartbeat
+
+  backend/workers/hacker-news-flags:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@queues/hacker-news-flags':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news-flags
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../../services/posts
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../../services/rss-feed-items
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../../services/urls
+      glide-mq:
+        specifier: ^0.20.0
+        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
+    devDependencies:
+      '@queues/hacker-news':
+        specifier: workspace:^
+        version: link:../../queues/hacker-news
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/heartbeat:
     dependencies:

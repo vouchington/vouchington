@@ -20,9 +20,9 @@ Two projects have shown how much Hacker News readers like a useful list built fr
 
 Voucha does some of this today. Here is the part that exists.
 
-## See the HN thread next to the link
+## Seen on Hacker News, mentioned in comments
 
-Turn on related Hacker News discussions in your preferences. Voucha will then look up the page you are reading, whether it is a [post](https://voucha.ai/posts) or a news item, and show matching HN threads in a side panel with points and comment counts. The lookup runs in your browser against the public HN search service, and it is off until you opt in.
+When a link has matching Hacker News references, Voucha shows stories that linked to it under “Seen on” and comments that mentioned it under “Mentioned on.” Story details can include points and comment counts. These references describe where a link appeared. They do not label it as a recommendation.
 
 ## RSS in and out
 
@@ -50,4 +50,4 @@ We are candid about it: [How Voucha Makes Money](./how-voucha-makes-money.md).
 
 ## Where to start
 
-Join a few [communities](https://voucha.ai/communities), add some sources from [news](https://voucha.ai/news), and turn on the HN panel. Then read [How to Use Voucha](./how-to-use-voucha.md).
+Join a few [communities](https://voucha.ai/communities), add some sources from [news](https://voucha.ai/news), and read [How to Use Voucha](./how-to-use-voucha.md).

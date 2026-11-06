@@ -2,7 +2,7 @@ import dns from 'node:dns'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { MockAgent, withMockAgentDefaultFetchForTest } from '@voucha/test-helpers/provider-http'
-import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
+import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 import { getUrlByAnyCached } from '@services/urls/get'
 import { getRssFeedByUrlId } from './get.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -60,21 +60,25 @@ describe('source creation canonical mapping failure', () => {
       })
     try {
       const { result, error } = await withMockAgentDefaultFetchForTest(agent, () =>
-        withPostgresPoolQueryFailureForTest('/* setCanonicalUrl */', async () => {
-          const created = await createSourceFromUrl(user, WEB_PROVENANCE, originalUrl, {
-            follow: false,
-          })
-          await Promise.allSettled(canonicalWrites)
-          expect(
-            sentryCaptureExceptionMock.mock.calls
-              .slice(firstCapture)
-              .some(
-                ([captured]) =>
-                  captured instanceof Error && 'code' in captured && captured.code === '25P02',
-              ),
-          ).toBe(true)
-          return created
-        }),
+        withPostgresQueryFailureForTest(
+          '/* setCanonicalUrl */',
+          async () => {
+            const created = await createSourceFromUrl(user, WEB_PROVENANCE, originalUrl, {
+              follow: false,
+            })
+            await Promise.allSettled(canonicalWrites)
+            expect(
+              sentryCaptureExceptionMock.mock.calls
+                .slice(firstCapture)
+                .some(
+                  ([captured]) =>
+                    captured instanceof Error && 'code' in captured && captured.code === '25P02',
+                ),
+            ).toBe(true)
+            return created
+          },
+          { command: 'UPDATE' },
+        ),
       )
 
       expect(error).toMatchObject({ code: '25P02' })

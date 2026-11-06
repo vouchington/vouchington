@@ -1,6 +1,6 @@
 -- Pre-launch Hacker News reference facts per URL. Neutral facts only: item ids, counts and dates.
 -- No comment text is stored and nothing here feeds ranking or trust. Rows are capped per URL by
--- the writer and are removed with the URL.
+-- the writer and expire through the scheduled lookup-time retention sweep.
 -- A zero-hit lookup still records its time; readers and the filter use the counts.
 CREATE TABLE IF NOT EXISTS url_hacker_news_totals (
   url_id UUID PRIMARY KEY REFERENCES urls(id) ON DELETE CASCADE,
@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS url_hacker_news_totals (
   comment_count INTEGER NOT NULL DEFAULT 0 CHECK (comment_count >= 0),
   looked_up_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Includes zero-hit lookups; supplies both the retention cutoff and stable page order.
+CREATE INDEX IF NOT EXISTS idx_url_hacker_news_totals__looked_up_at__url_id
+  ON url_hacker_news_totals (looked_up_at, url_id);
 
 CREATE TABLE IF NOT EXISTS url_hacker_news_stories (
   url_id UUID NOT NULL REFERENCES urls(id) ON DELETE CASCADE,

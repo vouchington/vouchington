@@ -413,8 +413,8 @@ WHERE deleted_at IS NULL;
 
 -- for looking up items by url
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__url_id
-ON rss_feed_items (url_id);
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__url_id__id
+ON rss_feed_items (url_id, id);
 
 -- find rss feed items pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

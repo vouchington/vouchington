@@ -74,6 +74,19 @@ flowchart LR
 
 ## Why queues are shaped this way
 
+Hacker News flag maintenance runs independently of external lookups so provider throttling and
+visibility controls do not delay convergence of stored filter state. URL changes admit bounded
+pages of affected posts and feed items; a scheduled keyset repair revisits older entities when
+queue delivery or a transition admission is lost. Workers apply the configured global concurrency
+when they start, so a limit change takes effect after they restart. Entity-listener reconciliation only covers a
+recent change window and cannot recover an old entity whose referenced URL changed independently.
+
+Hacker News lookups have a dedicated external-service rate limit, isolating a flood of new URLs
+from other background work. Detail reads re-admit missing or stale results after a lost or terminal
+job. A separate bounded refresh readmission lane revisits known lookup state within its automatic
+refresh window, recovering dropped refresh chains from persisted timestamps. It does not backfill
+URLs whose initial lookup was missed; those may remain without references until normal admission.
+
 Moderation reconciliation and Bedrock batch polling carry a fixed sweep boundary through bounded
 continuations, so unchanged active rows cannot monopolize every page. Moderation reconciliation
 indexes unfinished work so completed history cannot dominate page reads. Invalid-crawl cleanup
@@ -110,7 +123,8 @@ Source storage and quarantined-image renders are removed only after the final pa
 its listener work is admitted. Quarantine deletion still requires a confirmed permanent copy.
 
 The data-retention schedule runs in deployed environments so staging exposes retention failures
-before production. Staging assigns the job lower queue priority to keep interactive and recovery
+before production. Its Hacker News sweep removes a bounded number of expired URL snapshots;
+committed deletions advance the next scheduled pass through any remaining backlog. Staging assigns the job lower queue priority to keep interactive and recovery
 work ahead of housekeeping. Each AI retention family owns one fixed continuation identity in the
 PostgreSQL maintenance queue. Daily seeds recover finished records but coalesce with live work.
 Each bounded pass yields that same native job while backlog remains, so a large cleanup drains

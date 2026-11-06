@@ -1,3 +1,4 @@
+import { recomputeRegisteredPostHackerNewsFlags } from './post-hacker-news-flag-registry.mts'
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
 import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 import {
@@ -78,6 +79,12 @@ export async function runRelationPublicationMutation<
       await lockTopicRssFeedPublicationScopes(query, subjectIds)
     await options?.postMutationGuard?.assertAllowed(query)
     const changes = await mutation(query)
+    if (!capturePublication && relationTable === 'relation__post__related__url') {
+      await recomputeRegisteredPostHackerNewsFlags(
+        changes.flatMap(change => (change.newly_active === false ? [] : [change.subject_id])),
+        { query },
+      )
+    }
     if (capturePublication)
       await recordPostTopicRelationPublicationChanges(
         query,

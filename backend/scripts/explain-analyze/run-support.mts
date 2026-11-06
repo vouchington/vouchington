@@ -1,3 +1,4 @@
+import '@backend/service-registrations'
 import {
   enableQueryCapture,
   disableQueryCapture,

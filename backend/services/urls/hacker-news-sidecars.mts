@@ -1,3 +1,4 @@
+import { enqueueMissingHackerNewsLookups } from './hacker-news-lookup-enqueue.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { getHackerNewsUrlIdsByPostIds } from './hacker-news-post-urls.mts'
 import {
@@ -35,7 +36,9 @@ export function getRssFeedItemHackerNewsDetails(
   items: readonly ItemWithUrl[],
   options: QueryOptions = {},
 ): Promise<Record<string, HackerNewsReferenceDetail>> {
-  return getHackerNewsDetailsByEntity(urlIdsByItemId(items), options)
+  const urlIds = urlIdsByItemId(items)
+  void enqueueMissingHackerNewsLookups(Object.values(urlIds).flat())
+  return getHackerNewsDetailsByEntity(urlIds, options)
 }
 
 /** Hacker News counts for post cards. A post's URLs are its link URL and live related URLs. */
@@ -53,5 +56,6 @@ export async function getPostHackerNewsDetails(
   options: QueryOptions = {},
 ): Promise<Record<string, HackerNewsReferenceDetail>> {
   const urlIds = await getHackerNewsUrlIdsByPostIds(postIds, options)
+  void enqueueMissingHackerNewsLookups(Object.values(urlIds).flat())
   return getHackerNewsDetailsByEntity(urlIds, options)
 }

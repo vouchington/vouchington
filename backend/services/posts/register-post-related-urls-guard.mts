@@ -1,3 +1,5 @@
+import { registerPostHackerNewsFlagRecompute } from '@services/entity-relations/post-hacker-news-flag-registry'
+import { recomputePostHackerNewsFlags } from './hacker-news-flags.mts'
 import type { BasicUser } from '@voucha/types/entities/user'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { registerPostRelatedUrlsGuard } from '@services/entity-relations/post-related-urls-guard-registry'
@@ -31,3 +33,5 @@ async function guardPostRelatedUrls(
 // backend/services/posts/index.mts, which imports this first for its side effects). Keeps
 // entity-relations from depending on posts or communities.
 registerPostRelatedUrlsGuard(guardPostRelatedUrls)
+
+registerPostHackerNewsFlagRecompute(recomputePostHackerNewsFlags)

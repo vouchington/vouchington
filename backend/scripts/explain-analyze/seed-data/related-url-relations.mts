@@ -1,3 +1,4 @@
+import '@backend/service-registrations'
 import { beginTransaction } from '@data-stores/psql'
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation'
 import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from '@services/elections-votes/entity-relation/vote-stats-batch'

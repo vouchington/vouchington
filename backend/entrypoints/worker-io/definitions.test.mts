@@ -4,6 +4,7 @@ import { upsertSchedules as upsertMembershipSchedules } from '@queues/membership
 import { upsertSchedules as upsertPsqlSchedules } from '@queues/psql/enqueues/schedules'
 import { upsertSchedules as upsertEmailSchedules } from '@queues/emails/enqueues/schedules'
 import { upsertSchedules as upsertCrawlEmbedsSchedules } from '@queues/crawl-embeds/enqueues/schedules'
+import { upsertSchedules as upsertHackerNewsFlagSchedules } from '@queues/hacker-news-flags/enqueues/schedules'
 import { SCHEDULE_DEFINITIONS } from './definitions.mts'
 
 describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
@@ -14,6 +15,7 @@ describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
     await expect(byQueue('crawl_embeds').load()).resolves.toBe(upsertCrawlEmbedsSchedules)
     await expect(byQueue('psql').load()).resolves.toBe(upsertPsqlSchedules)
     await expect(byQueue('bloom-filters').load()).resolves.toBe(upsertBloomFilterSchedules)
+    await expect(byQueue('hacker-news-flags').load()).resolves.toBe(upsertHackerNewsFlagSchedules)
     await expect(byQueue('memberships').load()).resolves.toBe(upsertMembershipSchedules)
     await expect(byQueue('background').load()).resolves.toBeTypeOf('function')
   })

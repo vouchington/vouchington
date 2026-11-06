@@ -1,3 +1,9 @@
+import {
+  assessPostLinkEdit,
+  persistPostLinkEdit,
+  assertCommunityLinkEditAllowed,
+} from './update/link-url.mts'
+import { recomputePostHackerNewsFlag } from './hacker-news-flags.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Post, UpdatePostChanges } from './types.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
@@ -13,7 +19,6 @@ import { writePostUpdates } from './update/post-update-query.mts'
 import { createUpdatePostRevision } from './update/revisions.mts'
 import { syncPostDataPointTopicsInTransaction } from './update/data-point-relations.mts'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
-import { assertCommunityNoLinksAllowed } from '@services/communities/restrictions/enforce'
 import sql from 'sql-template-strings'
 import { finalizePostUpdateAndDeliver } from './update/post-commit-delivery.mts'
 import { lockPostUpdateMutationScopes } from './category-user-locks.mts'
@@ -41,20 +46,31 @@ export const updatePost = async (
   delegated = false,
 ) => {
   await assertValidPostUpdate(creator, post, requestedChanges, membershipPlan, !!hashtagIntent)
+  const assessment = await assessPostLinkEdit(post, requestedChanges)
+  let normalizedChanges = assessment.changes
   let changed = false
   let contentChanged = false
   let shouldEnqueuePostUpdated = false
   let previousPost = post
-  let effectiveChanges = requestedChanges
+  let effectiveChanges = normalizedChanges
   let syncHashtagCategories = false
   async function updatePostInTransaction() {
     await using query = await beginTransaction()
     async function updatePostRows(query: TransactionQuery) {
+      if (assessment.urls) {
+        normalizedChanges = await persistPostLinkEdit(
+          query,
+          creator.id,
+          assessment.changes,
+          assessment.urls,
+        )
+        effectiveChanges = normalizedChanges
+      }
       const activeCategoryOwnerId = await lockPostUpdateMutationScopes(
         query,
         post.id,
         creator.id,
-        requestedChanges,
+        normalizedChanges,
         hashtagIntent,
         delegated,
       )
@@ -67,7 +83,7 @@ export const updatePost = async (
         effectiveChanges = await prepareLockedHashtagIntentChanges(
           creator,
           currentPost,
-          requestedChanges,
+          normalizedChanges,
           hashtagIntent,
           options,
         )
@@ -86,39 +102,24 @@ export const updatePost = async (
       const hasContentUpdates =
         changes.markdown !== undefined ||
         changes.title !== undefined ||
-        changes.structured_data !== undefined
+        changes.structured_data !== undefined ||
+        (changes.url_id !== undefined && changes.url_id !== currentPost.url_id)
       const hasAiSummaryUpdate =
         changes.ai_summary_markdown !== undefined &&
         changes.ai_summary_markdown !== currentPost.ai_summary_markdown
 
-      if (currentPost.community_id && hasContentUpdates) {
-        await assertCommunityNoLinksAllowed({
-          communityId: currentPost.community_id,
-          currentUser: creator,
-          options,
-          updates: {
-            title: changes.title,
-            markdown: changes.markdown,
-            structured_data: changes.structured_data,
-            url: changes.url,
-            url_id: changes.url_id,
-          },
-        })
-      }
-
+      if (hasContentUpdates)
+        await assertCommunityLinkEditAllowed(creator, currentPost, changes, options)
       if (changes.slug) {
         await createPostSlug(currentPost, changes.slug, options)
         changed = true
       }
-
       if (await assertValidAudienceUpdate(currentPost, changes, options)) {
         changed = true
       }
-
       if (changes.is_anonymous !== undefined && changes.is_anonymous !== currentPost.is_anonymous) {
         changed = true
       }
-
       if (
         changes.declared_language !== undefined &&
         normalizeContentLanguageTag(changes.declared_language ?? null) !==
@@ -126,12 +127,9 @@ export const updatePost = async (
       ) {
         changed = true
       }
-
       if (hasContentUpdates || hasAiSummaryUpdate) contentChanged = true
-
       shouldEnqueuePostUpdated =
         changed || hasContentUpdates || hasAiSummaryUpdate || changes.categories !== undefined
-
       await writePostUpdates({
         changed,
         changes,
@@ -182,6 +180,7 @@ export const updatePost = async (
         syncHashtagCategories,
       })
 
+      if (changes.url_id !== undefined) await recomputePostHackerNewsFlag(post.id, options)
       return getPostByAny(post.id, options)
     }
     const result = await updatePostRows(query)

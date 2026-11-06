@@ -52,16 +52,18 @@ export function projectScheduledJobs(
 /**
  * Mirrors the runtime clamp so the operator-facing `schedule` text never disagrees with the
  * cadence actually registered. Skips jobs registered as production-only (never clamped even on
- * staging) and thunk repeats (resolved fresh at registration time, not statically clampable here).
+ * staging). Resolve thunk repeats at projection time, just as registration resolves them,
+ * so dynamic intervals show the cadence actually registered in staging.
  */
 function clampedSurfaceSchedule(
   job: ScheduledJobManifest['jobs'][number],
   schedule: string,
   applyHourlyFloor: boolean,
 ): string {
-  if (!applyHourlyFloor || job.environment === 'production' || typeof job.repeat === 'function') {
+  if (!applyHourlyFloor || job.environment === 'production') {
     return schedule
   }
-  const aligned = clampScheduledJobRepeatToHourlyFloor(job.repeat)
+  const repeat = typeof job.repeat === 'function' ? job.repeat() : job.repeat
+  const aligned = clampScheduledJobRepeatToHourlyFloor(repeat)
   return aligned.clamped ? alignedScheduleText(aligned.repeat.pattern) : schedule
 }

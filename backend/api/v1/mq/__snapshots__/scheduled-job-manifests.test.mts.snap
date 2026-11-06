@@ -2105,6 +2105,80 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Readmit due Hacker News refreshes in bounded pages",
+        "id": "readmitHackerNewsLookups",
+        "kind": "scheduled-jobs",
+        "schedule": "Dynamic interval",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "hacker-news-flags",
+    "registration": "parallel",
+    "repeat": "[runtime repeat]",
+    "schedulerId": "readmitHackerNewsLookups",
+    "template": {
+      "data": {
+        "kind": "readmission",
+      },
+      "name": "readmitHackerNewsLookups",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "hacker-news-flags:readmission",
+        },
+        "priority": 0,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Repair Hacker News filter flags in bounded pages",
+        "id": "repairHackerNewsFlags",
+        "kind": "scheduled-jobs",
+        "schedule": "Dynamic interval",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "hacker-news-flags",
+    "registration": "parallel",
+    "repeat": "[runtime repeat]",
+    "schedulerId": "repairHackerNewsFlags",
+    "template": {
+      "data": {
+        "kind": "repair",
+      },
+      "name": "repairHackerNewsFlags",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "hacker-news-flags:repair",
+        },
+        "priority": 0,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Publish class-aggregated GlideMQ depth and staleness to CloudWatch",
         "id": "publish-glidemq-stats",
         "kind": "scheduled-jobs",
@@ -3478,6 +3552,22 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "find-your-friends",
     "schedule": "0 3 * * *",
     "triggerName": "enqueueDispatchFindYourFriends",
+  },
+  {
+    "description": "Repair Hacker News filter flags in bounded pages",
+    "id": "repairHackerNewsFlags",
+    "job_name": "repairHackerNewsFlags",
+    "queue_name": "hacker-news-flags",
+    "schedule": "Dynamic interval",
+    "triggerName": "enqueueHackerNewsFlagRepair",
+  },
+  {
+    "description": "Readmit due Hacker News refreshes in bounded pages",
+    "id": "readmitHackerNewsLookups",
+    "job_name": "readmitHackerNewsLookups",
+    "queue_name": "hacker-news-flags",
+    "schedule": "Dynamic interval",
+    "triggerName": "enqueueHackerNewsLookupReadmission",
   },
   {
     "description": "Deliver durable membership entitlement effects",

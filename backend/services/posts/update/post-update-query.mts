@@ -29,6 +29,7 @@ function appendFieldUpdates(
   post: Post,
   changes: UpdatePostChanges,
 ) {
+  if (changes.url_id !== undefined) updateQuery.append(sql`, url_id = ${changes.url_id}`)
   if (changes.markdown !== undefined) updateQuery.append(sql`, markdown = ${changes.markdown}`)
   if (changes.title !== undefined) updateQuery.append(sql`, title = ${changes.title}`)
   if (post.post_type !== 'comment' && changes.broadcast) {

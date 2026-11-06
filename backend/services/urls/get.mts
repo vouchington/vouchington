@@ -25,7 +25,10 @@ export const getUrlById = async (
   return rows[0] || null
 }
 
-const getUrlByAny = async (id: string, options: QueryOptions = {}): Promise<ViewUrl | null> => {
+export const getUrlByAny = async (
+  id: string,
+  options: QueryOptions = {},
+): Promise<ViewUrl | null> => {
   let filter: string
   let param: string
   if (isUUID(id)) {
@@ -44,7 +47,8 @@ const getUrlByAny = async (id: string, options: QueryOptions = {}): Promise<View
       })
     }
   }
-  const { rows } = await read<ViewUrl>(
+  const query = options.readOnly === false ? write : read
+  const { rows } = await query<ViewUrl>(
     `/* getUrlByAny */
     WITH url_id AS (
       SELECT id

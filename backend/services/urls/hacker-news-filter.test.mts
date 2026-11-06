@@ -170,7 +170,7 @@ describe('references stored on a canonical URL', () => {
     if (hops === 1) {
       await setCanonicalUrl(source, canonical)
     } else {
-      // setCanonicalUrl flattens; a concurrent call can leave this two-hop chain.
+      // Readers also tolerate a two-hop chain.
       await linkTwoHopCanonicalUrlForTest(source, middle, canonical)
     }
     return source

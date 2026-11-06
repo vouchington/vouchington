@@ -29,6 +29,8 @@
     "@queues/background-cpu": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
+    "@queues/hacker-news": "workspace:^",
+    "@queues/hacker-news-flags": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@queues/psql": "workspace:^",
     "@queues/ses-inbound": "workspace:^",

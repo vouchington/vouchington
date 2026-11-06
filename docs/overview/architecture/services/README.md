@@ -182,6 +182,12 @@ Expiring an old Follow cycle clears only the optional cycle pointer, preserving 
 and target facts. Terminal follower distribution intents also expire through bounded pages; their
 children cascade from the parent, while unfinished intents remain available for retries.
 
+Hacker News references are refetchable facts on canonical URL identities. Retention expires whole
+reference snapshots by their last lookup time, including empty lookups, rather than relying on URL
+deletion. Canonical changes discard the old snapshot and expose the resolved target for a fresh
+lookup. Refreshes, canonical changes, and retention coordinate row locks so cleanup cannot leave
+partial or misplaced facts.
+
 History retention keeps a durable high-water cursor for age-only referral scrubbing, referral
 expiry, and pending imports. A completed pass advances its fixed age boundary rather than starting
 again at the oldest row. Each bounded page first checks for one still-eligible row behind the
