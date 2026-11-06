@@ -506,7 +506,7 @@ COMMENT ON COLUMN rss_feed_item_sources.published_at IS 'Publication timestamp c
 COMMENT ON COLUMN rss_feed_item_sources.story_id IS 'Story copied from the item so a page can stop at the newest visible source. The item remains the source of truth.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_copy_rss_feed_item_source_story_id()
+CREATE OR REPLACE FUNCTION fn_ensure_rss_feed_item_source_story_id()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -522,10 +522,10 @@ $$;
 CREATE OR REPLACE TRIGGER trigger_copy_rss_feed_item_source_story_id
 BEFORE INSERT OR UPDATE OF story_id ON rss_feed_item_sources
 FOR EACH ROW
-EXECUTE FUNCTION fn_copy_rss_feed_item_source_story_id();
+EXECUTE FUNCTION fn_ensure_rss_feed_item_source_story_id();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_sync_rss_feed_item_source_story_id()
+CREATE OR REPLACE FUNCTION fn_update_rss_feed_item_sources_story_id()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -543,7 +543,7 @@ CREATE OR REPLACE TRIGGER trigger_sync_rss_feed_item_source_story_id
 AFTER UPDATE OF story_id ON rss_feed_items
 FOR EACH ROW
 WHEN (OLD.story_id IS DISTINCT FROM NEW.story_id)
-EXECUTE FUNCTION fn_sync_rss_feed_item_source_story_id();
+EXECUTE FUNCTION fn_update_rss_feed_item_sources_story_id();
 
 -------------------------------------------------------------------------------
 -- rss_feed_item_categories
