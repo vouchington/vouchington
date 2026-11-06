@@ -40,6 +40,15 @@ export async function claimRecoverableDataRequests(
     LIMIT ${batchSize}
   `)
   const selectedIds = candidateRows.map(row => row.id)
+  const activeUserIds: string[] = []
+  const deletedUserIds: string[] = []
+  for (const userId of [
+    ...new Set(candidateRows.flatMap(row => (row.user_id ? [row.user_id] : []))),
+  ].toSorted()) {
+    // oxlint-disable-next-line no-await-in-loop -- sorted lifecycle locks fence every candidate before a request-row lock.
+    if (await lockActiveDataRequestUser(transaction, userId)) activeUserIds.push(userId)
+    else deletedUserIds.push(userId)
+  }
   const { rowCount: deletedCount } =
     await transaction(sql`/* claimRecoverableDataRequests:deletedUsers */
     WITH candidates AS (
@@ -48,10 +57,7 @@ export async function claimRecoverableDataRequests(
         AND request.completed_at IS NULL AND request.failed_at IS NULL
         AND (
           request.user_id IS NULL
-          OR NOT EXISTS (
-            SELECT 1 FROM users live_user
-            WHERE live_user.id = request.user_id AND live_user.deleted_at IS NULL
-          )
+          OR request.user_id = ANY(${deletedUserIds}::uuid[])
         )
       ORDER BY request.id LIMIT ${batchSize} FOR UPDATE SKIP LOCKED
     )
@@ -59,13 +65,6 @@ export async function claimRecoverableDataRequests(
       last_error_message = 'User was deleted before the export completed'
     WHERE id IN (SELECT id FROM candidates)
   `)
-  const activeUserIds: string[] = []
-  for (const userId of [
-    ...new Set(candidateRows.flatMap(row => (row.user_id ? [row.user_id] : []))),
-  ].toSorted()) {
-    // oxlint-disable-next-line no-await-in-loop -- sorted user lifecycle locks fence every candidate before the claim update.
-    if (await lockActiveDataRequestUser(transaction, userId)) activeUserIds.push(userId)
-  }
   if (activeUserIds.length === 0) {
     await transaction.commit()
     return {
