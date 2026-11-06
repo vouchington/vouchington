@@ -83,7 +83,9 @@ recent change window and cannot recover an old entity whose referenced URL chang
 
 Hacker News lookups have a dedicated external-service rate limit, isolating a flood of new URLs
 from other background work. Detail reads re-admit missing or stale results after a lost or terminal
-job; unread URLs may remain without references until a detail read occurs.
+job. A separate bounded refresh readmission lane revisits known lookup state within its automatic
+refresh window, recovering dropped refresh chains from persisted timestamps. It does not backfill
+URLs whose initial lookup was missed; those may remain without references until normal admission.
 
 Moderation reconciliation and Bedrock batch polling carry a fixed sweep boundary through bounded
 continuations, so unchanged active rows cannot monopolize every page. Moderation reconciliation

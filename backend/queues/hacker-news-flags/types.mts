@@ -13,4 +13,5 @@ export type RepairFlagCursor = {
   afterId?: string
   upperId?: string
 }
-export type HackerNewsFlagData = UrlFlagCursor | RepairFlagCursor
+export type LookupReadmissionCursor = { kind: 'readmission'; afterId?: string; upperId?: string }
+export type HackerNewsFlagData = UrlFlagCursor | RepairFlagCursor | LookupReadmissionCursor

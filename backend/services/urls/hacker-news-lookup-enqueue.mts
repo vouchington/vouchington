@@ -1,8 +1,7 @@
 import onError from '@modules/on-error'
 import { enqueueHackerNewsLookups } from '@queues/hacker-news/enqueues'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { getHackerNewsLookupTargets } from './hacker-news-lookup-state.mts'
-import { getHackerNewsWorkLimit } from './hacker-news-work-limits.mts'
+import { getHackerNewsLookupTargets, isHackerNewsLookupDue } from './hacker-news-lookup-state.mts'
 
 /** Admission is best effort: Algolia and queue outages never fail ingestion or detail reads. */
 export async function enqueueMissingHackerNewsLookups(
@@ -11,13 +10,9 @@ export async function enqueueMissingHackerNewsLookups(
 ): Promise<void> {
   try {
     const targets = await getHackerNewsLookupTargets(urlIds, options)
-    const cutoff = Date.now() - getHackerNewsWorkLimit('retention_days') * 86_400_000
+    const now = Date.now()
     await enqueueHackerNewsLookups(
-      targets.flatMap(target =>
-        !target.looked_up_at || new Date(target.looked_up_at).getTime() <= cutoff
-          ? [target.id]
-          : [],
-      ),
+      targets.flatMap(target => (isHackerNewsLookupDue(target, now) ? [target.id] : [])),
     )
   } catch (err) {
     onError(

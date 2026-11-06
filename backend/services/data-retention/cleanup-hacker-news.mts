@@ -9,10 +9,7 @@ import {
   getHackerNewsWorkLimit,
   hackerNewsWorkConfig,
 } from '@services/urls/hacker-news-work-limits'
-import {
-  HACKER_NEWS_COMMENT_CAP_PER_URL,
-  HACKER_NEWS_STORY_CAP_PER_URL,
-} from '@services/urls/hacker-news-references-types'
+import { hackerNewsReferenceMaxValues } from '@services/urls/hacker-news-reference-limits'
 import { runBoundedBatches } from './run-bounded-batches.mts'
 
 /** Refetchable facts expire by lookup time; deletion of URL identities never drives retention. */
@@ -75,7 +72,7 @@ async function cleanupHackerNewsReferenceBatch(
       DELETE FROM url_hacker_news_stories AS stories USING candidates
       WHERE stories.url_id = candidates.url_id
         AND stories.hacker_news_item_id = candidates.hacker_news_item_id`,
-    [ids, batchSize * HACKER_NEWS_STORY_CAP_PER_URL],
+    [ids, batchSize * hackerNewsReferenceMaxValues.stories_per_url],
   )
   await query(
     `/* deleteExpiredHackerNewsComments */
@@ -87,7 +84,7 @@ async function cleanupHackerNewsReferenceBatch(
       DELETE FROM url_hacker_news_comments AS comments USING candidates
       WHERE comments.url_id = candidates.url_id
         AND comments.hacker_news_item_id = candidates.hacker_news_item_id`,
-    [ids, batchSize * HACKER_NEWS_COMMENT_CAP_PER_URL],
+    [ids, batchSize * hackerNewsReferenceMaxValues.comments_per_url],
   )
   await query(
     `/* deleteExpiredHackerNewsTotals */

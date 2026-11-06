@@ -1,11 +1,13 @@
+import {
+  getHackerNewsReferenceLimit,
+  hackerNewsReferenceMaxValues,
+} from './hacker-news-reference-limits.mts'
 import { enqueueHackerNewsFlagsBestEffort } from '@queues/hacker-news-flags/enqueues'
 import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import { getHackerNewsWorkLimit, hackerNewsWorkConfig } from './hacker-news-work-limits.mts'
-import {
-  HACKER_NEWS_COMMENT_CAP_PER_URL,
-  HACKER_NEWS_STORY_CAP_PER_URL,
-  type HackerNewsCommentReference,
-  type HackerNewsStoryReference,
+import type {
+  HackerNewsCommentReference,
+  HackerNewsStoryReference,
 } from './hacker-news-references-types.mts'
 
 export type HackerNewsReferenceRefresh = {
@@ -71,13 +73,14 @@ async function replaceHackerNewsReferenceChunk(
       await enqueueHackerNewsFlagsBestEffort(changedIds)
     })
 
+  // Removal uses the hard ceiling so lowering the insertion cap cannot leave older child rows.
   const payload = JSON.stringify(
     accepted.map(item => ({
       url_id: item.urlId,
       story_count: item.storyCount,
       comment_count: item.commentCount,
-      stories: item.stories.slice(0, HACKER_NEWS_STORY_CAP_PER_URL),
-      comments: item.comments.slice(0, HACKER_NEWS_COMMENT_CAP_PER_URL),
+      stories: item.stories.slice(0, getHackerNewsReferenceLimit('stories_per_url')),
+      comments: item.comments.slice(0, getHackerNewsReferenceLimit('comments_per_url')),
     })),
   )
 
@@ -109,7 +112,7 @@ async function replaceHackerNewsReferenceChunk(
     DELETE FROM url_hacker_news_stories AS old USING candidates
     WHERE old.url_id = candidates.url_id
       AND old.hacker_news_item_id = candidates.hacker_news_item_id`,
-    [payload, accepted.length * HACKER_NEWS_STORY_CAP_PER_URL],
+    [payload, accepted.length * hackerNewsReferenceMaxValues.stories_per_url],
   )
   await query(
     `/* upsertHackerNewsStories */
@@ -141,7 +144,7 @@ async function replaceHackerNewsReferenceChunk(
     DELETE FROM url_hacker_news_comments AS old USING candidates
     WHERE old.url_id = candidates.url_id
       AND old.hacker_news_item_id = candidates.hacker_news_item_id`,
-    [payload, accepted.length * HACKER_NEWS_COMMENT_CAP_PER_URL],
+    [payload, accepted.length * hackerNewsReferenceMaxValues.comments_per_url],
   )
   await query(
     `/* upsertHackerNewsComments */

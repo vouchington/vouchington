@@ -1,12 +1,15 @@
+import { v7 as uuidv7 } from 'uuid'
+import { readmitHackerNewsLookupPage } from '@services/urls/hacker-news-lookup-readmission'
 import { createWorker, processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import {
   FLAG_JOB,
   REPAIR_JOB,
+  READMISSION_JOB,
   QUEUE_NAME,
   hackerNewsFlagsConfig,
   getHackerNewsFlagsLimit,
 } from '@queues/hacker-news-flags/config'
-import type { HackerNewsFlagData } from '@queues/hacker-news-flags/types'
+import type { HackerNewsFlagData, LookupReadmissionCursor } from '@queues/hacker-news-flags/types'
 import { refreshUrlHackerNewsFlags } from './workers/url-page.mts'
 import { repairHackerNewsFlags } from './workers/repair-page.mts'
 import { recomputeHackerNewsFlags } from './workers/recompute.mts'
@@ -16,7 +19,9 @@ import type { Job } from 'glide-mq'
 export async function createHackerNewsFlagsWorker(options: { promotionInterval?: number } = {}) {
   await hackerNewsFlagsConfig.waitForInitialization()
   const concurrency =
-    getHackerNewsFlagsLimit('url_concurrency') + getHackerNewsFlagsLimit('repair_concurrency')
+    getHackerNewsFlagsLimit('url_concurrency') +
+    getHackerNewsFlagsLimit('repair_concurrency') +
+    getHackerNewsFlagsLimit('readmission_concurrency')
   return createWorker<HackerNewsFlagData>(
     QUEUE_NAME,
     async (job: Job<HackerNewsFlagData>) => {
@@ -28,7 +33,9 @@ export async function createHackerNewsFlagsWorker(options: { promotionInterval?:
             ? await refreshUrlHackerNewsFlags(job.data, size, recomputeHackerNewsFlags)
             : job.name === REPAIR_JOB && job.data.kind === 'repair'
               ? await repairHackerNewsFlags(job.data, size, recomputeHackerNewsFlags)
-              : invalidJob()
+              : job.name === READMISSION_JOB && job.data.kind === 'readmission'
+                ? await readmit(job.data)
+                : invalidJob()
         // Persist only after the domain transactions commit; retries replay idempotent writes.
         if (next) await save(next)
         return { hasMore: next !== null }
@@ -44,4 +51,13 @@ export async function createHackerNewsFlagsWorker(options: { promotionInterval?:
 }
 function invalidJob(): never {
   throw new Error('Invalid Hacker News flags job')
+}
+
+async function readmit(data: LookupReadmissionCursor) {
+  const upperId = data.upperId ?? uuidv7()
+  const result = await readmitHackerNewsLookupPage({
+    afterId: data.afterId ?? '00000000-0000-0000-0000-000000000000',
+    upperId,
+  })
+  return result.hasMore ? { kind: 'readmission' as const, upperId, afterId: result.afterId } : null
 }

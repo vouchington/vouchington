@@ -1,3 +1,4 @@
+import { HACKER_NEWS_VIEWER_SCENARIO_IDS } from './hacker-news-viewer-scenario-ids.mts'
 import { COPYRIGHT_CASE_PURGE_SCENARIO_IDS } from './copyright-case-purge-scenario-ids.mts'
 import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
 import { PUBLICATION_SCOPE_SCENARIO_IDS } from './publication-scope-scenario-ids.mts'
@@ -110,6 +111,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   'request-attempt-retention-continuation',
   'request-attempt-retention-delete',
   'hacker-news-retention-page',
+  ...HACKER_NEWS_VIEWER_SCENARIO_IDS,
   'hacker-news-posts-new-1m-low',
   'hacker-news-posts-new-1y-low',
   'hacker-news-posts-new-all-low',

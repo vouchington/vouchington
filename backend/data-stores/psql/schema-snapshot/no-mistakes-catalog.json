@@ -146558,6 +146558,38 @@
         }
       },
       "indexes": {
+        "idx_url_hacker_news_totals__looked_up_at__url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hacker_news_totals__looked_up_at__url_id ON public.url_hacker_news_totals USING btree (looked_up_at, url_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "looked_up_at",
+              "descending": false,
+              "expression": "looked_up_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "url_hacker_news_totals_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,

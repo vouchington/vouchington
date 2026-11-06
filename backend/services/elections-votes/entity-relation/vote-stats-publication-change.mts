@@ -6,8 +6,11 @@ export function isEntityRelationPublicationChange(
   priorSort: number,
   nextSort: number,
 ): boolean {
+  const hasPositiveRankedUrl = priorNet > 0 || nextNet > 0
   return (
     priorNet > 0 !== nextNet > 0 ||
-    (relationTable === 'relation__post__related__url' && priorSort !== nextSort)
+    (relationTable === 'relation__post__related__url' &&
+      hasPositiveRankedUrl &&
+      priorSort !== nextSort)
   )
 }

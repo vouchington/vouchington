@@ -116,6 +116,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/voteWeightFamilySourceChanges',
   'background/voteWeightDirtyMarkers',
   'hacker-news-flags/repairHackerNewsFlags',
+  'hacker-news-flags/readmitHackerNewsLookups',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {

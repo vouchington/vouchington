@@ -1,3 +1,4 @@
+import { hackerNewsReferenceConfig } from './hacker-news-reference-limits.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUrlWithHostname,
@@ -26,6 +27,32 @@ const comment = (id: number) => ({
 })
 
 describe('replaceHackerNewsReferences', () => {
+  it('removes all earlier rows when the runtime insertion cap decreases', async () => {
+    const urlId = await createTestUrlWithHostname()
+    await replaceHackerNewsReferences([
+      {
+        urlId,
+        storyCount: 25,
+        commentCount: 25,
+        stories: Array.from({ length: 25 }, (_, i) => story(i + 1)),
+        comments: Array.from({ length: 25 }, (_, i) => comment(i + 1)),
+      },
+    ])
+    const restore = overrideDynamicConfigFieldsForTest(hackerNewsReferenceConfig, {
+      stories_per_url: 1,
+      comments_per_url: 1,
+    })
+    try {
+      await replaceHackerNewsReferences([
+        { urlId, storyCount: 1, commentCount: 1, stories: [story(99)], comments: [comment(199)] },
+      ])
+    } finally {
+      restore()
+    }
+    const items = (await getHackerNewsItemsByUrlIds([urlId])).get(urlId)!
+    expect(items.stories.map(row => row.hacker_news_item_id)).toEqual([99])
+    expect(items.comments.map(row => row.hacker_news_item_id)).toEqual([199])
+  })
   it('keeps totals beyond the 25-per-kind caps, replaces stale items and records zero hits', async () => {
     const [urlId, emptyId] = await Promise.all([
       createTestUrlWithHostname(),

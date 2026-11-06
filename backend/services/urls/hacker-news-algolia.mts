@@ -1,6 +1,5 @@
 import { hasHackerNewsLink, hackerNewsUrlIdentity } from './hacker-news-algolia-identity.mts'
 import { areHackerNewsLookupsEnabled, hackerNewsQueueConfig } from '@queues/hacker-news/config'
-import { setTimeout } from 'node:timers/promises'
 import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { canonicalizeUrl, isBareDomainUrl } from '@vouchington/utils/urls'
 import { cancelResponseBody, fetchWithTimeout, handleHttpErrors } from '@modules/utils/http'
@@ -27,12 +26,7 @@ export async function fetchHackerNewsReferences(
   const results: HackerNewsLookupResult[] = []
   const search = async (url: string, kind: 'story' | 'comment') => {
     if (!areHackerNewsLookupsEnabled()) return null
-    try {
-      return await searchAlgolia(url, kind)
-    } finally {
-      // Hold the global worker slot between requests, including the last request in a job.
-      await setTimeout(1000)
-    }
+    return searchAlgolia(url, kind)
   }
   for (const input of inputs) {
     const result: HackerNewsLookupResult = { urlId: input.urlId, stories: [], comments: [] }

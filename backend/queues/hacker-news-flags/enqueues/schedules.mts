@@ -6,13 +6,39 @@ import {
 import {
   QUEUE_NAME,
   REPAIR_JOB,
+  READMISSION_JOB,
   hackerNewsFlagsConfig,
   getHackerNewsFlagsLimit,
   getHackerNewsFlagsOrdering,
 } from '../config.mts'
-import { enqueueHackerNewsFlagRepair } from '../enqueues.mts'
+import { enqueueHackerNewsFlagRepair, enqueueHackerNewsLookupReadmission } from '../enqueues.mts'
 import { hackerNewsFlagsQueue } from '../queues.mts'
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  {
+    schedulerId: READMISSION_JOB,
+    repeat: () => ({ every: getHackerNewsFlagsLimit('readmission_interval_seconds') * 1000 }),
+    template: {
+      name: READMISSION_JOB,
+      data: { kind: 'readmission' },
+      opts: () => ({
+        ...ENQUEUE_BASE_DEFAULTS,
+        priority: 0,
+        attempts: 3,
+        removeOnComplete: true,
+        removeOnFail: true,
+        ordering: getHackerNewsFlagsOrdering('readmission'),
+      }),
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: READMISSION_JOB,
+        schedule: 'Dynamic interval',
+        description: 'Readmit due Hacker News refreshes in bounded pages',
+        trigger: enqueueHackerNewsLookupReadmission,
+      },
+    ],
+  },
   {
     schedulerId: REPAIR_JOB,
     repeat: () => ({ every: getHackerNewsFlagsLimit('repair_interval_seconds') * 1000 }),

@@ -1,3 +1,4 @@
+import { getHackerNewsReferenceLimit } from '../hacker-news-reference-limits.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUrlWithHostname,
@@ -9,10 +10,6 @@ import {
   getHackerNewsItemsByUrlIds,
   getHackerNewsTotalsByUrlIds,
 } from '../hacker-news-references-read.mts'
-import {
-  HACKER_NEWS_COMMENT_CAP_PER_URL,
-  HACKER_NEWS_STORY_CAP_PER_URL,
-} from '../hacker-news-references-types.mts'
 import { CircularCanonicalReferenceError, setCanonicalUrl } from '../set-canonical.mts'
 
 describe('setCanonicalUrl', () => {
@@ -52,17 +49,23 @@ describe('setCanonicalUrl', () => {
       url_id: source,
       story_count: 100,
       comment_count: 100,
-      stories: Array.from({ length: HACKER_NEWS_STORY_CAP_PER_URL }, (_, index) => ({
-        hacker_news_item_id: index + 1,
-        points: 10,
-        reply_count: 2,
-        posted_at,
-      })),
-      comments: Array.from({ length: HACKER_NEWS_COMMENT_CAP_PER_URL }, (_, index) => ({
-        hacker_news_item_id: index + 100,
-        parent_story_item_id: 1,
-        posted_at,
-      })),
+      stories: Array.from(
+        { length: getHackerNewsReferenceLimit('stories_per_url') },
+        (_, index) => ({
+          hacker_news_item_id: index + 1,
+          points: 10,
+          reply_count: 2,
+          posted_at,
+        }),
+      ),
+      comments: Array.from(
+        { length: getHackerNewsReferenceLimit('comments_per_url') },
+        (_, index) => ({
+          hacker_news_item_id: index + 100,
+          parent_story_item_id: 1,
+          posted_at,
+        }),
+      ),
     })
     await insertHackerNewsReferencesForTest({
       url_id: canonical,

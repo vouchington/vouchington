@@ -1,6 +1,7 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import { buildHackerNewsPostUrlsSql } from '@services/urls/hacker-news-post-urls'
 import { buildPostSearchQuery } from '@services/posts/search/query-builder'
+import { postsWorkConfig, getPostsWorkLimit } from '@services/posts/work-limits'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { getRssFeedItemFeedIds } from '@services/feeds'
 import { getPrivateUserByIdOrSlug } from '@services/users'
@@ -24,7 +25,7 @@ const RSS_COUNT = 5_000
 const POST_SEED_BOUND = SEEDED_ROWS_BY_RELATION.posts! + POST_COUNT + 16
 const RSS_SEED_BOUND = SEEDED_ROWS_BY_RELATION.rss_feed_items! + RSS_COUNT
 
-/** Real generated flag-filter plans for public search and personalized feed windows. */
+/** Real flag-filter plans for anonymous, signed-in and admin search, plus feed windows. */
 export async function runHackerNewsFilterScenarios(): Promise<void> {
   let fixture: HackerNewsFilterFixture | undefined
   try {
@@ -34,6 +35,7 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
       rssCount: RSS_COUNT,
     })
     await seed.commit()
+    await postsWorkConfig.waitForInitialization()
     const user = await getPrivateUserByIdOrSlug(fixture.actorId)
     if (!user) throw new Error('Hacker News feed fixture user is missing')
     for (const density of ['low', 'high'] as const) {
@@ -47,36 +49,52 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
         '/* analyzeHackerNewsFilterFixture */ ANALYZE posts,rss_feed_items,url_hacker_news_totals,relation__post__related__url',
       )
       await update.commit()
-      for (const sort of ['new', 'best', 'hot'] as const) {
-        for (const timeRange of ['1m', '1y', 'all'] as const) {
-          const id = `hacker-news-posts-${sort}-${timeRange}-${density}`
-          registerScenarioContract(id, {
-            seededRows: { posts: POST_SEED_BOUND, rss_feed_items: RSS_SEED_BOUND },
-            expectations: [
-              { kind: 'queryBinds', token: 'posts.has_hacker_news_references' },
-              {
-                kind: 'maxProcessedRows',
-                relation: 'posts',
-                // Hot plans can scan the shared corpus once and hydrate at most two pages.
-                max: sort === 'hot' ? POST_SEED_BOUND + 2 * 26 : 2000,
+      const viewers = [
+        { suffix: '', user: undefined },
+        { suffix: '-member', user },
+        { suffix: '-admin', user: { ...user, roles: ['administrator'] } },
+      ]
+      for (const viewer of viewers) {
+        for (const sort of ['new', 'best', 'hot'] as const) {
+          for (const timeRange of ['1m', '1y', 'all'] as const) {
+            const id = `hacker-news-posts-${sort}-${timeRange}-${density}${viewer.suffix}`
+            const boundedHot = sort === 'hot' && timeRange === '1m'
+            registerScenarioContract(id, {
+              seededRows: { posts: POST_SEED_BOUND, rss_feed_items: RSS_SEED_BOUND },
+              expectations: [
+                { kind: 'queryBinds', token: 'posts.has_hacker_news_references' },
+                ...(boundedHot
+                  ? [{ kind: 'queryBinds' as const, token: 'hacker_news_hot_candidates' }]
+                  : []),
+                ...(sort === 'hot' && !boundedHot
+                  ? [{ kind: 'queryBinds' as const, token: 'vote_score' }]
+                  : []),
+                {
+                  kind: 'maxProcessedRows',
+                  relation: 'posts',
+                  // Cohort source/root probes plus bounded hydration/root probes; never the corpus.
+                  max: boundedHot
+                    ? 4 * getPostsWorkLimit('hacker_news_hot_candidate_limit') + 2 * 26
+                    : 2000,
+                },
+              ],
+              allowEmptyResult: true,
+              crossPartition: {
+                posts: 'HN searches may span UUIDv7 post ranges within the selected window.',
               },
-            ],
-            allowEmptyResult: true,
-            crossPartition: {
-              posts: 'HN searches may span UUIDv7 post ranges within the selected window.',
-            },
-          })
-          // no-mistakes-disable-next-line query-reached-per-item: the fixed sort/window/density matrix requires independent plans and serial process-global query capture.
-          await runAndCapture(id, () =>
-            read(
-              buildPostSearchQuery(undefined, {
-                has_hacker_news_references: true,
-                time_range: timeRange,
-                sort,
-                limit: 26,
-              }),
-            ),
-          )
+            })
+            // no-mistakes-disable-next-line query-reached-per-item: the fixed sort/window/density matrix requires independent plans and serial process-global query capture.
+            await runAndCapture(id, () =>
+              read(
+                buildPostSearchQuery(viewer.user, {
+                  has_hacker_news_references: true,
+                  time_range: timeRange,
+                  sort,
+                  limit: 26,
+                }),
+              ),
+            )
+          }
         }
       }
       const id = `hacker-news-rss-new-all-${density}`

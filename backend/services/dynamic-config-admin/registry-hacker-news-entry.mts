@@ -11,6 +11,8 @@ export const hackerNewsRegistryEntries = [
     maxValues: hackerNewsFlagsMaxValues,
     descriptions: {
       batch_size: 'Maximum entities rechecked per maintenance page.',
+      readmission_interval_seconds: 'Interval between bounded refresh readmission scans.',
+      readmission_concurrency: 'Global concurrency for refresh readmission.',
       repair_interval_seconds: 'Interval between flag repair runs.',
       url_concurrency: 'Global concurrency for URL-triggered flag maintenance.',
       repair_concurrency: 'Global concurrency for flag repair.',

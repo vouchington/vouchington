@@ -1,11 +1,8 @@
+import { hackerNewsReferenceMaxValues } from './hacker-news-reference-limits.mts'
 import { enqueueMissingHackerNewsLookups } from './hacker-news-lookup-enqueue.mts'
 import { enqueueHackerNewsFlagsBestEffort } from '@queues/hacker-news-flags/enqueues'
 import { write, beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
-import {
-  HACKER_NEWS_COMMENT_CAP_PER_URL,
-  HACKER_NEWS_STORY_CAP_PER_URL,
-} from './hacker-news-references-types.mts'
 
 export class CircularCanonicalReferenceError extends Error {
   readonly code = 'CIRCULAR_CANONICAL_REFERENCE'
@@ -114,7 +111,7 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
       USING candidates
       WHERE stories.url_id = candidates.url_id
         AND stories.hacker_news_item_id = candidates.hacker_news_item_id`,
-      [urlId, HACKER_NEWS_STORY_CAP_PER_URL],
+      [urlId, hackerNewsReferenceMaxValues.stories_per_url],
     )
     await query(
       `/* removeCanonicalSourceHackerNewsComments */
@@ -126,7 +123,7 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
       USING candidates
       WHERE comments.url_id = candidates.url_id
         AND comments.hacker_news_item_id = candidates.hacker_news_item_id`,
-      [urlId, HACKER_NEWS_COMMENT_CAP_PER_URL],
+      [urlId, hackerNewsReferenceMaxValues.comments_per_url],
     )
   }
   registerPostCommitAction(query, async () => {
@@ -137,7 +134,7 @@ export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Pr
   // Another canonical rewrite can retarget this URL after commit. Read the primary, and let
   // lookup workers resolve again when they execute a queued lookup.
   const resolvedId = await resolveCanonicalTarget(urlId, write)
-  await enqueueMissingHackerNewsLookups([resolvedId])
+  await enqueueMissingHackerNewsLookups([resolvedId], { query: write })
   return resolvedId
 }
 

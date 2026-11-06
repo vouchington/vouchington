@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { canonicalizeUrl, isBareDomainUrl } from '@vouchington/utils/urls'
 import { getHackerNewsWorkLimit, hackerNewsWorkConfig } from './hacker-news-work-limits.mts'
@@ -11,7 +11,7 @@ export type HackerNewsLookupTarget = {
 }
 
 /**
- * Resolve canonical chains, including two-hop links.
+ * Resolve canonical chains, including two-hop links, from the replica by default.
  * Lateral point probes keep recursive cardinality estimates from scanning the whole URL store.
  */
 export async function getHackerNewsLookupTargets(
@@ -25,7 +25,7 @@ export async function getHackerNewsLookupTargets(
   const batchSize = getHackerNewsWorkLimit('lookup_batch_size')
   for (let start = 0; start < ids.length; start += batchSize) {
     // no-mistakes-disable-next-line query-reached-per-item: each statement resolves one bounded batch of URL identities, not one URL
-    const { rows } = await write<HackerNewsLookupTarget>( // oxlint-disable-line no-await-in-loop -- serialize bounded primary reads
+    const { rows } = await read<HackerNewsLookupTarget>( // oxlint-disable-line no-await-in-loop -- serialize bounded reads
       `/* getHackerNewsLookupTargets */
       WITH RECURSIVE chain AS (
         SELECT id, canonical_url_id, url, created_at, 0 AS depth
@@ -56,6 +56,17 @@ export async function getHackerNewsLookupTargets(
     }
   }
   return [...targets.values()]
+}
+
+/** Canonical ownership and post-write state must be checked against the writer. */
+export function getPrimaryHackerNewsLookupTargets(
+  urlIds: readonly string[],
+  options: QueryOptions = {},
+): Promise<HackerNewsLookupTarget[]> {
+  return getHackerNewsLookupTargets(
+    urlIds,
+    options.client ? options : { ...options, query: options.query ?? write },
+  )
 }
 
 /** Recent URLs refresh daily, then weekly, then monthly, for a finite retention window. */

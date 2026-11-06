@@ -109,3 +109,15 @@ export async function getHackerNewsRowVersionsForTest(urlId: string): Promise<st
   )
   return result.rows.map(row => row.version as string)
 }
+
+/** Age owned lookup state without advancing the clock or touching other fixtures. */
+export async function ageHackerNewsLookupsForTest(
+  urlIds: readonly string[],
+  lookedUpAt: Date,
+): Promise<void> {
+  await write(
+    `/* ageHackerNewsLookupsForTest */ UPDATE url_hacker_news_totals
+     SET looked_up_at = $2 WHERE url_id = ANY($1::uuid[])`,
+    [urlIds, lookedUpAt],
+  )
+}

@@ -7,6 +7,7 @@ import {
 import {
   FLAG_JOB,
   REPAIR_JOB,
+  READMISSION_JOB,
   QUEUE_NAME,
   hackerNewsFlagsConfig,
   getHackerNewsFlagsLimit,
@@ -60,4 +61,25 @@ const enqueueRepair = createEnqueueFunction<{ kind: 'repair' }, typeof REPAIR_JO
 export async function enqueueHackerNewsFlagRepair(): Promise<unknown> {
   await hackerNewsFlagsConfig.waitForInitialization()
   return enqueueRepair({ kind: 'repair' }, { ordering: getHackerNewsFlagsOrdering('repair') })
+}
+
+const enqueueReadmission = createEnqueueFunction<{ kind: 'readmission' }, typeof READMISSION_JOB>({
+  queue: hackerNewsFlagsQueue,
+  queueName: QUEUE_NAME,
+  jobName: READMISSION_JOB,
+  defaults: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 1000 },
+    removeOnComplete: true,
+    removeOnFail: true,
+  },
+})
+
+/** Operator recovery uses the same bounded refresh-only scan as the schedule. */
+export async function enqueueHackerNewsLookupReadmission(): Promise<unknown> {
+  await hackerNewsFlagsConfig.waitForInitialization()
+  return enqueueReadmission(
+    { kind: 'readmission' },
+    { ordering: getHackerNewsFlagsOrdering('readmission') },
+  )
 }
