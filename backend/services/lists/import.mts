@@ -100,14 +100,18 @@ export async function importCommunityList(
     communityId,
     viewer,
     delegated,
+    sourceLimit,
   }: {
     communityId: string
     viewer: EntityRelationViewer
     delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string }
+    /** Shortens the membership page. Never raises the configured import limit. */
+    sourceLimit?: number
   },
 ): Promise<{ posts: number; items: number }> {
   const targetListId = targetList.id
-  const limit = getListImportLimit()
+  const configuredLimit = getListImportLimit()
+  const limit = sourceLimit === undefined ? configuredLimit : Math.min(sourceLimit, configuredLimit)
   const postsSource = importCommunityListPostsSourceSql(
     targetListId,
     communityId,

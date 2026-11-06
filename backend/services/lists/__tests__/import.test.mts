@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { read } from '@data-stores/psql'
 import {
   createTestUser,
   createRandomString,
@@ -17,7 +16,7 @@ import {
   listRssFeedItemsFromFeedExist,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { importCommunityList, importCommunityListPostsSourceSql } from '../import.mts'
+import { importCommunityList } from '../import.mts'
 import { getManageableList, type ManageableList } from '../manage.mts'
 
 describe('importCommunityList', () => {
@@ -115,14 +114,21 @@ describe('importCommunityList', () => {
     await deleteTestPost(newer)
 
     const viewer = viewerFor(user.id)
-    const newestOnly = await read(
-      importCommunityListPostsSourceSql(list.id, community.id, viewer, 1),
-    )
-    expect(newestOnly.rows).toHaveLength(0)
-    const withOlder = await read(
-      importCommunityListPostsSourceSql(list.id, community.id, viewer, 2),
-    )
-    expect(withOlder.rows.map(row => row.id)).toEqual([older])
+    const newestOnly = await importCommunityList(list, {
+      communityId: community.id,
+      viewer,
+      sourceLimit: 1,
+    })
+    expect(newestOnly.posts).toBe(0)
+    expect(await listPostItemExists(list.id, older)).toBe(false)
+    const withOlder = await importCommunityList(list, {
+      communityId: community.id,
+      viewer,
+      sourceLimit: 2,
+    })
+    expect(withOlder.posts).toBe(1)
+    expect(await listPostItemExists(list.id, older)).toBe(true)
+    expect(await listPostItemExists(list.id, newer)).toBe(false)
   })
 })
 
