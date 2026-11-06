@@ -5,11 +5,7 @@ import { decodeDataPointCursor } from './data-point-cursor.mts'
 import { buildDataPointPageQuery } from './data-point-query.mts'
 import type { DataPointSearchPage, SearchDataPointsOptions } from './data-point-types.mts'
 
-export type {
-  DataPointSearchPage,
-  DataPointSearchResult,
-  SearchDataPointsOptions,
-} from './data-point-types.mts'
+export type { DataPointSearchPage, SearchDataPointsOptions } from './data-point-types.mts'
 
 /**
  * Data-point search reads community-less posts first, then a keyset page of
