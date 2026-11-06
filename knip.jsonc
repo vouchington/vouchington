@@ -15,6 +15,7 @@
         "dev/launch-services.mts",
         "dev/sandbox-command-audit/rules.mts",
         "test-helpers/vitest.runner.backend-data-guards.mts",
+        "test-helpers/vitest.runner.admin-streams.mts",
       ],
       "project": [
         ".github/workflows/**/*.mts",

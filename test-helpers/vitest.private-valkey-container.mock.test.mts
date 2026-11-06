@@ -1,7 +1,7 @@
 import { PassThrough } from 'node:stream'
 import { execFileSync, spawn, ChildProcess } from 'node:child_process'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import createPlatformStatsCache from './vitest.platform-stats-cache-container.mts'
+import createPrivateValkey from './vitest.private-valkey-container.mts'
 
 vi.mock<typeof import('node:child_process')>(import('node:child_process'), async importOriginal => {
   const actual = await importOriginal()
@@ -71,12 +71,12 @@ function fixture(failure?: Failure, manualHealth = false) {
   }
 }
 
-describe('private platform-stats cache lifecycle', () => {
+describe('private test Valkey lifecycle', () => {
   afterEach(() => vi.clearAllMocks())
 
   it('provides the healthy owned endpoint and removes that exact container on teardown', async () => {
     const target = fixture()
-    const cache = await createPlatformStatsCache()
+    const cache = await createPrivateValkey('platform-stats')
     expect(cache).toMatchObject({
       url: 'redis://127.0.0.1:43210',
       owner: target.owner(),
@@ -111,12 +111,12 @@ describe('private platform-stats cache lifecycle', () => {
     ['start', 'start failed', 1],
     ['create', 'create transport timeout', 0],
     ['id', 'Docker did not return a container ID', 0],
-    ['binding', 'Private platform-stats Valkey did not bind an assigned localhost port', 1],
+    ['binding', 'Private test Valkey did not bind an assigned localhost port', 1],
     ['unhealthy', 'unhealthy', 1],
     ['exit', 'health watcher exited', 1],
   ] as const)('cleans up its owned container after %s failure', async (mode, message, watchers) => {
     const target = fixture(mode)
-    await expect(createPlatformStatsCache()).rejects.toThrow(message)
+    await expect(createPrivateValkey('platform-stats')).rejects.toThrow(message)
     expect(target.commands).toHaveBeenLastCalledWith('docker', ['rm', '--force', containerId], {
       timeout: 30_000,
     })
@@ -127,7 +127,7 @@ describe('private platform-stats cache lifecycle', () => {
   it('ignores a healthy event for another container', async () => {
     const target = fixture(undefined, true)
     const settled = vi.fn<() => void>()
-    const starting = createPlatformStatsCache().then(cache => {
+    const starting = createPrivateValkey('platform-stats').then(cache => {
       settled()
       return cache
     })
@@ -146,9 +146,9 @@ describe('private platform-stats cache lifecycle', () => {
 
   it('refuses to remove a container whose ownership label differs', async () => {
     const target = fixture()
-    const cache = await createPlatformStatsCache()
+    const cache = await createPrivateValkey('platform-stats')
     target.makeForeign()
-    expect(cache.close).toThrow('foreign platform-stats cache container')
+    expect(cache.close).toThrow('foreign private test Valkey container')
     expect(
       target.commands.mock.calls.some(([, args]) => Array.isArray(args) && args[0] === 'rm'),
     ).toBe(false)

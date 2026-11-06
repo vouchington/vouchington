@@ -28,6 +28,7 @@ describe('runVitestProjectGroup', () => {
       'backend/analytics-integration',
       'backend-data-stores',
       'backend-platform-stats-cache',
+      'backend-admin-streams',
       'backend-mocks',
       'backend-real-glide-mq',
     ])
@@ -88,6 +89,8 @@ describe('runVitestProjectGroup', () => {
           'backend-data-stores',
           '--project',
           'backend-platform-stats-cache',
+          '--project',
+          'backend-admin-streams',
           '--project',
           'backend-mocks',
           '--project',

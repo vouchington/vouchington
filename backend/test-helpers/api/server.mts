@@ -125,6 +125,22 @@ export const createRequest = (
 
 export const request = createRequest()
 
+/** Close the listener only when the caller owns its isolated API module graph. */
+export async function closeApiTestServer(): Promise<void> {
+  const state = globalThis as ApiTestServerGlobal
+  const current = state[API_TEST_SERVER_STATE_KEY]
+  if (!current) return
+  await current.addressPromise
+  const closed = new Promise<void>((resolve, reject) => {
+    current.server.close(error => (error ? reject(error) : resolve()))
+  })
+  current.server.closeAllConnections()
+  await closed
+  state[API_TEST_SERVER_STATE_KEY] = undefined
+  state[API_TEST_SERVER_LISTENER_KEY] = undefined
+  state[API_TEST_SERVER_MATCHER_KEY] = undefined
+}
+
 export function nextTestRequestIp(): string {
   testRequestIpState.vouchaTestRequestIpCounter =
     (testRequestIpState.vouchaTestRequestIpCounter ?? 0) + 1

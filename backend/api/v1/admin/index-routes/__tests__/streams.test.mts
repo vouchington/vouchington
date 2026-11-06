@@ -1,5 +1,8 @@
-import { beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest'
-import { createRequest } from '@voucha/test-helpers/api/server'
+import { ClientRequest } from 'node:http'
+import { GlideClient, GlideClientConfiguration } from '@valkey/valkey-glide'
+import { TestGlideClientScope } from '@voucha/test-helpers/glide-client-scope'
+import { afterAll, beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest'
+import { closeApiTestServer, createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
@@ -10,6 +13,7 @@ type StreamCapture = {
 
 let admin: PrivateUser
 let regularUser: PrivateUser
+const streamClients = new TestGlideClientScope()
 
 describe('Admin SSE stream routes', () => {
   beforeAll(async () => {
@@ -18,6 +22,14 @@ describe('Admin SSE stream routes', () => {
       createTestUser(),
     ])
     await Promise.all([import('../postgresql-stream-get.mts'), import('../valkey-stream-get.mts')])
+  })
+
+  afterAll(async () => {
+    try {
+      await closeApiTestServer()
+    } finally {
+      await streamClients.close()
+    }
   })
 
   describe('GET /api/v1/admin/postgresql/stream', () => {
@@ -91,6 +103,7 @@ describe('Admin SSE stream routes', () => {
       expect(capture.contentType).toContain('text/event-stream')
       expect(capture.body.match(/event: snapshot\n/g)).toHaveLength(2)
       expect(capture.body).toContain('"groups"')
+      expect(streamClients.size).toBe(4)
     })
   })
 })
@@ -104,6 +117,32 @@ async function captureAdminStream(
   const chunks: string[] = []
   const tickerStopped = Promise.withResolvers<void>()
   let clearIntervalSpy: MockInstance<typeof globalThis.clearInterval> | undefined
+  let response: { destroy(): void } | undefined
+  const responseClosed = Promise.withResolvers<void>()
+  const req = request.get(path).set('Accept', 'text/event-stream').timeout(5000).buffer(false)
+  const clientCreation = vi.spyOn(GlideClient, 'createClient').mockImplementation(async config => {
+    const client = await streamClients.create(config)
+    const patterns =
+      config.pubsubSubscriptions?.channelsAndPatterns?.[
+        GlideClientConfiguration.PubSubChannelModes.Pattern
+      ]
+    const ownedPatterns = ['admin:postgresql:*', 'admin:valkey:*'].filter(pattern =>
+      patterns?.has(pattern),
+    )
+    if (ownedPatterns.length > 0) streamClients.own(client, ownedPatterns)
+    return client
+  })
+  const publish = GlideClient.prototype.publish
+  const publication = vi.spyOn(GlideClient.prototype, 'publish').mockImplementation(function (
+    this: GlideClient,
+    message,
+    channel,
+  ) {
+    if (channel === 'admin:postgresql:snapshot' || channel === 'admin:valkey:snapshot') {
+      streamClients.own(this)
+    }
+    return publish.call(this, message, channel)
+  })
 
   if (options) {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
@@ -118,7 +157,6 @@ async function captureAdminStream(
     await new Promise<void>((resolve, reject) => {
       let advanced = false
       const expectedSnapshotCount = options ? 2 : 1
-      const req = request.get(path).set('Accept', 'text/event-stream').timeout(5000).buffer(false)
 
       req.on(
         'response',
@@ -126,7 +164,10 @@ async function captureAdminStream(
           headers: Record<string, string>
           on: (event: string, fn: (...args: unknown[]) => void) => void
           destroy: () => void
+          once: (event: string, fn: () => void) => void
         }) => {
+          response = res
+          res.once('close', () => responseClosed.resolve())
           contentType = res.headers['content-type'] ?? ''
           res.on('data', (...args: unknown[]) => {
             chunks.push(String(args[0]))
@@ -158,11 +199,25 @@ async function captureAdminStream(
 
     return { body: chunks.join(''), contentType }
   } finally {
-    clearIntervalSpy?.mockRestore()
-    if (options) {
-      // Drain retained restorers before restoring real timer globals.
-      vi.restoreAllMocks()
-      vi.useRealTimers()
+    try {
+      const transport = req.req
+      const transportClosed =
+        transport instanceof ClientRequest && !transport.closed
+          ? new Promise<void>(resolve => transport.once('close', () => resolve()))
+          : Promise.resolve()
+      req.abort()
+      response?.destroy()
+      if (response) await responseClosed.promise
+      await transportClosed
+    } finally {
+      clientCreation.mockRestore()
+      publication.mockRestore()
+      clearIntervalSpy?.mockRestore()
+      if (options) {
+        // Drain retained restorers before restoring real timer globals.
+        vi.restoreAllMocks()
+        vi.useRealTimers()
+      }
     }
   }
 }
