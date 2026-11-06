@@ -587,6 +587,17 @@ ALTER TABLE posts VALIDATE CONSTRAINT fk_posts_community_id;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__community_id ON posts (community_id, id) WHERE community_id IS NOT NULL;
 
+-- Data-point search pages read a bounded newest slice per community, then community-less posts.
+-- These follow idx_posts__community_id so the publication keyset keeps that index's partition name.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__data_point_community
+  ON posts (community_id, id DESC)
+  WHERE post_type = 'data_point' AND community_id IS NOT NULL AND deleted_at IS NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__data_point_no_community
+  ON posts (id DESC)
+  WHERE post_type = 'data_point' AND community_id IS NULL AND deleted_at IS NULL;
 
 -- community_pinned_posts
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

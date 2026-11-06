@@ -434,17 +434,6 @@ CREATE INDEX IF NOT EXISTS idx_posts__data_point_vertical
   ON posts (data_point_vertical, id DESC)
   WHERE data_point_vertical IS NOT NULL AND deleted_at IS NULL;
 
--- Data-point search pages read a bounded newest slice per community, then community-less posts.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__data_point_community
-  ON posts (community_id, id DESC)
-  WHERE post_type = 'data_point' AND community_id IS NOT NULL AND deleted_at IS NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__data_point_no_community
-  ON posts (id DESC)
-  WHERE post_type = 'data_point' AND community_id IS NULL AND deleted_at IS NULL;
-
 -- expression index for querying by topic_id stored inside structured_data
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__structured_data__topic_id

@@ -155,8 +155,8 @@
       },
       "read_data_points": {
         "measured": {
-          "list": 3384,
-          "core": 1450
+          "list": 3708,
+          "core": 1476
         },
         "max": {
           "list": 4000,

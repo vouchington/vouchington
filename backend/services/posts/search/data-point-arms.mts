@@ -2,6 +2,14 @@ import { buildSourceBoundPostEligibilityFilter } from '@modules/feed-query-build
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { SearchDataPointsOptions } from './data-point-types.mts'
 
+/** A bound from DynamicConfig, inlined so a generic plan sees the same LIMIT as a custom plan. */
+export function dataPointLimitLiteral(value: number): string {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 101) {
+    throw new Error('data-point page limit is outside its configured bound')
+  }
+  return String(value)
+}
+
 export function appendNullArm(
   query: SQLStatement,
   options: SearchDataPointsOptions,
@@ -31,7 +39,9 @@ export function appendNullArm(
   if (postUpper) query.append(sql` AND id < ${postUpper}::uuid`)
   query.append(sql`
         ORDER BY id DESC
-        LIMIT ${lookahead}
+        LIMIT `)
+  query.append(dataPointLimitLiteral(lookahead))
+  query.append(sql`
       ) slice
       JOIN posts ON posts.id = slice.id
       LEFT JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)`)
@@ -79,7 +89,9 @@ export function appendCommunityArm(
   if (arm.postUpper) query.append(sql` AND id < ${arm.postUpper}::uuid`)
   query.append(sql`
         ORDER BY id DESC
-        LIMIT ${arm.lookahead}
+        LIMIT `)
+  query.append(dataPointLimitLiteral(arm.lookahead))
+  query.append(sql`
       ) slice ON TRUE
       LEFT JOIN posts ON posts.id = slice.id
       LEFT JOIN posts root_post
