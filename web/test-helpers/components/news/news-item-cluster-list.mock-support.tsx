@@ -1,6 +1,7 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+/* oxlint-disable no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+
 import type { ReactNode } from 'react'
-import { render } from '@testing-library/react'
+import { configure, render } from '@testing-library/react'
 import { vi } from 'vitest'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
@@ -10,6 +11,8 @@ import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 import { NewsItemClusterList } from '@/components/news/news-item-cluster-list'
 import { FeedStyleProvider } from '@/lib/preferences/feed-style-context'
 import { ClusterListNavIds } from '@/test-helpers/components/news/cluster-list-nav-ids'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const clusterViewer = vi.hoisted(() => ({ id: null as string | null }))
 export function setClusterMockViewerId(id: string | null) {
@@ -32,7 +35,7 @@ vi.mock(import('@/lib/api/client'), () => ({
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: () => (
     <button
-      data-testid='hide-button'
+      data-pw='hide-button'
       type='button'
       aria-label='Hide news item'
     />
@@ -40,7 +43,7 @@ vi.mock(import('@/components/shared/hide-button'), () => ({
 }))
 
 vi.mock(import('@/components/shared/follower-share-actions'), () => ({
-  FollowerShareActions: () => <div data-testid='follower-share-actions' />,
+  FollowerShareActions: () => <div data-pw='follower-share-actions' />,
 }))
 
 vi.mock(import('@/components/shared/report-menu-item'), () => ({
@@ -82,15 +85,15 @@ vi.mock(import('@/components/votes/score-vote'), () => ({
     existingVoteChoice?: string
     entityType?: string
   }) => (
-    <div data-testid={`score-vote-${electionId}`}>
-      <span data-testid={`existing-vote-choice-${electionId}`}>{String(existingVoteChoice)}</span>
-      <span data-testid={`entity-type-${electionId}`}>{String(entityType)}</span>
+    <div data-pw={`score-vote-${electionId}`}>
+      <span data-pw={`existing-vote-choice-${electionId}`}>{String(existingVoteChoice)}</span>
+      <span data-pw={`entity-type-${electionId}`}>{String(entityType)}</span>
     </div>
   ),
 }))
 
 vi.mock(import('@/components/news/news-discuss-menu'), () => ({
-  NewsDiscussMenu: () => <div data-testid='news-discuss-menu' />,
+  NewsDiscussMenu: () => <div data-pw='news-discuss-menu' />,
 }))
 
 export const makeClusterItem = (id: string, title: string) =>

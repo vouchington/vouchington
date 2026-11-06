@@ -14,7 +14,7 @@ import type { User } from '@/types/user'
 
 vi.mock(import('@/components/shared/follow-button'), () => ({
   FollowButton: ({ onChange }: { onChange?: (isActive: boolean) => void }) => (
-    <div data-testid='follow-button'>
+    <div data-pw='follow-button'>
       <button
         type='button'
         onClick={() => onChange?.(true)}

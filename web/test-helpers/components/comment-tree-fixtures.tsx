@@ -1,5 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
-import { render } from '@testing-library/react'
+import { configure, render } from '@testing-library/react'
 import type { MouseEventHandler, ReactNode } from 'react'
 import { vi } from 'vitest'
 import { trackDynamicLoader } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
@@ -8,6 +7,8 @@ import { toClientAuthUser } from '@/lib/auth/client-auth-user'
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { Post } from '@/types/posts'
 import type { User } from '@/types/user'
+
+configure({ testIdAttribute: 'data-pw' })
 
 export type { PostElection } from '@/types/posts'
 
@@ -57,7 +58,7 @@ vi.mock(
 )
 
 vi.mock(import('@/components/admin/admin-moderation-button'), () => ({
-  default: () => <div data-testid='admin-moderation-button' />,
+  default: () => <div data-pw='admin-moderation-button' />,
 }))
 
 vi.mock(import('@/components/shared/report-menu-item'), () => ({
@@ -69,7 +70,7 @@ vi.mock(
   () =>
     ({
       MARKDOWN_CONTENT_FEATURES_RICH: { code: true, images: true, utm: true },
-      MarkdownContent: ({ html }: { html: string }) => <div data-testid='markdown'>{html}</div>,
+      MarkdownContent: ({ html }: { html: string }) => <div data-pw='markdown'>{html}</div>,
     }) as unknown as typeof import('@/components/shared/markdown-content'),
 )
 

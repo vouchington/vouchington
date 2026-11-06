@@ -1,8 +1,10 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
+import { configure } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import type { Post } from '@/types/posts'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const mockNav = createNavMock()
 export const mockRouterPush = mockNav.push
@@ -53,7 +55,7 @@ vi.mock(
       }) => (
         // ast-grep-ignore: web-no-raw-form-elements -- test mock intentionally replaces the UI Select with native select semantics
         <select
-          data-testid='topic-type-select'
+          data-pw='topic-type-select'
           value={value}
           onChange={e => onValueChange?.(e.target.value)}
         >

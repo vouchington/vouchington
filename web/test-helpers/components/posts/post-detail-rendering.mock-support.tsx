@@ -1,10 +1,12 @@
+import { configure } from '@testing-library/react'
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { createNextDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { Button } from '@/components/ui/button'
 import type { User } from '@/types/user'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const mockUseEmblaCarousel = vi.hoisted(() => vi.fn<VitestLooseMock>())
 export const postDetailMockState: { currentUser: User | null } = { currentUser: null }
@@ -106,7 +108,7 @@ vi.mock(
       }) =>
         open ? (
           <div
-            data-testid='lightbox'
+            data-pw='lightbox'
             data-start-index={startIndex}
           >
             <Button

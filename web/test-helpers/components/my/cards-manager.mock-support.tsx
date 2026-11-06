@@ -1,11 +1,12 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
+import { configure } from '@testing-library/react'
 import React from 'react'
 import { vi } from 'vitest'
 import { Input } from '@/components/ui/input'
-
 import { CardsManager } from '@/components/my/cards-manager'
 import { createMyCard, deleteMyCard, updateMyCard } from '@/lib/api/client'
 import { initialCards } from '@/test-helpers/cards-manager-test-data'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const { toastMock } = vi.hoisted(() => ({
   toastMock: Object.assign(vi.fn<VitestLooseMock>(), {
@@ -41,7 +42,7 @@ vi.mock(import('@/components/posts/topic-autocomplete'), () => ({
       aria-label={placeholder ?? 'Topic'}
       value={value ?? ''}
       onChange={e => onChange(e.target.value, 'Mocked Card')}
-      data-testid='mock-topic-autocomplete-input'
+      data-pw='mock-topic-autocomplete-input'
     />
   ),
 }))
@@ -79,7 +80,7 @@ vi.mock(import('@/components/ui/select'), () => {
           value={value}
           aria-label='Card issuer'
           onChange={event => onValueChange?.(event.target.value)}
-          data-testid='mock-select'
+          data-pw='mock-select'
         >
           {content?.props.children}
         </select>
@@ -103,7 +104,7 @@ vi.mock(import('@/components/ui/checkbox'), () => {
         checked={checked}
         aria-label='Authorized user'
         onChange={e => onCheckedChange(e.target.checked)}
-        data-testid='mock-checkbox'
+        data-pw='mock-checkbox'
       />
     ),
   } as unknown as typeof import('@/components/ui/checkbox')

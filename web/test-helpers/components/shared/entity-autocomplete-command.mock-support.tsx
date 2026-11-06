@@ -1,10 +1,13 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+/* oxlint-disable no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+
 import type { ComponentProps, KeyboardEvent, ReactNode } from 'react'
-import { render } from '@testing-library/react'
+import { configure, render } from '@testing-library/react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EntityAutocomplete } from '@/components/shared/entity-autocomplete'
+
+configure({ testIdAttribute: 'data-pw' })
 
 interface Item {
   id: string
@@ -59,7 +62,7 @@ vi.mock(
       ),
       CommandList: ({ children }: { children: ReactNode }) => <ul>{children}</ul>,
       CommandEmpty: ({ children }: { children: ReactNode }) => (
-        <li data-testid='command-empty'>{children}</li>
+        <li data-pw='command-empty'>{children}</li>
       ),
       CommandItem: ({
         children,

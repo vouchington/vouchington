@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { NewsItemActions } from '../news-item-actions'
 
-const trailingAction = <span data-testid='trailing'>Next</span>
+const trailingAction = <span data-pw='trailing'>Next</span>
 
 describe('NewsItemActions hide/save buttons and leading/trailing actions', () => {
   it('renders trailingAction', () => {

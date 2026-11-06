@@ -18,7 +18,7 @@ vi.mock(import('@/components/auth/oauth-login-button'), () => ({
     return (
       <button
         type='button'
-        data-testid='oauth-login-btn'
+        data-pw='oauth-login-btn'
       >
         Connect
       </button>

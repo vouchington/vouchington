@@ -15,7 +15,7 @@ vi.mock(import('@/components/asides/aside-accordion'), () => ({
     children: React.ReactNode
     'data-pw'?: string
   }) => (
-    <div data-testid='aside-accordion'>
+    <div data-pw='aside-accordion'>
       <h3>{title}</h3>
       {children}
     </div>

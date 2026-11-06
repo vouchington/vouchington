@@ -187,9 +187,9 @@ describe('PostCard', () => {
           sharedByUser={sharedByUser}
         />,
       )
-      expect(
-        container.querySelector('[data-testid="shared-byline"]')?.getAttribute('data-class'),
-      ).toBe('pr-14')
+      expect(container.querySelector('[data-pw="shared-byline"]')?.getAttribute('data-class')).toBe(
+        'pr-14',
+      )
     })
     it('card view: shared byline has no pr-14 for post owner', () => {
       mockPostCardUser.current = { id: 'user-1' } as User
@@ -200,9 +200,9 @@ describe('PostCard', () => {
           sharedByUser={sharedByUser}
         />,
       )
-      expect(
-        container.querySelector('[data-testid="shared-byline"]')?.getAttribute('data-class'),
-      ).toBe('')
+      expect(container.querySelector('[data-pw="shared-byline"]')?.getAttribute('data-class')).toBe(
+        '',
+      )
     })
   })
 })

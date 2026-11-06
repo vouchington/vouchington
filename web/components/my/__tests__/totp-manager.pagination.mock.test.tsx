@@ -36,7 +36,7 @@ vi.mock(
     ({
       MfaReauthDialog: ({ open }: { open: boolean }) => (
         <div
-          data-testid='mfa-reauth-dialog'
+          data-pw='mfa-reauth-dialog'
           data-open={String(open)}
         />
       ),
