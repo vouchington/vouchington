@@ -152,7 +152,7 @@
     "dependency-cruiser": "^18.7.0",
     "eslint-plugin-no-mistakes": "^0.109.3",
     "eslint-plugin-playwright": "^2.12.1",
-    "eslint-plugin-react-you-might-not-need-an-effect": "^1.0.2",
+    "eslint-plugin-react-you-might-not-need-an-effect": "^1.1.0",
     "eslint-plugin-vouchington": "^0.2.0",
     "gh-pr-attach-screenshots": "^0.2.0",
     "glide-mq": "^0.20.0",
