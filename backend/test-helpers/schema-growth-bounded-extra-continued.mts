@@ -12,6 +12,10 @@ export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
     'Unfinished Stripe processing state remains while terminal work older than 30 days is deleted by bounded UUIDv7 keyset cleanup; immutable stripe_events retain deduplication.',
   ],
   [
+    'membership_stripe_purchase_collision_work_items',
+    'One immutable row per unfinished source-binding collision; successful invoice-case reconciliation deletes it, so storage tracks outstanding collision work.',
+  ],
+  [
     'membership_purchase_intents',
     'Live launch replays remain; failed or unlaunched intents with expiry over 30 days ago and no verification reference are deleted by bounded UUIDv7 keyset cleanup.',
   ],
