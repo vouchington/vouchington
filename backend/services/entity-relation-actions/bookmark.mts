@@ -140,7 +140,7 @@ async function writePreparedBookmarkGroups(
   )
 }
 
-export async function upsertBookmarkActions(
+async function upsertBookmarkActions(
   currentUser: PrivateUser,
   authority: EntityRelationActionAuthority,
   inputs: readonly BookmarkActionInput[],
