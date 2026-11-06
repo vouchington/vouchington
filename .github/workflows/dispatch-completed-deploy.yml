@@ -37,6 +37,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
           SOURCE_WORKFLOW_PATH: ${{ github.event.workflow_run.path }}
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: This API-only job deliberately runs without checkout.
         run: |
           set -euo pipefail
           should_dispatch=true
@@ -58,6 +59,7 @@ jobs:
         if: steps.intent.outputs.should_dispatch == 'true'
         env:
           SOURCE_WORKFLOW_PATH: ${{ github.event.workflow_run.path }}
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: This API-only job deliberately runs without checkout.
         run: |
           case "$SOURCE_WORKFLOW_PATH" in
             .github/workflows/docs-publish.yml)
