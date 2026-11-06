@@ -92878,26 +92878,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_posts__structured_data__result": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__structured_data__result ON ONLY public.posts USING btree (((structured_data ->> 'result'::text))) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": null,
-              "descending": false,
-              "expression": "(structured_data ->> 'result'::text)",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_posts__structured_data__result__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -92951,26 +92931,6 @@
               "expression": "id",
               "nullsFirst": true,
               "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_posts__structured_data__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__structured_data__topic_id ON ONLY public.posts USING btree (((structured_data ->> 'topic_id'::text))) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": null,
-              "descending": false,
-              "expression": "(structured_data ->> 'topic_id'::text)",
-              "nullsFirst": false,
-              "opclass": "text_ops"
             }
           ],
           "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",

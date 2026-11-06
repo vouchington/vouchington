@@ -98394,29 +98394,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_posts__structured_data__result": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__structured_data__result ON ONLY public.posts USING btree (((structured_data ->> 'result'::text))) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": null,
-              "descending": false,
-              "expression": "(structured_data ->> 'result'::text)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_posts__structured_data__result__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -98480,29 +98457,6 @@
               "expression": "id",
               "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_posts__structured_data__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__structured_data__topic_id ON ONLY public.posts USING btree (((structured_data ->> 'topic_id'::text))) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": null,
-              "descending": false,
-              "expression": "(structured_data ->> 'topic_id'::text)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
             }
           ],
