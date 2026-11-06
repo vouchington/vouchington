@@ -56,18 +56,17 @@ export async function searchCommunityMembers(
   }
 
   const roster = memberRosterFilter(options)
-  // LIMIT 1 keeps the community id visible, so a custom plan stops on the active
-  // membership index. A materialized parameter row hides it and bitmaps every member.
+  // The id page is index-only, so a low row estimate cannot bitmap the member heap.
   const afterId =
     cursorName !== undefined && cursorId !== undefined
       ? cursorId
       : '00000000-0000-0000-0000-000000000000'
   const query = sql`/* searchCommunityMembers */
     WITH membership_page AS MATERIALIZED (
-      SELECT page.*
+      SELECT full_member.*
       FROM (SELECT ${communityId}::uuid AS community_id, ${afterId}::uuid AS after_id LIMIT 1) requested
       JOIN LATERAL (
-        SELECT cm.*
+        SELECT cm.id
         FROM community_members cm
         WHERE cm.community_id = requested.community_id
           AND cm.removed_at IS NULL
@@ -79,6 +78,11 @@ export async function searchCommunityMembers(
         ORDER BY cm.community_id ASC, cm.id ASC
         LIMIT ${limit + 1}
       ) page ON TRUE
+      JOIN LATERAL (
+        SELECT loaded.* FROM community_members loaded
+        WHERE loaded.id = page.id
+        LIMIT 1
+      ) full_member ON TRUE
     )
     SELECT cm.*, (member_user.id IS NOT NULL) AS kept
     FROM membership_page cm
