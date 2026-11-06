@@ -4,6 +4,7 @@ export {
   buildNotificationPostEligibilityFilter,
   buildOtherwisePublicPostEligibilityFilter,
   buildPublicPostEligibilityFilter,
+  buildSourceBoundPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
   type DirectPostEligibilityOptions,
 } from './post-publication-eligibility.mts'

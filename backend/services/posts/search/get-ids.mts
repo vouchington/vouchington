@@ -17,6 +17,7 @@ import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-
 import type { PostSearchRow } from './get-ids-types.mts'
 import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
 import { postsWorkConfig } from '../work-limits.mts'
+import { isStorySourceSearch, searchStorySourcePosts } from './story-source-page.mts'
 
 type PostSearchResponse = {
   results: PostSearchResult[]
@@ -44,17 +45,25 @@ export async function getPostIds(
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
   const hasRankingScore =
     buildPostRankingScoreExpression({ hasTextSearch, hasSemanticSearch }) !== null
+  // Post search is always time-bounded; callers needing the full history pass 'all'. Only an
+  // author's own drafts listing (their user id plus drafts) keeps that full history.
+  const effectiveTimeRange =
+    options.time_range ??
+    (isOwnDraftsListing(currentUser, options) ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
+  if (isStorySourceSearch(options)) {
+    return searchStorySourcePosts(currentUser, {
+      ...options,
+      time_range: effectiveTimeRange,
+      semanticSearchEmbedding,
+      limit,
+    })
+  }
 
   const { id_lt, vote_score_lt, ranking_lt, hot_score_lt } = decodePostSearchCursor(
     options,
     sort,
     hasRankingScore,
   )
-  // Post search is always time-bounded; callers needing the full history pass 'all'. Only an
-  // author's own drafts listing (their user id plus drafts) keeps that full history.
-  const effectiveTimeRange =
-    options.time_range ??
-    (isOwnDraftsListing(currentUser, options) ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
   // Build query - pass decoded cursor values and use limit + 1
   const queryOptions: PostSearchOptions = {
     ...options,

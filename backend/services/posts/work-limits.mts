@@ -8,6 +8,10 @@ const defaultFields = {
   semantic_post_candidate_limit: SEMANTIC_POST_CANDIDATE_LIMIT,
   review_succession_candidate_page_size: 100,
   profile_post_count_cap: 1000,
+  story_source_page_size: 25,
+  story_source_child_limit: 5,
+  data_point_community_page_size: 25,
+  data_point_child_limit: 25,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
@@ -16,6 +20,10 @@ export const postsWorkMaxValues = {
   semantic_post_candidate_limit: SEMANTIC_POST_CANDIDATE_LIMIT,
   review_succession_candidate_page_size: 1000,
   profile_post_count_cap: 10_000,
+  story_source_page_size: 100,
+  story_source_child_limit: 25,
+  data_point_community_page_size: 100,
+  data_point_child_limit: 100,
 }
 
 export const postsWorkConfig = new DynamicConfig({
@@ -25,6 +33,10 @@ export const postsWorkConfig = new DynamicConfig({
     semantic_post_candidate_limit: 'number',
     review_succession_candidate_page_size: 'number',
     profile_post_count_cap: 'number',
+    story_source_page_size: 'number',
+    story_source_child_limit: 'number',
+    data_point_community_page_size: 'number',
+    data_point_child_limit: 'number',
   },
   defaultFields,
 })

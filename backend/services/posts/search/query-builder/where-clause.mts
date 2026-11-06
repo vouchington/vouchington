@@ -2,7 +2,10 @@ import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visib
 import type { BasicUser } from '@services/users/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PostSearchOptions } from '../types.mts'
-import { buildPostHasHackerNewsReferences } from '@modules/feed-query-builders'
+import {
+  buildPostHasHackerNewsReferences,
+  buildTimeRangeFilter,
+} from '@modules/feed-query-builders'
 import { appendBaseFilters } from './base-filters.mts'
 import { appendPartitionAndPaginationFilters } from './pagination-filters.mts'
 import { appendSearchAndSimilarityFilters } from './search-filters.mts'
@@ -54,6 +57,29 @@ export function appendPostSearchWhereClause(
     sort,
   })
   appendFilters(query, filters)
+}
+
+/** Filters for a story page whose FROM is already the inspected source window. */
+export function appendStorySourcePageFilters(
+  filters: SQLStatement[],
+  {
+    currentUser,
+    hasSemanticSearch,
+    hasTextSearch,
+    options,
+  }: {
+    currentUser?: BasicUser
+    hasSemanticSearch: boolean
+    hasTextSearch: boolean
+    options: PostSearchOptions
+  },
+): void {
+  appendBaseFilters(filters, currentUser, options, 'source-bound')
+  appendTopicFilters(filters, options)
+  appendSimpleColumnFilters(filters, options)
+  appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })
+  const timeRangeFilter = buildTimeRangeFilter(options.time_range ?? 'all', 'posts.id')
+  if (timeRangeFilter) filters.push(timeRangeFilter)
 }
 
 function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchOptions): void {

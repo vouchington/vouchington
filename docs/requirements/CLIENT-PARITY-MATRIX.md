@@ -513,6 +513,13 @@ Swift and .NET adoption is tracked in
 [vouchington-clients#543](https://github.com/vouchington/vouchington-clients/issues/543) and does not
 block the producer. No native parity completion is claimed here.
 
+## Story and data-point search pages
+
+`GET /api/v1/posts?post_types=story` and MCP `read_posts` share a cursor that continues the inspected
+feed when a page is short. MCP `read_data_points` search returns `page_info` and accepts `after`.
+Clients page with the returned cursor. Swift and .NET follow the producer and do not gate this
+repository. Data-point posts on the posts endpoint stay on post search.
+
 ## Relation admission
 
 REST and MCP share the same refusal when an account cannot add another follow or subscription of
