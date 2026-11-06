@@ -18,14 +18,6 @@ CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_us
  LANGUAGE sql
 ```
 
-## `fn_copy_rss_feed_item_source_story_id`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_copy_rss_feed_item_source_story_id()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_copyright_case_purge_permitted(table_name text)`
 
 ```sql
@@ -263,6 +255,14 @@ CREATE OR REPLACE FUNCTION public.fn_ensure_retained_actor_identity()
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)
  RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_rss_feed_item_source_story_id`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_rss_feed_item_source_story_id()
+ RETURNS trigger
  LANGUAGE plpgsql
 ```
 
@@ -1589,14 +1589,6 @@ CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind
  LANGUAGE plpgsql
 ```
 
-## `fn_sync_rss_feed_item_source_story_id`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_item_source_story_id()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_text_to_timestamptz(text_value text)`
 
 ```sql
@@ -1874,6 +1866,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_retained_copyright_notice_identity_residual()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_rss_feed_item_sources_story_id`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_item_sources_story_id()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
