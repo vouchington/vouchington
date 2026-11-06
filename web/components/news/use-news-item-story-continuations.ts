@@ -7,7 +7,7 @@ import {
   type FirstStorySelection,
   type StoryState,
 } from './news-item-cluster-projection'
-import type { StoryPageResponse } from '@/types/rss-feed-items'
+import { refreshStoryMemberPages } from './refresh-story-member-pages'
 
 export function useNewsItemStoryContinuations({
   selections,
@@ -21,7 +21,13 @@ export function useNewsItemStoryContinuations({
   generation: number
 }) {
   const requestScope = useMemo(
-    () => ({ key, viewerId, generation, active: new Set<string>() }),
+    () => ({
+      key,
+      viewerId,
+      generation,
+      active: new Set<string>(),
+      pendingRefresh: new Map<string, { primaryId: string; pageCount: number }>(),
+    }),
     [key, viewerId, generation],
   )
   const requestScopeRef = useRef(requestScope)
@@ -45,24 +51,16 @@ export function useNewsItemStoryContinuations({
     pageCount: number,
     scope: typeof requestScope,
   ) {
-    let cursor = selection.preview.page_info.end_cursor
-    const refreshedPages: StoryPageResponse[] = []
-    for (let index = 0; index < pageCount; index += 1) {
-      if (!cursor) break
-      // oxlint-disable-next-line no-await-in-loop -- each cursor depends on the previous page
-      const response = await getStoryMemberPage(storyId, {
-        after: cursor,
-        excludeItemId: selection.primaryId,
-      })
-      if (
-        requestScopeRef.current !== scope ||
-        latestSelections.current.get(storyId)?.primaryId !== selection.primaryId
-      )
-        return
-      refreshedPages.push(response)
-      cursor = response.page_info.end_cursor
-    }
-    if (requestScopeRef.current === scope) {
+    const refreshedPages = await refreshStoryMemberPages(
+      storyId,
+      selection,
+      pageCount,
+      () =>
+        requestScopeRef.current === scope &&
+        latestSelections.current.get(storyId)?.primaryId === selection.primaryId,
+    )
+    if (refreshedPages) {
+      scope.pendingRefresh.delete(storyId)
       setStoryState(previous =>
         updateStory(previous, scope, storyId, selection.primaryId, {
           pages: refreshedPages,
@@ -89,6 +87,8 @@ export function useNewsItemStoryContinuations({
         const selection = selections.get(storyId)
         if (!selection) continue
         scope.active.add(storyId)
+        const pageCount = Math.max(1, state.pages.length)
+        scope.pendingRefresh.set(storyId, { primaryId: selection.primaryId, pageCount })
         setStoryState(previous =>
           updateStory(previous, scope, storyId, selection.primaryId, {
             loading: true,
@@ -97,7 +97,7 @@ export function useNewsItemStoryContinuations({
         )
         try {
           // oxlint-disable-next-line no-await-in-loop -- serialize retained stories to bound refresh concurrency
-          await refreshStoryPages(storyId, selection, Math.max(1, state.pages.length), scope)
+          await refreshStoryPages(storyId, selection, pageCount, scope)
         } catch {
           if (requestScopeRef.current === scope) {
             setStoryState(previous =>
@@ -126,7 +126,8 @@ export function useNewsItemStoryContinuations({
     const scope = requestScope
     if (scope.active.has(storyId)) return
     scope.active.add(storyId)
-    if (state?.error && state.pages.length > 0) {
+    const pendingRefresh = scope.pendingRefresh.get(storyId)
+    if (state?.error && pendingRefresh?.primaryId === selection.primaryId) {
       setStoryState(previous =>
         updateStory(previous, scope, storyId, selection.primaryId, {
           loading: true,
@@ -134,7 +135,7 @@ export function useNewsItemStoryContinuations({
         }),
       )
       try {
-        await refreshStoryPages(storyId, selection, state.pages.length, scope)
+        await refreshStoryPages(storyId, selection, pendingRefresh.pageCount, scope)
       } catch {
         if (requestScopeRef.current === scope) {
           setStoryState(previous =>

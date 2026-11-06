@@ -1,4 +1,8 @@
-import type { RssFeedItem, RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
+import type {
+  RssFeedItem,
+  RssFeedItemsFeedResponseBody,
+  StoryPageResponse,
+} from '@/types/rss-feed-items'
 
 import { loadWebApiFixture } from './fixture-loader'
 
@@ -94,5 +98,35 @@ export function makeRssFeedItemsFeedResponse({
     page_info: pageInfo,
     rss_feed_items: Object.fromEntries(rssFeedItems.map(item => [item.id, item])),
     rss_feed_item_elections: {},
+  }
+}
+
+export function makeStoryMemberPageResponse(
+  overrides: Partial<StoryPageResponse> = {},
+): StoryPageResponse {
+  return {
+    story: {
+      id: 'story-1',
+      title: null,
+      cluster_reason: null,
+      published_at: null,
+      official_rss_feed_item_id: null,
+    },
+    item_ids: [],
+    page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    rss_feed_items: {},
+    rss_feed_item_elections: {},
+    rss_feed_item_hacker_news_references: {},
+    rss_feed_item_embeds: {},
+    rss_feed_item_thumbnail_url: {},
+    rss_feed_item_content_html: {},
+    related_posts_by_url_id: {},
+    story_post_ids: {},
+    posts: {},
+    posts_metrics: {},
+    bookmarks: {},
+    election_votes: {},
+    rss_feed_bookmarks: {},
+    ...overrides,
   }
 }
