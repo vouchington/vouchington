@@ -56,23 +56,29 @@ export async function searchCommunityMembers(
   }
 
   const roster = memberRosterFilter(options)
-  // The scalar initplan keeps a community that holds most of the table on the
-  // active-membership index. A bare equality lets a custom plan walk the primary key.
+  // The one-row fence and id bound keep a community that holds most of the table
+  // on the active-membership index. A bare equality lets a custom plan walk the primary key.
+  const afterId =
+    cursorName !== undefined && cursorId !== undefined
+      ? cursorId
+      : '00000000-0000-0000-0000-000000000000'
   const query = sql`/* searchCommunityMembers */
     WITH membership_page AS MATERIALIZED (
-      SELECT cm.*
-      FROM community_members cm
-      WHERE cm.community_id = (SELECT ${communityId}::uuid)
-        AND cm.removed_at IS NULL
+      SELECT page.*
+      FROM (SELECT ${communityId}::uuid AS community_id, ${afterId}::uuid AS after_id OFFSET 0) requested
+      JOIN LATERAL (
+        SELECT cm.*
+        FROM community_members cm
+        WHERE cm.community_id = requested.community_id
+          AND cm.removed_at IS NULL
+          AND cm.id > requested.after_id
   `
   if (options?.role) query.append(sql` AND cm.role = ${options.role}`)
   appendMemberRosterPageFilter(query, roster)
-  if (cursorName !== undefined && cursorId !== undefined) {
-    query.append(sql` AND cm.id > ${cursorId}`)
-  }
   query.append(sql`
-      ORDER BY cm.community_id ASC, cm.id ASC
-      LIMIT ${limit + 1}
+        ORDER BY cm.community_id ASC, cm.id ASC
+        LIMIT ${limit + 1}
+      ) page ON TRUE
     )
     SELECT cm.*, (member_user.id IS NOT NULL) AS kept
     FROM membership_page cm

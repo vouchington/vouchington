@@ -1,6 +1,12 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { seedUuid } from '../seed-data/common.mts'
 import { seedPostId, seedUser } from '../run-support.mts'
+
+// Posts 0..9999 already carry an explain-retention version. A newer version on
+// one of those posts enters the retention-due index, and the idle-keeper generic
+// plan then sorts instead of walking that index.
+export const DELETED_PARENT_MODERATION_POST_ID = seedUuid(10_000, '05')
 
 export const SELECTED_DISTRIBUTION_ID = '019e0000-7d02-7000-8000-000000000001'
 
@@ -51,7 +57,7 @@ export async function seedDeletedParentModerationVersion(): Promise<void> {
        AND post.deleted_at IS NULL
        AND post.llm_moderation_content_sha256 IS NOT NULL
      ON CONFLICT DO NOTHING`,
-    [seedPostId, POST_MODERATION_POLICY_REVISION],
+    [DELETED_PARENT_MODERATION_POST_ID, POST_MODERATION_POLICY_REVISION],
   )
 }
 
@@ -60,7 +66,7 @@ export async function deleteDeletedParentModerationVersion(): Promise<void> {
     `/* cleanupDeletedParentModerationVersion */
      DELETE FROM post_moderation_versions
      WHERE post_id = $1 AND policy_revision = $2`,
-    [seedPostId, POST_MODERATION_POLICY_REVISION],
+    [DELETED_PARENT_MODERATION_POST_ID, POST_MODERATION_POLICY_REVISION],
   )
 }
 

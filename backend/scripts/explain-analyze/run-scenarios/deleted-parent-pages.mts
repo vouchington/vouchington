@@ -22,6 +22,7 @@ import {
   COMMUNITY_MEMBERSHIP_CAP_USER_ID,
 } from '../seed-data/community-membership-caps.mts'
 import {
+  DELETED_PARENT_MODERATION_POST_ID,
   deleteDeletedParentModerationVersion,
   deleteSavedRssItems,
   deleteSelectedRecipients,
@@ -143,7 +144,7 @@ export async function runDeletedParentPageScenarios(): Promise<void> {
     })
     await runAndCapture(
       'deleted-parent-moderation-versions',
-      () => reconcilePostModerationWork(10, [seedPostId]),
+      () => reconcilePostModerationWork(10, [DELETED_PARENT_MODERATION_POST_ID]),
       undefined,
       'reconcilePostModerationWork',
     )
