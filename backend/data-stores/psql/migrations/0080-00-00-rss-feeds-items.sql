@@ -492,8 +492,6 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_sources (
   rss_feed_id UUID NOT NULL REFERENCES rss_feeds ON DELETE CASCADE,
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items ON DELETE CASCADE,
   published_at TIMESTAMPTZ,
-  -- Copied from the item. The item remains the source of truth; triggers below keep this equal.
-  story_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (rss_feed_id, rss_feed_item_id)
 );
@@ -503,74 +501,6 @@ COMMENT ON COLUMN rss_feed_item_sources.rss_feed_id IS 'The RSS feed that contai
 COMMENT ON COLUMN rss_feed_item_sources.rss_feed_item_id IS 'The RSS feed item.';
 COMMENT ON COLUMN rss_feed_item_sources.created_at IS 'When this feed-to-item association was first observed (during crawl).';
 COMMENT ON COLUMN rss_feed_item_sources.published_at IS 'Publication timestamp captured when this feed-to-item association is first observed. Production ingestion applies the item UUIDv7 clamp to this feed payload''s sanitized publication dates and preserves an existing association on conflict.';
-COMMENT ON COLUMN rss_feed_item_sources.story_id IS 'Story copied from the item so a page can stop at the newest visible source. The item remains the source of truth.';
-
--- One update for the whole insert. A per-row lookup pushed the explain seed past its cap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_update_rss_feed_item_source_story_id()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  UPDATE rss_feed_item_sources AS sources
-  SET story_id = items.story_id
-  FROM inserted
-  JOIN rss_feed_items AS items ON items.id = inserted.rss_feed_item_id
-  WHERE sources.rss_feed_id = inserted.rss_feed_id
-    AND sources.rss_feed_item_id = inserted.rss_feed_item_id
-    AND sources.story_id IS DISTINCT FROM items.story_id;
-  RETURN NULL;
-END;
-$$;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_update_rss_feed_item_source_story_id
-AFTER INSERT ON rss_feed_item_sources
-REFERENCING NEW TABLE AS inserted
-FOR EACH STATEMENT
-EXECUTE FUNCTION fn_update_rss_feed_item_source_story_id();
-
--- A direct edit of the copy is overwritten from the item. Nested updates already copied it.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_ensure_rss_feed_item_source_story_id()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  SELECT items.story_id INTO NEW.story_id
-  FROM rss_feed_items items
-  WHERE items.id = NEW.rss_feed_item_id;
-  RETURN NEW;
-END;
-$$;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_ensure_rss_feed_item_source_story_id
-BEFORE UPDATE OF story_id ON rss_feed_item_sources
-FOR EACH ROW
-WHEN (pg_trigger_depth() = 0)
-EXECUTE FUNCTION fn_ensure_rss_feed_item_source_story_id();
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_update_rss_feed_item_sources_story_id()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  UPDATE rss_feed_item_sources
-  SET story_id = NEW.story_id
-  WHERE rss_feed_item_id = NEW.id
-    AND story_id IS DISTINCT FROM NEW.story_id;
-  RETURN NULL;
-END;
-$$;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_sync_rss_feed_item_source_story_id
-AFTER UPDATE OF story_id ON rss_feed_items
-FOR EACH ROW
-WHEN (OLD.story_id IS DISTINCT FROM NEW.story_id)
-EXECUTE FUNCTION fn_update_rss_feed_item_sources_story_id();
 
 -------------------------------------------------------------------------------
 -- rss_feed_item_categories
@@ -811,14 +741,6 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_item_sources__feed_published_item
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_sources__missing_published_at
   ON rss_feed_item_sources (rss_feed_id, rss_feed_item_id)
   WHERE published_at IS NULL;
-
--- Newest visible source of one story. The partial predicate also serves the story_id foreign key.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_item_sources__story_feed_item
-  ON rss_feed_item_sources (story_id, rss_feed_id DESC, rss_feed_item_id DESC)
-  WHERE story_id IS NOT NULL;
-
-COMMENT ON INDEX idx_rss_feed_item_sources__story_feed_item IS 'Stops a story page at the newest visible source of one story.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS rss_feed_items_default_story_id_id_url_id_idx

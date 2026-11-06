@@ -515,8 +515,10 @@ block the producer. No native parity completion is claimed here.
 
 ## Story and data-point search pages
 
-`GET /api/v1/posts?post_types=story` and MCP `read_posts` share a cursor that continues the inspected
-feed when a page is short. MCP `read_data_points` search returns `page_info` and accepts `after`.
+`GET /api/v1/posts?post_types=story` and MCP `read_posts` rank story posts with the normal post
+page for new, best, and hot. A public page includes a story when one of its items is in an
+enabled, discoverable, undeleted feed. Staff also see a story whose only live feed is disabled
+or not discoverable. MCP `read_data_points` search returns `page_info` and accepts `after`.
 Clients page with the returned cursor. Swift and .NET follow the producer and do not gate this
 repository. Data-point posts on the posts endpoint stay on post search.
 

@@ -102,27 +102,6 @@ END $$;
 
 ALTER TABLE rss_feed_items VALIDATE CONSTRAINT fk_rss_feed_items_story_id;
 
--- Sources copy story_id from the item. Defer this check so deleting a story can clear the item
--- first; an immediate SET NULL would race the copy trigger and write the deleted story id back.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint
-    WHERE conname = 'fk_rss_feed_item_sources_story_id'
-      AND conrelid = 'rss_feed_item_sources'::regclass
-  ) THEN
-    ALTER TABLE rss_feed_item_sources
-      ADD CONSTRAINT fk_rss_feed_item_sources_story_id
-      FOREIGN KEY (story_id) REFERENCES stories(id)
-      ON DELETE SET NULL
-      DEFERRABLE INITIALLY DEFERRED
-      NOT VALID;
-  END IF;
-END $$;
-
-ALTER TABLE rss_feed_item_sources VALIDATE CONSTRAINT fk_rss_feed_item_sources_story_id;
-
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_story_posts__initiated_by_id

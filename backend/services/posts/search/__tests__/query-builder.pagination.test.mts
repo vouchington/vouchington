@@ -200,4 +200,53 @@ describe('query-builder (pagination and moderation)', () => {
     // Admins bypass the clearance gate entirely
     expect(query.sql).not.toContain('approved_at IS NOT NULL')
   })
+
+  it('keeps public story search on a discoverable source', () => {
+    const query = buildPostSearchQuery(undefined, { post_types: ['story'] })
+
+    expect(query.sql).toContain('story_posts post_story')
+    expect(query.sql).toContain('is_discoverable')
+    expect(query.sql).toContain('approved_at IS NOT NULL')
+  })
+
+  it('lets staff story search include a hidden live feed', () => {
+    const userId = '123e4567-e89b-12d3-a456-426614174000'
+    const moderator = buildPostSearchQuery(
+      { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
+      { post_types: ['story'] },
+    )
+    expect(moderator.sql).toContain('story_posts post_story')
+    expect(moderator.sql).toContain('rf.deleted_at IS NULL')
+    expect(moderator.sql).not.toContain('is_discoverable')
+
+    const administrator = buildPostSearchQuery(
+      { id: userId, roles: ['administrator'] } as unknown as PrivateUser,
+      { post_types: ['story'] },
+    )
+    expect(administrator.sql).toContain('story_posts post_story')
+    expect(administrator.sql).toContain('rf.deleted_at IS NULL')
+    expect(administrator.sql).not.toContain('is_discoverable')
+    expect(administrator.sql).not.toContain('approved_at IS NOT NULL')
+  })
+
+  it('keeps mixed, public-only, and story lookup search on the public source filter', () => {
+    const userId = '123e4567-e89b-12d3-a456-426614174000'
+    const mixed = buildPostSearchQuery(
+      { id: userId, roles: ['administrator'] } as unknown as PrivateUser,
+      {},
+    )
+    expect(mixed.sql).not.toContain('story_posts')
+
+    const publicOnly = buildPostSearchQuery(
+      { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
+      { post_types: ['story'], public_eligibility_only: true },
+    )
+    expect(publicOnly.sql).toContain('is_discoverable')
+
+    const lookup = buildPostSearchQuery(
+      { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
+      { post_types: ['story'], story_id: userId },
+    )
+    expect(lookup.sql).toContain('is_discoverable')
+  })
 })
