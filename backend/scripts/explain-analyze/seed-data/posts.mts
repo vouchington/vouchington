@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { v7 } from 'uuid'
 import { contentHash, seedUuid } from './common.mts'
 import { PostSeedDiagnostics, type SeedBackend } from './post-diagnostics.mts'
 
@@ -24,10 +25,11 @@ export async function seedPosts(count = 10_000): Promise<void> {
         const batch = Math.min(500, count - i)
         const values: unknown[] = []
         const rows: string[] = []
-        const postIds: string[] = []
+        const clearanceChangeIds = new Map<string, string>()
         for (let j = 0; j < batch; j++) {
           const idx = i + j
           const id = seedUuid(idx, '05')
+          const clearanceChangeId = v7()
           const userId = seedUuid(idx % 20_000, '01')
           const postType = idx % 3 === 0 ? 'discussion' : idx % 3 === 1 ? 'review' : 'data_point'
           const title = `Seed Post ${idx}`
@@ -43,7 +45,7 @@ export async function seedPosts(count = 10_000): Promise<void> {
                 ],
               })
             : null
-          postIds.push(id)
+          clearanceChangeIds.set(id, clearanceChangeId)
           values.push(
             id,
             postType,
@@ -54,42 +56,45 @@ export async function seedPosts(count = 10_000): Promise<void> {
             hash,
             dataPointVertical,
             structuredData,
+            clearanceChangeId,
           )
-          const base = values.length - 8
+          const base = values.length - 9
           rows.push(
-            `('system', $${base}, $${base + 1}::post_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}::jsonb)`,
+            `('system', $${base}, $${base + 1}::post_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}::jsonb, 1, uuid_extract_timestamp($${base + 9}::uuid), uuid_extract_timestamp($${base + 9}::uuid))`,
           )
         }
-        await diagnostics.operation('insert', batchIndex, () =>
-          query(
+        const { rows: changedPosts } = await diagnostics.operation('insert', batchIndex, () =>
+          query<{ id: string }>(
             `/* seedExplainData */ INSERT INTO posts (
           created_via, id, post_type, title, markdown, created_by_id,
           bedrock_nova_multimodal_v1_content_sha256,
           llm_moderation_content_sha256,
-          data_point_vertical, structured_data
-        ) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
+          data_point_vertical, structured_data, clearance_version,
+          clearance_changed_at, approved_at
+        ) VALUES ${rows.join(', ')}
+        ON CONFLICT (id) DO UPDATE SET
+          clearance_version = posts.clearance_version + 1,
+          clearance_changed_at = EXCLUDED.clearance_changed_at,
+          clearance_changed_by_id = NULL,
+          clearance_public_reason_code = NULL,
+          clearance_is_platform_override = FALSE,
+          approved_at = EXCLUDED.approved_at,
+          rejected_at = NULL,
+          in_review_at = NULL
+        WHERE posts.approved_at IS NULL AND posts.rejected_at IS NULL AND posts.in_review_at IS NULL
+        RETURNING id`,
             values,
           ),
         )
+        const changedPostIds = changedPosts.map(({ id }) => id)
+        // The history author trigger must see the post, so append history in a separate statement.
         await diagnostics.operation('clearance', batchIndex, () =>
           query(
-            `/* seedExplainData */
-             WITH seed_posts AS (SELECT UNNEST($1::uuid[]) AS post_id),
-             inserted_change AS (
-               INSERT INTO post_clearance_changes (post_id, change_type, metadata)
-               SELECT seed_posts.post_id, 'approve', '{"source":"explain-seed"}'::jsonb
-               FROM seed_posts JOIN posts ON posts.id = seed_posts.post_id
-               WHERE posts.approved_at IS NULL AND posts.rejected_at IS NULL AND posts.in_review_at IS NULL
-               RETURNING post_id, created_at, changed_by_id, public_reason_code, is_platform_override
-             )
-             UPDATE posts SET clearance_version = posts.clearance_version + 1,
-               clearance_changed_at = inserted_change.created_at,
-               clearance_changed_by_id = inserted_change.changed_by_id,
-               clearance_public_reason_code = inserted_change.public_reason_code,
-               clearance_is_platform_override = inserted_change.is_platform_override,
-               approved_at = inserted_change.created_at, rejected_at = NULL, in_review_at = NULL
-             FROM inserted_change WHERE posts.id = inserted_change.post_id`,
-            [postIds],
+            `/* seedExplainData */ INSERT INTO post_clearance_changes
+             (id, post_id, change_type, metadata)
+             SELECT change_id, post_id, 'approve', '{"source":"explain-seed"}'::jsonb
+             FROM UNNEST($1::uuid[], $2::uuid[]) AS changed(post_id, change_id)`,
+            [changedPostIds, changedPostIds.map(id => clearanceChangeIds.get(id))],
           ),
         )
       })
