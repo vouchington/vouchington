@@ -13,5 +13,12 @@ export type RepairFlagCursor = {
   afterId?: string
   upperId?: string
 }
-export type LookupReadmissionCursor = { kind: 'readmission'; afterId?: string; upperId?: string }
+export type LookupReadmissionKey = { lookedUpAt: string; urlId: string }
+export type LookupReadmissionWindow = { decisionInstant: number; cutoff: string }
+export type LookupReadmissionCursor = {
+  kind: 'readmission'
+  after?: LookupReadmissionKey
+  window?: LookupReadmissionWindow
+  urlIds?: readonly string[]
+}
 export type HackerNewsFlagData = UrlFlagCursor | RepairFlagCursor | LookupReadmissionCursor

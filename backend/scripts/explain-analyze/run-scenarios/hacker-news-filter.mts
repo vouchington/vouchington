@@ -1,3 +1,4 @@
+import { runHackerNewsReadmissionScenarios } from './hacker-news-readmission.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import { buildHackerNewsPostUrlsSql } from '@services/urls/hacker-news-post-urls'
 import { buildPostSearchQuery } from '@services/posts/search/query-builder'
@@ -58,7 +59,7 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
         for (const sort of ['new', 'best', 'hot'] as const) {
           for (const timeRange of ['1m', '1y', 'all'] as const) {
             const id = `hacker-news-posts-${sort}-${timeRange}-${density}${viewer.suffix}`
-            const boundedHot = sort === 'hot' && timeRange === '1m'
+            const boundedHot = sort === 'hot'
             registerScenarioContract(id, {
               seededRows: { posts: POST_SEED_BOUND, rss_feed_items: RSS_SEED_BOUND },
               expectations: [
@@ -66,13 +67,13 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
                 ...(boundedHot
                   ? [{ kind: 'queryBinds' as const, token: 'hacker_news_hot_candidates' }]
                   : []),
-                ...(sort === 'hot' && !boundedHot
-                  ? [{ kind: 'queryBinds' as const, token: 'vote_score' }]
+                ...(boundedHot
+                  ? [{ kind: 'queryBinds' as const, token: 'hackerNewsHotWindow' }]
                   : []),
                 {
                   kind: 'maxProcessedRows',
                   relation: 'posts',
-                  // Cohort source/root probes plus bounded hydration/root probes; never the corpus.
+                  // Bounded cohort source/root and page probes; never the corpus.
                   max: boundedHot
                     ? 4 * getPostsWorkLimit('hacker_news_hot_candidate_limit') + 2 * 26
                     : 2000,
@@ -137,6 +138,7 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
         )
       }
     }
+    await runHackerNewsReadmissionScenarios()
   } finally {
     if (fixture) {
       await using cleanup = await beginTransaction()

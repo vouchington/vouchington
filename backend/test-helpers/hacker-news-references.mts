@@ -113,7 +113,7 @@ export async function getHackerNewsRowVersionsForTest(urlId: string): Promise<st
 /** Age owned lookup state without advancing the clock or touching other fixtures. */
 export async function ageHackerNewsLookupsForTest(
   urlIds: readonly string[],
-  lookedUpAt: Date,
+  lookedUpAt: Date | string,
 ): Promise<void> {
   await write(
     `/* ageHackerNewsLookupsForTest */ UPDATE url_hacker_news_totals
