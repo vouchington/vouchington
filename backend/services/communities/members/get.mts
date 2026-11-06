@@ -11,6 +11,7 @@ import type {
   CommunityMemberRosterVisibility,
 } from '../types.mts'
 import { appendUserMembershipPrivacyFilter } from './member-privacy-filter.mts'
+import { appendMembershipPageSource, membershipPageRoles } from './member-roster-page.mts'
 
 export async function getCommunityMember(
   communityId: string,
@@ -65,19 +66,9 @@ export async function searchCommunityMembers(
     WITH membership_page AS MATERIALIZED (
       SELECT full_member.*
       FROM (SELECT ${communityId}::uuid AS community_id, ${afterId}::uuid AS after_id LIMIT 1) requested
-      JOIN LATERAL (
-        SELECT cm.id
-        FROM community_members cm
-        WHERE cm.community_id = requested.community_id
-          AND cm.removed_at IS NULL
-          AND cm.id > requested.after_id
   `
-  if (options?.role) query.append(sql` AND cm.role = ${options.role}`)
-  appendMemberRosterPageFilter(query, roster)
+  appendMembershipPageSource(query, membershipPageRoles(options?.role, roster), limit)
   query.append(sql`
-        ORDER BY cm.community_id ASC, cm.id ASC
-        LIMIT ${limit + 1}
-      ) page ON TRUE
       JOIN LATERAL (
         SELECT loaded.* FROM community_members loaded
         WHERE loaded.id = page.id
@@ -117,24 +108,6 @@ function membershipWithoutKept(row: CommunityMember & { kept: boolean }): Commun
   const { kept, ...member } = row
   void kept
   return member
-}
-
-function appendMemberRosterPageFilter(
-  query: SQLStatement,
-  roster: 'all' | 'moderators' | 'privacy',
-) {
-  switch (roster) {
-    case 'all':
-    case 'privacy':
-      return
-    case 'moderators':
-      query.append(sql` AND cm.role IN ('owner', 'moderator')`)
-      return
-    default: {
-      const unexpected: never = roster
-      throw new Error(`Unexpected member roster ${String(unexpected)}`)
-    }
-  }
 }
 
 function appendMemberRosterVisibilityFilter(

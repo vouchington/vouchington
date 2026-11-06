@@ -204,6 +204,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members__unique ON community_mem
 CREATE INDEX IF NOT EXISTS idx_community_members__active_community_id_id
   ON community_members (community_id, id)
   WHERE removed_at IS NULL;
+-- Role pages must not walk lower-id regular members to reach owners or moderators.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_community_members__active_community_role_id
+  ON community_members (community_id, role, id)
+  WHERE removed_at IS NULL;
 -- Moderator discovery must skip regular members even in a large community.
 CREATE INDEX IF NOT EXISTS idx_community_members__active_moderators
   ON community_members (community_id, user_id)
@@ -512,7 +517,10 @@ ON community_post_reviews (platform_override_by_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__community ON community_post_reviews (community_id, post_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__pending ON community_post_reviews (community_id) WHERE approved_at IS NULL AND rejected_at IS NULL;
+-- Pending keyset order is post_id within one community, and only while approval, rejection, and unpublish are all unset.
+CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__pending
+  ON community_post_reviews (community_id, post_id)
+  WHERE approved_at IS NULL AND rejected_at IS NULL AND unpublished_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__approved_visible

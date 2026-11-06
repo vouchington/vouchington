@@ -21,7 +21,7 @@ export async function getLandingPageCandidateIds(
   query.append(sql`
       ORDER BY sort_order ASC, id ASC LIMIT ${limit}
     ), reviews AS MATERIALIZED (
-      -- no-mistakes-disable-next-line postgres-required-predicates: owned review candidates span post-id partitions; the author index and bounded keyset preserve older candidates
+      -- no-mistakes-disable-next-line postgres-required-predicates: owned review candidates span post-id partitions; the review author index and bounded keyset preserve older candidates
       SELECT post.id, 1 AS tier, NULL::integer AS sort_order FROM posts post
       WHERE post.created_by_id = ${userId} AND post.post_type = 'review'
         AND ${cursor === null || cursor.tier >= 1}`)

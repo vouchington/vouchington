@@ -62,9 +62,13 @@ export const searchTopicAliases = async ({
       ) AS topic,
       (topics.id IS NOT NULL) AS kept
     FROM alias_page page
-    LEFT JOIN topics
-      ON topics.id = page.topic_id
-      AND topics.deleted_at IS NULL
+    LEFT JOIN LATERAL (
+      SELECT live.id, live.name, live.slug, live.topic_type
+      FROM topics live
+      WHERE live.id = page.topic_id
+        AND live.deleted_at IS NULL
+      LIMIT 1
+    ) topics ON TRUE
     ORDER BY page.alias
   `
 

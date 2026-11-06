@@ -2,6 +2,7 @@ import { SEED_PREFIX, runAndCapture, seedTopicId, seedUser } from '../run-suppor
 import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
 import { runAdminUserSearchScenarios } from './admin-user-search.mts'
+import { runUserRemovedPostPageScenarios } from './user-removed-post-pages.mts'
 import { runViewDrivenHostnameScenarios } from './view-driven-hostnames.mts'
 
 const {
@@ -12,7 +13,6 @@ const {
   getRevenue,
   getTopicDataPointInsights,
   getUserBookmarkCounts,
-  listUserRemovedPosts,
   searchDataPoints,
   searchTopicAliases,
   updateTopicRatingStats,
@@ -27,7 +27,13 @@ export async function runEntityTailScenarios(): Promise<void> {
 
   await runAdminUserSearchScenarios()
 
-  // Topic alias search — autocomplete prefix query
+  // Prefix ILIKE is not served by text_pattern_ops; the page cap is the alias table, and topics stay a lookup.
+  registerScenarioContract('search-topic-aliases', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
+      { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
+    ],
+  })
   await runAndCapture('search-topic-aliases', () =>
     searchTopicAliases({ prefixQuery: 'seed', limit: 25 }),
   )
@@ -80,15 +86,7 @@ export async function runEntityTailScenarios(): Promise<void> {
       limit: 25,
     }),
   )
-  registerScenarioContract('user-removed-posts-page', {
-    expectations: [
-      { kind: 'custom', name: 'userRemovedPosts' },
-      { kind: 'usesIndexes', indexes: ['idx_posts__default__created_by_rejected_at_id'] },
-    ],
-  })
-  await runAndCapture('user-removed-posts-page', () =>
-    listUserRemovedPosts(seedUser.id, { includePlatform: true, limit: 25 }),
-  )
+  await runUserRemovedPostPageScenarios()
 
   // Platform stats — 6 scalar COUNT subqueries
   registerScenarioContract('platform-stats', {

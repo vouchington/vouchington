@@ -1,6 +1,7 @@
 import { SEED_PREFIX, runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { searchCommunityPosts, searchPendingPosts } from '@services/communities/publications/get'
+import { runPendingReviewDensityScenario } from './pending-review-density.mts'
 import { searchCommunityAgentPromptSimulationPosts } from '@services/community-agent-prompts/simulations'
 import { withSeedAnchorClock } from '../seed-clock.mts'
 
@@ -149,4 +150,5 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
     // no-mistakes-disable-next-line query-reached-per-item: capture both pages separately.
     await runAndCapture(scenario.id, scenario.run)
   }
+  await runPendingReviewDensityScenario()
 }

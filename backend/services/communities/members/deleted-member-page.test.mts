@@ -79,4 +79,100 @@ describe('deleted parent pages', () => {
     expect(seen).toEqual([communities[0]!.id, communities[2]!.id])
     expect(emptyContinuation).toBe(true)
   })
+
+  it('pages owners without returning regular members between them', async () => {
+    const creator = await createTestUser()
+    const community = await insertTestCommunity({ createdById: creator.id })
+    const start = Date.parse('2026-03-01T00:00:00Z')
+    const member = await createTestUser()
+    const owners = [await createTestUser(), await createTestUser(), await createTestUser()]
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: member.id,
+      role: 'member',
+      createdAt: new Date(start),
+    })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: owners[0]!.id,
+      role: 'owner',
+      createdAt: new Date(start + 1_000),
+    })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: owners[1]!.id,
+      role: 'owner',
+      createdAt: new Date(start + 2_000),
+    })
+    await softDeleteUser(owners[1]!.id)
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: owners[2]!.id,
+      role: 'owner',
+      createdAt: new Date(start + 3_000),
+    })
+
+    const seen: string[] = []
+    let after: string | undefined
+    let emptyContinuation = false
+    for (let step = 0; step < 6; step++) {
+      const page = await searchCommunityMembers(community.id, { limit: 1, role: 'owner', after })
+      seen.push(...page.results.map(row => row.user_id))
+      if (page.results.length === 0 && page.page_info.has_next_page) emptyContinuation = true
+      if (!page.page_info.has_next_page) break
+      after = page.page_info.end_cursor ?? undefined
+    }
+
+    expect(seen).toEqual([owners[0]!.id, owners[2]!.id])
+    expect(emptyContinuation).toBe(true)
+  })
+
+  it('pages the moderator roster without regular members between them', async () => {
+    const creator = await createTestUser()
+    const community = await insertTestCommunity({ createdById: creator.id })
+    const start = Date.parse('2026-03-02T00:00:00Z')
+    const firstMember = await createTestUser()
+    const owner = await createTestUser()
+    const secondMember = await createTestUser()
+    const moderator = await createTestUser()
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: firstMember.id,
+      role: 'member',
+      createdAt: new Date(start),
+    })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: owner.id,
+      role: 'owner',
+      createdAt: new Date(start + 1_000),
+    })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: secondMember.id,
+      role: 'member',
+      createdAt: new Date(start + 2_000),
+    })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: moderator.id,
+      role: 'moderator',
+      createdAt: new Date(start + 3_000),
+    })
+
+    const seen: string[] = []
+    let after: string | undefined
+    for (let step = 0; step < 6; step++) {
+      const page = await searchCommunityMembers(community.id, {
+        limit: 1,
+        rosterVisibility: 'moderators',
+        after,
+      })
+      seen.push(...page.results.map(row => row.user_id))
+      if (!page.page_info.has_next_page) break
+      after = page.page_info.end_cursor ?? undefined
+    }
+
+    expect(seen).toEqual([owner.id, moderator.id])
+  })
 })

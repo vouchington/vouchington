@@ -21,6 +21,7 @@ import {
   COMMUNITY_MEMBERSHIP_CAP_COMMUNITY_ID,
   COMMUNITY_MEMBERSHIP_CAP_USER_ID,
 } from '../seed-data/community-membership-caps.mts'
+import { runCommunityMemberRolePageScenarios } from './community-member-role-pages.mts'
 import {
   DELETED_PARENT_MODERATION_POST_ID,
   deleteDeletedParentModerationVersion,
@@ -43,6 +44,7 @@ export async function runDeletedParentPageScenarios(): Promise<void> {
   await runAndCapture('deleted-parent-community-members', () =>
     searchCommunityMembers(COMMUNITY_MEMBERSHIP_CAP_COMMUNITY_ID, { limit: 25 }),
   )
+  await runCommunityMemberRolePageScenarios()
 
   const memberViewer = { id: COMMUNITY_MEMBERSHIP_CAP_USER_ID } as PrivateUser
   registerScenarioContract('deleted-parent-member-communities', {
