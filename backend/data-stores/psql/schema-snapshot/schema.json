@@ -21224,6 +21224,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_community_members__active_moderator_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__active_moderator_user_id ON public.community_members USING btree (user_id, community_id) WHERE ((removed_at IS NULL) AND (role = ANY (ARRAY['owner'::community_member_roles, 'moderator'::community_member_roles])))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((removed_at IS NULL) AND (role = ANY (ARRAY['owner'::community_member_roles, 'moderator'::community_member_roles])))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_members__active_moderators": {
           "accessMethod": "btree",
           "constraintBacked": false,
