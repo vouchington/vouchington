@@ -20,7 +20,6 @@ const end = start + 100
 
 describe('ineligible Stripe purchase detection', () => {
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date((start + 50) * 1000))
   })
   afterEach(() => {
@@ -242,6 +241,24 @@ describe('ineligible Stripe purchase detection', () => {
     const fixture = await setupPurchase(start, end)
     fixture.lines[0]!.pricing.price_details.price = `price_other_${randomUUID()}`
     await expect(fixture.detect()).resolves.toBe(false)
+    await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toBeNull()
+  })
+
+  it('rejects an invoice whose subscription environment differs from the event', async () => {
+    const fixture = await setupPurchase(start, end)
+    fixture.subscription.livemode = false
+    await expect(fixture.detect()).rejects.toThrow(
+      `Stripe invoice ${fixture.invoice.id} environment does not match its subscription`,
+    )
+    await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toBeNull()
+  })
+
+  it('rejects a purchase intent that does not identify this invoice price', async () => {
+    const fixture = await setupPurchase(start, end)
+    fixture.subscription.metadata.membership_purchase_intent_id = randomUUID()
+    await expect(fixture.detect()).rejects.toThrow(
+      `Stripe subscription ${fixture.subscriptionId} has an invalid purchase intent`,
+    )
     await expect(getIneligiblePurchaseReversalCase(fixture.lookup)).resolves.toBeNull()
   })
 })
