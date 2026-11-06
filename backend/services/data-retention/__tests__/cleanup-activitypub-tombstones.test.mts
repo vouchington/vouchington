@@ -1,3 +1,4 @@
+import { deleteTestRetainedPostIdentity } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   withCommittedPostgresTransactionForTest,
@@ -60,6 +61,7 @@ describe('retained Like activity terminal cleanup', () => {
             activityIds.map(id => deleteOperationalRetainedLikeReferenceForTest(cleanupQuery, id)),
           ),
         )
+        await deleteTestRetainedPostIdentity(postId)
         await deleteTerminalRetentionFixtureForTest({
           actorId: actor.id,
           actorUri: actor.actorUri,
@@ -155,6 +157,7 @@ describe('retained Like activity terminal cleanup', () => {
         await withCommittedPostgresTransactionForTest(cleanupQuery =>
           deleteOperationalRetainedLikeReferenceForTest(cleanupQuery, activityId),
         )
+        await deleteTestRetainedPostIdentity(postId)
         await deleteTerminalRetentionFixtureForTest({
           actorId: actor.id,
           actorUri: actor.actorUri,

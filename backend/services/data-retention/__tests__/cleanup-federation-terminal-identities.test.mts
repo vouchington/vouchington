@@ -1,3 +1,4 @@
+import { deleteTestRetainedPostIdentity } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import {
@@ -51,6 +52,7 @@ describe('finite ActivityPub terminal identity retention', () => {
               activityIds.map(id => deleteOperationalRetainedLikeReferenceForTest(query, id)),
             ),
           )
+          await deleteTestRetainedPostIdentity(post.id)
         }
         await deleteTerminalRetentionFixtureForTest({
           actorId: actor.id,

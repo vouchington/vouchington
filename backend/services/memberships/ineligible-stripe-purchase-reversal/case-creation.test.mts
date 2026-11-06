@@ -7,48 +7,78 @@ import {
   getTestIneligiblePurchaseReversalCase,
 } from '@voucha/test-helpers'
 import {
-  calculateIneligibleStripePurchaseRefundCap,
-  recordIneligibleStripePurchaseCasesForCollision,
+  recordIneligibleStripePurchaseCaseForCollision,
+  recordPreparedIneligibleStripePurchaseCasesForCollision,
   type IneligibleStripePurchaseCaseInput,
 } from './case-creation.mts'
+
+import { createProviderMembershipSource } from '../provider-source.mts'
+import { getLockedIneligiblePurchaseReversalCase } from './case-ledger.mts'
 
 describe('ineligible Stripe purchase refund cap', () => {
   const start = new Date('2026-01-01T00:00:00.000Z')
   const end = new Date('2026-01-01T00:00:10.000Z')
 
   it.each([
-    ['already covered', new Date('2025-12-31T23:59:59.000Z'), 1001],
-    ['covered at the start', start, 1001],
-    ['partial overlap rounded down', new Date('2026-01-01T00:00:03.000Z'), 700],
-    ['no overlap at the end', end, 0],
-    ['no overlap after the end', new Date('2026-01-01T00:00:11.000Z'), 0],
-  ])('%s', (_label, collision, expected) => {
-    expect(calculateIneligibleStripePurchaseRefundCap(1001, start, end, collision)).toBe(expected)
-  })
-
-  it('uses the full qualifying amount for a zero-length period', () => {
-    expect(calculateIneligibleStripePurchaseRefundCap(1001, start, start, start)).toBe(1001)
-  })
-
-  it('preserves integer precision for large minor-unit amounts', () => {
-    expect(
-      calculateIneligibleStripePurchaseRefundCap(
-        Number.MAX_SAFE_INTEGER,
-        start,
-        end,
-        new Date('2026-01-01T00:00:03.000Z'),
-      ),
-    ).toBe(6305039478318693)
+    ['already covered', start, end, new Date('2025-12-31T23:59:59.000Z'), 1001, 1001],
+    ['covered at the start', start, end, start, 1001, 1001],
+    ['partial overlap rounded down', start, end, new Date('2026-01-01T00:00:03.000Z'), 1001, 700],
+    ['zero-length period', start, start, start, 1001, 1001],
+    [
+      'large minor-unit amount',
+      start,
+      end,
+      new Date('2026-01-01T00:00:03.000Z'),
+      Number.MAX_SAFE_INTEGER,
+      6305039478318693,
+    ],
+  ])('%s', async (_label, periodStart, periodEnd, collision, amount, expected) => {
+    const { input, invoice, line, subscriptionId } = await createCaseInput()
+    line.period = { start: periodStart.getTime() / 1000, end: periodEnd.getTime() / 1000 }
+    invoice.total = amount
+    input.collisionAt = collision
+    await using transaction = await beginTransaction()
+    await expect(recordIneligibleStripePurchaseCaseForCollision(input, transaction)).resolves.toBe(
+      true,
+    )
+    const recorded = await getLockedIneligiblePurchaseReversalCase(
+      {
+        originatingInvoiceId: invoice.id,
+        providerApplicationId: input.sourceIdentity.applicationId,
+        providerEnvironment: 'production',
+        subscriptionId,
+      },
+      transaction,
+    )
+    expect(recorded?.refundCapMinorUnits).toBe(expected)
+    await expect(recordIneligibleStripePurchaseCaseForCollision(input, transaction)).resolves.toBe(
+      false,
+    )
   })
 
   it.each([Number.MAX_SAFE_INTEGER + 1, -1, 1.5])(
-    'rejects invalid qualifying minor units %s',
-    amount => {
-      expect(() => calculateIneligibleStripePurchaseRefundCap(amount, start, end, start)).toThrow(
-        'Stripe purchase qualifying amount must be a nonnegative safe integer',
-      )
+    'rejects invalid qualifying minor units %s through the producer',
+    async amount => {
+      const { input, invoice } = await createCaseInput()
+      invoice.total = amount
+      await using transaction = await beginTransaction()
+      await expect(
+        recordIneligibleStripePurchaseCaseForCollision(input, transaction),
+      ).rejects.toThrow(`Stripe invoice ${invoice.id} has an invalid qualifying amount`)
+      await transaction.commit()
     },
   )
+
+  it('rejects an inverted service period through the producer', async () => {
+    const { input, line } = await createCaseInput()
+    line.period = { start: end.getTime() / 1000, end: start.getTime() / 1000 }
+    input.collisionAt = start
+    await using transaction = await beginTransaction()
+    await expect(
+      recordIneligibleStripePurchaseCaseForCollision(input, transaction),
+    ).rejects.toThrow('Stripe purchase period ends before it starts')
+    await transaction.commit()
+  })
 })
 
 async function createCaseInput() {
@@ -93,26 +123,16 @@ describe('ineligible Stripe purchase case validation', () => {
     const { input, line, subscriptionId } = await createCaseInput()
     line.period = { start: startedAt, end: endedAt }
     await using transaction = await beginTransaction()
+    await expect(recordIneligibleStripePurchaseCaseForCollision(input, transaction)).resolves.toBe(
+      false,
+    )
+    const source = await createProviderMembershipSource(
+      { userId: input.userId, sourceIdentity: input.sourceIdentity, sourceKind: 'direct' },
+      transaction,
+    )
     await expect(
-      recordIneligibleStripePurchaseCasesForCollision([input], transaction),
+      recordPreparedIneligibleStripePurchaseCasesForCollision([input], source, transaction),
     ).resolves.toEqual([])
-    await transaction.commit()
-    await expect(
-      getTestIneligiblePurchaseReversalCase(subscriptionId, 'production'),
-    ).resolves.toBeNull()
-  })
-
-  it('rejects a batch whose purchases have different source identities', async () => {
-    const { input, subscriptionId } = await createCaseInput()
-    const other = {
-      ...input,
-      sourceIdentity: { ...input.sourceIdentity, providerLineageId: `sub_other_${randomUUID()}` },
-      invoice: { ...input.invoice, id: `in_other_${randomUUID()}` },
-    }
-    await using transaction = await beginTransaction()
-    await expect(
-      recordIneligibleStripePurchaseCasesForCollision([input, other], transaction),
-    ).rejects.toThrow('Stripe reversal case batch must share one source identity')
     await transaction.commit()
     await expect(
       getTestIneligiblePurchaseReversalCase(subscriptionId, 'production'),
@@ -159,8 +179,16 @@ describe('ineligible Stripe purchase case validation', () => {
     const fixture = await createCaseInput()
     mutate(fixture)
     await using transaction = await beginTransaction()
+    const source = await createProviderMembershipSource(
+      {
+        userId: fixture.input.userId,
+        sourceIdentity: fixture.input.sourceIdentity,
+        sourceKind: 'direct',
+      },
+      transaction,
+    )
     await expect(
-      recordIneligibleStripePurchaseCasesForCollision([fixture.input], transaction),
+      recordPreparedIneligibleStripePurchaseCasesForCollision([fixture.input], source, transaction),
     ).rejects.toThrow(error)
     await transaction.commit()
     await expect(

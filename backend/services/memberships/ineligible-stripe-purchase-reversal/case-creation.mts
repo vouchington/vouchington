@@ -20,7 +20,7 @@ export type IneligibleStripePurchaseSource = {
   bindingId: string
 }
 
-export function calculateIneligibleStripePurchaseRefundCap(
+function calculateIneligibleStripePurchaseRefundCap(
   qualifyingAmountMinorUnits: number,
   periodStartedAt: Date,
   periodEndsAt: Date,
@@ -45,7 +45,7 @@ export async function recordIneligibleStripePurchaseCaseForCollision(
   return inserted.includes(input.invoice.id)
 }
 
-export async function recordIneligibleStripePurchaseCasesForCollision(
+async function recordIneligibleStripePurchaseCasesForCollision(
   inputs: readonly IneligibleStripePurchaseCaseInput[],
   query: QueryExecutor,
 ): Promise<string[]> {
