@@ -21,14 +21,25 @@ export function PaginatedUserCommunityList({
   const state = usePaginatedList(initialData, endpoint, {})
   const communities = mergePageResultsById(state.pages)
   const handleLoadMore = state.loadMore
-  if (communities.length === 0) {
-    return (
+  const body =
+    communities.length === 0 ? (
       <EmptyState
         title={emptyTitle}
         description={emptyDescription}
       />
+    ) : (
+      <div className='space-y-4'>
+        {communities.map(community => (
+          <CommunityCard
+            key={community.id}
+            community={community}
+            hideJoinButton
+          />
+        ))}
+      </div>
     )
-  }
+  // A short page can be empty while later keys are still eligible.
+  if (communities.length === 0 && !state.hasNextPage) return body
 
   return (
     <InfiniteScroll
@@ -40,15 +51,7 @@ export function PaginatedUserCommunityList({
       clearError={state.clearError}
       resetKey={state.resetKey}
     >
-      <div className='space-y-4'>
-        {communities.map(community => (
-          <CommunityCard
-            key={community.id}
-            community={community}
-            hideJoinButton
-          />
-        ))}
-      </div>
+      {body}
     </InfiniteScroll>
   )
 }

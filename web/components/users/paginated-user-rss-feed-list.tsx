@@ -29,26 +29,13 @@ export function PaginatedUserRssFeedList({
   const hostnameElections = mergeRecords(state.pages, page => page.hostname_elections)
   const electionVotes = mergeRecords(state.pages, page => page.election_votes ?? {})
   const handleLoadMore = state.loadMore
-
-  if (results.length === 0) {
-    return (
+  const body =
+    results.length === 0 ? (
       <EmptyState
         title={emptyTitle}
         description={emptyDescription}
       />
-    )
-  }
-
-  return (
-    <InfiniteScroll
-      hasNextPage={state.hasNextPage}
-      endCursor={state.endCursor}
-      onLoadMore={handleLoadMore}
-      loadingMore={state.loadingMore}
-      fetchError={state.fetchError}
-      clearError={state.clearError}
-      resetKey={state.resetKey}
-    >
+    ) : (
       <div className='space-y-4'>
         {results.map(feed => (
           <RssFeedListItem
@@ -67,6 +54,21 @@ export function PaginatedUserRssFeedList({
           />
         ))}
       </div>
+    )
+  // A short page can be empty while later keys are still eligible.
+  if (results.length === 0 && !state.hasNextPage) return body
+
+  return (
+    <InfiniteScroll
+      hasNextPage={state.hasNextPage}
+      endCursor={state.endCursor}
+      onLoadMore={handleLoadMore}
+      loadingMore={state.loadingMore}
+      fetchError={state.fetchError}
+      clearError={state.clearError}
+      resetKey={state.resetKey}
+    >
+      {body}
     </InfiniteScroll>
   )
 }

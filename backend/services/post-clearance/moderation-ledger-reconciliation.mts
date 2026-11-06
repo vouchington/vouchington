@@ -123,21 +123,20 @@ export async function reconcilePostModerationWork(
         )
         UNION ALL
         (
-          SELECT numbered.version_id,
+          SELECT inspected.version_id,
             (
               SELECT source.source::post_moderation_sources
               FROM unnest($7::text[]) AS source(source)
               ORDER BY source.source::post_moderation_sources DESC
               LIMIT 1
             ),
-            numbered.post_id, numbered.through_id
-          FROM (
-            SELECT version_page.*, row_number() OVER (ORDER BY version_id) AS n
-            FROM version_page
-          ) numbered
+            inspected.post_id, inspected.through_id
+          FROM version_page inspected
           WHERE NOT EXISTS (SELECT 1 FROM selected)
             AND (SELECT count(*) FROM version_page) > $1
-            AND numbered.n = $1
+          -- The raw page re-includes the cursor, so the first row is not progress.
+          ORDER BY inspected.version_id DESC
+          LIMIT 1
         )
       )
       SELECT 'exhausted'::text AS row_kind, selected.post_id, selected.version_id, selected.source,

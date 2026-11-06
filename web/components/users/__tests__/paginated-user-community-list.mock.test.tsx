@@ -123,4 +123,26 @@ describe('PaginatedUserCommunityList', () => {
     expect(await screen.findByText('community-2')).toBeDefined()
     expect(getPaginatedPage).toHaveBeenCalledTimes(2)
   })
+
+  it('loads the next page when the current page is empty but has a continuation', async () => {
+    vi.mocked(getPaginatedPage).mockResolvedValueOnce(makePage(['community-2']))
+
+    render(
+      <PaginatedUserCommunityList
+        initialData={makePage([], { endCursor: 'cursor-1', hasNextPage: true })}
+        endpoint='/api/v1/users/alice/communities/member'
+        emptyTitle='No member communities'
+        emptyDescription='This user is not a member of any communities.'
+      />,
+    )
+
+    await act(async () => {
+      await receiveLoadMore.mock.calls.at(-1)![0]()
+    })
+
+    expect(getPaginatedPage).toHaveBeenCalledWith('/api/v1/users/alice/communities/member', {
+      after: 'cursor-1',
+    })
+    expect(await screen.findByText('community-2')).toBeDefined()
+  })
 })
