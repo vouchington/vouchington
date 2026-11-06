@@ -81,7 +81,6 @@ import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-c
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
 import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
-/** Defer the large retention corpus until its own plans, then refresh only its statistics. */
 async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
   await seedAgentModerationRetention()
   await write(`/* analyzeAgentModerationRetention */
