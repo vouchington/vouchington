@@ -114,7 +114,7 @@ async function scheduleCatalogFailures(): Promise<string[]> {
     )
   }
   if (combined.length !== combinedQueues.length) {
-    failures.push(
+    catalogFailures.push(
       `catalog combined manifests: ${combined.length}, expected ${combinedQueues.length} (${combined.map(manifest => manifest.queueName).join(', ')})`,
     )
   }
@@ -137,7 +137,7 @@ async function scheduleCatalogFailures(): Promise<string[]> {
     const discoveredIds = (domainSchedulerIds.get(queueName) ?? []).toSorted()
     const catalogIds = catalogIdsByQueue.get(queueName) ?? []
     if (!sameList(discoveredIds, catalogIds)) {
-      failures.push(
+      catalogFailures.push(
         `${queueName}: catalog scheduler ids [${catalogIds.join(', ')}] do not match discovered modules [${discoveredIds.join(', ')}]`,
       )
     }
@@ -153,7 +153,7 @@ async function scheduleCatalogFailures(): Promise<string[]> {
     register => !ownRegistrations.includes(register),
   )
   if (combinedRegistrations.length !== 2) {
-    failures.push(
+    catalogFailures.push(
       `worker runtime combined registrations: ${combinedRegistrations.length}, expected 2`,
     )
   }
@@ -165,7 +165,7 @@ async function scheduleCatalogFailures(): Promise<string[]> {
   }).toSorted()
   const expectedQueueNames = [BACKGROUND_CPU_QUEUE_NAME, BACKGROUND_QUEUE_NAME].toSorted()
   if (!sameList(combinedQueueNames, expectedQueueNames)) {
-    failures.push(
+    catalogFailures.push(
       `worker runtime combined queues [${combinedQueueNames.join(', ')}] do not match [${expectedQueueNames.join(', ')}]`,
     )
   }
@@ -175,7 +175,7 @@ async function scheduleCatalogFailures(): Promise<string[]> {
     runtimeSet.size !== expectedRegistrations.size ||
     [...runtimeSet].some(registration => !expectedRegistrations.has(registration))
   ) {
-    failures.push(
+    catalogFailures.push(
       'worker runtime schedule functions are not the discovered upsert functions plus the combined registrations',
     )
   }
