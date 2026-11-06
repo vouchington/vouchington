@@ -56,8 +56,15 @@ describe('buildUserRemovedPostsQuery', () => {
               'community'::TEXT AS post_removal_kind,
               (p.id IS NOT NULL) AS kept
             FROM review_page page
-            LEFT JOIN posts p
-              ON p.id = page.post_id AND p.deleted_at IS NULL AND p.created_by_id = $5
+
+          LEFT JOIN LATERAL (
+            SELECT p.id, p.title, p.declared_language, p.lingua_rs_detected_language
+            FROM posts p
+            WHERE p.id = page.post_id
+              AND p.deleted_at IS NULL
+              AND p.created_by_id = $5
+            LIMIT 1
+          ) p ON TRUE
             LEFT JOIN communities c ON c.id = page.community_id
           ), removed_posts AS (
             SELECT * FROM platform_removed_posts
