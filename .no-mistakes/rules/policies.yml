@@ -4591,6 +4591,7 @@
   scope: repository
   severity: advisory
   options:
+    ignoreExportsUsedInFile: true
     productionRoots:
       [backend, web, lambdas, cloudflare-worker, ts-shared, email-templates, localization]
     testGlobs:
