@@ -6,6 +6,18 @@ const DISPLAY_LIMIT = 20
 /** Short pages of deleted users must not turn one sidebar render into a full roster scan. */
 const MAX_PAGES = 5
 
+/** Serialized entity maps are not object-spreadable. */
+function mergeRecords<T>(left: Record<string, T>, right: Record<string, T>): Record<string, T> {
+  const merged: Record<string, T> = {}
+  for (const source of [left, right]) {
+    for (const id of Object.keys(source)) {
+      const value = source[id]
+      if (value !== undefined) merged[id] = value
+    }
+  }
+  return merged
+}
+
 /** Follow empty membership pages until the sidebar has its live display cap. */
 export async function loadCommunityRoleMembers(
   slug: string,
@@ -26,8 +38,8 @@ export async function loadCommunityRoleMembers(
       ? {
           results: [...combined.results, ...response.results].slice(0, DISPLAY_LIMIT),
           page_info: response.page_info,
-          community_members: { ...combined.community_members, ...response.community_members },
-          users: { ...combined.users, ...response.users },
+          community_members: mergeRecords(combined.community_members, response.community_members),
+          users: mergeRecords(combined.users, response.users),
         }
       : { ...response, results: response.results.slice(0, DISPLAY_LIMIT) }
     if (
