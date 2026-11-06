@@ -71,7 +71,12 @@ export function prRevisionPairViolations(
     MERGE_QUEUE_BASE_SHA: '${{ steps.merge-queue-range.outputs.base }}',
     MERGE_QUEUE_HEAD_SHA: '${{ steps.merge-queue-range.outputs.head }}',
   }
-  if (JSON.stringify(docs?.env) !== JSON.stringify(expectedEnv))
+  const docsEnv = docs?.env
+  if (
+    !docsEnv ||
+    Object.keys(docsEnv).length !== Object.keys(expectedEnv).length ||
+    Object.entries(expectedEnv).some(([name, value]) => docsEnv[name] !== value)
+  )
     violations.push('ci-detect-changes docs check must use the shared merge-queue base and head')
   if (range?.if !== "github.event_name == 'merge_group'")
     violations.push('ci-detect-changes merge queue range must run only for merge_group')

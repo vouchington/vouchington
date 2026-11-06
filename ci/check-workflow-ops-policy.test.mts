@@ -50,6 +50,72 @@ describe('static workflow ops scan', () => {
       'Workflow ops policies passed.\n',
     )
 
+    const ciDetectChangesPath = join(workflows, 'ci-detect-changes.yml')
+    const validCiDetectChanges = files['.github/workflows/ci-detect-changes.yml']!
+    const originalEnv = [
+      `          EVENT_NAME: \${{ github.event_name }}`,
+      `          MERGE_QUEUE_BASE_SHA: \${{ steps.merge-queue-range.outputs.base }}`,
+      `          MERGE_QUEUE_HEAD_SHA: \${{ steps.merge-queue-range.outputs.head }}`,
+    ].join('\n')
+    const reorderedEnv = [
+      `          MERGE_QUEUE_HEAD_SHA: \${{ steps.merge-queue-range.outputs.head }}`,
+      `          EVENT_NAME: \${{ github.event_name }}`,
+      `          MERGE_QUEUE_BASE_SHA: \${{ steps.merge-queue-range.outputs.base }}`,
+    ].join('\n')
+    const reorderedCiDetectChanges = validCiDetectChanges.replace(originalEnv, reorderedEnv)
+    expect(reorderedCiDetectChanges).not.toBe(validCiDetectChanges)
+    await writeFile(ciDetectChangesPath, reorderedCiDetectChanges)
+    await exec('git', ['-C', root, 'add', '.github/workflows/ci-detect-changes.yml'])
+    expect(checkWorkflowOpsPolicy(root)).toEqual([])
+
+    const assertCiDetectChangesViolation = async (source: string, expected: string) => {
+      expect(source).not.toBe(validCiDetectChanges)
+      await writeFile(ciDetectChangesPath, source)
+      await exec('git', ['-C', root, 'add', '.github/workflows/ci-detect-changes.yml'])
+      expect(checkWorkflowOpsPolicy(root)).toEqual([expected])
+    }
+    await assertCiDetectChangesViolation(
+      validCiDetectChanges.replace(
+        "github.event_name == 'merge_group'",
+        "github.event_name == 'pull_request'",
+      ),
+      'ci-detect-changes merge queue range must run only for merge_group',
+    )
+    await assertCiDetectChangesViolation(
+      validCiDetectChanges.replace('git rev-parse HEAD', 'git rev-parse origin/main'),
+      'ci-detect-changes must resolve the merge queue head from HEAD',
+    )
+    await assertCiDetectChangesViolation(
+      validCiDetectChanges.replace(
+        'git merge-base origin/main "$HEAD_SHA"',
+        'git merge-base origin/master "$HEAD_SHA"',
+      ),
+      'ci-detect-changes must resolve the merge queue base from origin/main',
+    )
+    await assertCiDetectChangesViolation(
+      validCiDetectChanges.replace(
+        'MERGE_QUEUE_HEAD_SHA: ${{ steps.merge-queue-range.outputs.head }}',
+        'MERGE_QUEUE_HEAD_SHA: ${{ github.sha }}',
+      ),
+      'ci-detect-changes docs check must use the shared merge-queue base and head',
+    )
+    await assertCiDetectChangesViolation(
+      validCiDetectChanges.replace(
+        '      - uses: dorny/paths-filter@synthetic\n        with:\n          base: ${{ steps.merge-queue-range.outputs.base }}\n          ref: ${{ steps.merge-queue-range.outputs.head }}\n',
+        '',
+      ),
+      'ci-detect-changes must have exactly two paths-filter steps',
+    )
+    await assertCiDetectChangesViolation(
+      validCiDetectChanges.replace(
+        '          ref: ${{ steps.merge-queue-range.outputs.head }}',
+        '          ref: ${{ github.sha }}',
+      ),
+      'ci-detect-changes paths-filter step 0 must share the resolved base/head',
+    )
+    await writeFile(ciDetectChangesPath, validCiDetectChanges)
+    await exec('git', ['-C', root, 'add', '.github/workflows/ci-detect-changes.yml'])
+
     await writeFile(
       join(workflows, 'fix-main.yml'),
       'name: Fix Main\non:\n  workflow_run:\n    workflows: [Nightly, "Dispatch completed deploy"]\njobs: {}\n',
