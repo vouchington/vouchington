@@ -3,7 +3,6 @@ import { isAdminUser } from '@services/users/authorization'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   buildPublicPostEligibilityFilter,
-  buildSourceBoundPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
 import type { PostSearchOptions } from '../types.mts'
@@ -18,9 +17,9 @@ export function appendBaseFilters(
     include_topic_recommendations,
     post_types,
     public_eligibility_only,
+    story_id,
     user_id,
   }: PostSearchOptions,
-  eligibility: 'standard' | 'source-bound' = 'standard',
 ): boolean {
   filters.push(sql`posts.deleted_at IS NULL`)
   filters.push(sql`posts.community_id IS NULL`)
@@ -38,15 +37,11 @@ export function appendBaseFilters(
       WHERE root_post.id = COALESCE(posts.root_post_id, posts.id)
         AND `
     viewerEligibility.append(
-      eligibility === 'source-bound'
-        ? buildSourceBoundPostEligibilityFilter('posts', 'root_post', {
-            currentUserId: viewer.id,
-            isAdministrator: isAdmin,
-          })
-        : buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
-            currentUserId: viewer.id,
-            isAdministrator: isAdmin,
-          }),
+      buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
+        currentUserId: viewer.id,
+        isAdministrator: isAdmin,
+        storySourceStaff: seesHiddenStoryFeeds(viewer, { post_types, story_id }),
+      }),
     ).append(sql`
     )`)
     filters.push(viewerEligibility)
@@ -56,11 +51,7 @@ export function appendBaseFilters(
       FROM posts root_post
       WHERE root_post.id = COALESCE(posts.root_post_id, posts.id)
         AND `
-    publicEligibility.append(
-      eligibility === 'source-bound'
-        ? buildSourceBoundPostEligibilityFilter('posts', 'root_post', null)
-        : buildPublicPostEligibilityFilter('posts', 'root_post'),
-    )
+    publicEligibility.append(buildPublicPostEligibilityFilter('posts', 'root_post'))
     // A reply is readable when it and the thread root are, so only the root's type can block a
     // comment. Comments are searched only when asked for, so only then does the root need judging.
     if (public_eligibility_only && post_types?.includes('comment')) {
@@ -74,6 +65,15 @@ export function appendBaseFilters(
   if (exclude_for_user_id) appendUserExclusionFilters(filters)
   if (user_id) appendUserFilter(filters, { currentUser: viewer, isAdmin, user_id })
   return isAdmin
+}
+
+function seesHiddenStoryFeeds(
+  viewer: BasicUser,
+  { post_types, story_id }: Pick<PostSearchOptions, 'post_types' | 'story_id'>,
+): boolean {
+  const storyOnly = post_types?.length === 1 && post_types[0] === 'story' && story_id === undefined
+  if (!storyOnly) return false
+  return viewer.roles.includes('administrator') || viewer.roles.includes('moderator')
 }
 
 function appendUserExclusionFilters(filters: SQLStatement[]): void {

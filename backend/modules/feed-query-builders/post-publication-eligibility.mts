@@ -24,6 +24,7 @@ export type ViewerPostDiscoveryEligibilityOptions = {
   currentUserId: string
   includeArchivedCommunities?: boolean
   isAdministrator: boolean
+  storySourceStaff?: boolean
 }
 
 /** Builds recipient-independent state for notification reconciliation. */
@@ -151,6 +152,7 @@ export function buildViewerPostDiscoveryEligibilityFilter(
     currentUserId: options.currentUserId,
     isModerationStaff: options.isAdministrator,
     requireActiveCommunity: options.includeArchivedCommunities !== true,
+    storySourceStaff: options.storySourceStaff,
   })
   const statement = sql`(`
     .append(directEligibility)

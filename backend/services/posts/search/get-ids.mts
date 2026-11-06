@@ -17,7 +17,6 @@ import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-
 import type { PostSearchRow } from './get-ids-types.mts'
 import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
 import { postsWorkConfig } from '../work-limits.mts'
-import { isStorySourceSearch, searchStorySourcePosts } from './story-source-page.mts'
 
 type PostSearchResponse = {
   results: PostSearchResult[]
@@ -50,15 +49,6 @@ export async function getPostIds(
   const effectiveTimeRange =
     options.time_range ??
     (isOwnDraftsListing(currentUser, options) ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
-  if (isStorySourceSearch(options)) {
-    return searchStorySourcePosts(currentUser, {
-      ...options,
-      time_range: effectiveTimeRange,
-      semanticSearchEmbedding,
-      limit,
-    })
-  }
-
   const { id_lt, vote_score_lt, ranking_lt, hot_score_lt } = decodePostSearchCursor(
     options,
     sort,

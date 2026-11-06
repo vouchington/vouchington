@@ -15,6 +15,8 @@ export function buildPostAccessEligibilityFilter(
     currentUserId: string | null
     isModerationStaff: boolean
     requireActiveCommunity: boolean
+    /** Story-only search. Staff still need a source, and the feed may be hidden. */
+    storySourceStaff?: boolean
   },
   includeStorySource = true,
 ): SQLStatement {
@@ -22,7 +24,15 @@ export function buildPostAccessEligibilityFilter(
   assertSafeSqlAlias(rootAlias)
 
   const nonDeleted = buildNonDeletedClause(candidateAlias, rootAlias)
-  if (options.isModerationStaff) return nonDeleted
+  const storyStaff = options.storySourceStaff === true && includeStorySource
+  if (options.isModerationStaff && !storyStaff) return nonDeleted
+  if (options.isModerationStaff) {
+    return sql`(`
+      .append(nonDeleted)
+      .append(sql` AND `)
+      .append(buildStorySourceAccessClause(rootAlias, true))
+      .append(sql`)`)
+  }
 
   const candidateClearance = buildClearanceClause(candidateAlias, options.currentUserId)
   const rootClearance = buildClearanceClause(rootAlias, options.currentUserId)
@@ -43,7 +53,7 @@ export function buildPostAccessEligibilityFilter(
     .append(sql` AND `)
     .append(audienceAccess)
   if (includeStorySource) {
-    statement.append(sql` AND `).append(buildStorySourceAccessClause(rootAlias))
+    statement.append(sql` AND `).append(buildStorySourceAccessClause(rootAlias, storyStaff))
   }
   return statement.append(sql`)`)
 }

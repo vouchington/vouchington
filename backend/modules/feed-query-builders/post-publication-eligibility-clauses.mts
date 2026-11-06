@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { itemHasDiscoverableSourceSql } from './discoverability-sql.mts'
+import { storyItemSourceSql } from './discoverability-sql.mts'
 
 const SAFE_SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
 
@@ -173,7 +173,7 @@ export function buildRootDiscoveryAudienceAccessClause(
     )`)
 }
 
-export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
+export function buildStorySourceAccessClause(rootAlias: string, staff = false): SQLStatement {
   return sql`(`
     .append(`${rootAlias}.post_type <> 'story'`)
     .append(sql`
@@ -191,7 +191,7 @@ export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
     .append(`${rootAlias}.id`)
     .append(sql`
         AND `)
-    .append(itemHasDiscoverableSourceSql('story_item.id')).append(sql`
+    .append(storyItemSourceSql('story_item.id', staff)).append(sql`
     )
   )`)
 }
