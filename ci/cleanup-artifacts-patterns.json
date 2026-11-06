@@ -30,6 +30,7 @@
     "wrangler-logs-*"
   ],
   "delete": [
+    "backend-query-profile-hits-shard-*",
     "code-review-payload-*",
     "lcov-full-*",
     "playwright-otel-output-shard-*",
