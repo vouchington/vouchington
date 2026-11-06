@@ -83,7 +83,6 @@ _none_
 - `idx_communities__deleted_by_id`: `CREATE INDEX idx_communities__deleted_by_id ON public.communities USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_communities__lingua_rs_pending`: `CREATE INDEX idx_communities__lingua_rs_pending ON public.communities USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_communities__list_type`: `CREATE INDEX idx_communities__list_type ON public.communities USING btree (list_type) WHERE ((list_type IS NOT NULL) AND (deleted_at IS NULL))`
-- `idx_communities__live_public_id`: `CREATE INDEX idx_communities__live_public_id ON public.communities USING btree (id DESC) WHERE ((deleted_at IS NULL) AND (archived_at IS NULL) AND (visibility = 'public'::privacy_types))`
 - `idx_communities__profile_image`: `CREATE INDEX idx_communities__profile_image ON public.communities USING btree (profile_image_id) WHERE ((profile_image_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_communities__profile_image_id_bare`: `CREATE INDEX idx_communities__profile_image_id_bare ON public.communities USING btree (profile_image_id) WHERE (profile_image_id IS NOT NULL)`
 - `idx_communities__search`: `CREATE INDEX idx_communities__search ON public.communities USING gin (search_vector) WHERE (deleted_at IS NULL)`
