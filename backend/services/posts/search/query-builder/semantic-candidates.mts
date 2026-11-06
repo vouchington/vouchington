@@ -1,5 +1,8 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { buildPostSearchTimeRangeFilter } from '../hacker-news-hot-options.mts'
+import {
+  buildPostSearchTimeRangeFilter,
+  usesHackerNewsHotCandidates,
+} from '../hacker-news-hot-options.mts'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions } from '../types.mts'
 import { buildPostSearchAuthorFilter } from './base-filters.mts'
@@ -37,7 +40,10 @@ export function buildSemanticPostCandidates(
     hasTextSearch,
     options: candidateOptions,
     rankingScoreExpression: null,
-    sort: options.sort === 'hot' ? ('hot' as const) : ('new' as const),
+    sort:
+      options.sort === 'hot' && !usesHackerNewsHotCandidates(options)
+        ? ('hot' as const)
+        : ('new' as const),
   }
   appendPostSearchSelectAndJoins(query, context)
   appendPostSearchWhereClause(query, context)

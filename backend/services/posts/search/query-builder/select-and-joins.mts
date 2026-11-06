@@ -34,7 +34,7 @@ export function appendPostSearchSelectAndJoins(
       posts.id,
       posts.post_type
   `)
-  if (includeHotCandidateColumns) query.append(sql`, posts.votes_score_net`)
+  if (includeHotCandidateColumns) query.append(sql`, posts.votes_score_sort`)
   if (rankingScoreExpression) appendSelectExpression(query, rankingScoreExpression, 'ranking_score')
   if (followingRankExpression)
     appendSelectExpression(query, followingRankExpression, 'following_rank')
