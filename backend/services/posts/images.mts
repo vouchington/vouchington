@@ -169,7 +169,7 @@ export async function setPostImages(
           imageIds: images.map(image => image.image_id),
         }).catch(onError)
       }
-      if ((err as { code?: string }).code === '23503') {
+      if (typeof err === 'object' && err !== null && 'code' in err && err.code === '23503') {
         /* v8 ignore next -- defensive race fallback; validation covers normal incomplete/missing images */
         throw createHttpError(400, 'Image not found or not complete')
       }

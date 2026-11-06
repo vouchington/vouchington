@@ -21,9 +21,7 @@ describe('queue stats shutdown', () => {
   it('reports a queue close failure with its queue name and finishes shutdown', async () => {
     const queueName = `stats-shutdown-${crypto.randomUUID()}`
     await getQueueStats(queueName)
-    const failure = new Error('queue close failed') as Error & {
-      extra?: Record<string, unknown>
-    }
+    const failure = 'queue close failed'
     closeQueue.mockRejectedValueOnce(failure)
     await expect(
       onGracefulShutdown('SIGTERM', {
@@ -33,10 +31,15 @@ describe('queue stats shutdown', () => {
     ).resolves.toBeUndefined()
 
     expect(closeQueue).toHaveBeenCalledOnce()
-    expect(failure.extra).toEqual({ operation: 'closeQueueInstance', queueName })
     expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(
-      failure,
-      expect.objectContaining({ extra: expect.objectContaining(failure.extra) }),
+      expect.objectContaining({
+        message: failure,
+        cause: failure,
+        extra: { operation: 'closeQueueInstance', queueName },
+      }),
+      expect.objectContaining({
+        extra: expect.objectContaining({ operation: 'closeQueueInstance', queueName }),
+      }),
     )
   })
 })

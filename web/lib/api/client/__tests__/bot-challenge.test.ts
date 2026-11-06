@@ -76,7 +76,7 @@ describe('browser bot challenge', () => {
     window.turnstile = turnstile({})
 
     const result = requestBotChallengeToken('bot-challenge.mutation')
-    const rejection = result.catch((err: unknown) => err as unknown)
+    const rejection = result.catch((err: unknown) => err)
     const dialog = await nextDialog()
     dialog.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
 
@@ -121,7 +121,7 @@ describe('browser bot challenge', () => {
     const abortReason = new Error('navigation interrupted')
     window.turnstile = turnstile({})
     const result = requestBotChallengeToken('bot-challenge.mutation', controller.signal)
-    const rejection = result.catch((err: unknown) => err as unknown)
+    const rejection = result.catch((err: unknown) => err)
     await nextDialog()
 
     controller.abort(abortReason)
