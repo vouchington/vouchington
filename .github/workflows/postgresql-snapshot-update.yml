@@ -94,32 +94,39 @@ jobs:
           install: false
           cache: false
           version: ${{ steps.pnpm-version.outputs.version }}
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
-        with:
-          ref: ${{ github.sha }}
-          path: .trusted-snapshot-scripts
-          persist-credentials: false
       - name: Set fresh PostgreSQL connection
         timeout-minutes: 1
         env:
           POSTGRES_PORT: ${{ job.services.postgres.ports['5432'] }}
-        run: source "$GITHUB_WORKSPACE/.trusted-snapshot-scripts/.github/workflows/set-snapshot-postgres-connection.sh"
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: Runs in a trusted issue_comment job without a trusted-script checkout; set the fresh PostgreSQL connection with workflow-owned code.
+        run: |
+          postgres_url="postgres://postgres@localhost:$POSTGRES_PORT/postgres"
+          {
+            echo "DATABASE_URL=$postgres_url"
+            echo "READ_DATABASE_URL=$postgres_url"
+          } >> "$GITHUB_ENV"
       - name: Install candidate dependencies
         timeout-minutes: 5
         run: pnpm install --frozen-lockfile
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
-        with:
-          ref: ${{ github.sha }}
-          path: .trusted-snapshot-scripts
-          persist-credentials: false
       - name: Generate snapshot from fresh PostgreSQL
         timeout-minutes: 4
         working-directory: backend
         env:
           SNAPSHOT_HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
-        run: source "$GITHUB_WORKSPACE/.trusted-snapshot-scripts/.github/workflows/generate-postgresql-snapshot.sh"
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: Runs in a trusted issue_comment job without a trusted-script checkout; generate the snapshot from the bound candidate with workflow-owned code.
+        run: |
+          test "$(git rev-parse HEAD)" = "$SNAPSHOT_HEAD_SHA"
+          node --input-type=module -e '
+            const { applyAllMigrations } = await import("./data-stores/psql/migrate.mts")
+            const { generateSchemaSnapshot } = await import("./data-stores/psql/schema-snapshot/generate.mts")
+            const { close } = await import("./data-stores/psql/runtime.mts")
+            try {
+              await applyAllMigrations()
+              await generateSchemaSnapshot()
+            } finally {
+              await close()
+            }
+          '
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
         with:
