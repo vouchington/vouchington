@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { isAdmin, isModerationStaff } from '@/lib/auth/account-type'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import type { Metadata } from 'next'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { CommunityModerationPanels } from './community-moderation-panels'
 import { loadCommunityModerationPanels } from './community-moderation-data'
 
@@ -50,6 +51,7 @@ export default async function CommunityModerationPage({ params, searchParams }: 
   const reportSort =
     !isStaff && requestedReportSort === 'severity' ? 'created_at_desc' : requestedReportSort
   const panels = await loadCommunityModerationPanels(slug, reportSort)
+  const t = await getTranslations()
 
   return (
     <CommunityModerationPanels
@@ -60,6 +62,7 @@ export default async function CommunityModerationPage({ params, searchParams }: 
       activeTab={activeTab}
       activeTabIsExplicit={activeTabIsExplicit}
       panels={panels}
+      t={t}
     />
   )
 }

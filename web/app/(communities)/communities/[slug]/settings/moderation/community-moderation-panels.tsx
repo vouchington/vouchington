@@ -17,16 +17,9 @@ import { getTranslations } from '@/lib/i18n/get-translations'
 import type { Community } from '@/types/api-responses'
 import type { CommunityModerationPanelData } from './community-moderation-data'
 
-async function PanelError({ label }: { label: string }) {
-  const t = await getTranslations()
-  return (
-    <p className='rounded-md border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive'>
-      {t('extracted.moderation.page.labelCouldNotBeLoadedPlease_4538b470', { label })}
-    </p>
-  )
-}
+type Translate = Awaited<ReturnType<typeof getTranslations>>
 
-export async function CommunityModerationPanels({
+export function CommunityModerationPanels({
   community,
   currentUserId,
   isStaff,
@@ -34,6 +27,7 @@ export async function CommunityModerationPanels({
   activeTab,
   activeTabIsExplicit,
   panels,
+  t,
 }: {
   community: Community
   currentUserId: string
@@ -42,8 +36,8 @@ export async function CommunityModerationPanels({
   activeTab: 'reports' | 'posts' | 'escalated'
   activeTabIsExplicit: boolean
   panels: CommunityModerationPanelData
+  t: Translate
 }) {
-  const t = await getTranslations()
   const {
     aiAgents,
     automodActions,
@@ -60,6 +54,11 @@ export async function CommunityModerationPanels({
   } = panels
   const hasRules = community.rules_markdown != null && community.rules_markdown.length > 0
   const automodConfigured = (agentPrompts?.community_agent_prompts.length ?? 0) > 0
+  const panelError = (label: string) => (
+    <p className='rounded-md border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive'>
+      {t('extracted.moderation.page.labelCouldNotBeLoadedPlease_4538b470', { label })}
+    </p>
+  )
 
   return (
     <div className='space-y-6'>
@@ -95,7 +94,7 @@ export async function CommunityModerationPanels({
           communitySlug={community.slug}
         />
       ) : (
-        <PanelError label={t('extracted.moderation.page.aiAgents_3d9e4348')} />
+        panelError(t('extracted.moderation.page.aiAgents_3d9e4348'))
       )}
       {agentPrompts ? (
         <CommunityAgentPromptsPanel
@@ -105,7 +104,7 @@ export async function CommunityModerationPanels({
           communitySlug={community.slug}
         />
       ) : (
-        <PanelError label={t('extracted.moderation.page.agentPrompts_b17006d4')} />
+        panelError(t('extracted.moderation.page.agentPrompts_b17006d4'))
       )}
       <CommunityAutomodActionForm
         key={`${community.slug}-${community.automod_action}`}
@@ -119,7 +118,7 @@ export async function CommunityModerationPanels({
           communitySlug={community.slug}
         />
       ) : (
-        <PanelError label={t('extracted.moderation.page.agentPromptHistory_2eaa44fa')} />
+        panelError(t('extracted.moderation.page.agentPromptHistory_2eaa44fa'))
       )}
       {automodActions ? (
         <CommunityAutomodReviewPanel
@@ -128,7 +127,7 @@ export async function CommunityModerationPanels({
           stats={automodActions.stats}
         />
       ) : (
-        <PanelError label={t('extracted.moderation.page.automodReview_207675c0')} />
+        panelError(t('extracted.moderation.page.automodReview_207675c0'))
       )}
       {automodFlags ? (
         <CommunityAutomodFlagsPanel
@@ -136,9 +135,7 @@ export async function CommunityModerationPanels({
           communitySlug={community.slug}
         />
       ) : (
-        <PanelError
-          label={t('extracted.communities.communityAutomodFlagsPanel.automodFlags_b5fc56db')}
-        />
+        panelError(t('extracted.communities.communityAutomodFlagsPanel.automodFlags_b5fc56db'))
       )}
       {pendingPosts && pendingReports ? (
         <ModQueue
@@ -152,7 +149,7 @@ export async function CommunityModerationPanels({
           activeTabIsExplicit={activeTabIsExplicit}
         />
       ) : (
-        <PanelError label={t('extracted.moderation.page.moderationQueue_50d92231')} />
+        panelError(t('extracted.moderation.page.moderationQueue_50d92231'))
       )}
       <CommunityPostTypeSettingsForm
         key={`${community.slug}-${community.should_allow_review_posts}-${community.should_allow_data_point_posts}`}
@@ -165,7 +162,7 @@ export async function CommunityModerationPanels({
           initialData={restrictions}
         />
       ) : (
-        <PanelError label={t('extracted.moderation.page.raidMode_d21c8747')} />
+        panelError(t('extracted.moderation.page.raidMode_d21c8747'))
       )}
       {bans ? (
         <CommunityBansPanel
@@ -173,7 +170,7 @@ export async function CommunityModerationPanels({
           initialData={bans}
         />
       ) : (
-        <PanelError label={t('extracted.moderation.page.bans_4d5469c7')} />
+        panelError(t('extracted.moderation.page.bans_4d5469c7'))
       )}
       <ModmailInbox
         key={community.slug}
