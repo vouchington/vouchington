@@ -959,6 +959,9 @@
   options:
     roots:
       - vitest: true
+    runtimeAssets:
+      - root: backend/data-stores/psql/migrations
+        reason: Shipped migration files are enumerated to report database migration status.
 
 - name: Vitest tests do not run live no-mistakes analysis
   rule: forbidden-calls

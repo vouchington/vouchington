@@ -1,6 +1,7 @@
 import { ClientRequest } from 'node:http'
 import { beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { createMigrationStatusFixture } from '@voucha/test-helpers/migration-status-fixture'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
@@ -46,17 +47,24 @@ describe('Admin SSE stream routes', () => {
     it('sets SSE headers and writes the initial migration-status snapshot for admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
+      await createMigrationStatusFixture()
 
       const capture = await captureAdminStream(request, '/api/v1/admin/postgresql/stream')
 
       expect(capture.contentType).toContain('text/event-stream')
       expect(capture.body).toContain('event: snapshot')
       expect(capture.body).toContain('"total"')
+      expect(firstMigrationSnapshot(capture.body)).toMatchObject({
+        total: 2,
+        pending: ['m25-owned-pending.mts'],
+      })
+      expect(firstMigrationSnapshot(capture.body).applied).toHaveLength(1)
     })
 
     it('publishes a periodic snapshot and stops the ticker when the client disconnects', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
+      await createMigrationStatusFixture()
 
       const capture = await captureAdminStream(request, '/api/v1/admin/postgresql/stream', {
         tickerIntervalMs: 30_000,
@@ -65,6 +73,11 @@ describe('Admin SSE stream routes', () => {
       expect(capture.contentType).toContain('text/event-stream')
       expect(capture.body.match(/event: snapshot\n/g)).toHaveLength(2)
       expect(capture.body).toContain('"total"')
+      expect(firstMigrationSnapshot(capture.body)).toMatchObject({
+        total: 2,
+        pending: ['m25-owned-pending.mts'],
+      })
+      expect(firstMigrationSnapshot(capture.body).applied).toHaveLength(1)
     })
   })
 
@@ -195,4 +208,14 @@ async function captureAdminStream(
       }
     }
   }
+}
+
+function firstMigrationSnapshot(body: string): {
+  applied: string[]
+  pending: string[]
+  total: number
+} {
+  const data = body.match(/data: ([^\n]+)/)?.[1]
+  if (!data) throw new Error('Migration snapshot data was missing')
+  return JSON.parse(data) as { applied: string[]; pending: string[]; total: number }
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
+import { createMigrationStatusFixture } from '@voucha/test-helpers/migration-status-fixture'
 
 describe('POST /api/v1/psql/jobs', () => {
   it('requires completed MFA for an enrolled administrator fixture', async () => {
@@ -20,7 +21,11 @@ describe('POST /api/v1/psql/jobs', () => {
 
     const verified = createRequest()
     await verified.authenticateAs(user)
-    await verified.get('/api/v1/psql/migrations').expect(200)
+    await createMigrationStatusFixture()
+    const response = await verified.get('/api/v1/psql/migrations').expect(200)
+    expect(response.body.total).toBe(2)
+    expect(response.body.applied).toHaveLength(1)
+    expect(response.body.pending).toEqual(['m25-owned-pending.mts'])
   })
 
   it('enqueues runConfigDriven and returns 200', async () => {
