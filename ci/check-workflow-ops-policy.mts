@@ -18,16 +18,19 @@ import { prRevisionPairViolations } from './workflow-revision-policy.mts'
 import { workflowScriptOwnershipViolations } from './workflow-script-ownership-policy.mts'
 
 const workflowPathPattern = /^\.github\/workflows\/[^/]+\.ya?ml$/u
+const smokePostgresScriptPath = '.github/workflows/initialize-smoke-test/prepare-postgres.sh'
 
 /** Read tracked workflow sources once for the required static CI policy check. */
 export function checkWorkflowOpsPolicy(root: string): string[] {
-  const paths = trackedFiles(root, ['.github/workflows'])
-    .filter(path => workflowPathPattern.test(path))
-    .toSorted()
+  const trackedWorkflowPaths = trackedFiles(root, ['.github/workflows']).toSorted()
+  const paths = trackedWorkflowPaths.filter(path => workflowPathPattern.test(path))
   if (paths.length === 0) return ['No tracked workflows found for workflow ops policy']
 
   const sources = Object.fromEntries(
-    paths.map(path => [path, readFileSync(join(root, path), 'utf8')]),
+    [
+      ...paths,
+      ...(trackedWorkflowPaths.includes(smokePostgresScriptPath) ? [smokePostgresScriptPath] : []),
+    ].map(path => [path, readFileSync(join(root, path), 'utf8')]),
   ) as Record<string, string>
   const workflows = Object.fromEntries(
     paths.map(path => [path, parseYaml(sources[path]!) as OpsWorkflow]),

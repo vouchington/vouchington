@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-
 import { parse as load } from 'yaml'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { maxCiVitestWorkers } from '../../test-helpers/vitest-config/environment.mts'
@@ -8,7 +6,6 @@ import {
   type OpsWorkflow,
 } from '../../ci/workflow-ops-policy.mts'
 
-const workflowDirectory = '.github/workflows'
 const ciPostgresMaxConnections = 300
 // Tests trigger ERRORs on purpose, and every ERROR already reaches the client that caused it, so
 // the server-log copy (plus its STATEMENT line) only floods the service-container log. LOG ranks
@@ -23,12 +20,8 @@ type VitestConfig = {
   }
 }
 
-function readWorkflow(name: string): string {
-  return readFileSync(`${workflowDirectory}/${name}`, 'utf8')
-}
-
 const validPgvectorImage = `ghcr.io/vouchington/dependency-pgvector:synthetic-tag@sha256:${'a'.repeat(64)}`
-const postgresPolicySources = {
+const postgresPolicySources: Record<string, string> = {
   '.github/workflows/unit.yml': `
 jobs:
   test:
@@ -50,19 +43,23 @@ jobs:
 jobs:
   smoke:
     steps:
-      - run: docker run -e POSTGRES_INITDB_ARGS="-c max_connections=300 -c log_min_messages=log"
+      - run: source .github/workflows/initialize-smoke-test/prepare-postgres.sh
+`,
+  '.github/workflows/initialize-smoke-test/prepare-postgres.sh': `
+docker run -e ${requiredDockerInitdbArgs} ${validPgvectorImage}
 `,
 }
 const postgresPolicyDocuments = Object.fromEntries(
-  Object.entries(postgresPolicySources).map(([path, source]) => [
-    path,
-    load(source) as OpsWorkflow,
-  ]),
+  Object.entries(postgresPolicySources)
+    .filter(([path]) => path.endsWith('.yml'))
+    .map(([path, source]) => [path, load(source) as OpsWorkflow]),
 )
 
-function postgresPolicyErrors(sources: typeof postgresPolicySources) {
+function postgresPolicyErrors(sources: Record<string, string>) {
   const documents = Object.fromEntries(
-    Object.entries(sources).map(([path, source]) => [path, load(source) as OpsWorkflow]),
+    Object.entries(sources)
+      .filter(([path]) => path.endsWith('.yml'))
+      .map(([path, source]) => [path, load(source) as OpsWorkflow]),
   )
   return postgresWorkflowPolicyViolations(sources, documents)
 }
@@ -84,6 +81,7 @@ describe('PostgreSQL workflow image policy', () => {
       }),
     ).toEqual([
       'Postgres workflow image is not digest pinned: ghcr.io/vouchington/dependency-pgvector:synthetic-tag',
+      'Postgres workflow images must use one digest-pinned reference; found 2',
     ])
   })
 
@@ -137,9 +135,40 @@ describe('PostgreSQL workflow image policy', () => {
     ])
   })
 
-  it('gives the initialize-smoke docker postgres the shared CI server settings', () => {
-    const script = '.github/workflows/initialize-smoke-test/prepare-postgres.sh'
-    expect(readWorkflow('initialize-smoke-test.yml')).toContain(`run: source ${script}`)
-    expect(readFileSync(script, 'utf8')).toContain(requiredDockerInitdbArgs)
+  it('requires the smoke workflow to call the tracked helper with shared Docker settings', () => {
+    const workflowPath = '.github/workflows/initialize-smoke-test.yml'
+    const scriptPath = '.github/workflows/initialize-smoke-test/prepare-postgres.sh'
+    expect(postgresPolicyErrors(postgresPolicySources)).toEqual([])
+    expect(
+      postgresPolicyErrors({
+        ...postgresPolicySources,
+        [workflowPath]: postgresPolicySources[workflowPath]!.replace(
+          'prepare-postgres.sh',
+          'wrong-script.sh',
+        ),
+      }),
+    ).toEqual([
+      '.github/workflows/initialize-smoke-test.yml must run the shared Docker postgres preparation script',
+    ])
+    expect(
+      postgresPolicyErrors({
+        ...postgresPolicySources,
+        [scriptPath]: postgresPolicySources[scriptPath]!.replace(
+          requiredDockerInitdbArgs,
+          'POSTGRES_INITDB_ARGS="-c max_connections=20"',
+        ),
+      }),
+    ).toEqual([
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh must use the shared Docker postgres settings',
+    ])
+    expect(
+      postgresPolicyErrors(
+        Object.fromEntries(
+          Object.entries(postgresPolicySources).filter(([path]) => path !== scriptPath),
+        ),
+      ),
+    ).toEqual([
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh must use the shared Docker postgres settings',
+    ])
   })
 })

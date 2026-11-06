@@ -125,9 +125,19 @@ export function postgresWorkflowPolicyViolations(
       )
   }
   const smokeWorkflow = sources['.github/workflows/initialize-smoke-test.yml']
-  if (!smokeWorkflow?.includes(requiredDockerInitdbArgs))
+  if (
+    !smokeWorkflow?.includes(
+      'run: source .github/workflows/initialize-smoke-test/prepare-postgres.sh',
+    )
+  ) {
     violations.push(
-      '.github/workflows/initialize-smoke-test.yml must use the shared Docker postgres settings',
+      '.github/workflows/initialize-smoke-test.yml must run the shared Docker postgres preparation script',
+    )
+  }
+  const smokePostgresScript = sources['.github/workflows/initialize-smoke-test/prepare-postgres.sh']
+  if (!smokePostgresScript?.includes(requiredDockerInitdbArgs))
+    violations.push(
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh must use the shared Docker postgres settings',
     )
   return violations
 }

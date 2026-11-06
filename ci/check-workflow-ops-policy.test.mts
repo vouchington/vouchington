@@ -31,7 +31,9 @@ describe('static workflow ops scan', () => {
       '.github/workflows/postgres.yml': `jobs:\n  test:\n    services:\n      postgres:\n        image: ${fixtureImage}\n        env:\n          POSTGRES_INITDB_ARGS: '${postgresArgs}'\n`,
       '.github/workflows/explain-analyze.yml':
         "jobs:\n  test:\n    services:\n      postgres:\n        env:\n          POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log -c work_mem=32MB'\n",
-      '.github/workflows/initialize-smoke-test.yml': `jobs:\n  smoke:\n    steps:\n      - run: docker run -e POSTGRES_INITDB_ARGS="${postgresArgs}"\n`,
+      '.github/workflows/initialize-smoke-test.yml':
+        'jobs:\n  smoke:\n    steps:\n      - run: source .github/workflows/initialize-smoke-test/prepare-postgres.sh\n',
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh': `docker run -e POSTGRES_INITDB_ARGS="${postgresArgs}" ${fixtureImage}\n`,
       '.github/workflows/ci-detect-changes.yml': `jobs:\n  detect-changes:\n    steps:\n      - name: Resolve merge queue diff range\n        if: github.event_name == 'merge_group'\n        run: |\n          HEAD_SHA="$(git rev-parse HEAD)"\n          git merge-base origin/main "$HEAD_SHA"\n      - name: Check for docs-only changes\n        env:\n          EVENT_NAME: \${{ github.event_name }}\n          MERGE_QUEUE_BASE_SHA: \${{ steps.merge-queue-range.outputs.base }}\n          MERGE_QUEUE_HEAD_SHA: \${{ steps.merge-queue-range.outputs.head }}\n        run: git diff --name-only "$MERGE_QUEUE_BASE_SHA" "$MERGE_QUEUE_HEAD_SHA"\n      - uses: dorny/paths-filter@synthetic\n        with:\n          base: \${{ steps.merge-queue-range.outputs.base }}\n          ref: \${{ steps.merge-queue-range.outputs.head }}\n      - uses: dorny/paths-filter@synthetic\n        with:\n          base: \${{ steps.merge-queue-range.outputs.base }}\n          ref: \${{ steps.merge-queue-range.outputs.head }}\n`,
       '.github/workflows/script-owner.yml':
         'on:\n  pull_request:\n    paths: [ci/check.sh]\n  push:\n    paths: [ci/check.sh]\njobs:\n  test:\n    steps:\n      - run: bash ci/check.sh\n',
@@ -115,6 +117,64 @@ describe('static workflow ops scan', () => {
     )
     await writeFile(ciDetectChangesPath, validCiDetectChanges)
     await exec('git', ['-C', root, 'add', '.github/workflows/ci-detect-changes.yml'])
+
+    const smokePostgresScriptPath = join(workflows, 'initialize-smoke-test/prepare-postgres.sh')
+    const smokeWorkflowPath = join(workflows, 'initialize-smoke-test.yml')
+    const validSmokePostgresScript =
+      files['.github/workflows/initialize-smoke-test/prepare-postgres.sh']!
+    const validSmokeWorkflow = files['.github/workflows/initialize-smoke-test.yml']!
+    await writeFile(
+      smokePostgresScriptPath,
+      validSmokePostgresScript.replace('log_min_messages=log', 'log_min_messages=info'),
+    )
+    await exec('git', [
+      '-C',
+      root,
+      'add',
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh',
+    ])
+    expect(checkWorkflowOpsPolicy(root)).toEqual([
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh must use the shared Docker postgres settings',
+    ])
+    await writeFile(smokePostgresScriptPath, validSmokePostgresScript)
+    await exec('git', [
+      '-C',
+      root,
+      'add',
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh',
+    ])
+
+    await writeFile(
+      smokeWorkflowPath,
+      validSmokeWorkflow.replace(
+        '.github/workflows/initialize-smoke-test/prepare-postgres.sh',
+        '.github/workflows/initialize-smoke-test/wrong-script.sh',
+      ),
+    )
+    await exec('git', ['-C', root, 'add', '.github/workflows/initialize-smoke-test.yml'])
+    expect(checkWorkflowOpsPolicy(root)).toEqual([
+      '.github/workflows/initialize-smoke-test.yml must run the shared Docker postgres preparation script',
+    ])
+    await writeFile(smokeWorkflowPath, validSmokeWorkflow)
+    await exec('git', ['-C', root, 'add', '.github/workflows/initialize-smoke-test.yml'])
+
+    await exec('git', [
+      '-C',
+      root,
+      'rm',
+      '--cached',
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh',
+    ])
+    expect(checkWorkflowOpsPolicy(root)).toEqual([
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh must use the shared Docker postgres settings',
+    ])
+    await writeFile(smokePostgresScriptPath, validSmokePostgresScript)
+    await exec('git', [
+      '-C',
+      root,
+      'add',
+      '.github/workflows/initialize-smoke-test/prepare-postgres.sh',
+    ])
 
     await writeFile(
       join(workflows, 'fix-main.yml'),
