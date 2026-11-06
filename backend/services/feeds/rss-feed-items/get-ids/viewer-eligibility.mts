@@ -25,7 +25,8 @@ export function buildRssFeedItemSourceMuteFilter(eligibilityChildLimit?: number)
               FROM `)
   if (eligibilityChildLimit) {
     query.append(sql`(
-                SELECT id, subject_id, object_id, deleted_at, votes_score_net
+                SELECT id, subject_id, object_id, deleted_at, votes_score_net,
+                  votes_score_sort, created_at
                 FROM relation__topic__publisher_type__topic relation
                 WHERE relation.subject_id = rf.topic_id
                 ORDER BY relation.id DESC LIMIT ${eligibilityChildLimit}

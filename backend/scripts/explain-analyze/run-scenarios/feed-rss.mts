@@ -13,6 +13,8 @@ import {
 } from './rss-feed-pages.mts'
 import { runRssFeedCandidateReconciliationScenarios } from './rss-feed-candidate-maintenance.mts'
 import { runRssTopicMergeCandidateScenarios } from './rss-topic-merge-candidates.mts'
+import { RSS_PROXY_CAP_USER_ID } from '../seed-data/rss-feed-proxy-caps.mts'
+import type { PrivateUser } from '@services/users/types'
 import { RSS_AT_CAP_OUTSIDE_TOPIC_GUID } from '../seed-data/rss-feed-candidate-at-cap.mts'
 import * as services from '../run-services.mts'
 
@@ -43,6 +45,28 @@ export async function runFeedRssScenarios(): Promise<void> {
   const previousPageFields = rssFeedItemPageConfig.getFields()
   try {
     await rssFeedItemPageConfig.setFields(rssFeedItemPageMaxima)
+    const proxyUser: PrivateUser = {
+      ...heavyFollowUser,
+      id: RSS_PROXY_CAP_USER_ID,
+      username: 'explain-rss-proxy-cap',
+      roles: [],
+    }
+    await runRssFeedFirstAndContinuationScenarios(
+      'rss-feed-item-feed-proxy-feeds-at-cap',
+      proxyUser,
+      { limit: 25, time_range: '1w', feed_type: 'follow_rss_feeds' },
+      undefined,
+      undefined,
+      true,
+    )
+    await runRssFeedFirstAndContinuationScenarios(
+      'rss-feed-item-feed-proxy-topics-at-cap',
+      proxyUser,
+      { limit: 25, time_range: '1w', feed_type: 'follow_topics' },
+      undefined,
+      undefined,
+      true,
+    )
     const { rows } = await read<{ id: string }>(
       `/* readRssAtCapOutsideTopicId */
        SELECT id FROM rss_feed_item_guids WHERE guid = $1::text LIMIT 1`,

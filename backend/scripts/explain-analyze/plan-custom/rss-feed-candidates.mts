@@ -49,20 +49,20 @@ export function assertRssFeedCandidatesAreSetBased(result: ExplainResult): void 
       query,
     )
   const hasTopLevelPageLimit =
-    /ORDER\s+BY\s+combined_rss_feed_items\.sort_at\s+DESC,\s*combined_rss_feed_items\.result_id::uuid\s+DESC\s+LIMIT\s+\$\d+\s*$/i.test(
+    /ORDER\s+BY\s+page_rows\.cursor_sort_at\s+DESC\s+NULLS\s+LAST,\s*page_rows\.result_id::uuid\s+DESC\s+NULLS\s+LAST\s+LIMIT\s+\$\d+\s*$/i.test(
       query.trim(),
     )
   const hasWinnersBeforeCombinedPage =
     query.includes('direct_rss_feed_items AS') &&
     query.indexOf('combined_rss_feed_items AS') > query.indexOf('direct_rss_feed_items AS')
   const continuation = result.scenario_id.includes('-after')
-  const hasStrictCursorInEveryWalk =
+  const hasCursorInEveryWalk =
     !continuation ||
-    (hasStrictTuple(query, 'source.item_sort_at', 'source.rss_feed_item_id') &&
-      hasStrictTuple(query, 'candidate.sort_at', 'candidate.rss_feed_item_id') &&
-      hasStrictTuple(query, 'item_sort_at', 'rss_feed_item_id') &&
-      hasStrictTuple(query, 'sort_at', 'rss_feed_item_id') &&
-      /\(sort_at,\s*id\)\s*<\s*\(\$\d+::timestamptz,\s*\$\d+::uuid\)/i.test(query) &&
+    (hasBoundedTuple(query, 'source.item_sort_at', 'source.rss_feed_item_id') &&
+      hasBoundedTuple(query, 'candidate.sort_at', 'candidate.rss_feed_item_id') &&
+      hasBoundedTuple(query, 'item_sort_at', 'rss_feed_item_id') &&
+      hasBoundedTuple(query, 'sort_at', 'rss_feed_item_id') &&
+      /\(sort_at,\s*id\)\s*<=?\s*\(\$\d+::timestamptz,\s*\$\d+::uuid\)/i.test(query) &&
       /\(combined_rss_feed_items\.sort_at,\s*combined_rss_feed_items\.result_id::uuid\)\s*</i.test(
         query,
       ))
@@ -78,7 +78,7 @@ export function assertRssFeedCandidatesAreSetBased(result: ExplainResult): void 
     !hasShareLimit ||
     !hasWinnersBeforeCombinedPage ||
     !hasTopLevelPageLimit ||
-    !hasStrictCursorInEveryWalk
+    !hasCursorInEveryWalk
   ) {
     throw new Error(
       `${result.name} must rank bounded cursor-relative source heads, read bounded source/topic/share index walks, veto stories only when a newer matching member is proven, and apply the final sort/id page limit`,
@@ -86,11 +86,11 @@ export function assertRssFeedCandidatesAreSetBased(result: ExplainResult): void 
   }
 }
 
-function hasStrictTuple(query: string, sortColumn: string, idColumn: string): boolean {
+function hasBoundedTuple(query: string, sortColumn: string, idColumn: string): boolean {
   const escapedSort = sortColumn.replaceAll('.', '\\.')
   const escapedId = idColumn.replaceAll('.', '\\.')
   return new RegExp(
-    `\\(${escapedSort},\\s*${escapedId}\\)\\s*<\\s*\\(\\$\\d+::timestamptz,\\s*\\$\\d+::uuid\\)`,
+    `\\(${escapedSort},\\s*${escapedId}\\)\\s*<=?\\s*\\(\\$\\d+::timestamptz,\\s*\\$\\d+::uuid\\)`,
     'i',
   ).test(query)
 }

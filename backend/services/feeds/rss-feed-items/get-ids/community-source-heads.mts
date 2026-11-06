@@ -1,6 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildSourceHead, type SourceKind } from './source-head.mts'
 
+// Rank activity only within the indexed, stable list-input budget.
 function buildCommunityList(
   kind: SourceKind,
   communityId: SQLStatement,
@@ -24,6 +25,9 @@ export function buildLatestCommunityActivity(
   limit: number,
   cursorSortAt?: string,
   cursorId?: string,
+  cursorInclusive = false,
+  cutoffDate: Date | null = null,
+  itemCutoffId: string | null = null,
 ): SQLStatement {
   if (kind === 'feed') {
     return sql`SELECT head.sort_at AS activity_at, head.item_id AS activity_item_id FROM (`
@@ -33,15 +37,34 @@ export function buildLatestCommunityActivity(
           AND feed.is_enabled = TRUE AND feed.deleted_at IS NULL
           AND feed.latest_item_sort_at IS NOT NULL
         LEFT JOIN LATERAL (`)
-      .append(buildSourceHead(kind, sql`feed.id`, cursorSortAt, cursorId)).append(sql`) head ON TRUE
+      .append(
+        buildSourceHead(
+          kind,
+          sql`feed.id`,
+          cursorSortAt,
+          cursorId,
+          cursorInclusive,
+          cutoffDate,
+          itemCutoffId,
+        ),
+      ).append(sql`) head ON TRUE
         ORDER BY head.sort_at DESC NULLS LAST, head.item_id DESC NULLS LAST,
           feed.id DESC LIMIT 1`)
   }
   return sql`SELECT head.sort_at AS activity_at, head.item_id AS activity_item_id FROM (`
     .append(buildCommunityList(kind, communityId, limit))
     .append(sql`) raw LEFT JOIN LATERAL (`)
-    .append(buildSourceHead(kind, sql`raw.topic_id`, cursorSortAt, cursorId))
-    .append(sql`) head ON TRUE
+    .append(
+      buildSourceHead(
+        kind,
+        sql`raw.topic_id`,
+        cursorSortAt,
+        cursorId,
+        cursorInclusive,
+        cutoffDate,
+        itemCutoffId,
+      ),
+    ).append(sql`) head ON TRUE
       ORDER BY head.sort_at DESC NULLS LAST, head.item_id DESC NULLS LAST,
         raw.topic_id DESC LIMIT 1`)
 }
@@ -53,6 +76,9 @@ export function buildCommunitySources(
   sourceLimit: number,
   cursorSortAt?: string,
   cursorId?: string,
+  cursorInclusive = false,
+  cutoffDate: Date | null = null,
+  itemCutoffId: string | null = null,
 ): SQLStatement {
   if (kind === 'feed') {
     return sql`SELECT feed.id AS rss_feed_id FROM (`
@@ -61,15 +87,34 @@ export function buildCommunitySources(
         AND feed.is_enabled = TRUE AND feed.deleted_at IS NULL
         AND feed.latest_item_sort_at IS NOT NULL
         LEFT JOIN LATERAL (`)
-      .append(buildSourceHead(kind, sql`feed.id`, cursorSortAt, cursorId)).append(sql`) head ON TRUE
+      .append(
+        buildSourceHead(
+          kind,
+          sql`feed.id`,
+          cursorSortAt,
+          cursorId,
+          cursorInclusive,
+          cutoffDate,
+          itemCutoffId,
+        ),
+      ).append(sql`) head ON TRUE
         ORDER BY head.sort_at DESC NULLS LAST, head.item_id DESC NULLS LAST,
           feed.id DESC LIMIT ${sourceLimit}`)
   }
   return sql`SELECT raw.topic_id FROM (`
     .append(buildCommunityList(kind, communityId, followInputLimit))
     .append(sql`) raw LEFT JOIN LATERAL (`)
-    .append(buildSourceHead(kind, sql`raw.topic_id`, cursorSortAt, cursorId))
-    .append(sql`) head ON TRUE
+    .append(
+      buildSourceHead(
+        kind,
+        sql`raw.topic_id`,
+        cursorSortAt,
+        cursorId,
+        cursorInclusive,
+        cutoffDate,
+        itemCutoffId,
+      ),
+    ).append(sql`) head ON TRUE
     ORDER BY head.sort_at DESC NULLS LAST, head.item_id DESC NULLS LAST,
       raw.topic_id DESC LIMIT ${sourceLimit}`)
 }

@@ -15,29 +15,52 @@ export function appendRelationCTEs(
     communityId,
     currentUserId,
     followInputLimit,
+    proxyFollowInputLimit,
+    communityListInputLimit,
+    cutoffDate,
+    itemCutoffId,
     sourceLimit,
     exclusionRelationLimit,
     cursorSortAt,
     cursorId,
+    cursorInclusive,
   }: {
     communityId?: string
     currentUserId?: string
+    proxyFollowInputLimit: number
+    communityListInputLimit: number
+    cutoffDate: Date | null
+    itemCutoffId: string | null
     followInputLimit: number
     sourceLimit: number
     exclusionRelationLimit: number
     cursorSortAt?: string
     cursorId?: string
+    cursorInclusive?: boolean
   },
 ): SQLStatement {
   return query
+    .append(sql`viewer_proxy_follows AS MATERIALIZED (
+      SELECT object_id AS community_id, created_at
+      FROM relation__user__proxy_follow__community
+      WHERE subject_id = ${currentUserId ?? '00000000-0000-0000-0000-000000000000'}
+        AND deleted_at IS NULL
+      ORDER BY created_at DESC, object_id DESC
+      LIMIT ${proxyFollowInputLimit + 1}
+    ), `)
     .append(
       buildFollowedRssFeedsCTE({
         communityId,
         currentUserId,
         followInputLimit,
+        proxyFollowInputLimit,
+        communityListInputLimit,
+        cutoffDate,
+        itemCutoffId,
         sourceLimit,
         cursorSortAt,
         cursorId,
+        cursorInclusive,
       }),
     )
     .append(sql`,
@@ -47,9 +70,14 @@ export function appendRelationCTEs(
         communityId,
         currentUserId,
         followInputLimit,
+        proxyFollowInputLimit,
+        communityListInputLimit,
+        cutoffDate,
+        itemCutoffId,
         sourceLimit,
         cursorSortAt,
         cursorId,
+        cursorInclusive,
       }),
     )
     .append(sql`,

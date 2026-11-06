@@ -11,6 +11,7 @@ const MAX_FEED_FOLLOW_ROWS = 1_000
 // Generic plans may hash the capped topic follows for both stable-match sites.
 const MAX_TOPIC_FOLLOW_ROWS = 31_000
 const MAX_PROXY_COMMUNITY_ROWS = 512
+// At proxy maxima, two ranking passes read 1,024 list rows; capped viewer/story membership adds pair probes.
 const MAX_COMMUNITY_LIST_ROWS = 512
 const MAX_PAGE_ITEM_LIMIT = 100
 const MAX_SOURCE_TABLE_ROWS = 4_000
@@ -20,7 +21,10 @@ const MAX_RSS_FEED_ITEM_ROWS = 1_200
 const MAX_STORY_PROBE_ROWS = 512
 const MAX_PUBLISHER_TYPE_ROWS = 3_000
 
-function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type']) {
+function feedCandidateExpectations(
+  feedType?: RssFeedItemFeedOptions['feed_type'],
+  proxyCap = false,
+) {
   return [
     { kind: 'custom', name: 'rssFeedCandidates' },
     ...(feedType === 'follow_topics'
@@ -35,7 +39,7 @@ function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type'
           {
             kind: 'maxProcessedRows' as const,
             relation: 'community_list_rss_feeds',
-            max: MAX_COMMUNITY_LIST_ROWS,
+            max: proxyCap ? 1800 : MAX_COMMUNITY_LIST_ROWS,
           },
         ]),
     ...(feedType === 'follow_rss_feeds'
@@ -53,7 +57,7 @@ function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type'
           {
             kind: 'maxProcessedRows' as const,
             relation: 'community_list_topics',
-            max: MAX_COMMUNITY_LIST_ROWS,
+            max: proxyCap ? 1800 : MAX_COMMUNITY_LIST_ROWS,
           },
         ]),
     {
@@ -69,7 +73,7 @@ function feedCandidateExpectations(feedType?: RssFeedItemFeedOptions['feed_type'
     {
       kind: 'maxProcessedRows',
       relation: 'rss_feeds',
-      max: MAX_RSS_FEED_ROWS,
+      max: proxyCap ? 1800 : MAX_RSS_FEED_ROWS,
     },
     { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: MAX_RSS_FEED_ITEM_ROWS },
     {
@@ -103,10 +107,11 @@ export function registerRssFeedCandidateScenario(
   scenarioId: string,
   feedType?: RssFeedItemFeedOptions['feed_type'],
   allowEmptyResult = false,
+  proxyCap = false,
 ): void {
   registerScenarioContract(scenarioId, {
     allowEmptyResult,
-    expectations: feedCandidateExpectations(feedType),
+    expectations: feedCandidateExpectations(feedType, proxyCap),
     crossPartition: {
       rss_feed_items: 'The feed ranks recent matching items across the time window.',
     },
@@ -119,9 +124,10 @@ export async function runRssFeedFirstAndContinuationScenarios(
   options: RssFeedItemFeedOptions,
   suffix?: string,
   validateContinuation?: (page: RssFeedItemFeedResponse) => void,
+  proxyCap = false,
 ): Promise<void> {
   let first: RssFeedItemFeedResponse | undefined
-  registerRssFeedCandidateScenario(scenarioId, options.feed_type)
+  registerRssFeedCandidateScenario(scenarioId, options.feed_type, false, proxyCap)
   await runAndCapture(
     scenarioId,
     async () => {
@@ -139,7 +145,7 @@ export async function runRssFeedFirstAndContinuationScenarios(
       .filter(row => row.delivery_type === 'direct' && row.story_id)
       .map(row => row.story_id),
   )
-  registerRssFeedCandidateScenario(`${scenarioId}-after`, options.feed_type)
+  registerRssFeedCandidateScenario(`${scenarioId}-after`, options.feed_type, false, proxyCap)
   await runAndCapture(
     `${scenarioId}-after`,
     async () => {
