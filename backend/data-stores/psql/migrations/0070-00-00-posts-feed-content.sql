@@ -456,7 +456,7 @@ CREATE INDEX IF NOT EXISTS idx_posts__url_id
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__url_id__link
   ON posts (url_id, id DESC)
-  WHERE post_type = 'link' AND deleted_at IS NULL;
+  WHERE post_type = 'link';
 
 COMMENT ON TABLE posts IS 'User-generated posts: discussions, reviews, data points, recommendations, stories, and comments. RANGE-partitioned by id.';
 COMMENT ON COLUMN posts.post_type IS 'Discriminator: discussion, review, data_point, topic_recommendation, comment, story, link, article, or blog_post.';

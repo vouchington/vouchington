@@ -97387,7 +97387,7 @@
         "idx_posts__url_id__link": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__url_id__link ON ONLY public.posts USING btree (url_id, id DESC) WHERE ((post_type = 'link'::post_types) AND (deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_posts__url_id__link ON ONLY public.posts USING btree (url_id, id DESC) WHERE (post_type = 'link'::post_types)",
           "immediate": true,
           "keys": [
             {
@@ -97410,7 +97410,7 @@
             }
           ],
           "live": true,
-          "predicate": "((post_type = 'link'::post_types) AND (deleted_at IS NULL))",
+          "predicate": "(post_type = 'link'::post_types)",
           "primary": false,
           "ready": true,
           "unique": false,

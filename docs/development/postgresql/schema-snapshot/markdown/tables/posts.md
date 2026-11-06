@@ -163,7 +163,7 @@ _none_
 - `idx_posts__structured_data__topic_id`: `CREATE INDEX idx_posts__structured_data__topic_id ON ONLY public.posts USING btree (((structured_data ->> 'topic_id'::text))) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__updated_by_id`: `CREATE INDEX idx_posts__updated_by_id ON ONLY public.posts USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)`
 - `idx_posts__url_id`: `CREATE INDEX idx_posts__url_id ON ONLY public.posts USING btree (url_id) WHERE (url_id IS NOT NULL)`
-- `idx_posts__url_id__link`: `CREATE INDEX idx_posts__url_id__link ON ONLY public.posts USING btree (url_id, id DESC) WHERE ((post_type = 'link'::post_types) AND (deleted_at IS NULL))`
+- `idx_posts__url_id__link`: `CREATE INDEX idx_posts__url_id__link ON ONLY public.posts USING btree (url_id, id DESC) WHERE (post_type = 'link'::post_types)`
 - `idx_posts__votes_score_sort__id`: `CREATE INDEX idx_posts__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_posts__votes_score_sort__positive__id`: `CREATE INDEX idx_posts__votes_score_sort__positive__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
 - `posts_pkey`: `CREATE UNIQUE INDEX posts_pkey ON ONLY public.posts USING btree (id)`
