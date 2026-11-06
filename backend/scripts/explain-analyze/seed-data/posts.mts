@@ -22,7 +22,7 @@ export async function seedPosts(count = 10_000): Promise<void> {
       const batchIndex = i / 500
       await diagnostics.operation('batch', batchIndex, async () => {
         const batch = Math.min(500, count - i)
-        const ids: string[] = []
+        const postIds: string[] = []
         const postTypes: string[] = []
         const titles: string[] = []
         const markdowns: string[] = []
@@ -48,7 +48,7 @@ export async function seedPosts(count = 10_000): Promise<void> {
                 ],
               })
             : null
-          ids.push(id)
+          postIds.push(id)
           postTypes.push(postType)
           titles.push(title)
           markdowns.push(markdown)
@@ -57,58 +57,52 @@ export async function seedPosts(count = 10_000): Promise<void> {
           verticals.push(dataPointVertical)
           structuredDataValues.push(structuredData)
         }
-        const { rows: changedPosts } = await diagnostics.operation('insert', batchIndex, () =>
-          query<{ id: string; change_id: string }>(
-            `/* seedExplainData */
-             WITH seeded AS MATERIALIZED (
-               SELECT input.id, input.post_type, input.title, input.markdown,
-                 input.created_by_id, input.hash AS embedding_hash,
-                 input.hash AS moderation_hash, input.data_point_vertical,
-                 input.structured_data, input.ordinal, uuidv7() AS change_id
-               FROM UNNEST($1::uuid[], $2::post_types[], $3::text[], $4::text[],
-                 $5::uuid[], $6::bytea[], $7::text[], $8::jsonb[])
-                 WITH ORDINALITY AS input (
-                   id, post_type, title, markdown, created_by_id, hash,
-                   data_point_vertical, structured_data, ordinal
-                 )
-               ORDER BY input.ordinal
-             ), changed AS (
-               INSERT INTO posts (
-                 created_via, id, post_type, title, markdown, created_by_id,
-                 bedrock_nova_multimodal_v1_content_sha256,
-                 llm_moderation_content_sha256, data_point_vertical, structured_data,
-                 clearance_version, clearance_changed_at, approved_at
-               ) SELECT 'system', id, post_type, title, markdown, created_by_id,
-                   embedding_hash, moderation_hash, data_point_vertical, structured_data,
-                   1, uuid_extract_timestamp(change_id), uuid_extract_timestamp(change_id)
-                 FROM seeded
-               WHERE TRUE ORDER BY ordinal
-               ON CONFLICT (id) DO UPDATE SET
-                 clearance_version = posts.clearance_version + 1,
-                 clearance_changed_at = EXCLUDED.clearance_changed_at,
-                 clearance_changed_by_id = NULL,
-                 clearance_public_reason_code = NULL,
-                 clearance_is_platform_override = FALSE,
-                 approved_at = EXCLUDED.approved_at,
-                 rejected_at = NULL,
-                 in_review_at = NULL
-               WHERE posts.approved_at IS NULL
-                 AND posts.rejected_at IS NULL AND posts.in_review_at IS NULL
-               RETURNING id
-             )
-             SELECT changed.id, seeded.change_id
-             FROM seeded JOIN changed ON seeded.id = changed.id`,
-            [ids, postTypes, titles, markdowns, userIds, hashes, verticals, structuredDataValues],
+        await diagnostics.operation('insert', batchIndex, () =>
+          query(
+            `/* seedExplainData */ INSERT INTO posts (
+          created_via, id, post_type, title, markdown, created_by_id,
+          bedrock_nova_multimodal_v1_content_sha256,
+          llm_moderation_content_sha256,
+          data_point_vertical, structured_data
+        ) SELECT 'system', id, post_type, title, markdown, author_id,
+            hash, hash, vertical, data
+          FROM UNNEST($1::uuid[], $2::post_types[], $3::text[], $4::text[],
+            $5::uuid[], $6::bytea[], $7::text[], $8::jsonb[])
+            WITH ORDINALITY AS seed (
+              id, post_type, title, markdown, author_id, hash, vertical, data, ordinal
+            )
+          WHERE TRUE ORDER BY ordinal ON CONFLICT DO NOTHING`,
+            [
+              postIds,
+              postTypes,
+              titles,
+              markdowns,
+              userIds,
+              hashes,
+              verticals,
+              structuredDataValues,
+            ],
           ),
         )
-        // The history author trigger must see the post, so append history in a separate statement.
         await diagnostics.operation('clearance', batchIndex, () =>
           query(
-            `/* seedExplainData */ INSERT INTO post_clearance_changes
-             (id, post_id, change_type, metadata)
-             SELECT change_id, post_id, 'approve', '{"source":"explain-seed"}'::jsonb
-             FROM UNNEST($1::uuid[], $2::uuid[]) AS changed(post_id, change_id)`,
-            [changedPosts.map(({ id }) => id), changedPosts.map(({ change_id }) => change_id)],
+            `/* seedExplainData */
+             WITH seed_posts AS (SELECT UNNEST($1::uuid[]) AS post_id),
+             inserted_change AS (
+               INSERT INTO post_clearance_changes (post_id, change_type, metadata)
+               SELECT seed_posts.post_id, 'approve', '{"source":"explain-seed"}'::jsonb
+               FROM seed_posts JOIN posts ON posts.id = seed_posts.post_id
+               WHERE posts.approved_at IS NULL AND posts.rejected_at IS NULL AND posts.in_review_at IS NULL
+               RETURNING post_id, created_at, changed_by_id, public_reason_code, is_platform_override
+             )
+             UPDATE posts SET clearance_version = posts.clearance_version + 1,
+               clearance_changed_at = inserted_change.created_at,
+               clearance_changed_by_id = inserted_change.changed_by_id,
+               clearance_public_reason_code = inserted_change.public_reason_code,
+               clearance_is_platform_override = inserted_change.is_platform_override,
+               approved_at = inserted_change.created_at, rejected_at = NULL, in_review_at = NULL
+             FROM inserted_change WHERE posts.id = inserted_change.post_id`,
+            [postIds],
           ),
         )
       })
