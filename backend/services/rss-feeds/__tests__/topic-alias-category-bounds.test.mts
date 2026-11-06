@@ -62,7 +62,7 @@ describe('bounded topic alias category reconciliation', () => {
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toMatchObject({
       generation,
     })
-    await expect(drainAlias(alias.id)).resolves.toMatchObject({ reconciled: 1, updated: 7 })
+    await expect(drainAlias(alias.id)).resolves.toMatchObject({ reconciled: 1, updated: 4 })
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeUndefined()
     for (const fixture of fixtures) {
       await expect(getTestRssFeedCategories(fixture.feedId)).resolves.toContainEqual({
@@ -82,7 +82,7 @@ describe('bounded topic alias category reconciliation', () => {
       hasMore: true,
     })
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeDefined()
-    await expect(drainAlias(alias.id)).resolves.toMatchObject({ reconciled: 1, updated: 7 })
+    await expect(drainAlias(alias.id)).resolves.toMatchObject({ reconciled: 1, updated: 4 })
     await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeUndefined()
     for (const fixture of fixtures) {
       await expect(getTestRssFeedCategories(fixture.feedId)).resolves.toContainEqual({
@@ -200,11 +200,11 @@ describe('bounded topic alias category reconciliation', () => {
 async function drainAlias(aliasId: string) {
   let updated = 0
   let reconciled = 0
-  for (let page = 0; page < 13; page += 1) {
+  for (let page = 0; page < 10; page += 1) {
     const result = await processReconcileTopicAliasCategoryMappings(1, [aliasId])
     updated += result.updated
     reconciled += result.reconciled
     if (!result.hasMore) return { reconciled, updated, hasMore: false }
   }
-  throw new Error('Alias generation did not finish within thirteen raw pages')
+  throw new Error('Alias generation did not finish within ten raw pages')
 }

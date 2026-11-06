@@ -5,7 +5,6 @@ import {
 } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { RssFeedItemFeedOptions } from '../types.mts'
-import { rssFeedItemPageDefaults } from './feed-page-config.mts'
 
 type EffectiveFeedCursorOptions = RssFeedItemFeedOptions & {
   feed_type: NonNullable<RssFeedItemFeedOptions['feed_type']>
@@ -16,12 +15,10 @@ type EffectiveFeedCursorOptions = RssFeedItemFeedOptions & {
 }
 
 type FeedCursorRow = { cursor_sort_at: string; cursor_id: string }
-type FeedPageLimits = Record<keyof typeof rssFeedItemPageDefaults, number>
 
 export function getRssFeedItemFeedCursorScope(
   currentUserId: string | undefined,
   options: EffectiveFeedCursorOptions,
-  pageLimits: FeedPageLimits = rssFeedItemPageDefaults,
 ): string {
   const scope = {
     resource: 'rss-feed-item-feed',
@@ -41,7 +38,6 @@ export function getRssFeedItemFeedCursorScope(
     hashtag_alias_ids: normalizeArray(options.hashtag_alias_ids),
     text_search_query: options.text_search_query?.trim() ?? '',
     has_unknown_hashtag: options.has_unknown_hashtag ?? false,
-    page_limits: pageLimits,
   }
   return createHash('sha256').update(JSON.stringify(scope)).digest('hex')
 }

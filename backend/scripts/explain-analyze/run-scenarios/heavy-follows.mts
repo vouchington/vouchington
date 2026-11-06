@@ -1,10 +1,7 @@
 import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
-import {
-  RSS_AT_CAP_STORY_ID,
-  RSS_AT_CAP_STORY_TOKEN,
-} from '../seed-data/rss-feed-candidate-at-cap.mts'
+import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
 import {
   registerRssFeedCandidateScenario,
   runRssFeedFirstAndContinuationScenarios,
@@ -102,7 +99,7 @@ export async function runHeavyFollowScenarios() {
     { limit: 25, time_range: '1w' },
     'heavy',
   )
-  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-follow-rss-feeds', 'follow_rss_feeds')
+  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-follow-rss-feeds')
   await runAndCapture(
     'rss-feed-item-feed-heavy-follow-rss-feeds',
     () =>
@@ -113,7 +110,7 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-follow-rss-feeds',
   )
-  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-follow-topics', 'follow_topics')
+  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-follow-topics')
   await runAndCapture(
     'rss-feed-item-feed-heavy-follow-topics',
     () =>
@@ -140,9 +137,13 @@ export async function runHeavyFollowScenarios() {
     const page = await getRssFeedItemFeedIds(heavyFollowUser, {
       limit: 25,
       time_range: '1w',
-      text_search_query: RSS_AT_CAP_STORY_TOKEN,
+      text_search_query: STORY_POST_RELATED_URL_PROJECTION_SEED.feedSearchToken,
     })
-    if (page.results.length !== 1 || page.results[0]?.story_id !== RSS_AT_CAP_STORY_ID) {
+    if (
+      page.results.length !== 1 ||
+      page.results[0]?.story_id !== STORY_POST_RELATED_URL_PROJECTION_SEED.storyId ||
+      page.page_info.has_next_page
+    ) {
       throw new Error('RSS story-skew scenario must return one canonical direct representative')
     }
   })

@@ -1,8 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { contentHash, postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 
-export const TOP_HASHTAG_RSS_SEED_COUNT = 432
-
 // Five old rows per recent row (including back catalogue) make an unbounded scan fail.
 export async function seedTopHashtags(): Promise<void> {
   await using transaction = await beginTransaction()
@@ -30,7 +28,7 @@ export async function seedTopHashtags(): Promise<void> {
      ON CONFLICT DO NOTHING`,
     [postIds, aliasId],
   )
-  const rssRows = Array.from({ length: TOP_HASHTAG_RSS_SEED_COUNT }, (_, i) => {
+  const rssRows = Array.from({ length: 432 }, (_, i) => {
     const old = i >= 72
     const backCatalogue = i >= 60 && !old
     const timestamp = postSeedTimestampMs(old ? 65_000 + i : 1000 + i)

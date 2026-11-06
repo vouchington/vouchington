@@ -101,7 +101,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/dispatchRssFeeds',
   'rss-feed-maintenance/reconcileRssFeedItemCategorySnapshots',
   'rss-feed-maintenance/reconcileTopicAliasCategoryMappings',
-  'rss-feed-maintenance/reconcileRssFeedItemCandidates',
   'rss-feed-maintenance/recoverRssFeedHardDeletes',
   'rss-feed-maintenance/recoverTopicAliasUnlinks',
   'background/ses-inbound-reconciliation',

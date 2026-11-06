@@ -4,11 +4,9 @@ Personalized post and RSS feed item feeds for logged-in users. Feeds are filtere
 
 ## Query Pipeline
 
-Both feeds start with follow and exclusion relations and combine direct and shared deliveries. RSS pages read items through indexed followed-source and topic filters. Each source contributes its next item before the cursor; the highest heads choose the capped source set for that page. Each selected source and the share pool then take a bounded child page. Feed activity is cached on the feed, so publication does not rewrite follower rows. Topic candidates coalesce current category and voted memberships rather than expanding those relationships during every read.
+Both feeds combine direct and shared deliveries with the viewer's follow and exclusion relations. Personalized RSS reads the recent publication window in one SQL statement. Followed sources and topics are indexed membership filters, combined as a union. Eligibility, score thresholds, search, media and related-post filters run before the final page limit, so selective filters can inspect the entire window without exposing an empty continuation page.
 
-RSS continuations push the strict publication-time and delivery-ID cursor into every source, topic and share index walk. Source selection is repeated against that cursor, allowing previously unselected sources and older items to enter later pages. Omitted-source and proxy-community head lookahead, together with each full child window's last tuple, withholds older deliveries until the unread prefix can be considered. This prevents one stream from moving the cursor past another stream's unseen items. When a whole candidate window is suppressed, the request advances internally through a capped number of further windows. Already examined boundaries are excluded; an unread omitted-source head remains eligible at the boundary. The public cursor always identifies the last returned delivery. The window budget bounds the work performed by each request. Filters or exhausted eligibility and story-proof budgets can produce short or terminal partial results. Live item, follow or score changes can change results between requests.
-
-Canonical date and deletion corrections leave durable, coalesced projection work. Bounded worker pages refresh source and topic order, and scheduled recovery resumes work after a crash. Alias ownership changes use the category reconciler's bounded candidate phase. Item deletion cascades through the projections.
+The item publication window bounds the RSS read instead of a candidate budget. Longer requested ranges use the personal feed's maximum horizon; narrower ranges remain narrower. Direct items use their publication tuple, while shares retain their independent delivery tuple and metadata. Both the target item and the share delivery must fit the requested horizon. Live item, follow or score changes can change results between requests.
 
 ```mermaid
 flowchart TD
@@ -28,12 +26,11 @@ flowchart TD
     subgraph RSS["RSS item feed - getRssFeedItemFeedIds"]
         RR["Follow and exclusion relations"] --> RM
         RR --> RE
-        RM["Cursor-relative source heads, then bounded child pages"] --> RD
-        RD["Materialized eligible direct cohort with score and request filters"] --> RW
-        RW["Bounded newer-member proof: newest eligible matching story member"] --> RCombined
-        RE["Shared-item eligibility"] --> RShared
-        RShared["shared_rss_feed_items (rss_feed_item_feed_shares JOIN eligible items)"] --> RCombined
-        RCombined["combined_rss_feed_items = UNION ALL"] --> RFinal
+        RM["Recent RSS item walk with indexed source OR topic membership"] --> RD
+        RD["Visibility, score, search, media and related-post filters"] --> RW
+        RW["Cursor-independent newest matching story representative"] --> RCombined
+        RE["Recent recipient share deliveries and eligible recent targets"] --> RCombined
+        RCombined["Direct and shared deliveries = UNION ALL"] --> RFinal
         RFinal["Strict delivery cursor/order -> LIMIT+1"]
     end
 ```
@@ -49,13 +46,13 @@ flowchart TD
 | RSS Feed Items | `follow_rss_feeds` | Items from RSS feeds the current user follows                                                                                                                    |
 | RSS Feed Items | `follow_topics`    | Items with a category/related topic the current user follows                                                                                                     |
 | RSS Feed Items | `any`              | Union of the above (default)                                                                                                                                     |
-| RSS Feed Items | `all`              | Intersection of the above                                                                                                                                        |
+| RSS Feed Items | `all`              | Union of the above                                                                                                                                               |
 
 ## Filtering
 
 - **Post types**: Filter by discussion, review, article, etc. The default feed excludes `article`, `comment`, and `topic_recommendation` post types. Articles are staff-created content and do not appear in user feeds by default — they are browsable at `/articles`. Comments only show from followed users.
 - **Minimum vote score**: Separate thresholds per source (e.g. `min_score_follow_users` defaults to -5, `min_score_follow_topics` defaults to 0).
-- **Time range**: `1d`, `1w` (default), `1m`, `1y`, `all`.
+- **Time range**: Personalized RSS applies its maximum recent-publication horizon to longer selections; a shorter selection stays shorter. Post feeds retain their own time-range semantics.
 - **Privacy**: `buildViewerPostDiscoveryEligibilityFilter` applies canonical candidate/root eligibility plus discovery-only archived-content and suspended-author exclusions.
 - **Hidden content**: Posts/items related to muted or blocked topics, users, or RSS feeds are excluded.
 - **RSS-specific**: `appendRssFeedItemEligibilityFilters` owns the shared item predicate for direct and shared delivery paths: nondeleted item, at least one active/nondeleted source that is not muted or publisher-topic-excluded, hidden/topic/hostname exclusions, related-post, media, text, source-topic, and hashtag filters. A `topic_ids` source match itself must be active and nondeleted, so an item with an unrelated active source cannot pass through a disabled or deleted matching source. This intentionally does not require global discoverability: users can still receive items from feeds they follow when those feeds are hidden from public discovery. `has_related_posts` shows only items with/without linked discussion posts.
@@ -121,7 +118,7 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
 
 RSS feed items are grouped into stories — first-class entities representing a single news event covered by multiple outlets. The story-clustering Choice classifier decides whether to cluster using heuristics (e.g., rumors ≠ announcements) and fails closed on a low-confidence or malformed answer. Personalized feeds represent a story at its newest eligible member matching the viewer's follows, using the feed's normal score minima. Official status and Wilson score do not choose that representative. Share deliveries remain independent events. See stories.md for full details.
 
-The [direct winner builder](../../../backend/services/feeds/rss-feed-items/get-ids/direct-winner-cte.mts) checks newer story members in chronological index order without applying the page cursor to that proof. An eligible newer match suppresses its older sibling even on a later page. If the bounded proof cannot rule out a newer match, it conservatively omits the older candidate. Indexed follow and community-list checks start from the viewer's capped proxy follows, so unrelated community-list popularity cannot veto a story. Proxy-follow and per-community list input budgets bound head ranking separately from direct follows. These input budgets use stable indexed order; activity ranks only the sources inside the inspected input. Membership work remains independent of the cursor-selected source set. Ordinary, heavy-follow, sparse source-filter, and skewed-story [EXPLAIN scenarios](../../development/postgresql/explain-analyze/README.md) enforce source work in custom and generic plans. Global recency and semantic search retain their separate selection paths.
+The story representative is selected independently of the page cursor from eligible members matching the viewer's follows and request filters. A newer matching member suppresses its older sibling on every page. A nonmatching or ineligible member cannot veto the matched fallback. Story suppression uses the same source-specific score minima as ordinary candidates; it adds no positive-net requirement. Indexed proxy-community membership checks start from the viewer's follows. Global recency and semantic search retain their separate selection paths.
 
 ## Related Services
 

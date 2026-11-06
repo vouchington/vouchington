@@ -3,7 +3,6 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
   followRssFeed,
-  setTestRssFeedItemVotes,
   setTestItemStoryId,
   insertTestCommunity,
   insertTestCommunityListItem,
@@ -48,7 +47,6 @@ describe('bounded story routes', () => {
     const peer = await createTestStoryMembers(1)
     const primary = fixture.itemIds[0]!
     const query = `primary${fixture.story.id.replaceAll('-', '')}`
-    await setTestRssFeedItemVotes(primary, 1)
     await setTestStoryMemberTitle(primary, query)
     await setTestItemStoryId(peer.itemIds[0]!, fixture.story.id)
     await followRssFeed(user, fixture.feed.id)
@@ -74,7 +72,6 @@ describe('bounded story routes', () => {
       createTestStoryMembers(4),
       createTestUser(),
     ])
-    await setTestRssFeedItemVotes(fixture.itemIds[0]!, 1)
     for (const itemId of peers.itemIds) await setTestItemStoryId(itemId, fixture.story.id)
     const community = await insertTestCommunity({ createdById: owner.id })
     await insertTestCommunityListItem({

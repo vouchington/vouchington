@@ -1,4 +1,3 @@
-import { RSS_SEEDED_ROWS } from './plan-seeded-rss-rows.mts'
 import * as prompt from './community-agent-prompt-page-ids.mts'
 import { UPLOAD_CLEANUP_TOTAL_ROWS } from './seed-data/upload-cleanup-cohort.mts'
 import { LANDING_PAGE_REVIEW_COUNT } from './seed-data/landing-page-candidates.mts'
@@ -19,7 +18,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   user_email_addresses: 40_000,
   oauth_clients: 26_000,
-  topics: 11_103,
+  topics: 3_603,
   individual_cards: 10_000,
   individual_rewards_program_point_valuations: 10_000,
   spending_entries: 20_000,
@@ -33,7 +32,11 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   url_hostnames: 4_018, // Existing 2000 hosts, 11 policy flags, 2006 crawl-sweep hosts and one referral benchmark host.
   url_hostname_blocks: 6,
   urls: 10_000,
-  ...RSS_SEEDED_ROWS,
+  rss_feeds: 2_500,
+  rss_feed_items: 25_000,
+  rss_feed_item_guids: 25_000,
+  rss_feed_item_sources: 65_000,
+  rss_feed_item_categories: 5_000,
   rss_category_identities: 201, // 200 category values plus seedTopHashtags' seedhashtag.
   relation__user__follow__user: 11_000,
   relation__user__mute__user: 2_500,
@@ -41,7 +44,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   remote_actors: 100_000,
   relation__remote_actor__follow__user: 101_000,
   relation__user__follow__rss_feed: 2_699,
-  relation__user__follow__topic: 12_499,
+  relation__user__follow__topic: 2_699,
   notifications: 2_000,
   conversations: 2_001,
   conversation_messages: 500,
@@ -155,7 +158,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   relation__post__category__topic__votes: 1_000,
   relation__post__category__topic_alias: ANCILLARY_SEED_ROW_UPPER_BOUND,
   relation__post__related__post: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  relation__rss_feed_item__category__topic: 12_001,
+  relation__rss_feed_item__category__topic: 10_000,
   relation__rss_feed_item__category__topic__votes: 1_000,
   relation__rss_feed_item__category__topic_alias: ANCILLARY_SEED_ROW_UPPER_BOUND,
   relation__topic__category__topic: ANCILLARY_SEED_ROW_UPPER_BOUND,

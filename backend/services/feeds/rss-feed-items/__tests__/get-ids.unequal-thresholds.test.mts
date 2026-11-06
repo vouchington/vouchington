@@ -58,7 +58,7 @@ describe('getRssFeedItemFeedIds eligibility regressions', () => {
         feed_type: 'all' as const,
         min_score_follow_rss_feeds: meetingScore,
         min_score_follow_topics: 0,
-        included: [ids.bothHigh],
+        included: [ids.sourceHigh, ids.topicLow, ids.topicHigh, ids.bothLow, ids.bothHigh],
       },
       {
         feed_type: 'any' as const,
@@ -70,7 +70,7 @@ describe('getRssFeedItemFeedIds eligibility regressions', () => {
         feed_type: 'all' as const,
         min_score_follow_rss_feeds: 0,
         min_score_follow_topics: meetingScore,
-        included: [ids.bothHigh],
+        included: [ids.sourceLow, ids.sourceHigh, ids.topicHigh, ids.bothLow, ids.bothHigh],
       },
     ]
 

@@ -122,7 +122,7 @@ async function main() {
   await seedCopyrightStaffEvidence()
   await seedRemoteFollowers()
   await seedUrls()
-  await seedTopics(10_000)
+  await seedTopics(2500)
   await seedIndividualCards(INDIVIDUAL_CARD_SEED_COUNT)
   await seedPointValuations(POINT_VALUATION_SEED_COUNT)
   await seedSpendingCategories(SPENDING_CATEGORY_SEED_COUNT)

@@ -3,7 +3,6 @@ import { getRssFeedsToFetch } from '@services/rss-feeds/get-to-fetch'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
-import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import assert from 'node:assert/strict'
 
 export async function runMaterializedViewRefreshScenarios(): Promise<void> {
@@ -92,7 +91,7 @@ registerScenarioContract('mv-rss-feed-crawl-tiers-refresh', {
     // CI also seeds development feeds/topics before the EXPLAIN cohort.
     rss_feeds: 3089,
     relation__user__follow__rss_feed: 3239,
-    topics: SEEDED_ROWS_BY_RELATION.topics! + 1_000,
+    topics: 5259,
     memberships: 360,
     membership_products: 5,
     membership_sources: 360,
@@ -109,11 +108,7 @@ registerScenarioContract('rss-feeds-to-fetch-tiered', {
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 32 },
     {
       kind: 'usesIndexes',
-      indexes: [
-        'rss_feeds_pkey',
-        'idx_rss_feeds__is_enabled',
-        'idx_rss_feeds__live_activity_lookup',
-      ],
+      indexes: ['rss_feeds_pkey', 'idx_rss_feeds__is_enabled'],
       anyOf: true,
       queryContains: 'getRssFeedsTiered',
     },
@@ -134,8 +129,7 @@ registerScenarioContract('rss-feeds-to-fetch-fallback-page', {
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 64 },
     {
       kind: 'usesIndexes',
-      indexes: ['idx_rss_feeds__is_enabled', 'idx_rss_feeds__live_activity_lookup'],
-      anyOf: true,
+      indexes: ['idx_rss_feeds__is_enabled'],
       queryContains: 'getRssFeedsTiered',
     },
   ],
@@ -150,8 +144,7 @@ registerScenarioContract('rss-feeds-to-fetch-fallback-tail', {
     { kind: 'usesIndexes', indexes: ['url_hostnames_pkey'], queryContains: 'getRssFeedsTiered' },
     {
       kind: 'usesIndexes',
-      indexes: ['idx_rss_feeds__is_enabled', 'idx_rss_feeds__live_activity_lookup'],
-      anyOf: true,
+      indexes: ['idx_rss_feeds__is_enabled'],
       queryContains: 'getRssFeedsTiered',
     },
   ],
@@ -160,7 +153,7 @@ registerScenarioContract('mv-platform-stats-refresh', {
   expectations: [
     { kind: 'maxProcessedRows', relation: 'posts', max: 250000 },
     { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 4000 },
-    { kind: 'maxProcessedRows', relation: 'topics', max: SEEDED_ROWS_BY_RELATION.topics! + 1_000 },
+    { kind: 'maxProcessedRows', relation: 'topics', max: 6000 },
   ],
   crossPartition: { posts: 'The snapshot counts all public posts.' },
 })

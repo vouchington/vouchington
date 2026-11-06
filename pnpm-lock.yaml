@@ -6417,9 +6417,6 @@ importers:
       '@services/feature-flags':
         specifier: workspace:^
         version: link:../feature-flags
-      '@services/feeds':
-        specifier: workspace:^
-        version: link:../feeds
       '@services/follower-distributions':
         specifier: workspace:^
         version: link:../follower-distributions
@@ -7285,9 +7282,6 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
@@ -7333,9 +7327,6 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
-      valkyries:
-        specifier: ^0.15.0
-        version: 0.15.0
     devDependencies:
       '@services/rss-feed-items':
         specifier: workspace:^
@@ -14762,9 +14753,6 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../../services/entity-cache
-      '@services/post-publication':
-        specifier: workspace:^
-        version: link:../../services/post-publication
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items

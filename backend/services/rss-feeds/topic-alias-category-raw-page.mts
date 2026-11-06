@@ -7,14 +7,12 @@ export type AliasCategoryPhase =
   | 'rss_item_categories'
   | 'rss_item_text_categories'
   | 'rss_feed_text_categories'
-  | 'rss_item_alias_candidates'
   | 'completed'
 
 const NEXT_PHASE: Record<AliasCategoryPhase, AliasCategoryPhase> = {
   rss_item_categories: 'rss_item_text_categories',
   rss_item_text_categories: 'rss_feed_text_categories',
-  rss_feed_text_categories: 'rss_item_alias_candidates',
-  rss_item_alias_candidates: 'completed',
+  rss_feed_text_categories: 'completed',
   completed: 'completed',
 }
 
@@ -56,9 +54,7 @@ export async function readAliasCategoryRawPage(
   const upperFeedId = cursor.sweep_upper_bound_feed_id ?? (await readUpperId(query, 'rss_feeds'))
   let rows: AliasCategoryRawRow[]
   const textIdentityId =
-    cursor.phase === 'rss_item_categories' || cursor.phase === 'rss_item_alias_candidates'
-      ? null
-      : await readCategoryIdentityId(query, alias)
+    cursor.phase === 'rss_item_categories' ? null : await readCategoryIdentityId(query, alias)
   if (cursor.phase === 'rss_item_categories') {
     const result = await query<AliasCategoryRawRow>(
       `/* readAliasCategoryRawPage authoredItems */
@@ -90,17 +86,6 @@ export async function readAliasCategoryRawPage(
        ORDER BY category.rss_feed_item_id
        LIMIT $4::integer`,
       [textIdentityId, upperItemId, cursor.cursor_item_id ?? NIL_UUID, pageSize + 1],
-    )
-    rows = result.rows
-  } else if (cursor.phase === 'rss_item_alias_candidates') {
-    const result = await query<AliasCategoryRawRow>(
-      `/* readAliasCategoryRawPage aliasCandidates */
-       SELECT rss_feed_item_id, $4::uuid AS category_identity_id
-       FROM rss_feed_item_topic_alias_candidates
-       WHERE topic_alias_id = $1::uuid AND rss_feed_item_id <= $2::uuid
-         AND rss_feed_item_id > $3::uuid
-       ORDER BY rss_feed_item_id LIMIT $5::integer`,
-      [aliasId, upperItemId, cursor.cursor_item_id ?? NIL_UUID, NIL_UUID, pageSize + 1],
     )
     rows = result.rows
   } else {
