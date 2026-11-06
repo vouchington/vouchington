@@ -18,6 +18,14 @@ CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_us
  LANGUAGE sql
 ```
 
+## `fn_copy_rss_feed_item_source_story_id`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copy_rss_feed_item_source_story_id()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_copyright_case_purge_permitted(table_name text)`
 
 ```sql
@@ -1578,6 +1586,14 @@ CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)
  RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_sync_rss_feed_item_source_story_id`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_item_source_story_id()
+ RETURNS trigger
  LANGUAGE plpgsql
 ```
 

@@ -11,6 +11,7 @@ Not partitioned — growth: unbounded.
 | `rss_feed_id`      | `uuid`                     | no       |                     |          |           |           | The RSS feed that contains this item.                                                                                                                                                                                                         |
 | `rss_feed_item_id` | `uuid`                     | no       |                     |          |           |           | The RSS feed item.                                                                                                                                                                                                                            |
 | `published_at`     | `timestamp with time zone` | yes      |                     |          |           |           | Publication timestamp captured when this feed-to-item association is first observed. Production ingestion applies the item UUIDv7 clamp to this feed payload's sanitized publication dates and preserves an existing association on conflict. |
+| `story_id`         | `uuid`                     | yes      |                     |          |           |           | Story copied from the item so a page can stop at the newest visible source. The item remains the source of truth.                                                                                                                             |
 | `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this feed-to-item association was first observed (during crawl).                                                                                                                                                                         |
 
 **Primary key:** `PRIMARY KEY (rss_feed_id, rss_feed_item_id)`
@@ -23,6 +24,7 @@ _none_
 
 **Foreign keys:**
 
+- `fk_rss_feed_item_sources_story_id`: `FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED`
 - `rss_feed_item_sources_rss_feed_id_fkey`: `FOREIGN KEY (rss_feed_id) REFERENCES rss_feeds(id) ON DELETE CASCADE`
 - `rss_feed_item_sources_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
 
@@ -31,7 +33,9 @@ _none_
 - `idx_rss_feed_item_sources__feed_published_item`: `CREATE INDEX idx_rss_feed_item_sources__feed_published_item ON public.rss_feed_item_sources USING btree (rss_feed_id, published_at DESC, rss_feed_item_id DESC) WHERE (published_at IS NOT NULL)`
 - `idx_rss_feed_item_sources__item_feed`: `CREATE INDEX idx_rss_feed_item_sources__item_feed ON public.rss_feed_item_sources USING btree (rss_feed_item_id, rss_feed_id)`
 - `idx_rss_feed_item_sources__missing_published_at`: `CREATE INDEX idx_rss_feed_item_sources__missing_published_at ON public.rss_feed_item_sources USING btree (rss_feed_id, rss_feed_item_id) WHERE (published_at IS NULL)`
+- `idx_rss_feed_item_sources__story_feed_item`: `CREATE INDEX idx_rss_feed_item_sources__story_feed_item ON public.rss_feed_item_sources USING btree (story_id, rss_feed_id DESC, rss_feed_item_id DESC) WHERE (story_id IS NOT NULL)`
 - `rss_feed_item_sources_pkey`: `CREATE UNIQUE INDEX rss_feed_item_sources_pkey ON public.rss_feed_item_sources USING btree (rss_feed_id, rss_feed_item_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_copy_rss_feed_item_source_story_id`: `CREATE TRIGGER trigger_copy_rss_feed_item_source_story_id BEFORE INSERT OR UPDATE OF story_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_copy_rss_feed_item_source_story_id()`
