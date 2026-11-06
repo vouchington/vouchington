@@ -73,4 +73,17 @@ describe('explain analyze paired results', () => {
       }),
     ).toThrow('temp-written')
   })
+
+  it('rejects excessive WAL in the recorded result', () => {
+    const result = {
+      name: 'wal-heavy-query',
+      query_text: 'UPDATE users SET markdown = markdown',
+      plan: { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': 11 * 1024 * 1024 } },
+      execution_time_ms: 1,
+      planning_time_ms: 1,
+      timestamp: new Date().toISOString(),
+    }
+    const normal = { ...result, plan: { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': 1 } } }
+    expect(() => analyzePairedResults('fixture.json', [result], [normal], {})).toThrow('wal')
+  })
 })

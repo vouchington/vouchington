@@ -21,6 +21,8 @@ export type PlanExpectation =
 
 export interface ScenarioPlanContract {
   expectations: readonly PlanExpectation[]
+  /** Reset the WAL checkpoint clock and warm the identical query before each recorded plan. */
+  walCaptureCondition?: 'warm'
   /** Preserve an indexed access-path requirement even with a smaller setup corpus. */
   forbidSequentialScans?: readonly string[]
   /** A negative-match probe can prove that indexed candidates skip a large nonmatching seed. */

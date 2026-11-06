@@ -127,6 +127,7 @@ async function seedReplacementReceipts(storyId: string): Promise<void> {
 async function captureReplacement(id: string, work: ProjectionWork, limit: number): Promise<void> {
   relationLimitsConfig.fields.set('post_related_url', limit)
   registerScenarioContract(id, {
+    ...(id === 'post-url-replacement-maximum' ? { walCaptureCondition: 'warm' as const } : {}),
     allowEmptyResult: true, // UPDATE has no RETURNING; its live mutation is checked below.
     seededRows: {
       relation__post__related__url: seed.relationRows,
