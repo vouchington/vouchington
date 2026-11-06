@@ -78,7 +78,7 @@ describe('metrics-batch', () => {
           rss_feeds_following: 1,
         },
       })
-      expect(metrics?.viewer_count).toBeUndefined()
+      expect(metrics).not.toHaveProperty('viewer_count')
       expect(metrics?.private_count).toBeUndefined()
     }
   })

@@ -78,11 +78,6 @@
       "users_followers": 6,
       "users_following": 5
     },
-    "id": "user-abc",
-    "viewer_count": {
-      "comments": 7,
-      "discussions": 2,
-      "reviews": 1
-    }
+    "id": "user-abc"
   }
 }

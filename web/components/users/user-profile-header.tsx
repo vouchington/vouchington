@@ -16,6 +16,8 @@ import { useAuth } from '@/lib/auth/context'
 import type { User, UserMetrics, ProfileLink } from '@/types/user'
 import { createUserPathname, userHref, userPathSegment } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatNumber } from '@ts-shared/utils/format'
 import { isPlatformAccount } from '@/lib/auth/account-type'
 import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
 
@@ -37,7 +39,7 @@ interface UserProfileHeaderProps {
     | 'verified_display_name'
     | 'lingua_rs_detected_language'
   > & { roles?: readonly string[] }
-  metrics?: Pick<UserMetrics, 'count'>
+  metrics?: Pick<UserMetrics, 'count' | 'post_counts_capped'>
   profileLinks?: Array<Pick<ProfileLink, 'id' | 'link_type' | 'url' | 'handle' | 'name'>>
   aboutHtml?: string | null
   isAdmin?: boolean
@@ -51,21 +53,22 @@ export function UserProfileHeader({
   isAdmin = false,
 }: UserProfileHeaderProps) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   const router = useRouter()
   const { currentUser } = useAuth()
   const currentUserId = currentUser?.id
   const displayName = getUserLabel(user, t('shared.user.deletedUser'))
   const canFollow = currentUserId !== user.id
+  const profileCountLabel = (count: number, unit: 'review' | 'discussion' | 'comment') => {
+    const formattedCount = `${formatNumber(count, uiLocale)}${
+      metrics?.post_counts_capped && count > 0 ? '+' : ''
+    }`
+    return t('shared.countLabel.formatted', { count, formattedCount, unit })
+  }
   const summaryItems = [
-    metrics?.count.reviews
-      ? t('shared.countLabel.format', { count: metrics.count.reviews, unit: 'review' })
-      : null,
-    metrics?.count.discussions
-      ? t('shared.countLabel.format', { count: metrics.count.discussions, unit: 'discussion' })
-      : null,
-    metrics?.count.comments
-      ? t('shared.countLabel.format', { count: metrics.count.comments, unit: 'comment' })
-      : null,
+    metrics?.count.reviews ? profileCountLabel(metrics.count.reviews, 'review') : null,
+    metrics?.count.discussions ? profileCountLabel(metrics.count.discussions, 'discussion') : null,
+    metrics?.count.comments ? profileCountLabel(metrics.count.comments, 'comment') : null,
   ].filter(Boolean)
 
   return (

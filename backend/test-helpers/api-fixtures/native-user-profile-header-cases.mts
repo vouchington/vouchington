@@ -63,11 +63,6 @@ export const nativeUserProfileHeaderApiFixtureCases: ApiFixtureCase[] = [
           rss_feeds_following: 8,
           communities_member: 9,
         },
-        viewer_count: {
-          comments: 7,
-          discussions: 2,
-          reviews: 1,
-        },
         bookmarks: {
           follow: { topics: 1, posts: 2, users: 3 },
         },

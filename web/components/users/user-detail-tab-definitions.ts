@@ -2,7 +2,11 @@ import type { useTranslations } from '@/lib/i18n/use-translations'
 import type { UserMetrics } from '@/types/user'
 import type { UserDetailTab, BuildUserDetailTabsOptions } from './user-detail-tab-types'
 import type { TopLevelTabName } from './user-profile-tabs-config'
-import { appendContentTab, appendCountTab } from './user-detail-tab-builders'
+import {
+  appendContentTab,
+  appendCountTab,
+  formatProfilePostCount,
+} from './user-detail-tab-builders'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { formatNumber } from '@ts-shared/utils/format'
 
@@ -27,12 +31,11 @@ export function buildUserProfileDropdownItems(
       (metrics?.count.reviews ?? 0) +
       (metrics?.count.discussions ?? 0) +
       (metrics?.count.comments ?? 0)
-    const allViewerCount =
-      (metrics?.viewer_count?.reviews ?? 0) +
-      (metrics?.viewer_count?.discussions ?? 0) +
-      (metrics?.viewer_count?.comments ?? 0)
-    if (allCount > 0 || allViewerCount > 0 || routeSuffix === '/posts') {
-      const allCountDisplay = `${formatNumber(allCount, uiLocale)}${allViewerCount > allCount ? '+' : ''}`
+    if (allCount > 0 || routeSuffix === '/posts') {
+      const allCountDisplay = formatProfilePostCount(allCount, {
+        capped: metrics?.post_counts_capped === true,
+        uiLocale,
+      })
       tabs.push({
         value: 'posts-all',
         label: t('extracted.users.userDetailTabDefinitions.allCount_a58a7734', {

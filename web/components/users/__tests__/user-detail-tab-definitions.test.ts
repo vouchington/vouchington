@@ -9,9 +9,8 @@ const t: Translator = (key, params) => {
   return (typeof count === 'number' || typeof count === 'string') && count ? `${key}:${count}` : key
 }
 
-interface UserMetricsOverrides extends Omit<Partial<UserMetrics>, 'count' | 'viewer_count'> {
+interface UserMetricsOverrides extends Omit<Partial<UserMetrics>, 'count'> {
   count?: Partial<UserMetrics['count']>
-  viewer_count?: Partial<NonNullable<UserMetrics['viewer_count']>>
 }
 
 function makeUserMetrics(overrides: UserMetricsOverrides = {}): UserMetrics {
@@ -29,14 +28,7 @@ function makeUserMetrics(overrides: UserMetricsOverrides = {}): UserMetrics {
       communities_member: 0,
       ...overrides.count,
     },
-    viewer_count: overrides.viewer_count
-      ? {
-          reviews: 0,
-          discussions: 0,
-          comments: 0,
-          ...overrides.viewer_count,
-        }
-      : undefined,
+    post_counts_capped: overrides.post_counts_capped,
     private_count: overrides.private_count,
     bookmarks: overrides.bookmarks ?? {
       follow: {
@@ -57,7 +49,7 @@ describe('buildUserProfileDropdownItems', () => {
     expect(buildUserProfileDropdownItems(t, tabName, 'alice', undefined, '', 'en')).toBeNull()
   })
 
-  it('builds post dropdown items from public and viewer-visible metrics', () => {
+  it('builds post dropdown items from the posts this viewer can see', () => {
     const tabs = buildUserProfileDropdownItems(
       t,
       'posts',
@@ -65,10 +57,6 @@ describe('buildUserProfileDropdownItems', () => {
       makeUserMetrics({
         count: {
           reviews: 2,
-          comments: 1,
-        },
-        viewer_count: {
-          reviews: 4,
           discussions: 1,
           comments: 1,
         },
@@ -80,24 +68,50 @@ describe('buildUserProfileDropdownItems', () => {
     expect(tabs).toEqual([
       expect.objectContaining({
         value: 'posts-all',
-        label: 'extracted.users.userDetailTabDefinitions.allCount_a58a7734:3+',
+        label: 'extracted.users.userDetailTabDefinitions.allCount_a58a7734:4',
         href: '/user/alice/posts',
         routeSuffix: '/posts',
       }),
       expect.objectContaining({
         value: 'discussions',
-        label: 'extracted.users.userDetailTabBuilders.discussionsCount_fb82771e:0+',
+        label: 'extracted.users.userDetailTabBuilders.discussionsCount_fb82771e:1',
         href: '/user/alice/discussions',
       }),
       expect.objectContaining({
         value: 'reviews',
-        label: 'extracted.users.userDetailTabBuilders.reviewsCount_7dc3b459:2+',
+        label: 'extracted.users.userDetailTabBuilders.reviewsCount_7dc3b459:2',
         href: '/user/alice/reviews',
       }),
       expect.objectContaining({
         value: 'comments',
         label: 'extracted.users.userDetailTabBuilders.commentsCount_147198f2:1',
         href: '/user/alice/comments',
+      }),
+    ])
+  })
+
+  it('shows the cap plus for every viewer when profile post counts are capped', () => {
+    const tabs = buildUserProfileDropdownItems(
+      t,
+      'posts',
+      'alice',
+      makeUserMetrics({
+        count: { reviews: 1000 },
+        post_counts_capped: true,
+      }),
+      '/posts',
+      'en',
+    )
+
+    expect(tabs).toEqual([
+      expect.objectContaining({
+        value: 'posts-all',
+        label: 'extracted.users.userDetailTabDefinitions.allCount_a58a7734:1,000+',
+      }),
+      expect.objectContaining({
+        value: 'reviews',
+        label: 'extracted.users.userDetailTabBuilders.reviewsCount_7dc3b459:1,000+',
+        href: '/user/alice/reviews',
       }),
     ])
   })

@@ -38038,6 +38038,9 @@
         "id": {
           "type": "string"
         },
+        "post_counts_capped": {
+          "type": "boolean"
+        },
         "private_count": {
           "additionalProperties": false,
           "properties": {
@@ -38148,22 +38151,6 @@
             "users_muted",
             "users_subscribed_posts"
           ],
-          "type": "object"
-        },
-        "viewer_count": {
-          "additionalProperties": false,
-          "properties": {
-            "comments": {
-              "type": "number"
-            },
-            "discussions": {
-              "type": "number"
-            },
-            "reviews": {
-              "type": "number"
-            }
-          },
-          "required": ["comments", "discussions", "reviews"],
           "type": "object"
         }
       },
