@@ -1,4 +1,10 @@
-import { markStoryPostRelatedUrlProjection } from '@services/stories/story-post-related-url-projection-work'
+import {
+  captureGenerationReset,
+  captureRssGenerationReset,
+  seedGenerationResetNoise,
+  cleanupGenerationResetNoise,
+} from './story-post-url-generation-resets.mts'
+import { captureLoweredPostUrlCap } from './story-post-url-lowered-cap.mts'
 import assert from 'node:assert/strict'
 import { processStoryPostRelatedUrlProjectionEligibilityPage } from '@services/stories/story-post-related-url-projection-eligibility'
 import { beginTransaction, write } from '@data-stores/psql'
@@ -18,18 +24,29 @@ export async function captureStoryPostUrlReplacementScenarios(): Promise<void> {
       VALUES ('EXPLAIN atomic post URL replacements') RETURNING id`,
   )
   const storyId = rows[0]!.id
+  let noiseStoryIds: string[] = []
   try {
+    noiseStoryIds = await seedGenerationResetNoise()
     const work = await seedReplacementWork(storyId)
+    await write(
+      `/* seedStoryPostUrlReplacementStoryPost */
+      INSERT INTO story_posts (post_id,story_id,initiated_by_id) VALUES ($1,$2,$3)`,
+      [seed.posts[3], storyId, seed.user],
+    )
     await seedReplacementReceipts(storyId)
     await write(`/* analyzeStoryPostUrlReplacements */
       ANALYZE story_post_related_url_projection_jobs,
         story_post_related_url_projection_receipts,
-        story_post_related_url_projection_relation_mutations`)
+        story_post_related_url_projection_relation_mutations,
+        story_posts, posts, rss_feed_items, relation__post__related__url`)
     await captureEligibilityCompletion(work[0]!)
     await captureGenerationReset(work[0]!)
+    await captureRssGenerationReset(work[2]!)
     await captureReplacement('post-url-replacement-default', work[0]!, 1000)
     await captureReplacement('post-url-replacement-maximum', work[1]!, 10000)
+    await captureLoweredPostUrlCap(work[1]!)
   } finally {
+    await cleanupGenerationResetNoise(noiseStoryIds)
     await write(
       `/* cleanupStoryPostUrlReplacementWork */
       DELETE FROM story_post_related_url_projection_jobs WHERE story_id = $1`,
@@ -77,7 +94,7 @@ async function seedReplacementWork(storyId: string): Promise<ProjectionWork[]> {
     [seed.posts.slice(0, 2), seedUuid(350, 'f6')],
   )
   return rows
-    .filter(row => seed.posts.slice(0, 2).includes(row.post_id))
+    .filter(row => [seed.posts[0], seed.posts[1], seed.posts[3]].includes(row.post_id))
     .toSorted((a, b) => a.post_id.localeCompare(b.post_id))
 }
 
@@ -167,32 +184,5 @@ async function captureEligibilityCompletion(work: ProjectionWork): Promise<void>
       }),
     undefined,
     'completeStoryPostRelatedUrlProjectionEligibility',
-  )
-}
-
-async function captureGenerationReset(work: ProjectionWork): Promise<void> {
-  const id = 'post-url-replacement-generation-reset'
-  registerScenarioContract(id, {
-    allowEmptyResult: true, // The live conflict-path assertion below verifies the reset.
-    seededRows: { story_post_related_url_projection_jobs: seed.posts.length },
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'story_post_related_url_projection_jobs', max: 1 },
-    ],
-  })
-  await runAndCapture(
-    id,
-    async () => {
-      await using query = await beginTransaction()
-      await markStoryPostRelatedUrlProjection(query, work.post_id, work.story_id)
-      const { rows } = await query<{ generation: string; eligibility_completed_at: Date | null }>(
-        `/* verifyStoryPostUrlReplacementReset */ SELECT generation, eligibility_completed_at
-        FROM story_post_related_url_projection_jobs WHERE post_id = $1 LIMIT 1`,
-        [work.post_id],
-      )
-      assert.equal(rows[0]?.generation, (BigInt(work.generation) + 1n).toString())
-      assert.equal(rows[0]?.eligibility_completed_at, null)
-    },
-    undefined,
-    'markStoryPostRelatedUrlProjection',
   )
 }

@@ -50,6 +50,8 @@ on a later page cannot be mistaken for an obsolete relation. Replacement writes 
 projection-owned rows and admit the new sources in one transaction under the post publication
 lock. A capacity refusal rolls back those removals, while manual claims remain protected by the
 projection's ownership and mutation fences.
+Discovery stays bounded independently of a lowered admission limit, so obsolete sources cannot
+hold replacement capacity indefinitely. Reducing the limit alone does not remove existing rows.
 
 ## Table Structure
 

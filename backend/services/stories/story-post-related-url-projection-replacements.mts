@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { getRelationTypeLimit } from '@services/entity-relations/relation-limits-config'
+import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import { recordPostRelatedUrlPublicationChanges } from '@services/entity-relations/post-topic-publication'
 import { markStoryPostRelatedUrlProjectionInvalidationRequired } from './story-post-related-url-projection-invalidation.mts'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
@@ -10,7 +10,8 @@ export async function pruneObsoleteStoryPostRelatedUrlsForReplacement(
   work: ProjectionWork,
   storyTellerId: string,
 ): Promise<void> {
-  const limit = getRelationTypeLimit('relation__post__related__url')!
+  // A lower admission cap must still allow removal of sources admitted under an earlier cap.
+  const limit = relationLimitsMaxValues.post_related_url
   const { rowCount } = await query(
     `/* pruneObsoleteStoryPostRelatedUrlsForReplacement */
       WITH RECURSIVE candidates AS (
