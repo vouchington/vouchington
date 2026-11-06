@@ -24,6 +24,7 @@ export { parseBoundedIntegerLimit } from './parser.mts'
 
 // Re-export filter validators (for service layer use)
 export * from './filters.mts'
+export { walkSourceWindow } from './source-window.mts'
 
 // Re-export factory function
 export * from './factory.mts'

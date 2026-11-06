@@ -105,6 +105,11 @@ CREATE OR REPLACE TRIGGER trigger_communities_updated_at
 CREATE UNIQUE INDEX IF NOT EXISTS idx_communities__slug ON communities (slug) WHERE deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__search_name ON communities (name, id) WHERE deleted_at IS NULL;
+-- Live public communities in id order, so a data-point page can stop at LIMIT.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_communities__live_public_id
+  ON communities (id DESC)
+  WHERE deleted_at IS NULL AND archived_at IS NULL AND visibility = 'public';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__archived_at ON communities (archived_at) WHERE archived_at IS NOT NULL AND deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

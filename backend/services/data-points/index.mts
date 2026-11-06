@@ -1,5 +1,4 @@
 export type * from './types.mts'
 export * from './validate.mts'
 export * from './verticals.mts'
-export * from './search.mts'
 export * from './insights.mts'

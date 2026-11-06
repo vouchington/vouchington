@@ -3,6 +3,7 @@ import { isAdminUser } from '@services/users/authorization'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   buildPublicPostEligibilityFilter,
+  buildSourceBoundPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
 import type { PostSearchOptions } from '../types.mts'
@@ -19,6 +20,7 @@ export function appendBaseFilters(
     public_eligibility_only,
     user_id,
   }: PostSearchOptions,
+  eligibility: 'standard' | 'source-bound' = 'standard',
 ): boolean {
   filters.push(sql`posts.deleted_at IS NULL`)
   filters.push(sql`posts.community_id IS NULL`)
@@ -36,10 +38,15 @@ export function appendBaseFilters(
       WHERE root_post.id = COALESCE(posts.root_post_id, posts.id)
         AND `
     viewerEligibility.append(
-      buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
-        currentUserId: viewer.id,
-        isAdministrator: isAdmin,
-      }),
+      eligibility === 'source-bound'
+        ? buildSourceBoundPostEligibilityFilter('posts', 'root_post', {
+            currentUserId: viewer.id,
+            isAdministrator: isAdmin,
+          })
+        : buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
+            currentUserId: viewer.id,
+            isAdministrator: isAdmin,
+          }),
     ).append(sql`
     )`)
     filters.push(viewerEligibility)
@@ -49,7 +56,11 @@ export function appendBaseFilters(
       FROM posts root_post
       WHERE root_post.id = COALESCE(posts.root_post_id, posts.id)
         AND `
-    publicEligibility.append(buildPublicPostEligibilityFilter('posts', 'root_post'))
+    publicEligibility.append(
+      eligibility === 'source-bound'
+        ? buildSourceBoundPostEligibilityFilter('posts', 'root_post', null)
+        : buildPublicPostEligibilityFilter('posts', 'root_post'),
+    )
     // A reply is readable when it and the thread root are, so only the root's type can block a
     // comment. Comments are searched only when asked for, so only then does the root need judging.
     if (public_eligibility_only && post_types?.includes('comment')) {

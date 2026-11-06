@@ -1,6 +1,6 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import { searchDataPoints } from '@services/data-points/search'
+import { searchDataPoints } from '@services/posts/search/data-point-page'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import {
   DATA_POINT_VERTICALS,
@@ -10,6 +10,13 @@ import {
 import { resolveTopic } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { nullable, objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { componentSchema } from './route-response-schema.mts'
+import {
+  findPageOrNull,
+  INVALID_CURSOR_RESULT,
+  type InvalidCursorResult,
+  type SearchPageInfo,
+} from './paged-search.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
 const SCORE_RANGES = CREDIT_SCORE_RANGES.map(o => o.value)
@@ -21,6 +28,7 @@ type ToolArgs = {
   result?: string
   credit_score_range?: string
   limit?: number
+  after?: string
 }
 
 type ToolResult =
@@ -32,7 +40,9 @@ type ToolResult =
         data_point_vertical: string | null
         structured_data: Record<string, unknown>
       }>
+      page_info: SearchPageInfo
     }
+  | InvalidCursorResult
   | {
       success: false
       error: string
@@ -62,6 +72,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           type: 'number',
           description: 'Maximum results to return (default: 25, max: 25)',
         },
+        after: {
+          type: 'string',
+        },
       },
       required: [],
     },
@@ -83,6 +96,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           structured_data: { type: 'object' },
         }),
       },
+      page_info: componentSchema('PageInfo'),
     }),
   },
   function:
@@ -93,16 +107,20 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         return { success: false, error: 'Topic not found' }
       }
 
-      const results = await searchDataPoints({
-        topic_id: topic?.id,
-        vertical: args.vertical,
-        result: args.result,
-        credit_score_range: args.credit_score_range,
-        limit: args.limit,
-      })
+      const page = await findPageOrNull(args.after, () =>
+        searchDataPoints({
+          topic_id: topic?.id,
+          vertical: args.vertical,
+          result: args.result,
+          credit_score_range: args.credit_score_range,
+          limit: args.limit,
+          after: args.after,
+        }),
+      )
+      if (!page) return INVALID_CURSOR_RESULT
 
       const sanitizedResults = await Promise.all(
-        results.map(async result => ({
+        page.results.map(async result => ({
           ...result,
           title: await sanitizePromptInjection(result.title, { isTitle: true }),
         })),
@@ -111,6 +129,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       return {
         success: true,
         results: sanitizedResults,
+        page_info: page.page_info,
       }
     },
 }

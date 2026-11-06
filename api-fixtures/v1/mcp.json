@@ -7582,6 +7582,9 @@
                         "limit": {
                           "type": "number",
                           "description": "Maximum results to return (default: 25, max: 25)"
+                        },
+                        "after": {
+                          "type": "string"
                         }
                       },
                       "required": [],
@@ -7729,9 +7732,39 @@
                             "required": ["id", "title", "data_point_vertical", "structured_data"],
                             "additionalProperties": false
                           }
+                        },
+                        "page_info": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end_cursor": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "has_next_page": {
+                              "type": "boolean"
+                            },
+                            "start_cursor": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["end_cursor", "has_next_page", "start_cursor"],
+                          "type": "object"
                         }
                       },
-                      "required": ["success", "results"],
+                      "required": ["success", "results", "page_info"],
                       "additionalProperties": false
                     },
                     {

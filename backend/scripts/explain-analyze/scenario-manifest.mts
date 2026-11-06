@@ -4,6 +4,7 @@ import { INGESTION_PAGE_SCENARIO_IDS } from './ingestion-page-scenario-ids.mts'
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
+import { SEARCH_PAGE_SCENARIO_IDS } from './search-page-scenario-ids.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
 import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario-ids.mts'
 import { BOUNDED_WORK_SCENARIOS } from './scenario-manifest-work.mts'
@@ -154,7 +155,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'search-communities-text',
   'search-communities-virtual-subscriptions',
   'search-community-posts',
-  'search-data-points',
+  ...SEARCH_PAGE_SCENARIO_IDS,
   ...(['search-top-hostnames', 'search-top-hostnames-by-topic'] as const),
   ...([
     'search-topic-aliases',

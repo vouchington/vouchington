@@ -53,6 +53,7 @@ describe('read_data_points.search tool — real DB', () => {
     expect(props).toHaveProperty('result')
     expect(props).toHaveProperty('credit_score_range')
     expect(props).toHaveProperty('limit')
+    expect(props).toHaveProperty('after')
   })
 
   it('no required fields', () => {

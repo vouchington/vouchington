@@ -39,9 +39,29 @@ export async function runEntityTailScenarios(): Promise<void> {
   )
 
   // Data point search — JSONB + EXISTS subquery
+  registerScenarioContract('search-data-points', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'communities', max: 200 },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 20000 },
+    ],
+    crossPartition: {
+      posts: 'A data-point page reads child posts that can sit in more than one id partition.',
+    },
+  })
   await runAndCapture('search-data-points', () =>
     searchDataPoints({ topic_id: seedTopicId, limit: 25 }),
   )
+  registerScenarioContract('search-data-points-live-page', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'communities', max: 80 },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 2000 },
+      { kind: 'usesIndexes', indexes: ['idx_communities__live_public_id'] },
+    ],
+    crossPartition: {
+      posts: 'A data-point page reads child posts that can sit in more than one id partition.',
+    },
+  })
+  await runAndCapture('search-data-points-live-page', () => searchDataPoints({ limit: 25 }))
 
   // User bookmark counts — dynamic UNION ALL of COUNT queries across bookmark tables
   await runAndCapture('user-bookmark-counts', () => getUserBookmarkCounts(seedUser.id))

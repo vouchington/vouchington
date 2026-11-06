@@ -8,6 +8,7 @@ import {
 } from '../seed-data/common.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
 import { runRssFeedFirstAndContinuationScenarios } from './rss-feed-pages.mts'
+import { runStorySourceSearchScenarios } from './story-source-search.mts'
 import * as services from '../run-services.mts'
 
 const {
@@ -111,6 +112,7 @@ export async function runFeedRssScenarios(): Promise<void> {
   await runAndCapture('post-search-hot', () =>
     getPostIds(seedUser, { sort: 'hot', limit: 25, time_range: '1w' }),
   )
+  await runStorySourceSearchScenarios()
   registerScenarioContract('rss-feed-item-feed-related-posts', {
     expectations: [
       { kind: 'custom', name: 'rssFeedCandidates' },
