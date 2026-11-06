@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
-import { getCommunity, getCommunityListItemCounts, getCommunityMembers } from '@/lib/api/server'
+import { getCommunity, getCommunityListItemCounts } from '@/lib/api/server'
+import { loadCommunityRoleMembers } from './load-community-role-members'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 import { CommunityAboutCopy } from '@/components/communities/community-about-copy'
 import { CommunityHeader } from '@/components/communities/community-header'
@@ -29,8 +30,8 @@ interface AsideProps {
     lingua_rs_detected_language?: string | null
   }
   community_metrics?: { member_count: number; post_count: number } | null
-  owners: Awaited<ReturnType<typeof getCommunityMembers>> | null
-  moderators: Awaited<ReturnType<typeof getCommunityMembers>> | null
+  owners: Awaited<ReturnType<typeof loadCommunityRoleMembers>>
+  moderators: Awaited<ReturnType<typeof loadCommunityRoleMembers>>
   uiLocale: NumberFormatLocale
 }
 
@@ -106,14 +107,8 @@ export default async function CommunityLayout({ params, children }: LayoutProps)
 
   const [listCounts, owners, moderators] = await Promise.all([
     returnNullForMissingEntity(getCommunityListItemCounts(slug), { nullStatusCodes: [403, 404] }),
-    returnNullForMissingEntity(
-      getCommunityMembers(slug, { searchParams: { role: 'owner', limit: 20 } }),
-      { nullStatusCodes: [403, 404] },
-    ),
-    returnNullForMissingEntity(
-      getCommunityMembers(slug, { searchParams: { role: 'moderator', limit: 20 } }),
-      { nullStatusCodes: [403, 404] },
-    ),
+    loadCommunityRoleMembers(slug, 'owner'),
+    loadCommunityRoleMembers(slug, 'moderator'),
   ])
 
   const { community, community_metrics, membership } = communityData
