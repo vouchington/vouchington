@@ -1,3 +1,4 @@
+import { hackerNewsReferenceRegistryEntry } from './registry-hacker-news-reference-entry.mts'
 import {
   hackerNewsVisibilityConfig,
   HACKER_NEWS_POST_TIME_RANGES,
@@ -33,6 +34,7 @@ import {
 } from './product-config-validators.mts'
 
 export const operationalDynamicConfigRegistryEntries = [
+  hackerNewsReferenceRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'hacker-news-visibility-config',
     label: 'Hacker News visibility',

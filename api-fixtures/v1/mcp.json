@@ -2401,6 +2401,10 @@
                         "required": ["app", "via"],
                         "type": "object"
                       },
+                      "placeholder_state": {
+                        "enum": ["deleted", "unmoderated"],
+                        "type": "string"
+                      },
                       "hacker_news_references": {
                         "additionalProperties": false,
                         "properties": {
@@ -6795,6 +6799,10 @@
                               "required": ["app", "via"],
                               "type": "object"
                             },
+                            "placeholder_state": {
+                              "enum": ["deleted", "unmoderated"],
+                              "type": "string"
+                            },
                             "hacker_news_references": {
                               "type": "object",
                               "properties": {
@@ -7111,6 +7119,10 @@
                         },
                         "required": ["app", "via"],
                         "type": "object"
+                      },
+                      "placeholder_state": {
+                        "enum": ["deleted", "unmoderated"],
+                        "type": "string"
                       },
                       "hacker_news_references": {
                         "additionalProperties": false,
@@ -11773,6 +11785,10 @@
                       "required": ["app", "via"],
                       "type": "object"
                     },
+                    "placeholder_state": {
+                      "enum": ["deleted", "unmoderated"],
+                      "type": "string"
+                    },
                     "hacker_news_references": {
                       "additionalProperties": false,
                       "properties": {
@@ -12255,6 +12271,10 @@
                           },
                           "required": ["app", "via"],
                           "type": "object"
+                        },
+                        "placeholder_state": {
+                          "enum": ["deleted", "unmoderated"],
+                          "type": "string"
                         },
                         "hacker_news_references": {
                           "additionalProperties": false,
@@ -14740,6 +14760,10 @@
                       },
                       "required": ["app", "via"],
                       "type": "object"
+                    },
+                    "placeholder_state": {
+                      "enum": ["deleted", "unmoderated"],
+                      "type": "string"
                     },
                     "hacker_news_references": {
                       "additionalProperties": false,

@@ -1,9 +1,7 @@
+import { getHackerNewsReferenceLimit } from './hacker-news-reference-limits.mts'
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import {
-  HACKER_NEWS_RELATED_URLS_PER_POST_MAX,
-  HACKER_NEWS_URL_BATCH_MAX,
-} from './hacker-news-references-types.mts'
+import { HACKER_NEWS_RELATED_URLS_PER_POST_MAX } from './hacker-news-references-types.mts'
 
 /**
  * The post's link URL followed by at most ten live, positively voted related URLs, best first.
@@ -14,9 +12,10 @@ export async function getHackerNewsUrlIdsByPostIds(
   postIds: readonly string[],
   options: QueryOptions = {},
 ): Promise<Record<string, string[]>> {
+  const batchSize = getHackerNewsReferenceLimit('url_batch_size')
   const ids = [...new Set(postIds)]
   const urlIdsByPostId: Record<string, string[]> = {}
-  for (let start = 0; start < ids.length; start += HACKER_NEWS_URL_BATCH_MAX) {
+  for (let start = 0; start < ids.length; start += batchSize) {
     // no-mistakes-disable-next-line query-reached-per-item: one bounded chunk of post ids per query, not an individual post.
     const { rows } = await read<{ post_id: string; url_id: string }>( // oxlint-disable-line no-await-in-loop -- bounded chunks avoid concurrent database fan-out.
       `/* getHackerNewsUrlIdsByPostIds */
@@ -26,7 +25,7 @@ export async function getHackerNewsUrlIdsByPostIds(
         CROSS JOIN LATERAL (${buildHackerNewsPostUrlsSql('requested.post_id')}) selected_url
       ) selected
       ORDER BY post_id, source_order, votes_score_sort DESC, created_at DESC, url_id DESC`,
-      [ids.slice(start, start + HACKER_NEWS_URL_BATCH_MAX)],
+      [ids.slice(start, start + batchSize)],
       options,
     )
     for (const row of rows) {

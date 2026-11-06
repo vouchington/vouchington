@@ -1,3 +1,4 @@
+import { getHackerNewsReferenceLimit } from './hacker-news-reference-limits.mts'
 import { areHackerNewsReferencesVisible } from './hacker-news-visibility-config.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import {
@@ -5,13 +6,11 @@ import {
   getHackerNewsTotalsByUrlIds,
   type HackerNewsUrlItems,
 } from './hacker-news-references-read.mts'
-import {
-  HACKER_NEWS_COMMENT_CAP_PER_URL,
-  HACKER_NEWS_STORY_CAP_PER_URL,
-  type HackerNewsCommentReference,
-  type HackerNewsReferenceCounts,
-  type HackerNewsReferenceDetail,
-  type HackerNewsStoryReference,
+import type {
+  HackerNewsCommentReference,
+  HackerNewsReferenceCounts,
+  HackerNewsReferenceDetail,
+  HackerNewsStoryReference,
 } from './hacker-news-references-types.mts'
 
 /** URL ids (canonical or not) that belong to each entity (post, RSS feed item), keyed by entity id. */
@@ -57,10 +56,10 @@ function mergeEntityUrls(
     comment_count: commentCount - (commentRows - comments.size),
     stories: [...stories.values()]
       .toSorted((a, b) => b.points - a.points || b.hacker_news_item_id - a.hacker_news_item_id)
-      .slice(0, HACKER_NEWS_STORY_CAP_PER_URL),
+      .slice(0, getHackerNewsReferenceLimit('stories_per_url')),
     comments: [...comments.values()]
       .toSorted((a, b) => newestFirst(a, b) || b.hacker_news_item_id - a.hacker_news_item_id)
-      .slice(0, HACKER_NEWS_COMMENT_CAP_PER_URL),
+      .slice(0, getHackerNewsReferenceLimit('comments_per_url')),
   }
 }
 

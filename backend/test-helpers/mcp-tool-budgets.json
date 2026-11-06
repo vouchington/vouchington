@@ -45,7 +45,7 @@
       },
       "read_community": {
         "measured": {
-          "list": 10983,
+          "list": 11054,
           "core": 4180
         },
         "max": {
@@ -135,8 +135,8 @@
       },
       "read_posts": {
         "measured": {
-          "list": 12397,
-          "core": 5629
+          "list": 12753,
+          "core": 5843
         },
         "max": {
           "list": 13000,
@@ -295,17 +295,17 @@
       },
       "create_post": {
         "measured": {
-          "list": 3885,
+          "list": 3956,
           "core": 1978
         },
         "max": {
-          "list": 4000,
+          "list": 5000,
           "core": 3000
         }
       },
       "act_on_post": {
         "measured": {
-          "list": 6757,
+          "list": 6828,
           "core": 4330
         },
         "max": {
@@ -445,7 +445,7 @@
       },
       "start_discussion": {
         "measured": {
-          "list": 3006,
+          "list": 3077,
           "core": 1041
         },
         "max": {

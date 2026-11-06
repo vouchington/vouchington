@@ -15,6 +15,7 @@ export function appendPostSearchSelectAndJoins(
     rankingScoreExpression,
     sort,
     useSemanticCandidates = false,
+    useHackerNewsHotCandidates = false,
   }: {
     currentUser?: BasicUser
     followingRankExpression: SQLStatement | null
@@ -24,6 +25,7 @@ export function appendPostSearchSelectAndJoins(
     rankingScoreExpression: SQLStatement | null
     sort: PostSearchSort
     useSemanticCandidates?: boolean
+    useHackerNewsHotCandidates?: boolean
   },
 ): void {
   query.append(sql`SELECT
@@ -34,7 +36,16 @@ export function appendPostSearchSelectAndJoins(
   if (followingRankExpression)
     appendSelectExpression(query, followingRankExpression, 'following_rank')
   query.append(sortSelectColumn(sort))
-  if (useSemanticCandidates) {
+  if (useHackerNewsHotCandidates) {
+    query.append(sql`
+      FROM hacker_news_hot_candidates
+      CROSS JOIN LATERAL (
+        SELECT hot_selected_post.* FROM posts hot_selected_post
+        WHERE hot_selected_post.id = hacker_news_hot_candidates.id
+        LIMIT 1
+      ) posts
+    `)
+  } else if (useSemanticCandidates) {
     // Keep ranking/filter distance work bounded even when a full-table join looks cheaper.
     query.append(sql`
       FROM semantic_post_candidates

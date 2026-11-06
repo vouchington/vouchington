@@ -73,10 +73,11 @@ export async function toMcpPosts(
   return Promise.all(
     maskCommentPlaceholders(labeled, null).map(async masked => {
       const post = masked as Post
-      return ({
-      ...(await toMcpPost(post)),
-      ...(references[post.id] && { hacker_news_references: references[post.id] }),
-    })}),
+      return {
+        ...(await toMcpPost(post)),
+        ...(references[post.id] && { hacker_news_references: references[post.id] }),
+      }
+    }),
   )
 }
 

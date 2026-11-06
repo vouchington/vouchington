@@ -1,5 +1,10 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import {
+  hackerNewsReferenceConfig,
+  getHackerNewsReferenceLimit,
+} from './hacker-news-reference-limits.mts'
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestUrlWithHostname, insertHackerNewsReferencesForTest } from '@voucha/test-helpers'
 import { setCanonicalUrl } from './set-canonical.mts'
 import {
@@ -10,10 +15,6 @@ import {
   getHackerNewsDetailsByEntity,
   getHackerNewsSummariesByEntity,
 } from './hacker-news-references.mts'
-import {
-  HACKER_NEWS_STORY_CAP_PER_URL,
-  HACKER_NEWS_URL_BATCH_MAX,
-} from './hacker-news-references-types.mts'
 
 const story = (id: number, points = 10) => ({
   hacker_news_item_id: id,
@@ -28,14 +29,41 @@ const comment = (id: number, postedAt = '2026-02-01T00:00:00.000Z') => ({
 })
 
 describe('Hacker News references', () => {
+  it('applies lowered row caps to each existing URL without dropping later URLs or comments', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(hackerNewsReferenceConfig, {
+        stories_per_url: 2,
+        comments_per_url: 1,
+        url_batch_size: 1,
+      }),
+    )
+    const ids = await Promise.all([createTestUrlWithHostname(), createTestUrlWithHostname()])
+    await Promise.all(
+      ids.map(url_id =>
+        insertHackerNewsReferencesForTest({
+          url_id,
+          story_count: 4,
+          comment_count: 2,
+          stories: [story(1, 1), story(2, 2), story(3, 3), story(4, 4)],
+          comments: [comment(5), comment(6, '2026-03-01T00:00:00.000Z')],
+        }),
+      ),
+    )
+    const items = await getHackerNewsItemsByUrlIds(ids)
+    for (const id of ids) {
+      expect(items.get(id)?.stories.map(row => row.hacker_news_item_id)).toEqual([4, 3])
+      expect(items.get(id)?.comments.map(row => row.hacker_news_item_id)).toEqual([6])
+    }
+  })
   it('keeps real totals, caps rows, and reads summaries and details in batches', async () => {
     const [capped, empty, missing] = await Promise.all([
       createTestUrlWithHostname(),
       createTestUrlWithHostname(),
       createTestUrlWithHostname(),
     ])
-    const manyStories = Array.from({ length: HACKER_NEWS_STORY_CAP_PER_URL + 5 }, (_, i) =>
-      story(1000 + i, i),
+    const manyStories = Array.from(
+      { length: getHackerNewsReferenceLimit('stories_per_url') + 5 },
+      (_, i) => story(1000 + i, i),
     )
     await Promise.all([
       insertHackerNewsReferencesForTest({
@@ -60,7 +88,7 @@ describe('Hacker News references', () => {
       missingEntity: [missing],
     })
     const detail = details.cappedEntity!
-    expect(detail.stories).toHaveLength(HACKER_NEWS_STORY_CAP_PER_URL)
+    expect(detail.stories).toHaveLength(getHackerNewsReferenceLimit('stories_per_url'))
     expect(detail.stories[0]?.points).toBeGreaterThan(detail.stories[1]!.points)
     expect(detail.comments.map(c => c.hacker_news_item_id)).toEqual([6, 5])
     expect(details.missingEntity).toBeUndefined()
@@ -93,7 +121,7 @@ describe('Hacker News references', () => {
       items
         .get(first)
         ?.stories.map(s => s.hacker_news_item_id)
-        .toSorted(),
+        .toSorted((a, b) => a - b),
     ).toEqual([2, 3])
 
     const entity = { post: [first, second, first] }
@@ -125,7 +153,9 @@ describe('Hacker News references', () => {
         stories: [story(12), story(13)],
       }),
     ])
-    const filler = Array.from({ length: HACKER_NEWS_URL_BATCH_MAX + 5 }, () => randomUUID())
+    const filler = Array.from({ length: getHackerNewsReferenceLimit('url_batch_size') + 5 }, () =>
+      randomUUID(),
+    )
     const entity = { first: [early, ...filler], last: [...filler, late] }
 
     expect(await getHackerNewsSummariesByEntity(entity)).toEqual({
@@ -133,7 +163,9 @@ describe('Hacker News references', () => {
       last: { story_count: 2, comment_count: 0 },
     })
     const details = await getHackerNewsDetailsByEntity(entity)
-    expect(details.last!.stories.map(s => s.hacker_news_item_id).toSorted()).toEqual([12, 13])
+    expect(details.last!.stories.map(s => s.hacker_news_item_id).toSorted((a, b) => a - b)).toEqual(
+      [12, 13],
+    )
   })
 
   it('counts a canonical row once when an entity has several URLs resolving to it', async () => {

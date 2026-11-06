@@ -12,11 +12,17 @@ import { appendPostSearchOrderAndLimit } from './query-builder/order-and-limit.m
 import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins.mts'
 import { appendPostSearchWhereClause } from './query-builder/where-clause.mts'
 import { buildSemanticPostCandidates } from './query-builder/semantic-candidates.mts'
+import {
+  normalizeHackerNewsHotSearch,
+  usesHackerNewsHotCandidates,
+} from './hacker-news-hot-options.mts'
+import { buildHackerNewsHotCandidates } from './query-builder/hacker-news-hot-candidates.mts'
 
 export function buildPostSearchQuery(
   currentUser?: BasicUser,
-  options: PostSearchOptions = {},
+  input: PostSearchOptions = {},
 ): SQLStatement {
+  const options = normalizeHackerNewsHotSearch(input)
   const { limit, omitLimit = false, omitOrderBy = false, semanticSearchEmbedding } = options
   const hasTextSearch = hasTextSearchFn(options)
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
@@ -39,9 +45,14 @@ export function buildPostSearchQuery(
     hasTextSearch,
   })
   if (hasSemanticSearch) ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch))
+  const useHackerNewsHotCandidates = usesHackerNewsHotCandidates(options)
+  if (useHackerNewsHotCandidates) {
+    ctes.push(buildHackerNewsHotCandidates(currentUser, options, hasTextSearch, hasSemanticSearch))
+  }
   appendCtes(query, ctes)
   appendPostSearchSelectAndJoins(query, {
     useSemanticCandidates: hasSemanticSearch,
+    useHackerNewsHotCandidates,
     currentUser,
     followingRankExpression,
     hasSemanticSearch,

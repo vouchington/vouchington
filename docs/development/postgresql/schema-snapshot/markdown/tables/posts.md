@@ -148,8 +148,8 @@ _none_
 - `idx_posts__creation_source_url_id`: `CREATE INDEX idx_posts__creation_source_url_id ON ONLY public.posts USING btree (creation_source_url_id) WHERE (creation_source_url_id IS NOT NULL)`
 - `idx_posts__data_point_vertical`: `CREATE INDEX idx_posts__data_point_vertical ON ONLY public.posts USING btree (data_point_vertical, id DESC) WHERE ((data_point_vertical IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__deleted_by_id`: `CREATE INDEX idx_posts__deleted_by_id ON ONLY public.posts USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
-- `idx_posts__hacker_news_references__id`: `CREATE INDEX idx_posts__hacker_news_references__id ON ONLY public.posts USING btree (id DESC) WHERE (has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))`
-- `idx_posts__hacker_news_references__votes_score_sort__id`: `CREATE INDEX idx_posts__hacker_news_references__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (has_hacker_news_references AND (approved_at IS NOT NULL) AND (deleted_at IS NULL))`
+- `idx_posts__hacker_news_references__id`: `CREATE INDEX idx_posts__hacker_news_references__id ON ONLY public.posts USING btree (id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))`
+- `idx_posts__hacker_news_references__votes_score_sort__id`: `CREATE INDEX idx_posts__hacker_news_references__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))`
 - `idx_posts__id__post_type`: `CREATE INDEX idx_posts__id__post_type ON ONLY public.posts USING btree (id DESC, post_type) WHERE (deleted_at IS NULL)`
 - `idx_posts__lingua_rs_pending`: `CREATE INDEX idx_posts__lingua_rs_pending ON ONLY public.posts USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_posts__parent_id__id`: `CREATE INDEX idx_posts__parent_id__id ON ONLY public.posts USING btree (parent_post_id, id) WHERE (parent_post_id IS NOT NULL)`

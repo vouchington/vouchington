@@ -1,17 +1,13 @@
 -- Pre-launch Hacker News reference facts per URL. Neutral facts only: item ids, counts and dates.
 -- No comment text is stored and nothing here feeds ranking or trust. Rows are capped per URL by
 -- the writer and are removed with the URL.
+-- A zero-hit lookup still records its time; readers and the filter use the counts.
 CREATE TABLE IF NOT EXISTS url_hacker_news_totals (
   url_id UUID PRIMARY KEY REFERENCES urls(id) ON DELETE CASCADE,
   story_count INTEGER NOT NULL DEFAULT 0 CHECK (story_count >= 0),
   comment_count INTEGER NOT NULL DEFAULT 0 CHECK (comment_count >= 0),
   looked_up_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- A zero-hit lookup still records its time; readers and the filter use the counts.
-CREATE INDEX IF NOT EXISTS idx_url_hacker_news_totals__url_id__referenced
-  ON url_hacker_news_totals (url_id)
-  WHERE story_count > 0 OR comment_count > 0;
 
 CREATE TABLE IF NOT EXISTS url_hacker_news_stories (
   url_id UUID NOT NULL REFERENCES urls(id) ON DELETE CASCADE,
@@ -52,11 +48,11 @@ COMMENT ON COLUMN url_hacker_news_comments.posted_at IS 'When the comment was po
 -- Partial indexes support bounded post and feed searches with the reference filter.
 CREATE INDEX IF NOT EXISTS idx_posts__hacker_news_references__id
   ON posts (id DESC)
-  WHERE has_hacker_news_references AND approved_at IS NOT NULL AND deleted_at IS NULL;
+  WHERE has_hacker_news_references AND deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_posts__hacker_news_references__votes_score_sort__id
   ON posts (votes_score_sort DESC, id DESC)
-  WHERE has_hacker_news_references AND approved_at IS NOT NULL AND deleted_at IS NULL;
+  WHERE has_hacker_news_references AND deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__hacker_news_references__published_at__id
   ON rss_feed_items (published_at DESC, id DESC)

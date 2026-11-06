@@ -1,10 +1,4 @@
-/** Most story rows stored for one URL; totals keep the real count. */
-export const HACKER_NEWS_STORY_CAP_PER_URL = 25
-/** Most comment rows stored for one URL; totals keep the real count. */
-export const HACKER_NEWS_COMMENT_CAP_PER_URL = 25
-/** Most URL ids in one read statement; larger batches are split into several reads. */
-export const HACKER_NEWS_URL_BATCH_MAX = 200
-/** Most related URLs of one post that contribute references. */
+/** Defines card URL membership and has_hacker_news_references; this shared top ten must stay fixed. */
 export const HACKER_NEWS_RELATED_URLS_PER_POST_MAX = 10
 
 export type HackerNewsReferenceCounts = {

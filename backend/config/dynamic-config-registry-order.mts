@@ -1,4 +1,5 @@
 export const REGISTRY_ORDER = [
+  'hacker-news-reference-config',
   'paged-dispatch-work-config',
   'membership-verification-queue-config',
   'feature-flags',

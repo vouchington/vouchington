@@ -1,12 +1,10 @@
+import { getHackerNewsReferenceLimit } from './hacker-news-reference-limits.mts'
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import {
-  HACKER_NEWS_COMMENT_CAP_PER_URL,
-  HACKER_NEWS_STORY_CAP_PER_URL,
-  HACKER_NEWS_URL_BATCH_MAX,
-  type HackerNewsCommentReference,
-  type HackerNewsReferenceCounts,
-  type HackerNewsStoryReference,
+import type {
+  HackerNewsCommentReference,
+  HackerNewsReferenceCounts,
+  HackerNewsStoryReference,
 } from './hacker-news-references-types.mts'
 
 export type HackerNewsUrlItems = {
@@ -14,12 +12,13 @@ export type HackerNewsUrlItems = {
   comments: HackerNewsCommentReference[]
 }
 
-/** Unique URL ids in reads of at most HACKER_NEWS_URL_BATCH_MAX each; no id is ever dropped. */
+/** Unique URL ids in runtime-bounded chunks; no id is ever dropped. */
 function urlIdChunks(urlIds: readonly string[]): string[][] {
+  const batchSize = getHackerNewsReferenceLimit('url_batch_size')
   const unique = [...new Set(urlIds)]
   const chunks: string[][] = []
-  for (let i = 0; i < unique.length; i += HACKER_NEWS_URL_BATCH_MAX) {
-    chunks.push(unique.slice(i, i + HACKER_NEWS_URL_BATCH_MAX))
+  for (let i = 0; i < unique.length; i += batchSize) {
+    chunks.push(unique.slice(i, i + batchSize))
   }
   return chunks
 }
@@ -124,17 +123,24 @@ export async function getHackerNewsItemsByUrlIds(
 async function readItemRows(ids: string[], options: QueryOptions) {
   const { rows } = await read(
     `/* getHackerNewsItemsByUrlIds */
-    SELECT url_id, 'story' AS kind, hacker_news_item_id, points, reply_count,
-           NULL::bigint AS parent_story_item_id, posted_at
-    FROM url_hacker_news_stories
-    WHERE url_id = ANY($1::uuid[])
-    UNION ALL
-    SELECT url_id, 'comment', hacker_news_item_id, NULL, NULL, parent_story_item_id, posted_at
-    FROM url_hacker_news_comments
-    WHERE url_id = ANY($1::uuid[])
-    LIMIT $2
+    SELECT requested.url_id, selected.*
+    FROM unnest($1::uuid[]) requested(url_id)
+    CROSS JOIN LATERAL (
+      (SELECT 'story' AS kind, hacker_news_item_id, points, reply_count,
+              NULL::bigint AS parent_story_item_id, posted_at
+       FROM url_hacker_news_stories WHERE url_id = requested.url_id
+       ORDER BY points DESC, hacker_news_item_id DESC LIMIT $2)
+      UNION ALL
+      (SELECT 'comment', hacker_news_item_id, NULL, NULL, parent_story_item_id, posted_at
+       FROM url_hacker_news_comments WHERE url_id = requested.url_id
+       ORDER BY posted_at DESC, hacker_news_item_id DESC LIMIT $3)
+    ) selected
   `,
-    [ids, ids.length * (HACKER_NEWS_STORY_CAP_PER_URL + HACKER_NEWS_COMMENT_CAP_PER_URL)],
+    [
+      ids,
+      getHackerNewsReferenceLimit('stories_per_url'),
+      getHackerNewsReferenceLimit('comments_per_url'),
+    ],
     options,
   )
   return rows
