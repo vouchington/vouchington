@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
   createTestUser,
+  createTestUserDirect,
   getTestPostgresBackendProcessId,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -14,8 +15,10 @@ import {
 import { addUrl } from '@services/urls/upsert'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { getTopicByAny } from '@services/topics/get'
+import { resolveHostname } from '@services/topics/resolve-hostname'
+import { createInstanceFromHostname } from '../fediverse-instances/create-instance.mts'
 import { createSourceWithRetry } from '../rss-feeds/create-source-helpers.mts'
-import { createInstanceInTransaction } from '../fediverse-instances/create-instance-helpers.mts'
+import { createInstanceWithRetry } from '../fediverse-instances/create-instance-helpers.mts'
 import { prepareTopicRecommendation } from './create-topic-recommendation.mts'
 import { approveTopicRecommendationInTransaction } from './approve-topic-recommendation.mts'
 
@@ -74,14 +77,15 @@ describe('source creation serializes hostname ownership before aliases', () => {
                   feedType: 'article',
                   attempt: 0,
                 })
-              : createInstanceInTransaction(
-                  WEB_PROVENANCE,
-                  admin.id,
+              : createInstanceWithRetry({
+                  provenance: WEB_PROVENANCE,
+                  currentUser: admin,
                   hostnameId,
-                  `Source ${suffix}`,
-                  `source-${suffix}`,
-                  null,
-                )
+                  hostname,
+                  attempt: 0,
+                  details: { name: `Source ${suffix}`, slug: `source-${suffix}` },
+                  metadata: null,
+                })
           await waitForLock(creating)
           await holder.commit()
           return creating
@@ -93,4 +97,23 @@ describe('source creation serializes hostname ownership before aliases', () => {
       expect(await getActiveLandingPageHostnameClaims([hostnameId])).toContain(approved.topic.id)
     },
   )
+  it('returns null when a hostname already has an instance after a creation conflict', async () => {
+    const user = await createTestUserDirect()
+    const hostname = `fedi-existing-race-${Math.random().toString(36).slice(2, 10)}.example.com`
+    const created = await createInstanceFromHostname(user, WEB_PROVENANCE, hostname)
+    expect(created.status).toBe('created')
+    const hostnameId = await resolveHostname(user.id, hostname)
+    expect(hostnameId).not.toBeNull()
+
+    await expect(
+      createInstanceWithRetry({
+        provenance: WEB_PROVENANCE,
+        currentUser: user,
+        hostnameId: hostnameId!,
+        hostname,
+        attempt: 0,
+        metadata: null,
+      }),
+    ).resolves.toBeNull()
+  })
 })

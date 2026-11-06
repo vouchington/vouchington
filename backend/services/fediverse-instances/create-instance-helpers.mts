@@ -54,7 +54,7 @@ export type CreateInstanceTransactionResult = { topicId: string; claimedAlias: T
  *
  * createdById is always a real user, so the topic revision is created unconditionally.
  */
-export async function createInstanceInTransaction(
+async function createInstanceInTransaction(
   provenance: ContentProvenance,
   createdById: string,
   hostnameId: string,
@@ -168,6 +168,7 @@ export type CreateInstanceWithRetryArgs = {
   hostname: string
   attempt: number
   metadata: InstanceClassificationMetadata | null
+  details?: GeneratedInstanceDetails
 }
 
 /** Creates an instance topic with name/slug-collision retry; returns null when a hostname race condition is detected. */
@@ -175,7 +176,7 @@ export async function createInstanceWithRetry(
   args: CreateInstanceWithRetryArgs,
 ): Promise<(CreateInstanceTransactionResult & { slug: string; name: string }) | null> {
   const { provenance, currentUser, hostnameId, hostname, attempt, metadata } = args
-  const { name, slug } = generateInstanceDetails(hostname, attempt)
+  const { name, slug } = args.details ?? generateInstanceDetails(hostname, attempt)
   const result = await createFediverseInstance({
     provenance,
     hostnameId,
@@ -191,5 +192,5 @@ export async function createInstanceWithRetry(
   if (raceExisting) return null
 
   assert(attempt < 2, 409, 'An instance topic with this hostname already exists')
-  return createInstanceWithRetry({ ...args, attempt: attempt + 1 })
+  return createInstanceWithRetry({ ...args, details: undefined, attempt: attempt + 1 })
 }
