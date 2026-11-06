@@ -9,8 +9,11 @@ import {
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { configure, fireEvent, render, screen } from '@testing-library/react'
+
 import { SpendingCategoriesManager } from '../spending-categories-manager'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('SpendingCategoriesManager Integration Flow', () => {
   beforeEach(() => {

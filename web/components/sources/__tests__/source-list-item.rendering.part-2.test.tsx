@@ -2,9 +2,11 @@ import { makeFeed } from '@/test-helpers/components/sources/source-list-item-ren
 
 import { describe, expect, it } from 'vitest'
 
-import { render, screen } from '@testing-library/react'
+import { configure, render, screen } from '@testing-library/react'
 
 import { SourceListItem } from '../source-list-item'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('SourceListItem rendering', () => {
   it('does not render external icon link when no hostname and no home_page_url', () => {

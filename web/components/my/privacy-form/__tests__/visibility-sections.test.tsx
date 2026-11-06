@@ -64,7 +64,7 @@ describe('MessagingSection', () => {
       />,
     )
 
-    fireEvent.click(container.querySelector('[data-testid="select"]')!)
+    fireEvent.click(container.querySelector('[data-pw="select"]')!)
 
     expect(onChange).toHaveBeenCalledWith('direct_messages_audience', 'followers')
   })

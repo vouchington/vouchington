@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { configure, render, screen, fireEvent } from '@testing-library/react'
+
 import { initialCards, makeCardsPage } from '@/test-helpers/cards-manager-test-data'
 import {
   loadCardsManager,
@@ -7,6 +8,8 @@ import {
   mockUpdate,
   setUpCardsManagerTest,
 } from '@/test-helpers/components/my/cards-manager.mock-support'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('CardsManager keyboard submit', () => {
   beforeEach(setUpCardsManagerTest)

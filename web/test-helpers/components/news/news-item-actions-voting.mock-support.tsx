@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { render } from '@testing-library/react'
 import type { ComponentProps, ReactNode } from 'react'
 import { vi } from 'vitest'
@@ -40,7 +39,7 @@ vi.mock(import('@/components/votes/score-vote'), () => {
     <button
       type='button'
       aria-label='Submit vote'
-      data-testid={testId}
+      data-pw={testId}
       onClick={onClick}
     />
   )
@@ -65,12 +64,12 @@ vi.mock(import('@/components/votes/score-vote'), () => {
       submitVote: (id: string, choice: string) => Promise<void>
       'data-pw'?: string
     }) => (
-      <div data-testid={dataPw}>
-        <span data-testid='count-up'>{countUp}</span>
-        <span data-testid='count-down'>{countDown}</span>
-        <span data-testid='signed-out'>{String(signedOut)}</span>
-        <span data-testid='existing-vote-choice'>{String(existingVoteChoice)}</span>
-        <span data-testid='entity-type'>{String(entityType)}</span>
+      <div data-pw={dataPw}>
+        <span data-pw='count-up'>{countUp}</span>
+        <span data-pw='count-down'>{countDown}</span>
+        <span data-pw='signed-out'>{String(signedOut)}</span>
+        <span data-pw='existing-vote-choice'>{String(existingVoteChoice)}</span>
+        <span data-pw='entity-type'>{String(entityType)}</span>
         {voteSubmitDouble({
           testId: `${dataPw}-submit`,
           onClick: () => submitVote(electionId, 'vouch'),
@@ -81,33 +80,33 @@ vi.mock(import('@/components/votes/score-vote'), () => {
 })
 
 vi.mock(import('@/components/news/news-discuss-menu'), () => ({
-  NewsDiscussMenu: () => <div data-testid='news-discuss-menu' />,
+  NewsDiscussMenu: () => <div data-pw='news-discuss-menu' />,
 }))
 
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: ({ initialActive }: { initialActive?: boolean }) => (
     <Button
-      data-testid='hide-button'
+      data-pw='hide-button'
       data-active={initialActive}
       type='button'
     >
       {initialActive ? 'Unhide' : 'Hide'}
     </Button>
   ),
-  HideMenuItem: () => <div data-testid='hide-menu-item' />,
+  HideMenuItem: () => <div data-pw='hide-menu-item' />,
 }))
 
 vi.mock(import('@/components/shared/save-button'), () => ({
   SaveButton: ({ initialActive }: { initialActive?: boolean }) => (
     <Button
-      data-testid='save-button'
+      data-pw='save-button'
       data-active={initialActive}
       type='button'
     >
       {initialActive ? 'Saved' : 'Save'}
     </Button>
   ),
-  SaveMenuItem: () => <div data-testid='save-menu-item' />,
+  SaveMenuItem: () => <div data-pw='save-menu-item' />,
 }))
 
 const mockSubmitRssFeedItemVote = vi.hoisted(() => vi.fn<VitestLooseMock>())

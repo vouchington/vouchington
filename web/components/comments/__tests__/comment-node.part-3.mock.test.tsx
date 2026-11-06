@@ -7,11 +7,13 @@ import {
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { configure, fireEvent, render, screen } from '@testing-library/react'
 
 import { CommentNode } from '../comment-node'
 
 import type { ElectionVote } from '@/types/posts'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const makePost = makeCommentPost
 const makeNode = makeCommentNode

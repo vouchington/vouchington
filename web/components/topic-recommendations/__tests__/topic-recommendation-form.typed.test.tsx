@@ -3,10 +3,13 @@ import {
   mockFetchTopicRecommendationDuplicates,
   mockOnError,
 } from '@/test-helpers/components/topic-recommendations/topic-recommendation-form.mock-support'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TopicRecommendationForm } from '../topic-recommendation-form'
 import { makeTopicRecommendationMutationResponse } from '@/test-helpers/api-responses'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('TopicRecommendationForm – typed fields', () => {
   beforeEach(() => {

@@ -1,9 +1,11 @@
 import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import '@/test-helpers/components/podcast.mock-support'
-import { render, screen } from '@testing-library/react'
+import { configure, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { PodcastListItem } from '../podcast-list-item'
 import type { ViewRssFeed } from '@/types/rss-feeds'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('next/navigation'), () => navMockModule)
 

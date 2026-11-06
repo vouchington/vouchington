@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support forwards the component data-pw props the privacy tests query */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
@@ -19,7 +18,7 @@ vi.mock(import('@/components/ui/select'), () => {
     }) => (
       <Button
         type='button'
-        data-testid='select'
+        data-pw='select'
         data-value={value}
         onClick={() => onValueChange?.('followers')}
       >

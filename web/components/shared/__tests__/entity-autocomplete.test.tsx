@@ -1,10 +1,12 @@
 import { renderEntityAutocomplete } from '@/test-helpers/components/shared/entity-autocomplete.mock-support'
 
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { configure, act, fireEvent, render, screen } from '@testing-library/react'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { EntityAutocomplete } from '../entity-autocomplete'
+
+configure({ testIdAttribute: 'data-pw' })
 
 interface Item {
   id: string

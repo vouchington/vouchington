@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { vi } from 'vitest'
 import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import CommunityModerationAnalyticsPage from '@/app/(communities)/communities/[slug]/settings/moderation/analytics/page'
@@ -18,9 +17,9 @@ const {
   redirectMock,
   headersMock,
 } = vi.hoisted(() => ({
-  dashboardMock: vi.fn<VitestLooseMock>(() => <div data-testid='dashboard' />),
-  rangeFilterMock: vi.fn<VitestLooseMock>(() => <div data-testid='range-filter' />),
-  transparencyPanelMock: vi.fn<VitestLooseMock>(() => <div data-testid='transparency-panel' />),
+  dashboardMock: vi.fn<VitestLooseMock>(() => <div data-pw='dashboard' />),
+  rangeFilterMock: vi.fn<VitestLooseMock>(() => <div data-pw='range-filter' />),
+  transparencyPanelMock: vi.fn<VitestLooseMock>(() => <div data-pw='transparency-panel' />),
   getCommunityMock: vi.fn<VitestLooseMock>(),
   getCommunityModerationAnalyticsMock: vi.fn<VitestLooseMock>(),
   getCommunityModerationTransparencyMock: vi.fn<VitestLooseMock>(),

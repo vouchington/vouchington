@@ -1,5 +1,6 @@
 import '@/test-helpers/components/podcast.mock-support'
 import { render, screen } from '@testing-library/react'
+import { getByPw } from '@/test-helpers/pw-queries'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
@@ -113,7 +114,7 @@ describe('PodcastShowMetadataAside', () => {
         feed={feed}
       />,
     )
-    expect(screen.getByTestId('mic-icon')).toBeDefined()
+    expect(getByPw('mic-icon')).toBeDefined()
   })
 
   it('renders author name', async () => {

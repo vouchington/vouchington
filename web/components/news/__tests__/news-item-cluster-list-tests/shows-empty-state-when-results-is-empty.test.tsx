@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { configure, screen } from '@testing-library/react'
+
 import {
   makeClusterElection,
   makeClusterItem,
@@ -8,6 +9,8 @@ import {
   renderClusterList,
 } from '@/test-helpers/components/news/news-item-cluster-list.mock-support'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('NewsItemClusterList', () => {
   beforeEach(() => {

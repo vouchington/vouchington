@@ -1,4 +1,5 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { configure, fireEvent, screen } from '@testing-library/react'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   makeComment,
@@ -8,6 +9,8 @@ import {
 } from '@/test-helpers/components/comment-tree-fixtures'
 import { CommentTree } from '../comment-tree'
 import type { User } from '@/types/user'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('comment-tree', () => {
   beforeEach(() => {

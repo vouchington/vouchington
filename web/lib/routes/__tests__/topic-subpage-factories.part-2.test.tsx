@@ -3,7 +3,7 @@ import '@/test-helpers/lib/routes/topic-subpage-factories.mock-support'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { render, screen } from '@testing-library/react'
+import { configure, render, screen } from '@testing-library/react'
 
 import { createTopicReviewsPage, createTopicDataPointsPage } from '../topic-subpage-factories'
 
@@ -12,6 +12,8 @@ import { createTopicLatestPage, createTopicNewsPage } from '../topic-navigation-
 import { getTopic } from '@/lib/api/server'
 
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const baseTopic = {
   __entity_type: 'topic' as const,

@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { createUserPathname } from '@/lib/links/entity-href'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { createNextDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
@@ -78,7 +77,7 @@ vi.mock(import('next/image'), () => {
 vi.mock(import('@/components/shared/follower-share-actions'), () => ({
   FollowerShareActions: ({ className }: { className?: string }) => (
     <div
-      data-testid='follower-share-actions'
+      data-pw='follower-share-actions'
       className={className}
     />
   ),

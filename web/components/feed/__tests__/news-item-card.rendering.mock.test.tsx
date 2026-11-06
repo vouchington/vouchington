@@ -7,6 +7,7 @@ import {
   makeRssFeedItemTopic,
 } from '@/test-helpers/api-responses'
 import { render, screen } from '@testing-library/react'
+import { findByPw } from '@/test-helpers/pw-queries'
 import { NewsItemCard } from '../news-item-card'
 import type { RssFeedItem } from '@/types/rss-feed-items'
 
@@ -54,7 +55,7 @@ describe('NewsItemCard rendering', () => {
       'https://example.com/article1?utm_source=voucha.ai&utm_medium=referral',
     )
     expect(title.closest('a')?.getAttribute('target')).toBe('_blank')
-    expect(await screen.findByTestId('follower-share-actions')).toBeDefined()
+    expect(await findByPw('follower-share-actions')).toBeDefined()
   })
   it('uses rss_feed.title (not topic.name) as source label', () => {
     render(<NewsItemCard item={mockItem} />)
@@ -176,7 +177,7 @@ describe('NewsItemCard rendering', () => {
   })
   it('passes absolute-positioning className to FollowerShareActions compact kebab', async () => {
     render(<NewsItemCard item={mockItem} />)
-    const actions = await screen.findByTestId('follower-share-actions')
+    const actions = await findByPw('follower-share-actions')
     expect(actions.className).toContain('absolute')
     expect(actions.className).toContain('right-2')
     expect(actions.className).toContain('top-2')

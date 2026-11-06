@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
@@ -60,7 +59,7 @@ vi.mock(
     ({
       TopicVouchDisavowVote: (props: Record<string, unknown>) => (
         <div
-          data-testid='topic-vouch-disavow-vote'
+          data-pw='topic-vouch-disavow-vote'
           data-election-id={props.electionId as string}
           data-signed-out={String(props.signedOut)}
         />
@@ -74,7 +73,7 @@ vi.mock(
     ({
       DomainTrustBadge: (props: Record<string, unknown>) => (
         <span
-          data-testid='domain-trust-badge'
+          data-pw='domain-trust-badge'
           data-href={props.href as string}
         >
           {props.hostname as string}

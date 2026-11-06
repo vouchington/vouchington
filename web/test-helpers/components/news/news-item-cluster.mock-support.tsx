@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
@@ -52,7 +51,7 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/follower-share-actions'), () => ({
-  FollowerShareActions: () => <div data-testid='follower-share-actions' />,
+  FollowerShareActions: () => <div data-pw='follower-share-actions' />,
 }))
 
 vi.mock(import('@/components/shared/report-menu-item'), () => ({
@@ -79,7 +78,7 @@ vi.mock(import('@/lib/api/client/elections'), () => ({
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: () => (
     <Button
-      data-testid='hide-button'
+      data-pw='hide-button'
       type='button'
       aria-label='Hide news item'
     />
@@ -104,9 +103,9 @@ vi.mock(
         entityType?: string
         'data-pw'?: string
       }) => (
-        <div data-testid={dataPw}>
-          <span data-testid='existing-vote-choice'>{String(existingVoteChoice)}</span>
-          <span data-testid='entity-type'>{String(entityType)}</span>
+        <div data-pw={dataPw}>
+          <span data-pw='existing-vote-choice'>{String(existingVoteChoice)}</span>
+          <span data-pw='entity-type'>{String(entityType)}</span>
         </div>
       ),
     }) as unknown as typeof import('@/components/votes/score-vote'),

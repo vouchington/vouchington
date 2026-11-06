@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { vi } from 'vitest'
 import { Input } from '@/components/ui/input'
 import type { ListResponse } from '@/types/api-responses'
@@ -25,14 +24,14 @@ vi.mock(
         onChange: (id: string, name: string) => void
         placeholder?: string
       }) => (
-        <div data-testid='mock-topic-autocomplete'>
+        <div data-pw='mock-topic-autocomplete'>
           <Input
             type='text'
             placeholder={placeholder}
             aria-label={placeholder ?? 'Rewards program status'}
             value={value ?? ''}
             onChange={event => onChange(event.target.value, 'Mocked Status')}
-            data-testid='mock-topic-autocomplete-input'
+            data-pw='mock-topic-autocomplete-input'
           />
         </div>
       ),

@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
@@ -44,18 +43,18 @@ interface FollowerShareActionsMockProps {
 
 vi.mock(import('@/components/votes/score-vote'), () => ({
   ScoreVote: ({ 'data-pw': dataPw = 'score-vote' }: { display?: string; 'data-pw'?: string }) => (
-    <div data-testid={dataPw} />
+    <div data-pw={dataPw} />
   ),
 }))
 
 vi.mock(import('@/components/news/news-discuss-menu'), () => ({
-  NewsDiscussMenu: () => <div data-testid='news-discuss-menu' />,
+  NewsDiscussMenu: () => <div data-pw='news-discuss-menu' />,
 }))
 
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: ({ active, initialActive, onActiveChange }: ToggleMockProps) => (
     <Button
-      data-testid='hide-button'
+      data-pw='hide-button'
       data-active={active ?? initialActive}
       type='button'
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
@@ -67,7 +66,7 @@ vi.mock(import('@/components/shared/hide-button'), () => ({
     <Button
       type='button'
       aria-label='Toggle hide menu item'
-      data-testid='hide-menu-item'
+      data-pw='hide-menu-item'
       data-active={active ?? initialActive}
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
     />
@@ -77,7 +76,7 @@ vi.mock(import('@/components/shared/hide-button'), () => ({
 vi.mock(import('@/components/shared/save-button'), () => ({
   SaveButton: ({ active, initialActive, onActiveChange }: ToggleMockProps) => (
     <Button
-      data-testid='save-button'
+      data-pw='save-button'
       data-active={active ?? initialActive}
       type='button'
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
@@ -89,7 +88,7 @@ vi.mock(import('@/components/shared/save-button'), () => ({
     <Button
       type='button'
       aria-label='Toggle save menu item'
-      data-testid='save-menu-item'
+      data-pw='save-menu-item'
       data-active={active ?? initialActive}
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
     />

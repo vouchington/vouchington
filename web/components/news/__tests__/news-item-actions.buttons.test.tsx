@@ -5,8 +5,11 @@ import {
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { render, screen } from '@testing-library/react'
+import { configure, render, screen } from '@testing-library/react'
+
 import { NewsItemActions } from '../news-item-actions'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('NewsItemActions hide/save buttons and leading/trailing actions', () => {
   afterEach(() => {
@@ -81,8 +84,8 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
     )
     const row = container.querySelector('[data-pw="news-item-actions-row"]')
     expect(row).not.toBeNull()
-    const saveButton = row?.querySelector('[data-testid="save-button"]')
-    const hideButton = row?.querySelector('[data-testid="hide-button"]')
+    const saveButton = row?.querySelector('[data-pw="save-button"]')
+    const hideButton = row?.querySelector('[data-pw="hide-button"]')
     expect(saveButton).not.toBeNull()
     expect(hideButton).not.toBeNull()
     expect(

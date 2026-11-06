@@ -3,6 +3,7 @@ import {
   mockProfileAuth,
   resetUserProfileHeaderDoubles,
 } from '@/test-helpers/components/users/user-profile-header.mock-support'
+import { getByPw, queryByPw } from '@/test-helpers/pw-queries'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -70,7 +71,7 @@ describe('UserProfileHeader', () => {
     // canFollow = undefined !== 'user-abc' = true → FollowButton slot renders
     // canManageBookmarks = !!undefined && ... = false -> subscribe slot skipped
     await screen.findByTestId('follow-button')
-    expect(screen.queryByTestId('subscribe-button')).toBeNull()
+    expect(queryByPw('subscribe-button')).toBeNull()
   })
 
   it('viewing own profile (currentUserId === user.id): no FollowButton, no subscribe bookmark button', () => {
@@ -79,7 +80,7 @@ describe('UserProfileHeader', () => {
     // canFollow = 'user-abc' !== 'user-abc' = false → slot skipped entirely
     // canManageBookmarks = false → slot skipped entirely
     expect(screen.queryByTestId('follow-button')).toBeNull()
-    expect(screen.queryByTestId('subscribe-button')).toBeNull()
+    expect(queryByPw('subscribe-button')).toBeNull()
   })
 
   it('signed-in viewing another profile: FollowButton renders; subscribe button is not in hero (moved to aside)', async () => {
@@ -88,7 +89,7 @@ describe('UserProfileHeader', () => {
     // canFollow = 'user-xyz' !== 'user-abc' = true → FollowButton slot renders
     // Subscribe to Posts was moved to UserActionsAside — not rendered in this component
     expect(await screen.findByTestId('follow-button')).toBeDefined()
-    expect(screen.queryByTestId('subscribe-button')).toBeNull()
+    expect(queryByPw('subscribe-button')).toBeNull()
   })
 
   it('links the @username handle to the user page (not landing page)', () => {
@@ -134,7 +135,7 @@ describe('UserProfileHeader', () => {
         ]}
       />,
     )
-    expect(screen.getByTestId('user-profile-links')).toBeDefined()
+    expect(getByPw('user-profile-links')).toBeDefined()
   })
 
   it('does not render profile links when profileLinks is empty', () => {
@@ -144,6 +145,6 @@ describe('UserProfileHeader', () => {
         profileLinks={[]}
       />,
     )
-    expect(screen.queryByTestId('user-profile-links')).toBeNull()
+    expect(queryByPw('user-profile-links')).toBeNull()
   })
 })

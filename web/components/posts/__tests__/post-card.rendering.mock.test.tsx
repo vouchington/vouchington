@@ -5,13 +5,15 @@ import {
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { configure, render, screen, waitFor } from '@testing-library/react'
 
 import { PostCard } from '../post-card'
 
 import type { Post, PostMetrics, PostElection } from '@/types/posts'
 
 import type { User } from '@/types/user'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(
   import('@/lib/auth/context'),

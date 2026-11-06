@@ -11,7 +11,9 @@ import {
   renderNewsItemActions,
 } from '@/test-helpers/components/news/news-item-actions-voting.mock-support'
 
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, screen, waitFor } from '@testing-library/react'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const makeVote = (choice: 'vouch' | 'disavow' | 'neutral') => ({
   __entity_type: 'election_vote' as const,

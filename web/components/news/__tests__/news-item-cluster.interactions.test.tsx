@@ -1,8 +1,11 @@
 import { makeItem, makeStory } from '@/test-helpers/components/news/news-item-cluster.mock-support'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
 import { describe, expect, it } from 'vitest'
 import { NewsItemCluster } from '../news-item-cluster'
 import type { RssFeedItemElection } from '@/types/rss-feed-items'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const makeElection = (id: string): RssFeedItemElection => ({
   __entity_type: 'rss_feed_item_election',

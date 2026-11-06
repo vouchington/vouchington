@@ -5,9 +5,11 @@ import {
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { render, screen } from '@testing-library/react'
+import { configure, render, screen } from '@testing-library/react'
 
 import { UserProfileHeader } from '../user-profile-header'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('@/components/shared/follow-button'), () => ({
   FollowButton: () => <div data-testid='follow-button' />,

@@ -8,11 +8,14 @@ import {
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import { mergeMessages } from '@/lib/i18n/use-translations'
 import { SpendingCategoriesManager } from '../spending-categories-manager'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('SpendingCategoriesManager Integration Flow', () => {
   mergeMessages('es', esMessages)

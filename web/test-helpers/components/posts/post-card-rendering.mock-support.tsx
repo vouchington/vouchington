@@ -1,5 +1,5 @@
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
-/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-unique -- moved test support preserves the original post-card doubles, including the shared follower-share-actions id */
+/* oxlint-disable no-mistakes/playwright-unique -- two follower-share-actions doubles share one literal id */
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import type { User } from '@/types/user'
@@ -15,7 +15,7 @@ vi.mock(
       default: (loader: () => Promise<unknown>) => {
         const src = loader.toString()
         if (src.includes('follower-share-actions'))
-          return () => <div data-testid='follower-share-actions' />
+          return () => <div data-pw='follower-share-actions' />
         if (src.includes('report-menu-item'))
           return ({ 'data-pw': dataPw }: { 'data-pw'?: string }) => (
             <DataPw
@@ -32,7 +32,7 @@ vi.mock(
 )
 
 vi.mock(import('@/components/admin/admin-moderation-button'), () => ({
-  default: () => <div data-testid='admin-moderation-button' />,
+  default: () => <div data-pw='admin-moderation-button' />,
 }))
 
 vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
@@ -66,13 +66,13 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/follower-share-actions'), () => ({
-  FollowerShareActions: () => <div data-testid='follower-share-actions' />,
+  FollowerShareActions: () => <div data-pw='follower-share-actions' />,
 }))
 
 vi.mock(import('@/components/shared/shared-byline'), () => ({
   SharedByline: ({ className }: { className?: string }) => (
     <div
-      data-testid='shared-byline'
+      data-pw='shared-byline'
       data-class={className ?? ''}
     />
   ),

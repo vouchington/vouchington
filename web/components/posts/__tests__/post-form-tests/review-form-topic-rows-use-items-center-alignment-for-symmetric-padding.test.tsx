@@ -12,9 +12,11 @@ import {
 
 import { describe, it, expect, beforeEach } from 'vitest'
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { configure, render, screen, fireEvent } from '@testing-library/react'
 
 import { PostForm } from '../../post-form'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('PostForm', () => {
   beforeEach(() => {

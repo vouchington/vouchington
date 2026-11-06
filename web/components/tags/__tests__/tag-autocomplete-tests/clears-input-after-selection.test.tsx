@@ -7,9 +7,11 @@ import {
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
 
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, configure, render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 import { TagAutocomplete } from '../../tag-autocomplete'
+
+configure({ testIdAttribute: 'data-pw' })
 
 async function settleInitialQuery() {
   await act(async () => {})

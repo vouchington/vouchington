@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { MouseEventHandler, ReactNode } from 'react'
 import { vi } from 'vitest'
 import { createUserPathname } from '@/lib/links/entity-href'
@@ -50,7 +49,7 @@ vi.mock(
   import('@/components/admin/admin-moderation-button'),
   () =>
     ({
-      default: () => <div data-testid='admin-moderation-button' />,
+      default: () => <div data-pw='admin-moderation-button' />,
     }) as unknown as typeof import('@/components/admin/admin-moderation-button'),
 )
 
@@ -83,7 +82,7 @@ vi.mock(
   () =>
     ({
       MARKDOWN_CONTENT_FEATURES_RICH: { code: true, images: true, utm: true },
-      MarkdownContent: ({ html }: { html: string }) => <div data-testid='markdown'>{html}</div>,
+      MarkdownContent: ({ html }: { html: string }) => <div data-pw='markdown'>{html}</div>,
     }) as unknown as typeof import('@/components/shared/markdown-content'),
 )
 
@@ -91,9 +90,7 @@ vi.mock(
   import('@/components/shared/user-avatar'),
   () =>
     ({
-      UserAvatar: ({ username }: { username: string }) => (
-        <span data-testid='avatar'>{username}</span>
-      ),
+      UserAvatar: ({ username }: { username: string }) => <span data-pw='avatar'>{username}</span>,
     }) as unknown as typeof import('@/components/shared/user-avatar'),
 )
 
@@ -115,7 +112,7 @@ vi.mock(
         onClick?: MouseEventHandler<HTMLElement>
       }) => (
         <a
-          data-testid='user-link'
+          data-pw='user-link'
           href={createUserPathname(user, tab ? `/${tab}` : '')}
           className={className}
           onClick={onClick}
@@ -132,7 +129,7 @@ vi.mock(
     ({
       ScoreVote: (props: { existingVoteChoice?: string }) => {
         scoreVoteProps.push(props)
-        return <div data-testid='score-vote'>votes</div>
+        return <div data-pw='score-vote'>votes</div>
       },
     }) as unknown as typeof import('@/components/votes/score-vote'),
 )

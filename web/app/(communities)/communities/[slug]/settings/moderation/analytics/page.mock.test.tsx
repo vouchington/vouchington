@@ -1,6 +1,7 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { configure, render, screen } from '@testing-library/react'
+
 import { ApiError } from '@vouchington/api-client'
 import {
   dashboardMock,
@@ -17,6 +18,8 @@ import {
   resetModerationAnalyticsPageMocks,
   transparencyPanelMock,
 } from '@/test-helpers/app/communities/community-moderation-analytics-page.mock-support'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('@/components/admin/moderation-analytics/moderation-analytics-dashboard'), () => ({
   default: dashboardMock,

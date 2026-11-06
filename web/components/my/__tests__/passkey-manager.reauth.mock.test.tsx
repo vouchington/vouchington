@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   MfaReauthDialogMock,
@@ -37,6 +38,8 @@ import { startRegistration } from '@simplewebauthn/browser'
 import type { ListResponse } from '@/types/api-responses'
 import type { Passkey } from '@/types/user'
 import { PasskeyManager } from '../passkey-manager'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const mockDelete = vi.mocked(deletePasskey)
 

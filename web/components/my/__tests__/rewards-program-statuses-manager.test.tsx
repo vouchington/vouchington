@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
 import {
   initialPage,
   installRewardsProgramStatusMockResponses,
@@ -12,6 +13,8 @@ import {
 // Imported after the mock helper so its vi.mock factories run first.
 import { RewardsProgramStatusesManager } from '../rewards-program-statuses-manager'
 import { ApiError } from '@vouchington/api-client'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('RewardsProgramStatusesManager Integration Flow', () => {
   beforeEach(() => {

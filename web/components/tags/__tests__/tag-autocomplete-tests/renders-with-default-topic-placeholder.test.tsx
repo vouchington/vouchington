@@ -6,9 +6,11 @@ import {
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { TagAutocomplete } from '../../tag-autocomplete'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('TagAutocomplete', () => {
   afterEach(() => {

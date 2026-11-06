@@ -1,5 +1,5 @@
 import { describe } from 'vitest'
-import { render } from '@testing-library/react'
+import { configure, render } from '@testing-library/react'
 import { registerManagerKeyboardTests } from '@/test-helpers/components/my/manager-keyboard-submit'
 import {
   initialPointValuationData,
@@ -9,6 +9,8 @@ import {
 } from '@/test-helpers/components/my/point-valuations-manager.mock-support'
 // Imported after the mock helper so its vi.mock factories run first.
 import { PointValuationsManager } from '../point-valuations-manager'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('PointValuationsManager keyboard submit', () => {
   registerManagerKeyboardTests({

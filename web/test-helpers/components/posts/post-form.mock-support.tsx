@@ -1,5 +1,4 @@
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { Ref } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
@@ -89,13 +88,13 @@ vi.mock(import('../../../components/posts/topic-autocomplete'), () => ({
         type='text'
         ref={inputRef}
         aria-label='Search topics'
-        data-testid='topic-search-input'
+        data-pw='topic-search-input'
         readOnly
       />
       <Button
         type='button'
         variant='ghost'
-        data-testid='topic-autocomplete'
+        data-pw='topic-autocomplete'
         onClick={() => onChange('topic-1', 'Test Topic')}
       >
         Topic Autocomplete

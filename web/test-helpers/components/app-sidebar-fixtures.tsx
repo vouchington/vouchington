@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- test support preserves existing Testing Library selectors */
 import { render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
@@ -65,7 +64,7 @@ vi.mock(
 )
 
 vi.mock(import('../../components/navbar/intent-switcher'), () => ({
-  IntentSwitcher: () => <div data-testid='intent-switcher-stub' />,
+  IntentSwitcher: () => <div data-pw='intent-switcher-stub' />,
 }))
 
 vi.mock(

@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { createContext, use } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
@@ -50,7 +49,7 @@ vi.mock(
       ),
       CommandList: ({ children }: { children: React.ReactNode }) => <ul>{children}</ul>,
       CommandEmpty: ({ children }: { children: React.ReactNode }) => (
-        <li data-testid='command-empty'>{children}</li>
+        <li data-pw='command-empty'>{children}</li>
       ),
       CommandItem: ({
         children,

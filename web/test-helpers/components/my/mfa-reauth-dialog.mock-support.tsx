@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- reauth dialog test double keeps the static data-testid the manager reauth tests query */
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 
@@ -29,7 +28,7 @@ export function MfaReauthDialogMock({
   )
   return (
     <div
-      data-testid='mfa-reauth-dialog'
+      data-pw='mfa-reauth-dialog'
       data-open={String(open)}
     >
       {verify}

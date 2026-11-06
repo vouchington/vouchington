@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { render } from '@testing-library/react'
 import { vi } from 'vitest'
@@ -32,7 +31,7 @@ vi.mock(import('@/lib/api/client'), () => ({
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: () => (
     <button
-      data-testid='hide-button'
+      data-pw='hide-button'
       type='button'
       aria-label='Hide news item'
     />
@@ -40,7 +39,7 @@ vi.mock(import('@/components/shared/hide-button'), () => ({
 }))
 
 vi.mock(import('@/components/shared/follower-share-actions'), () => ({
-  FollowerShareActions: () => <div data-testid='follower-share-actions' />,
+  FollowerShareActions: () => <div data-pw='follower-share-actions' />,
 }))
 
 vi.mock(import('@/components/shared/report-menu-item'), () => ({
@@ -79,7 +78,7 @@ vi.mock(import('@/components/votes/score-vote'), () => {
   }: {
     testId?: string
     children?: ReactNode
-  }) => <div data-testid={testId}>{children}</div>
+  }) => <div data-pw={testId}>{children}</div>
 
   const clusterTestText = ({
     testId = 'existing-vote-choice',
@@ -87,7 +86,7 @@ vi.mock(import('@/components/votes/score-vote'), () => {
   }: {
     testId?: string
     children?: ReactNode
-  }) => <span data-testid={testId}>{children}</span>
+  }) => <span data-pw={testId}>{children}</span>
 
   return {
     ScoreVote: ({
@@ -118,7 +117,7 @@ vi.mock(import('@/components/votes/score-vote'), () => {
 })
 
 vi.mock(import('@/components/news/news-discuss-menu'), () => ({
-  NewsDiscussMenu: () => <div data-testid='news-discuss-menu' />,
+  NewsDiscussMenu: () => <div data-pw='news-discuss-menu' />,
 }))
 
 export const makeClusterItem = (id: string, title: string) =>

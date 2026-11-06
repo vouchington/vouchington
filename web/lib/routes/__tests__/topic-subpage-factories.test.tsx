@@ -1,3 +1,4 @@
+import { getByPw } from '@/test-helpers/pw-queries'
 import '@/test-helpers/i18n/mock-json-messages'
 import {
   mockGetDefaultTopicSubpage,
@@ -91,7 +92,7 @@ describe('topic factory functions', () => {
         searchParams: Promise.resolve({}),
       })
       render(result)
-      expect(screen.getByTestId('topic-posts-page')).toBeDefined()
+      expect(getByPw('topic-posts-page')).toBeDefined()
     })
 
     it('calls notFound when topic is not found', async () => {

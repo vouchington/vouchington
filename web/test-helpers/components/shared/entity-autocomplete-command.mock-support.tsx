@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ComponentProps, KeyboardEvent, ReactNode } from 'react'
 import { render } from '@testing-library/react'
 import { vi } from 'vitest'
@@ -61,7 +60,7 @@ vi.mock(
       ),
       CommandList: ({ children }: { children: ReactNode }) => <ul>{children}</ul>,
       CommandEmpty: ({ children }: { children: ReactNode }) => (
-        <li data-testid='command-empty'>{children}</li>
+        <li data-pw='command-empty'>{children}</li>
       ),
       CommandItem: ({
         children,

@@ -2,10 +2,12 @@ import {
   MOCK_ITEM,
   mockAuthState,
 } from '@/test-helpers/components/news/news-item-actions-buttons.mock-support'
+import { getByPw, queryByPw } from '@/test-helpers/pw-queries'
 
 import { describe, expect, it } from 'vitest'
 
 import { render, screen } from '@testing-library/react'
+
 import { NewsItemActions } from '../news-item-actions'
 
 const leadingAction = <span data-testid='leading'>Show more</span>
@@ -19,7 +21,7 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
       />,
     )
 
-    expect(screen.getByTestId('save-button')).toBeDefined()
+    expect(getByPw('save-button')).toBeDefined()
   })
 
   it('does NOT render SaveButton when not logged in', () => {
@@ -31,7 +33,7 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
       />,
     )
 
-    expect(screen.queryByTestId('save-button')).toBeNull()
+    expect(queryByPw('save-button')).toBeNull()
     mockAuthState.isAuthenticated = true
   })
 
@@ -44,7 +46,7 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
       />,
     )
 
-    const saveButton = screen.getByTestId('save-button')
+    const saveButton = getByPw('save-button')
     expect(saveButton.getAttribute('data-active')).toBe('true')
   })
 
@@ -57,7 +59,7 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
       />,
     )
 
-    const saveButton = screen.getByTestId('save-button')
+    const saveButton = getByPw('save-button')
     expect(saveButton.getAttribute('data-active')).toBe('false')
   })
 

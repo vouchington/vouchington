@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, renderHook, screen } from '@testing-library/react'
+import { configure, act, fireEvent, renderHook, screen } from '@testing-library/react'
+
 import {
   makeClusterItem,
   makeClusterElection,
@@ -10,6 +11,8 @@ import { getStoryMemberPage } from '@/lib/api/client/stories'
 import { getPaginatedPage } from '@/lib/api/client'
 import { useNewsItemClusters } from '@/components/news/use-news-item-clusters'
 import type { RssFeedItemsFeedResponseBody, StoryPageResponse } from '@/types/rss-feed-items'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('@/lib/api/client/stories'), async importOriginal => ({
   ...(await importOriginal()),

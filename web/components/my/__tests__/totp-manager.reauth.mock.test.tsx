@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   MfaReauthDialogMock,
@@ -36,6 +37,8 @@ import { deleteTotpAuthenticator } from '@/lib/api/client'
 import type { ListResponse } from '@/types/api-responses'
 import type { TotpAuthenticator } from '@/types/user'
 import { TotpManager } from '../totp-manager'
+
+configure({ testIdAttribute: 'data-pw' })
 
 const mockDelete = vi.mocked(deleteTotpAuthenticator)
 

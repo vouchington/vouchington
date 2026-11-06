@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
 import {
   initialPointValuationData,
   installPointValuationMockResponses,
@@ -11,6 +12,8 @@ import {
 } from '@/test-helpers/components/my/point-valuations-manager.mock-support'
 // Imported after the mock helper so its vi.mock factories run first.
 import { PointValuationsManager } from '../point-valuations-manager'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('PointValuationsManager Integration Flow', () => {
   beforeEach(() => {

@@ -9,9 +9,12 @@ import {
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
 import { ApiError } from '@vouchington/api-client'
 import { SpendingCategoriesManager } from '../spending-categories-manager'
+
+configure({ testIdAttribute: 'data-pw' })
 
 describe('SpendingCategoriesManager Integration Flow', () => {
   beforeEach(() => {

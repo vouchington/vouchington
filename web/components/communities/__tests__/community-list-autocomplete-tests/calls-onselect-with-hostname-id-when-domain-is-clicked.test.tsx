@@ -8,8 +8,11 @@ import {
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
 import { CommunityListAutocomplete } from '../../community-list-autocomplete'
+
+configure({ testIdAttribute: 'data-pw' })
 
 async function settleInitialQuery() {
   await act(async () => {})

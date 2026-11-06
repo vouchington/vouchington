@@ -1,4 +1,3 @@
-/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import React, { type ReactNode } from 'react'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { trackDynamicImport } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
@@ -62,7 +61,7 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
-  EntityBookmarkButton: () => <div data-testid='subscribe-button' />,
+  EntityBookmarkButton: () => <div data-pw='subscribe-button' />,
 }))
 
 vi.mock(
@@ -89,21 +88,21 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/user-avatar'), () => ({
-  UserAvatar: () => <div data-testid='user-avatar' />,
+  UserAvatar: () => <div data-pw='user-avatar' />,
 }))
 
 vi.mock(import('@/components/shared/rss-feed-link'), () => ({
-  RssFeedLink: () => <div data-testid='rss-feed-link' />,
+  RssFeedLink: () => <div data-pw='rss-feed-link' />,
 }))
 
 vi.mock(import('@/components/users/identity-verified-badge'), () => ({
-  IdentityVerifiedBadge: () => <div data-testid='identity-verified-badge' />,
+  IdentityVerifiedBadge: () => <div data-pw='identity-verified-badge' />,
 }))
 
 vi.mock(import('@/components/users/profile-links'), () => ({
   UserProfileLinks: ({ links }: { links: { id: string; link_type: string }[] }) => (
     <div
-      data-testid='user-profile-links'
+      data-pw='user-profile-links'
       data-count={links.length}
     />
   ),
@@ -126,7 +125,7 @@ vi.mock(
         lang?: string
       }) => (
         <div
-          data-testid='markdown-content'
+          data-pw='markdown-content'
           data-html={html}
           data-classname={className ?? ''}
           data-features={features !== undefined ? JSON.stringify(features) : ''}
