@@ -5,7 +5,7 @@ import {
   getFollowNewsSourcesRecipients,
   getFollowTopicsRecipients,
   getPostReferralLinkRecipients,
-} from './dispatch-engagement-emails.mts'
+} from './engagement-email-recipients.mts'
 import { engagementEmailsWorkConfig } from './work-limits.mts'
 
 const RECIPIENT_ANNOTATIONS = [

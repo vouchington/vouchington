@@ -2,7 +2,7 @@ import { createSchemaSnapshotValidation } from './schema-snapshot-validator-prim
 
 const referentialActions = ['no action', 'restrict', 'cascade', 'set null', 'set default'] as const
 
-export function validateSnapshot(value: unknown, schemaSnapshotPath: string): string[] {
+export function validateSnapshot(snapshot: unknown, schemaSnapshotPath: string): string[] {
   const {
     addError,
     diagnostic,
@@ -161,14 +161,14 @@ export function validateSnapshot(value: unknown, schemaSnapshotPath: string): st
   }
 
   const errors: string[] = []
-  if (!isRecord(value)) return [diagnostic('snapshot must be an object')]
-  if (value.formatVersion !== 2) addError(errors, 'formatVersion must be 2')
+  if (!isRecord(snapshot)) return [diagnostic('snapshot must be an object')]
+  if (snapshot.formatVersion !== 2) addError(errors, 'formatVersion must be 2')
 
-  validateRecord(value.tables, 'tables', errors, validateTable)
-  validateRecord(value.views, 'views', errors, validateView)
-  validateRecord(value.enums, 'enums', errors, validateEnum)
-  validateRecord(value.extensions, 'extensions', errors, validateExtension)
-  validateRecord(value.functions, 'functions', errors, validateFunction)
-  validateRecord(value.policies, 'policies', errors, validatePolicy)
+  validateRecord(snapshot.tables, 'tables', errors, validateTable)
+  validateRecord(snapshot.views, 'views', errors, validateView)
+  validateRecord(snapshot.enums, 'enums', errors, validateEnum)
+  validateRecord(snapshot.extensions, 'extensions', errors, validateExtension)
+  validateRecord(snapshot.functions, 'functions', errors, validateFunction)
+  validateRecord(snapshot.policies, 'policies', errors, validatePolicy)
   return errors
 }
