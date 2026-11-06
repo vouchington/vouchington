@@ -21,8 +21,8 @@ export async function loadTopicRecommendation(id: string) {
 }
 
 /**
- * The explicit REST mutation response post: read_posts' public base plus the required workflow
- * extension. A contract test pins its base properties to read_posts.
+ * The REST public mutation base plus its workflow extension and optional MCP HN facts.
+ * A contract test pins its base properties to read_posts.
  */
 const postSchema = componentSchema('PublicTopicRecommendationPost')
 export const TOPIC_RECOMMENDATION_POST_SCHEMA = {

@@ -12690,6 +12690,19 @@
                     },
                     "updated_at": {
                       "type": "string"
+                    },
+                    "hacker_news_references": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "comment_count": {
+                          "type": "number"
+                        },
+                        "story_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["comment_count", "story_count"],
+                      "type": "object"
                     }
                   },
                   "required": [
@@ -19876,6 +19889,19 @@
                     },
                     "updated_at": {
                       "type": "string"
+                    },
+                    "hacker_news_references": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "comment_count": {
+                          "type": "number"
+                        },
+                        "story_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["comment_count", "story_count"],
+                      "type": "object"
                     }
                   },
                   "required": [

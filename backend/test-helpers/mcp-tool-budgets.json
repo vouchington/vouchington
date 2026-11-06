@@ -325,7 +325,7 @@
       },
       "create_topic_recommendation": {
         "measured": {
-          "list": 4266,
+          "list": 4462,
           "core": 1197
         },
         "max": {
@@ -765,7 +765,7 @@
       },
       "update_topic_recommendation": {
         "measured": {
-          "list": 4307,
+          "list": 4503,
           "core": 1238
         },
         "max": {
