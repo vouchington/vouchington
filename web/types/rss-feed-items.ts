@@ -6,6 +6,7 @@
 import type { PageInfo, PaginatedResult } from '@voucha/types/pagination'
 import type { PaginatedResponse } from './api-responses/paginated-response'
 import type { ElectionVote, Post, PostMetrics } from './posts'
+import type { HackerNewsReferenceCounts } from './hacker-news'
 import type { PublicUser } from './user'
 import type { PodcastShow } from './rss-feeds'
 import type { UrlEmbed } from './api-responses/url-embed'
@@ -118,6 +119,7 @@ export interface StoryPageResponse extends StoryMemberPage {
   rss_feed_items: Record<string, RssFeedItem>
   rss_feed_item_elections: Record<string, RssFeedItemElection>
   rss_feed_item_embeds: Record<string, UrlEmbed>
+  rss_feed_item_hacker_news_references?: Record<string, HackerNewsReferenceCounts>
   rss_feed_item_thumbnail_url: Record<string, string>
   rss_feed_item_content_html: Record<string, string>
   related_posts_by_url_id: Record<string, string[]>
@@ -150,6 +152,7 @@ export type RssFeedItemsFeedResponseBody = PaginatedResponse<RssFeedItemSearchRe
   rss_feed_item_thumbnail_url?: Record<string, string>
   /** Embed sidecars are keyed by RSS item id and share the post URL-embed contract. */
   rss_feed_item_embeds?: Record<string, UrlEmbed>
+  rss_feed_item_hacker_news_references?: Record<string, HackerNewsReferenceCounts>
 
   stories?: Record<string, Story>
   story_member_pages?: Record<string, StoryMemberPage>

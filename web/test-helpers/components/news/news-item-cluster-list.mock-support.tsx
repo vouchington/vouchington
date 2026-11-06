@@ -54,16 +54,16 @@ vi.mock(import('@/components/tags/add-tag-form'), () => ({
   AddTagForm: () => <span hidden />,
 }))
 
-vi.mock(
-  import('@/lib/auth/context'),
-  () =>
-    ({
-      useAuth: () => ({
-        isAuthenticated: true,
-        currentUser: clusterViewer.id ? { id: clusterViewer.id } : null,
-      }),
-    }) as unknown as typeof import('@/lib/auth/context'),
-)
+vi.mock(import('@/lib/auth/context'), () => {
+  const getClusterAuth = () => ({
+    isAuthenticated: true,
+    currentUser: clusterViewer.id ? { id: clusterViewer.id } : null,
+  })
+  return {
+    useAuth: getClusterAuth,
+    useOptionalAuth: getClusterAuth,
+  } as unknown as typeof import('@/lib/auth/context')
+})
 
 vi.mock(import('@/components/shared/shared-byline'), () => ({
   SharedByline: ({ sharedByUser }: { sharedByUser?: { username?: string } }) =>

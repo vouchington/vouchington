@@ -2790,15 +2790,11 @@
     },
     {
       "id": "hn-discussions",
-      "title": "Hacker News discussion asides",
+      "title": "Hacker News references",
       "domain": "Content",
       "intents": [],
-      "requirements": ["docs/requirements/users/PREFERENCES.md"],
+      "requirements": ["docs/requirements/content/HACKER-NEWS-REFERENCES.md"],
       "matrixRows": [
-        {
-          "table": "B",
-          "surface": "settings"
-        },
         {
           "table": "B",
           "surface": "news / rss feed items"
@@ -2812,38 +2808,27 @@
         "web": {
           "status": "full",
           "uiEvidence": [
-            "web/components/my/preferences-form.tsx",
-            "web/components/asides/hn-discussions-aside.tsx",
+            "web/components/hacker-news/hacker-news-reference-label.tsx",
+            "web/components/hacker-news/hacker-news-references-aside.tsx",
+            "web/components/hacker-news/hacker-news-filter-toggle.tsx",
             "web/components/rss-feed-items/rss-feed-item-modal.tsx"
           ],
-          "behaviorTests": [
-            "web/lib/hn-discussions/__tests__/search.test.ts",
-            "web/components/asides/hn-discussions-aside.mock.test.tsx",
-            "web/components/my/__tests__/preferences-form.mock.test.tsx"
-          ]
+          "behaviorTests": ["web/components/hacker-news/__tests__/hacker-news-references.test.tsx"]
         },
         "swift": {
-          "status": "full",
-          "uiEvidence": [
-            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+Sections.swift",
-            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeCommentThreadSurface.swift",
-            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeFocusedRssFeedItemSurface.swift"
-          ],
-          "behaviorTests": [
-            "swift-clients/core/Tests/VouchaCoreTests/HnDiscussionsClientTests.swift"
-          ]
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
         },
         "dotnet": {
-          "status": "full",
-          "uiEvidence": [
-            "dotnet-clients/src/Voucha.Client.App/Pages/SettingsPage.xaml",
-            "dotnet-clients/src/Voucha.Client.App/Pages/PostDetailPage.xaml",
-            "dotnet-clients/src/Voucha.Client.App/Pages/RssFeedItemDetailPage.cs"
-          ],
-          "behaviorTests": [
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/HnDiscussions/HnDiscussionsClientTests.cs"
-          ]
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
         }
+      },
+      "gap": {
+        "summary": "Native clients must drop the old per-user Hacker News discussions setting and Algolia lookup, and read the stored post_hacker_news_references and rss_feed_item_hacker_news_references sidecars instead. The references are neutral facts shown to every viewer and never affect ranking.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/532"
       }
     },
     {

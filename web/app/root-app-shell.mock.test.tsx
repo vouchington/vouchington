@@ -1,5 +1,6 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
+import { HackerNewsConfigProvider } from '@/components/hacker-news/hacker-news-config-provider'
 import { AuthProvider } from '@/lib/auth/auth-provider'
 import type { User } from '@/types/user'
 import { RootAppShell } from './root-app-shell'
@@ -34,6 +35,7 @@ describe('RootAppShell auth boundary', () => {
     const tree = RootAppShell({
       currentUser: privateUser,
       globalFeatureFlags: {},
+      hackerNewsConfig: { references_visible: true, post_time_range_cap: '1y' },
       isStandaloneLandingPage: true,
       initialPathname: '/',
       mainContent: <main />,
@@ -41,6 +43,7 @@ describe('RootAppShell auth boundary', () => {
       uiLocale: 'en',
       uiMessages: {},
     })
+    expect(findElementByType(tree, HackerNewsConfigProvider)?.key).toBeNull()
     const authProvider = findElementByType(tree, AuthProvider)
 
     expect(authProvider).not.toBeNull()

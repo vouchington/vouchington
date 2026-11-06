@@ -20,7 +20,6 @@ const REGISTERED_WEB_CSP_ORIGINS = [
   { origin: 'https://player.vimeo.com', directives: ['frame-src'] },
   { origin: 'https://graph.facebook.com', directives: ['connect-src'] },
   { origin: 'https://www.facebook.com', directives: ['connect-src'] },
-  { origin: 'https://hn.algolia.com', directives: ['connect-src'] },
   { origin: 'https://images-staging.voucha.ai', directives: ['img-src'] },
   { origin: 'https://images.voucha.ai', directives: ['img-src'] },
 ] as const

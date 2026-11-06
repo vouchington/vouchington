@@ -19,7 +19,7 @@ import type { NewsCommunityDiscussionTarget } from '@/components/news/community-
 import { stripHtmlTags } from '@/lib/utils/strip-html-tags'
 import { topicHref } from '@/lib/links/entity-href'
 import { getTranslations } from '@/lib/i18n/get-translations'
-import { RssFeedItemHnDiscussionsAside } from '@/components/asides/rss-feed-item-hn-discussions-aside'
+import { HackerNewsReferencesAside } from '@/components/hacker-news/hacker-news-references-aside'
 import { getContentLanguageDir } from '@ts-shared/languages/content-languages'
 import {
   selectAuthorizedPlayerUrl,
@@ -180,7 +180,9 @@ export async function RssFeedItemModal({
             <RssFeedItemFollowContext id={item.id} />
           </Suspense>
         </div>
-        <RssFeedItemHnDiscussionsAside url={item.url.url} />
+        <HackerNewsReferencesAside
+          references={response.rss_feed_item_hacker_news_references?.[item.id]}
+        />
       </div>
       <RssFeedItemViewTracker
         key={item.id}

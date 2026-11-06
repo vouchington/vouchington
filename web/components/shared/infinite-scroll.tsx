@@ -45,8 +45,9 @@ export function InfiniteScroll({
   const resetGenerationRef = useRef(0)
 
   function requestLoad(manual: boolean) {
-    if (!hasNextPage || !endCursor || loadingMore || loadingRef.current) return
     const retryingFailure = manual && fetchError !== null
+    if ((!hasNextPage || !endCursor) && !retryingFailure) return
+    if (loadingMore || loadingRef.current) return
     if (attemptedCursorRef.current === endCursor && !retryingFailure) return
 
     loadingRef.current = true
@@ -144,17 +145,18 @@ export function InfiniteScroll({
   return (
     <>
       {children}
-      {hasNextPage && endCursor && (
+      {((hasNextPage && endCursor) || fetchError) && (
         <div
           ref={observerRef}
           data-pw='infinite-scroll-sentinel'
         >
           <PaginatedListFooter
             fetchError={fetchError}
-            canLoadMore
+            canLoadMore={Boolean((hasNextPage && endCursor) || fetchError)}
             loadingMore={loadingMore}
             clearError={clearError}
             loadMore={() => requestLoad(true)}
+            mode={hasNextPage && endCursor ? 'continuation' : 'retry-only'}
           />
         </div>
       )}

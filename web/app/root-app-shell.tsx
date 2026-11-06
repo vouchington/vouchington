@@ -1,3 +1,5 @@
+import { HackerNewsConfigProvider } from '@/components/hacker-news/hacker-news-config-provider'
+import type { HackerNewsConfig } from '@/lib/hacker-news-config'
 import { StrictMode, type ReactNode } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarSiteFooter } from '@/components/sidebar-site-footer'
@@ -34,6 +36,7 @@ import type { EnCatalog } from '@ts-shared/ui-messages'
 
 interface RootAppShellProps {
   currentUser: User | null
+  hackerNewsConfig: HackerNewsConfig
   globalFeatureFlags: FeatureFlags
   isStandaloneLandingPage: boolean
   initialPathname: string
@@ -46,6 +49,7 @@ interface RootAppShellProps {
 export function RootAppShell({
   currentUser,
   globalFeatureFlags,
+  hackerNewsConfig,
   isStandaloneLandingPage,
   initialPathname,
   mainContent,
@@ -63,62 +67,64 @@ export function RootAppShell({
         catalog={uiMessages}
       >
         <RuntimePublicConfigProvider config={runtimePublicConfig}>
-          <ThemeProvider>
-            <TooltipProvider delayDuration={0}>
-              <ListStyleProvider>
-                <FeedStyleProvider>
-                  <UiLocaleProvider uiLocale={uiLocale}>
-                    <FeatureFlagsProvider globalFlags={globalFeatureFlags}>
-                      <AuthProvider initialUser={clientAuthUser}>
-                        <EmailVerificationRecoveryProvider>
-                          <VoteStoreProvider>
-                            {isStandaloneLandingPage ? (
-                              <div className='min-h-svh bg-background'>
-                                <LocalizedRouteBoundary
-                                  initialCatalog={uiMessages}
-                                  initialLocale={uiLocale}
-                                  initialPathname={initialPathname}
-                                >
-                                  {mainContent}
-                                </LocalizedRouteBoundary>
-                              </div>
-                            ) : (
-                              <NavIntentProvider>
-                                <AsideProvider>
-                                  <SignedInMessagesSidebarProvider>
-                                    <SidebarProvider defaultOpen>
-                                      <div className='flex min-h-svh w-full'>
-                                        <AppSidebar siteFooter={<SidebarSiteFooter />} />
-                                        <SidebarInset className='min-w-0 flex-1 flex-col'>
-                                          <PodcastPlayerProvider>
-                                            <Navbar profileMenuUser={profileMenuUser} />
-                                            <SuspensionBanner notice={suspensionNotice} />
-                                            <LocalizedRouteBoundary
-                                              initialCatalog={uiMessages}
-                                              initialLocale={uiLocale}
-                                              initialPathname={initialPathname}
-                                            >
-                                              {mainContent}
-                                            </LocalizedRouteBoundary>
-                                            <PodcastPlayerSpacer />
-                                          </PodcastPlayerProvider>
-                                        </SidebarInset>
-                                      </div>
-                                    </SidebarProvider>
-                                  </SignedInMessagesSidebarProvider>
-                                </AsideProvider>
-                              </NavIntentProvider>
-                            )}
-                          </VoteStoreProvider>
-                        </EmailVerificationRecoveryProvider>
-                      </AuthProvider>
-                    </FeatureFlagsProvider>
-                  </UiLocaleProvider>
-                </FeedStyleProvider>
-              </ListStyleProvider>
-            </TooltipProvider>
-            <Toaster />
-          </ThemeProvider>
+          <HackerNewsConfigProvider initialConfig={hackerNewsConfig}>
+            <ThemeProvider>
+              <TooltipProvider delayDuration={0}>
+                <ListStyleProvider>
+                  <FeedStyleProvider>
+                    <UiLocaleProvider uiLocale={uiLocale}>
+                      <FeatureFlagsProvider globalFlags={globalFeatureFlags}>
+                        <AuthProvider initialUser={clientAuthUser}>
+                          <EmailVerificationRecoveryProvider>
+                            <VoteStoreProvider>
+                              {isStandaloneLandingPage ? (
+                                <div className='min-h-svh bg-background'>
+                                  <LocalizedRouteBoundary
+                                    initialCatalog={uiMessages}
+                                    initialLocale={uiLocale}
+                                    initialPathname={initialPathname}
+                                  >
+                                    {mainContent}
+                                  </LocalizedRouteBoundary>
+                                </div>
+                              ) : (
+                                <NavIntentProvider>
+                                  <AsideProvider>
+                                    <SignedInMessagesSidebarProvider>
+                                      <SidebarProvider defaultOpen>
+                                        <div className='flex min-h-svh w-full'>
+                                          <AppSidebar siteFooter={<SidebarSiteFooter />} />
+                                          <SidebarInset className='min-w-0 flex-1 flex-col'>
+                                            <PodcastPlayerProvider>
+                                              <Navbar profileMenuUser={profileMenuUser} />
+                                              <SuspensionBanner notice={suspensionNotice} />
+                                              <LocalizedRouteBoundary
+                                                initialCatalog={uiMessages}
+                                                initialLocale={uiLocale}
+                                                initialPathname={initialPathname}
+                                              >
+                                                {mainContent}
+                                              </LocalizedRouteBoundary>
+                                              <PodcastPlayerSpacer />
+                                            </PodcastPlayerProvider>
+                                          </SidebarInset>
+                                        </div>
+                                      </SidebarProvider>
+                                    </SignedInMessagesSidebarProvider>
+                                  </AsideProvider>
+                                </NavIntentProvider>
+                              )}
+                            </VoteStoreProvider>
+                          </EmailVerificationRecoveryProvider>
+                        </AuthProvider>
+                      </FeatureFlagsProvider>
+                    </UiLocaleProvider>
+                  </FeedStyleProvider>
+                </ListStyleProvider>
+              </TooltipProvider>
+              <Toaster />
+            </ThemeProvider>
+          </HackerNewsConfigProvider>
         </RuntimePublicConfigProvider>
       </UiMessagesHydrator>
     </StrictMode>

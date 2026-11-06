@@ -17,6 +17,8 @@ import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 import { RssItemNavProvider } from '@/lib/rss-item-nav-provider'
 import { RSS_ITEM_HIDDEN_EVENT } from '@/lib/rss-item-modal'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { HackerNewsReferencesProvider } from '@/components/hacker-news/hacker-news-references-context'
+import { useHackerNewsReferenceRefresh } from '@/components/hacker-news/use-hacker-news-reference-refresh'
 
 interface NewsItemListProps {
   data: RssFeedItemsFeedResponseBody
@@ -36,8 +38,16 @@ export function NewsItemList({
 }: NewsItemListProps) {
   const t = useTranslations()
   const { feedStyle } = useFeedStyle()
+  const pagination = usePaginatedList(data, nextPageEndpoint, nextPageParams)
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
-    usePaginatedList(data, nextPageEndpoint, nextPageParams)
+    pagination
+  const referenceRefresh = useHackerNewsReferenceRefresh(
+    pagination.refreshLoadedPages,
+    nextPageEndpoint,
+    nextPageParams,
+    pagination.fetchError,
+    pagination.resetKey,
+  )
   const [hiddenItemIds, setHiddenItemIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -59,6 +69,10 @@ export function NewsItemList({
   const allPosts = mergeRecords(pages, page => page.posts ?? {})
   const allBookmarks = mergeRecords(pages, page => page.bookmarks ?? {})
   const allUsers = mergeRecords(pages, page => page.users ?? {})
+  const allHackerNewsReferences = mergeRecords(
+    pages,
+    page => page.rss_feed_item_hacker_news_references ?? {},
+  )
 
   // Derived from visible results so hidden items are excluded from modal navigation.
   const visibleResults = allResults.filter(
@@ -88,43 +102,47 @@ export function NewsItemList({
       <InfiniteScroll
         hasNextPage={canLoadMore}
         endCursor={endCursor}
-        onLoadMore={loadMore}
+        onLoadMore={referenceRefresh.handleLoadMore(loadMore)}
         loadingMore={loadingMore}
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
       >
-        <div className='space-y-4'>
-          {visibleResults.map(result => {
-            const item = allItems[result.entity_id ?? result.id]
-            if (!item) return null
+        <HackerNewsReferencesProvider references={allHackerNewsReferences}>
+          <div className='space-y-4'>
+            {visibleResults.map(result => {
+              const item = allItems[result.entity_id ?? result.id]
+              if (!item) return null
 
-            const relatedPostIds = allRelatedPostsByUrlId[item.url.id] ?? []
-            const relatedPosts = relatedPostIds.flatMap(id => (allPosts[id] ? [allPosts[id]] : []))
-            const viewerBookmarks = allBookmarks[item.id]
+              const relatedPostIds = allRelatedPostsByUrlId[item.url.id] ?? []
+              const relatedPosts = relatedPostIds.flatMap(id =>
+                allPosts[id] ? [allPosts[id]] : [],
+              )
+              const viewerBookmarks = allBookmarks[item.id]
 
-            return (
-              <NewsItemCard
-                key={result.id}
-                item={item}
-                view={feedStyle}
-                thumbnailUrl={allThumbnailUrls[item.id]}
-                embed={allEmbeds[item.id]}
-                sharedByUser={result.shared_by_id ? allUsers[result.shared_by_id] : undefined}
-                sharedAt={result.shared_at}
-                footer={modalHref => (
-                  <NewsItemActions
-                    item={item}
-                    election={allElections[item.id]}
-                    relatedPosts={relatedPosts}
-                    viewerBookmarks={viewerBookmarks}
-                    leadingHref={modalHref}
-                  />
-                )}
-              />
-            )
-          })}
-        </div>
+              return (
+                <NewsItemCard
+                  key={result.id}
+                  item={item}
+                  view={feedStyle}
+                  thumbnailUrl={allThumbnailUrls[item.id]}
+                  embed={allEmbeds[item.id]}
+                  sharedByUser={result.shared_by_id ? allUsers[result.shared_by_id] : undefined}
+                  sharedAt={result.shared_at}
+                  footer={modalHref => (
+                    <NewsItemActions
+                      item={item}
+                      election={allElections[item.id]}
+                      relatedPosts={relatedPosts}
+                      viewerBookmarks={viewerBookmarks}
+                      leadingHref={modalHref}
+                    />
+                  )}
+                />
+              )
+            })}
+          </div>
+        </HackerNewsReferencesProvider>
       </InfiniteScroll>
       {children}
     </RssItemNavProvider>

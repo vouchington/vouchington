@@ -1,3 +1,4 @@
+import { getHackerNewsConfig } from '@/lib/api/server/hacker-news-config'
 /**
  * Post list page component (Server Component)
  * Fetches posts data and renders filters, sort, and list
@@ -22,7 +23,8 @@ import { PostsDiscoveryAside } from '@/components/asides/posts-discovery-aside'
 import { PostListTopSection } from './post-list-top-section'
 import { PostListEmptyState } from './post-list-empty-state'
 import { joinSearchParamValues } from '@/lib/search-param-values'
-import { postTimeRangeParams } from '@/lib/posts/time-range'
+import { hackerNewsPostTimeRange, postTimeRangeParams } from '@/lib/posts/time-range'
+import { HACKER_NEWS_FILTER_PARAM } from '@/components/hacker-news/hacker-news-filter-param'
 
 interface PostListPageProps {
   config: PostRouteConfig
@@ -38,11 +40,16 @@ export async function PostListPage({ config, searchParams }: PostListPageProps) 
   const topics = joinSearchParamValues(params.topics)
   const sort = typeof params.sort === 'string' ? params.sort : 'hot'
   const postTypes = config.postTypes?.join(',')
+  const hnConfig = await getHackerNewsConfig()
+  const hackerNews = hnConfig.references_visible && params[HACKER_NEWS_FILTER_PARAM] === '1'
   const queryParams = {
     ...(q ? { q } : {}),
     ...(topics ? { topics } : {}),
     ...(postTypes ? { post_types: postTypes } : {}),
-    ...postTimeRangeParams(params.time_range),
+    ...(hackerNews
+      ? { time_range: hackerNewsPostTimeRange(params.time_range, hnConfig.post_time_range_cap) }
+      : postTimeRangeParams(params.time_range)),
+    ...(hackerNews ? { has_hacker_news_references: true } : {}),
     sort,
     limit: 25,
   }
@@ -94,6 +101,7 @@ export async function PostListPage({ config, searchParams }: PostListPageProps) 
             <PostFilters
               defaultSort='hot'
               showTimeRange
+              showHackerNewsFilter
             />
           }
           viewToggle={<PostViewToggle />}

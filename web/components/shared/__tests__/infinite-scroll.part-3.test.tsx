@@ -150,6 +150,27 @@ describe('InfiniteScroll', () => {
     expect(onLoadMore).toHaveBeenCalledTimes(2)
   })
 
+  it('keeps a retry button for errors after the final page is loaded', () => {
+    const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
+    const clearError = vi.fn<VitestLooseMock>()
+    render(
+      <InfiniteScroll
+        hasNextPage={false}
+        endCursor={null}
+        fetchError={new Error('refresh failed')}
+        clearError={clearError}
+        onLoadMore={onLoadMore}
+      >
+        <div>content</div>
+      </InfiniteScroll>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+
+    expect(clearError).toHaveBeenCalledOnce()
+    expect(onLoadMore).toHaveBeenCalledOnce()
+  })
+
   it('re-observes the sentinel when resetKey changes even if hasNextPage, endCursor, and fetchError are unchanged', () => {
     const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
     const { rerender } = render(

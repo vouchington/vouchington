@@ -9560,7 +9560,7 @@
           "tool": {
             "name": "read_my_preferences",
             "title": "Read My Preferences",
-            "description": "email: Get the current user's email choices and delivery schedule for recommendations, news, digests and moderation summaries. Email addresses and sign-in settings are excluded. Change these with edit_my_preferences (option email).\ngeneral: Get the current user's privacy and posting settings, including audience, messaging, locale and Hacker News discussions. Edit them with edit_my_preferences (option general). Financial visibility, consents, federation, email addresses, sign-in settings and username are excluded.",
+            "description": "email: Get the current user's email choices and delivery schedule for recommendations, news, digests and moderation summaries. Email addresses and sign-in settings are excluded. Change these with edit_my_preferences (option email).\ngeneral: Get the current user's privacy and posting settings, including audience, messaging and locale. Edit them with edit_my_preferences (option general). Financial visibility, consents, federation, email addresses, sign-in settings and username are excluded.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -9699,9 +9699,6 @@
                         },
                         "ui_locale": {
                           "$ref": "#/$defs/S2"
-                        },
-                        "should_import_hacker_news_discussions": {
-                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -9715,8 +9712,7 @@
                         "default_post_broadcast",
                         "default_post_privacy",
                         "country",
-                        "ui_locale",
-                        "should_import_hacker_news_discussions"
+                        "ui_locale"
                       ],
                       "additionalProperties": false
                     }
@@ -11202,7 +11198,7 @@
           "tool": {
             "name": "edit_my_preferences",
             "title": "Edit My Preferences",
-            "description": "email: Change which emails the current user receives and when: setup recommendations, the news and community digests, and community moderation summaries. Only the fields sent change. Email addresses and sign-in settings cannot be changed here.\ngeneral: Change the current user's privacy and posting settings, including audience, messaging, locale and Hacker News discussions. Only supplied fields change. Financial visibility, consents, federation and username cannot be changed here.",
+            "description": "email: Change which emails the current user receives and when: setup recommendations, the news and community digests, and community moderation summaries. Only the fields sent change. Email addresses and sign-in settings cannot be changed here.\ngeneral: Change the current user's privacy and posting settings, including audience, messaging and locale. Only supplied fields change. Financial visibility, consents, federation and username cannot be changed here.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -11324,10 +11320,6 @@
                             }
                           ],
                           "description": "A supported interface locale, or null to use the default."
-                        },
-                        "should_import_hacker_news_discussions": {
-                          "type": "boolean",
-                          "description": "Whether post and article pages show related Hacker News discussions."
                         }
                       },
                       "minProperties": 1,
@@ -11449,9 +11441,6 @@
                         },
                         "ui_locale": {
                           "$ref": "#/$defs/S2"
-                        },
-                        "should_import_hacker_news_discussions": {
-                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -11465,8 +11454,7 @@
                         "default_post_broadcast",
                         "default_post_privacy",
                         "country",
-                        "ui_locale",
-                        "should_import_hacker_news_discussions"
+                        "ui_locale"
                       ],
                       "additionalProperties": false
                     }
@@ -35541,9 +35529,6 @@
                     },
                     "rss_feed_follows_visibility": {
                       "$ref": "#/$defs/S3"
-                    },
-                    "should_import_hacker_news_discussions": {
-                      "type": "boolean"
                     },
                     "should_receive_third_party_marketing": {
                       "$ref": "#/$defs/S5"

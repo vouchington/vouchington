@@ -10,6 +10,7 @@ import { NewsItemClusterList } from '@/components/news/news-item-cluster-list'
 import { RssFeedItemModal } from '@/components/rss-feed-items/rss-feed-item-modal'
 import { ListSearchError } from '@/components/shared/list-search-error'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
+import { HACKER_NEWS_FILTER_PARAM } from '@/components/hacker-news/hacker-news-filter-param'
 import { getRssFeedItems } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getTranslations } from '@/lib/i18n/get-translations'
@@ -60,6 +61,7 @@ export async function MediaItemListingPage(config: MediaItemListingPageConfig) {
   const queryParams = {
     ...(q ? { q } : {}),
     ...(topics ? { topics } : {}),
+    ...(params[HACKER_NEWS_FILTER_PARAM] === '1' ? { has_hacker_news_references: true } : {}),
     media_type: config.mediaType,
     limit: MEDIA_ITEM_LISTING_LIMIT,
   }

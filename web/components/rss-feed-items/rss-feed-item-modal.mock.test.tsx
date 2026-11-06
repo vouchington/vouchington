@@ -19,14 +19,6 @@ vi.mock(import('@/lib/api/server'), () => ({
   getRssFeedItem: mockGetRssFeedItem,
 }))
 
-vi.mock(
-  import('@/components/asides/rss-feed-item-hn-discussions-aside'),
-  () =>
-    ({
-      RssFeedItemHnDiscussionsAside: () => null,
-    }) as unknown as typeof import('@/components/asides/rss-feed-item-hn-discussions-aside'),
-)
-
 vi.mock(import('@/lib/i18n/get-resolved-ui-locale'), () => ({
   getResolvedUiLocale: mockGetResolvedUiLocale,
 }))

@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { PostFilters } from '../post-filters'
+import { HackerNewsConfigContext } from '@/components/hacker-news/hacker-news-config-context'
 
 function renderWithProviders(ui: ReactNode) {
   return render(<TooltipProvider>{ui}</TooltipProvider>)
@@ -124,5 +125,36 @@ describe('PostFilters', () => {
   it('does not show a separate Post Type filter', () => {
     renderWithProviders(<PostFilters />)
     expect(screen.queryByText('Post Type')).toBeNull()
+  })
+})
+
+const rangeConfigs = {
+  '1m': { references_visible: true, post_time_range_cap: '1m' },
+  '1y': { references_visible: true, post_time_range_cap: '1y' },
+  all: { references_visible: true, post_time_range_cap: 'all' },
+} as const
+
+describe('Hacker News range cap', () => {
+  it.each([
+    ['1m', ['1w', '1m']],
+    ['1y', ['1w', '1m', '1y']],
+    ['all', ['1w', '1m', '1y', 'all']],
+  ] as const)('offers ranges up to %s and clamps an all-time URL', (cap, options) => {
+    mockNav.reset()
+    mockNav.setSearchParams('hacker_news=1&time_range=all')
+    const config = rangeConfigs[cap]
+    renderWithProviders(
+      <HackerNewsConfigContext.Provider value={config}>
+        <PostFilters
+          showTimeRange
+          showHackerNewsFilter
+        />
+      </HackerNewsConfigContext.Provider>,
+    )
+    const select = screen
+      .getAllByLabelText<HTMLSelectElement>('Sort list')
+      .find(element => Array.from(element.options).some(option => option.value === '1w'))!
+    expect(Array.from(select.options).map(option => option.value)).toEqual(options)
+    expect(select.value).toBe(cap)
   })
 })

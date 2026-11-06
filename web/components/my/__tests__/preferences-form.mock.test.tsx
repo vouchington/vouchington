@@ -64,35 +64,6 @@ vi.mock(import('@/lib/preferences/use-feed-style'), () => ({
   useFeedStyle: vi.fn<VitestLooseMock>(),
 }))
 
-const mockUpdateMyUser = vi.hoisted(() => vi.fn<VitestLooseMock>())
-
-vi.mock(import('@/lib/api/client/users'), () => ({
-  updateMyUser: mockUpdateMyUser,
-}))
-
-vi.mock(
-  import('@/components/ui/switch'),
-  () =>
-    ({
-      Switch: ({
-        checked,
-        id,
-        onCheckedChange,
-      }: {
-        checked: boolean
-        id?: string
-        onCheckedChange: (enabled: boolean) => void
-      }) => (
-        <input
-          checked={checked}
-          id={id}
-          type='checkbox'
-          onChange={event => onCheckedChange(event.target.checked)}
-        />
-      ),
-    }) as unknown as typeof import('@/components/ui/switch'),
-)
-
 vi.mock(
   import('sonner'),
   () =>
@@ -112,12 +83,7 @@ const mockUseFeedStyle = vi.mocked(useFeedStyle)
 const mockToastSuccess = vi.mocked(toast.success)
 
 function renderForm() {
-  return render(
-    <PreferencesForm
-      hnDiscussionsEnabled={false}
-      userId='user-1'
-    />,
-  )
+  return render(<PreferencesForm />)
 }
 
 describe('PreferencesForm', () => {
@@ -130,8 +96,6 @@ describe('PreferencesForm', () => {
     mockSetListStyle.mockClear()
     mockSetFeedStyle.mockClear()
     mockToastSuccess.mockClear()
-    mockUpdateMyUser.mockReset()
-    mockUpdateMyUser.mockResolvedValue({})
     mockUseTheme.mockReturnValue({ theme: 'system', setTheme: mockSetTheme })
     mockUseListStyle.mockReturnValue({ listStyle: 'card', setListStyle: mockSetListStyle })
     mockUseFeedStyle.mockReturnValue({ feedStyle: 'summary', setFeedStyle: mockSetFeedStyle })
@@ -142,7 +106,7 @@ describe('PreferencesForm', () => {
     expect(screen.getByLabelText('Theme')).toBeInTheDocument()
     expect(screen.getByLabelText('Post List Style')).toBeInTheDocument()
     expect(screen.getByLabelText('Feed Style')).toBeInTheDocument()
-    expect(screen.getByLabelText('Hacker News discussions')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Hacker News discussions')).not.toBeInTheDocument()
   })
 
   it('displays the current theme value', () => {
@@ -209,20 +173,5 @@ describe('PreferencesForm', () => {
     renderForm()
     fireEvent.change(screen.getByLabelText('Feed Style'), { target: { value: 'invalid' } })
     expect(mockSetFeedStyle).not.toHaveBeenCalled()
-  })
-
-  it('enables Hacker News discussions and shows a toast', async () => {
-    const toasted = Promise.withResolvers<void>()
-    mockToastSuccess.mockImplementation(message => {
-      if (message === 'Hacker News discussions updated') toasted.resolve()
-      return 'hn-toast'
-    })
-    renderForm()
-    fireEvent.click(screen.getByLabelText('Hacker News discussions'))
-    expect(mockUpdateMyUser).toHaveBeenCalledWith('user-1', {
-      should_import_hacker_news_discussions: true,
-    })
-    await toasted.promise
-    expect(mockToastSuccess).toHaveBeenCalledWith('Hacker News discussions updated')
   })
 })

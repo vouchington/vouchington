@@ -1,5 +1,6 @@
 import type * as Api from './shared'
 import type { UrlEmbed } from './posts-topics-and-feeds'
+import type { HackerNewsReferenceCounts } from '../hacker-news'
 import type {
   Notification,
   NotificationResult,
@@ -114,7 +115,9 @@ export type UsersSearchResponseBody = ListResponse<UserSearchResult> & {
 
 export type TopicsListResponseBody = ListResponse<Topic>
 
-export type PostsListResponseBody = ListResponse<Post>
+export type PostsListResponseBody = ListResponse<Post> & {
+  post_hacker_news_references?: Record<string, HackerNewsReferenceCounts>
+}
 
 export type RssFeedsListResponseBody = ListResponse<ViewRssFeed> & {
   topic_elections: Record<string, TopicElection>
@@ -126,6 +129,7 @@ export type RssFeedsListResponseBody = ListResponse<ViewRssFeed> & {
 export type RssFeedItemsListResponseBody = ListResponse<RssFeedItem> & {
   rss_feed_item_thumbnail_url?: Record<string, string>
   rss_feed_item_embeds?: Record<string, UrlEmbed>
+  rss_feed_item_hacker_news_references?: Record<string, HackerNewsReferenceCounts>
 }
 
 export type UrlsListResponseBody = ListResponse<PublicUrl>

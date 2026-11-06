@@ -125,7 +125,6 @@ describe('preferences tool contract — real DB', () => {
       direct_messages_audience: 'followers',
       default_post_privacy: 'private',
       country: 'ca',
-      should_import_hacker_news_discussions: false,
     }
     const request = createRequest()
     await request.authenticateAs(other)
@@ -153,7 +152,6 @@ describe('preferences tool contract — real DB', () => {
     expect(result.settings).toMatchObject({
       follows_visibility: 'nobody',
       country: 'CA',
-      should_import_hacker_news_discussions: false,
     })
     expect((await privateUser(caller.id))?.follows_visibility).toBe('nobody')
   })
@@ -184,7 +182,6 @@ describe('preferences tool contract — real DB', () => {
     ['a consent', { processing_restricted: true }],
     ['an audience that is not offered', { follows_visibility: 'friends' }],
     ['a broadcast that is not offered', { default_post_broadcast: 'nobody' }],
-    ['a non-boolean toggle', { should_import_hacker_news_discussions: 'yes' }],
   ])('refuses %s before any change', async (_, args) => {
     const caller = await createCaller()
     const before = await privateUser(caller.id)
