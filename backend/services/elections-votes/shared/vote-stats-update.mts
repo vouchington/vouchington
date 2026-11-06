@@ -19,7 +19,7 @@ export async function updateElectionStatsIfChanged(
   stats: AggregatedElectionStats,
   transactionQuery?: TransactionQuery,
 ): Promise<UpdatedElectionStats | undefined> {
-  if (!config.entityTable) return
+  if (!config.entityTable) return undefined
   const entityTable = config.entityTable
 
   const run = async (query: TransactionQuery): Promise<UpdatedElectionStats | undefined> => {

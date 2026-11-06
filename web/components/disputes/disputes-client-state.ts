@@ -26,6 +26,7 @@ export const initialDisputesClientState: DisputesClientState = {
   openId: null,
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 export function disputesClientReducer(
   state: DisputesClientState,
   action: DisputesClientAction,

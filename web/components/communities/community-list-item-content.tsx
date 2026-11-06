@@ -17,6 +17,7 @@ type CommunityListItemContentProps = {
   data: CommunityListPageData
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed itemType switch is exhaustive; Oxlint misses its terminal flow.
 export function CommunityListItemContent({ item, itemType, data }: CommunityListItemContentProps) {
   const t = useTranslations()
   switch (itemType) {

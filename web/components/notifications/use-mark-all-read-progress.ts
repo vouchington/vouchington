@@ -38,7 +38,7 @@ export function useMarkAllReadProgress(
     refreshReadState().catch(Sentry.captureException)
   })
   useEffect(() => {
-    if (!readAllPending) return
+    if (!readAllPending) return undefined
     const onVisibilityChange = () => {
       if (!document.hidden) refreshOnFocus()
     }

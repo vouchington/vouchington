@@ -32,6 +32,7 @@ type Action =
   | { type: 'set_error'; message: string | null }
   | { type: 'set_copied'; value: boolean }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'set_token': {

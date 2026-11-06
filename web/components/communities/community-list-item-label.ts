@@ -4,6 +4,7 @@ import type {
   CommunityListPageData,
 } from '@/types/api-responses'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed itemType switch is exhaustive; Oxlint misses its terminal flow.
 export function getCommunityListItemLabel(
   item: CommunityListItem,
   itemType: CommunityListItemType,

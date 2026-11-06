@@ -173,7 +173,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
 
     output.election_votes = itemsPromise.then(async items => {
       const itemIds = items.flatMap(item => (item != null ? [item.id] : []))
-      if (itemIds.length === 0) return
+      if (itemIds.length === 0) return undefined
       const votes = await getRssFeedItemElectionVotesByUser(currentUser.id, itemIds)
       const votesMap = new Map(votes.map(vote => [vote.entity_id, vote]))
       const election_votes = electionVotesMapToRecord(votesMap)

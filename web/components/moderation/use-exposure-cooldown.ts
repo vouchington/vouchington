@@ -59,7 +59,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
   useEffect(() => {
     const cooldownEndsAt = exposureState?.cooldown_ends_at
     const cooldownEndsAtMs = cooldownEndsAt ? new Date(cooldownEndsAt).getTime() : Number.NaN
-    if (!exposureState?.in_cooldown || !Number.isFinite(cooldownEndsAtMs)) return
+    if (!exposureState?.in_cooldown || !Number.isFinite(cooldownEndsAtMs)) return undefined
 
     let cancelled = false
     let confirmationPending = false

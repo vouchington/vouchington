@@ -106,7 +106,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   useEffect(() => {
-    if (!detailId || !detailNeedsRecommendation) return
+    if (!detailId || !detailNeedsRecommendation) return undefined
     let current = true
     void getCopyrightEmailIntake(detailId)
       .then(response => {

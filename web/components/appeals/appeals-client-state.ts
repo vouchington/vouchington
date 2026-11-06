@@ -24,6 +24,7 @@ export const initialAppealsClientState: State = {
   openId: null,
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 export function appealsClientReducer(state: State, action: Action): State {
   switch (action.type) {
     case 'update_appeal': {

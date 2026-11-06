@@ -9,6 +9,7 @@ export type HardDeleteChildRow = {
 }
 
 /** Static lock queries let PostgreSQL and the lock-order checker see every FK child path. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed phase switch is exhaustive; Oxlint misses its terminal flow.
 export async function lockHardDeleteRssFeedChildRows(
   query: TransactionQuery,
   feedId: string,

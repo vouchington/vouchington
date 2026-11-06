@@ -24,6 +24,7 @@ export function hasMonotonicEligibility(kind: HistoryKind): boolean {
 type Candidate = { id: string }
 
 /** Read at most limit raw UUIDv7 rows; eligibility is checked only within this page. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed kind switch is exhaustive; Oxlint misses its terminal flow.
 export async function listRawCandidates(
   query: TransactionQuery,
   kind: HistoryKind,

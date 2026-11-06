@@ -7,23 +7,18 @@ import { domainHref } from '@/lib/links/entity-href'
 import { type TrustTier, getTrustTier, getTrustLabel } from '@ts-shared/utils/trust-tier'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
-function getTrustColor(tier: TrustTier): string {
-  switch (tier) {
-    case 'trusted': {
-      return 'text-emerald-700 dark:text-emerald-400'
-    }
-    case 'neutral': {
-      return 'text-amber-700 dark:text-amber-400'
-    }
-    case 'distrusted': {
-      return 'text-rose-700 dark:text-rose-400'
-    }
-    case 'unrated': {
-      return 'text-muted-foreground'
-    }
-  }
+const trustColors: Record<TrustTier, string> = {
+  trusted: 'text-emerald-700 dark:text-emerald-400',
+  neutral: 'text-amber-700 dark:text-amber-400',
+  distrusted: 'text-rose-700 dark:text-rose-400',
+  unrated: 'text-muted-foreground',
 }
 
+function getTrustColor(tier: TrustTier): string {
+  return trustColors[tier]
+}
+
+// oxlint-disable-next-line typescript/consistent-return -- Typed tier switch is exhaustive; Oxlint misses its terminal flow.
 function getTrustTooltip(tier: TrustTier, t: ReturnType<typeof useTranslations>): string {
   switch (tier) {
     case 'trusted': {
@@ -43,21 +38,15 @@ function getTrustTooltip(tier: TrustTier, t: ReturnType<typeof useTranslations>)
   }
 }
 
+const trustBgColors: Record<TrustTier, string> = {
+  trusted: 'bg-emerald-100 dark:bg-emerald-950',
+  neutral: 'bg-amber-100 dark:bg-amber-950',
+  distrusted: 'bg-rose-100 dark:bg-rose-950',
+  unrated: 'bg-muted',
+}
+
 function getTrustBgColor(tier: TrustTier): string {
-  switch (tier) {
-    case 'trusted': {
-      return 'bg-emerald-100 dark:bg-emerald-950'
-    }
-    case 'neutral': {
-      return 'bg-amber-100 dark:bg-amber-950'
-    }
-    case 'distrusted': {
-      return 'bg-rose-100 dark:bg-rose-950'
-    }
-    case 'unrated': {
-      return 'bg-muted'
-    }
-  }
+  return trustBgColors[tier]
 }
 
 interface DomainTrustBadgeProps {

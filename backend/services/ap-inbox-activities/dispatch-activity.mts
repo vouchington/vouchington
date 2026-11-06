@@ -61,14 +61,14 @@ export async function dispatchInboundActivity(
   }
   if (activity.type === 'Like') {
     await handleLike(remoteActor, activity, options)
-    return
+    return undefined
   }
-  if (activity.type !== 'Undo') return
+  if (activity.type !== 'Undo') return undefined
 
   const embeddedFollow = getEmbeddedActivity(activity.object, 'Follow')
   if (embeddedFollow) {
     await handleUndoFollow(remoteActor, embeddedFollow.id, embeddedFollow.object, options)
-    return
+    return undefined
   }
   const embeddedLike = getEmbeddedActivity(activity.object, 'Like')
   if (embeddedLike) {
@@ -85,9 +85,9 @@ export async function recoverDuplicateFollow(
   options: QueryOptions,
 ): Promise<InboundPostCommitAction | undefined> {
   const targetUserId = await resolveFederatedTargetUserId(activity.object, options)
-  if (!targetUserId) return
+  if (!targetUserId) return undefined
   const cycle = await reserveRemoteFollowCycle(activity.id, remoteActor.id, targetUserId, options)
-  if (cycle.isUndone) return
+  if (cycle.isUndone) return undefined
   if (!cycle.isNew) {
     return (await isCurrentRemoteFollowCycle(remoteActor.id, targetUserId, cycle.id, options))
       ? { type: 'send-follow-accept', remoteActor, activity, targetUserId }
@@ -140,7 +140,7 @@ async function handleUndoFollow(
   options: QueryOptions,
 ): Promise<void> {
   const targetUserId = await resolveUndoTargetUserId(followObject, options)
-  if (!targetUserId) return
+  if (!targetUserId) return undefined
   const cycleId = await markRemoteFollowUndone(followActivityId, remoteActor, targetUserId, options)
   if (!cycleId) return
   await softDeleteEntityRelation(

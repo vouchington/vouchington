@@ -44,8 +44,8 @@ export function useTopicEditPage(
 
   useEffect(() => {
     if (id !== initialIdRef.current) hasLeftInitialIdRef.current = true
-    if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return
-    if (!isValidTopicType) return
+    if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return undefined
+    if (!isValidTopicType) return undefined
     let active = true
     void loadTopicEditState(id).then(nextState => {
       if (active) dispatch(nextState)

@@ -15,6 +15,7 @@ const copyrightStatementNotificationCopy = {
   },
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed deliveryKind switch is exhaustive; Oxlint misses its terminal flow.
 export function copyrightNotificationCopy(
   deliveryKind:
     | 'claimant_receipt'

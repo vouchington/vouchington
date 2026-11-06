@@ -33,7 +33,7 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
   useEffect(() => {
     idGenerationRef.current += 1
     if (id !== initialIdRef.current) hasLeftInitialIdRef.current = true
-    if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return
+    if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return undefined
     let active = true
     // A topic switch invalidates any additional-hostnames load-more in flight for the
     // previous topic: reset that state immediately rather than leaving it to the

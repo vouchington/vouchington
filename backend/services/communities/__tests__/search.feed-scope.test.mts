@@ -80,6 +80,7 @@ function requireCommunity(communities: ReadonlyMap<string, Community>, key: stri
   return community
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed membership switch is exhaustive; Oxlint misses its terminal flow.
 function membershipWrites(
   viewerId: string,
   communityId: string,
@@ -102,6 +103,7 @@ function membershipWrites(
   }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed itemType switch is exhaustive; Oxlint misses its terminal flow.
 function listItemEntityId(itemType: MineFeedListItem, fixtures: MineFeedFixtures): string {
   switch (itemType) {
     case 'topic':

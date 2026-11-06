@@ -92,7 +92,7 @@ export function InfiniteScroll({
   const hasScrolledRef = useRef(false)
 
   useEffect(() => {
-    if (!hasNextPage || !endCursor || !observerRef.current) return
+    if (!hasNextPage || !endCursor || !observerRef.current) return undefined
 
     const element = observerRef.current
     const observer = new IntersectionObserver(

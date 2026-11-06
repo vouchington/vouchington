@@ -36,12 +36,11 @@ app.route('/api/v1/urls/:id/crawls/:crawlId').get(async ctx => {
   if (!canViewHeaders) {
     const crawl = await getPublicUrlCrawlDetailById(crawlId, url.id)
     if (!crawl) return ctx.throw(404, 'Crawl not found')
-    ctx.json(
+    return ctx.json(
       apiResponse('GET:/api/v1/urls/:id/crawls/:crawlId#paid', {
         crawl,
       }),
     )
-    return
   }
 
   const crawl = await getCrawlById(crawlId, url.id)
@@ -53,7 +52,7 @@ app.route('/api/v1/urls/:id/crawls/:crawlId').get(async ctx => {
     crawl.meta_tags?.['twitter:image'],
   ])
 
-  ctx.json(
+  return ctx.json(
     apiResponse('GET:/api/v1/urls/:id/crawls/:crawlId#privileged', {
       crawl,
       og_image_sideload,

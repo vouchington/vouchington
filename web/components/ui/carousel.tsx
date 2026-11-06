@@ -84,7 +84,7 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) {
-      return
+      return undefined
     }
 
     queueMicrotask(() => onSelect(api))

@@ -90,6 +90,7 @@ function choiceResults(
   return results
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed candidate.candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 function resultForCandidate(
   candidate: ClassifierDecisionCandidate,
   probability: number,

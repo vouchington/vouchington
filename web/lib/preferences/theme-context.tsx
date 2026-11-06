@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     applyTheme(themeValue)
 
-    if (themeValue !== 'system') return
+    if (themeValue !== 'system') return undefined
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     function handleChange(e: MediaQueryListEvent) {

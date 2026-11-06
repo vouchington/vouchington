@@ -48,7 +48,7 @@ app.route('/api/v1/attribution/referrer').post(async (ctx: Context) => {
     try {
       return new URL(body.landing_url).href
     } catch {
-      ctx.throw(400, 'landing_url is not a valid URL')
+      return ctx.throw(400, 'landing_url is not a valid URL')
     }
   })()
   ctx.assert(landingUrlHref.length <= MAX_LANDING_URL_LENGTH, 400, 'landing_url is too long')

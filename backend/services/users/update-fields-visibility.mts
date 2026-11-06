@@ -55,6 +55,7 @@ function visibilityEntries(
   ]
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed column switch is exhaustive; Oxlint misses its terminal flow.
 function visibilityAssignment(column: (typeof visibilityFieldNames)[number], value: string) {
   switch (column) {
     case 'cards_visibility':

@@ -37,6 +37,7 @@ export function ModerationSummary({
   summary: AdminReviewQueuePost['moderation_summary']
 }) {
   const t = useTranslations()
+  // oxlint-disable-next-line typescript/consistent-return -- Typed summary.disposition switch is exhaustive; Oxlint misses its terminal flow.
   const disposition = (() => {
     switch (summary.disposition) {
       case 'pass':

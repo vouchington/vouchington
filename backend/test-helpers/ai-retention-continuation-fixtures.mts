@@ -33,6 +33,7 @@ export function reserveAIRetentionContinuationJobs() {
  * fixture's leftover row as an extra page. Cursor-backed families also keep a rollback-scoped
  * cursor.
  */
+// oxlint-disable-next-line typescript/consistent-return -- Typed family switch is exhaustive; Oxlint misses its terminal flow.
 export async function createAIRetentionContinuationFixture(
   family: AIRetentionFamily,
   query: TransactionQuery,

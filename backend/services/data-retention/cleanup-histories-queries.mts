@@ -4,6 +4,7 @@ import { getRetentionCutoffDate } from './cleanup-options.mts'
 import type { HistoryKind } from './cleanup-histories-candidates.mts'
 
 /** Mutate only candidate ids; per-key probes stop at the owner-approved rank. */
+// oxlint-disable-next-line typescript/consistent-return -- Typed kind switch is exhaustive; Oxlint misses its terminal flow.
 export async function mutatePage(
   query: TransactionQuery,
   kind: HistoryKind,

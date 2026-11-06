@@ -178,6 +178,7 @@ function ownerId(target: CopyrightEmailApprovalTarget): string | undefined {
     case 'community-banner-image':
       return target.community_id
   }
+  return undefined
 }
 
 function stringValue(value: unknown): string {

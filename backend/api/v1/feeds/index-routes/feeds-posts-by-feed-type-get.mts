@@ -130,7 +130,7 @@ app.route('/api/v1/feeds/posts/:feed_type').get(async (ctx: Context) => {
   output.election_votes = postsPromise.then(async posts => {
     const filteredPostIds = posts.flatMap(p => (p != null ? [p.id] : []))
 
-    if (filteredPostIds.length === 0) return
+    if (filteredPostIds.length === 0) return undefined
 
     const votes = await getPostElectionVotesByUser(currentUser.id, filteredPostIds)
     const votesMap = new Map(votes.map(vote => [vote.entity_id, vote]))

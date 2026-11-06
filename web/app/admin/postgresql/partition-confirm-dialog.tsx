@@ -49,7 +49,7 @@ export function PartitionConfirmDialog({
   const [statusError, setStatusError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (pendingAction !== 'cleanupPartitions') return
+    if (pendingAction !== 'cleanupPartitions') return undefined
     let active = true
     void fetchPartitions().then(
       status => {

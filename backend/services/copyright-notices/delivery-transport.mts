@@ -10,6 +10,7 @@ import { decryptSecret } from '@modules/token-secrets'
 import { getVerifiedEmailAddress } from '@services/contribution-gating'
 import { createCopyrightNoticeNotification } from '@services/notifications'
 import assert from 'http-assert'
+import createHttpError from 'http-errors'
 import {
   type ClaimedCopyrightDeliveryIntent,
   claimCopyrightDeliveryIntent,
@@ -147,7 +148,7 @@ async function resolveCopyrightEmailRecipient(
     assert(email, 422, 'Affected poster has no verified email address')
     return email
   }
-  assert(false, 422, 'Copyright email delivery has no private recipient')
+  throw createHttpError(422, 'Copyright email delivery has no private recipient')
 }
 
 function errorMessage(error: unknown): string {
