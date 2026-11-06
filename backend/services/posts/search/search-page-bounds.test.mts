@@ -1,4 +1,5 @@
 import { encodeCursor } from '@modules/pagination'
+import type { BasicUser } from '@services/users/types'
 import { describe, expect, it } from 'vitest'
 import { dataPointLimitLiteral } from './data-point-arms.mts'
 import { assembleDataPointPage } from './data-point-assemble.mts'
@@ -76,6 +77,33 @@ describe('search page bounds', () => {
       ),
     ).toThrow('Invalid cursor')
     expect(() => decodeStoryCursor(storyAfter({ feed_open: true }))).toThrow('Invalid cursor')
+    expect(() =>
+      decodeStoryCursor(
+        storyAfter({
+          feed_open: true,
+          item_id: OTHER,
+          published_at: '9999-99-99T00:00:00.000000Z',
+        }),
+      ),
+    ).toThrow(expect.objectContaining({ statusCode: 400, message: 'Invalid cursor' }))
+    expect(() =>
+      decodeStoryCursor(
+        storyAfter({
+          feed_open: true,
+          item_id: OTHER,
+          published_at: '2021-02-31T00:00:00.000000Z',
+        }),
+      ),
+    ).toThrow(expect.objectContaining({ statusCode: 400, message: 'Invalid cursor' }))
+    expect(
+      decodeStoryCursor(
+        storyAfter({
+          feed_open: true,
+          item_id: OTHER,
+          published_at: '9999-12-31T23:59:59.999999Z',
+        }),
+      )?.published_at,
+    ).toBe('9999-12-31T23:59:59.999999Z')
     expect(() =>
       decodeStoryCursor(storyAfter({ feed_open: false, item_id: OTHER, published_at: null })),
     ).toThrow('Invalid cursor')
@@ -184,6 +212,34 @@ describe('search page bounds', () => {
       childLimit: 5,
     })
     expect(stories.sql).toContain('similar_rss_feed_item_embedding')
+    expect(stories.sql).toContain('is_discoverable')
     expect(stories.values).toContain(ID)
+
+    const filtered = buildDataPointPageQuery(
+      { topic_id: ID, vertical: 'bank_account' },
+      null,
+      25,
+      25,
+    )
+    expect(filtered.sql).toContain('data_point_vertical')
+    expect(filtered.sql).toContain('post_data_point_topics')
+    for (const predicate of filtered.sql.split('FROM posts').slice(1)) {
+      const childWhere = predicate.slice(0, predicate.indexOf('LIMIT'))
+      expect(childWhere).not.toContain('data_point_vertical')
+      expect(childWhere).not.toContain('post_data_point_topics')
+    }
+
+    const staff = buildStorySourcePageQuery({
+      currentUser: { id: ID, roles: ['moderator'] } as BasicUser,
+      options: { post_types: ['story'] },
+      cursor: null,
+      hasSemanticSearch: false,
+      hasTextSearch: false,
+      pageSize: 25,
+      childLimit: 5,
+    })
+    expect(staff.sql).toContain('is_enabled = FALSE')
+    expect(staff.sql).not.toContain('is_discoverable')
+    expect(staff.sql).not.toContain('view_rss_feed_current_states')
   })
 })

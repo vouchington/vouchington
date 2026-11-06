@@ -37,7 +37,8 @@ export const backgroundWorkRegistryEntries7 = {
         'Review succession candidate page size for posts processing.',
       profile_post_count_cap:
         'Maximum profile review, discussion, and comment rows counted for one viewer. Past this, the profile shows the cap with a plus.',
-      story_source_page_size: 'Live discoverable feeds read for one story search page.',
+      story_source_page_size:
+        'Feeds read for one story search page. Staff also include disabled and non-discoverable feeds.',
       story_source_child_limit: 'Items read from each feed on a story search page.',
       data_point_community_page_size:
         'Live public communities read for one data-point search page.',

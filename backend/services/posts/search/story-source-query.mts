@@ -3,7 +3,12 @@ import { appendStorySourcePageFilters } from './query-builder/where-clause.mts'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions } from './types.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { appendChildLateral, resumeBounds } from './story-source-child.mts'
+import {
+  appendChildLateral,
+  appendLaterFeedSlice,
+  appendOwningSource,
+  resumeBounds,
+} from './story-source-child.mts'
 import type { StoryCursor, StoryFeedBounds } from './story-source-types.mts'
 
 export function buildStorySourcePageQuery(input: {
@@ -19,6 +24,7 @@ export function buildStorySourcePageQuery(input: {
   const resumeSlot = input.cursor?.feed_open ? 1 : 0
   const laterPage = input.pageSize - resumeSlot
   const laterLimit = laterPage + 1
+  const staff = seesNonPublicStoryFeeds(input.currentUser)
   const filters: SQLStatement[] = []
   appendStorySourcePageFilters(filters, {
     currentUser: input.currentUser,
@@ -37,17 +43,9 @@ export function buildStorySourcePageQuery(input: {
   query.append(sql`later_feeds AS (
       SELECT id, ROW_NUMBER() OVER (ORDER BY id DESC)::int AS ord
       FROM (
-        SELECT id
-        FROM rss_feeds
-        WHERE is_enabled
-          AND is_discoverable
-          AND deleted_at IS NULL
-          AND `)
-  if (input.cursor) query.append(sql`id < ${input.cursor.feed_id}::uuid`)
-  else query.append(sql`TRUE`)
+        `)
+  appendLaterFeedSlice(query, input.cursor, laterLimit, staff)
   query.append(sql`
-        ORDER BY id DESC
-        LIMIT ${laterLimit}
       ) sliced
     ),
     later_page AS (
@@ -64,13 +62,11 @@ export function buildStorySourcePageQuery(input: {
   if (input.cursor?.feed_open) {
     appendFeedArm(query, {
       fromSql: sql`rss_feeds feed`,
-      whereSql: sql`WHERE feed.id = ${input.cursor.feed_id}::uuid
-        AND feed.is_enabled
-        AND feed.is_discoverable
-        AND feed.deleted_at IS NULL`,
+      whereSql: openFeedWhere(input.cursor, staff),
       ordSql: sql`0::int`,
       bounds: resumeBounds(input.cursor),
       lookahead,
+      staff,
     })
     query.append(sql`
       UNION ALL
@@ -82,6 +78,7 @@ export function buildStorySourcePageQuery(input: {
     ordSql: sql`feed.ord`,
     bounds: { published: null, missingItemUpper: null },
     lookahead,
+    staff,
   })
   query.append(sql`
     )
@@ -122,6 +119,7 @@ function appendFeedArm(
     ordSql: SQLStatement
     bounds: StoryFeedBounds
     lookahead: number
+    staff: boolean
   },
 ): void {
   query.append(sql`
@@ -134,7 +132,13 @@ function appendFeedArm(
         src.published_at,
         src.phase,
         src.child_rank,
-        story_posts.post_id
+        CASE
+          WHEN story_posts.post_id IS NOT NULL
+           AND owner.feed_id = feed.id
+           AND owner.item_id = item.id
+          THEN story_posts.post_id
+          ELSE NULL
+        END AS post_id
       FROM `)
   query.append(arm.fromSql)
   appendChildLateral(query, arm.bounds, arm.lookahead)
@@ -147,6 +151,7 @@ function appendFeedArm(
         ON stories.id = item.story_id
        AND stories.deleted_at IS NULL
       LEFT JOIN story_posts ON story_posts.story_id = stories.id`)
+  appendOwningSource(query, arm.staff)
   if (arm.whereSql.values.length > 0 || arm.whereSql.text.includes('WHERE')) {
     query.append(sql`\n`).append(arm.whereSql)
   }
@@ -163,6 +168,17 @@ function appendSearchJoins(
   if (input.options.similar_rss_feed_item_id) {
     query.append(sql`\n    CROSS JOIN similar_rss_feed_item_embedding`)
   }
+}
+
+function seesNonPublicStoryFeeds(user: BasicUser | undefined): boolean {
+  return !!user && (user.roles.includes('administrator') || user.roles.includes('moderator'))
+}
+
+function openFeedWhere(cursor: StoryCursor, staff: boolean): SQLStatement {
+  const where = sql`WHERE feed.id = ${cursor.feed_id}::uuid
+        AND feed.deleted_at IS NULL`
+  if (!staff) where.append(sql` AND feed.is_enabled AND feed.is_discoverable`)
+  return where
 }
 
 function combineFilters(filters: SQLStatement[]): SQLStatement {

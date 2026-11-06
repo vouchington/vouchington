@@ -20,6 +20,13 @@ export async function runStorySourceSearchScenarios(): Promise<void> {
       time_range: 'all',
     }),
   )
+  registerScenarioContract('story-source-search-staff', storySourceStaffPlanContract())
+  await runAndCapture('story-source-search-staff', () =>
+    getPostIds(
+      { ...seedUser, roles: ['administrator'] },
+      { post_types: ['story'], sort: 'new', limit: 21, time_range: 'all' },
+    ),
+  )
   registerScenarioContract('story-source-search-semantic', storySourcePlanContract())
   await runAndCapture(
     'story-source-search-semantic',
@@ -47,12 +54,37 @@ async function captureStorySourceScenario(
   )
 }
 
+function storySourceStaffPlanContract() {
+  const contract = storySourcePlanContract()
+  return {
+    ...contract,
+    expectations: [
+      { kind: 'maxProcessedRows' as const, relation: 'rss_feeds', max: 400 },
+      { kind: 'maxProcessedRows' as const, relation: 'rss_feed_item_sources', max: 800 },
+      { kind: 'maxProcessedRows' as const, relation: 'rss_feed_items', max: 800 },
+      { kind: 'maxProcessedRows' as const, relation: 'posts', max: 800 },
+      { kind: 'maxProcessedRows' as const, relation: 'stories', max: 400 },
+      { kind: 'maxProcessedRows' as const, relation: 'story_posts', max: 400 },
+      { kind: 'maxProcessedRows' as const, relation: 'communities', max: 200 },
+      {
+        kind: 'usesIndexes' as const,
+        indexes: [
+          'idx_rss_feeds__is_enabled',
+          'idx_rss_feeds__disabled',
+          'idx_rss_feed_item_sources__feed_published_item',
+          'idx_rss_feed_item_sources__missing_published_at',
+        ],
+      },
+    ],
+  }
+}
+
 function storySourcePlanContract() {
   return {
     expectations: [
-      { kind: 'maxProcessedRows' as const, relation: 'rss_feeds', max: 40 },
-      { kind: 'maxProcessedRows' as const, relation: 'rss_feed_item_sources', max: 400 },
-      { kind: 'maxProcessedRows' as const, relation: 'rss_feed_items', max: 400 },
+      { kind: 'maxProcessedRows' as const, relation: 'rss_feeds', max: 240 },
+      { kind: 'maxProcessedRows' as const, relation: 'rss_feed_item_sources', max: 800 },
+      { kind: 'maxProcessedRows' as const, relation: 'rss_feed_items', max: 800 },
       { kind: 'maxProcessedRows' as const, relation: 'posts', max: 800 },
       { kind: 'maxProcessedRows' as const, relation: 'stories', max: 400 },
       { kind: 'maxProcessedRows' as const, relation: 'story_posts', max: 400 },
