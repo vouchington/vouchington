@@ -1425,6 +1425,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_user_id uuid)\n RETURNS boolean\n LANGUAGE sql\nAS $function$\n  SELECT actor_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_user_id)\n$function$\n",
       "returnsSet": false
     },
+    "fn_copy_rss_feed_item_source_story_id()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_copy_rss_feed_item_source_story_id()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  SELECT items.story_id INTO NEW.story_id\n  FROM rss_feed_items items\n  WHERE items.id = NEW.rss_feed_item_id;\n  RETURN NEW;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
     "fn_copyright_case_purge_permitted(table_name text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_case_purge_permitted(table_name text)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT current_setting('app.copyright_case_purge_table', true) = table_name\n    AND NULLIF(current_setting('app.copyright_case_purge_notice_id', true), '')::uuid IS NOT NULL\n$function$\n",
       "returnsSet": false
@@ -2195,6 +2199,10 @@
     },
     "fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ORDER BY placement.id, placement.revision, surface.image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;\n\nEND;\n$function$\n",
+      "returnsSet": false
+    },
+    "fn_sync_rss_feed_item_source_story_id()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_item_source_story_id()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE rss_feed_item_sources\n  SET story_id = NEW.story_id\n  WHERE rss_feed_item_id = NEW.id\n    AND story_id IS DISTINCT FROM NEW.story_id;\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_text_to_timestamptz(text_value text)": {
@@ -130754,7 +130762,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "published_at": {
           "comment": "Publication timestamp captured when this feed-to-item association is first observed. Production ingestion applies the item UUIDv7 clamp to this feed payload's sanitized publication dates and preserves an existing association on conflict.",
@@ -130785,10 +130793,28 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
+        },
+        "story_id": {
+          "comment": "Story copied from the item so a page can stop at the newest visible source. The item remains the source of truth.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         }
       },
       "comment": "Join table: which RSS feeds contain which items. An item (unique per hostname+guid) can appear in multiple feeds from the same domain.",
       "foreignKeys": {
+        "fk_rss_feed_item_sources_story_id": {
+          "columns": ["story_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "stories",
+          "validated": true
+        },
         "rss_feed_item_sources_rss_feed_id_fkey": {
           "columns": ["rss_feed_id"],
           "onDelete": "CASCADE",
@@ -130912,6 +130938,47 @@
           "unique": false,
           "valid": true
         },
+        "idx_rss_feed_item_sources__story_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_item_sources__story_feed_item ON public.rss_feed_item_sources USING btree (story_id, rss_feed_id DESC, rss_feed_item_id DESC) WHERE (story_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "rss_feed_id",
+              "descending": true,
+              "expression": "rss_feed_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "rss_feed_item_id",
+              "descending": true,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(story_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "rss_feed_item_sources_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -130950,7 +131017,11 @@
         "columns": ["rss_feed_id", "rss_feed_item_id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_copy_rss_feed_item_source_story_id": {
+          "definition": "CREATE TRIGGER trigger_copy_rss_feed_item_source_story_id BEFORE INSERT OR UPDATE OF story_id ON public.rss_feed_item_sources FOR EACH ROW EXECUTE FUNCTION fn_copy_rss_feed_item_source_story_id()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "rss_feed_item_unmapped_category_counts": {
@@ -132434,6 +132505,9 @@
         },
         "trigger_rss_feed_items_updated_at": {
           "definition": "CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_sync_rss_feed_item_source_story_id": {
+          "definition": "CREATE TRIGGER trigger_sync_rss_feed_item_source_story_id AFTER UPDATE OF story_id ON public.rss_feed_items FOR EACH ROW WHEN ((old.story_id IS DISTINCT FROM new.story_id)) EXECUTE FUNCTION fn_sync_rss_feed_item_source_story_id()"
         },
         "trigger_sync_rss_feed_items_search_vector": {
           "definition": "CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_items_search_vector()"

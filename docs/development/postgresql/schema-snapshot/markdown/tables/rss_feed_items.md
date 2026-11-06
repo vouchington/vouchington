@@ -107,4 +107,5 @@ _none_
 
 - `trigger_register_retained_rss_feed_item_identity`: `CREATE TRIGGER trigger_register_retained_rss_feed_item_identity BEFORE INSERT ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('rss_feed_item')`
 - `trigger_rss_feed_items_updated_at`: `CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_sync_rss_feed_item_source_story_id`: `CREATE TRIGGER trigger_sync_rss_feed_item_source_story_id AFTER UPDATE OF story_id ON public.rss_feed_items FOR EACH ROW WHEN ((old.story_id IS DISTINCT FROM new.story_id)) EXECUTE FUNCTION fn_sync_rss_feed_item_source_story_id()`
 - `trigger_sync_rss_feed_items_search_vector`: `CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_items_search_vector()`
