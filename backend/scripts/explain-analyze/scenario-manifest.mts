@@ -1,4 +1,3 @@
-import { POST_URL_CAPACITY_SCENARIOS } from './post-related-url-capacity-scenario-ids.mts'
 import { INGESTION_PAGE_SCENARIO_IDS } from './ingestion-page-scenario-ids.mts'
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
@@ -11,7 +10,6 @@ import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
 import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
 import { SESSION_LIMIT_SCENARIO_IDS } from './session-limit-scenario-ids.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
-  ...POST_URL_CAPACITY_SCENARIOS,
   ...VIEW_DRIVEN_SCENARIO_IDS,
   ...BOUNDED_WORK_SCENARIOS,
   'url-blocklist-hostnames',
@@ -32,12 +30,15 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'classifier-human-vote-comparison-post',
   'classifier-human-vote-comparison-rss-feed-item',
   ...(['comment-ancestors', 'comment-descendants-depth-bound'] as const),
-  ...(['comment-tree-best', 'comment-tree-new', 'conversation-messages'] as const),
+  'comment-tree-best',
+  'comment-tree-new',
+  'conversation-messages',
   'direct-message-inbox-page',
   'community-activity-digest-aggregation',
   'community-activity-digest-recipients',
   'conversations-by-user',
-  ...(['crawl-chunks-by-crawl', 'crawl-latest-successful'] as const),
+  'crawl-chunks-by-crawl',
+  'crawl-latest-successful',
   ...RELATION_SCENARIOS,
   'first-community-post-id-index',
   'feed-posts-batch',

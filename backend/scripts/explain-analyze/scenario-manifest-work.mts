@@ -2,6 +2,7 @@ import { COPYRIGHT_CASE_PURGE_SCENARIO_IDS } from './copyright-case-purge-scenar
 import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
 import { PUBLICATION_SCOPE_SCENARIO_IDS } from './publication-scope-scenario-ids.mts'
 import { NOTIFICATION_VISIBILITY_SCENARIO_IDS } from './notification-visibility-scenario-ids.mts'
+import { POST_URL_CAPACITY_SCENARIOS } from './post-related-url-capacity-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
   'community-agent-prompt-capacity',
@@ -98,6 +99,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   'upload-cleanup-abandonment-forward',
   ...PUBLICATION_SCOPE_SCENARIO_IDS,
   ...NOTIFICATION_VISIBILITY_SCENARIO_IDS,
+  ...POST_URL_CAPACITY_SCENARIOS,
   'sitemap-users-page',
   'sitemap-topics-page',
   'sitemap-post-day-page',
