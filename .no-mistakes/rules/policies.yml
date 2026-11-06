@@ -4956,6 +4956,7 @@
     importSpecifier: '@data-stores/psql'
     executorFactoryNames: [beginTransaction, beginBoundedTransaction]
     executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+    executorNames: [readPool, writePool]
     exclude:
       - '**/*.test.*'
       - '**/__tests__/**'
