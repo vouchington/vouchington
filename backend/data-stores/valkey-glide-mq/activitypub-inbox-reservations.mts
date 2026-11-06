@@ -48,10 +48,7 @@ export async function releaseActivityPubInboxDelivery(
   await workerQueueCommandClient.zrem(activityPubInboxReservationKey(queueName, prefix), [jobId])
 }
 
-export function activityPubInboxReservationKey(
-  queueName: string,
-  prefix = workerQueuePrefix,
-): string {
+function activityPubInboxReservationKey(queueName: string, prefix = workerQueuePrefix): string {
   return `${prefix ?? 'glide'}:{${queueName}}:activitypub-inbox-reservations`
 }
 

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq/glide-mq-shared-client'
-import { activityPubInboxReservationKey } from '@data-stores/valkey-glide-mq/activitypub-inbox-reservations'
+import { workerQueuePrefix } from '../../data-stores/valkey-core/glide-mq-client.mts'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { failNextOwnedActivityPubInboxEnqueue } from '@voucha/test-helpers/activitypub-inbox-enqueue-failure'
 import { postInbox, signInboxRequest } from '@voucha/test-helpers/activitypub-inbox-api-requests'
@@ -55,7 +55,7 @@ describe('POST /ap/inbox native reservation admission', () => {
     const { actorUri, keyId, privateKeyPem, hostname } = await createRemoteActorFixture()
     const accepted = signedDelivery(actorUri, keyId, privateKeyPem, hostname)
     const rejected = signedDelivery(actorUri, keyId, privateKeyPem, hostname)
-    const reservationKey = activityPubInboxReservationKey(BACKGROUND_QUEUE_NAME)
+    const reservationKey = `${workerQueuePrefix ?? 'glide'}:{${BACKGROUND_QUEUE_NAME}}:activitypub-inbox-reservations`
     onTestFinished(async () => {
       await removeActivityPubInboxJobForRequestDigest(accepted.requestDigest)
       await removeActivityPubInboxJobForRequestDigest(rejected.requestDigest)
@@ -85,7 +85,7 @@ describe('POST /ap/inbox native reservation admission', () => {
     const { actorUri, keyId, privateKeyPem, hostname } = await createRemoteActorFixture()
     const failed = signedDelivery(actorUri, keyId, privateKeyPem, hostname)
     const retried = signedDelivery(actorUri, keyId, privateKeyPem, hostname)
-    const reservationKey = activityPubInboxReservationKey(BACKGROUND_QUEUE_NAME)
+    const reservationKey = `${workerQueuePrefix ?? 'glide'}:{${BACKGROUND_QUEUE_NAME}}:activitypub-inbox-reservations`
     onTestFinished(async () => {
       await removeActivityPubInboxJobForRequestDigest(failed.requestDigest)
       await removeActivityPubInboxJobForRequestDigest(retried.requestDigest)
@@ -109,7 +109,7 @@ describe('POST /ap/inbox native reservation admission', () => {
   it('releases the second reservation when native digest dedup skips a replay', async () => {
     const { actorUri, keyId, privateKeyPem, hostname } = await createRemoteActorFixture()
     const replayed = signedDelivery(actorUri, keyId, privateKeyPem, hostname)
-    const reservationKey = activityPubInboxReservationKey(BACKGROUND_QUEUE_NAME)
+    const reservationKey = `${workerQueuePrefix ?? 'glide'}:{${BACKGROUND_QUEUE_NAME}}:activitypub-inbox-reservations`
     onTestFinished(async () => {
       await removeActivityPubInboxJobForRequestDigest(replayed.requestDigest)
       await workerQueueCommandClient.unlink([reservationKey])
@@ -127,7 +127,7 @@ describe('POST /ap/inbox native reservation admission', () => {
   it('fails closed without enqueuing when the owned reservation key has the wrong type', async () => {
     const { actorUri, keyId, privateKeyPem, hostname } = await createRemoteActorFixture()
     const delivery = signedDelivery(actorUri, keyId, privateKeyPem, hostname)
-    const reservationKey = activityPubInboxReservationKey(BACKGROUND_QUEUE_NAME)
+    const reservationKey = `${workerQueuePrefix ?? 'glide'}:{${BACKGROUND_QUEUE_NAME}}:activitypub-inbox-reservations`
     onTestFinished(async () => {
       await workerQueueCommandClient.unlink([reservationKey])
       await removeActivityPubInboxJobForRequestDigest(delivery.requestDigest)
