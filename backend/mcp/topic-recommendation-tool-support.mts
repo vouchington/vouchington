@@ -4,7 +4,7 @@ import { getPostByAnyCached } from '@services/entity-fetch'
 import { postReferenceSchema } from './entity-reference-schema.mts'
 import { asTopicRecommendationPost } from '@services/topic-recommendations'
 import { componentSchema } from './route-response-schema.mts'
-import { successSchema } from '@vouchington/mcp-server/schema'
+import { successSchema, type JsonSchema } from '@vouchington/mcp-server/schema'
 
 export type TopicRecommendationIdArgs = { id: string }
 
@@ -25,7 +25,7 @@ export async function loadTopicRecommendation(id: string) {
  * A contract test pins its base properties to read_posts.
  */
 const postSchema = componentSchema('PublicTopicRecommendationPost')
-export const TOPIC_RECOMMENDATION_POST_SCHEMA = {
+export const TOPIC_RECOMMENDATION_POST_SCHEMA: JsonSchema = {
   ...postSchema,
   properties: {
     ...(postSchema.properties as Record<string, unknown>),
