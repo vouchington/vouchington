@@ -120,27 +120,31 @@ function appendFeedIdUpperBound(query: SQLStatement, cursor: StoryCursor | null)
   else query.append(sql`TRUE`)
 }
 
-/** Newest visible feed, then greatest item id, owns the story post for this reader. */
+/** Newest visible feed at least as new as this one, then greatest item id, owns the story. */
 export function appendOwningSource(query: SQLStatement, staff: boolean): void {
   query.append(sql`
       LEFT JOIN LATERAL (
-        SELECT owner_feed.id AS feed_id, owner_item.id AS item_id
+        SELECT owner_src.rss_feed_id AS feed_id, owner_item.id AS item_id
         -- no-mistakes-disable-next-line postgres-required-predicates: the owning source is the newest visible feed of this story, and story_id is the indexed key across item id partitions
         FROM rss_feed_items owner_item
         JOIN rss_feed_item_sources owner_src
           ON owner_src.rss_feed_item_id = owner_item.id
-        JOIN rss_feeds owner_feed
-          ON owner_feed.id = owner_src.rss_feed_id
-         AND owner_feed.deleted_at IS NULL`)
-  if (!staff) {
-    query.append(sql`
-         AND owner_feed.is_enabled
-         AND owner_feed.is_discoverable`)
-  }
-  query.append(sql`
+         AND owner_src.rss_feed_id >= feed.id
         WHERE owner_item.story_id = item.story_id
           AND owner_item.deleted_at IS NULL
-        ORDER BY owner_feed.id DESC, owner_item.id DESC
+          AND EXISTS (
+            SELECT 1
+            FROM rss_feeds owner_feed
+            WHERE owner_feed.id = owner_src.rss_feed_id
+              AND owner_feed.deleted_at IS NULL`)
+  if (!staff) {
+    query.append(sql`
+              AND owner_feed.is_enabled
+              AND owner_feed.is_discoverable`)
+  }
+  query.append(sql`
+          )
+        ORDER BY owner_src.rss_feed_id DESC, owner_item.id DESC
         LIMIT 1
       ) owner ON item.id IS NOT NULL`)
 }
