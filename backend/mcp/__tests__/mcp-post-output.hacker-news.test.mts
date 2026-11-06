@@ -71,7 +71,8 @@ describe('MCP Hacker News placeholder privacy', () => {
       expect(projected.hacker_news_references).toBeUndefined()
       const response = await createRequest().get(`/api/v1/posts/${comment.id}`).expect(200)
       expect(response.body.post.placeholder_state).toBe(state)
-      expect(response.body.hacker_news_references).toBeUndefined()
+      expect(response.body.post_hacker_news_references?.[comment.id]).toBeUndefined()
+      expect(response.body.post.hacker_news_references).toBeUndefined()
 
       const hiddenComment =
         state === 'deleted'
