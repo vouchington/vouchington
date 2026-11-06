@@ -15,6 +15,14 @@ the same references as the page it duplicates, and neither the post nor the alia
 lookup. Reads tolerate a short canonical chain; canonical rewrites are serialized and flatten
 back-references so concurrent updates do not leave longer chains or cycles.
 
+Reference facts belong to the content response rather than a viewer preference. REST and MCP
+therefore share count summaries and bounded detail links. Responses carrying these facts must not
+remain in a shared public cache, so hiding references can take effect on the next read.
+
+Personalized feeds apply reference eligibility before deduplication and pagination. Each loaded page
+carries its reference facts through the card providers, including continued story members and user
+collections, so later pages retain the same presentation as the first page.
+
 ## Rules
 
 - Labels are neutral facts: "Seen on Hacker News" for a story and "Mentioned on Hacker News" for a
