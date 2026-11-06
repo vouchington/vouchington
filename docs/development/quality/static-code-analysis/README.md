@@ -6,6 +6,12 @@ Rules live in code and config ([`.no-mistakes/`](../../../../.no-mistakes/), `.o
 
 Environment usage must survive refactoring between orchestration and executable workflow code; otherwise inventory cleanup can remove live configuration.
 
+Repository workflow contracts run against the tracked checkout in the required static gate through
+the [repository policy aggregate](../../../../ci/check-repository-policy-scans.mts). Their Vitest
+suites exercise the same policy logic with bounded fixture snapshots. Keeping repository discovery
+in the static runner prevents unrelated file changes from becoming unit-test inputs while preserving
+enforcement of the committed workflow contract.
+
 ## Where To Put A New Rule (Priority Order)
 
 Pick the highest tier that can express the rule. Keep rules small and focused (#4988).
