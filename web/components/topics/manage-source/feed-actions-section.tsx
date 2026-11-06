@@ -36,33 +36,54 @@ export function FeedActionsSection({
         {t('extracted.manageSource.feedActionsSection.actions_ff8059dc')}
       </h2>
       <div className='flex flex-wrap items-center gap-3'>
-        <Button
-          type='button'
-          variant='secondary'
-          onClick={onToggle}
-          disabled={toggling}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- conditional button based on state
-          data-pw={rssFeed.is_enabled ? 'feed-disable' : 'feed-enable'}
-        >
-          {rssFeed.is_enabled
-            ? t('extracted.manageSource.feedActionsSection.disable_b7e3e4aa')
-            : t('extracted.manageSource.feedActionsSection.enable_5342e09f')}
-        </Button>
-        <Button
-          type='button'
-          variant={rssFeed.is_discoverable ? 'secondary' : 'destructive'}
-          onClick={onToggleDiscoverability}
-          disabled={togglingDiscoverability}
-          title={t(
-            'extracted.manageSource.feedActionsSection.whenHiddenFromDiscoveryItemsFrom_77cd310f',
-          )}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- conditional button based on state
-          data-pw={rssFeed.is_discoverable ? 'feed-hide-discovery' : 'feed-make-discoverable'}
-        >
-          {rssFeed.is_discoverable
-            ? t('extracted.manageSource.feedActionsSection.hideFromDiscovery_c2075b95')
-            : t('extracted.manageSource.feedActionsSection.makeDiscoverable_f4310831')}
-        </Button>
+        {rssFeed.is_enabled ? (
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={onToggle}
+            disabled={toggling}
+            data-pw='feed-disable'
+          >
+            {t('extracted.manageSource.feedActionsSection.disable_b7e3e4aa')}
+          </Button>
+        ) : (
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={onToggle}
+            disabled={toggling}
+            data-pw='feed-enable'
+          >
+            {t('extracted.manageSource.feedActionsSection.enable_5342e09f')}
+          </Button>
+        )}
+        {rssFeed.is_discoverable ? (
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={onToggleDiscoverability}
+            disabled={togglingDiscoverability}
+            title={t(
+              'extracted.manageSource.feedActionsSection.whenHiddenFromDiscoveryItemsFrom_77cd310f',
+            )}
+            data-pw='feed-hide-discovery'
+          >
+            {t('extracted.manageSource.feedActionsSection.hideFromDiscovery_c2075b95')}
+          </Button>
+        ) : (
+          <Button
+            type='button'
+            variant='destructive'
+            onClick={onToggleDiscoverability}
+            disabled={togglingDiscoverability}
+            title={t(
+              'extracted.manageSource.feedActionsSection.whenHiddenFromDiscoveryItemsFrom_77cd310f',
+            )}
+            data-pw='feed-make-discoverable'
+          >
+            {t('extracted.manageSource.feedActionsSection.makeDiscoverable_f4310831')}
+          </Button>
+        )}
         <Button
           data-pw='feed-actions-section-trigger-crawl'
           type='button'

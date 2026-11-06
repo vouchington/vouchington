@@ -19,15 +19,21 @@ export function SourceSection({
   const t = useTranslations()
   return (
     <section className='bg-card p-6 shadow-sm dark:shadow-none sm:rounded-lg'>
-      <h2
-        className='mb-4 text-xl font-semibold text-foreground'
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- conditional heading based on state
-        data-pw={rssFeed ? 'update-source-heading' : 'source-heading'}
-      >
-        {rssFeed
-          ? t('extracted.manageSource.sourceSection.updateSource_d413c6b0')
-          : t('extracted.manageSource.sourceSection.source_0e570ca6')}
-      </h2>
+      {rssFeed ? (
+        <h2
+          className='mb-4 text-xl font-semibold text-foreground'
+          data-pw='update-source-heading'
+        >
+          {t('extracted.manageSource.sourceSection.updateSource_d413c6b0')}
+        </h2>
+      ) : (
+        <h2
+          className='mb-4 text-xl font-semibold text-foreground'
+          data-pw='source-heading'
+        >
+          {t('extracted.manageSource.sourceSection.source_0e570ca6')}
+        </h2>
+      )}
       {rssFeed ? (
         <form
           key={rssFeed.id}
