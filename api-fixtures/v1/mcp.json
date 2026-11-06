@@ -7584,7 +7584,8 @@
                           "description": "Maximum results to return (default: 25, max: 25)"
                         },
                         "after": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Opaque cursor from this option’s previous page."
                         }
                       },
                       "required": [],
