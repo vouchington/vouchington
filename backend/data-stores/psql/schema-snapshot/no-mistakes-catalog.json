@@ -66753,10 +66753,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_membership_reversal_cases__originating_invoice": {
+        "idx_membership_ineligible_purchase_reversal_cases__invoice_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_reversal_cases__originating_invoice ON public.membership_ineligible_purchase_reversal_cases USING btree (originating_invoice_id)",
+          "definition": "CREATE INDEX idx_membership_ineligible_purchase_reversal_cases__invoice_id ON public.membership_ineligible_purchase_reversal_cases USING btree (originating_invoice_id)",
           "immediate": true,
           "keys": [
             {

@@ -50,7 +50,7 @@ _none_
 - `idx_membership_ineligible_purchase_reversal_cases__binding`: `CREATE INDEX idx_membership_ineligible_purchase_reversal_cases__binding ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_lineage_binding_id, membership_provider_lineage_id)`
 - `idx_membership_ineligible_purchase_reversal_cases__currency`: `CREATE INDEX idx_membership_ineligible_purchase_reversal_cases__currency ON public.membership_ineligible_purchase_reversal_cases USING btree (currency_code)`
 - `idx_membership_ineligible_purchase_reversal_cases__invoice`: `CREATE UNIQUE INDEX idx_membership_ineligible_purchase_reversal_cases__invoice ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_provider_lineage_id, originating_invoice_id)`
-- `idx_membership_reversal_cases__originating_invoice`: `CREATE INDEX idx_membership_reversal_cases__originating_invoice ON public.membership_ineligible_purchase_reversal_cases USING btree (originating_invoice_id)`
+- `idx_membership_ineligible_purchase_reversal_cases__invoice_id`: `CREATE INDEX idx_membership_ineligible_purchase_reversal_cases__invoice_id ON public.membership_ineligible_purchase_reversal_cases USING btree (originating_invoice_id)`
 - `pk_mipr_cases`: `CREATE UNIQUE INDEX pk_mipr_cases ON public.membership_ineligible_purchase_reversal_cases USING btree (id)`
 
 **Triggers:**
