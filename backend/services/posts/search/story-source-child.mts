@@ -140,40 +140,47 @@ function appendFeedIdUpperBound(query: SQLStatement, cursor: StoryCursor | null)
   else query.append(sql`TRUE`)
 }
 
-/** Newest visible feed at least as new as this one, then greatest item id, owns the story. */
-export function appendOwningSource(query: SQLStatement, staff: boolean): void {
-  query.append(sql`
-      LEFT JOIN LATERAL (
-        SELECT candidate.feed_id, candidate.item_id
-        FROM (
-          SELECT
-            owner_src.rss_feed_id AS feed_id,
-            owner_item.id AS item_id,
-            (
-              SELECT owner_feed.id
-              FROM rss_feeds owner_feed
-              WHERE owner_feed.id = owner_src.rss_feed_id
-                AND owner_feed.deleted_at IS NULL`)
+/** One scan of the page's stories. The newest visible feed at least as new as the row, then greatest item id, owns it. */
+export function appendStoryOwnership(query: SQLStatement, staff: boolean): void {
+  query.append(sql`story_feeds AS MATERIALIZED (
+      SELECT owner_item.story_id, owner_item.id AS item_id, owner_src.rss_feed_id AS feed_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: story_id is the indexed key across item id partitions; feed order is applied to this candidate set
+      FROM rss_feed_items owner_item
+      JOIN rss_feed_item_sources owner_src ON owner_src.rss_feed_item_id = owner_item.id
+      WHERE owner_item.deleted_at IS NULL
+        AND owner_item.story_id IS NOT NULL
+        AND owner_item.story_id IN (
+          SELECT source_rows.story_id FROM source_rows WHERE source_rows.story_post_id IS NOT NULL
+        )
+        AND EXISTS (
+          SELECT 1 FROM rss_feeds owner_feed
+          WHERE owner_feed.id = owner_src.rss_feed_id AND owner_feed.deleted_at IS NULL`)
   if (!staff) {
     query.append(sql`
-                AND owner_feed.is_enabled
-                AND owner_feed.is_discoverable`)
+            AND owner_feed.is_enabled AND owner_feed.is_discoverable`)
   }
   query.append(sql`
-            ) AS visible_feed_id
-          -- no-mistakes-disable-next-line postgres-required-predicates: story_id is the indexed key across item id partitions; the feed lower bound is applied after that equality
-          FROM rss_feed_items owner_item
-          JOIN rss_feed_item_sources owner_src
-            ON owner_src.rss_feed_item_id = owner_item.id
-          WHERE owner_item.story_id = item.story_id
-            AND owner_item.story_id IS NOT NULL
-            AND owner_item.deleted_at IS NULL
-            AND owner_src.rss_feed_id >= feed.id
-        ) candidate
-        WHERE candidate.visible_feed_id IS NOT NULL
-        ORDER BY candidate.feed_id DESC, candidate.item_id DESC
+        )
+    ),
+    sources AS (
+      SELECT source_rows.feed_id, source_rows.feed_ord, source_rows.item_id,
+        source_rows.published_at, source_rows.phase, source_rows.child_rank,
+        CASE
+          WHEN source_rows.story_post_id IS NOT NULL
+           AND owner.feed_id = source_rows.feed_id
+           AND owner.item_id = source_rows.item_id
+          THEN source_rows.story_post_id ELSE NULL
+        END AS post_id
+      FROM source_rows
+      LEFT JOIN LATERAL (
+        SELECT story_feeds.feed_id, story_feeds.item_id
+        FROM story_feeds
+        WHERE story_feeds.story_id = source_rows.story_id
+          AND story_feeds.feed_id >= source_rows.feed_id
+        ORDER BY story_feeds.feed_id DESC, story_feeds.item_id DESC
         LIMIT 1
-      ) owner ON story_posts.post_id IS NOT NULL`)
+      ) owner ON source_rows.story_post_id IS NOT NULL
+    )`)
 }
 
 export function resumeBounds(cursor: StoryCursor): StoryFeedBounds & { published: SQLStatement } {
