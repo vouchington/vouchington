@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import { v7 } from 'uuid'
 import { contentHash, seedUuid } from './common.mts'
 import { PostSeedDiagnostics, type SeedBackend } from './post-diagnostics.mts'
 
@@ -25,11 +24,9 @@ export async function seedPosts(count = 10_000): Promise<void> {
         const batch = Math.min(500, count - i)
         const values: unknown[] = []
         const rows: string[] = []
-        const clearanceChangeIds = new Map<string, string>()
         for (let j = 0; j < batch; j++) {
           const idx = i + j
           const id = seedUuid(idx, '05')
-          const clearanceChangeId = v7()
           const userId = seedUuid(idx % 20_000, '01')
           const postType = idx % 3 === 0 ? 'discussion' : idx % 3 === 1 ? 'review' : 'data_point'
           const title = `Seed Post ${idx}`
@@ -45,7 +42,6 @@ export async function seedPosts(count = 10_000): Promise<void> {
                 ],
               })
             : null
-          clearanceChangeIds.set(id, clearanceChangeId)
           values.push(
             id,
             postType,
@@ -56,37 +52,51 @@ export async function seedPosts(count = 10_000): Promise<void> {
             hash,
             dataPointVertical,
             structuredData,
-            clearanceChangeId,
           )
-          const base = values.length - 9
+          const base = values.length - 8
           rows.push(
-            `('system', $${base}, $${base + 1}::post_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}::jsonb, 1, uuid_extract_timestamp($${base + 9}::uuid), uuid_extract_timestamp($${base + 9}::uuid))`,
+            `($${base}::uuid, $${base + 1}::post_types, $${base + 2}::text, $${base + 3}::text, $${base + 4}::uuid, $${base + 5}::bytea, $${base + 6}::bytea, $${base + 7}::text, $${base + 8}::jsonb)`,
           )
         }
         const { rows: changedPosts } = await diagnostics.operation('insert', batchIndex, () =>
-          query<{ id: string }>(
-            `/* seedExplainData */ INSERT INTO posts (
-          created_via, id, post_type, title, markdown, created_by_id,
-          bedrock_nova_multimodal_v1_content_sha256,
-          llm_moderation_content_sha256,
-          data_point_vertical, structured_data, clearance_version,
-          clearance_changed_at, approved_at
-        ) VALUES ${rows.join(', ')}
-        ON CONFLICT (id) DO UPDATE SET
-          clearance_version = posts.clearance_version + 1,
-          clearance_changed_at = EXCLUDED.clearance_changed_at,
-          clearance_changed_by_id = NULL,
-          clearance_public_reason_code = NULL,
-          clearance_is_platform_override = FALSE,
-          approved_at = EXCLUDED.approved_at,
-          rejected_at = NULL,
-          in_review_at = NULL
-        WHERE posts.approved_at IS NULL AND posts.rejected_at IS NULL AND posts.in_review_at IS NULL
-        RETURNING id`,
+          query<{ id: string; change_id: string }>(
+            `/* seedExplainData */
+             WITH seeded AS MATERIALIZED (
+               SELECT input.id, input.post_type, input.title, input.markdown,
+                 input.created_by_id, input.embedding_hash, input.moderation_hash,
+                 input.data_point_vertical, input.structured_data, uuidv7() AS change_id
+               FROM (VALUES ${rows.join(', ')}) AS input (
+                 id, post_type, title, markdown, created_by_id, embedding_hash,
+                 moderation_hash, data_point_vertical, structured_data
+               )
+             ), changed AS (
+               INSERT INTO posts (
+                 created_via, id, post_type, title, markdown, created_by_id,
+                 bedrock_nova_multimodal_v1_content_sha256,
+                 llm_moderation_content_sha256, data_point_vertical, structured_data,
+                 clearance_version, clearance_changed_at, approved_at
+               ) SELECT 'system', id, post_type, title, markdown, created_by_id,
+                   embedding_hash, moderation_hash, data_point_vertical, structured_data,
+                   1, uuid_extract_timestamp(change_id), uuid_extract_timestamp(change_id)
+                 FROM seeded
+               ON CONFLICT (id) DO UPDATE SET
+                 clearance_version = posts.clearance_version + 1,
+                 clearance_changed_at = EXCLUDED.clearance_changed_at,
+                 clearance_changed_by_id = NULL,
+                 clearance_public_reason_code = NULL,
+                 clearance_is_platform_override = FALSE,
+                 approved_at = EXCLUDED.approved_at,
+                 rejected_at = NULL,
+                 in_review_at = NULL
+               WHERE posts.approved_at IS NULL
+                 AND posts.rejected_at IS NULL AND posts.in_review_at IS NULL
+               RETURNING id
+             )
+             SELECT changed.id, seeded.change_id
+             FROM seeded JOIN changed ON seeded.id = changed.id`,
             values,
           ),
         )
-        const changedPostIds = changedPosts.map(({ id }) => id)
         // The history author trigger must see the post, so append history in a separate statement.
         await diagnostics.operation('clearance', batchIndex, () =>
           query(
@@ -94,7 +104,7 @@ export async function seedPosts(count = 10_000): Promise<void> {
              (id, post_id, change_type, metadata)
              SELECT change_id, post_id, 'approve', '{"source":"explain-seed"}'::jsonb
              FROM UNNEST($1::uuid[], $2::uuid[]) AS changed(post_id, change_id)`,
-            [changedPostIds, changedPostIds.map(id => clearanceChangeIds.get(id))],
+            [changedPosts.map(({ id }) => id), changedPosts.map(({ change_id }) => change_id)],
           ),
         )
       })
