@@ -9,6 +9,7 @@ export async function pruneObsoleteStoryPostRelatedUrlsForReplacement(
   query: TransactionQuery,
   work: ProjectionWork,
   storyTellerId: string,
+  unsafeUrlIds: readonly string[],
 ): Promise<void> {
   // A lower admission cap must still allow removal of sources admitted under an earlier cap.
   const limit = relationLimitsMaxValues.post_related_url
@@ -40,11 +41,11 @@ export async function pruneObsoleteStoryPostRelatedUrlsForReplacement(
             AND work.lease_expires_at > clock_timestamp()
             AND work.eligibility_completed_at IS NOT NULL
         )
-        AND NOT EXISTS (
+        AND (candidates.object_id = ANY($8::uuid[]) OR NOT EXISTS (
           SELECT 1 FROM story_post_related_url_projection_receipts receipt
           WHERE receipt.post_id = $1 AND receipt.generation = $6
             AND receipt.url_id = candidates.object_id AND receipt.is_eligible = TRUE
-        )
+        ))
         AND NOT EXISTS (
           SELECT 1 FROM story_post_related_url_projection_relation_mutations mutation
           WHERE mutation.post_id = $1 AND mutation.generation = $6
@@ -65,6 +66,7 @@ export async function pruneObsoleteStoryPostRelatedUrlsForReplacement(
       work.relation_snapshot_at,
       work.generation,
       work.lease_token,
+      unsafeUrlIds,
     ],
   )
   if (rowCount) {

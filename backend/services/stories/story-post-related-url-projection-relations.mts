@@ -11,11 +11,10 @@ import '@services/elections-votes/entity-relation/register-election-vote-handler
 import '@services/posts/register-post-related-urls-guard'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { getSystemUserByUsername } from '@services/users/system-users'
-import { containsReferralLinks } from '@services/referral-program-link-validations/contains-referral-links'
+import { findUnsafeStoryPostRelatedUrlProjectionUrls } from './story-post-related-url-projection-replacement-safety.mts'
 import { markStoryPostRelatedUrlProjectionInvalidationRequired } from './story-post-related-url-projection-invalidation.mts'
 import {
   lockPostScopeAndCheckProjectionWork,
-  lockProjectionEligibilityAndFindBlockedUrls,
   recordProjectionCrawlRequirements,
 } from './story-post-related-url-projection-relation-safety.mts'
 import type { ProjectionWork, SourceRow } from './story-post-related-url-projection-types.mts'
@@ -106,30 +105,25 @@ async function writePendingRelations(work: ProjectionWork, rows: SourceRow[]): P
     `/* markStoryPostRelatedUrlProjectionRelationWrite */
         SELECT set_config('voucha.story_post_related_url_projection_write', 'true', true)`,
   )
-  const blockedUrlIds = await lockProjectionEligibilityAndFindBlockedUrls(
+  const ineligibleUrlIds = await findUnsafeStoryPostRelatedUrlProjectionUrls(
     transactionQuery,
-    sourceRowUrlIds(rows),
+    work.post_id,
+    rows,
   )
   if (!(await lockPostScopeAndCheckProjectionWork(transactionQuery, work))) return false
-  const sourceUrls: string[] = []
-  for (const row of rows) sourceUrls.push(row.url)
-  const { matched_urls: referralMatches } = await containsReferralLinks(sourceUrls, {
-    query: transactionQuery,
-  })
-  const referralUrls = new Set<string>()
-  for (const match of referralMatches) referralUrls.add(match.url)
-  const ineligibleUrlIds = new Set(blockedUrlIds)
-  for (const row of rows) {
-    if (referralUrls.has(row.url)) ineligibleUrlIds.add(row.url_id)
-  }
   const allowedUrlIds: string[] = []
   for (const object of objects) {
     if (!ineligibleUrlIds.has(object.id)) allowedUrlIds.push(object.id)
   }
-  if (ineligibleUrlIds.size > 0)
-    await recordProjectionCrawlRequirements(transactionQuery, work, [], ineligibleUrlIds)
+  const ineligiblePageUrlIds = new Set(
+    objects.map(object => object.id).filter(id => ineligibleUrlIds.has(id)),
+  )
+  if (ineligiblePageUrlIds.size > 0)
+    await recordProjectionCrawlRequirements(transactionQuery, work, [], ineligiblePageUrlIds)
   // ast-grep-ignore: no-three-sequential-awaits -- Capacity must observe obsolete-row removal before the guarded insertion on this locked transaction.
-  await pruneObsoleteStoryPostRelatedUrlsForReplacement(transactionQuery, work, storyTeller.id)
+  await pruneObsoleteStoryPostRelatedUrlsForReplacement(transactionQuery, work, storyTeller.id, [
+    ...ineligibleUrlIds,
+  ])
   await assertPostRelatedUrlsAllowed(
     creator,
     relation,

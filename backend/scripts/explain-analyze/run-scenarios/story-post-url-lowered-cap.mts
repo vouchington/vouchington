@@ -54,7 +54,7 @@ export async function captureLoweredPostUrlCap(work: ProjectionWork): Promise<vo
     async () => {
       await using query = await beginTransaction()
       await lockPostPublicationPostScopes(query, [work.post_id])
-      await pruneObsoleteStoryPostRelatedUrlsForReplacement(query, work, seed.user)
+      await pruneObsoleteStoryPostRelatedUrlsForReplacement(query, work, seed.user, [])
       const { rows } = await query<{ count: number }>(
         `/* verifyLoweredCapProjection */
       SELECT count(*)::integer AS count FROM relation__post__related__url

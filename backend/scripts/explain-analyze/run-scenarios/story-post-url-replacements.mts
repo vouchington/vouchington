@@ -1,3 +1,4 @@
+import { captureActivePostUrlSafety } from './story-post-url-active-safety.mts'
 import {
   captureGenerationReset,
   captureRssGenerationReset,
@@ -45,6 +46,7 @@ export async function captureStoryPostUrlReplacementScenarios(): Promise<void> {
     await captureReplacement('post-url-replacement-default', work[0]!, 1000)
     await captureReplacement('post-url-replacement-maximum', work[1]!, 10000)
     await captureLoweredPostUrlCap(work[1]!)
+    await captureActivePostUrlSafety(work)
   } finally {
     await cleanupGenerationResetNoise(noiseStoryIds)
     await write(
@@ -158,7 +160,7 @@ async function captureReplacement(id: string, work: ProjectionWork, limit: numbe
     async () => {
       await using query = await beginTransaction()
       await lockPostPublicationPostScopes(query, [work.post_id])
-      await pruneObsoleteStoryPostRelatedUrlsForReplacement(query, work, seed.user)
+      await pruneObsoleteStoryPostRelatedUrlsForReplacement(query, work, seed.user, [])
       const { rows } = await query<{ count: number }>(
         `/* verifyStoryPostUrlReplacement */
         SELECT count(*)::integer AS count FROM relation__post__related__url

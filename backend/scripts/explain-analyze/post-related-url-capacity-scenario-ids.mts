@@ -10,4 +10,7 @@ export const POST_URL_CAPACITY_SCENARIOS = [
   'post-url-replacement-lowered-cap',
   'post-url-replacement-default',
   'post-url-replacement-maximum',
+  'post-url-active-safety-1000',
+  'post-url-active-safety-10000',
+  'post-url-replacement-unsafe-existing',
 ] as const
