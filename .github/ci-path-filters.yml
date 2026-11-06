@@ -314,6 +314,7 @@ build-backend:
   - '.github/worker-io-automation.env'
   - '.github/actions/build-backend-images/**'
   - '.github/workflows/publish-backend-images.yml'
+  - '.github/workflows/publish-backend-images.sh'
   - '.trivyignore.yaml'
   - 'ci/resolve-published-images.sh'
   - 'ci/curl-to.sh'
@@ -334,6 +335,7 @@ build-web:
   - '.github/ci-path-filters.yml'
   - '.github/actions/build-web-images/**'
   - '.github/workflows/publish-web-images.yml'
+  - '.github/workflows/publish-web-images.sh'
   - '.trivyignore.yaml'
   - 'ci/resolve-published-images.sh'
   - 'ci/curl-to.sh'
@@ -499,7 +501,7 @@ runtime-web-integration:
   - '!web/**/*.stories.tsx'
   - '!cloudflare-worker/**/test-*.mts'
 runtime-build-web:
-  - '{.github/ci-path-filters.yml,.github/actions/build-web-images/**,.github/workflows/publish-web-images.yml,.trivyignore.yaml,ci/curl-to.sh,ci/resolve-published-images.sh,ci/prepare-trivy-db.sh,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,web/**,web/Dockerfile,ts-shared/**,backend/types/**,.dockerignore,.hadolint.yaml}'
+  - '{.github/ci-path-filters.yml,.github/actions/build-web-images/**,.github/workflows/publish-web-images.yml,.github/workflows/publish-web-images.sh,.trivyignore.yaml,ci/curl-to.sh,ci/resolve-published-images.sh,ci/prepare-trivy-db.sh,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,web/**,web/Dockerfile,ts-shared/**,backend/types/**,.dockerignore,.hadolint.yaml}'
   - '!web/.dependency-cruiser.cjs'
   - '!**/*.md'
   - '!**/*.mdx'
@@ -522,7 +524,7 @@ runtime-build-web:
   - '!web/**/*.stories.ts'
   - '!web/**/*.stories.tsx'
 runtime-build-backend:
-  - '{.github/ci-path-filters.yml,.github/worker-io-automation.env,.github/actions/build-backend-images/**,.github/workflows/publish-backend-images.yml,.trivyignore.yaml,ci/curl-to.sh,ci/resolve-published-images.sh,ci/prepare-trivy-db.sh,ci/package.json,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,backend/**,email-templates/**,localization/**,dev/localization/**,ts-shared/**,backend/Dockerfile,.dockerignore,.hadolint.yaml}'
+  - '{.github/ci-path-filters.yml,.github/worker-io-automation.env,.github/actions/build-backend-images/**,.github/workflows/publish-backend-images.yml,.github/workflows/publish-backend-images.sh,.trivyignore.yaml,ci/curl-to.sh,ci/resolve-published-images.sh,ci/prepare-trivy-db.sh,ci/package.json,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,backend/**,email-templates/**,localization/**,dev/localization/**,ts-shared/**,backend/Dockerfile,.dockerignore,.hadolint.yaml}'
   - '!**/*.md'
   - '!**/*.mdx'
   - '!**/*.test.mts'
