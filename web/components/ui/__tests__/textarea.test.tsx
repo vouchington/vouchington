@@ -4,7 +4,9 @@ import type { KeyboardEvent } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 
 function renderInForm(extra?: Parameters<typeof Textarea>[0]) {
-  const onSubmit = vi.fn<VitestLooseMock>((e: React.FormEvent) => e.preventDefault())
+  const onSubmit = vi.fn<VitestLooseMock>((e: React.SubmitEvent<HTMLFormElement>) =>
+    e.preventDefault(),
+  )
   render(
     <form onSubmit={onSubmit}>
       <Textarea
@@ -55,7 +57,9 @@ describe('Textarea (auto submit-on-cmd-enter)', () => {
   })
 
   it('runs caller onKeyDown before the default and lets it opt out via preventDefault', () => {
-    const onSubmit = vi.fn<VitestLooseMock>((e: React.FormEvent) => e.preventDefault())
+    const onSubmit = vi.fn<VitestLooseMock>((e: React.SubmitEvent<HTMLFormElement>) =>
+      e.preventDefault(),
+    )
     const onKeyDown = vi.fn<VitestLooseMock>((e: KeyboardEvent<HTMLTextAreaElement>) =>
       e.preventDefault(),
     )
@@ -74,7 +78,9 @@ describe('Textarea (auto submit-on-cmd-enter)', () => {
   })
 
   it('still calls caller onKeyDown when not opting out, and submits via the default', () => {
-    const onSubmit = vi.fn<VitestLooseMock>((e: React.FormEvent) => e.preventDefault())
+    const onSubmit = vi.fn<VitestLooseMock>((e: React.SubmitEvent<HTMLFormElement>) =>
+      e.preventDefault(),
+    )
     const onKeyDown = vi.fn<VitestLooseMock>()
     render(
       <form onSubmit={onSubmit}>

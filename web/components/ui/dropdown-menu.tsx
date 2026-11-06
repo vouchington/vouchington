@@ -14,7 +14,7 @@ function DropdownMenuContent({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof DropdownMenuPrimitive.Content>>
 }) {
   return (
     <DropdownMenuPrimitive.Portal>
@@ -39,7 +39,7 @@ function DropdownMenuItem({
   ...props
 }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
   inset?: boolean
-  ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Item>>
+  ref?: React.Ref<React.ComponentRef<typeof DropdownMenuPrimitive.Item>>
 }) {
   return (
     <DropdownMenuPrimitive.Item
@@ -62,7 +62,7 @@ function DropdownMenuLabel({
   ...props
 }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
   inset?: boolean
-  ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Label>>
+  ref?: React.Ref<React.ComponentRef<typeof DropdownMenuPrimitive.Label>>
 }) {
   return (
     <DropdownMenuPrimitive.Label
@@ -79,7 +79,7 @@ function DropdownMenuSeparator({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator> & {
-  ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Separator>>
+  ref?: React.Ref<React.ComponentRef<typeof DropdownMenuPrimitive.Separator>>
 }) {
   return (
     <DropdownMenuPrimitive.Separator

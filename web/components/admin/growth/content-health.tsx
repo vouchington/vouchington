@@ -1,7 +1,7 @@
 // oxlint-disable react-doctor/prefer-dynamic-import -- dedicated chart file; recharts is the core dependency
 'use client'
 
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatNumber } from '@ts-shared/utils/format'
 import type { ContentProduction } from '@/types/growth-metrics'
@@ -31,7 +31,9 @@ export function ContentHealth({ contentProduction }: Props) {
     },
     { name: t('extracted.growth.contentHealth.comments_1c4d6b85'), value: posts_by_type.comment },
     { name: t('extracted.growth.contentHealth.stories_7f8a2e39'), value: posts_by_type.story },
-  ].filter(d => d.value > 0)
+  ]
+    .filter(d => d.value > 0)
+    .map((entry, index) => ({ ...entry, fill: PIE_COLORS[index % PIE_COLORS.length] }))
 
   return (
     <div className='rounded-xl border border-border bg-card p-4 shadow-sm'>
@@ -65,14 +67,7 @@ export function ContentHealth({ contentProduction }: Props) {
               outerRadius={70}
               dataKey='value'
               labelLine={false}
-            >
-              {pieData.map((entry, index) => (
-                <Cell
-                  key={entry.name}
-                  fill={PIE_COLORS[index % PIE_COLORS.length]}
-                />
-              ))}
-            </Pie>
+            />
             <Tooltip formatter={value => formatNumber(Number(value), uiLocale)} />
             <Legend />
           </PieChart>

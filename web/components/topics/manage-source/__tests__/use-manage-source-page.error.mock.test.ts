@@ -65,7 +65,7 @@ const mockRemoveHostname = vi.mocked(removeAdditionalHostname)
 
 const initialData = { ...initialManageSourceState, loading: false }
 
-function makeFormEvent(values: Record<string, string> = {}) {
+function makeSubmitEvent(values: Record<string, string> = {}) {
   const form = document.createElement('form')
   for (const [name, value] of Object.entries(values)) {
     const input = document.createElement('input')
@@ -76,7 +76,7 @@ function makeFormEvent(values: Record<string, string> = {}) {
   return {
     preventDefault: () => {},
     currentTarget: form,
-  } as unknown as React.FormEvent<HTMLFormElement>
+  } as unknown as React.SubmitEvent<HTMLFormElement>
 }
 
 describe('useManageSourcePage error handling', () => {
@@ -91,7 +91,7 @@ describe('useManageSourcePage error handling', () => {
 
     await act(async () => {
       await result.current.handlers.handlePrimaryHostnameSubmit(
-        makeFormEvent({ primary_hostname: 'example.com' }),
+        makeSubmitEvent({ primary_hostname: 'example.com' }),
       )
     })
 
@@ -216,7 +216,7 @@ describe('useManageSourcePage error handling', () => {
 
     await act(async () => {
       await result.current.handlers.handleAddHostname(
-        makeFormEvent({ new_hostname: 'sub.example.com' }),
+        makeSubmitEvent({ new_hostname: 'sub.example.com' }),
       )
     })
 
@@ -227,7 +227,7 @@ describe('useManageSourcePage error handling', () => {
     const { result } = renderHook(() => useManageSourcePage('topic-1', initialData))
 
     await act(async () => {
-      await result.current.handlers.handleAddHostname(makeFormEvent({ new_hostname: '' }))
+      await result.current.handlers.handleAddHostname(makeSubmitEvent({ new_hostname: '' }))
     })
 
     expect(toastMock.error).toHaveBeenCalledWith('Hostname is required')
@@ -255,7 +255,7 @@ describe('useManageSourcePage error handling', () => {
 
     await act(async () => {
       await result.current.handlers.handleAddHostname(
-        makeFormEvent({ new_hostname: 'new.example.com' }),
+        makeSubmitEvent({ new_hostname: 'new.example.com' }),
       )
     })
 

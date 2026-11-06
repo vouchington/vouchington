@@ -8,7 +8,7 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 interface AddPasskeyFormProps {
   loading: boolean
   newName: string
-  onAddPasskey: (event: React.FormEvent) => void
+  onAddPasskey: (event: React.SubmitEvent<HTMLFormElement>) => void
   setNewName: (name: string) => void
   setStep: (step: 'list' | 'add') => void
 }

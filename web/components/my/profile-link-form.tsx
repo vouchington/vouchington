@@ -32,7 +32,7 @@ interface UIProps {
   setUrl: (url: string) => void
   setHandle: (handle: string) => void
   setName: (name: string) => void
-  handleSubmit: (e: React.FormEvent) => Promise<void>
+  handleSubmit: (e: React.SubmitEvent<HTMLFormElement>) => Promise<void>
   onCancel: () => void
 }
 
@@ -141,7 +141,7 @@ export function ProfileLinkForm({ link, onSubmit, onCancel, loading }: Props) {
   const [handle, setHandle] = useState(link?.handle ?? '')
   const [name, setName] = useState(link?.name ?? '')
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     try {
       await onSubmit({

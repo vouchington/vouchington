@@ -16,7 +16,7 @@ interface IdentityUsernameSectionProps {
   usernameLoading: boolean
   usernameAvailability: ReturnType<typeof useAvailabilityCheck>
   onUsernameChange: (value: string) => void
-  onSubmit: (e: React.FormEvent) => void
+  onSubmit: (e: React.SubmitEvent<HTMLFormElement>) => void
 }
 
 export function IdentityUsernameSection({

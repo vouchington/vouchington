@@ -30,7 +30,7 @@ export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus:
   const authentication = useFreshAuthentication(mfaStatus)
   const reauthDialogOpen = authentication.dialogProps.open
 
-  async function handleAddPasskey(e: React.FormEvent) {
+  async function handleAddPasskey(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     const reAuthToken = await authentication.requestAuthentication()
     if (!reAuthToken) return

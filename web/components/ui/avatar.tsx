@@ -10,7 +10,7 @@ function Avatar({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> & {
-  ref?: React.Ref<React.ElementRef<typeof AvatarPrimitive.Root>>
+  ref?: React.Ref<React.ComponentRef<typeof AvatarPrimitive.Root>>
 }) {
   return (
     <AvatarPrimitive.Root
@@ -28,7 +28,7 @@ function AvatarImage({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> & {
-  ref?: React.Ref<React.ElementRef<typeof AvatarPrimitive.Image>>
+  ref?: React.Ref<React.ComponentRef<typeof AvatarPrimitive.Image>>
 }) {
   return (
     <AvatarPrimitive.Image
@@ -46,7 +46,7 @@ function AvatarFallback({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback> & {
-  ref?: React.Ref<React.ElementRef<typeof AvatarPrimitive.Fallback>>
+  ref?: React.Ref<React.ComponentRef<typeof AvatarPrimitive.Fallback>>
 }) {
   return (
     <AvatarPrimitive.Fallback

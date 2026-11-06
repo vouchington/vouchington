@@ -1,9 +1,9 @@
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { TopicTypeSection } from '@/components/topics/settings/topic-type-section'
 import { StoryFrame } from '@/storybook/story-frame'
 
-const prevent = (event: FormEvent) => event.preventDefault()
+const prevent = (event: SubmitEvent<HTMLFormElement>) => event.preventDefault()
 
 const meta = {
   title: 'Topics/Topic Type',

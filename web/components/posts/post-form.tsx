@@ -148,7 +148,7 @@ export function PostForm({
     setBroadcast(nextAudience.initialBroadcast)
     setPrivacy(nextAudience.initialPrivacy)
   }
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const valid = validatePostForm({
       dataPointVertical,

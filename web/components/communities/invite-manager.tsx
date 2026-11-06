@@ -42,7 +42,7 @@ export function InviteManager({ data, communitySlug, onInviteCreated }: InviteMa
     return invite && !revokedInviteIds.has(invite.id) ? [invite] : []
   })
 
-  async function handleSendInvite(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSendInvite(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setCreatedInviteCode(null)

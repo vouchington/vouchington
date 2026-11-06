@@ -41,7 +41,7 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
   const [loading, setLoading] = useState(false)
   const submitting = useRef(false)
 
-  async function handleRequestVerification(e: React.FormEvent) {
+  async function handleRequestVerification(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     const reAuthToken = await authentication.requestAuthentication()
     if (!reAuthToken) return
@@ -86,7 +86,7 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
     }
   }
 
-  async function handleVerify(e: React.FormEvent) {
+  async function handleVerify(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (submitting.current) return
     await submitVerify(token)

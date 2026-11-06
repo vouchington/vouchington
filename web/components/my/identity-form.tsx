@@ -40,7 +40,7 @@ export function IdentityForm({
   const [displayNameLoading, setDisplayNameLoading] = useState(false)
   const usernameAvailability = useAvailabilityCheck('username')
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (isUsernameUUID(username)) {
       onError(new Error('Username cannot be a UUID'), {

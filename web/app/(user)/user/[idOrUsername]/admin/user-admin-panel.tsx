@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState, useTransition, type ChangeEvent, type FormEvent } from 'react'
+import { useId, useState, useTransition, type ChangeEvent, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Ban, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
@@ -42,7 +42,7 @@ export function UserAdminPanel({ user }: UserAdminPanelProps) {
     setFormState(current => ({ ...current, reason: value }))
   }
 
-  const handleSuspend = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSuspend = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormState(current => ({ ...current, action: 'suspend' }))
     try {

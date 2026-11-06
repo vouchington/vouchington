@@ -55,7 +55,7 @@ export function IssueWarningDialog({
     setPublicMessage('')
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     const trimmedReason = reason.trim()
     if (!trimmedReason) return

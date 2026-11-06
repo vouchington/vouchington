@@ -172,7 +172,7 @@ export function MarkdownContentEnhancer({
                 height={portal.height}
                 unoptimized
                 style={{ width: '100%', height: 'auto' }}
-                priority
+                preload
               />
             ) : (
               <Image

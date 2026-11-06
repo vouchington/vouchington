@@ -1,7 +1,13 @@
-import { XMLParser, XMLValidator } from 'fast-xml-parser'
+import { XMLParser } from 'fast-xml-parser'
+import { SyntaxValidator } from 'fast-xml-validator'
 
 export function xamlMessageKeys(source: string): string[] {
-  if (XMLValidator.validate(source) !== true) return []
+  try {
+    SyntaxValidator.validate(source)
+  } catch (err) {
+    if (err instanceof Error && err.name === 'ValidationError') return []
+    throw err
+  }
   const document = new XMLParser({
     attributeNamePrefix: '@_',
     ignoreAttributes: false,

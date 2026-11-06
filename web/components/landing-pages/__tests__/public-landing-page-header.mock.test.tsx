@@ -1,9 +1,30 @@
 import { render } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { PublicLandingPageHeader } from '../public-landing-page-header'
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 
+const mockImage = vi.hoisted(() => vi.fn<VitestLooseMock>().mockReturnValue(null))
+
+vi.mock(import('@/components/shared/proxied-image'), () => ({ ProxiedImage: mockImage }))
+
 describe('PublicLandingPageHeader', () => {
+  it('preloads the profile image', () => {
+    render(
+      <PublicLandingPageHeader
+        canonicalHref='/user/alex'
+        displayName='Alex'
+        profileImagePath='/images/alex'
+        title='Links'
+        username='alex'
+      />,
+    )
+
+    expect(mockImage.mock.calls.at(-1)?.[0]).toMatchObject({
+      src: '/images/alex',
+      preload: true,
+    })
+  })
+
   it('marks the landing-page bio with the detected content language', () => {
     const { container } = render(
       <PublicLandingPageHeader

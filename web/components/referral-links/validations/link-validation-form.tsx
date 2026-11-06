@@ -25,7 +25,7 @@ export function LinkValidationForm({ referralProgramId }: LinkValidationFormProp
   const [slug, setSlug] = useState('')
   const [isPending, startTransition] = useTransition()
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     const trimmed = slug.trim()
     if (!trimmed) return

@@ -10,7 +10,7 @@ vi.mock(import('@radix-ui/react-avatar'), async () => {
       ref,
       ...props
     }: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> & {
-      ref?: React.Ref<React.ElementRef<typeof AvatarPrimitive.Root>>
+      ref?: React.Ref<React.ComponentRef<typeof AvatarPrimitive.Root>>
     }) {
       return (
         <span
@@ -25,7 +25,7 @@ vi.mock(import('@radix-ui/react-avatar'), async () => {
       ref,
       ...props
     }: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> & {
-      ref?: React.Ref<React.ElementRef<typeof AvatarPrimitive.Image>>
+      ref?: React.Ref<React.ComponentRef<typeof AvatarPrimitive.Image>>
     }) {
       return React.createElement('img', { alt: '', ...props, ref })
     },
@@ -34,7 +34,7 @@ vi.mock(import('@radix-ui/react-avatar'), async () => {
       ref,
       ...props
     }: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback> & {
-      ref?: React.Ref<React.ElementRef<typeof AvatarPrimitive.Fallback>>
+      ref?: React.Ref<React.ComponentRef<typeof AvatarPrimitive.Fallback>>
     }) {
       return (
         <span

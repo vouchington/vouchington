@@ -41,7 +41,7 @@ export function CommunityRaidModePanel({ community, initialData }: Props) {
   const raidModeSuggestion = initialData.raid_mode_suggestion
   const isBusy = state.isSaving || isNavigating
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (isBusy || state.selectedTypes.size === 0) return
 

@@ -14,7 +14,7 @@ function Checkbox({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> & {
-  ref?: React.Ref<React.ElementRef<typeof CheckboxPrimitive.Root>>
+  ref?: React.Ref<React.ComponentRef<typeof CheckboxPrimitive.Root>>
 }) {
   return (
     <CheckboxPrimitive.Root

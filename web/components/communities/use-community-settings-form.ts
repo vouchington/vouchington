@@ -39,7 +39,7 @@ export function useCommunitySettingsForm(
   const isBusy = loading || isNavigating
   const isArchived = !!community.archived_at
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (isBusy) return
 

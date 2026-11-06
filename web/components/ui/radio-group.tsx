@@ -11,7 +11,7 @@ function RadioGroup({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root> & {
-  ref?: React.Ref<React.ElementRef<typeof RadioGroupPrimitive.Root>>
+  ref?: React.Ref<React.ComponentRef<typeof RadioGroupPrimitive.Root>>
 }) {
   return (
     <RadioGroupPrimitive.Root
@@ -28,7 +28,7 @@ function RadioGroupItem({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item> & {
-  ref?: React.Ref<React.ElementRef<typeof RadioGroupPrimitive.Item>>
+  ref?: React.Ref<React.ComponentRef<typeof RadioGroupPrimitive.Item>>
 }) {
   return (
     <RadioGroupPrimitive.Item

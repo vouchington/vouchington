@@ -39,7 +39,7 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
   const authentication = useFreshAuthentication(mfaStatus)
   const reauthDialogOpen = authentication.dialogProps.open
 
-  async function handleStartSetup(e: React.FormEvent) {
+  async function handleStartSetup(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setSetupVerificationProof(null)
     const reAuthToken = await authentication.requestAuthentication()

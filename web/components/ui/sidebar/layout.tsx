@@ -14,7 +14,7 @@ function SidebarTrigger({
   ref,
   ...props
 }: React.ComponentProps<typeof Button> & {
-  ref?: React.Ref<React.ElementRef<typeof Button>>
+  ref?: React.Ref<React.ComponentRef<typeof Button>>
 }) {
   const t = useTranslations()
   const { toggleSidebar } = useSidebar()

@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { SyntaxValidator } from 'fast-xml-validator'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest.mts'
 import { validateNativeConsumerUsage, type NativeProductSource } from './native-consumer-usage.mts'
+import { xamlMessageKeys } from './native-xaml-message-keys.mts'
 
 function entry(
   key: string,
@@ -235,6 +237,32 @@ describe('native consumer usage manifest', () => {
         ],
       ),
     ).toThrow('unknown dotnet XAML message key "missing.key"')
+  })
+
+  it('ignores references in invalid XAML', () => {
+    for (const invalidXaml of [
+      '<Label Text="{DynamicResource missing.key}">',
+      '<Label Text="{DynamicResource missing.key}" /><!DOCTYPE Label>',
+    ]) {
+      expect(() =>
+        validateNativeConsumerUsage(
+          [],
+          [source('dotnet-clients/src/Voucha.Client.App/Feature.xaml', invalidXaml)],
+        ),
+      ).not.toThrow()
+    }
+  })
+
+  it('propagates unexpected XAML validator failures', () => {
+    const failure = new Error('validator unavailable')
+    const validator = vi.spyOn(SyntaxValidator, 'validate').mockImplementationOnce(() => {
+      throw failure
+    })
+    try {
+      expect(() => xamlMessageKeys('<Label />')).toThrow(failure)
+    } finally {
+      validator.mockRestore()
+    }
   })
 
   it('maps generated descriptor variants back to their manifest leaf', () => {

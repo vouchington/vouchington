@@ -168,7 +168,7 @@ describe('lookups.generated', () => {
   })
 
   it('resolveRssFeedIds throws 422 for non-UUID identifiers', () => {
-    expect(() => resolveRssFeedIds(['not-a-uuid'])).toThrowError(
+    expect(() => resolveRssFeedIds(['not-a-uuid'])).toThrow(
       expect.objectContaining({ status: 422 }),
     )
   })

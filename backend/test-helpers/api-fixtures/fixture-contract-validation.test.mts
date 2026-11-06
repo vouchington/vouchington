@@ -28,7 +28,7 @@ describe('API fixture backend contract validation', () => {
         'POST:/api/v1/widgets': contract('POST', '/api/v1/widgets', [201]),
         'DELETE:/api/v1/widgets/:widgetId': deleteContract,
       }),
-    ).toThrowError(
+    ).toThrow(
       [
         'Fixture contract validation failed:',
         'widgets.create: status 200 is not declared by response contract "POST:/api/v1/widgets" (POST:/api/v1/widgets); available statuses: 201',
@@ -65,7 +65,7 @@ describe('API fixture backend contract validation', () => {
       '/api/v1/widgets',
       200,
     )
-    expect(() => validateFixtureContracts([wrongBinding], contracts)).toThrowError(
+    expect(() => validateFixtureContracts([wrongBinding], contracts)).toThrow(
       [
         'Fixture contract validation failed:',
         'widgets.create: fixture operation POST:/api/v1/widgets does not match response contract "GET:/api/v1/widgets/:widgetId" (GET:/api/v1/widgets/:widgetId)',

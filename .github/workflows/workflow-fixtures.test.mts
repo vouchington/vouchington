@@ -19,7 +19,7 @@ import {
 
 describe('workflow test helpers', () => {
   it('reports workflow invariant failures with their supplied context', () => {
-    expect(() => assertWorkflowInvariant(false, 'job "build" has no runner')).toThrowError(
+    expect(() => assertWorkflowInvariant(false, 'job "build" has no runner')).toThrow(
       'job "build" has no runner',
     )
     expect(() => assertWorkflowInvariant(true, 'not emitted')).not.toThrow()
@@ -31,10 +31,10 @@ describe('workflow test helpers', () => {
         ['build.yml#test: missing timeout', 'deploy.yml#apply: missing permissions'],
         'Workflow policy violations:',
       ),
-    ).toThrowError(
+    ).toThrow(
       'Workflow policy violations:\nbuild.yml#test: missing timeout\ndeploy.yml#apply: missing permissions',
     )
-    expect(() => assertNoWorkflowViolations(['build.yml#test: missing timeout'])).toThrowError(
+    expect(() => assertNoWorkflowViolations(['build.yml#test: missing timeout'])).toThrow(
       'build.yml#test: missing timeout',
     )
     expect(() => assertNoWorkflowViolations([], 'not emitted')).not.toThrow()

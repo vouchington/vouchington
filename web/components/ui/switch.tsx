@@ -10,7 +10,7 @@ function Switch({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> & {
-  ref?: React.Ref<React.ElementRef<typeof SwitchPrimitives.Root>>
+  ref?: React.Ref<React.ComponentRef<typeof SwitchPrimitives.Root>>
 }) {
   return (
     <SwitchPrimitives.Root

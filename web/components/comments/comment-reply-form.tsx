@@ -85,7 +85,7 @@ export function CommentReplyForm({
     el.style.height = 'auto'
     el.style.height = `${el.scrollHeight}px`
   }
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!markdown.trim() || isSubmitting) return
     setIsSubmitting(true)

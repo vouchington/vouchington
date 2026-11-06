@@ -42,7 +42,7 @@ function ToggleGroup({
   ...props
 }: React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> &
   VariantProps<typeof toggleVariants> & {
-    ref?: React.Ref<React.ElementRef<typeof ToggleGroupPrimitive.Root>>
+    ref?: React.Ref<React.ComponentRef<typeof ToggleGroupPrimitive.Root>>
   }) {
   const toggleGroupContextValue = React.useMemo(() => ({ variant, size }), [variant, size])
   return (
@@ -69,7 +69,7 @@ function ToggleGroupItem({
   ...props
 }: React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> &
   VariantProps<typeof toggleVariants> & {
-    ref?: React.Ref<React.ElementRef<typeof ToggleGroupPrimitive.Item>>
+    ref?: React.Ref<React.ComponentRef<typeof ToggleGroupPrimitive.Item>>
   }) {
   const context = React.use(ToggleGroupContext)
 

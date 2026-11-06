@@ -64,7 +64,7 @@ export function UsernameRequiredDialog({
     onClose()
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (loading) return
     const trimmedUsername = username.trim()

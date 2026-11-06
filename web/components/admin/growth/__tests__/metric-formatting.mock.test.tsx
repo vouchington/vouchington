@@ -33,6 +33,19 @@ vi.mock(import('recharts'), () => {
   )
   const Legend = () => <div data-testid='legend' />
   const Primitive = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>
+  const Pie = ({ data }: { data: { name: string; value: number; fill: string }[] }) => (
+    <div>
+      {data.map(slice => (
+        <span
+          key={slice.name}
+          data-testid='pie-slice'
+          data-fill={slice.fill}
+        >
+          {slice.value}
+        </span>
+      ))}
+    </div>
+  )
 
   return {
     AreaChart: ChartShell,
@@ -48,7 +61,7 @@ vi.mock(import('recharts'), () => {
     Area: Primitive,
     Bar: Primitive,
     Line: Primitive,
-    Pie: Primitive,
+    Pie,
     Cell: Primitive,
   } as unknown as typeof import('recharts')
 })
@@ -132,6 +145,27 @@ function renderWithGermanLocale(ui: React.ReactElement) {
 }
 
 describe('growth metric formatting', () => {
+  it('assigns pie colors after filtering empty content types', () => {
+    renderWithGermanLocale(
+      <ContentHealth
+        contentProduction={{
+          ...metrics.content_production,
+          posts_by_type: {
+            review: 0,
+            data_point: 2,
+            discussion: 0,
+            comment: 3,
+            story: 0,
+          },
+        }}
+      />,
+    )
+
+    expect(
+      screen.getAllByTestId('pie-slice').map(slice => slice.getAttribute('data-fill')),
+    ).toEqual(['#3b82f6', '#10b981'])
+  })
+
   it('formats card counts with the active UI locale', () => {
     renderWithGermanLocale(
       <>

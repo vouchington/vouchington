@@ -86,7 +86,7 @@ describe('query-builder (pagination and moderation)', () => {
         sort: 'best',
         vote_score_lt: 42.5,
       }),
-    ).toThrowError('vote_score_lt requires id_lt')
+    ).toThrow('vote_score_lt requires id_lt')
   })
 
   it('buildPostSearchQuery adds composite pagination filter with ranking_lt and id_lt for sort=relevance', () => {
@@ -141,7 +141,7 @@ describe('query-builder (pagination and moderation)', () => {
         sort: 'hot',
         hot_score_lt: 0.5,
       }),
-    ).toThrowError('hot_score_lt requires id_lt')
+    ).toThrow('hot_score_lt requires id_lt')
   })
 
   it('buildPostSearchQuery does not include hot_score for sort=new', () => {
@@ -156,7 +156,7 @@ describe('query-builder (pagination and moderation)', () => {
         sort: 'following_new',
         id_lt: '123e4567-e89b-12d3-a456-426614174000',
       }),
-    ).toThrowError('following_new cursor requires ranking_lt')
+    ).toThrow('following_new cursor requires ranking_lt')
   })
 
   it('buildPostSearchQuery hides non-approved posts for anonymous users', () => {

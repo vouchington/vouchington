@@ -44,7 +44,7 @@ export function EmailVerificationRecoveryDialog({
     onOpenChange(false)
   }
 
-  async function requestVerification(event: React.FormEvent) {
+  async function requestVerification(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
     try {

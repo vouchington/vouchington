@@ -20,7 +20,7 @@ export function TopicTypeSection({
   typeSaving,
 }: {
   disabled?: boolean
-  onTypeSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  onTypeSubmit: (e: React.SubmitEvent<HTMLFormElement>) => void
   setTopicTypeValue: (value: string) => void
   topicTypeValue: string
   typeSaving: boolean
