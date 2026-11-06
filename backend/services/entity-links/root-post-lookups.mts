@@ -3,16 +3,16 @@ import type { EntityMention, PostMention } from './types.mts'
 
 export async function getRootPostsForCommentMentions(
   mentions: EntityMention[],
-  lookupByType: Map<string, Map<string, unknown | null>>,
+  lookupByType: Map<string, Map<string, unknown>>,
   lookupErrorByType: Map<string, boolean>,
 ) {
   if (lookupErrorByType.get('post')) {
-    return { failed: false, roots: new Map<string, unknown | null>() }
+    return { failed: false, roots: new Map<string, unknown>() }
   }
 
   const postLookup = lookupByType.get('post')
   if (!postLookup) {
-    return { failed: false, roots: new Map<string, unknown | null>() }
+    return { failed: false, roots: new Map<string, unknown>() }
   }
 
   const commentMentions = mentions.filter(
@@ -35,22 +35,22 @@ export async function getRootPostsForCommentMentions(
   ]
 
   if (rootIds.length === 0) {
-    return { failed: false, roots: new Map<string, unknown | null>() }
+    return { failed: false, roots: new Map<string, unknown>() }
   }
 
-  let rootPosts: Array<unknown | null>
+  let rootPosts: Array<unknown>
   try {
     rootPosts = await getPostByAnyCachedBatch(rootIds)
   } catch {
-    return { failed: true, roots: new Map<string, unknown | null>() }
+    return { failed: true, roots: new Map<string, unknown>() }
   }
 
-  const rootPostMap = new Map<string, unknown | null>()
+  const rootPostMap = new Map<string, unknown>()
   for (let i = 0; i < rootIds.length; i++) {
     rootPostMap.set(rootIds[i]!, rootPosts[i] ?? null)
   }
 
-  const commentRootMap = new Map<string, unknown | null>()
+  const commentRootMap = new Map<string, unknown>()
   for (const mention of commentMentions) {
     const entity = postLookup.get(mention.identifier) as
       | { id: string; post_type: string; root_post_id?: string | null }

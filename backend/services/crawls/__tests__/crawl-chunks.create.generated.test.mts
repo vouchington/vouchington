@@ -130,7 +130,7 @@ describe('create.generated', () => {
 
     // Verify chunks have null embeddings
     const chunks = (await getCrawlChunksWithEmbeddingStatus(url!.id, crawl.id)) as Array<{
-      bedrock_nova_multimodal_v1_embedding: unknown | null
+      bedrock_nova_multimodal_v1_embedding: unknown
       bedrock_nova_multimodal_v1_embedding_created_at: Date | null
     }>
 

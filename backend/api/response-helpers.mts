@@ -147,7 +147,7 @@ export const EMPTY_PAGE_INFO: PageInfo = {
   end_cursor: null,
   start_cursor: null,
 }
-function captureSignatureVerificationError(ctx: Context): Promise<unknown | null> {
+function captureSignatureVerificationError(ctx: Context): Promise<unknown> {
   return ctx.verifyAttestedRequestSignature().then(
     () => null,
     err => err,
@@ -167,7 +167,7 @@ async function rejectAnonymous(settleRateLimit: () => Promise<void>): Promise<ne
 }
 async function settleBeforeSignatureError(
   settleRateLimit: () => Promise<void>,
-  signatureError: Promise<unknown | null>,
+  signatureError: Promise<unknown>,
 ): Promise<void> {
   await settleRateLimit()
   await throwSignatureError(signatureError)
@@ -175,7 +175,7 @@ async function settleBeforeSignatureError(
 async function settleSignatureAndBotChallenge(
   ctx: Context,
   settleRateLimit: () => Promise<void>,
-  signatureError: Promise<unknown | null>,
+  signatureError: Promise<unknown>,
 ): Promise<void> {
   await settleBeforeSignatureError(settleRateLimit, signatureError)
   await enforceLowScoreBotChallenge(ctx)
@@ -183,12 +183,12 @@ async function settleSignatureAndBotChallenge(
 async function applyRouteRateLimitBeforeSignatureError(
   ctx: Context,
   routeId: string,
-  signatureError: Promise<unknown | null>,
+  signatureError: Promise<unknown>,
 ): Promise<void> {
   await ctx.applyRouteRateLimit(routeId)
   await throwSignatureError(signatureError)
 }
-async function throwSignatureError(signatureError: Promise<unknown | null>): Promise<void> {
+async function throwSignatureError(signatureError: Promise<unknown>): Promise<void> {
   const error = await signatureError
   if (error)
     throw error instanceof Error

@@ -1,5 +1,5 @@
 import '@/test-helpers/i18n/mock-json-messages'
-import { createElement, type ElementType, type ReactNode } from 'react'
+import { createElement, type ComponentType, type ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@vouchington/api-client'
@@ -33,7 +33,7 @@ vi.mock(import('@/components/page-with-aside'), () => ({
     aside,
   }: {
     children: ReactNode
-    aside?: ElementType | ReactNode
+    aside?: ComponentType | ReactNode
     showFooter?: boolean
     mobileHidden?: boolean
   }) => (

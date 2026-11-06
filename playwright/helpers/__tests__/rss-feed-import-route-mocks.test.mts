@@ -5,7 +5,7 @@ import {
   mockCompletedRssFeedImport,
 } from '../rss-feed-import-route-mocks.mts'
 
-type RouteHandler = (route: Route) => Promise<unknown> | unknown
+type RouteHandler = (route: Route) => unknown
 
 function createPage() {
   const routes: { handler: RouteHandler; pattern: string }[] = []

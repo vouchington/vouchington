@@ -154,7 +154,7 @@ export async function enqueueRssFeedItemLanguageDetection(rows: RssFeedItemEnque
   )
 }
 
-async function enqueueChunks<T>(items: T[], enqueue: (chunk: T[]) => unknown | Promise<unknown>) {
+async function enqueueChunks<T>(items: T[], enqueue: (chunk: T[]) => unknown) {
   const RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE = getRssFeedItemsWorkLimit('enqueue_batch_size')
   for (const chunk of chunkArray(items, RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE)) {
     try {

@@ -7,7 +7,7 @@ export type PushPayloadNotification = {
   title: string
   body: string
   target_path: string | null
-  target_entity: unknown | null
+  target_entity: unknown
   target_intent: string | null
   community_slug: string | null
 }

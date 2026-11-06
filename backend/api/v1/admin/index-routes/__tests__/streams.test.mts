@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
@@ -103,7 +103,7 @@ async function captureAdminStream(
   let contentType = ''
   const chunks: string[] = []
   const tickerStopped = Promise.withResolvers<void>()
-  let clearIntervalSpy: ReturnType<typeof vi.spyOn> | undefined
+  let clearIntervalSpy: MockInstance<typeof globalThis.clearInterval> | undefined
 
   if (options) {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })

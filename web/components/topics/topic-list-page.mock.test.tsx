@@ -1,5 +1,5 @@
 import '@/test-helpers/i18n/mock-json-messages'
-import type { ElementType, ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render } from '@testing-library/react'
 import { TopicListPage } from './topic-list-page'
@@ -26,7 +26,7 @@ vi.mock(import('@/components/page-with-aside'), () => ({
     aside,
   }: {
     children: ReactNode
-    aside?: ElementType | ReactNode
+    aside?: ComponentType | ReactNode
   }) => (
     <div data-testid='page-with-aside'>
       {children}

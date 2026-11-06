@@ -35,7 +35,7 @@ function apiKeyPost(body: unknown): unknown {
   }
 }
 
-function passkeyPost(endpoint: string, body: unknown): unknown | undefined {
+function passkeyPost(endpoint: string, body: unknown): unknown {
   if (endpoint === '/api/v1/auth/passkeys/registration/options') {
     return {
       options: { challenge: 'storybook-challenge', rp: { name: 'Voucha', id: 'localhost' } },
@@ -62,7 +62,7 @@ export function resetPendingTotpName(): void {
   pendingTotpName = 'Authenticator'
 }
 
-function totpPost(endpoint: string, body: unknown): unknown | undefined {
+function totpPost(endpoint: string, body: unknown): unknown {
   if (endpoint === '/api/v1/auth/totp') {
     pendingTotpName = textField(body, 'name') || 'Authenticator'
     return {
@@ -87,7 +87,7 @@ function totpPost(endpoint: string, body: unknown): unknown | undefined {
   return undefined
 }
 
-export function accountPost(endpoint: string, body: unknown): unknown | undefined {
+export function accountPost(endpoint: string, body: unknown): unknown {
   if (endpoint === '/api/v1/my/import/topics') {
     return { results: topicNames(body).map(input => ({ input, status: 'followed' })) }
   }
@@ -124,7 +124,7 @@ export function accountPost(endpoint: string, body: unknown): unknown | undefine
   return undefined
 }
 
-export function accountImageState(endpoint: string): unknown | undefined {
+export function accountImageState(endpoint: string): unknown {
   if (!/^\/api\/v1\/images\/[^/]+\/upload-state$/.test(endpoint)) return undefined
   return {
     upload_state: {

@@ -565,7 +565,7 @@
     "typescript/unified-signatures": "error",
     "typescript/use-unknown-in-catch-callback-variable": "off",
     "typescript/no-unnecessary-type-arguments": "error",
-    "typescript/no-redundant-type-constituents": "off",
+    "typescript/no-redundant-type-constituents": "error",
     "typescript/unbound-method": "off",
     "typescript/consistent-return": "off",
     "typescript/no-base-to-string": "error",

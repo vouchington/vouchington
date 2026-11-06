@@ -6,7 +6,7 @@ import sql from 'sql-template-strings'
 export type PostImagePublicationState = {
   title: string
   markdown: string
-  structured_data: unknown | null
+  structured_data: unknown
   ai_summary_markdown: string | null
   llm_moderation_content_sha256: Buffer
   clearance_version: string

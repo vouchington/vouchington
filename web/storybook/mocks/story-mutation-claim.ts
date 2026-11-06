@@ -7,7 +7,7 @@ export function resetStorySourceImport(): void {
   sourceImportUrl = 'https://example.com/feed.xml'
 }
 
-export function storySourceImportStatus(endpoint: string): unknown | undefined {
+export function storySourceImportStatus(endpoint: string): unknown {
   if (endpoint !== `/api/v1/my/import/rss-feeds/${sourceImportId}`) return undefined
   return {
     import: {
@@ -32,7 +32,7 @@ export function storySourceImportStatus(endpoint: string): unknown | undefined {
   }
 }
 
-export function storyClaimMutation(endpoint: string, body: unknown): unknown | undefined {
+export function storyClaimMutation(endpoint: string, body: unknown): unknown {
   if (endpoint === '/api/v1/rss-feeds') {
     sourceImportUrl = storyText(body, 'rss_feed_url') || sourceImportUrl
     return {

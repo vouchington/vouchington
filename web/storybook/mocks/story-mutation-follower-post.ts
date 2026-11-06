@@ -1,4 +1,4 @@
-export function followerActionPost(endpoint: string): unknown | undefined {
+export function followerActionPost(endpoint: string): unknown {
   if (endpoint === '/api/v1/reports') {
     return {
       report: {

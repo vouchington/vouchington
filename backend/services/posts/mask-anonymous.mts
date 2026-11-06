@@ -2,8 +2,8 @@ import type { PrivateUser } from '@services/users/types'
 import type { Post } from './types.mts'
 
 type MaskablePost = Post & {
-  created_by?: unknown | null
-  updated_by?: unknown | null
+  created_by?: unknown
+  updated_by?: unknown
 }
 
 /** Administrators and the author see who wrote an anonymous post. Everyone else does not. */
@@ -29,10 +29,10 @@ function maskAnonymousPost<T extends MaskablePost>(
     locked_by_id: null,
   } as T
   if ('created_by' in post) {
-    ;(masked as T & { created_by?: unknown | null }).created_by = null
+    ;(masked as T & { created_by?: unknown }).created_by = null
   }
   if ('updated_by' in post) {
-    ;(masked as T & { updated_by?: unknown | null }).updated_by = null
+    ;(masked as T & { updated_by?: unknown }).updated_by = null
   }
   return masked
 }

@@ -31,7 +31,7 @@ interface ModerationReportListItem {
 }
 
 export interface MemberModerationReport extends ModerationReportListItem {
-  post_moderation_context: unknown | null
+  post_moderation_context: unknown
 }
 
 export interface StaffModerationReport extends ModerationReportListItem {
@@ -57,7 +57,7 @@ export interface StaffModerationReport extends ModerationReportListItem {
     judged_report_count: number | null
     current_report_count: number
   } | null
-  post_moderation_context: unknown | null
+  post_moderation_context: unknown
 }
 
 interface ModerationReportsPageInfo {

@@ -5,7 +5,7 @@ import type {
 
 export type ScheduledJobEnvironment = 'all' | 'production' | 'deployed'
 
-export type ScheduledJobTrigger = () => unknown | Promise<unknown>
+export type ScheduledJobTrigger = () => unknown
 
 export type ScheduledJobOperatorSurface = {
   kind: 'scheduled-jobs'

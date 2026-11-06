@@ -19,7 +19,7 @@ export async function resolveEntityMentions(mentions: EntityMention[]): Promise<
     mentionConfigs.map(config => config.batchGet(identifiersByType.get(config.type) ?? [])),
   )
 
-  const lookupByType = new Map<string, Map<string, unknown | null>>()
+  const lookupByType = new Map<string, Map<string, unknown>>()
   const lookupErrorByType = new Map<string, boolean>()
 
   for (let i = 0; i < mentionConfigs.length; i++) {
@@ -27,10 +27,7 @@ export async function resolveEntityMentions(mentions: EntityMention[]): Promise<
     const identifiers = identifiersByType.get(config.type) ?? []
     const result = results[i]
     if (result?.status === 'fulfilled') {
-      lookupByType.set(
-        config.type,
-        createLookupMap(identifiers, result.value as Array<unknown | null>),
-      )
+      lookupByType.set(config.type, createLookupMap(identifiers, result.value as Array<unknown>))
       lookupErrorByType.set(config.type, false)
     } else {
       lookupByType.set(config.type, createLookupMap(identifiers, []))

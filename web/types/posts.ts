@@ -156,7 +156,7 @@ export interface Post {
     landing_page_urls: string[]
   } | null
   data_point_vertical?: string | null
-  structured_data?: unknown | null
+  structured_data?: unknown
   declared_language?: string | null
   lingua_rs_detected_language?: string | null
   can_edit_content?: boolean
