@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { workflowDownloadIntegrityViolations } from './check-workflow-download-integrity.mts'
+import {
+  workflowDownloadIntegrityViolations,
+  workflowDownloadPolicyPaths,
+} from './check-workflow-download-integrity.mts'
 
 describe('workflow download integrity policy', () => {
   it('reports literal violations for helper, step environment, and composite script downloads', () => {
@@ -57,6 +60,47 @@ jobs:
           shasum -a 256 -c tool.sha256
       - run: wget https://api.github.com:8443/tool
 `,
+    })
+
+    expect(violations).toEqual([])
+  })
+
+  it('selects workflow shell scripts alongside workflow YAML and action scripts', () => {
+    expect(
+      workflowDownloadPolicyPaths([
+        '.github/workflows/helper.yml',
+        '.github/workflows/dependency-mirror-install-regctl.sh',
+        '.github/workflows/evals-backend/mint-anthropic-token.sh',
+        '.github/workflows/README.md',
+        '.github/actions/tool/install-tool.sh',
+        '.github/actions/tool/action.yml',
+        '.github/actions/tool/nested/extra.sh',
+        'ci/curl-to.sh',
+      ]),
+    ).toEqual([
+      '.github/workflows/helper.yml',
+      '.github/workflows/dependency-mirror-install-regctl.sh',
+      '.github/workflows/evals-backend/mint-anthropic-token.sh',
+      '.github/actions/tool/install-tool.sh',
+      '.github/actions/tool/action.yml',
+    ])
+  })
+
+  it('reports a continued-line download in a workflow shell script', () => {
+    const violations = workflowDownloadIntegrityViolations({
+      '.github/workflows/dependency-mirror-install-regctl.sh':
+        'curl --fail --silent --show-error --location \\\n  https://github.com/example/tool/releases/download/current/tool \\\n  --output "$REGCTL_PATH"\n',
+    })
+
+    expect(violations).toEqual([
+      '.github/workflows/dependency-mirror-install-regctl.sh script step[0]: downloads from github.com without sha256sum verification (add sha256sum -c after the download, or # integrity-check: skip reason=... on or before the download line)',
+    ])
+  })
+
+  it('accepts sha256sum --check after a continued download', () => {
+    const violations = workflowDownloadIntegrityViolations({
+      '.github/workflows/tool.sh':
+        "curl --fail --location \\\n  https://downloads.example.com/tool \\\n  --output tool\nprintf '%s  %s\\n' 'abc' tool | sha256sum --check\n",
     })
 
     expect(violations).toEqual([])
