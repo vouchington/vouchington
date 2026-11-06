@@ -2,6 +2,14 @@ import createHttpError from 'http-errors'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { StoryCursor, StoryFeedBounds } from './story-source-types.mts'
 
+/** A bound from DynamicConfig, inlined so a generic plan sees the same LIMIT as a custom plan. */
+export function storyLimitLiteral(value: number): string {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 101) {
+    throw new Error('story page limit is outside its configured bound')
+  }
+  return String(value)
+}
+
 export function appendChildLateral(
   query: SQLStatement,
   bounds: { published: SQLStatement | null; missingItemUpper: string | null },
@@ -30,7 +38,9 @@ export function appendChildLateral(
   }
   query.append(sql`
             ORDER BY published_at DESC, rss_feed_item_id DESC
-            LIMIT ${lookahead}
+            LIMIT `)
+  query.append(storyLimitLiteral(lookahead))
+  query.append(sql`
           )
           UNION ALL
           (
@@ -44,11 +54,15 @@ export function appendChildLateral(
   } else query.append(sql`TRUE`)
   query.append(sql`
             ORDER BY rss_feed_item_id DESC
-            LIMIT ${lookahead}
+            LIMIT `)
+  query.append(storyLimitLiteral(lookahead))
+  query.append(sql`
           )
         ) page
         ORDER BY page.published_at DESC NULLS LAST, page.item_id DESC
-        LIMIT ${lookahead}
+        LIMIT `)
+  query.append(storyLimitLiteral(lookahead))
+  query.append(sql`
       ) src ON TRUE`)
 }
 
@@ -77,7 +91,8 @@ function appendPublicFeedSlice(
   appendFeedIdUpperBound(query, cursor)
   query.append(sql`
         ORDER BY id DESC
-        LIMIT ${laterLimit}`)
+        LIMIT `)
+  query.append(storyLimitLiteral(laterLimit))
 }
 
 function appendStaffFeedSlice(
@@ -96,7 +111,9 @@ function appendStaffFeedSlice(
   appendFeedIdUpperBound(query, cursor)
   query.append(sql`
           ORDER BY id DESC
-          LIMIT ${laterLimit}
+          LIMIT `)
+  query.append(storyLimitLiteral(laterLimit))
+  query.append(sql`
         ) enabled_feeds
         UNION ALL
         SELECT id
@@ -109,10 +126,13 @@ function appendStaffFeedSlice(
   appendFeedIdUpperBound(query, cursor)
   query.append(sql`
           ORDER BY id DESC
-          LIMIT ${laterLimit}
+          LIMIT `)
+  query.append(storyLimitLiteral(laterLimit))
+  query.append(sql`
         ) disabled_feeds
         ORDER BY id DESC
-        LIMIT ${laterLimit}`)
+        LIMIT `)
+  query.append(storyLimitLiteral(laterLimit))
 }
 
 function appendFeedIdUpperBound(query: SQLStatement, cursor: StoryCursor | null): void {
@@ -141,18 +161,19 @@ export function appendOwningSource(query: SQLStatement, staff: boolean): void {
   }
   query.append(sql`
             ) AS visible_feed_id
-          -- no-mistakes-disable-next-line postgres-required-predicates: the owning source is the newest visible feed of this story, and story_id is the indexed key across item id partitions
+          -- no-mistakes-disable-next-line postgres-required-predicates: story_id is the indexed key across item id partitions; the feed lower bound is applied after that equality
           FROM rss_feed_items owner_item
           JOIN rss_feed_item_sources owner_src
             ON owner_src.rss_feed_item_id = owner_item.id
-           AND owner_src.rss_feed_id >= feed.id
           WHERE owner_item.story_id = item.story_id
+            AND owner_item.story_id IS NOT NULL
             AND owner_item.deleted_at IS NULL
+            AND owner_src.rss_feed_id >= feed.id
         ) candidate
         WHERE candidate.visible_feed_id IS NOT NULL
         ORDER BY candidate.feed_id DESC, candidate.item_id DESC
         LIMIT 1
-      ) owner ON item.id IS NOT NULL`)
+      ) owner ON story_posts.post_id IS NOT NULL`)
 }
 
 export function resumeBounds(cursor: StoryCursor): StoryFeedBounds & { published: SQLStatement } {
