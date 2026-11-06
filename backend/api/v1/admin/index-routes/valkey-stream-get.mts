@@ -8,7 +8,12 @@ import { createAdminSnapshotStream } from './snapshot-stream.mts'
 
 const TICKER_INTERVAL_MS = 10_000
 
-const valkeyPubSub = createChannelPubSub<Awaited<ReturnType<typeof fetchSnapshot>>>('admin:valkey')
+const valkeyPubSub = createChannelPubSub<Awaited<ReturnType<typeof fetchSnapshot>>>(
+  'admin:valkey',
+  {
+    closeSubscriberWhenIdle: true,
+  },
+)
 
 async function fetchSnapshot() {
   const cacheGroupsResult = await Promise.allSettled([Promise.resolve(getCacheGroups())]).then(

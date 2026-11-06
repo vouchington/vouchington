@@ -10,7 +10,9 @@ const TICKER_INTERVAL_MS = 30_000
 
 type PostgresqlSnapshot = Awaited<ReturnType<typeof getMigrationStatus>> | { error: string }
 
-const postgresqlPubSub = createChannelPubSub<PostgresqlSnapshot>('admin:postgresql')
+const postgresqlPubSub = createChannelPubSub<PostgresqlSnapshot>('admin:postgresql', {
+  closeSubscriberWhenIdle: true,
+})
 
 function publishPostgresqlSnapshot(publish: (value: PostgresqlSnapshot) => Promise<void>): void {
   getMigrationStatus()

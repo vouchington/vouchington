@@ -1,3 +1,4 @@
+import { ClientRequest } from 'node:http'
 import { beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -104,6 +105,9 @@ async function captureAdminStream(
   const chunks: string[] = []
   const tickerStopped = Promise.withResolvers<void>()
   let clearIntervalSpy: MockInstance<typeof globalThis.clearInterval> | undefined
+  let response: { destroy(): void } | undefined
+  const responseClosed = Promise.withResolvers<void>()
+  const req = request.get(path).set('Accept', 'text/event-stream').timeout(5000).buffer(false)
 
   if (options) {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
@@ -118,7 +122,6 @@ async function captureAdminStream(
     await new Promise<void>((resolve, reject) => {
       let advanced = false
       const expectedSnapshotCount = options ? 2 : 1
-      const req = request.get(path).set('Accept', 'text/event-stream').timeout(5000).buffer(false)
 
       req.on(
         'response',
@@ -126,7 +129,10 @@ async function captureAdminStream(
           headers: Record<string, string>
           on: (event: string, fn: (...args: unknown[]) => void) => void
           destroy: () => void
+          once: (event: string, fn: () => void) => void
         }) => {
+          response = res
+          res.once('close', () => responseClosed.resolve())
           contentType = res.headers['content-type'] ?? ''
           res.on('data', (...args: unknown[]) => {
             chunks.push(String(args[0]))
@@ -158,11 +164,23 @@ async function captureAdminStream(
 
     return { body: chunks.join(''), contentType }
   } finally {
-    clearIntervalSpy?.mockRestore()
-    if (options) {
-      // Drain retained restorers before restoring real timer globals.
-      vi.restoreAllMocks()
-      vi.useRealTimers()
+    try {
+      const transport = req.req
+      const transportClosed =
+        transport instanceof ClientRequest && !transport.closed
+          ? new Promise<void>(resolve => transport.once('close', () => resolve()))
+          : Promise.resolve()
+      req.abort()
+      response?.destroy()
+      if (response) await responseClosed.promise
+      await transportClosed
+    } finally {
+      clearIntervalSpy?.mockRestore()
+      if (options) {
+        // Drain retained restorers before restoring real timer globals.
+        vi.restoreAllMocks()
+        vi.useRealTimers()
+      }
     }
   }
 }
