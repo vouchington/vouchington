@@ -20608,10 +20608,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_posts__community": {
+        "idx_community_list_posts__community_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_posts__community ON public.community_list_posts USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_posts__community_id__id ON public.community_list_posts USING btree (community_id, id DESC) WHERE (removed_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -20622,10 +20622,92 @@
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(removed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_posts__community_id__id__all_rows": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_posts__community_id__id__all_rows ON public.community_list_posts USING btree (community_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
             }
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_posts__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_posts__community_id__order_index__id ON public.community_list_posts USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -20888,10 +20970,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_rss_feeds__community": {
+        "idx_community_list_rss_feeds__community_id__foreign_key": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_rss_feeds__community ON public.community_list_rss_feeds USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_rss_feeds__community_id__foreign_key ON public.community_list_rss_feeds USING btree (community_id) WHERE (community_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -20905,7 +20987,48 @@
             }
           ],
           "live": true,
-          "predicate": null,
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_rss_feeds__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_rss_feeds__community_id__order_index__id ON public.community_list_rss_feeds USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -21180,10 +21303,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_topics__community": {
+        "idx_community_list_topics__community_id__foreign_key": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_topics__community ON public.community_list_topics USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_topics__community_id__foreign_key ON public.community_list_topics USING btree (community_id) WHERE (community_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -21197,7 +21320,48 @@
             }
           ],
           "live": true,
-          "predicate": null,
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_topics__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_topics__community_id__order_index__id ON public.community_list_topics USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -21463,10 +21627,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_url_hostnames__community": {
+        "idx_community_list_url_hostnames__community_id__foreign_key": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_url_hostnames__community ON public.community_list_url_hostnames USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_url_hostnames__community_id__foreign_key ON public.community_list_url_hostnames USING btree (community_id) WHERE (community_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -21480,7 +21644,48 @@
             }
           ],
           "live": true,
-          "predicate": null,
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_url_hostnames__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_url_hostnames__community_id__order_index__id ON public.community_list_url_hostnames USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -21743,10 +21948,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_urls__community": {
+        "idx_community_list_urls__community_id__foreign_key": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_urls__community ON public.community_list_urls USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_urls__community_id__foreign_key ON public.community_list_urls USING btree (community_id) WHERE (community_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -21760,7 +21965,48 @@
             }
           ],
           "live": true,
-          "predicate": null,
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_urls__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_urls__community_id__order_index__id ON public.community_list_urls USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

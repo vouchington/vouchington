@@ -229,8 +229,16 @@ describe('items service', () => {
         after: first.page_info.end_cursor ?? undefined,
         currentUserId: user.id,
       })
-      expect(second.results.map(item => item.entity_id)).toEqual([older])
-      expect(second.page_info.has_next_page).toBe(false)
+      expect(second.results).toEqual([])
+      expect(second.page_info.has_next_page).toBe(true)
+      expect(second.page_info.end_cursor).toEqual(expect.any(String))
+      const third = await searchListItems(list.id, {
+        limit: 1,
+        after: second.page_info.end_cursor ?? undefined,
+        currentUserId: user.id,
+      })
+      expect(third.results.map(item => item.entity_id)).toEqual([older])
+      expect(third.page_info.has_next_page).toBe(false)
     })
   })
 

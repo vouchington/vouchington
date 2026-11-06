@@ -25,7 +25,7 @@ import {
   createEntityRelationAction,
 } from '@services/entity-relation-actions'
 import {
-  encodeEntityRelationCursor,
+  entityRelationPageInfo,
   parseEntityRelationCursor,
   withoutEntityRelationCursorMetadata,
 } from './cursor.mts'
@@ -104,7 +104,11 @@ app
       typeof ctx.query.after === 'string'
         ? parseEntityRelationCursor(ctx, ctx.query.after, cursorScope, parsed)
         : undefined
-    const { results: relations, hasNextPage } = await getEntityRelationsPage(
+    const {
+      results: relations,
+      hasNextPage,
+      continuation,
+    } = await getEntityRelationsPage(
       parsed.entityType,
       resolvedSubjectId,
       parsed.predicate,
@@ -125,16 +129,13 @@ app
         __entity_type: 'entity_relation' as const,
         id: r.id,
       })),
-      page_info: {
-        has_next_page: hasNextPage,
-        start_cursor: relationsWithId[0]
-          ? encodeEntityRelationCursor(relationsWithId[0], cursorScope, parsed)
-          : null,
-        end_cursor:
-          hasNextPage && relationsWithId.at(-1)
-            ? encodeEntityRelationCursor(relationsWithId.at(-1)!, cursorScope, parsed)
-            : null,
-      },
+      page_info: entityRelationPageInfo(
+        relationsWithId,
+        hasNextPage,
+        continuation,
+        cursorScope,
+        parsed,
+      ),
       entity_relations: indexById(publicRelationsWithId),
       entity_relation_elections: getElectionRecordsForRelations(parsed.metadata, entityIds),
     }
@@ -150,7 +151,6 @@ app
         entityIds,
       )
     }
-
     ctx.set('Content-Type', 'application/json')
     await ctx.pipeline(streamJsonObject(output))
   })

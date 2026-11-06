@@ -192,30 +192,38 @@ describe('entity-relations post access', () => {
       .expect(404)
   })
 
-  it('fills each page with readable relations when hidden ones fall between them', async () => {
+  it('returns each readable relation once when hidden rows thin the page', async () => {
     const topicId = await insertTopic(author.id)
     const readablePostIds: string[] = []
+    const hiddenPostIds: string[] = []
     for (const privacy of ['public', 'private', 'public', 'private', 'public'] as const) {
       const postId = await insertPost(author.id, { privacy })
       if (privacy === 'public') readablePostIds.push(postId)
+      else hiddenPostIds.push(postId)
       await upsertEntityRelation(author, metadataFor('topic', 'faq', 'post'), { id: topicId }, [
         { id: postId },
       ])
     }
     const path = `topic/${topicId}/faq/post?sort=newest&limit=2`
-
-    const firstPage = await listRelations(path, member)
-    expect(firstPage.results).toHaveLength(2)
-    expect(firstPage.page_info.has_next_page).toBe(true)
-
-    const secondPage = await listRelations(
-      `${path}&after=${encodeURIComponent(firstPage.page_info.end_cursor!)}`,
-      member,
-    )
-    expect(secondPage.results).toHaveLength(1)
-    expect(secondPage.page_info.has_next_page).toBe(false)
-
-    const listed = [...objectIdsOf(firstPage), ...objectIdsOf(secondPage)]
+    const pages = []
+    let after: string | null = null
+    for (let page = 0; page < 5; page += 1) {
+      const body = await listRelations(
+        after ? `${path}&after=${encodeURIComponent(after)}` : path,
+        member,
+      )
+      pages.push(body)
+      if (!body.page_info.has_next_page) break
+      after = body.page_info.end_cursor
+      if (page === 4) throw new Error('Relation pages did not reach the end')
+    }
+    const listed = pages.flatMap(objectIdsOf)
+    const earlier = pages.slice(0, -1)
+    expect(pages.at(-1)?.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
+    expect(earlier.some(body => body.results.length < 2)).toBe(true)
+    expect(earlier.every(body => typeof body.page_info.end_cursor === 'string')).toBe(true)
     expect(listed.toSorted()).toEqual(readablePostIds.toSorted())
+    expect(new Set(listed).size).toBe(listed.length)
+    for (const hiddenId of hiddenPostIds) expect(listed).not.toContain(hiddenId)
   })
 })

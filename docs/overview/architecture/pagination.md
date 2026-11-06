@@ -25,8 +25,14 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   the standard base64 alphabet. Callers must not construct or inspect cursor payloads.
 - The cursor contains every key in the deterministic keyset order, including a unique ID
   tie-breaker. A continuation predicate uses the same keys and direction as `ORDER BY`.
-- Apply visibility, filters, and semantic deduplication before pagination. Preserve those inputs on
-  every continuation request and reject a cursor whose encoded query or sort shape is incompatible.
+- Apply visibility, filters, and semantic deduplication before pagination, except membership pages
+  whose order is the membership key. Saved posts, personal lists, community lists, and entity
+  relations read one keyset page of live membership rows first, then test the targets for that
+  page. A page can be shorter than the requested limit, including empty, while `has_next_page` is
+  true and `end_cursor` is the last membership key inspected. That continuation is best effort:
+  the cursor can name a row the viewer was not shown. Decoding the opaque cursor can reveal that
+  such a row exists and its sort key, not its content. Preserve filter inputs on every
+  continuation request and reject a cursor whose encoded query or sort shape is incompatible.
 - Relevance-ranked RSS search uses the same rule with a score, microsecond publication timestamp,
   and UUID keyset. Its opaque scope binds normalized semantic query input, effective filters, and
   viewer identity only when a viewer-dependent filter is active.
@@ -41,8 +47,8 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   from another owner or status, or a plain REST score cursor, is refused, and the unfiltered REST
   listing refuses a scoped one.
 - Private post relation collections use the same scope binding with a timestamp-and-UUID keyset.
-  Resolve comments to their root and apply post type, clearance, audience, and community access in
-  SQL before selecting the visible `limit + 1` relation rows.
+  The page is the live relation keyset. Post type, clearance, audience, and community access are
+  applied to that page, so an ineligible relation advances the cursor without filling the page.
 - Fetch `limit + 1`, return at most `limit`, and derive `has_next_page` from the extra row. A result
   count equal to `limit` does not prove another page exists.
 - List responses use `{ results, page_info, ...pageLocalSidecars }`. `page_info` includes accurate

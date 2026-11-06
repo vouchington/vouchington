@@ -36,7 +36,9 @@ _none_
 
 - `community_list_posts_pkey`: `CREATE UNIQUE INDEX community_list_posts_pkey ON public.community_list_posts USING btree (id)`
 - `idx_community_list_posts__added_by_id`: `CREATE INDEX idx_community_list_posts__added_by_id ON public.community_list_posts USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)`
-- `idx_community_list_posts__community`: `CREATE INDEX idx_community_list_posts__community ON public.community_list_posts USING btree (community_id)`
+- `idx_community_list_posts__community_id__id`: `CREATE INDEX idx_community_list_posts__community_id__id ON public.community_list_posts USING btree (community_id, id DESC) WHERE (removed_at IS NULL)`
+- `idx_community_list_posts__community_id__id__all_rows`: `CREATE INDEX idx_community_list_posts__community_id__id__all_rows ON public.community_list_posts USING btree (community_id, id)`
+- `idx_community_list_posts__community_id__order_index__id`: `CREATE INDEX idx_community_list_posts__community_id__order_index__id ON public.community_list_posts USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)`
 - `idx_community_list_posts__post`: `CREATE INDEX idx_community_list_posts__post ON public.community_list_posts USING btree (post_id)`
 - `idx_community_list_posts__removed_by_id`: `CREATE INDEX idx_community_list_posts__removed_by_id ON public.community_list_posts USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)`
 - `idx_community_list_posts__unique`: `CREATE UNIQUE INDEX idx_community_list_posts__unique ON public.community_list_posts USING btree (community_id, post_id) WHERE (removed_at IS NULL)`

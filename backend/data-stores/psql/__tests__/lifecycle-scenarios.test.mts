@@ -282,7 +282,7 @@ async function runPrivatePostCollectionScenario(
         visibleItemCount: firstIds.length,
         hasNextPage: first.page_info.has_next_page,
       },
-      { strategy: 'filter-before-limit' },
+      { strategy: 'short-page' },
     )
   }
   const second = await getCollection(owner, owner.id, 'saved', {

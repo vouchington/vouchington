@@ -9,9 +9,11 @@ import { getVisiblePostCollectionRows } from './get-visible-collection-rows.mts'
 
 describe('post collection relation table allowlist', () => {
   it.each(Object.values(POST_LIST_TABLES))('accepts configured table %s', async tableName => {
-    await expect(getVisiblePostCollectionRows(null, tableName, randomUUID(), 1)).resolves.toEqual(
-      [],
-    )
+    await expect(getVisiblePostCollectionRows(null, tableName, randomUUID(), 1)).resolves.toEqual({
+      rows: [],
+      inspected: [],
+      hasMore: false,
+    })
   })
 
   it.each(['posts', 'Relation__user__save__post', 'relation__user__save__post; SELECT 1'])(
@@ -38,6 +40,6 @@ describe('hidden post collection', () => {
     await hidePost(user, comment)
 
     const hidden = await getVisiblePostCollectionRows(user, POST_LIST_TABLES.hidden, user.id, 10)
-    expect(hidden.map(row => row.entity_id)).toEqual([root.id])
+    expect(hidden.rows.map(row => row.entity_id)).toEqual([root.id])
   })
 })

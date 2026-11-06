@@ -40,30 +40,30 @@ export async function getUserPostsCollection(
   const afterCursor = after
     ? decodeScopedTimestampUuidCursor(after, scope, 'Invalid private post collection cursor')
     : undefined
-  const relationRows = await getVisiblePostCollectionRows(
+  // page_info comes from the raw membership window. Visibility can drop every row in that
+  // window; the cursor still advances to the last membership key inspected.
+  const page = await getVisiblePostCollectionRows(
     currentUser,
     POST_LIST_TABLES[listType],
     userId,
-    limit + 1,
+    limit,
     { after: afterCursor },
     options,
   )
-  const hasNextPage = relationRows.length > limit
-  const pageRows = relationRows.slice(0, limit)
-  const page_info = buildPageInfo(pageRows, {
-    hasNextPage,
+  const page_info = buildPageInfo(page.inspected, {
+    hasNextPage: page.hasMore,
     getCursor: row => ({ timestamp: row.created_us, id: row.entity_id, scope }),
   })
-  if (pageRows.length === 0) return { results: [], page_info }
+  if (page.rows.length === 0) return { results: [], page_info }
 
   const posts = await getPostsByAnyBatch(
-    pageRows.map(row => row.entity_id),
+    page.rows.map(row => row.entity_id),
     options,
   )
   const postsById = new Map(
     posts.filter((post): post is Post => post !== null).map(post => [post.id, post]),
   )
-  const results = pageRows.flatMap(row => {
+  const results = page.rows.flatMap(row => {
     const post = postsById.get(row.entity_id)
     return post ? [post] : []
   })
