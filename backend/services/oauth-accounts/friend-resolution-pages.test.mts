@@ -15,7 +15,7 @@ import {
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
 import { getTestFriendSyncStartTime } from '@voucha/test-helpers/entities/oauth-friend-edge-locks'
-import { cleanupOAuthFriendEdgePage } from '../data-retention/cleanup-oauth-friend-edges.mts'
+import { cleanupOAuthFriendEdgeWork } from '../data-retention/cleanup-oauth-friend-edges.mts'
 import { connectOAuthAccountToUser } from './connect.mts'
 import { oauthAccountFriendWorkConfig } from './work-limits.mts'
 import { disconnectOAuthAccount } from '../my/oauth-account.mts'
@@ -69,12 +69,10 @@ describe('bounded incoming friend resolution', () => {
     await setTestGithubFriendInvalidation(account.account_id, '2020-01-01 00:00:00.123900+00')
 
     expect(
-      await cleanupOAuthFriendEdgePage(
-        'github',
-        'erase',
-        1,
+      await cleanupOAuthFriendEdgeWork(
+        { batchSize: 1, maxBatches: 1 },
         new Date('2020-01-02T00:00:00Z'),
-        account.account_id,
+        { provider: 'github', phase: 'erase', accountId: account.account_id },
       ),
     ).toMatchObject({ deleted: 1, hasMore: false })
     expect(await testGithubFriendExists(stale)).toBe(false)
@@ -118,14 +116,18 @@ describe('bounded incoming friend resolution', () => {
     expect(stale.friend_github_account_id).toBeNull()
     expect(fresh.friend_github_account_id).toBe(targetAccount.account_id)
     expect(
-      await cleanupOAuthFriendEdgePage(
-        'github',
-        'resolve',
-        1,
-        new Date('2100-01-01'),
-        targetAccount.account_id,
-      ),
-    ).toMatchObject({ worked: false, hasMore: false })
+      await cleanupOAuthFriendEdgeWork({ batchSize: 1, maxBatches: 1 }, new Date('2100-01-01'), {
+        provider: 'github',
+        phase: 'resolve',
+        accountId: targetAccount.account_id,
+      }),
+    ).toMatchObject({ deleted: 0, resolved: 0, hasMore: false })
+    expect((await getTestFriend('github', staleProviderId, targetProviderId))[0]).toMatchObject({
+      friend_github_account_id: null,
+    })
+    expect((await getTestFriend('github', freshProviderId, targetProviderId))[0]).toMatchObject({
+      friend_github_account_id: targetAccount.account_id,
+    })
   })
 
   it('resolves one edge on connect and resumes the rest from the durable marker', async () => {
@@ -160,13 +162,11 @@ describe('bounded incoming friend resolution', () => {
       firstPass.filter(row => row.friend_github_account_id === targetAccount.account_id),
     ).toHaveLength(1)
     expect(
-      await cleanupOAuthFriendEdgePage(
-        'github',
-        'resolve',
-        1,
-        new Date('2100-01-01'),
-        targetAccount.account_id,
-      ),
+      await cleanupOAuthFriendEdgeWork({ batchSize: 1, maxBatches: 1 }, new Date('2100-01-01'), {
+        provider: 'github',
+        phase: 'resolve',
+        accountId: targetAccount.account_id,
+      }),
     ).toMatchObject({ resolved: 1, hasMore: false })
     const completed = await Promise.all(
       sourceIds.map(
