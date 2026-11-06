@@ -41,6 +41,7 @@ export async function markStoryPostRelatedUrlProjection(
           sweep_upper_bound_relation_id = EXCLUDED.sweep_upper_bound_relation_id,
           relation_snapshot_at = EXCLUDED.relation_snapshot_at,
           cursor_source_id = NULL,
+          eligibility_completed_at = NULL,
           source_completed_at = NULL,
           cursor_prune_id = NULL,
           lease_token = NULL, leased_at = NULL, lease_expires_at = NULL`,
@@ -85,7 +86,7 @@ export async function claimStoryPostRelatedUrlProjectionWork(): Promise<Projecti
         AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= clock_timestamp())
       RETURNING work.post_id, work.story_id, work.generation, work.sweep_upper_bound_source_id,
         work.sweep_upper_bound_relation_id, work.relation_snapshot_at, work.cursor_source_id,
-        work.source_completed_at, work.cursor_prune_id, work.lease_token`,
+        work.eligibility_completed_at, work.source_completed_at, work.cursor_prune_id, work.lease_token`,
     [LEASE_SECONDS],
   )
   return rows[0] ?? null

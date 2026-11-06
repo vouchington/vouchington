@@ -1,3 +1,4 @@
+import { pruneObsoleteStoryPostRelatedUrlsForReplacement } from './story-post-related-url-projection-replacements.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { assertPostRelatedUrlsAllowed } from '@services/entity-relations/assert-post-related-urls-allowed'
@@ -125,6 +126,9 @@ async function writePendingRelations(work: ProjectionWork, rows: SourceRow[]): P
   for (const object of objects) {
     if (!ineligibleUrlIds.has(object.id)) allowedUrlIds.push(object.id)
   }
+  if (ineligibleUrlIds.size > 0)
+    await recordProjectionCrawlRequirements(transactionQuery, work, [], ineligibleUrlIds)
+  await pruneObsoleteStoryPostRelatedUrlsForReplacement(transactionQuery, work, storyTeller.id)
   await assertPostRelatedUrlsAllowed(
     creator,
     relation,
@@ -146,12 +150,7 @@ async function writePendingRelations(work: ProjectionWork, rows: SourceRow[]): P
   await recordPostRelatedUrlPublicationChanges(transactionQuery, newlyActiveSubjectIds)
   if (newlyActiveSubjectIds.length > 0)
     await markStoryPostRelatedUrlProjectionInvalidationRequired(transactionQuery, work)
-  await recordProjectionCrawlRequirements(
-    transactionQuery,
-    work,
-    internalRelations,
-    ineligibleUrlIds,
-  )
+  await recordProjectionCrawlRequirements(transactionQuery, work, internalRelations, new Set())
   await transactionQuery.commit()
   await Promise.all([
     maintainBookmarkBloomForRelations(relation, internalRelations),

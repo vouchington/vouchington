@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS story_post_related_url_projection_jobs (
   sweep_upper_bound_relation_id UUID,
   relation_snapshot_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
   cursor_source_id UUID,
+  eligibility_completed_at TIMESTAMPTZ,
   source_completed_at TIMESTAMPTZ,
   cursor_prune_id UUID,
   invalidation_required_at TIMESTAMPTZ,
@@ -136,6 +137,7 @@ COMMENT ON COLUMN story_post_related_url_projection_jobs.sweep_upper_bound_sourc
 COMMENT ON COLUMN story_post_related_url_projection_jobs.sweep_upper_bound_relation_id IS 'Relation ID high-water mark that excludes post-capture related links from this generation prune.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.relation_snapshot_at IS 'Wall-clock boundary that excludes relations reactivated after this generation was captured.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_source_id IS 'RSS item ID keyset cursor for the bounded source projection phase.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.eligibility_completed_at IS 'Time the complete bounded eligibility scan finished before relation replacements; resets the source cursor for the write pass.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.source_completed_at IS 'Time the bounded source projection phase reached its high-water mark.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_prune_id IS 'Relation ID keyset cursor for the stale-relation pruning phase.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.invalidation_required_at IS 'Time a committed relation mutation made the story cache invalidation due.';

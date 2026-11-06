@@ -51,6 +51,20 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
     await releaseStoryPostRelatedUrlProjectionWork(rotated)
     await releaseStoryPostRelatedUrlProjectionWork(heldSecond)
 
+    // Each empty snapshot first completes eligibility without publishing or pruning.
+    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
+      processed: 0,
+      continue: true,
+    })
+    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
+      processed: 0,
+      continue: true,
+    })
+    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
+      processed: 0,
+      continue: true,
+    })
+
     // NULL source/relation high-water marks are genuine empty snapshots, not skipped effects.
     assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
       processed: 0,

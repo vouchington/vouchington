@@ -1,3 +1,4 @@
+import { processStoryPostRelatedUrlProjectionEligibilityPage } from './story-post-related-url-projection-eligibility.mts'
 import { getStoriesWorkLimit } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
@@ -45,6 +46,8 @@ export async function processStoryPostRelatedUrlProjectionPage(
     const recoveredCrawlEffects = await drainPendingStoryPostRelatedUrlProjectionCrawlEffects(work)
     if (recoveredCrawlEffects === null) return { processed: 0, continue: false }
     if (recoveredCrawlEffects > 0) return { processed: recoveredCrawlEffects, continue: true }
+    if (!work.eligibility_completed_at)
+      return await processStoryPostRelatedUrlProjectionEligibilityPage(work)
     if (!work.source_completed_at) return await projectSourcePage(work)
     return await prunePage(work)
   } finally {

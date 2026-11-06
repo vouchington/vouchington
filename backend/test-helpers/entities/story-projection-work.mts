@@ -28,7 +28,7 @@ export async function createTestStoryProjectionLease(postId: string) {
         AND (lease_expires_at IS NULL OR lease_expires_at <= clock_timestamp())
       RETURNING post_id, story_id, generation, sweep_upper_bound_source_id,
         sweep_upper_bound_relation_id, relation_snapshot_at, cursor_source_id,
-        source_completed_at, cursor_prune_id, lease_token`,
+        eligibility_completed_at, source_completed_at, cursor_prune_id, lease_token`,
   )
   return rows[0] ?? null
 }

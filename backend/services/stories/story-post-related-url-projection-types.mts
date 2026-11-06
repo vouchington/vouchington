@@ -6,6 +6,7 @@ export type ProjectionWork = {
   sweep_upper_bound_relation_id: string | null
   relation_snapshot_at: Date
   cursor_source_id: string | null
+  eligibility_completed_at: Date | null
   source_completed_at: Date | null
   cursor_prune_id: string | null
   lease_token: string | null

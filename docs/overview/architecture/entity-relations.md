@@ -43,6 +43,14 @@ User moderation tags reuse the election-backed `category` predicate as
 the generic entity-relations API admits only this exact user-subject tuple. Personal user-subject
 relations such as follow, mute, and block remain bookmark API concerns.
 
+## Story source replacement
+
+Story projection first records eligibility across its bounded source snapshot so that a source
+on a later page cannot be mistaken for an obsolete relation. Replacement writes remove obsolete
+projection-owned rows and admit the new sources in one transaction under the post publication
+lock. A capacity refusal rolls back those removals, while manual claims remain protected by the
+projection's ownership and mutation fences.
+
 ## Table Structure
 
 - Table naming: `relation__<subject>__<predicate>__<object>` (e.g. `relation__user__follow__user`)
