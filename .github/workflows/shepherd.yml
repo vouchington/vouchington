@@ -237,6 +237,7 @@ jobs:
       - name: Check the PR head and trigger are still valid
         timeout-minutes: 1
         id: check
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: Runs in the escalation job with no checkout; keep PR-head and trigger-comment revalidation inline without changing checkout or permissions.
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \

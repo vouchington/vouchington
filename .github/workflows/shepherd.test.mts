@@ -267,6 +267,8 @@ describe('shepherd workflow', () => {
     const escalateJob = workflow.jobs?.['escalate']
     expect(escalateJob?.if).toContain('always()')
     expect(escalateJob?.if).toContain("needs.gate.outputs.should_dispatch == 'true'")
+    expect(escalateJob?.permissions).toEqual({ issues: 'write', 'pull-requests': 'write' })
+    expect(escalateJob?.steps?.some(step => step.uses?.startsWith('actions/checkout@'))).toBe(false)
     expect(escalateJob?.if).not.toContain('usage-limit-hit')
     expect(escalateJob?.if).toContain("needs.render-prompt.result == 'failure'")
     expect(escalateJob?.if).toContain("needs.checkpoint-dispatch.result == 'failure'")
