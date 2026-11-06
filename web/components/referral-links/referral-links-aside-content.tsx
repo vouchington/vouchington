@@ -24,7 +24,6 @@ export function ReferralLinksAsideContent({
   const t = useTranslations()
   // The API already caps the list at the personalized-link limit, so it is shown as returned.
   const topLinks = response.links
-  if (topLinks.length === 0) return null
 
   return (
     <Card className='p-4'>
@@ -56,20 +55,22 @@ export function ReferralLinksAsideContent({
           </Link>
         </Button>
       </div>
-      <ul className='space-y-2'>
-        {topLinks.map(link => {
-          const user = link.user_id ? response.users[link.user_id] : undefined
-          return (
-            <li key={link.id}>
-              <ReferralLinkCard
-                link={link}
-                user={user}
-                variant='compact'
-              />
-            </li>
-          )
-        })}
-      </ul>
+      {topLinks.length > 0 && (
+        <ul className='space-y-2'>
+          {topLinks.map(link => {
+            const user = link.user_id ? response.users[link.user_id] : undefined
+            return (
+              <li key={link.id}>
+                <ReferralLinkCard
+                  link={link}
+                  user={user}
+                  variant='compact'
+                />
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </Card>
   )
 }

@@ -169,6 +169,17 @@ export const Aside: Story = {
   ),
 }
 
+export const EmptyPersonalizedAside: Story = {
+  render: () => (
+    <EntityStoryFrame
+      title='Referral links aside — empty personalized list'
+      aside={EmptyReferralLinksAside}
+    >
+      <p className='text-sm text-muted-foreground'>Main content area</p>
+    </EntityStoryFrame>
+  ),
+}
+
 const feedUser: ReferralLinkFeedUser = {
   id: storyCurrentUser.id,
   username: storyCurrentUser.username!,
@@ -204,6 +215,19 @@ function ReferralLinksAside() {
         topicId='rp-chase'
         topicType='referral-program'
         response={sampleResponse}
+      />
+    </AsideStack>
+  )
+}
+
+function EmptyReferralLinksAside() {
+  return (
+    <AsideStack>
+      <ReferralLinksAsideContent
+        topicId='rp-chase'
+        topicSlug='chase-sapphire-preferred'
+        topicType='referral-program'
+        response={emptyResponse}
       />
     </AsideStack>
   )
