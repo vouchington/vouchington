@@ -15,8 +15,6 @@ import {
   type YamlSources,
 } from './workflow-cache-pnpm-parsing.mts'
 
-export { cachePathsAreAllowed, runsPnpmInstall } from './workflow-cache-pnpm-parsing.mts'
-
 /** Pure policy evaluation. The static runner owns repository reads. */
 export function workflowCachePnpmViolations(sources: YamlSources): string[] {
   const violations: string[] = []

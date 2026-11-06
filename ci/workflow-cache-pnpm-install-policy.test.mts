@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { runsPnpmInstall } from './workflow-cache-pnpm-policy.mts'
+import { runsPnpmInstall } from './workflow-cache-pnpm-parsing.mts'
 
 describe('pnpm install shell recognition', () => {
   it('recognizes the original pnpm install shell examples', () => {

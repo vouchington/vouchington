@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { cachePathsAreAllowed, workflowCachePnpmViolations } from './workflow-cache-pnpm-policy.mts'
+import { cachePathsAreAllowed } from './workflow-cache-pnpm-parsing.mts'
+import { workflowCachePnpmViolations } from './workflow-cache-pnpm-policy.mts'
 
 import {
   action,
