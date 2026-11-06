@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { UserSessionRow } from './user-session-types.mts'
+import { sessionLimitsMaxValues } from './session-limits-config.mts'
 
 export async function listActiveUserSessions(
   currentUserId: string,
@@ -9,12 +10,20 @@ export async function listActiveUserSessions(
 ) {
   const limit = options.limit ?? 25
   const query = sql`/* listActiveUserSessions */
+    WITH active AS MATERIALIZED (
+      SELECT id, user_id, device_id, device_name, user_agent_string_id,
+        ip_address, created_at, last_seen_at, expires_at
+      -- no-mistakes-disable-next-line postgres-required-predicates: a SID may be minted before its owning user, so active-session pagination must include every session-ID partition
+      FROM user_sessions
+      WHERE user_id = ${currentUserId} AND revoked_at IS NULL
+        AND expires_at > CURRENT_TIMESTAMP
+      ORDER BY expires_at, id LIMIT ${sessionLimitsMaxValues.active_sessions_per_user}
+    )
     SELECT s.id, s.device_id, s.device_name, ua.user_agent, s.ip_address, s.created_at,
       s.last_seen_at, s.expires_at,
       COALESCE(native_connections.connections, '[]'::json) AS mcp_connections,
       to_char(s.last_seen_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS last_seen_cursor
-    -- no-mistakes-disable-next-line postgres-required-predicates: a session ID can be minted before its owning user and refreshed later, so active-session pagination must search all ID partitions
-    FROM user_sessions s
+    FROM active s
     JOIN user_agent_strings ua ON ua.id = s.user_agent_string_id
     LEFT JOIN LATERAL (
       SELECT json_agg(json_build_object(
@@ -34,8 +43,6 @@ export async function listActiveUserSessions(
       ) AS connection
     ) AS native_connections ON TRUE
     WHERE s.user_id = ${currentUserId}
-      AND s.revoked_at IS NULL
-      AND s.expires_at > CURRENT_TIMESTAMP
   `
   if (options.after) {
     query.append(sql` AND (s.last_seen_at < ${options.after.timestamp}::timestamptz

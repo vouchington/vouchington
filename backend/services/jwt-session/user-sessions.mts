@@ -11,6 +11,7 @@ import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import type { DeviceClass, DeviceContext } from './types.mts'
 import { normalizeDeviceName, normalizeIpAddress, normalizeText } from './session-device-name.mts'
 import type { UserSessionRow } from './user-session-types.mts'
+import { revokeSessionsAboveLimit } from './active-session-limit.mts'
 
 async function upsertAuthenticatedSession(
   currentUserId: string,
@@ -46,6 +47,11 @@ async function writeAuthenticatedSession(
     sql`/* upsertAuthenticatedSession */
         SELECT pg_advisory_xact_lock(hashtextextended(${currentUserId}, 0))`,
   )
+  const existingActiveSession = await query<{ id: string }>(sql`/* hasAuthenticatedSession */
+    SELECT id FROM user_sessions
+    WHERE id = ${options.sid} AND user_id = ${currentUserId}
+      AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP
+    LIMIT 1`)
   const deviceName = normalizeDeviceName(options.deviceName, options.userAgent)
   const userAgent = normalizeText(options.userAgent, 1024)
   const ipAddress = normalizeIpAddress(options.ipAddress)
@@ -85,7 +91,11 @@ async function writeAuthenticatedSession(
           WHERE id = user_sessions.user_agent_string_id) AS user_agent,
         ip_address, created_at, last_seen_at, expires_at, revoked_at
     `)
-  return { session: (rows[0] as UserSessionRow | undefined) ?? null, userAgentId }
+  const session = (rows[0] as UserSessionRow | undefined) ?? null
+  if (session && existingActiveSession.rows.length === 0 && session.expires_at > new Date()) {
+    await revokeSessionsAboveLimit(query, currentUserId, options.sid)
+  }
+  return { session, userAgentId }
 }
 
 export async function registerAuthenticatedSession(

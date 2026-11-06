@@ -231,10 +231,12 @@ describe('Auth sessions routes', () => {
       getJwtRevokedKey(otherSession.id),
     ])
 
-    await revokeAllAuthenticatedSessions(userId)
+    await expect(revokeAllAuthenticatedSessions(userId)).resolves.toEqual([])
 
-    await expect(isSessionRevoked(currentSessionId)).resolves.toBe(true)
-    await expect(isSessionRevoked(otherSession.id)).resolves.toBe(true)
+    await expect(sessionValkeyClient.get(getJwtRevokedKey(currentSessionId))).resolves.toBeNull()
+    await expect(sessionValkeyClient.get(getJwtRevokedKey(otherSession.id))).resolves.toBeNull()
+    await expect(isSessionRevoked(currentSessionId, { userId })).resolves.toBe(true)
+    await expect(isSessionRevoked(otherSession.id, { userId })).resolves.toBe(true)
   })
 
   it('does not authorize account-wide revocation from a missing session row', async () => {

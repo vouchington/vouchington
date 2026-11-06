@@ -79,6 +79,17 @@ revokes all of the current user's active sessions, and logout marks the current 
 alongside the Valkey revocation flag. `last_seen_at` advances on login, logout, revoke, and
 warm/cold refreshes, but not on listing or the hot JWT verification path.
 
+An active-session cap bounds each user's unrevoked, unexpired sessions independently of credential
+lifetime. Creating a new session revokes the oldest excess sessions in the same database transaction,
+while preserving the new session. Renewing or replaying an existing session does not consume another
+slot. Lowering the configured cap leaves current sessions valid until the next new session is created;
+revocation work remains bounded by the hard maximum during that interval. The
+[session limits configuration](../../../backend/services/jwt-session/session-limits-config.mts)
+owns the default and hard maximum. Eviction retains session rows and their replay receipts, and
+publishes the existing Valkey revocation markers after commit.
+Expiry-ordered candidate reads keep retained expired rows out of the work set; creation-order
+eviction and last-seen listing sort only the bounded active set.
+
 Browser refresh authority also has a session record, independent of the signed access claims.
 That record preserves browser-key binding across every renewal path, including access-cookie
 rotation and credential-completion replay. Losing the record requires sign-in instead of restoring

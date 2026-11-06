@@ -6345,6 +6345,9 @@ importers:
       '@services/images':
         specifier: workspace:^
         version: link:../images
+      '@services/jwt-session':
+        specifier: workspace:^
+        version: link:../jwt-session
       '@services/language-detection':
         specifier: workspace:^
         version: link:../language-detection
@@ -7677,6 +7680,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^

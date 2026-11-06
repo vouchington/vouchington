@@ -156217,10 +156217,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_user_sessions__user_id_active_last_seen": {
+        "idx_user_sessions__user_id_active_expires_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_sessions__user_id_active_last_seen ON ONLY public.user_sessions USING btree (user_id, last_seen_at DESC, id DESC) WHERE (revoked_at IS NULL)",
+          "definition": "CREATE INDEX idx_user_sessions__user_id_active_expires_at ON ONLY public.user_sessions USING btree (user_id, expires_at, id) WHERE (revoked_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -156234,19 +156234,19 @@
             },
             {
               "collation": null,
-              "column": "last_seen_at",
-              "descending": true,
-              "expression": "last_seen_at",
-              "nullsFirst": true,
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
               "opclass": "pg_catalog.timestamptz_ops",
               "orderingSupported": true
             },
             {
               "collation": null,
               "column": "id",
-              "descending": true,
+              "descending": false,
               "expression": "id",
-              "nullsFirst": true,
+              "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }

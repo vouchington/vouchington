@@ -61,6 +61,7 @@ import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-s
 import { runCrawlerBoilerplateScenario } from './run-scenarios/crawler-boilerplate.mts'
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
 import { runCommunityRoundTripScenarios } from './run-scenarios/community-round-trips.mts'
+import { runSessionLimitScenarios } from './run-scenarios/session-limits.mts'
 import { runImageDeliveryFoldScenarios } from './run-scenarios/image-delivery-folds.mts'
 import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
 import { runRequestContextFoldScenarios } from './run-scenarios/request-context-folds.mts'
@@ -145,6 +146,7 @@ async function main() {
     await runStep(runRoundTripShapeScenarios.name, runRoundTripShapeScenarios())
     await runStep(runRequestContextFoldScenarios.name, runRequestContextFoldScenarios())
     await runStep(runCommunityRoundTripScenarios.name, runCommunityRoundTripScenarios())
+    await runStep(runSessionLimitScenarios.name, runSessionLimitScenarios())
     await runStep(runImageDeliveryFoldScenarios.name, runImageDeliveryFoldScenarios())
     await runStep(runUserProfileRoundTripScenarios.name, runUserProfileRoundTripScenarios())
     await runStep(runUploadCleanupScenarios.name, runUploadCleanupScenarios())
@@ -192,7 +194,6 @@ async function run(): Promise<void> {
     await gracefulShutdown()
   }
 }
-
 run().catch(err => {
   console.error(err)
   process.exitCode = 1
