@@ -70,9 +70,11 @@ describe('RSS feed precise pagination', () => {
         return { guid, link: `https://example.com/${guid}`, title: 'Tied delivery', isoDate }
       }),
     )
-    const story = await insertTestStory({ officialRssFeedItemId: items[0].id })
-    await setTestItemStoryId(items[0].id, story.id)
-    await setTestItemStoryId(items[1].id, story.id)
+    const tiedStoryItems = [items[0]!, items[1]!].toSorted((a, b) => a.id.localeCompare(b.id))
+    const canonicalStoryItem = tiedStoryItems[1]!
+    const story = await insertTestStory({ officialRssFeedItemId: tiedStoryItems[0]!.id })
+    await setTestItemStoryId(tiedStoryItems[0]!.id, story.id)
+    await setTestItemStoryId(tiedStoryItems[1]!.id, story.id)
     await Promise.all([
       setTestRssFeedItemVotes(items[0].id, 1),
       setTestRssFeedItemVotes(items[1].id, 1),
@@ -100,7 +102,10 @@ describe('RSS feed precise pagination', () => {
     expect(results).toHaveLength(4)
     expect(results.slice(0, 2).map(result => result.delivery_type)).toEqual(['share', 'share'])
     expect(results[0].id.localeCompare(results[1].id)).toBeGreaterThan(0)
-    expect(results.slice(2).map(result => result.entity_id)).toEqual([items[0].id, items[2].id])
+    expect(results.slice(2).map(result => result.entity_id)).toEqual([
+      canonicalStoryItem.id,
+      items[2].id,
+    ])
     expect(new Set(results.map(result => result.id)).size).toBe(4)
     const cursor = (await getRssFeedItemFeedIds(user, options)).page_info.end_cursor!
     await expect(

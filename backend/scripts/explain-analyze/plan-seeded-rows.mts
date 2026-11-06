@@ -155,7 +155,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   relation__post__category__topic__votes: 1_000,
   relation__post__category__topic_alias: ANCILLARY_SEED_ROW_UPPER_BOUND,
   relation__post__related__post: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  relation__rss_feed_item__category__topic: 12_000,
+  relation__rss_feed_item__category__topic: 12_001,
   relation__rss_feed_item__category__topic__votes: 1_000,
   relation__rss_feed_item__category__topic_alias: ANCILLARY_SEED_ROW_UPPER_BOUND,
   relation__topic__category__topic: ANCILLARY_SEED_ROW_UPPER_BOUND,

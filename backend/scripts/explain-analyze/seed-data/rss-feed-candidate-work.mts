@@ -1,48 +1,23 @@
 import { beginTransaction } from '@data-stores/psql'
 import { contentHash, seedUuid, seedUuidAtTimestamp } from './common.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from './story-post-related-url-projection.mts'
+import {
+  buildRssFeedCandidateAtCapRows,
+  RSS_AT_CAP_STORY_ID,
+  RSS_AT_CAP_OUTSIDE_TOPIC_GUID,
+} from './rss-feed-candidate-at-cap.mts'
 
-const AT_CAP_TOPIC_START = 9_968
-const AT_CAP_TOPIC_COUNT = 32
-const AT_CAP_ITEMS_PER_TOPIC = 33
 const MAINTENANCE_CHILD_COUNT = 120
 const MAINTENANCE_ITEM_GUID = 'rss-candidate-maintenance-fanout-item'
-const AT_CAP_STORY_ITEM_COUNT = 9
 const PREVIEW_PRIMARY_GUID = 'rss-candidate-story-preview-primary'
-
-export const RSS_AT_CAP_STORY_ID = seedUuid(17, '17')
-export const RSS_AT_CAP_STORY_TOKEN = 'rsscandidatecapstory'
 
 /** Fill every selected topic's per-source item page and enqueue one multi-page repair item. */
 export async function seedRssFeedCandidateWork(): Promise<void> {
   await using transaction = await beginTransaction()
   const now = Date.now()
-  const atCapRows = Array.from(
-    { length: AT_CAP_TOPIC_COUNT * AT_CAP_ITEMS_PER_TOPIC },
-    (_, index) => {
-      const topicIndex = AT_CAP_TOPIC_START + Math.floor(index / AT_CAP_ITEMS_PER_TOPIC)
-      const isoDate = new Date(now - 5000).toISOString()
-      return {
-        id: seedUuidAtTimestamp(now - 1000, 10_000_000 + index),
-        hostname_id: seedUuid(0, '02'),
-        guid: `rss-candidate-at-cap-item-${index}`,
-        url_id: seedUuid(2500, '03'),
-        data: {
-          title: `RSS candidate at-cap item ${index}${
-            index >= AT_CAP_TOPIC_COUNT * AT_CAP_ITEMS_PER_TOPIC - AT_CAP_STORY_ITEM_COUNT
-              ? ` ${RSS_AT_CAP_STORY_TOKEN}`
-              : ''
-          }`,
-          link: `https://example.com/rss-candidate-at-cap/${index}`,
-          isoDate,
-        },
-        topic_id: seedUuid(topicIndex, '04'),
-        rss_feed_id: seedUuid(2, '08'),
-      }
-    },
-  )
-  // The heavy viewer proxy-mutes community 0's feed 0. Give its preview story one
-  // positive member on another followed source so winner selection reaches it.
+  const { rows: atCapRows, outsideTopic: outsideTopicRow } = buildRssFeedCandidateAtCapRows(now)
+  // The heavy viewer proxy-mutes community 0's feed 0. Give its preview story a
+  // member on another followed source so winner selection reaches it.
   const previewPrimaryRow = {
     id: seedUuidAtTimestamp(now - 1000, 11_000_001),
     hostname_id: seedUuid(0, '02'),
@@ -71,7 +46,7 @@ export async function seedRssFeedCandidateWork(): Promise<void> {
     topic_id: null,
     rss_feed_id: null,
   }
-  const allRows = [...atCapRows, previewPrimaryRow, maintenanceRow]
+  const allRows = [...atCapRows, outsideTopicRow, previewPrimaryRow, maintenanceRow]
   const rowsJson = JSON.stringify(allRows)
   await transaction(
     `/* seedRssFeedCandidateWorkIdentities */
@@ -95,7 +70,7 @@ export async function seedRssFeedCandidateWork(): Promise<void> {
      ON CONFLICT (id) DO NOTHING`,
     [rowsJson, contentHash('rss-feed-candidate-work-fixture')],
   )
-  const officialStoryGuid = atCapRows.at(-1)!.guid
+  const officialStoryGuid = atCapRows[1]!.guid
   await transaction(
     `/* seedRssFeedCandidateWorkStory */
      INSERT INTO stories (id, title, official_rss_feed_item_id)
@@ -107,7 +82,7 @@ export async function seedRssFeedCandidateWork(): Promise<void> {
        deleted_at = NULL`,
     [RSS_AT_CAP_STORY_ID, officialStoryGuid],
   )
-  const storyGuids = atCapRows.slice(-AT_CAP_STORY_ITEM_COUNT).map(row => row.guid)
+  const storyGuids = atCapRows.slice(0, 9).map(row => row.guid)
   await transaction(
     `/* seedRssFeedCandidateWorkStoryItems */
      UPDATE rss_feed_items
@@ -140,6 +115,7 @@ export async function seedRssFeedCandidateWork(): Promise<void> {
   )
   const topicRows = [
     ...atCapRows.map(row => ({ guid: row.guid, topic_id: row.topic_id })),
+    { guid: RSS_AT_CAP_OUTSIDE_TOPIC_GUID, topic_id: outsideTopicRow.topic_id },
     { guid: PREVIEW_PRIMARY_GUID, topic_id: previewPrimaryRow.topic_id },
     ...Array.from({ length: MAINTENANCE_CHILD_COUNT }, (_, index) => ({
       guid: MAINTENANCE_ITEM_GUID,

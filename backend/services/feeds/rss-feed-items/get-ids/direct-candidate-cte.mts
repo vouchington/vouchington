@@ -2,6 +2,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { RssFeedItemFeedType } from '../../types.mts'
 import { appendRssFeedItemEligibilityFilters } from './eligibility-filters.mts'
 import { appendMatchedItemCTEs } from './matched-item-ctes.mts'
+import { buildStableStoryMatch } from './story-follow-match.mts'
 
 export function appendDirectCandidateCTE(
   query: SQLStatement,
@@ -11,6 +12,15 @@ export function appendDirectCandidateCTE(
   if (!includeDirectItems) {
     query.append(sql`
     ,
+    omitted_direct_source AS MATERIALIZED (
+      SELECT NULL::timestamptz AS sort_at, NULL::uuid AS item_id WHERE FALSE
+    ),
+    saturated_direct_child_boundaries AS MATERIALIZED (
+      SELECT NULL::timestamptz AS sort_at, NULL::uuid AS item_id WHERE FALSE
+    ),
+    page_visibility_boundaries AS MATERIALIZED (
+      SELECT sort_at, item_id FROM saturated_shared_child_boundary
+    ),
     direct_candidate_rss_feed_items AS MATERIALIZED (
       SELECT
         NULL::uuid AS item_id, NULL::double precision AS votes_score_net,
@@ -58,6 +68,7 @@ export function appendDirectCandidateCTE(
 }
 
 export type DirectCandidateFilterOptions = {
+  communityId?: string
   currentUserId?: string
   currentUserIsAdministrator: boolean
   feedType: RssFeedItemFeedType | undefined
@@ -67,7 +78,9 @@ export type DirectCandidateFilterOptions = {
   itemCutoffId: string | null
   cutoffDate: Date | null
   sourceLimit: number
-  itemsPerSource: number
+  pageSize: number
+  cursorSortAt?: string
+  cursorId?: string
   storyItemLimit: number
   eligibilityChildLimit: number
   mediaTypes: string[]
@@ -82,8 +95,9 @@ export type DirectCandidateFilterOptions = {
 
 function appendMembershipScoreFilter(
   query: SQLStatement,
-  { feedType, minScoreFollowRssFeeds, minScoreFollowTopics }: DirectCandidateFilterOptions,
+  options: DirectCandidateFilterOptions,
 ): void {
+  const { feedType, minScoreFollowRssFeeds, minScoreFollowTopics } = options
   const source = sql`(matched_direct_rss_feed_item_guids.matches_source AND rss_feed_items.votes_score_net >= ${minScoreFollowRssFeeds})`
   const topics = sql`(matched_direct_rss_feed_item_guids.matches_topics AND rss_feed_items.votes_score_net >= ${minScoreFollowTopics})`
   query.append(sql` AND (`)
@@ -99,5 +113,12 @@ function appendMembershipScoreFilter(
       .append(source)
       .append(sql` OR `)
       .append(topics)
-  query.append(sql`)`)
+  query.append(sql` OR (
+    EXISTS (SELECT 1 FROM omitted_direct_source omitted
+      WHERE omitted.item_id = rss_feed_items.id)
+    AND `)
+  query.append(
+    buildStableStoryMatch(sql`rss_feed_items.id`, sql`rss_feed_items.votes_score_net`, options),
+  )
+  query.append(sql`))`)
 }

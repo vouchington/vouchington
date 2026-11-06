@@ -44,10 +44,8 @@ export async function getRssFeedItemFeedIds(
   const safeLimit = clampLimit(limit)
   const pageLimits = {
     source_limit: getRssFeedItemPageLimit('source_limit'),
-    items_per_source: getRssFeedItemPageLimit('items_per_source'),
     story_item_limit: getRssFeedItemPageLimit('story_item_limit'),
     eligibility_child_limit: getRssFeedItemPageLimit('eligibility_child_limit'),
-    share_limit: getRssFeedItemPageLimit('share_limit'),
     exclusion_relation_limit: getRssFeedItemPageLimit('exclusion_relation_limit'),
   }
   const cursorScope = getRssFeedItemFeedCursorScope(
@@ -80,6 +78,8 @@ export async function getRssFeedItemFeedIds(
     sourceLimit,
     followInputLimit,
     exclusionRelationLimit: pageLimits.exclusion_relation_limit,
+    cursorSortAt: sort_at_lt,
+    cursorId: id_lt,
   })
 
   appendEligibleRssFeedItemsCTE(query, {
@@ -97,6 +97,7 @@ export async function getRssFeedItemFeedIds(
   })
 
   appendDeliveryCTEs(query, {
+    communityId,
     cutoffDate,
     currentUserId,
     currentUserIsAdministrator,
@@ -115,10 +116,11 @@ export async function getRssFeedItemFeedIds(
     hashtagAliasIds: options.hashtag_alias_ids,
     hasUnknownHashtag: options.has_unknown_hashtag,
     sourceLimit,
-    itemsPerSource: pageLimits.items_per_source,
+    pageSize: safeLimit,
     storyItemLimit: pageLimits.story_item_limit,
     eligibilityChildLimit: pageLimits.eligibility_child_limit,
-    shareLimit: pageLimits.share_limit,
+    cursorSortAt: sort_at_lt,
+    cursorId: id_lt,
   })
   appendFeedPageSelect(query, {
     idLt: id_lt,
@@ -131,7 +133,10 @@ export async function getRssFeedItemFeedIds(
     WITH ${query.text}`,
     query.values,
   )
-  const hasNextPage = rows.length > safeLimit
+  const hasNextPage =
+    rows.length > safeLimit ||
+    (rows.length > 0 &&
+      (rows[0].has_omitted_source === true || rows[0].has_saturated_child_pool === true))
   const pageRows = rows.slice(0, safeLimit)
 
   const results = pageRows.map(row => ({

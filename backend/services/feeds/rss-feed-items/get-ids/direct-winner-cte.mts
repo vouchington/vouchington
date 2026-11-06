@@ -1,46 +1,20 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import type { RssFeedItemFeedType } from '../../types.mts'
+import { buildStableStoryMatch } from './story-follow-match.mts'
 
-export function appendDirectWinnerCTE(
-  query: SQLStatement,
-  {
-    storyItemLimit,
-    eligibilityChildLimit,
-  }: { storyItemLimit: number; eligibilityChildLimit: number },
-): void {
+type StoryWinnerOptions = {
+  communityId?: string
+  currentUserId?: string
+  feedType: RssFeedItemFeedType | undefined
+  storyItemLimit: number
+  eligibilityChildLimit: number
+  minScoreFollowRssFeeds: number
+  minScoreFollowTopics: number
+}
+
+/** A story is represented only by its newest provably matching member. */
+export function appendDirectWinnerCTE(query: SQLStatement, options: StoryWinnerOptions): void {
   query.append(sql`
-    ), direct_story_seeds AS MATERIALIZED (
-      SELECT DISTINCT story_id
-      FROM direct_candidate_rss_feed_items
-      WHERE story_id IS NOT NULL
-    ), direct_story_eligible_members AS MATERIALIZED (
-      SELECT child.*
-      FROM direct_story_seeds seed
-      CROSS JOIN LATERAL (
-        SELECT matched.*,
-          ranked.is_official_for_story,
-          ranked.votes_score_sort
-        FROM (
-          SELECT candidate.id, candidate.is_official_for_story, candidate.votes_score_sort
-          FROM rss_feed_item_feed_candidates candidate
-          WHERE candidate.story_id = seed.story_id
-            AND candidate.deleted_at IS NULL
-            AND candidate.votes_score_net > 0
-          ORDER BY candidate.is_official_for_story DESC,
-            candidate.votes_score_sort DESC, candidate.id DESC
-          LIMIT ${storyItemLimit}
-        ) ranked
-        JOIN direct_candidate_rss_feed_items matched ON matched.item_id = ranked.id
-        ORDER BY ranked.is_official_for_story DESC,
-          ranked.votes_score_sort DESC, ranked.id DESC
-        LIMIT ${eligibilityChildLimit}
-      ) child
-    ), direct_story_winners AS MATERIALIZED (
-      SELECT DISTINCT ON (candidate.story_id)
-        candidate.item_id, candidate.votes_score_net, candidate.published_at,
-        candidate.story_id, candidate.matches_source, candidate.matches_topics
-      FROM direct_story_eligible_members candidate
-      ORDER BY candidate.story_id, candidate.is_official_for_story DESC,
-        candidate.votes_score_sort DESC, candidate.item_id DESC
     ), direct_rss_feed_items AS (
       SELECT
         candidate.item_id,
@@ -55,10 +29,32 @@ export function appendDirectWinnerCTE(
         NULL::timestamptz AS shared_at,
         candidate.matches_source,
         candidate.matches_topics
-      FROM (
-        SELECT * FROM direct_candidate_rss_feed_items WHERE story_id IS NULL
-        UNION ALL
-        SELECT * FROM direct_story_winners
-      ) candidate
+      FROM direct_candidate_rss_feed_items candidate
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*) AS newer_count,
+          bool_or(eligible.item_id IS NOT NULL AND `)
+  query.append(
+    buildStableStoryMatch(sql`eligible.item_id`, sql`eligible.votes_score_net`, {
+      ...options,
+      allowUnknown: true,
+    }),
+  )
+  query.append(sql`) AS newer_matches
+        FROM (
+          SELECT newer.id FROM rss_feed_item_feed_candidates newer
+          WHERE newer.story_id = candidate.story_id AND newer.deleted_at IS NULL
+            AND (newer.sort_at, newer.id) > (candidate.published_at, candidate.item_id)
+          ORDER BY newer.sort_at DESC, newer.id DESC
+          LIMIT ${options.storyItemLimit + 1}
+        ) newer
+        LEFT JOIN LATERAL (
+          SELECT * FROM eligible_rss_feed_items
+          WHERE item_id = newer.id LIMIT 1
+        ) eligible ON TRUE
+      ) newer_probe ON candidate.story_id IS NOT NULL
+      WHERE candidate.story_id IS NULL OR (
+        newer_probe.newer_count <= ${options.storyItemLimit}
+        AND NOT COALESCE(newer_probe.newer_matches, FALSE)
+      )
   `)
 }

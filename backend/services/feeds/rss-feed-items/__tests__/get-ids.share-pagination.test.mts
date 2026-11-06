@@ -64,7 +64,8 @@ describe('RSS direct and share pagination', () => {
     await followUser(follower, sharer)
 
     const tiedAt = new Date(Date.now() + 5 * 60_000)
-    const directItem = await createTestRssFeedItemWithUrl(feedId, { createdAt: tiedAt })
+    const directItemSortAt = new Date(tiedAt.getTime() + 1000)
+    const directItem = await createTestRssFeedItemWithUrl(feedId, { createdAt: directItemSortAt })
     const sharedItem = await createTestRssFeedItemWithUrl(feedId, { createdAt: tiedAt })
     const story = await insertTestStory({ officialRssFeedItemId: directItem.id })
     await Promise.all([
@@ -80,7 +81,7 @@ describe('RSS direct and share pagination', () => {
       recipientUserId: follower.id,
       rssFeedItemId: sharedItem.id,
       sharedByUserId: sharer.id,
-      sortAt: tiedAt,
+      sortAt: directItemSortAt,
     })
 
     const page1 = await getRssFeedItemFeedIds(follower, { feed_type: 'any', limit: 1 })

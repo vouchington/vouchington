@@ -3,14 +3,11 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_feed_candidates (
   id UUID PRIMARY KEY REFERENCES rss_feed_items(id) ON DELETE CASCADE,
   story_id UUID,
   sort_at TIMESTAMPTZ NOT NULL,
-  is_official_for_story BOOLEAN NOT NULL DEFAULT FALSE,
-  votes_score_sort DOUBLE PRECISION NOT NULL,
-  votes_score_net DOUBLE PRECISION NOT NULL,
   deleted_at TIMESTAMPTZ
 );
-CREATE INDEX IF NOT EXISTS idx_rss_feed_item_feed_candidates__story_priority
-  ON rss_feed_item_feed_candidates (story_id, is_official_for_story DESC, votes_score_sort DESC, id DESC)
-  WHERE story_id IS NOT NULL AND votes_score_net > 0 AND deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_rss_feed_item_feed_candidates__story_order
+  ON rss_feed_item_feed_candidates (story_id, sort_at DESC, id DESC)
+  WHERE story_id IS NOT NULL AND deleted_at IS NULL;
 CREATE TABLE IF NOT EXISTS rss_feed_item_topic_candidates (
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items(id) ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
@@ -142,20 +139,11 @@ CREATE OR REPLACE TRIGGER trigger_rss_feed_latest_item_sort
 
 CREATE OR REPLACE FUNCTION fn_project_rss_feed_item_feed_candidate()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
-DECLARE official BOOLEAN := FALSE;
 BEGIN
-  IF NEW.story_id IS NOT NULL THEN
-    SELECT EXISTS (SELECT 1 FROM stories WHERE id = NEW.story_id
-      AND official_rss_feed_item_id = NEW.id AND deleted_at IS NULL) INTO official;
-  END IF;
-  INSERT INTO rss_feed_item_feed_candidates
-    (id, story_id, sort_at, is_official_for_story, votes_score_sort, votes_score_net, deleted_at)
-  VALUES (NEW.id, NEW.story_id, NEW.published_at, official,
-    COALESCE(NEW.votes_score_sort, 0), COALESCE(NEW.votes_score_net, 0), NEW.deleted_at)
-  ON CONFLICT (id) DO UPDATE SET story_id = EXCLUDED.story_id, sort_at = EXCLUDED.sort_at,
-    is_official_for_story = EXCLUDED.is_official_for_story,
-    votes_score_sort = EXCLUDED.votes_score_sort, votes_score_net = EXCLUDED.votes_score_net,
-    deleted_at = EXCLUDED.deleted_at;
+  INSERT INTO rss_feed_item_feed_candidates (id, story_id, sort_at, deleted_at)
+  VALUES (NEW.id, NEW.story_id, NEW.published_at, NEW.deleted_at)
+  ON CONFLICT (id) DO UPDATE SET story_id = EXCLUDED.story_id,
+    sort_at = EXCLUDED.sort_at, deleted_at = EXCLUDED.deleted_at;
   IF TG_OP = 'UPDATE' AND (OLD.published_at IS DISTINCT FROM NEW.published_at
       OR OLD.deleted_at IS DISTINCT FROM NEW.deleted_at) THEN
     INSERT INTO rss_feed_item_candidate_reconciliations (rss_feed_item_id) VALUES (NEW.id)
@@ -166,35 +154,14 @@ BEGIN
   RETURN NULL;
 END $$;
 CREATE OR REPLACE TRIGGER trigger_rss_feed_item_feed_candidate
-  AFTER INSERT OR UPDATE OF data, story_id, votes_score_up, votes_score_none, votes_score_down, deleted_at
+  AFTER INSERT OR UPDATE OF data, story_id, deleted_at
   ON rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_item_feed_candidate();
 
-CREATE OR REPLACE FUNCTION fn_project_story_official_feed_candidates()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-DECLARE item_id UUID;
-BEGIN
-  -- Only the old and new official item can change priority; never scan a story's members.
-  FOR item_id IN SELECT DISTINCT value FROM unnest(ARRAY[
-    CASE WHEN TG_OP <> 'INSERT' THEN OLD.official_rss_feed_item_id END,
-    CASE WHEN TG_OP <> 'DELETE' THEN NEW.official_rss_feed_item_id END
-  ]) AS ids(value) WHERE value IS NOT NULL ORDER BY value
-  LOOP
-    UPDATE rss_feed_item_feed_candidates SET is_official_for_story = COALESCE(
-      (TG_OP <> 'DELETE' AND NEW.deleted_at IS NULL AND id = NEW.official_rss_feed_item_id
-        AND story_id = NEW.id), FALSE)
-      WHERE id = item_id;
-  END LOOP;
-  RETURN NULL;
-END $$;
-
-COMMENT ON TABLE rss_feed_item_feed_candidates IS 'Current item order and story-priority projection; one row per live item identity and cascading item deletion, not event history.';
+COMMENT ON TABLE rss_feed_item_feed_candidates IS 'Current item order and story membership projection; one row per live item identity and cascading item deletion, not event history.';
 COMMENT ON COLUMN rss_feed_item_feed_candidates.id IS 'Live RSS item identity; foreign key cascades on item deletion.';
 COMMENT ON COLUMN rss_feed_item_feed_candidates.story_id IS 'Current story membership; the story foreign key is installed with its canonical creator.';
 COMMENT ON COLUMN rss_feed_item_feed_candidates.sort_at IS 'Current canonical publication order copied from the item.';
-COMMENT ON COLUMN rss_feed_item_feed_candidates.is_official_for_story IS 'Current official pointer membership, refreshed by bounded old/new-item updates.';
-COMMENT ON COLUMN rss_feed_item_feed_candidates.votes_score_sort IS 'Current Wilson ranking score; story children rank by this score.';
-COMMENT ON COLUMN rss_feed_item_feed_candidates.votes_score_net IS 'Current net score; only positive rows participate in story child reads.';
-COMMENT ON COLUMN rss_feed_item_feed_candidates.deleted_at IS 'Current item deletion marker; excluded by the priority index.';
+COMMENT ON COLUMN rss_feed_item_feed_candidates.deleted_at IS 'Current item deletion marker; excluded by the live story-order index.';
 
 COMMENT ON TABLE rss_feed_item_topic_candidates IS 'Current topic-to-item membership projection coalescing RSS categories and positive voted relations; deleted when the last contribution disappears.';
 COMMENT ON COLUMN rss_feed_item_topic_candidates.rss_feed_item_id IS 'Live item foreign key; item deletion cascades.';

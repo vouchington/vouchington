@@ -120,7 +120,7 @@ describe('RSS feed decision instant', () => {
         .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     ).toEqual(
       [
-        [older.id, 'direct'],
+        [equal.id, 'direct'],
         [older.id, 'share'],
         [equal.id, 'share'],
         [newer.id, 'direct'],

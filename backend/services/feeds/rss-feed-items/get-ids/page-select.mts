@@ -14,9 +14,16 @@ export function appendFeedPageSelect(
       combined_rss_feed_items.story_id,
       combined_rss_feed_items.delivery_type,
       combined_rss_feed_items.shared_by_id,
-      combined_rss_feed_items.shared_at
+      combined_rss_feed_items.shared_at,
+      EXISTS (SELECT 1 FROM omitted_direct_source) AS has_omitted_source,
+      (EXISTS (SELECT 1 FROM saturated_direct_child_boundaries) OR
+        EXISTS (SELECT 1 FROM saturated_shared_child_boundary)) AS has_saturated_child_pool
     FROM combined_rss_feed_items
-    WHERE 1 = 1`)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM page_visibility_boundaries omitted
+      WHERE (combined_rss_feed_items.sort_at, combined_rss_feed_items.result_id::uuid)
+        < (omitted.sort_at, omitted.item_id)
+    )`)
   if (idLt && sortAtLt)
     query.append(sql`
       AND (combined_rss_feed_items.sort_at, combined_rss_feed_items.result_id::uuid)

@@ -47,6 +47,10 @@ CREATE INDEX IF NOT EXISTS idx_community_list_topics__community_id__foreign_key
   ON community_list_topics (community_id)
   WHERE community_id IS NOT NULL;
 
+-- Bounded reverse membership probes skip removed list history.
+CREATE INDEX IF NOT EXISTS idx_community_list_topics__active_topic
+  ON community_list_topics (topic_id, community_id DESC) WHERE removed_at IS NULL;
+
 COMMENT ON TABLE community_list_topics IS 'Topics curated into a community list by community leads.';
 COMMENT ON COLUMN community_list_topics.community_id IS 'The community this list item belongs to.';
 COMMENT ON COLUMN community_list_topics.topic_id IS 'The topic added to the list.';
@@ -92,6 +96,10 @@ CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__rss_feed ON community_l
 CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__community_id__foreign_key
   ON community_list_rss_feeds (community_id)
   WHERE community_id IS NOT NULL;
+
+-- Bounded reverse membership probes skip removed list history.
+CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__active_feed
+  ON community_list_rss_feeds (rss_feed_id, community_id DESC) WHERE removed_at IS NULL;
 
 COMMENT ON TABLE community_list_rss_feeds IS 'RSS feeds curated into a community list by community leads.';
 COMMENT ON COLUMN community_list_rss_feeds.community_id IS 'The community this list item belongs to.';
