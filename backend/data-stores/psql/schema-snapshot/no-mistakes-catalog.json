@@ -73932,6 +73932,242 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "membership_stripe_purchase_collision_work_items": {
+      "checkConstraints": {
+        "membership_stripe_purchase_collision__winning_source_kind_check": {
+          "definition": "CHECK ((winning_source_kind = ANY (ARRAY['direct'::membership_source_kinds, 'family'::membership_source_kinds])))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "collision_at": {
+          "comment": "Winning membership effective time used for immutable overlap refund caps.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7
+        },
+        "created_at": {
+          "comment": "Work insertion time derived from its UUIDv7 identity; recovery orders by id.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
+        "id": {
+          "comment": "UUIDv7 work identity used by bounded recovery and stable GlideMQ admission.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "membership_lineage_binding_id": {
+          "comment": "Retained binding authorized at collision capture; it does not authorize access by a deleted user.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "membership_provider_lineage_id": {
+          "comment": "Canonical provider lineage shared by the retained source and binding.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "membership_source_id": {
+          "comment": "Retained losing Stripe source whose invoices must be inspected outside membership transactions.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "winning_plan": {
+          "comment": "Winning plan snapshot used to preserve family tier precedence during deferred discovery.",
+          "dataType": "membership_plan_slugs",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6
+        },
+        "winning_source_kind": {
+          "comment": "Winning direct native or family source at the captured collision.",
+          "dataType": "membership_source_kinds",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        }
+      },
+      "comment": "Immutable financial collision facts captured with membership projection. Pending rows recover lost queue admissions and terminal failures; completion deletes them after cases and reconciliation succeed.",
+      "foreignKeys": {
+        "fk_membership_stripe_purchase_collision_work_items__binding": {
+          "columns": ["membership_lineage_binding_id", "membership_provider_lineage_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id", "membership_provider_lineage_id"],
+          "referencedTable": "membership_lineage_bindings",
+          "validated": true
+        },
+        "fk_membership_stripe_purchase_collision_work_items__source": {
+          "columns": ["membership_source_id", "membership_provider_lineage_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id", "membership_provider_lineage_id"],
+          "referencedTable": "membership_sources",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_membership_stripe_purchase_collision_work_items__binding": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_stripe_purchase_collision_work_items__binding ON public.membership_stripe_purchase_collision_work_items USING btree (membership_lineage_binding_id, membership_provider_lineage_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "membership_lineage_binding_id",
+              "descending": false,
+              "expression": "membership_lineage_binding_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "membership_provider_lineage_id",
+              "descending": false,
+              "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_stripe_purchase_collision_work_items__collision": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_membership_stripe_purchase_collision_work_items__collision ON public.membership_stripe_purchase_collision_work_items USING btree (membership_source_id, membership_provider_lineage_id, collision_at, winning_source_kind, winning_plan)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "membership_source_id",
+              "descending": false,
+              "expression": "membership_source_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "membership_provider_lineage_id",
+              "descending": false,
+              "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "collision_at",
+              "descending": false,
+              "expression": "collision_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "winning_source_kind",
+              "descending": false,
+              "expression": "winning_source_kind",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "winning_plan",
+              "descending": false,
+              "expression": "winning_plan",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "membership_stripe_purchase_collision_work_items_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX membership_stripe_purchase_collision_work_items_pkey ON public.membership_stripe_purchase_collision_work_items USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_membership_stripe_purchase_collision_work_items_guard": {
+          "definition": "CREATE TRIGGER trigger_membership_stripe_purchase_collision_work_items_guard BEFORE UPDATE ON public.membership_stripe_purchase_collision_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "membership_verifications": {
       "checkConstraints": {
         "membership_verifications_check": {
