@@ -17,6 +17,11 @@ vi.mock(import('@/lib/api/client/bookmarks'), () => ({
   unbookmarkEntity: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
 }))
 
+vi.mock(import('@/lib/api/client/posts'), async importOriginal => ({
+  ...(await importOriginal()),
+  fetchPostDescendants: vi.fn<VitestLooseMock>(),
+}))
+
 const viewer = { id: 'viewer-1' } as User
 
 function renderTree(data: PostsResponseBody, user: User | null = viewer) {
