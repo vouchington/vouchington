@@ -1,14 +1,20 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import updateMyFinancialProfileTool from './update-my-financial-profile.mts'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers'
 import { getUserFinancialProfile } from '@services/user-financial-profiles'
+import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import type { PrivateUser } from '@services/users/types'
 
 describe('update_my_financial_profile tool — real DB', () => {
+  const suspendedUserIds: string[] = []
   let user: PrivateUser
 
   beforeAll(async () => {
     user = await createTestUser()
+  })
+
+  afterEach(async () => {
+    await Promise.all(suspendedUserIds.splice(0).map(unsuspendTestUser))
   })
 
   it('exposes numeric range constraints in the tool schema', () => {
@@ -159,5 +165,21 @@ describe('update_my_financial_profile tool — real DB', () => {
       maximum: { amount: 10_000_000, currency: 'usd' },
     })
     expect(result.profile.credit_score_range).toBe('740-799')
+  })
+
+  it('refuses a suspended account without changing the stored profile', async () => {
+    const suspendedUser = await createTestUser()
+    const execute = updateMyFinancialProfileTool.function(suspendedUser)
+    await execute({ credit_score_range: '670-739' })
+    suspendedUserIds.push(suspendedUser.id)
+    await suspendTestUser(suspendedUser.id)
+
+    await expect(execute({ credit_score_range: '800-850' })).rejects.toMatchObject({
+      status: 403,
+      code: ACCOUNT_SUSPENDED,
+    })
+
+    const persisted = await getUserFinancialProfile(suspendedUser.id)
+    expect(persisted?.credit_score_range).toBe('670-739')
   })
 })

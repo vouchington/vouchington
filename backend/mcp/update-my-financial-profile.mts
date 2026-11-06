@@ -12,6 +12,7 @@ import {
 } from '@ts-shared/data-points/json-schemas'
 import type { CurrencyCode, Money, MoneyRange } from '@ts-shared/money'
 import { successSchema, objectSchema } from '@vouchington/mcp-server/schema'
+import { requireActiveToolUser } from './private-user.mts'
 import { componentPropertySchema } from './route-response-schema.mts'
 
 // The REST twin returns the whole stored profile, including its owner and update time. The tool
@@ -98,9 +99,10 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const user = await requireActiveToolUser(currentUser)
       assertValidFinancialProfile(args as Record<string, unknown>)
 
-      const profile = await upsertUserFinancialProfile(currentUser.id, {
+      const profile = await upsertUserFinancialProfile(user.id, {
         currency: args.currency,
         credit_score_range: args.credit_score_range,
         stated_income_range: args.stated_income_range,
