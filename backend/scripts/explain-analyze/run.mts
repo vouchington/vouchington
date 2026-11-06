@@ -73,6 +73,7 @@ import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-disp
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
 import { seedAgentModerationRetention } from './seed-data/agent-moderation-retention.mts'
 import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
+import { runPrioritizedReferralCacheMeasurement } from './run-scenarios/prioritized-referral-cache-measurement.mts'
 import { runModerationReportContextScenarios } from './run-scenarios/moderation-report-contexts.mts'
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
@@ -89,12 +90,9 @@ async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
 
 // A failing step is recorded and the run continues, so one run reports every failure.
 async function runStep(scenario: string, result: Promise<unknown>): Promise<void> {
-  try {
-    await result
-  } catch (err) {
-    recordScenarioFailure(scenario, err)
-  }
+  await result.catch(err => recordScenarioFailure(scenario, err))
 }
+
 async function main() {
   prepareOutputDir()
   try {
@@ -170,6 +168,8 @@ async function main() {
     await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios())
     const runMembershipRenewalSelection = runMembershipRenewalSelectionScenario
     await runStep(runMembershipRenewalSelection.name, runMembershipRenewalSelection())
+    const measureReferralCache = runPrioritizedReferralCacheMeasurement
+    await runStep(measureReferralCache.name, measureReferralCache())
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)

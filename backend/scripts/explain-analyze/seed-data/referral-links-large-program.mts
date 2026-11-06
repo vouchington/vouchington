@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
+import { referralBenchmarkUrlId } from './referral-links-benchmark-urls.mts'
 
 const FIRST_AUTHOR_INDEX = 100
 
@@ -16,7 +17,7 @@ export async function seedLargeReferralProgram(
   console.log(`Seeding ${authorCount} authors with referral links and ranked posts...`)
   const authors = Array.from({ length: authorCount }, (_, i) => FIRST_AUTHOR_INDEX + i)
   const userIds = authors.map(index => seedUuid(index, '01'))
-  const urlIds = authors.map((_, i) => seedUuid(i, '03'))
+  const urlIds = authors.map((_, i) => referralBenchmarkUrlId(i))
   const reviewPostIds = authors.filter(index => index % 3 === 1).map(index => seedUuid(index, '05'))
   const dataPointPostIds = authors
     .filter(index => index % 3 === 2)

@@ -53,7 +53,7 @@ import {
   seedConversations,
   seedConversationPaginationRows,
   seedFriendRecommendation,
-  seedPrioritizedReferralLink,
+  seedPrioritizedReferralPrograms,
   seedRssFeedItemCategories,
   seedRssFeeds,
   seedSemanticRssFeedItems,
@@ -177,7 +177,7 @@ async function main() {
   await seedPostReviewTopicRatings(1000)
   await seedAnchorPostReviewTopicRating()
   await seedViewPostsAndUserImportApproval()
-  await seedPrioritizedReferralLink()
+  await seedPrioritizedReferralPrograms()
   await seedFriendRecommendation()
   await seedIngestionRawPages()
   await seedBloomReconciliation()
