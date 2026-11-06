@@ -1,148 +1,50 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
-  buildCommunityListProxyMutedRssFeedsCTE,
-  buildCommunityListProxyMutedTopicsCTE,
-  buildExcludedHostnameIdsCTE,
-  buildHiddenCTE,
+  buildCommunityListProxyFollowedTopicsCTE,
+  buildCommunityListTopicsCTE,
 } from '../../sql-builders/index.mts'
 import { appendPersonalizedExclusionCTEs } from './personalized-exclusions.mts'
-import { buildFollowedRssFeedsCTE } from './followed-rss-feeds-cte.mts'
-import { buildFollowedTopicsCTE } from './followed-topics-cte.mts'
 
+/** Viewer-side relation sets are independent of the delivery cursor. */
 export function appendRelationCTEs(
   query: SQLStatement,
-  {
-    communityId,
-    currentUserId,
-    followInputLimit,
-    proxyFollowInputLimit,
-    communityListInputLimit,
-    cutoffDate,
-    itemCutoffId,
-    sourceLimit,
-    exclusionRelationLimit,
-    cursorSortAt,
-    cursorId,
-    cursorInclusive,
-  }: {
-    communityId?: string
-    currentUserId?: string
-    proxyFollowInputLimit: number
-    communityListInputLimit: number
-    cutoffDate: Date | null
-    itemCutoffId: string | null
-    followInputLimit: number
-    sourceLimit: number
-    exclusionRelationLimit: number
-    cursorSortAt?: string
-    cursorId?: string
-    cursorInclusive?: boolean
-  },
+  { communityId, currentUserId }: { communityId?: string; currentUserId?: string },
 ): SQLStatement {
-  return query
-    .append(sql`viewer_proxy_follows AS MATERIALIZED (
-      SELECT object_id AS community_id, created_at
-      FROM relation__user__proxy_follow__community
-      WHERE subject_id = ${currentUserId ?? '00000000-0000-0000-0000-000000000000'}
-        AND deleted_at IS NULL
-      ORDER BY created_at DESC, object_id DESC
-      LIMIT ${proxyFollowInputLimit + 1}
-    ), `)
-    .append(
-      buildFollowedRssFeedsCTE({
-        communityId,
-        currentUserId,
-        followInputLimit,
-        proxyFollowInputLimit,
-        communityListInputLimit,
-        cutoffDate,
-        itemCutoffId,
-        sourceLimit,
-        cursorSortAt,
-        cursorId,
-        cursorInclusive,
-      }),
-    )
-    .append(sql`,
-    `)
-    .append(
-      buildFollowedTopicsCTE({
-        communityId,
-        currentUserId,
-        followInputLimit,
-        proxyFollowInputLimit,
-        communityListInputLimit,
-        cutoffDate,
-        itemCutoffId,
-        sourceLimit,
-        cursorSortAt,
-        cursorId,
-        cursorInclusive,
-      }),
-    )
-    .append(sql`,
-    `)
-    .append(appendPersonalizedExclusionCTEs(sql``, currentUserId, exclusionRelationLimit))
-}
-
-export function appendRssFeedItemViewerCTEs(
-  query: SQLStatement,
-  currentUserId: string | undefined,
-): SQLStatement {
-  return query
-    .append(buildExcludedTopicsCTE(currentUserId))
-    .append(sql`, `)
-    .append(buildExcludedRssFeedsCTE(currentUserId))
-    .append(sql`, `)
-    .append(buildHiddenItemsCTE(currentUserId))
-    .append(sql`, `)
-    .append(buildExcludedHostnamesCTE(currentUserId))
-}
-
-function buildExcludedTopicsCTE(currentUserId: string | undefined): SQLStatement {
-  return sql`/* buildExcludedCTE:fragment */
-    excluded_topics AS (
-      `.append(
-    currentUserId
-      ? sql`SELECT object_id AS topic_id
-      FROM relation__user__mute__topic
-      WHERE subject_id = ${currentUserId}
-        AND deleted_at IS NULL
+  query.append(sql`followed_rss_feeds AS NOT MATERIALIZED (`)
+  if (communityId)
+    query.append(sql`SELECT listing.rss_feed_id FROM community_list_rss_feeds listing
+      JOIN communities community ON community.id = listing.community_id
+        AND community.deleted_at IS NULL
+      WHERE listing.community_id = ${communityId} AND listing.removed_at IS NULL`)
+  else if (currentUserId)
+    query.append(sql`SELECT object_id AS rss_feed_id FROM relation__user__follow__rss_feed
+      WHERE subject_id = ${currentUserId} AND deleted_at IS NULL
       UNION
-      `.append(buildCommunityListProxyMutedTopicsCTE(currentUserId))
-      : sql`SELECT NULL::uuid AS topic_id WHERE false`,
-  ).append(sql`
-    )`)
-}
-
-function buildExcludedRssFeedsCTE(currentUserId: string | undefined): SQLStatement {
-  return sql`/* buildExcludedCTE:fragment */
-    excluded_rss_feeds AS (
-      `.append(
-    currentUserId
-      ? sql`SELECT object_id AS rss_feed_id
-      FROM relation__user__mute__rss_feed
-      WHERE subject_id = ${currentUserId}
-        AND deleted_at IS NULL
-      UNION
-      `.append(buildCommunityListProxyMutedRssFeedsCTE(currentUserId))
-      : sql`SELECT NULL::uuid AS rss_feed_id WHERE false`,
-  ).append(sql`
-    )`)
-}
-
-function buildHiddenItemsCTE(currentUserId: string | undefined): SQLStatement {
-  return currentUserId
-    ? buildHiddenCTE(currentUserId, {
-        relationTable: 'relation__user__hide__rss_feed_item',
-        idColumn: 'rss_feed_item_id',
-        cteAlias: 'hidden_items',
-      })
-    : sql`hidden_items AS (SELECT NULL::uuid AS rss_feed_item_id WHERE false)`
-}
-
-function buildExcludedHostnamesCTE(currentUserId: string | undefined): SQLStatement {
-  return currentUserId
-    ? buildExcludedHostnameIdsCTE(currentUserId)
-    : sql`excluded_hostname_ids AS (SELECT NULL::uuid AS hostname_id WHERE false)`
+      SELECT listing.rss_feed_id FROM relation__user__proxy_follow__community proxy
+      JOIN communities community ON community.id = proxy.object_id
+        AND community.deleted_at IS NULL
+      JOIN community_list_rss_feeds listing ON listing.community_id = proxy.object_id
+        AND listing.removed_at IS NULL
+      WHERE proxy.subject_id = ${currentUserId} AND proxy.deleted_at IS NULL
+        AND (community.visibility = 'public' OR EXISTS (
+          SELECT 1 FROM community_members member
+          WHERE member.community_id = community.id AND member.user_id = ${currentUserId}
+            AND member.removed_at IS NULL))`)
+  else query.append(sql`SELECT NULL::uuid AS rss_feed_id WHERE FALSE`)
+  query.append(sql`), followed_topics AS NOT MATERIALIZED (
+    SELECT candidate.topic_id FROM (`)
+  if (communityId) query.append(buildCommunityListTopicsCTE(communityId))
+  else if (currentUserId)
+    query
+      .append(sql`SELECT object_id AS topic_id FROM relation__user__follow__topic
+      WHERE subject_id = ${currentUserId} AND deleted_at IS NULL
+      UNION `)
+      .append(buildCommunityListProxyFollowedTopicsCTE(currentUserId))
+  else query.append(sql`SELECT NULL::uuid AS topic_id WHERE FALSE`)
+  query.append(sql`) candidate
+    JOIN topics active_topic ON active_topic.id = candidate.topic_id
+      AND active_topic.deleted_at IS NULL AND active_topic.merged_into_topic_id IS NULL
+  ), `)
+  appendPersonalizedExclusionCTEs(query, currentUserId)
+  return query
 }

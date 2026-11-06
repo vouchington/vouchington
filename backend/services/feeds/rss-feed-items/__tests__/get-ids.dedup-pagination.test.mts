@@ -119,7 +119,7 @@ describe('getRssFeedItemFeedIds dedup pagination', () => {
       setTestRssFeedItemVotes(itemD.id, 1),
     ])
 
-    const page1 = await getRssFeedItemFeedIds(user, { feed_type: 'follow_rss_feeds', limit: 3 })
+    const page1 = await getRssFeedItemFeedIds(user, { feed_type: 'follow_rss_feeds', limit: 2 })
     expect(page1.results.map(result => result.entity_id)).toEqual([itemA.id, itemB.id])
     expect(page1.page_info.has_next_page).toBe(true)
     const page2 = await getRssFeedItemFeedIds(user, {

@@ -35,7 +35,7 @@ describe('getRssFeedItemFeedIds', () => {
     const feedId = await createTestRssFeedWithTiming(topic.id)
     await followRssFeed(user, feedId)
 
-    const sharedIsoDate = new Date('2020-01-01T00:00:00.000Z').toISOString()
+    const sharedIsoDate = new Date(Date.now() - 60_000).toISOString()
     const embedding = new Array(1024).fill(0.01)
 
     const createItemWithSharedSortTs = async (guid: string) => {

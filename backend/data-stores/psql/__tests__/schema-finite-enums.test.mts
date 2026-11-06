@@ -144,15 +144,8 @@ const existingFiniteEnumColumns = [
       'rss_item_categories',
       'rss_item_text_categories',
       'rss_feed_text_categories',
-      'rss_item_alias_candidates',
       'completed',
     ],
-  },
-  {
-    table: 'rss_feed_item_candidate_reconciliations',
-    column: 'phase',
-    type: 'rss_feed_item_candidate_reconciliation_phases',
-    labels: ['sources', 'topics'],
   },
   {
     table: 'users',

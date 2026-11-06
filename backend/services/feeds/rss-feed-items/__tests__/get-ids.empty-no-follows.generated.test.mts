@@ -142,7 +142,7 @@ describe('getRssFeedItemFeedIds', () => {
 
     const foundItemOnlyFeed = result.results.find(r => r.id === itemOnlyFeed.id)
     const foundItemBoth = result.results.find(r => r.id === itemBoth.id)
-    expect(foundItemOnlyFeed).toBeUndefined()
+    expect(foundItemOnlyFeed).toBeDefined()
     expect(foundItemBoth).toBeDefined()
   })
 

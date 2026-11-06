@@ -21,12 +21,6 @@ export const backgroundWorkRegistryEntries5 = {
     label: 'Post publication',
     maxValues: postPublicationWorkMaxValues,
     descriptions: {
-      rss_feed_candidate_page_size:
-        'Maximum source or topic associations refreshed per candidate page.',
-      rss_feed_candidate_dispatch_size:
-        'Maximum pending item identities admitted per recovery page.',
-      rss_feed_candidate_concurrency: 'Global concurrency of each candidate projection lane.',
-
       capture_batch_size: 'Capture batch size for post publication processing.',
       effect_payload_key_batch_size: 'Maximum captured keys in one direct publication job.',
       story_lifecycle_lock_batch_size:

@@ -9,9 +9,6 @@ const defaultFields = {
   topic_alias_unlink_page_size: 100,
   topic_alias_unlink_page_concurrency: 1,
   topic_alias_unlink_recovery_concurrency: 1,
-  rss_feed_candidate_page_size: 100,
-  rss_feed_candidate_dispatch_size: 16,
-  rss_feed_candidate_concurrency: 1,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
@@ -23,9 +20,6 @@ export const postPublicationWorkMaxValues = {
   topic_alias_unlink_page_size: 1000,
   topic_alias_unlink_page_concurrency: 8,
   topic_alias_unlink_recovery_concurrency: 4,
-  rss_feed_candidate_page_size: 1000,
-  rss_feed_candidate_dispatch_size: 64,
-  rss_feed_candidate_concurrency: 4,
 }
 
 export const postPublicationWorkConfig = new DynamicConfig({
@@ -38,9 +32,6 @@ export const postPublicationWorkConfig = new DynamicConfig({
     topic_alias_unlink_page_size: 'number',
     topic_alias_unlink_page_concurrency: 'number',
     topic_alias_unlink_recovery_concurrency: 'number',
-    rss_feed_candidate_page_size: 'number',
-    rss_feed_candidate_dispatch_size: 'number',
-    rss_feed_candidate_concurrency: 'number',
   },
   defaultFields,
 })

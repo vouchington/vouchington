@@ -24,6 +24,7 @@ describe('RSS feed precise pagination', () => {
     const topic = await createTestTopic()
     const feedId = await createTestRssFeedWithTiming(topic.id)
     await followRssFeed(user, feedId)
+    const second = new Date(Date.now() - 60_000).toISOString().slice(0, 19)
     const items = await upsertRssFeedItems(
       feedId,
       [456, 456, 455, 0].map(microseconds => {
@@ -32,7 +33,7 @@ describe('RSS feed precise pagination', () => {
           guid,
           link: `https://example.com/${guid}`,
           title: 'Precise publication',
-          isoDate: `2020-01-02T03:04:05.123${String(microseconds).padStart(3, '0')}Z`,
+          isoDate: `${second}.${String(microseconds).padStart(6, '0')}Z`,
         }
       }),
     )
@@ -62,10 +63,10 @@ describe('RSS feed precise pagination', () => {
     const feedId = await createTestRssFeedWithTiming((await createTestTopic()).id)
     await followRssFeed(user, feedId)
     for (const sharer of sharers) await followUser(user, sharer)
-    const timestamp = '2020-01-02T03:04:05.123456Z'
+    const timestamp = `${new Date(Date.now() - 60_000).toISOString().slice(0, 19)}.123456Z`
     const items = await upsertRssFeedItems(
       feedId,
-      [timestamp, timestamp, '2020-01-02T03:04:05.123455Z'].map(isoDate => {
+      [timestamp, timestamp, `${timestamp.slice(0, 20)}123455Z`].map(isoDate => {
         const guid = randomUUID()
         return { guid, link: `https://example.com/${guid}`, title: 'Tied delivery', isoDate }
       }),

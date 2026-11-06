@@ -21,7 +21,6 @@ export function appendRssFeedItemEligibilityFilters(
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
-    eligibilityChildLimit,
     rssFeedItemId = sql`rss_feed_items.id`,
     rssFeedItemUrlId = sql`rss_feed_items.url_id`,
     rssFeedItemTable = sql`rss_feed_items`,
@@ -36,7 +35,6 @@ export function appendRssFeedItemEligibilityFilters(
     hashtagTopicIds: RssFeedItemFeedOptions['hashtag_topic_ids']
     hashtagAliasIds: RssFeedItemFeedOptions['hashtag_alias_ids']
     hasUnknownHashtag: RssFeedItemFeedOptions['has_unknown_hashtag']
-    eligibilityChildLimit: number
     rssFeedItemId?: SQLStatement
     rssFeedItemUrlId?: SQLStatement
     rssFeedItemTable?: SQLStatement
@@ -46,47 +44,21 @@ export function appendRssFeedItemEligibilityFilters(
     .append(sql`
       `)
     .append(rssFeedItemTable).append(sql`.deleted_at IS NULL
-      AND NOT (SELECT exhausted FROM exclusion_budget_exhausted)
       AND EXISTS (
         SELECT 1
-        FROM (
-          SELECT rss_feed_id FROM rss_feed_item_sources
-          WHERE rss_feed_item_id = `)
-  query
-    .append(rssFeedItemId)
-    .append(sql`
-          ORDER BY rss_feed_id DESC
-          LIMIT ${eligibilityChildLimit}
-        ) rfis
+        FROM rss_feed_item_sources rfis
         JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
-          AND rf.is_enabled = TRUE
-          AND rf.deleted_at IS NULL
-        WHERE 1 = 1
+          AND rf.is_enabled = TRUE AND rf.deleted_at IS NULL
+        WHERE rfis.rss_feed_item_id = `)
+  query.append(rssFeedItemId).append(buildRssFeedItemSourceMuteFilter()).append(sql`)
   `)
-    .append(buildRssFeedItemSourceMuteFilter(eligibilityChildLimit)).append(sql`)
-      AND (
-        SELECT COUNT(*) FROM (
-          SELECT 1 FROM rss_feed_item_sources
-          WHERE rss_feed_item_id = `)
-  query.append(rssFeedItemId).append(sql`
-          ORDER BY rss_feed_id DESC LIMIT ${eligibilityChildLimit + 1}
-        ) bounded_sources
-      ) <= ${eligibilityChildLimit}
-  `)
-  appendRssFeedItemViewerEligibilityFilters(
-    query,
-    rssFeedItemId,
-    rssFeedItemUrlId,
-    eligibilityChildLimit,
-    true,
-  )
+  appendRssFeedItemViewerEligibilityFilters(query, rssFeedItemId, rssFeedItemUrlId)
   appendRelatedPostsFilter(
     query,
     hasRelatedPosts,
     currentUserId,
     currentUserIsAdministrator,
     rssFeedItemUrlId,
-    eligibilityChildLimit,
   )
 
   if (areHackerNewsReferencesVisible() && hasHackerNewsReferences !== undefined) {
@@ -114,14 +86,11 @@ export function appendRssFeedItemEligibilityFilters(
     query.append(sql`
       AND EXISTS (
         SELECT 1
-        FROM (
-          SELECT rss_feed_id FROM rss_feed_item_sources
-          WHERE rss_feed_item_id = `)
-    query.append(rssFeedItemId).append(sql`
-          ORDER BY rss_feed_id DESC LIMIT ${eligibilityChildLimit}
-        ) topic_rfis
+        FROM rss_feed_item_sources topic_rfis
         JOIN rss_feeds topic_rf ON topic_rf.id = topic_rfis.rss_feed_id
-        WHERE topic_rf.topic_id = ANY(${topicIds}::uuid[])
+        WHERE topic_rfis.rss_feed_item_id = `)
+    query.append(rssFeedItemId).append(sql`
+          AND topic_rf.topic_id = ANY(${topicIds}::uuid[])
           AND topic_rf.is_enabled = TRUE
           AND topic_rf.deleted_at IS NULL
       )
@@ -132,6 +101,5 @@ export function appendRssFeedItemEligibilityFilters(
     hasUnknownHashtag,
     rssFeedItemId,
     topicIds: hashtagTopicIds,
-    eligibilityChildLimit,
   })
 }

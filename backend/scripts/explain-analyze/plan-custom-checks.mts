@@ -14,7 +14,6 @@ import { assertPostShareEligibilityIsTargetBounded } from './plan-custom/post-sh
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/remote-followers.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-custom/review-succession.mts'
 import { assertRssFeedCandidatesAreSetBased } from './plan-custom/rss-feed-candidates.mts'
-import { assertRssFeedCandidateMaintenanceIndexes } from './plan-custom/rss-feed-candidate-maintenance.mts'
 import { assertRssRecencyLateCursorPlan } from './plan-custom/rss-recency-cursor.mts'
 import {
   assertSearchCommunitiesEligibilityIsIndexed,
@@ -45,7 +44,6 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
   reviewSuccession: assertReviewSuccessionCandidatePlanIfApplicable,
   rssFeedCandidates: assertRssFeedCandidatesAreSetBased,
-  rssFeedCandidateMaintenance: assertRssFeedCandidateMaintenanceIndexes,
   rssHardDeleteRecoverySeek: assertRssHardDeleteRecoverySeek,
   rssRecencyCursor: assertRssRecencyLateCursorPlan,
   searchCommunitiesEligibility: assertSearchCommunitiesEligibilityIsIndexed,

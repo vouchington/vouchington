@@ -3,115 +3,25 @@ import type { RssFeedItemFeedOptions, RssFeedItemFeedResponse } from '@services/
 import { getRssFeedItemFeedIds } from '@services/feeds'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import {
+  HOSTNAME_COUNT,
+  RSS_FEED_ITEM_SEED_COUNT,
+  RSS_FEED_SEED_COUNT,
+} from '../seed-data/common.mts'
 
-// Fixed-corpus ceilings include both prepared plan modes and cursor pages. They
-// deliberately catch a return to full item materialization instead of multiplying
-// every independent production hard maximum into a vacuous global allowance.
-const MAX_FEED_FOLLOW_ROWS = 1_000
-// Generic plans may hash the capped topic follows for both stable-match sites.
-const MAX_TOPIC_FOLLOW_ROWS = 31_000
-const MAX_PROXY_COMMUNITY_ROWS = 512
-// At proxy maxima, two ranking passes read 1,024 list rows; capped viewer/story membership adds pair probes.
-const MAX_COMMUNITY_LIST_ROWS = 512
-const MAX_PAGE_ITEM_LIMIT = 100
-const MAX_SOURCE_TABLE_ROWS = 4_000
-const MAX_TOPIC_CANDIDATE_ROWS = 4_000
-const MAX_RSS_FEED_ROWS = 1_500
-const MAX_RSS_FEED_ITEM_ROWS = 1_200
-const MAX_STORY_PROBE_ROWS = 512
-const MAX_PUBLISHER_TYPE_ROWS = 3_000
+const feedCandidateExpectations = [
+  { kind: 'custom', name: 'rssFeedCandidates' },
+  {
+    kind: 'maxProcessedRows',
+    relation: 'rss_feed_item_sources',
+    max: RSS_FEED_ITEM_SEED_COUNT * Math.ceil(RSS_FEED_SEED_COUNT / HOSTNAME_COUNT) * 3,
+  },
+  { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: RSS_FEED_ITEM_SEED_COUNT * 2 },
+] as const
 
-function feedCandidateExpectations(
-  feedType?: RssFeedItemFeedOptions['feed_type'],
-  proxyCap = false,
-) {
-  return [
-    { kind: 'custom', name: 'rssFeedCandidates' },
-    ...(feedType === 'follow_topics'
-      ? []
-      : [
-          { kind: 'usesIndexes' as const, indexes: ['idx_rss_feed_item_sources__item_sort'] },
-          {
-            kind: 'maxProcessedRows' as const,
-            relation: 'relation__user__follow__rss_feed',
-            max: MAX_FEED_FOLLOW_ROWS,
-          },
-          {
-            kind: 'maxProcessedRows' as const,
-            relation: 'community_list_rss_feeds',
-            max: proxyCap ? 1800 : MAX_COMMUNITY_LIST_ROWS,
-          },
-        ]),
-    ...(feedType === 'follow_rss_feeds'
-      ? []
-      : [
-          {
-            kind: 'usesIndexes' as const,
-            indexes: ['idx_rss_feed_item_topic_candidates__topic_order'],
-          },
-          {
-            kind: 'maxProcessedRows' as const,
-            relation: 'relation__user__follow__topic',
-            max: MAX_TOPIC_FOLLOW_ROWS,
-          },
-          {
-            kind: 'maxProcessedRows' as const,
-            relation: 'community_list_topics',
-            max: proxyCap ? 1800 : MAX_COMMUNITY_LIST_ROWS,
-          },
-        ]),
-    {
-      kind: 'maxProcessedRows',
-      relation: 'rss_feed_item_sources',
-      max: MAX_SOURCE_TABLE_ROWS,
-    },
-    {
-      kind: 'maxProcessedRows',
-      relation: 'relation__user__proxy_follow__community',
-      max: MAX_PROXY_COMMUNITY_ROWS,
-    },
-    {
-      kind: 'maxProcessedRows',
-      relation: 'rss_feeds',
-      max: proxyCap ? 1800 : MAX_RSS_FEED_ROWS,
-    },
-    { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: MAX_RSS_FEED_ITEM_ROWS },
-    {
-      kind: 'maxProcessedRows',
-      relation: 'rss_feed_item_topic_candidates',
-      max: MAX_TOPIC_CANDIDATE_ROWS,
-    },
-    {
-      kind: 'maxProcessedRows',
-      relation: 'rss_feed_item_feed_candidates',
-      max: MAX_STORY_PROBE_ROWS,
-    },
-    {
-      kind: 'usesIndexes',
-      indexes: ['idx_rss_feed_item_feed_candidates__story_order'],
-    },
-    {
-      kind: 'maxProcessedRows',
-      relation: 'rss_feed_item_feed_shares',
-      max: MAX_PAGE_ITEM_LIMIT + 1,
-    },
-    {
-      kind: 'maxProcessedRows',
-      relation: 'relation__topic__publisher_type__topic',
-      max: MAX_PUBLISHER_TYPE_ROWS,
-    },
-  ] as const
-}
-
-export function registerRssFeedCandidateScenario(
-  scenarioId: string,
-  feedType?: RssFeedItemFeedOptions['feed_type'],
-  allowEmptyResult = false,
-  proxyCap = false,
-): void {
+export function registerRssFeedCandidateScenario(scenarioId: string): void {
   registerScenarioContract(scenarioId, {
-    allowEmptyResult,
-    expectations: feedCandidateExpectations(feedType, proxyCap),
+    expectations: feedCandidateExpectations,
     crossPartition: {
       rss_feed_items: 'The feed ranks recent matching items across the time window.',
     },
@@ -123,11 +33,9 @@ export async function runRssFeedFirstAndContinuationScenarios(
   user: PrivateUser,
   options: RssFeedItemFeedOptions,
   suffix?: string,
-  validateContinuation?: (page: RssFeedItemFeedResponse) => void,
-  proxyCap = false,
 ): Promise<void> {
   let first: RssFeedItemFeedResponse | undefined
-  registerRssFeedCandidateScenario(scenarioId, options.feed_type, false, proxyCap)
+  registerRssFeedCandidateScenario(scenarioId)
   await runAndCapture(
     scenarioId,
     async () => {
@@ -145,7 +53,7 @@ export async function runRssFeedFirstAndContinuationScenarios(
       .filter(row => row.delivery_type === 'direct' && row.story_id)
       .map(row => row.story_id),
   )
-  registerRssFeedCandidateScenario(`${scenarioId}-after`, options.feed_type, false, proxyCap)
+  registerRssFeedCandidateScenario(`${scenarioId}-after`)
   await runAndCapture(
     `${scenarioId}-after`,
     async () => {
@@ -162,7 +70,6 @@ export async function runRssFeedFirstAndContinuationScenarios(
       ) {
         throw new Error(`${scenarioId} continuation must contain new canonical deliveries`)
       }
-      validateContinuation?.(next)
     },
     suffix,
   )
