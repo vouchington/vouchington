@@ -94,7 +94,8 @@ export async function getVisiblePostCollectionRows(
       FROM posts access_post
       WHERE access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
       LIMIT 1
-    ) access_post ON TRUE`)
+    ) access_post ON TRUE
+    ORDER BY driving.created_us DESC, driving.entity_id DESC`)
 
   const { rows } = await read<{
     entity_id: string
