@@ -40,6 +40,7 @@ export async function getVisibleCommentDescendantIdsPage(
   const maxDepth = getCommentDescendantMaxDepth()
   const headLimit = Math.min(options.limit, limits.maxHeads)
   await using transaction = await beginTransaction({ client: readPool })
+  // ast-grep-ignore: no-three-sequential-awaits -- the read-only snapshot precedes root and head checks, whose result defines the dependent bounded preview frontier.
   await transaction(sql`/* getVisibleCommentDescendantIdsPage:transaction */
     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY`)
   const heads = await readCommentHeads(transaction, {
