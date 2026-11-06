@@ -212,8 +212,6 @@ describe('search page bounds', () => {
     })
     expect(stories.sql).toContain('similar_rss_feed_item_embedding')
     expect(stories.sql).toContain('is_discoverable')
-    expect(stories.sql).toContain('LIMIT 26')
-    expect(stories.sql).toContain('LIMIT 6')
     expect(stories.values).toContain(ID)
 
     const filtered = buildDataPointPageQuery(

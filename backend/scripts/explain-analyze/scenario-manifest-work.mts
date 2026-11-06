@@ -193,6 +193,7 @@ export const SEARCH_PAGE_SCENARIO_IDS = [
   'story-source-search-best',
   'story-source-search-following',
   'story-source-search-hot',
+  'story-source-search-many-feeds',
   'story-source-search-new',
   'story-source-search-semantic',
   'story-source-search-staff',

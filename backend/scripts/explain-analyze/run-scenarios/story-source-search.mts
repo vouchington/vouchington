@@ -1,5 +1,6 @@
 import { SEMANTIC_POST_SEARCH_SETTINGS } from '@services/posts/search/execute-query'
 import { searchStorySourcePosts } from '@services/posts/search/story-source-page'
+import { seedStoryCarriedByManyFeeds } from '../seed-data/story-source-many-feeds.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import * as services from '../run-services.mts'
@@ -41,6 +42,11 @@ export async function runStorySourceSearchScenarios(): Promise<void> {
     undefined,
     'listStorySourcePage',
     { localSettings: SEMANTIC_POST_SEARCH_SETTINGS },
+  )
+  await seedStoryCarriedByManyFeeds(seedUser.id)
+  registerScenarioContract('story-source-search-many-feeds', storySourceManyFeedsPlanContract())
+  await runAndCapture('story-source-search-many-feeds', () =>
+    getPostIds(seedUser, { post_types: ['story'], sort: 'new', limit: 21, time_range: 'all' }),
   )
 }
 
@@ -104,5 +110,27 @@ function storySourcePlanContract() {
       rss_feed_items:
         'A story source page joins inspected items that can sit in more than one id partition.',
     },
+  }
+}
+
+function storySourceManyFeedsPlanContract() {
+  const contract = storySourcePlanContract()
+  return {
+    ...contract,
+    expectations: contract.expectations.map(expectation => {
+      if (
+        expectation.kind === 'maxProcessedRows' &&
+        expectation.relation === 'rss_feed_item_sources'
+      ) {
+        return { ...expectation, max: 900 }
+      }
+      if (expectation.kind === 'usesIndexes') {
+        return {
+          ...expectation,
+          indexes: [...expectation.indexes, 'idx_rss_feed_item_sources__story_feed_item'],
+        }
+      }
+      return expectation
+    }),
   }
 }

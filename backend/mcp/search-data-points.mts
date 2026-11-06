@@ -74,6 +74,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         },
         after: {
           type: 'string',
+          description: 'Opaque cursor from this option’s previous page.',
         },
       },
       required: [],
