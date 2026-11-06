@@ -1,5 +1,4 @@
 import { encodeCursor } from '@modules/pagination'
-import type { BasicUser } from '@services/users/types'
 import { describe, expect, it } from 'vitest'
 import { dataPointLimitLiteral } from './data-point-arms.mts'
 import { assembleDataPointPage } from './data-point-assemble.mts'
@@ -230,7 +229,12 @@ describe('search page bounds', () => {
     }
 
     const staff = buildStorySourcePageQuery({
-      currentUser: { id: ID, roles: ['moderator'] } as BasicUser,
+      currentUser: {
+        __entity_type: 'user',
+        id: ID,
+        roles: ['moderator'],
+        account_type: null,
+      },
       options: { post_types: ['story'] },
       cursor: null,
       hasSemanticSearch: false,
