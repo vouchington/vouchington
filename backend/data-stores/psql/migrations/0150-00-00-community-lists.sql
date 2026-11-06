@@ -41,6 +41,11 @@ CREATE INDEX IF NOT EXISTS idx_community_list_topics__community_id__order_index_
   WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_topics__topic ON community_list_topics (topic_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Community delete includes removed rows. Live pages use the partial order index.
+CREATE INDEX IF NOT EXISTS idx_community_list_topics__community_id__foreign_key
+  ON community_list_topics (community_id)
+  WHERE community_id IS NOT NULL;
 
 COMMENT ON TABLE community_list_topics IS 'Topics curated into a community list by community leads.';
 COMMENT ON COLUMN community_list_topics.community_id IS 'The community this list item belongs to.';
@@ -82,6 +87,11 @@ CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__community_id__order_ind
   WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__rss_feed ON community_list_rss_feeds (rss_feed_id, id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Community delete includes removed rows. Live pages use the partial order index.
+CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__community_id__foreign_key
+  ON community_list_rss_feeds (community_id)
+  WHERE community_id IS NOT NULL;
 
 COMMENT ON TABLE community_list_rss_feeds IS 'RSS feeds curated into a community list by community leads.';
 COMMENT ON COLUMN community_list_rss_feeds.community_id IS 'The community this list item belongs to.';
@@ -167,6 +177,11 @@ CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__community_id__order
   WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__url_hostname ON community_list_url_hostnames (url_hostname_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Community delete includes removed rows. Live pages use the partial order index.
+CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__community_id__foreign_key
+  ON community_list_url_hostnames (community_id)
+  WHERE community_id IS NOT NULL;
 
 COMMENT ON TABLE community_list_url_hostnames IS 'URL hostnames (domains) curated into a community list by community leads.';
 COMMENT ON COLUMN community_list_url_hostnames.community_id IS 'The community this list item belongs to.';
@@ -204,6 +219,11 @@ CREATE INDEX IF NOT EXISTS idx_community_list_urls__community_id__order_index__i
   WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_urls__url ON community_list_urls (url_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Community delete includes removed rows. Live pages use the partial order index.
+CREATE INDEX IF NOT EXISTS idx_community_list_urls__community_id__foreign_key
+  ON community_list_urls (community_id)
+  WHERE community_id IS NOT NULL;
 
 COMMENT ON TABLE community_list_urls IS 'URLs curated into a community list by community leads.';
 COMMENT ON COLUMN community_list_urls.community_id IS 'The community this list item belongs to.';
