@@ -107,7 +107,7 @@ export default async function TopicAliasesPage({
                         prefetch={false}
                         href={topicManagementHref(result.topic, 'settings/aliases')}
                         className='text-primary hover:text-primary/80'
-                        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the alias search result
+                        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                         data-pw={`alias-search-edit-link-${result.alias}`}
                       >
                         {t('extracted.aliases.page.editAliases_c526d9ba')}

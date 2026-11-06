@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-defaults -- moved test support forwards the component data-pw props the privacy tests query */
+/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- moved test support forwards the component data-pw props the privacy tests query */
 
 import { configure } from '@testing-library/react'
 import type { ReactNode } from 'react'
@@ -38,7 +38,6 @@ vi.mock(import('@/components/ui/select'), () => {
     }) => (
       <Button
         type='button'
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the test passes this double's selector
         data-pw={dataPw}
       >
         {children}
@@ -57,7 +56,6 @@ vi.mock(import('@/components/ui/select'), () => {
     }) => (
       <option
         value={value}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the test passes this double's selector
         data-pw={dataPw}
       >
         {children}

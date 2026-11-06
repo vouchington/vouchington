@@ -24,7 +24,7 @@ export function ActiveSessionRow({
   return (
     <li
       className='rounded-md border p-4'
-      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the session id
+      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
       data-pw={`active-session-item-${session.id}`}
     >
       <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>

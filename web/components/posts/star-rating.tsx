@@ -61,7 +61,7 @@ export function StarRating({
             aria-label={`${star} star${star !== 1 ? 's' : ''}`}
             className='peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0'
             tabIndex={star === selected ? 0 : -1}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the star value
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
             data-pw={`star-rating-${star}`}
           />
           <Label

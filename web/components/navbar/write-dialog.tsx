@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-literals -- Write dialog IDs come from static option data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import Link from 'next/link'
@@ -77,7 +78,6 @@ export function WriteDialog({ open, onOpenChange }: WriteDialogProps) {
                 href={option.href}
                 prefetch={false}
                 onClick={() => onOpenChange(false)}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- Write dialog IDs come from static option data; ast-grep still bans inline calls in data-pw.
                 data-pw={option.dataPw}
               >
                 <div className='flex flex-col items-start gap-0.5 py-1'>

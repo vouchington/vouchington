@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-literals -- Sidebar nav IDs come from intent config data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import Link from 'next/link'
@@ -35,7 +36,6 @@ export function AppSidebarNavGroup({ group, pathname, isAuthenticated }: AppSide
         <SidebarGroupLabel asChild>
           <CollapsibleTrigger
             className='cursor-pointer'
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- Sidebar nav IDs come from intent config data; ast-grep still bans inline calls in data-pw.
             data-pw={group.dataPw}
           >
             {t(group.label)}
@@ -51,7 +51,6 @@ export function AppSidebarNavGroup({ group, pathname, isAuthenticated }: AppSide
                     <SidebarMenuItem key={item.dataPw}>
                       <SidebarMenuButton
                         aria-disabled='true'
-                        // oxlint-disable-next-line no-mistakes/playwright-literals -- Sidebar nav IDs come from intent config data; ast-grep still bans inline calls in data-pw.
                         data-pw={item.dataPw}
                         className='cursor-not-allowed opacity-50'
                       >
@@ -79,7 +78,6 @@ export function AppSidebarNavGroup({ group, pathname, isAuthenticated }: AppSide
                     >
                       <Link
                         href={item.href}
-                        // oxlint-disable-next-line no-mistakes/playwright-literals -- Sidebar nav IDs come from intent config data; ast-grep still bans inline calls in data-pw.
                         data-pw={item.dataPw}
                         prefetch={false}
                       >

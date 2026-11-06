@@ -42,7 +42,7 @@ export function PasskeyList({
         <li
           key={passkey.id}
           className='rounded-md border p-4'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the passkey id
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
           data-pw={`passkey-item-${passkey.id}`}
         >
           {renamingId === passkey.id ? (

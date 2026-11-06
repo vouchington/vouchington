@@ -58,7 +58,7 @@ export function ValidationsListTable({ validations, programSlug, t }: Validation
                 <Link
                   prefetch={false}
                   href={referralValidationHref(programSlug, v)}
-                  // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the validation id
+                  // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                   data-pw={`validation-link-${v.id}`}
                   className='text-primary hover:text-primary/80'
                 >

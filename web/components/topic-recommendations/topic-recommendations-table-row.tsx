@@ -52,7 +52,7 @@ export function TopicRecommendationsTableRow({
   }
 
   return (
-    <TableRow // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the topic slug
+    <TableRow // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
       data-pw={`topic-recommendation-row-${recommendation.topic_slug}`}
     >
       <TableCell>

@@ -67,7 +67,7 @@ export function CommunityCard({
               href={communityHref(community)}
               prefetch={false}
               className='truncate text-base font-semibold hover:underline'
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the community slug
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
               data-pw={`community-card-link-${community.slug}`}
             >
               {community.name}

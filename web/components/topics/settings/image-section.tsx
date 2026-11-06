@@ -142,7 +142,7 @@ function ImageRow({
             onUploadEnd={onUploadEnd}
             disabled={disabled}
             label={label}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the image kind
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
             data-pw={`topic-image-${kind}-upload`}
           />
           {imageId && (
@@ -152,7 +152,7 @@ function ImageRow({
               size='sm'
               disabled={disabled}
               onClick={onRemove}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the image kind
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
               data-pw={`topic-image-${kind}-remove`}
             >
               {removeLabel}

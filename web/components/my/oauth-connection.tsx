@@ -90,7 +90,7 @@ export function OAuthConnection({
       {separator && <Separator />}
       <h2
         className='flex items-center gap-2 text-lg font-semibold'
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the OAuth provider id
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
         data-pw={`oauth-connection-${provider}-heading`}
       >
         <ProviderIcon provider={provider} />

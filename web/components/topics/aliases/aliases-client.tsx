@@ -124,7 +124,7 @@ export function AliasesClient({
               {aliases.map(alias => (
                 <li
                   key={alias.id}
-                  // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the alias text
+                  // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                   data-pw={`alias-row-${alias.alias}`}
                   className='flex items-center justify-between py-3'
                 >
@@ -134,7 +134,7 @@ export function AliasesClient({
                       type='button'
                       variant='destructive'
                       size='sm'
-                      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the alias text
+                      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                       data-pw={`alias-remove-${alias.alias}`}
                       onClick={() => handleDeleteAlias(alias)}
                       loading={deletingAlias === alias.id}

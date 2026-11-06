@@ -72,7 +72,7 @@ export default function DomainCrawlersPanel({ crawlers }: Props) {
                       prefetch={false}
                       href={createCrawlerPathname(crawler)}
                       className='text-primary hover:text-primary/80'
-                      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the crawler id
+                      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                       data-pw={`domain-crawler-view-${crawler.id}`}
                     >
                       {t('extracted.domains.domainCrawlersPanel.view_dcc839a4')}
@@ -82,7 +82,7 @@ export default function DomainCrawlersPanel({ crawlers }: Props) {
                       prefetch={false}
                       href={createCrawlerPathname(crawler, '/edit')}
                       className='text-primary hover:text-primary/80'
-                      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the crawler id
+                      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                       data-pw={`domain-crawler-edit-${crawler.id}`}
                     >
                       {t('extracted.domains.domainCrawlersPanel.edit_464c4ffd')}

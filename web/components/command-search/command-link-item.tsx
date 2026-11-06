@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-defaults -- dataPw is a static prop passed from callers with literal values; ast-grep bans dynamic data-pw but this is a safe prop passthrough. */
+/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- dataPw is a static prop passed from callers with literal values; ast-grep bans dynamic data-pw but this is a safe prop passthrough. */
 'use client'
 
 import { useRef } from 'react'
@@ -108,12 +108,10 @@ export function CommandLinkItem({
     return (
       <CommandItem
         asChild
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the command search result id comes from the caller
         data-pw={dataPw}
         onSelect={handleSelect}
       >
         <ExternalLink
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the command search result id comes from the caller
           data-pw={dataPw}
           ref={externalAnchorRef}
           href={href}
@@ -129,12 +127,10 @@ export function CommandLinkItem({
   return (
     <CommandItem
       asChild
-      // oxlint-disable-next-line no-mistakes/playwright-literals -- the command search result id comes from the caller
       data-pw={dataPw}
       onSelect={handleSelect}
     >
       <TextLink
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the command search result id comes from the caller
         data-pw={dataPw}
         href={href}
         // Search lists many results; opt out of hover prefetch to avoid wasted bandwidth.

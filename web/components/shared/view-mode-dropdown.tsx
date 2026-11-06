@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-literals -- View option IDs come from caller-provided option data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import { ChevronDown, Check, LayoutGrid, List } from 'lucide-react'
@@ -75,7 +76,6 @@ export function ViewModeDropdown<T extends string>({
             <DropdownMenuItem
               key={option.value}
               onSelect={() => onValueChange(option.value)}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- View option IDs come from caller-provided option data; ast-grep still bans inline calls in data-pw.
               data-pw={option.dataPw}
             >
               <Icon className='h-4 w-4' />

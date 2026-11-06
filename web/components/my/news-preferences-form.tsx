@@ -33,7 +33,7 @@ export function NewsPreferencesForm({ publisherTypes }: NewsPreferencesFormProps
                 aria-label={t('extracted.my.newsPreferencesForm.muteName_f252a4cc', {
                   name: topic.name,
                 })}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the topic slug
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                 data-pw={`news-pref-mute-${topic.slug}`}
               />
               <span className='text-sm'>{topic.name}</span>

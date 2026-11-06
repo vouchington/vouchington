@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-literals -- Breadcrumb IDs interpolate the caller path slug. The slug function stays outside data-pw because ast-grep bans inline calls there. */
 'use client'
 
 import * as React from 'react'
@@ -146,13 +147,11 @@ function Breadcrumbs({ items }: BreadcrumbsProps) {
             <React.Fragment key={`${name}:${item.path}`}>
               <BreadcrumbItem className={isLast ? 'shrink' : 'shrink-0'}>
                 {isLast ? (
-                  // oxlint-disable-next-line no-mistakes/playwright-literals -- Breadcrumb IDs interpolate the caller path slug. The slug function stays outside data-pw because ast-grep bans inline calls there.
                   <BreadcrumbPage data-pw={`breadcrumb-current-${pathSlug}`}>{name}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
                     <Link
                       href={item.path}
-                      // oxlint-disable-next-line no-mistakes/playwright-literals -- Breadcrumb IDs interpolate the caller path slug. The slug function stays outside data-pw because ast-grep bans inline calls there.
                       data-pw={`breadcrumb-link-${pathSlug}`}
                       prefetch={false}
                     >

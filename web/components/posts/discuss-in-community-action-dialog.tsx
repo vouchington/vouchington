@@ -77,7 +77,7 @@ export function DiscussInCommunityActionDialog({
             <SelectItem
               key={community.id}
               value={community.slug}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the community slug
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
               data-pw={`discuss-in-community-option-${community.slug}`}
             >
               {community.name}

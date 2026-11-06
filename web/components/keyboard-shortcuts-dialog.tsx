@@ -55,7 +55,7 @@ export function KeyboardShortcutsDialog({
                     : [
                         <div
                           key={shortcut.id}
-                          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the shortcut id
+                          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                           data-pw={`shortcut-item-${shortcut.id}`}
                           className='flex items-center justify-between'
                         >

@@ -29,7 +29,7 @@ export function SearchTabs({ activeTab, onTabChange, onKeyDown, tabsRef, tabs }:
           type='button'
           variant='ghost'
           size='sm'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the tab value
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
           data-pw={`search-tab-${tab.value}`}
           onClick={() => onTabChange(tab.value)}
           onKeyDown={onKeyDown}

@@ -86,7 +86,7 @@ export function CategoryRowActions({ category }: Props) {
   return (
     <div
       className='flex flex-wrap items-center gap-2'
-      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the category text
+      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
       data-pw={`category-row-actions-${category.category_text}`}
     >
       <TopicAutocomplete
@@ -102,7 +102,7 @@ export function CategoryRowActions({ category }: Props) {
       <Link
         href={createTopicHref}
         prefetch={false}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the category text
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
         data-pw={`category-create-topic-${category.category_text}`}
         className='text-sm text-primary underline-offset-2 hover:underline'
       >
@@ -112,7 +112,7 @@ export function CategoryRowActions({ category }: Props) {
         <Button
           size='sm'
           variant='outline'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the category text
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
           data-pw={`category-unreject-${category.category_text}`}
           disabled={rejecting}
           onClick={handleUnreject}
@@ -123,7 +123,7 @@ export function CategoryRowActions({ category }: Props) {
         <Button
           size='sm'
           variant='ghost'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the category text
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
           data-pw={`category-reject-${category.category_text}`}
           disabled={rejecting}
           onClick={handleReject}

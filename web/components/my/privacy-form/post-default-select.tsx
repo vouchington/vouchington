@@ -1,6 +1,6 @@
 'use client'
 
-// oxlint-disable no-mistakes/playwright-defaults -- Post default call sites pass literal test IDs through this shared select.
+// oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Post default call sites pass literal test IDs through this shared select.
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -50,7 +50,6 @@ export function PostDefaultSelect({
         <SelectTrigger
           id={id}
           className='w-48'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector is the caller trigger id
           data-pw={triggerTestId}
         >
           <SelectValue
@@ -65,7 +64,6 @@ export function PostDefaultSelect({
               <SelectItem
                 key={o.value}
                 value={o.value}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector is the caller option id
                 data-pw={optionTestId}
               >
                 {o.label}

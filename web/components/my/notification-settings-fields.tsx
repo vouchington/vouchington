@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-literals -- Digest selectors derive stable values from a local discriminated union. */
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -31,7 +32,6 @@ export function DigestFrequencyField({
       >
         <SelectTrigger
           id={id}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- Digest selectors derive stable values from a local discriminated union.
           data-pw={`${id}-select`}
         >
           <SelectValue placeholder={label} />

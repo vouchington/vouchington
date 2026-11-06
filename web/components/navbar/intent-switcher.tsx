@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-literals -- Intent switcher item IDs come from intent config data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import { ChevronDown } from 'lucide-react'
@@ -89,7 +90,6 @@ export function IntentSwitcher({ variant }: { variant: 'navbar' | 'sidebar' }) {
               <Link
                 href={landingHref}
                 prefetch={false}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the intent id
                 data-pw={`intent-switcher-item-${intent.id}`}
               >
                 <Icon className='size-4 shrink-0' />

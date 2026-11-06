@@ -47,7 +47,7 @@ export function ListFiltersSortSelect<T extends string = string>({
             key={option.value}
             value={option.value}
             title={option.description}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the option value
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
             data-pw={`list-filters-sort-option-${option.value}`}
           >
             {option.label}

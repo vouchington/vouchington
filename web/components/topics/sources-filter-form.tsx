@@ -76,7 +76,7 @@ function SourcesFilterFormContent({ defaultPublisherType }: SourcesFilterFormPro
             <SelectItem
               key={type.slug}
               value={type.slug}
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the publisher type slug
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
               data-pw={`sources-filter-publisher-type-option-${type.slug}`}
             >
               {type.label}

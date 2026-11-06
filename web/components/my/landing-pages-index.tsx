@@ -106,7 +106,7 @@ export function LandingPagesIndex({ username, initialPages }: Props) {
                     asChild
                     variant='outline'
                     size='sm'
-                    // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the landing page slug
+                    // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                     data-pw={`landing-pages-settings-page-button-${page.slug}`}
                   >
                     <Link

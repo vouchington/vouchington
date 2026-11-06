@@ -108,7 +108,7 @@ function AdditionalDomainList({
       {additionalHostnames.map(h => (
         <li
           key={h.hostname_id}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the hostname
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
           data-pw={`additional-domain-row-${h.hostname}`}
           className='flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm'
         >
@@ -117,7 +117,7 @@ function AdditionalDomainList({
             type='button'
             variant='outline'
             size='sm'
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the hostname
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
             data-pw={`additional-domain-remove-${h.hostname}`}
             onClick={() => onRemoveHostname(h.hostname_id, h.hostname)}
             loading={removingHostnameId === h.hostname_id}

@@ -1,6 +1,6 @@
 'use client'
 
-// oxlint-disable no-mistakes/playwright-defaults -- Privacy form call sites pass literal test IDs through this shared select.
+// oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Privacy form call sites pass literal test IDs through this shared select.
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -59,7 +59,6 @@ export function AudienceSelect({
         <SelectTrigger
           id={id}
           className='w-48'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector is the caller trigger id
           data-pw={triggerTestId}
         >
           <SelectValue placeholder={t('extracted.my.audienceSelect.selectAudience_e2815050')} />
@@ -72,7 +71,6 @@ export function AudienceSelect({
               <SelectItem
                 key={opt}
                 value={opt}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector is the caller option id
                 data-pw={optionTestId}
               >
                 {audienceLabels[opt]}

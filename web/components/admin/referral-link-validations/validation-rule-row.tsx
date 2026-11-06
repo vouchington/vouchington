@@ -94,7 +94,7 @@ export function ValidationRuleRow({
             size='sm'
             variant='outline'
             onClick={onEdit}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the validation rule id
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
             data-pw={`rule-edit-${rule.id}`}
           >
             {t('extracted.referralLinkValidations.validationRulesTable.edit_464c4ffd')}
@@ -104,7 +104,7 @@ export function ValidationRuleRow({
             variant='destructive'
             disabled={isDeleting}
             onClick={onDeleteRequest}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the validation rule id
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
             data-pw={`rule-delete-${rule.id}`}
           >
             {t('extracted.referralLinkValidations.validationRulesTable.delete_e2d0a549')}

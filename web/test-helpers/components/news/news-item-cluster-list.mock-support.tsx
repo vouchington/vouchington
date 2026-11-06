@@ -1,3 +1,5 @@
+/* oxlint-disable no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+
 import type { ReactNode } from 'react'
 import { configure, render } from '@testing-library/react'
 import { vi } from 'vitest'
@@ -83,20 +85,9 @@ vi.mock(import('@/components/votes/score-vote'), () => ({
     existingVoteChoice?: string
     entityType?: string
   }) => (
-    // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the election id
     <div data-pw={`score-vote-${electionId}`}>
-      <span
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the election id
-        data-pw={`existing-vote-choice-${electionId}`}
-      >
-        {String(existingVoteChoice)}
-      </span>
-      <span
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the election id
-        data-pw={`entity-type-${electionId}`}
-      >
-        {String(entityType)}
-      </span>
+      <span data-pw={`existing-vote-choice-${electionId}`}>{String(existingVoteChoice)}</span>
+      <span data-pw={`entity-type-${electionId}`}>{String(entityType)}</span>
     </div>
   ),
 }))

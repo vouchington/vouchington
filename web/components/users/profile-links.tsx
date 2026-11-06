@@ -70,7 +70,7 @@ export function UserProfileLinks({ links, variant, t }: ProfileLinksProps) {
               rel='noopener noreferrer nofollow'
               aria-label={label}
               className='flex size-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground'
-              // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the profile link type
+              // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
               data-pw={`profile-link-${link.link_type}`}
             >
               <Icon className='h-4 w-4' />

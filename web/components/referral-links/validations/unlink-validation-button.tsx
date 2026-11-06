@@ -62,7 +62,7 @@ export function UnlinkValidationButton({
         loading={unlinking}
         disabled={unlinking}
         onClick={() => setShowConfirm(true)}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the validation id
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
         data-pw={`unlink-validation-${validationId}`}
       >
         {unlinking

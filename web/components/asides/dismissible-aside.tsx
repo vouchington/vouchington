@@ -47,7 +47,7 @@ export function DismissibleAside({ dismissKey, children }: DismissibleAsideProps
         className='absolute right-1 top-1 z-10 h-11 w-11'
         onClick={handleDismiss}
         aria-label={label}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the dismiss key
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
         data-pw={`dismissible-aside-button-${dismissKey}`}
       >
         <X className='h-3 w-3' />

@@ -41,7 +41,7 @@ export function PostCardBadges({
       <Badge
         variant={post.post_type}
         className='text-xs'
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the post type
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
         data-pw={`post-card-type-badge-${post.post_type}`}
       >
         {humanizePostType(post.post_type)}

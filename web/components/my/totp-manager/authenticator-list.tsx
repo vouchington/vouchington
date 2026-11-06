@@ -42,7 +42,7 @@ export function AuthenticatorList({
         <li
           key={authenticator.id}
           className='rounded-md border p-4'
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the authenticator id
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
           data-pw={`totp-authenticator-item-${authenticator.id}`}
         >
           {renamingId === authenticator.id ? (

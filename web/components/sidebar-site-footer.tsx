@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-literals -- Footer IDs come from static link data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import { useState } from 'react'
@@ -19,7 +20,6 @@ function FooterLinks({
             href={link.href}
             prefetch={false}
             className='inline-flex min-h-6 items-center px-1 hover:text-foreground max-md:min-h-11'
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- Footer IDs come from static link data; ast-grep still bans inline calls in data-pw.
             data-pw={link.dataPw}
           >
             {link.label}

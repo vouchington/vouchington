@@ -70,7 +70,7 @@ export function ProviderButton({
       onClick={signInWithProvider}
       loading={isSubmitting}
       disabled={!auth.isLoaded || isSubmitting || disabled}
-      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the OAuth provider id
+      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
       data-pw={`oauth-provider-button-${provider}`}
     >
       {!isSubmitting && (

@@ -1,3 +1,5 @@
+/* oxlint-disable no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+
 import { configure, render } from '@testing-library/react'
 import type { ComponentProps, ReactNode } from 'react'
 import { vi } from 'vitest'
@@ -53,7 +55,6 @@ vi.mock(
         submitVote: (id: string, choice: string) => Promise<void>
         'data-pw'?: string
       }) => (
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the test passes this vote selector
         <div data-pw={dataPw ?? 'score-vote'}>
           <span data-pw='count-up'>{countUp}</span>
           <span data-pw='count-down'>{countDown}</span>
@@ -63,7 +64,6 @@ vi.mock(
           <button
             type='button'
             aria-label='Submit vote'
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- the submit selector adds a suffix to the vote selector
             data-pw={`${dataPw ?? 'score-vote'}-submit`}
             onClick={() => submitVote(electionId, 'vouch')}
           />

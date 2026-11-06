@@ -76,7 +76,7 @@ export function ReviewReferralPrograms({ t, post }: ReviewReferralProgramsProps)
               'referral-links',
             )}
             prefetch={false}
-            // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the topic id
+            // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
             data-pw={`review-referral-link-${topic.topicId}`}
           >
             <Badge

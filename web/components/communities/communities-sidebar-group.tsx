@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-literals -- Bookmarks items derived from COMMUNITIES_INTENT config; data-pw values are literal strings in the config. */
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -104,7 +105,6 @@ export function CommunitiesSidebarGroup() {
         </SidebarGroupContent>
       </SidebarGroup>
       {bookmarksGroup && (
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- Bookmarks items derived from COMMUNITIES_INTENT config; data-pw values are literal strings in the config.
         <SidebarGroup data-pw={bookmarksGroup.dataPw}>
           <SidebarGroupLabel>{t(bookmarksGroup.label)}</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -118,7 +118,6 @@ export function CommunitiesSidebarGroup() {
                     <Link
                       href={item.href}
                       prefetch={false}
-                      // oxlint-disable-next-line no-mistakes/playwright-literals -- Bookmarks items derived from COMMUNITIES_INTENT config; data-pw values are literal strings in the config.
                       data-pw={item.dataPw}
                     >
                       <span>{t(item.label)}</span>

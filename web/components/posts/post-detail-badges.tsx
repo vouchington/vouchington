@@ -51,7 +51,7 @@ export function PostDetailBadges({
     <div className='scrollbar-hide flex items-center gap-1.5 overflow-x-auto'>
       <Badge
         variant={postType}
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the post type
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
         data-pw={`post-detail-type-badge-${postType}`}
       >
         {humanizePostType(postType)}

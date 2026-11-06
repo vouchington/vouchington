@@ -31,7 +31,7 @@ export function DismissibleCtaAside({
         data-pw={dataPw}
       >
         <h3
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector adds a heading suffix to the caller selector
+          // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
           data-pw={`${dataPw}-heading`}
           className='mb-2 pr-6 text-sm font-semibold'
         >

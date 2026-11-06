@@ -1,4 +1,4 @@
-/* oxlint-disable no-mistakes/playwright-defaults -- Settings nav IDs come from static table data; ast-grep still bans inline calls in data-pw. */
+/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- Settings nav IDs come from static table data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
 import Link from 'next/link'
@@ -20,7 +20,7 @@ export function SettingsNav() {
     active: value === activeTab,
     content: (
       <span
-        // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the settings section
+        // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
         data-pw={`settings-nav-${value}-tab`}
       >
         {t(label)}
@@ -34,7 +34,6 @@ export function SettingsNav() {
           href={href}
           prefetch={false}
           aria-current={isActivePath(pathname, href) ? 'page' : undefined}
-          // oxlint-disable-next-line no-mistakes/playwright-literals -- Settings nav IDs come from static table data; ast-grep still bans inline calls in data-pw.
           data-pw={dataPw}
         >
           {t(itemLabel)}

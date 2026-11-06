@@ -34,7 +34,7 @@ export function UserListItem({
 }) {
   return (
     <Card
-      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the user id
+      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
       data-pw={`user-card-${user.id}`}
       className='p-4'
     >

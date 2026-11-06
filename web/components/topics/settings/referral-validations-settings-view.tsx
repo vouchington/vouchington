@@ -76,7 +76,7 @@ export function ReferralValidationsSettingsView({
                   <Link
                     prefetch={false}
                     href={`${validationsBasePath}/${validation.id}`}
-                    // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the linked validation id
+                    // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
                     data-pw={`linked-validation-link-${validation.id}`}
                     className='text-sm font-medium text-primary hover:text-primary/80'
                   >

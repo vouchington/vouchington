@@ -1,3 +1,4 @@
+/* oxlint-disable no-mistakes/playwright-literals -- Static day rows derive stable data-pw values from a local constant table. */
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 
@@ -34,7 +35,6 @@ export function DaysField({
               <Checkbox
                 checked={selected}
                 disabled={disabled || (selected && selectedDays.length === 1)}
-                // oxlint-disable-next-line no-mistakes/playwright-literals -- Static day rows derive stable data-pw values from a local constant table.
                 data-pw={`moderation-email-day-${day.value}`}
                 onCheckedChange={checked => onDayToggle(day.value, checked === true)}
               />

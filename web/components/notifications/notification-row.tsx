@@ -59,7 +59,7 @@ export function NotificationRow({ notification, onOpen, onDelete, compact }: Not
   return (
     <div
       className='flex items-start gap-3 border-b p-4 last:border-b-0'
-      // oxlint-disable-next-line no-mistakes/playwright-literals -- the selector includes the notification entity type
+      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
       data-pw={`notification-item-${notification.entity_type}`}
     >
       <Button
