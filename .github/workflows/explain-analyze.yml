@@ -76,9 +76,9 @@ jobs:
           POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log -c work_mem=32MB'
         ports:
           - 5432
-        # The 40k-vector corpus exhausted 2GiB during RSS seeding (PR #1636 resource artifact).
-        # Allow bounded headroom for vector indexes, retained identities, and WAL; resource
-        # samples still capture peak usage on the same ubuntu-latest runner.
+        # The full partition fixture exceeds the former 4GiB tmpfs. Use the image's
+        # disk-backed ephemeral /var/lib/postgresql volume for data and WAL; resource
+        # samples still capture usage on the same ubuntu-latest runner.
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -86,7 +86,6 @@ jobs:
           --health-retries 5
           --health-start-period 30s
           --health-start-interval 1s
-          --tmpfs /var/lib/postgresql:rw,size=4g
 
     steps:
       - name: Set service ports
