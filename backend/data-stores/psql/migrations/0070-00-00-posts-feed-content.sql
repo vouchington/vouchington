@@ -474,18 +474,6 @@ CREATE INDEX IF NOT EXISTS idx_posts__credit_score_range__votes_score_sort__id
   ON posts ((structured_data->>'credit_score_range'), votes_score_sort DESC, id DESC)
   WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
 
--- expression index for querying by topic_id stored inside structured_data
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__structured_data__topic_id
-  ON posts ((structured_data->>'topic_id'))
-  WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
-
--- expression index for querying by result (approved/denied/etc.) inside structured_data
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__structured_data__result
-  ON posts ((structured_data->>'result'))
-  WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
-
 -- root-post visibility lookups: privacy filter checks root post broadcast/creator for comments
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__root_post_visibility

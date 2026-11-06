@@ -1,61 +1,85 @@
-import { seedUuid } from '../seed-data/common.mts'
+import {
+  deleteSelectiveDataPointMatches,
+  seedSelectiveDataPointMatches,
+  SELECTIVE_IN_WINDOW_COUNT,
+  SELECTIVE_OUT_OF_WINDOW_COUNT,
+  SELECTIVE_TOPIC_ID,
+} from '../seed-data/data-point-search-selective.mts'
 import { registerScenarioContract, type PlanExpectation } from '../plan-expectations.mts'
-import { runAndCapture } from '../run-support.mts'
+import { runAndCapture, seedUser } from '../run-support.mts'
 import * as services from '../run-services.mts'
 
 const { getPostIds } = services
 
-const CREDIT_POST_MAX = 20_000
-const SELECTIVE_TOPIC_ID = seedUuid(1, 'ee')
+const PAGE_LIMIT = 21
+const JOIN_SLACK = 8
+/**
+ * The selective seed is smaller than the page, so the read is those in-window
+ * matches plus join slack, not a walk of the other data points.
+ */
+const SELECTIVE_POST_MAX = Math.min(SELECTIVE_IN_WINDOW_COUNT, PAGE_LIMIT + 1) * JOIN_SLACK
+/** Topic links include the older matches. The post time bound drops those. */
+const SELECTIVE_TOPIC_MAX = (SELECTIVE_IN_WINDOW_COUNT + SELECTIVE_OUT_OF_WINDOW_COUNT) * JOIN_SLACK
+
+const SEARCH_WINDOW_MINUTES = 30 * 24 * 60
+const CREDIT_MATCH_STRIDE = 15
+/**
+ * Seeded posts are one minute apart. A data point is every third post and one
+ * credit bracket is every fifth, so one bracket is every 15th post. Hot reads
+ * that whole 30-day slice, then one id lookup per survivor. Best stops near
+ * the page. The bound is the larger of those reads.
+ */
+const CREDIT_IN_WINDOW = SEARCH_WINDOW_MINUTES / CREDIT_MATCH_STRIDE
+const CREDIT_POST_MAX = Math.max(CREDIT_IN_WINDOW * 2, (PAGE_LIMIT + 1) * JOIN_SLACK)
+
+const VERTICAL_INDEXES = [
+  'posts__default_data_point_vertical_id_idx',
+  'idx_posts__data_point_vertical',
+] as const
 
 type DataPointSort = 'new' | 'best' | 'hot'
 
 export async function runDataPointSearchScenarios(): Promise<void> {
-  await capture(
-    'search-data-points-filtered-page',
-    'new',
-    { data_point_vertical: 'bank_account' },
-    0,
-    ['posts__default_data_point_vertical_id_idx', 'idx_posts__data_point_vertical'],
-  )
-  await capture(
-    'search-data-points-vertical-best',
-    'best',
-    { data_point_vertical: 'bank_account' },
-    0,
-  )
-  await capture(
-    'search-data-points-vertical-hot',
-    'hot',
-    { data_point_vertical: 'bank_account' },
-    0,
-  )
-  await capture('search-data-points-result-best', 'best', { data_point_result: 'pending' }, 0)
-  await capture('search-data-points-result-hot', 'hot', { data_point_result: 'pending' }, 0)
-  await capture(
-    'search-data-points-credit-best',
-    'best',
-    { data_point_credit_score_range: '300-579' },
-    CREDIT_POST_MAX,
-  )
-  await capture(
-    'search-data-points-credit-hot',
-    'hot',
-    { data_point_credit_score_range: '300-579' },
-    CREDIT_POST_MAX,
-  )
-  await capture(
-    'search-data-points-topic-best',
-    'best',
-    { data_point_topic_ids: [SELECTIVE_TOPIC_ID] },
-    0,
-  )
-  await capture(
-    'search-data-points-topic-hot',
-    'hot',
-    { data_point_topic_ids: [SELECTIVE_TOPIC_ID] },
-    0,
-  )
+  await seedSelectiveDataPointMatches(seedUser.id)
+  try {
+    await capture(
+      'search-data-points-filtered-page',
+      'new',
+      { data_point_vertical: 'bank_account' },
+      SELECTIVE_POST_MAX,
+      VERTICAL_INDEXES,
+    )
+    await capture('search-data-points-vertical-best', 'best', {
+      data_point_vertical: 'bank_account',
+    })
+    await capture('search-data-points-vertical-hot', 'hot', { data_point_vertical: 'bank_account' })
+    await capture('search-data-points-result-new', 'new', { data_point_result: 'pending' })
+    await capture('search-data-points-result-best', 'best', { data_point_result: 'pending' })
+    await capture('search-data-points-result-hot', 'hot', { data_point_result: 'pending' })
+    await capture(
+      'search-data-points-credit-best',
+      'best',
+      { data_point_credit_score_range: '300-579' },
+      CREDIT_POST_MAX,
+    )
+    await capture(
+      'search-data-points-credit-hot',
+      'hot',
+      { data_point_credit_score_range: '300-579' },
+      CREDIT_POST_MAX,
+    )
+    await capture('search-data-points-topic-new', 'new', {
+      data_point_topic_ids: [SELECTIVE_TOPIC_ID],
+    })
+    await capture('search-data-points-topic-best', 'best', {
+      data_point_topic_ids: [SELECTIVE_TOPIC_ID],
+    })
+    await capture('search-data-points-topic-hot', 'hot', {
+      data_point_topic_ids: [SELECTIVE_TOPIC_ID],
+    })
+  } finally {
+    await deleteSelectiveDataPointMatches()
+  }
 }
 
 async function capture(
@@ -67,15 +91,21 @@ async function capture(
     data_point_credit_score_range?: string
     data_point_topic_ids?: string[]
   },
-  maxPosts: number,
+  maxPosts = SELECTIVE_POST_MAX,
   indexes?: readonly string[],
 ): Promise<void> {
   const expectations: PlanExpectation[] = [
     { kind: 'maxProcessedRows', relation: 'posts', max: maxPosts },
   ]
   if (indexes) expectations.push({ kind: 'usesIndexes', indexes, anyOf: true })
+  if (filters.data_point_topic_ids)
+    expectations.push({
+      kind: 'maxProcessedRows',
+      relation: 'post_data_point_topics',
+      max: SELECTIVE_TOPIC_MAX,
+    })
   registerScenarioContract(scenario, {
-    allowEmptyResult: true,
+    allowEmptyResult: false,
     expectations,
     crossPartition: {
       posts:
@@ -83,6 +113,6 @@ async function capture(
     },
   })
   await runAndCapture(scenario, () =>
-    getPostIds(undefined, { post_types: ['data_point'], sort, limit: 21, ...filters }),
+    getPostIds(undefined, { post_types: ['data_point'], sort, limit: PAGE_LIMIT, ...filters }),
   )
 }
