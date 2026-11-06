@@ -51,19 +51,19 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
 )
 
 describe('creation admission on real GlideMQ', () => {
-  let fixture: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
-  let cooldown: Awaited<ReturnType<typeof acquireEmbeddingCreationCooldown>>
-  beforeEach(async ({ signal }) => {
+  beforeEach(() => {
     vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
     vi.stubEnv('ENVIRONMENT', 'staging')
-    cooldown = await acquireEmbeddingCreationCooldown(signal)
-    fixture = await acquireEmbeddingQuotaFixture()
-    cooldown.beforeRelease(() => fixture.close())
   })
   afterEach(() => vi.unstubAllEnvs())
 
   // no-mistakes-timeout-reason: real GlideMQ worker drain for creation cooldown recheck after S3 upload
-  it('rechecks shared cooldown after S3 upload before submitting a creation batch', async () => {
+  it('rechecks shared cooldown after S3 upload before submitting a creation batch', async ({
+    signal,
+  }) => {
+    const fixture = await acquireEmbeddingQuotaFixture()
+    const cooldown = await acquireEmbeddingCreationCooldown(signal)
+    cooldown.beforeRelease(() => fixture.close())
     const owned = createOwnedEmbeddingQueue(
       fixture,
       'cooldown_during_upload',
