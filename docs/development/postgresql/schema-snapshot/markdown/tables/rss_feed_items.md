@@ -106,6 +106,6 @@ _none_
 **Triggers:**
 
 - `trigger_register_retained_rss_feed_item_identity`: `CREATE TRIGGER trigger_register_retained_rss_feed_item_identity BEFORE INSERT ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('rss_feed_item')`
-- `trigger_rss_feed_item_feed_candidate`: `CREATE TRIGGER trigger_rss_feed_item_feed_candidate AFTER INSERT OR UPDATE OF data, story_id, votes_score_up, votes_score_none, votes_score_down, deleted_at ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_item_feed_candidate()`
+- `trigger_rss_feed_item_feed_candidate`: `CREATE TRIGGER trigger_rss_feed_item_feed_candidate AFTER INSERT OR UPDATE OF data, story_id, deleted_at ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_item_feed_candidate()`
 - `trigger_rss_feed_items_updated_at`: `CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_sync_rss_feed_items_search_vector`: `CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_items_search_vector()`

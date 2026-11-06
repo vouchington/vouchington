@@ -668,14 +668,6 @@ CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_topic_relation_candidates(
  LANGUAGE plpgsql
 ```
 
-## `fn_project_story_official_feed_candidates`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_story_official_feed_candidates()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_project_story_post_related_url_relation_mutation`
 
 ```sql
