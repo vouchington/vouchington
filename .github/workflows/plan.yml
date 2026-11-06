@@ -178,6 +178,7 @@ jobs:
         id: check
         env:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: Runs in the escalation job with no checkout; validate the triggering issue before the failure comment is posted.
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --jq \
