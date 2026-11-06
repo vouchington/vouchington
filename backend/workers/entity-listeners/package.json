@@ -18,6 +18,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "@data-stores/psql": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@queues/ai-agents": "workspace:^",
@@ -56,6 +57,7 @@
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {
+    "@queues/hacker-news": "workspace:^",
     "@services/entity-fetch": "workspace:^",
     "@services/referral-program-link-validations": "workspace:^",
     "@voucha/test-helpers": "workspace:^"

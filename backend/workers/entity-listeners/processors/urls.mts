@@ -1,4 +1,5 @@
 import { enqueueMissingHackerNewsLookups } from '@services/urls/hacker-news-lookup-enqueue'
+import { write } from '@data-stores/psql'
 import { getUrlById } from '@services/urls/get'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import { computeParentPath } from '@ts-shared/utils/urls'
@@ -9,7 +10,7 @@ export const processUrlCreated = async (
   options: Parameters<typeof getUrlById>[1] = {},
 ) => {
   // Lookup admission resolves on the primary even if this listener's ordinary URL read lags.
-  await enqueueMissingHackerNewsLookups([id])
+  await enqueueMissingHackerNewsLookups([id], { query: write })
 
   const url = await getUrlById(id, options)
   if (!url) return
