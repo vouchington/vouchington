@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+import type { HackerNewsConfig } from '../lib/hacker-news-config'
 import { localizationGetResult } from '../../backend/services/localization/resolve.mts'
 import { headerValue } from '../../backend/services/localization/query.mts'
 
@@ -16,6 +17,13 @@ const server = createServer((request, response) => {
   }
   if (url.pathname === '/health') {
     response.writeHead(200).end('ready')
+    return
+  }
+  if (url.pathname === '/api/v1/hacker-news-config') {
+    const config: HackerNewsConfig = { references_visible: true, post_time_range_cap: '1y' }
+    response.setHeader('Content-Type', 'application/json; charset=utf-8')
+    response.setHeader('Cache-Control', 'private, no-store')
+    response.writeHead(200).end(JSON.stringify(config))
     return
   }
   if (url.pathname !== '/api/v1/localization') {
