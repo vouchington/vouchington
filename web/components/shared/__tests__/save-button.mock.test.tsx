@@ -217,7 +217,6 @@ describe('SaveButton', () => {
         pending
       />,
     )
-
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
   })
   it('uses controlled pending state for SaveMenuItem', () => {
@@ -228,7 +227,6 @@ describe('SaveButton', () => {
         pending
       />,
     )
-
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
   })
   it('defaults data-pw to "save-button"', () => {
@@ -254,8 +252,11 @@ describe('SaveButton', () => {
   })
   it('skips state updates in catch/finally when entityId changed mid-flight', async () => {
     let settle!: VitestLooseMock
-    vi.mocked(bookmarkEntity).mockReturnValueOnce(new Promise((_, rej) => (settle = rej)))
-
+    vi.mocked(bookmarkEntity).mockReturnValueOnce(
+      new Promise((_, rej) => {
+        settle = rej
+      }),
+    )
     const onActiveChange = vi.fn<VitestLooseMock>()
     const onPendingChange = vi.fn<VitestLooseMock>()
     const { rerender } = render(

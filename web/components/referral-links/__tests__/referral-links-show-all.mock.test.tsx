@@ -113,7 +113,9 @@ describe('ReferralLinksShowAll', () => {
   it('button is disabled while loading', async () => {
     // Resolve after a microtask so we can check the disabled state synchronously
     mockGetAllReferralLinks.mockReturnValue(
-      new Promise(resolve => queueMicrotask(() => resolve({ links: [], users: {} }))),
+      new Promise(resolve => {
+        queueMicrotask(() => resolve({ links: [], users: {} }))
+      }),
     )
 
     render(<ReferralLinksShowAll referralProgramId='rp-1' />)

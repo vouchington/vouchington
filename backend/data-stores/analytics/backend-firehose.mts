@@ -156,7 +156,9 @@ async function sendBatch(streamName: string, records: BufferedRecord[]): Promise
 
 async function delay(delayMs: number): Promise<void> {
   if (delayMs <= 0) return
-  await new Promise(resolve => setTimeout(resolve, delayMs))
+  await new Promise(resolve => {
+    setTimeout(resolve, delayMs)
+  })
 }
 
 async function sendBatchOnce(streamName: string, records: BufferedRecord[]) {

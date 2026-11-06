@@ -49,7 +49,9 @@ export async function runTestClassifierBatchConflict(
       if (client) {
         const reserved = client
         if (failures.length) {
-          const ended = new Promise<void>(resolve => reserved.once('end', resolve))
+          const ended = new Promise<void>(resolve => {
+            reserved.once('end', resolve)
+          })
           reserved.release(true)
           await ended
         } else reserved.release()

@@ -13,13 +13,23 @@ describe('raceFeedBudget', () => {
 
   it('rejects at once when the budget is already spent', async () => {
     await expect(
-      raceFeedBudget(AbortSignal.abort(), new Promise<never>(() => undefined)),
+      raceFeedBudget(
+        AbortSignal.abort(),
+        new Promise<never>(() => {
+          // Intentionally never settles; the abort/budget path must finish independently.
+        }),
+      ),
     ).rejects.toMatchObject({ name: 'FeedBudgetExceededError' })
   })
 
   it('rejects when the signal aborts while the work cannot be interrupted', async () => {
     const controller = new AbortController()
-    const raced = raceFeedBudget(controller.signal, new Promise<never>(() => undefined))
+    const raced = raceFeedBudget(
+      controller.signal,
+      new Promise<never>(() => {
+        // Intentionally never settles; the abort/budget path must finish independently.
+      }),
+    )
     controller.abort()
 
     await expect(raced).rejects.toMatchObject({ name: 'FeedBudgetExceededError' })

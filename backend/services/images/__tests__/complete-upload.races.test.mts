@@ -122,8 +122,12 @@ describe('completeImageUpload - duplicate recovery and races', () => {
 
     let releaseLock!: () => void
     let lockAcquired!: () => void
-    const lockReleased = new Promise<void>(resolve => (releaseLock = resolve))
-    const acquired = new Promise<void>(resolve => (lockAcquired = resolve))
+    const lockReleased = new Promise<void>(resolve => {
+      releaseLock = resolve
+    })
+    const acquired = new Promise<void>(resolve => {
+      lockAcquired = resolve
+    })
     const lockHolder = storageLifecycleLock.withImageStorageLifecycleLock(
       failedImageId,
       async () => {
@@ -142,7 +146,9 @@ describe('completeImageUpload - duplicate recovery and races', () => {
       },
     )
     let hashLookupCompleted!: () => void
-    const hashLookup = new Promise<void>(resolve => (hashLookupCompleted = resolve))
+    const hashLookup = new Promise<void>(resolve => {
+      hashLookupCompleted = resolve
+    })
     const realGetImageByHash = imageReads.getImageByHash
     vi.spyOn(imageReads, 'getImageByHash').mockImplementation(async (...args) => {
       const image = await realGetImageByHash(...args)

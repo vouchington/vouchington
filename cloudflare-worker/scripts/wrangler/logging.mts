@@ -57,9 +57,21 @@ export function prefixLines(text: string, prefix: string): string {
 
 export async function flushLogs(streams: WranglerLogStreams): Promise<void> {
   await Promise.all([
-    streams.stdoutLog ? new Promise<void>(done => streams.stdoutLog!.end(done)) : Promise.resolve(),
-    streams.stderrLog ? new Promise<void>(done => streams.stderrLog!.end(done)) : Promise.resolve(),
-    streams.eventsLog ? new Promise<void>(done => streams.eventsLog!.end(done)) : Promise.resolve(),
+    streams.stdoutLog
+      ? new Promise<void>(done => {
+          streams.stdoutLog!.end(done)
+        })
+      : Promise.resolve(),
+    streams.stderrLog
+      ? new Promise<void>(done => {
+          streams.stderrLog!.end(done)
+        })
+      : Promise.resolve(),
+    streams.eventsLog
+      ? new Promise<void>(done => {
+          streams.eventsLog!.end(done)
+        })
+      : Promise.resolve(),
   ])
 }
 

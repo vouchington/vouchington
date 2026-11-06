@@ -84,9 +84,12 @@ describe('InfiniteScroll', () => {
 
   it('uses the same guarded action for the Load more button and intersection', () => {
     let resolveLoad!: () => void
-    const onLoadMore = vi
-      .fn<() => Promise<void>>()
-      .mockImplementation(() => new Promise<void>(resolve => (resolveLoad = resolve)))
+    const onLoadMore = vi.fn<() => Promise<void>>().mockImplementation(
+      () =>
+        new Promise<void>(resolve => {
+          resolveLoad = resolve
+        }),
+    )
 
     render(
       <InfiniteScroll

@@ -50,7 +50,11 @@ describe('useTopicEditPage initial data', () => {
   it('reloads for a new id and ignores the stale prior load', async () => {
     let resolveFirstLoad!: (value: Partial<TopicEditState>) => void
     mockLoadTopicEditState
-      .mockReturnValueOnce(new Promise(resolve => (resolveFirstLoad = resolve)))
+      .mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveFirstLoad = resolve
+        }),
+      )
       .mockResolvedValueOnce(makeLoadedTopicState('topic-2'))
 
     const { result, rerender } = renderHook(

@@ -356,8 +356,7 @@
     "no-object-constructor": "error",
     "no-param-reassign": "error",
     "no-plusplus": "off",
-    // 171 findings / 115 files on 2026-08-19. Stage off until a dedicated remediation lands.
-    "no-promise-executor-return": "off",
+    "no-promise-executor-return": "error",
     "no-proto": "error",
     "no-prototype-builtins": "error",
     "no-redeclare": "error",

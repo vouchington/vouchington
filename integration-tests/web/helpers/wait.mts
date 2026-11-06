@@ -58,7 +58,9 @@ export async function poll<T>(
     }
 
     // oxlint-disable-next-line no-await-in-loop -- delay after a rejected value so polling attempts remain ordered and non-overlapping
-    await new Promise(resolve => setTimeout(resolve, intervalMs))
+    await new Promise(resolve => {
+      setTimeout(resolve, intervalMs)
+    })
   }
 
   throw new Error(`Polling timed out after ${timeoutMs}ms`)

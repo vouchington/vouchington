@@ -82,7 +82,11 @@ describe('QueueDomainsSection', () => {
   })
 
   it('shows loading until the domains arrive', () => {
-    mockFetch.mockReturnValue(new Promise(() => undefined))
+    mockFetch.mockReturnValue(
+      new Promise(() => {
+        // Keep the request pending to exercise the loading state.
+      }),
+    )
     render(<QueueDomainsSection />)
     expect(screen.getByText('Loading…')).toBeInTheDocument()
     expect(mockFetch).toHaveBeenCalledWith('background')
@@ -135,7 +139,11 @@ describe('QueueDomainsSection', () => {
   })
 
   it('disables the row actions while a request is in flight', async () => {
-    mockPause.mockReturnValue(new Promise(() => undefined))
+    mockPause.mockReturnValue(
+      new Promise(() => {
+        // Keep the request pending to exercise the in-flight state.
+      }),
+    )
     render(<QueueDomainsSection />)
     fireEvent.click(await screen.findByRole('button', { name: 'Pause' }))
     const retryButtons = screen.getAllByRole('button', { name: 'Retry failed' })

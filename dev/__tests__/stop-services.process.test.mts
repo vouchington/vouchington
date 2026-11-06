@@ -18,7 +18,9 @@ describe('dev/stop-services (process termination)', () => {
       { stdio: ['pipe', 'ignore', 'ignore'] },
     )
     const exitPromise = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
-      resolve => child.once('exit', (code, signal) => resolve({ code, signal })),
+      resolve => {
+        child.once('exit', (code, signal) => resolve({ code, signal }))
+      },
     )
     await runScript({
       binDir,

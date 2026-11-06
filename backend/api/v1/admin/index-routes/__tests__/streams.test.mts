@@ -178,7 +178,9 @@ async function captureAdminStream(
       const transport = req.req
       const transportClosed =
         transport instanceof ClientRequest && !transport.closed
-          ? new Promise<void>(resolve => transport.once('close', () => resolve()))
+          ? new Promise<void>(resolve => {
+              transport.once('close', () => resolve())
+            })
           : Promise.resolve()
       req.abort()
       response?.destroy()

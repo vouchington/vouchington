@@ -46,8 +46,8 @@ export async function withTruncatedHttpResponseForTest<Result>(
   } finally {
     for (const socket of responseSockets) socket.destroy()
     await dispatcher.close()
-    await new Promise<void>((resolve, reject) =>
-      server.close(error => (error ? reject(error) : resolve())),
-    )
+    await new Promise<void>((resolve, reject) => {
+      server.close(error => (error ? reject(error) : resolve()))
+    })
   }
 }

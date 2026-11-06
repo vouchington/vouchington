@@ -110,6 +110,8 @@ async function pollForUpdatedAppealDraft(
       'The AI draft is still processing. Refresh to check again.',
     )
   }
-  await new Promise<void>(resolve => setTimeout(resolve, RERUN_POLL_DELAY_MS))
+  await new Promise<void>(resolve => {
+    setTimeout(resolve, RERUN_POLL_DELAY_MS)
+  })
   return pollForUpdatedAppealDraft(appeal, attempt + 1)
 }

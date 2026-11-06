@@ -31,7 +31,11 @@ export async function openRetirementTransaction(deadline: number) {
   pool.on('connect', connected => {
     clients.push(connected)
     connected.on('error', onClientError)
-    clientEnds.push(new Promise<void>(resolveEnd => connected.once('end', resolveEnd)))
+    clientEnds.push(
+      new Promise<void>(resolveEnd => {
+        connected.once('end', resolveEnd)
+      }),
+    )
   })
   pool.on('error', onPoolError)
   let client: PoolClient | undefined

@@ -188,7 +188,9 @@ describe('useManageSourcePage additional-hostnames pagination', () => {
 
     let resolveLoadMore!: (value: never) => void
     mockFetchAdditionalHostnames.mockReturnValueOnce(
-      new Promise(resolve => (resolveLoadMore = resolve)),
+      new Promise(resolve => {
+        resolveLoadMore = resolve
+      }),
     )
     mockFetchTopic.mockResolvedValueOnce({
       id: 'topic-2',
@@ -238,7 +240,9 @@ describe('useManageSourcePage additional-hostnames pagination', () => {
 
     let rejectLoadMore!: (reason: unknown) => void
     mockFetchAdditionalHostnames.mockReturnValueOnce(
-      new Promise((_resolve, reject) => (rejectLoadMore = reject)),
+      new Promise((_resolve, reject) => {
+        rejectLoadMore = reject
+      }),
     )
     mockFetchTopic.mockResolvedValueOnce({
       id: 'topic-2',

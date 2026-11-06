@@ -134,7 +134,10 @@ export async function acquireNativeElectionEventFixture() {
 
   function send(message: object | string) {
     return new Promise<void>((resolve, rejectSend) => {
-      if (!child?.connected) return rejectSend(new Error('Owned worker IPC is disconnected'))
+      if (!child?.connected) {
+        rejectSend(new Error('Owned worker IPC is disconnected'))
+        return
+      }
       child.send(message, error => (error ? rejectSend(error) : resolve()))
     })
   }

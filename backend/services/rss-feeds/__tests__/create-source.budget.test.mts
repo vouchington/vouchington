@@ -65,7 +65,10 @@ describe('createSourceFromUrl budget', () => {
     const controller = new AbortController()
     const pending = createSourceFromUrl(user, WEB_PROVENANCE, feedUrl('remote'), {
       signal: controller.signal,
-      fetchAndClassifyFeedImpl: () => new Promise<never>(() => undefined),
+      fetchAndClassifyFeedImpl: () =>
+        new Promise<never>(() => {
+          // Intentionally never settles; the abort/budget path must finish independently.
+        }),
     })
     controller.abort()
 

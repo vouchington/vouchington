@@ -91,7 +91,7 @@ function isRetryableConfigDrivenPostgresError(err: unknown): err is { code: stri
 }
 
 async function waitForConfigDrivenRetry(attempt: number) {
-  await new Promise(resolve =>
-    setTimeout(resolve, Math.min(configDrivenRetryDelayMs * (attempt + Math.random()), 5_000)),
-  )
+  await new Promise(resolve => {
+    setTimeout(resolve, Math.min(configDrivenRetryDelayMs * (attempt + Math.random()), 5_000))
+  })
 }

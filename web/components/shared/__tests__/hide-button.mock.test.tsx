@@ -187,7 +187,6 @@ describe('HideButton', () => {
         initialActive
       />,
     )
-
     fireEvent.click(screen.getByRole('button', { name: 'Unhide' }))
 
     await act(async () => {
@@ -242,7 +241,6 @@ describe('HideButton', () => {
         pending
       />,
     )
-
     expect(screen.getByRole('button', { name: 'Hide' })).toBeDisabled()
   })
   it('uses controlled pending state for HideMenuItem', () => {
@@ -258,7 +256,11 @@ describe('HideButton', () => {
   })
   it('skips state updates in catch/finally when entityId changed mid-flight', async () => {
     let reject!: VitestLooseMock
-    vi.mocked(bookmarkEntity).mockReturnValueOnce(new Promise((_, r) => (reject = r)))
+    vi.mocked(bookmarkEntity).mockReturnValueOnce(
+      new Promise((_, r) => {
+        reject = r
+      }),
+    )
     const onActiveChange = vi.fn<VitestLooseMock>()
     const onPendingChange = vi.fn<VitestLooseMock>()
     const props = {

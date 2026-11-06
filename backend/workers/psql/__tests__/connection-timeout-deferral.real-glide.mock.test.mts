@@ -84,9 +84,9 @@ async function startHeldHandshakeProxy(connectionString: string): Promise<{
     connectionString: proxyUrl.toString(),
     close: async () => {
       for (const socket of sockets) socket.destroy()
-      await new Promise<void>((resolve, reject) =>
-        server.close(error => (error ? reject(error) : resolve())),
-      )
+      await new Promise<void>((resolve, reject) => {
+        server.close(error => (error ? reject(error) : resolve()))
+      })
     },
   }
 }
