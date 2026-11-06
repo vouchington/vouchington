@@ -43,7 +43,11 @@ export async function runEntityTailScenarios(): Promise<void> {
     allowEmptyResult: true,
     expectations: [
       { kind: 'maxProcessedRows', relation: 'posts', max: 500 },
-      { kind: 'usesIndexes', indexes: ['idx_posts__data_point_vertical'] },
+      {
+        kind: 'usesIndexes',
+        indexes: ['posts__default_data_point_vertical_id_idx', 'idx_posts__data_point_vertical'],
+        anyOf: true,
+      },
     ],
     crossPartition: {
       posts:
