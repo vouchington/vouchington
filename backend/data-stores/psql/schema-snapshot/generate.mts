@@ -5,7 +5,7 @@ import { readNoMistakesCatalog } from './no-mistakes-catalog.mts'
 import { renderSchemaMarkdown } from './render-markdown.mts'
 import { publishSchemaSnapshot } from './publish.mts'
 
-/* v8 ignore start -- live-DB generateSchemaSnapshot; writeSchemaSnapshot is unit-tested. */
+/* v8 ignore start -- live-DB generateSchemaSnapshot has no unit test. */
 export async function generateSchemaSnapshot({
   check = false,
 }: { check?: boolean } = {}): Promise<void> {

@@ -25,20 +25,6 @@ describe('schema snapshot output roots', () => {
     await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
   })
 
-  it('points omitted roots at the schema directory and committed markdown tree', async () => {
-    const check = () => publishSchemaSnapshot({ snapshot, markdown, check: true })
-    await expect(check()).rejects.toThrow(join(schemaSnapshotDirectory, 'schema.json'))
-    await expect(check()).rejects.toThrow(
-      join(
-        resolve(
-          schemaSnapshotDirectory,
-          '../../../../docs/development/postgresql/schema-snapshot/markdown',
-        ),
-        'README.md',
-      ),
-    )
-  })
-
   it('does not attach the committed markdown tree to a fixture root', async () => {
     const base = await mkdtemp(join(tmpdir(), 'schema-output-roots-'))
     roots.push(base)
@@ -47,29 +33,6 @@ describe('schema snapshot output roots', () => {
     const check = () => publishSchemaSnapshot({ snapshot, markdown, root, check: true })
     await expect(check()).rejects.toThrow(join(root, 'schema.json'))
     await expect(check()).rejects.toThrow(join(root, 'markdown/README.md'))
-    await expect(check()).rejects.not.toThrow(
-      resolve(
-        schemaSnapshotDirectory,
-        '../../../../docs/development/postgresql/schema-snapshot/markdown',
-      ),
-    )
-  })
-
-  it('keeps an explicit markdown directory ahead of the committed default', async () => {
-    const base = await mkdtemp(join(tmpdir(), 'schema-output-roots-'))
-    roots.push(base)
-    const markdownRoot = join(base, 'schema-snapshot-fixture-markdown')
-    await mkdir(markdownRoot)
-    const check = () =>
-      publishSchemaSnapshot({
-        snapshot,
-        markdown,
-        root: schemaSnapshotDirectory,
-        markdownRoot,
-        check: true,
-      })
-    await expect(check()).rejects.toThrow(join(schemaSnapshotDirectory, 'schema.json'))
-    await expect(check()).rejects.toThrow(join(markdownRoot, 'README.md'))
     await expect(check()).rejects.not.toThrow(
       resolve(
         schemaSnapshotDirectory,

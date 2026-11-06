@@ -7,7 +7,6 @@ import {
   type SchemaSnapshot,
 } from '@vouchington/postgres/pg-schema-snapshot'
 import { writeNoMistakesCatalog } from './no-mistakes-catalog.mts'
-import { renderSchemaMarkdown } from './render-markdown.mts'
 
 const __dirname = import.meta.dirname
 const committedMarkdownRoot = resolve(
@@ -108,7 +107,7 @@ export async function publishSchemaSnapshot({
   markdownRoot,
 }: {
   snapshot: SchemaSnapshot
-  markdown?: Map<string, string>
+  markdown: Map<string, string>
   catalog?: PostgresCatalog
   check?: boolean
   root?: string
@@ -117,7 +116,7 @@ export async function publishSchemaSnapshot({
   const outputs = resolveSchemaSnapshotOutputRoots({ root, markdownRoot })
   await writeSchemaSnapshot({
     snapshot,
-    markdown: markdown ?? renderSchemaMarkdown(snapshot),
+    markdown,
     catalog,
     check,
     ...outputs,
