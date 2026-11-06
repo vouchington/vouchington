@@ -8,7 +8,6 @@ import {
   insertTestStory,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { createTopicAliases } from '@services/topics/aliases'
 describe('RSS Feed Items Routes', () => {
   describe('GET /api/v1/rss-feed-items', () => {
@@ -33,10 +32,7 @@ describe('RSS Feed Items Routes', () => {
         rss_feed_item_id: itemId,
         source_url: expect.any(String),
       })
-      expect(response.headers['cache-control']).toContain('public')
-      expect(response.headers['cache-control']).toContain(
-        `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-      )
+      expect(response.headers['cache-control']).toBe('private, no-store')
     })
 
     it('should support filtering by rss_feeds', async () => {

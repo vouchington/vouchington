@@ -1,7 +1,6 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import {
   getRssFeedItemElectionVotesByUser,
@@ -14,6 +13,7 @@ import { getRssFeedItemEmbedsByItems } from '@services/rss-feed-items/get-rss-fe
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { proxyThumbnailUrls } from '@services/rss-feed-items'
 import { sanitizeRssFeedItemContentHtml } from '@services/rss-feed-items/sanitize-content-html'
+import { getRssFeedItemHackerNewsDetails } from '@services/urls/hacker-news-sidecars'
 import { getVoteFollowContextBatch } from '@services/users/follow-context'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
@@ -29,7 +29,6 @@ import { apiQuery } from '../../api-query-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import {
   getOptionalAuthAndRateLimit,
-  setAnonymousPublicCacheHeaders,
   requireAuth,
   validateRequestContract,
 } from '../../response-helpers.mts'
@@ -42,7 +41,7 @@ app.route('/api/v1/rss-feed-items/:id').get(async (ctx: Context) => {
   const item = await getRssFeedItemById(ctx.params.id!)
   ctx.assert(item, 404, 'RSS feed item not found')
 
-  setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+  ctx.set('Cache-Control', 'private, no-store')
 
   const output: Record<string, unknown> = {
     rss_feed_item: proxyRssFeedItemCoverArt(item),
@@ -56,6 +55,7 @@ app.route('/api/v1/rss-feed-items/:id').get(async (ctx: Context) => {
       {},
       isAdminUser(currentUser) ? 'administrator' : 'public',
     ),
+    rss_feed_item_hacker_news_references: getRssFeedItemHackerNewsDetails([item]),
   }
 
   if (currentUser) {

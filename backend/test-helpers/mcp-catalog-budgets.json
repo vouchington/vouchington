@@ -6,23 +6,23 @@
       "all": {
         "on": {
           "count": 78,
-          "list": 261000,
-          "core": 112000,
-          "output": 244000
+          "list": 267000,
+          "core": 113000,
+          "output": 250000
         }
       },
       "Reader": {
         "on": {
           "count": 9,
-          "list": 55000,
+          "list": 61000,
           "core": 26000,
-          "output": 54000
+          "output": 59000
         }
       },
       "Plus": {
         "on": {
           "count": 70,
-          "list": 228000,
+          "list": 236000,
           "core": 110000,
           "output": 240000
         }
@@ -204,7 +204,7 @@
       "all": {
         "on": {
           "count": 56,
-          "list": 194000,
+          "list": 195000,
           "core": 36000,
           "output": 183000
         }

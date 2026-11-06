@@ -21,15 +21,11 @@ import {
 } from '@services/posts'
 import { labelAndMaskPosts } from '@services/content-provenance'
 import { getUrlEmbedByUrlId } from '@services/rss-feed-items'
+import { getPostHackerNewsDetails } from '@services/urls/hacker-news-sidecars'
 import { DELETED_USER_ID, getUserMarkdown, isAdminUser, isFollowingUser } from '@services/users'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { userTag } from '@ts-shared/cache/cache-tags'
 import app from '../../../app.mts'
-import {
-  getOptionalAuthAndRateLimit,
-  validateRequestContract,
-  setAnonymousPublicCacheHeaders,
-} from '../../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
 
 app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
@@ -49,7 +45,7 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
   )
   ctx.assert(readState, 404, 'Post not found')
 
-  setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+  ctx.set('Cache-Control', 'private, no-store')
   if (readState === 'placeholder') {
     // A deleted or unmoderated comment with a valid reply below it: its place in the thread only.
     if (ctx.req.method === 'HEAD') {
@@ -165,6 +161,7 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
       .then(elections => elections[0] ?? null)
       .then(election => maybeSanitizeElection(currentUser, election)),
     communities: getPostCommunitiesRecord([post]),
+    post_hacker_news_references: getPostHackerNewsDetails([post.id]),
   }
 
   if (currentUser) {

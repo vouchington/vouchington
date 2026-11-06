@@ -90,6 +90,11 @@ WHERE deleted_at IS NULL;
 
   if (metadata.table_name === 'relation__post__related__url') {
     query += `
+CREATE INDEX IF NOT EXISTS idx_relation__post__related__url__subject__best_positive
+ON relation__post__related__url (subject_id, votes_score_sort DESC, created_at DESC, object_id DESC)
+WHERE deleted_at IS NULL AND votes_score_net > 0;
+
+
 DO $$
 BEGIN
   IF NOT EXISTS (

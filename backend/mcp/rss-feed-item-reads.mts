@@ -20,7 +20,12 @@ import {
   pagedSearchSchemaProperties,
   type PagedSearchArgs,
 } from './paged-search.mts'
-import { mcpRssFeedItemSchema, toMcpRssFeedItem, type McpRssFeedItem } from './mcp-rss-output.mts'
+import {
+  mcpRssFeedItemSchema,
+  toMcpRssFeedItem,
+  toMcpRssFeedItems,
+  type McpRssFeedItem,
+} from './mcp-rss-output.mts'
 import { pageInfoSchema, type McpPage } from './mcp-read-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
@@ -32,6 +37,7 @@ type ListArgs = PagedSearchArgs & {
   category_topic?: string
   category_topics?: string[]
   has_related_posts?: boolean
+  has_hacker_news_references?: boolean
   media_types?: Array<'article' | 'audio' | 'video'>
   rss_feed?: string
   rss_feeds?: string[]
@@ -70,6 +76,11 @@ export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
         category_topic: topicReferenceSchema,
         category_topics: { type: 'array', items: topicReferenceSchema },
         has_related_posts: { type: 'boolean' },
+        has_hacker_news_references: {
+          type: 'boolean',
+          description:
+            'Only items whose URL is seen or mentioned on Hacker News (true) or not (false).',
+        },
         media_types: {
           type: 'array',
           items: { type: 'string', enum: ['article', 'audio', 'video'] },
@@ -120,6 +131,7 @@ export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
           category_topic: topics.category_topic,
           category_topics: topics.category_topics,
           has_related_posts: args.has_related_posts,
+          has_hacker_news_references: args.has_hacker_news_references,
           media_types: args.media_types,
           rss_feed: feedId,
           rss_feeds: feedIds,
@@ -139,10 +151,8 @@ export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
         })
         const items = await getRssFeedItemByIdCachedBatch(result.results.map(entry => entry.id))
         return {
-          results: await Promise.all(
-            items
-              .filter((item): item is NonNullable<typeof item> => item !== null)
-              .map(toMcpRssFeedItem),
+          results: await toMcpRssFeedItems(
+            items.filter((item): item is NonNullable<typeof item> => item !== null),
           ),
           page_info: result.page_info,
         }
@@ -168,7 +178,7 @@ export const getRssFeedItemTool: MergedToolSource<DetailArgs, DetailResult> = {
     requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items/:id' }],
-    outputSchema: foundOrNotFoundSchema({ rss_feed_item: mcpRssFeedItemSchema() }),
+    outputSchema: foundOrNotFoundSchema({ rss_feed_item: mcpRssFeedItemSchema(true) }),
   },
   function:
     (_currentUser: BasicUser) =>

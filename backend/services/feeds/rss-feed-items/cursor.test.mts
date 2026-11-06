@@ -77,6 +77,7 @@ describe('RSS feed scoped precise cursor', () => {
     { min_score_follow_rss_feeds: 0 },
     { min_score_follow_topics: 1 },
     { has_related_posts: false },
+    { has_hacker_news_references: true },
     { media_types: ['audio' as const] },
     { topic_ids: [id] },
     { hashtag_topic_ids: [id] },

@@ -16,10 +16,11 @@ import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requireActiveToolUser } from './private-user.mts'
 import updateTool from './update-topic-recommendation.mts'
 import { TOPIC_RECOMMENDATION_RESULT_SCHEMA } from './topic-recommendation-tool-support.mts'
-import { toMcpRecommendation } from './topic-recommendation-read-output.mts'
+import {
+  toMcpRecommendation,
+  type McpTopicRecommendationPost,
+} from './topic-recommendation-read-output.mts'
 import { getLoadedMembershipPlan } from '@services/users'
-import { attachWrittenPostProvenance } from '@services/content-provenance'
-import type { PublicTopicRecommendationPost } from '@services/topic-recommendations/public-projection'
 
 type Args = CreateTopicRecommendationInput & { idempotency_key: string }
 const { id: _id, ...fields } = updateTool.schema.parameters!['properties'] as Record<
@@ -27,7 +28,7 @@ const { id: _id, ...fields } = updateTool.schema.parameters!['properties'] as Re
   unknown
 >
 
-const tool: Tool<Args, { success: true; post: PublicTopicRecommendationPost }> = {
+const tool: Tool<Args, { success: true; post: McpTopicRecommendationPost }> = {
   schema: {
     name: 'create_topic_recommendation',
     type: 'function',
@@ -80,7 +81,7 @@ const tool: Tool<Args, { success: true; post: PublicTopicRecommendationPost }> =
     })
     return {
       success: true,
-      post: await toMcpRecommendation(await attachWrittenPostProvenance(post, null)),
+      post: await toMcpRecommendation(post),
     }
   },
 }

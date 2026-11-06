@@ -516,3 +516,20 @@ shape and makes no new native UI parity claim.
 
 Swift and .NET adoption is tracked in [vouchington-clients#538](https://github.com/vouchington/vouchington-clients/issues/538). Native implementation
 does not gate the producer, and this change makes no new native UI parity claim.
+
+## Hacker News reference facts
+
+REST and MCP expose the same stored Hacker News facts for posts, feed items, and story members:
+list reads carry batched counts, and individual detail reads carry bounded reference links.
+Hiding references suppresses these facts and leaves a requested reference filter inactive in both
+transports. Pausing external lookups changes freshness independently of presentation.
+
+Personalized feeds apply the reference filter before deduplication and pagination. The web time-range
+cap controls the checkbox interaction without changing the API's accepted time ranges. HN-filtered hot
+searches retain hot ranking for every range, but the server restricts their eligible cohort to at most
+30 elapsed days; narrower requested windows remain narrower.
+
+Swift and .NET must remove the personal discussions preference and client-side lookup, consume stored
+reference facts, and honor the producer's visibility behavior. Their adoption remains dependent work
+in [vouchington-clients#532](https://github.com/vouchington/vouchington-clients/issues/532); this producer
+change makes no new native UI parity claim.

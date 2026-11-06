@@ -12,6 +12,7 @@ import {
   feedItemSchema,
   getCommunityId,
   hashtagOptions,
+  toMcpPostFeedItems,
   MAX_LIMIT,
   type FeedResult,
   type PostArgs,
@@ -68,13 +69,7 @@ const getPostFeedTool: MergedToolSource<PostArgs, FeedResult> = {
           after: args.after,
         })
         return {
-          results: result.results.map(row => ({
-            id: row.id,
-            entity_id: row.entity_id,
-            delivery_type: row.delivery_type,
-            shared_by_id: row.shared_by_id ?? null,
-            shared_at: row.shared_at ? new Date(row.shared_at).toISOString() : null,
-          })),
+          results: await toMcpPostFeedItems(result.results),
           page_info: result.page_info,
         }
       })

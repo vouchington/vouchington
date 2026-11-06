@@ -1,4 +1,13 @@
 import {
+  getRssFeedItemHackerNewsSummaries,
+  getRssFeedItemHackerNewsDetails,
+} from '@services/urls/hacker-news-sidecars'
+import type {
+  HackerNewsReferenceCounts,
+  HackerNewsReferenceDetail,
+} from '@services/urls/hacker-news-references-types'
+import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
+import {
   sanitizePromptInjection,
   sanitizeRssContent,
   wrapExternalContent,
@@ -21,6 +30,7 @@ export type McpRssFeed = {
 }
 
 export type McpRssFeedItem = {
+  hacker_news_references?: HackerNewsReferenceCounts | HackerNewsReferenceDetail
   id: string
   title: string
   markdown: string
@@ -48,17 +58,21 @@ export function mcpRssFeedSchema() {
   )
 }
 
-export function mcpRssFeedItemSchema() {
-  return closedObject({
-    id: pickProperties('ViewRssFeedItem', ['id']).id!,
-    title: { type: 'string' },
-    markdown: { type: 'string' },
-    url: pickProperties('ViewUrl', ['url']).url!,
-    guid: pickProperties('ViewRssFeedItem', ['guid']).guid!,
-    published_at: pickProperties('ViewRssFeedItem', ['published_at']).published_at!,
-    rss_feed_id: pickProperties('ViewRssFeed', ['id']).id!,
-    rss_feed_title: pickProperties('ViewRssFeed', ['title']).title!,
-  })
+export function mcpRssFeedItemSchema(details = false) {
+  return closedObject(
+    {
+      hacker_news_references: mcpHackerNewsReferenceSchema(details),
+      id: pickProperties('ViewRssFeedItem', ['id']).id!,
+      title: { type: 'string' },
+      markdown: { type: 'string' },
+      url: pickProperties('ViewUrl', ['url']).url!,
+      guid: pickProperties('ViewRssFeedItem', ['guid']).guid!,
+      published_at: pickProperties('ViewRssFeedItem', ['published_at']).published_at!,
+      rss_feed_id: pickProperties('ViewRssFeed', ['id']).id!,
+      rss_feed_title: pickProperties('ViewRssFeed', ['title']).title!,
+    },
+    ['hacker_news_references'],
+  )
 }
 
 /**
@@ -86,7 +100,7 @@ export async function toMcpRssFeeds(feeds: ViewRssFeed[]): Promise<McpRssFeed[]>
   return Promise.all((await attachRssFeedProvenance(feeds, null)).map(toMcpRssFeed))
 }
 
-export async function toMcpRssFeedItem(item: ViewRssFeedItem): Promise<McpRssFeedItem> {
+async function projectMcpRssFeedItem(item: ViewRssFeedItem): Promise<McpRssFeedItem> {
   const markdown = firstVisibleRssTextField([
     item.data['content:encoded'],
     item.data['content:encodedSnippet'],
@@ -115,4 +129,24 @@ export async function toMcpRssFeedItem(item: ViewRssFeedItem): Promise<McpRssFee
       { source: 'rss_feed', contentType: 'title' },
     ),
   }
+}
+
+/** One batched reference read for the complete result page. */
+export async function toMcpRssFeedItems(
+  items: ViewRssFeedItem[],
+  { details = false }: { details?: boolean } = {},
+): Promise<McpRssFeedItem[]> {
+  const references = await (
+    details ? getRssFeedItemHackerNewsDetails : getRssFeedItemHackerNewsSummaries
+  )(items)
+  return Promise.all(
+    items.map(async item => ({
+      ...(await projectMcpRssFeedItem(item)),
+      ...(references[item.id] && { hacker_news_references: references[item.id] }),
+    })),
+  )
+}
+
+export async function toMcpRssFeedItem(item: ViewRssFeedItem): Promise<McpRssFeedItem> {
+  return (await toMcpRssFeedItems([item], { details: true }))[0]!
 }

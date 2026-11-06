@@ -11,6 +11,7 @@ import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss
 import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-feed-items'
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { sanitizeRssFeedItemContentHtmlBatch } from '@services/rss-feed-items/sanitize-content-html'
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { getStoryPageRelatedPosts } from './story-page-related-posts.mts'
 
 export async function hydrateStoryMemberPage(
@@ -24,7 +25,7 @@ export async function hydrateStoryMemberPage(
   ])
   const items = fetched.flatMap(item => (item ? [item] : []))
   const urlIds = [...new Set(items.map(item => item.url.id))]
-  const [embeds, related, viewer, content] = await Promise.all([
+  const [embeds, related, viewer, content, hackerNewsReferences] = await Promise.all([
     getRssFeedItemEmbedsByItems(items, {}, isAdminUser(currentUser) ? 'administrator' : 'public'),
     getStoryPageRelatedPosts(currentUser, storyId, urlIds),
     currentUser
@@ -35,6 +36,7 @@ export async function hydrateStoryMemberPage(
         )
       : { bookmarks: {}, election_votes: {}, rss_feed_bookmarks: {} },
     sanitizeRssFeedItemContentHtmlBatch(items),
+    getRssFeedItemHackerNewsSummaries(items),
   ])
   return {
     rss_feed_items: indexById(items.map(proxyRssFeedItemCoverArt)),
@@ -42,6 +44,7 @@ export async function hydrateStoryMemberPage(
     rss_feed_item_embeds: embeds,
     rss_feed_item_thumbnail_url: proxyThumbnailUrls(items),
     rss_feed_item_content_html: content,
+    rss_feed_item_hacker_news_references: hackerNewsReferences,
     ...related,
     ...viewer,
   }

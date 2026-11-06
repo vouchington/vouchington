@@ -1,4 +1,5 @@
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
@@ -30,6 +31,7 @@ import {
 } from './shared.mts'
 
 app.route('/api/v1/feeds/posts/:feed_type').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/feeds/posts/:feed_type', postFeedParser, postFeedExtraQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/feeds/posts/:feed_type')
 
@@ -84,6 +86,7 @@ app.route('/api/v1/feeds/posts/:feed_type').get(async (ctx: Context) => {
     users: usersPromise.then(users => indexById(users.filter(Boolean))),
     posts_metrics: getPostMetricsByAnyCachedBatch(postIds).then(indexById),
     communities: rawPostsPromise.then(posts => getPostCommunitiesRecord(posts)),
+    post_hacker_news_references: getPostHackerNewsSummaries(postIds),
     post_link_embeds: rawPostsPromise.then(async posts => {
       const urlIds = [
         ...new Set(posts.flatMap(p => (p?.post_type === 'link' && p.url_id ? [p.url_id] : []))),

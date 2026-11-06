@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
 import {
   CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY,
   CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS,
@@ -122,6 +123,7 @@ process.on('unhandledRejection', reason => {
 /* v8 ignore start -- production bootstrap adapters; startApiServer has direct callback coverage. */
 await startApiServer(server, PORT, {
   exitWithFailure,
+  waitForVisibilityConfig: () => hackerNewsVisibilityConfig.waitForInitialization(),
   flushErrorReporting: () => flushSentry(2000),
   logListening: listeningPort =>
     console.log('API Server: serving at http://localhost:%s', listeningPort),

@@ -21347,6 +21347,19 @@
       "enum": ["30d", "7d", "90d", "all", "today"],
       "type": "string"
     },
+    "HackerNewsReferenceCounts": {
+      "additionalProperties": false,
+      "properties": {
+        "comment_count": {
+          "type": "number"
+        },
+        "story_count": {
+          "type": "number"
+        }
+      },
+      "required": ["comment_count", "story_count"],
+      "type": "object"
+    },
     "HouseholdIndividual": {
       "additionalProperties": false,
       "properties": {
@@ -31481,6 +31494,13 @@
       "properties": {},
       "type": "object"
     },
+    "Record_string_HackerNewsReferenceCounts": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/HackerNewsReferenceCounts"
+      },
+      "properties": {},
+      "type": "object"
+    },
     "Record_string_Notification": {
       "additionalProperties": {
         "$ref": "#/components/schemas/Notification"
@@ -34991,6 +35011,9 @@
             "rss_feed_item_embeds": {
               "$ref": "#/components/schemas/Record_string_UrlEmbed"
             },
+            "rss_feed_item_hacker_news_references": {
+              "$ref": "#/components/schemas/Record_string_HackerNewsReferenceCounts"
+            },
             "rss_feed_item_thumbnail_url": {
               "$ref": "#/components/schemas/Record_string_string"
             },
@@ -35016,6 +35039,7 @@
             "rss_feed_item_content_html",
             "rss_feed_item_elections",
             "rss_feed_item_embeds",
+            "rss_feed_item_hacker_news_references",
             "rss_feed_item_thumbnail_url",
             "rss_feed_items",
             "story",
@@ -35062,6 +35086,9 @@
             "rss_feed_item_embeds": {
               "$ref": "#/components/schemas/Record_string_UrlEmbed"
             },
+            "rss_feed_item_hacker_news_references": {
+              "$ref": "#/components/schemas/Record_string_HackerNewsReferenceCounts"
+            },
             "rss_feed_item_thumbnail_url": {
               "$ref": "#/components/schemas/Record_string_string"
             },
@@ -35087,6 +35114,7 @@
             "rss_feed_item_content_html",
             "rss_feed_item_elections",
             "rss_feed_item_embeds",
+            "rss_feed_item_hacker_news_references",
             "rss_feed_item_thumbnail_url",
             "rss_feed_items",
             "story",
@@ -35161,6 +35189,13 @@
           "anyOf": [
             {
               "$ref": "#/components/schemas/Record_string_PostElection"
+            }
+          ]
+        },
+        "post_hacker_news_references": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/Record_string_HackerNewsReferenceCounts"
             }
           ]
         },
@@ -44059,6 +44094,9 @@
           "community": {
             "type": "string"
           },
+          "has_hacker_news_references": {
+            "type": "boolean"
+          },
           "has_related_posts": {
             "type": "boolean"
           },
@@ -45198,6 +45236,9 @@
           "drafts": {
             "type": "boolean"
           },
+          "has_hacker_news_references": {
+            "type": "boolean"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -45723,6 +45764,9 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "has_hacker_news_references": {
+            "type": "boolean"
           },
           "has_related_posts": {
             "type": "boolean"

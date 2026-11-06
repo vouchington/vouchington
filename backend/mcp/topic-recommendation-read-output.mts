@@ -1,3 +1,5 @@
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
+import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
 import type { Post } from '@services/posts/types'
 import { attachPostProvenance } from '@services/content-provenance'
 import {
@@ -12,6 +14,10 @@ import {
 import { externalText, sanitizedTitle } from './mcp-read-output.mts'
 
 const SOURCE = 'topic_recommendation'
+
+export type McpTopicRecommendationPost = PublicTopicRecommendationPost & {
+  hacker_news_references?: HackerNewsReferenceCounts
+}
 
 /**
  * The recommendations among `posts`, read from the primary database, that this page lists. The ids
@@ -39,7 +45,7 @@ async function fencedText(text: string, contentType: string): Promise<string> {
  * One recommendation as an MCP client receives it. Every retained free-text field is sanitized;
  * Markdown and review messages are also fenced because an administrator may have edited them.
  */
-export async function toMcpRecommendation(
+export async function projectMcpRecommendation(
   post: TopicRecommendationPost,
 ): Promise<PublicTopicRecommendationPost> {
   const publicPost = projectPublicTopicRecommendation(post)
@@ -72,7 +78,25 @@ export async function toMcpRecommendation(
 /** Label a list in one primary-database read before projecting its public fields. */
 export async function toMcpRecommendations(
   posts: TopicRecommendationPost[],
-): Promise<PublicTopicRecommendationPost[]> {
-  const labelled = await attachPostProvenance(posts, null, { readOnly: false })
-  return Promise.all(labelled.map(toMcpRecommendation))
+): Promise<McpTopicRecommendationPost[]> {
+  const [labelled, references] = await Promise.all([
+    attachPostProvenance(posts, null, { readOnly: false }),
+    getPostHackerNewsSummaries(
+      posts.map(post => post.id),
+      { readOnly: false },
+    ),
+  ])
+  return Promise.all(
+    labelled.map(async post => ({
+      ...(await projectMcpRecommendation(post)),
+      ...(references[post.id] && { hacker_news_references: references[post.id] }),
+    })),
+  )
+}
+
+/** A mutation result uses the same batched, primary-backed projection as a list read. */
+export async function toMcpRecommendation(
+  post: TopicRecommendationPost,
+): Promise<McpTopicRecommendationPost> {
+  return (await toMcpRecommendations([post]))[0]!
 }

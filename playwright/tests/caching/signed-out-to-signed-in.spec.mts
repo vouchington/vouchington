@@ -31,14 +31,10 @@ test.describe('Signed-out to signed-in caching', () => {
 
     const requestPath = `/api/v1/posts/${SEEDED_IDS.discussion}?cache-transition=${randomUUID()}`
     const anonymousResponse = await browserFetch(page, requestPath)
-    const varyTokens = (anonymousResponse.vary ?? '')
-      .split(',')
-      .map(token => token.trim().toLowerCase())
 
     expect(anonymousResponse.status).toBe(200)
     expect(anonymousResponse.cacheStatus).toBe('DISPATCHED')
-    expect(anonymousResponse.cacheControl).toContain('public')
-    expect(varyTokens).toEqual(expect.arrayContaining(['cookie', 'authorization']))
+    expect(anonymousResponse.cacheControl).toBe('private, no-store')
     expect(anonymousResponse.body).not.toHaveProperty('election_vote')
 
     await withCleanUser(page)

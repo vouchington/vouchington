@@ -1651,6 +1651,9 @@ importers:
       '@services/queue-monitoring':
         specifier: workspace:^
         version: link:../../services/queue-monitoring
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../../services/urls
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -6468,6 +6471,9 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../urls
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../urls-domains-blacklist
@@ -7228,6 +7234,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../urls
       '@services/user-referral-program-links':
         specifier: workspace:^
         version: link:../user-referral-program-links
@@ -7256,9 +7265,6 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../urls
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -11697,6 +11703,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/membership-helpers':
         specifier: workspace:^
         version: link:../../modules/membership-helpers
@@ -11757,6 +11766,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5

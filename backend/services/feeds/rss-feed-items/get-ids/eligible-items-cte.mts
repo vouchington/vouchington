@@ -11,6 +11,7 @@ export function appendEligibleRssFeedItemsCTE(
     currentUserIsAdministrator,
     feedType,
     hasRelatedPosts,
+    hasHackerNewsReferences,
     mediaTypes,
     textSearchQuery,
     topicIds,
@@ -23,6 +24,7 @@ export function appendEligibleRssFeedItemsCTE(
     currentUserIsAdministrator: boolean
     feedType: RssFeedItemFeedOptions['feed_type']
     hasRelatedPosts: boolean | undefined
+    hasHackerNewsReferences?: boolean
     mediaTypes: string[]
     textSearchQuery: RssFeedItemFeedOptions['text_search_query']
     topicIds: RssFeedItemFeedOptions['topic_ids']
@@ -46,6 +48,7 @@ export function appendEligibleRssFeedItemsCTE(
     currentUserId,
     currentUserIsAdministrator,
     hasRelatedPosts,
+    hasHackerNewsReferences,
     mediaTypes,
     textSearchQuery,
     topicIds,

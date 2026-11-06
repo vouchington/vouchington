@@ -14,6 +14,12 @@ import {
 import { enableQueryCapture, stopTestQueryCapture } from '@voucha/test-helpers/query-capture'
 
 describe('bounded story routes', () => {
+  it('prevents anonymous story sidecars from surviving a visibility change in public caches', async () => {
+    const fixture = await createTestStoryMembers(1)
+    const response = await createRequest().get(`/api/v1/stories/${fixture.story.id}`).expect(200)
+    expect(response.headers['cache-control']).toBe('private, no-store')
+  })
+
   it('hydrates only the selected primary and bounded related previews on RSS search', async () => {
     const fixture = await createTestStoryMembers(2000)
     const query = `large${fixture.story.id.replaceAll('-', '')}`
@@ -83,7 +89,7 @@ describe('bounded story routes', () => {
       peers.itemIds.slice(0, 3),
     )
     expect(Object.keys(response.body.rss_feed_items)).toHaveLength(4)
-    expect(response.headers['cache-control']).toContain('public')
+    expect(response.headers['cache-control']).toBe('private, no-store')
   })
 
   it('paginates story detail at the bounded default with page-local sidecars and no count read', async () => {

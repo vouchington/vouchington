@@ -13,7 +13,7 @@ if (!workerOrigin || !traceOrigin || !artifactsDir) {
 }
 
 describe('worker authentication cache transition', () => {
-  it('bypasses an anonymous cached API response after the same client signs in', async () => {
+  it('keeps post details private across an anonymous-to-authenticated transition', async () => {
     const client = new WebIntegrationClient(workerOrigin, traceOrigin, artifactsDir)
 
     const requestPath = `/api/v1/posts/${SEEDED_IDS.discussion}?cache-transition=${randomUUID()}`
@@ -21,14 +21,10 @@ describe('worker authentication cache transition', () => {
       userAgent: PLAYWRIGHT_CHROME_UA,
     })
     const anonymousBody = (await anonymousResponse.json()) as Record<string, unknown>
-    const varyTokens = (anonymousResponse.headers.get('vary') ?? '')
-      .split(',')
-      .map(token => token.trim().toLowerCase())
 
     expect(anonymousResponse.status).toBe(200)
     expect(anonymousResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
-    expect(anonymousResponse.headers.get('cache-control')).toContain('public')
-    expect(varyTokens).toEqual(expect.arrayContaining(['cookie', 'authorization']))
+    expect(anonymousResponse.headers.get('cache-control')).toBe('private, no-store')
     expect(anonymousBody).not.toHaveProperty('election_vote')
 
     const authCookies = await createTestAuthCookies(TEST_USER_ID, PLAYWRIGHT_CHROME_UA)

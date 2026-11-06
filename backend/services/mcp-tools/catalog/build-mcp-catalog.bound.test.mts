@@ -106,13 +106,13 @@ function expectedGrantBudget(
   if (audience === 'user' && grant === 'Reader') {
     return {
       count: actual.count,
-      list: 55000,
+      list: 61000,
       core: roundBudget(actual.core),
       output: roundBudget(actual.output),
     }
   }
   if (audience === 'user' && grant === 'Plus') {
-    return { count: actual.count, list: 228000, core: 110000, output: 240000 }
+    return { count: actual.count, list: 236000, core: 110000, output: 240000 }
   }
   return {
     count: actual.count,

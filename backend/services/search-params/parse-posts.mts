@@ -1,15 +1,7 @@
 import { isUUID } from '@modules/utils'
 import { parseBooleanish } from '@ts-shared/utils/query'
-import {
-  defineQueryContract,
-  queryBoolean,
-  queryCsvArray,
-  queryString,
-  queryUuid,
-  queryUuidOrUri,
-  withQueryContract,
-} from '@vouchington/pagination'
-import { type PaginationRuntimeLimitBounds, createPaginationParser } from '@modules/pagination'
+import { withQueryContract } from '@vouchington/pagination'
+import type { PaginationRuntimeLimitBounds } from '@modules/pagination'
 import {
   getUserIdByAnyCached,
   getPostIdByAnyCached,
@@ -24,36 +16,9 @@ import {
   checkShouldReturnEmpty,
 } from './resolve.mts'
 import { resolveHashtagTopicSearch } from './hashtag-topic-search.mts'
+import { postsParser, postsQueryContract } from './parse-posts-contract.mts'
 import { prepareQueryForValidation } from './prepare-query.mts'
 import { withInternalOmitLimit } from './types.mts'
-
-const postsParser = createPaginationParser({
-  cursor: { type: ['simple', 'score', 'ranking'] as const },
-  limit: { min: 1, max: 100, default: 25 },
-  filters: {
-    postTypes: true,
-    timeRange: true,
-    sort: ['new', 'best', 'hot', 'relevance', 'following_new'] as const,
-    search: true,
-  },
-})
-const postsQueryContract = defineQueryContract({
-  q: queryString(),
-  topic: queryString(),
-  topics: queryCsvArray(queryString()),
-  category: queryString(),
-  categories: queryCsvArray(queryString()),
-  creator: queryString(),
-  url: queryUuidOrUri(),
-  similar_post: queryString(),
-  similar_topic: queryString(),
-  review_topic: queryString(),
-  data_point_topic: queryString(),
-  similar_rss_feed_item: queryUuid(),
-  drafts: queryBoolean(),
-  data_point_vertical: queryString(),
-  story_id: queryUuid(),
-})
 
 export function preparePostsSearchParams(
   query: Record<string, unknown>,
@@ -79,6 +44,7 @@ export function preparePostsSearchParams(
     uniqueCategoryIdentifiers: extractIdentifiers(query, ['category', 'categories'], 10),
     storyIdRaw: typeof query.story_id === 'string' ? query.story_id : undefined,
     drafts: query.drafts,
+    hasHackerNewsReferences: query.has_hacker_news_references,
     dataPointVertical: query.data_point_vertical,
     q: query.q,
   }
@@ -100,6 +66,7 @@ export async function resolvePostsSearchParams(
     uniqueCategoryIdentifiers,
     storyIdRaw,
     drafts,
+    hasHackerNewsReferences,
     dataPointVertical,
     q,
   } = prepared
@@ -133,7 +100,6 @@ export async function resolvePostsSearchParams(
     getTopicIdsByAnyCachedBatch(uniqueCategoryIdentifiers),
   ])
   const storyId = storyIdRaw !== undefined && isUUID(storyIdRaw) ? storyIdRaw : undefined
-
   const shouldReturnEmpty =
     checkShouldReturnEmpty(
       [
@@ -180,6 +146,9 @@ export async function resolvePostsSearchParams(
       ),
     }),
     ...(drafts !== undefined && { drafts: parseBooleanish(drafts) }),
+    ...(hasHackerNewsReferences !== undefined && {
+      has_hacker_news_references: parseBooleanish(hasHackerNewsReferences),
+    }),
     ...(typeof dataPointVertical === 'string' && dataPointVertical.trim()
       ? { data_point_vertical: dataPointVertical.trim() }
       : {}),

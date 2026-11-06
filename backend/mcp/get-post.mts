@@ -29,14 +29,14 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['posts:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/posts/:idOrSlug' }],
-    outputSchema: foundOrNotFoundSchema({ post: mcpPostSchema() }),
+    outputSchema: foundOrNotFoundSchema({ post: mcpPostSchema(true) }),
   },
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const thread = await resolveReadableThread(currentUser, args.post_id)
       if (!thread) return { success: false, error: 'Post not found' }
-      return { success: true, post: (await toMcpPosts([thread.post]))[0]! }
+      return { success: true, post: (await toMcpPosts([thread.post], { details: true }))[0]! }
     },
 }
 

@@ -90967,7 +90967,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "archived_at": {
@@ -90978,7 +90978,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 40,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -90989,7 +90989,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 41,
           "type": "uuid"
         },
         "ban_evasion_post_embedding_input_sha256": {
@@ -91000,7 +91000,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 56,
+          "ordinalPosition": 57,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -91011,7 +91011,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 51,
+          "ordinalPosition": 52,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -91022,7 +91022,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 54,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -91033,7 +91033,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 54,
+          "ordinalPosition": 55,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -91044,7 +91044,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52,
+          "ordinalPosition": 53,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -91055,7 +91055,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 55,
+          "ordinalPosition": 56,
           "type": "integer"
         },
         "broadcast": {
@@ -91143,7 +91143,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 35,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -91154,7 +91154,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 34,
           "type": "uuid"
         },
         "created_via": {
@@ -91187,7 +91187,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 45,
           "type": "uuid"
         },
         "data_point_vertical": {
@@ -91198,7 +91198,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 42,
           "type": "text"
         },
         "declared_language": {
@@ -91209,7 +91209,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 46,
           "type": "text"
         },
         "deleted_at": {
@@ -91220,7 +91220,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 38,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -91231,7 +91231,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 39,
           "type": "uuid"
         },
         "has_creation_moderation_bypass": {
@@ -91243,6 +91243,17 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 29,
+          "type": "boolean"
+        },
+        "has_hacker_news_references": {
+          "collation": null,
+          "comment": "Whether the post has a qualifying Hacker News reference, maintained asynchronously or with post changes.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 30,
           "type": "boolean"
         },
         "id": {
@@ -91264,7 +91275,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 33,
           "type": "timestamp with time zone"
         },
         "is_anonymous": {
@@ -91286,7 +91297,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 48,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -91297,7 +91308,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 51,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -91308,7 +91319,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 47,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -91319,7 +91330,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 49,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -91330,7 +91341,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49,
+          "ordinalPosition": 50,
           "type": "jsonb"
         },
         "llm_moderation_content_sha256": {
@@ -91341,7 +91352,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 57,
+          "ordinalPosition": 58,
           "type": "bytea"
         },
         "markdown": {
@@ -91396,7 +91407,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "timestamp with time zone"
         },
         "root_post_id": {
@@ -91418,7 +91429,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58,
+          "ordinalPosition": 59,
           "type": "tsvector"
         },
         "structured_data": {
@@ -91429,7 +91440,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 43,
           "type": "jsonb"
         },
         "title": {
@@ -91451,7 +91462,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -91462,7 +91473,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 37,
           "type": "uuid"
         },
         "url_id": {
@@ -91473,7 +91484,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 44,
           "type": "uuid"
         },
         "votes_count_down": {
@@ -92143,6 +92154,53 @@
           "unique": false,
           "valid": true
         },
+        "idx_posts__hacker_news_references__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__id ON ONLY public.posts USING btree (id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(has_hacker_news_references AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__hacker_news_references__votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "float8_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(has_hacker_news_references AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_posts__id__post_type": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -92448,7 +92506,7 @@
         "idx_posts__url_id__link": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__url_id__link ON ONLY public.posts USING btree (url_id, id DESC) WHERE ((post_type = 'link'::post_types) AND (deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_posts__url_id__link ON ONLY public.posts USING btree (url_id, id DESC) WHERE (post_type = 'link'::post_types)",
           "includedColumns": [],
           "keys": [
             {
@@ -92466,7 +92524,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((post_type = 'link'::post_types) AND (deleted_at IS NULL))",
+          "predicate": "(post_type = 'link'::post_types)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -97526,6 +97584,47 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__related__url__subject__best_positive": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__subject__best_positive ON ONLY public.relation__post__related__url USING btree (subject_id, votes_score_sort DESC, created_at DESC, object_id DESC) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "float8_ops"
+            },
+            {
+              "column": "created_at",
+              "descending": true,
+              "expression": "created_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "object_id",
+              "descending": true,
+              "expression": "object_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -123785,7 +123884,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -123796,7 +123895,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -123807,7 +123906,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -123818,7 +123917,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -123829,7 +123928,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "integer"
         },
         "created_at": {
@@ -123840,7 +123939,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "data": {
@@ -123851,7 +123950,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "jsonb"
         },
         "deleted_at": {
@@ -123862,7 +123961,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "duration_seconds": {
@@ -123873,7 +123972,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "integer"
         },
         "enclosure_length": {
@@ -123884,7 +123983,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "bigint"
         },
         "enclosure_media_type_id": {
@@ -123895,7 +123994,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "bigint"
         },
         "enclosure_url": {
@@ -123906,8 +124005,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "text"
+        },
+        "has_hacker_news_references": {
+          "collation": null,
+          "comment": "Whether the item has a qualifying Hacker News reference, maintained asynchronously.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "boolean"
         },
         "id": {
           "collation": null,
@@ -123928,7 +124038,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -123939,7 +124049,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 34,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -123950,7 +124060,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -123961,7 +124071,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -123972,7 +124082,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 33,
           "type": "jsonb"
         },
         "media_type": {
@@ -123983,7 +124093,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "rss_feed_item_media_types"
         },
         "published_at": {
@@ -123994,7 +124104,7 @@
           "generatedExpression": "LEAST(COALESCE(fn_text_to_timestamptz((data ->> 'isoDate'::text)), 'infinity'::timestamp with time zone), COALESCE(fn_text_to_timestamptz((data ->> 'pubDate'::text)), 'infinity'::timestamp with time zone), uuid_extract_timestamp(id))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 39,
           "type": "timestamp with time zone"
         },
         "search_vector": {
@@ -124005,7 +124115,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "tsvector"
         },
         "story_id": {
@@ -124016,7 +124126,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 35,
           "type": "uuid"
         },
         "story_locked_at": {
@@ -124027,7 +124137,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "thumbnail_url": {
@@ -124038,7 +124148,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "updated_at": {
@@ -124049,7 +124159,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "url_id": {
@@ -124060,7 +124170,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "video_id": {
@@ -124071,7 +124181,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "text"
         },
         "video_platform": {
@@ -124082,7 +124192,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "text"
         },
         "votes_count_down": {
@@ -124181,7 +124291,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 38,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -124192,7 +124302,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 37,
           "type": "xid8"
         }
       },
@@ -124348,6 +124458,33 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_items__hacker_news_references__published_at__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__hacker_news_references__published_at__id ON ONLY public.rss_feed_items USING btree (published_at DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "published_at",
+              "descending": true,
+              "expression": "published_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(has_hacker_news_references AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -138333,6 +138470,320 @@
           "accessMethod": "btree",
           "constraintBacked": true,
           "definition": "CREATE UNIQUE INDEX url_crawl_states_pkey ON public.url_crawl_states USING btree (url_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id"],
+        "definition": "PRIMARY KEY (url_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "url_hacker_news_comments": {
+      "checkConstraints": {
+        "url_hacker_news_comments_hacker_news_item_id_check": "CHECK ((hacker_news_item_id > 0))",
+        "url_hacker_news_comments_parent_story_item_id_check": "CHECK ((parent_story_item_id > 0))"
+      },
+      "columns": {
+        "hacker_news_item_id": {
+          "collation": null,
+          "comment": "Hacker News item id of the comment; an outside identifier with no row here.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "bigint"
+        },
+        "parent_story_item_id": {
+          "collation": null,
+          "comment": "Hacker News item id of the story whose thread holds the comment; an outside identifier that may not link the URL itself.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "bigint"
+        },
+        "posted_at": {
+          "collation": null,
+          "comment": "When the comment was posted on Hacker News.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "url_id": {
+          "collation": null,
+          "comment": "The URL the comment links. Removed with the URL.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Capped Hacker News comments that link a URL: item id, parent story id and posted time. No comment text, and no points because Hacker News publishes none.",
+      "foreignKeys": {
+        "url_hacker_news_comments_url_id_fkey": {
+          "columns": ["url_id"],
+          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "url_hacker_news_comments_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hacker_news_comments_pkey ON public.url_hacker_news_comments USING btree (url_id, hacker_news_item_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "hacker_news_item_id",
+              "descending": false,
+              "expression": "hacker_news_item_id",
+              "nullsFirst": false,
+              "opclass": "int8_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id", "hacker_news_item_id"],
+        "definition": "PRIMARY KEY (url_id, hacker_news_item_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "url_hacker_news_stories": {
+      "checkConstraints": {
+        "url_hacker_news_stories_hacker_news_item_id_check": "CHECK ((hacker_news_item_id > 0))",
+        "url_hacker_news_stories_points_check": "CHECK ((points >= 0))",
+        "url_hacker_news_stories_reply_count_check": "CHECK ((reply_count >= 0))"
+      },
+      "columns": {
+        "hacker_news_item_id": {
+          "collation": null,
+          "comment": "Hacker News item id of the story; an outside identifier with no row here.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "bigint"
+        },
+        "points": {
+          "collation": null,
+          "comment": "Story points when last looked up.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "posted_at": {
+          "collation": null,
+          "comment": "When the story was posted on Hacker News.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "reply_count": {
+          "collation": null,
+          "comment": "Number of replies on the story thread when last looked up; not the number of comments that mention the URL.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "integer"
+        },
+        "url_id": {
+          "collation": null,
+          "comment": "The URL the story links. Removed with the URL.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Capped Hacker News stories that link a URL: item id, points, reply count and posted time. No titles or text.",
+      "foreignKeys": {
+        "url_hacker_news_stories_url_id_fkey": {
+          "columns": ["url_id"],
+          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "url_hacker_news_stories_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hacker_news_stories_pkey ON public.url_hacker_news_stories USING btree (url_id, hacker_news_item_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "hacker_news_item_id",
+              "descending": false,
+              "expression": "hacker_news_item_id",
+              "nullsFirst": false,
+              "opclass": "int8_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id", "hacker_news_item_id"],
+        "definition": "PRIMARY KEY (url_id, hacker_news_item_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "url_hacker_news_totals": {
+      "checkConstraints": {
+        "url_hacker_news_totals_comment_count_check": "CHECK ((comment_count >= 0))",
+        "url_hacker_news_totals_story_count_check": "CHECK ((story_count >= 0))"
+      },
+      "columns": {
+        "comment_count": {
+          "collation": null,
+          "comment": "Total Hacker News comments linking the URL, including comments beyond the capped stored rows.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "looked_up_at": {
+          "collation": null,
+          "comment": "When the totals and stored rows were last refreshed from Hacker News search, including lookups with zero hits.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "story_count": {
+          "collation": null,
+          "comment": "Total Hacker News stories linking the URL, including stories beyond the capped stored rows.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "integer"
+        },
+        "url_id": {
+          "collation": null,
+          "comment": "The URL these totals describe. Removed with the URL.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Per-URL totals of Hacker News stories and comments that link the URL, with the time of the last lookup. Facts only; never a ranking or trust input.",
+      "foreignKeys": {
+        "url_hacker_news_totals_url_id_fkey": {
+          "columns": ["url_id"],
+          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "url_hacker_news_totals_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hacker_news_totals_pkey ON public.url_hacker_news_totals USING btree (url_id)",
           "includedColumns": [],
           "keys": [
             {

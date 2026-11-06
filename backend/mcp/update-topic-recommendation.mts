@@ -9,10 +9,11 @@ import {
   TOPIC_RECOMMENDATION_ID_SCHEMA,
   TOPIC_RECOMMENDATION_RESULT_SCHEMA,
 } from './topic-recommendation-tool-support.mts'
-import { toMcpRecommendation } from './topic-recommendation-read-output.mts'
+import {
+  toMcpRecommendation,
+  type McpTopicRecommendationPost,
+} from './topic-recommendation-read-output.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
-import { attachWrittenPostProvenance } from '@services/content-provenance'
-import type { PublicTopicRecommendationPost } from '@services/topic-recommendations/public-projection'
 
 type UpdateTopicRecommendationArgs = UpdateTopicRecommendationInput & { id: string }
 
@@ -25,7 +26,7 @@ const textList = (description: string) => ({
 
 const tool: Tool<
   UpdateTopicRecommendationArgs,
-  { success: true; post: PublicTopicRecommendationPost }
+  { success: true; post: McpTopicRecommendationPost }
 > = {
   schema: {
     name: 'update_topic_recommendation',
@@ -71,7 +72,7 @@ const tool: Tool<
     const post = await updateTopicRecommendation(user, await loadTopicRecommendation(id), changes)
     return {
       success: true,
-      post: await toMcpRecommendation(await attachWrittenPostProvenance(post, null)),
+      post: await toMcpRecommendation(post),
     }
   },
 }

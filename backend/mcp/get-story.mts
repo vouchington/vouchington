@@ -9,7 +9,7 @@ import {
   mcpStoryItemSchema,
   mcpStorySchema,
   toMcpStory,
-  toMcpStoryItem,
+  toMcpStoryItems,
   type McpStory,
   type McpStoryItem,
 } from './mcp-story-output.mts'
@@ -98,10 +98,8 @@ const tool: Tool<ToolArgs, ToolResult> = {
       return {
         success: true,
         story: await toMcpStory(story),
-        items: await Promise.all(
-          items
-            .filter((item): item is NonNullable<typeof item> => Boolean(item))
-            .map(toMcpStoryItem),
+        items: await toMcpStoryItems(
+          items.filter((item): item is NonNullable<typeof item> => Boolean(item)),
         ),
         page_info: page.page_info,
       }

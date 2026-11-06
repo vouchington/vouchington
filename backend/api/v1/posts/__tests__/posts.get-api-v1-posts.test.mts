@@ -13,7 +13,6 @@ import {
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { encodeCursor } from '@modules/pagination'
 
 import type { PrivateUser } from '@services/users/types'
@@ -52,10 +51,7 @@ describe('posts', () => {
         expect(response.body).toHaveProperty('posts_metrics')
         expect(response.body).toHaveProperty('results')
         expect(response.body).toHaveProperty('page_info')
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('private, no-store')
         expect(response.body).not.toHaveProperty('bookmarks')
         expect(response.body).not.toHaveProperty('election_votes')
         expect(response.body).not.toHaveProperty('post_moderations')

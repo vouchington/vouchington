@@ -1,3 +1,6 @@
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
+import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
+import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
 import {
   sanitizePromptInjection,
   sanitizeRssContent,
@@ -32,6 +35,7 @@ export type McpStory = {
 }
 
 export type McpStoryItem = {
+  hacker_news_references?: HackerNewsReferenceCounts
   id: string
   title: string
   markdown: string
@@ -52,16 +56,20 @@ export function mcpStorySchema() {
  * RSS item contract; the title and markdown are sanitized text the tool builds itself.
  */
 export function mcpStoryItemSchema() {
-  return closedObject({
-    id: pickProperties('ViewRssFeedItem', ['id']).id!,
-    title: { type: 'string' },
-    markdown: { type: 'string' },
-    url: pickProperties('ViewUrl', ['url']).url!,
-    guid: pickProperties('ViewRssFeedItem', ['guid']).guid!,
-    published_at: pickProperties('ViewRssFeedItem', ['published_at']).published_at!,
-    rss_feed_id: pickProperties('ViewRssFeed', ['id']).id!,
-    rss_feed_title: pickProperties('ViewRssFeed', ['title']).title!,
-  })
+  return closedObject(
+    {
+      hacker_news_references: mcpHackerNewsReferenceSchema(),
+      id: pickProperties('ViewRssFeedItem', ['id']).id!,
+      title: { type: 'string' },
+      markdown: { type: 'string' },
+      url: pickProperties('ViewUrl', ['url']).url!,
+      guid: pickProperties('ViewRssFeedItem', ['guid']).guid!,
+      published_at: pickProperties('ViewRssFeedItem', ['published_at']).published_at!,
+      rss_feed_id: pickProperties('ViewRssFeed', ['id']).id!,
+      rss_feed_title: pickProperties('ViewRssFeed', ['title']).title!,
+    },
+    ['hacker_news_references'],
+  )
 }
 
 /** A story with its LLM-written title and grouping reason sanitized like any external text. */
@@ -83,7 +91,7 @@ export async function toMcpStory(story: StoryRow): Promise<McpStory> {
 }
 
 /** A story member article, shaped and sanitized like the `search_rss_feed_items` results. */
-export async function toMcpStoryItem(item: RssItem): Promise<McpStoryItem> {
+async function toMcpStoryItem(item: RssItem): Promise<McpStoryItem> {
   return {
     id: item.id,
     title: await sanitizePromptInjection(item.data.title || item.guid, { isTitle: true }),
@@ -109,4 +117,15 @@ function rssItemContent(data: RssItem['data']): string {
     data.description,
     data['media:description'],
   ])
+}
+
+/** Story members share the RSS page's single batched reference read. */
+export async function toMcpStoryItems(items: RssItem[]): Promise<McpStoryItem[]> {
+  const references = await getRssFeedItemHackerNewsSummaries(items)
+  return Promise.all(
+    items.map(async item => ({
+      ...(await toMcpStoryItem(item)),
+      ...(references[item.id] && { hacker_news_references: references[item.id] }),
+    })),
+  )
 }

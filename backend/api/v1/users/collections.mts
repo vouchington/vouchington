@@ -10,6 +10,7 @@ import {
 } from '@services/entity-fetch'
 import { getBookmarksForEntityGroups } from '@services/bookmarks/get'
 import { attachPostProvenance } from '@services/content-provenance'
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import {
@@ -35,6 +36,7 @@ const usersSearchRouteQueryContract = defineQueryContract({
 })
 
 app.route('/api/v1/users/:idOrSlug/posts/:listType').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/users/:idOrSlug/posts/:listType', postsPaginationParser)
   await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/users/:idOrSlug/posts/:listType')
   const listType = assertSetValue(ctx.params.listType, POST_LIST_TYPES, 'Invalid post list type')
@@ -56,6 +58,9 @@ app.route('/api/v1/users/:idOrSlug/posts/:listType').get(async (ctx: Context) =>
   ctx.json({
     ...collection,
     results: await attachPostProvenance(collection.results, resolved.currentUser),
+    post_hacker_news_references: await getPostHackerNewsSummaries(
+      collection.results.map(post => post.id),
+    ),
   })
 })
 

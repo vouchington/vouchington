@@ -44,6 +44,7 @@ export type RssFeedItemFeedOptions = {
   limit?: number // default: 25, max: 100
   after?: string // Base64-encoded cursor
   has_related_posts?: boolean // filter items with/without linked discussion posts
+  has_hacker_news_references?: boolean
   media_types?: Array<'article' | 'audio' | 'video'>
   text_search_query?: string
   topic_ids?: string[]

@@ -1,4 +1,5 @@
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { indexById } from '@modules/utils'
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-feed-items'
@@ -22,7 +23,7 @@ import {
 } from '@services/stories'
 import { getPublicUsersByAnyBatch } from '@services/users/get-public-batch'
 import { isAdminUser } from '@services/users'
-import { parseNumberParams } from '@ts-shared/utils/query'
+import { parseBooleanish, parseNumberParams } from '@ts-shared/utils/query'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 import { apiQuery } from '../../../api-query-contract.mts'
@@ -36,6 +37,7 @@ import {
 } from './shared.mts'
 
 app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/feeds/rss_feed_items/:feed_type', rssFeedItemFeedQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/feeds/rss_feed_items/:feed_type')
 
@@ -46,7 +48,6 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     `Invalid feed_type. Must be one of: ${VALID_RSS_FEED_ITEM_FEED_TYPES.join(', ')}`,
   )
 
-  // Parse pagination and common filters
   const paginationOptions = parseAndValidatePaginatedRequest(
     ctx,
     'GET:/api/v1/feeds/rss_feed_items/:feed_type',
@@ -55,7 +56,6 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
   )
   const hashtagSearchOptions = await parseHashtagFeedSearchOptions(ctx.query)
 
-  // Parse feed-specific parameters
   const communityParam = ctx.query.community as string | undefined
   const communityScope = await loadOptionalFeedCommunityScope(currentUser, feedType, communityParam)
   const has_related_posts =
@@ -72,6 +72,9 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     feed_type: feedType,
     community_id: communityScope?.community.id,
     ...(has_related_posts !== undefined && { has_related_posts }),
+    ...(ctx.query.has_hacker_news_references !== undefined && {
+      has_hacker_news_references: parseBooleanish(ctx.query.has_hacker_news_references),
+    }),
   }
 
   const result = await getRssFeedItemFeedIds(currentUser, options)
@@ -119,7 +122,6 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     return { related_posts_by_url_id, postIds }
   })
 
-  // Build stories record (filter nulls from batch result)
   const storiesRecord: Record<string, unknown> = {}
   for (const story of storiesArr) {
     if (story) storiesRecord[story.id] = story
@@ -143,6 +145,9 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
         {},
         isAdminUser(currentUser) ? 'administrator' : 'public',
       ),
+    ),
+    rss_feed_item_hacker_news_references: itemsPromise.then(items =>
+      getRssFeedItemHackerNewsSummaries(items),
     ),
     rss_feed_item_elections: getRssFeedItemElectionByIdCachedBatch(allItemIds).then(indexById),
     users: usersPromise.then(users => indexById(users.filter(Boolean))),

@@ -22,12 +22,12 @@ import { attachPostProvenance } from '@services/content-provenance'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { indexById } from '@modules/utils'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   parseRssFeedItemsSearchParams,
   prepareRssFeedItemsSearchParams,
   resolveRssFeedItemsSearchParams,
 } from '@services/search-params'
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 
 import {
@@ -38,6 +38,7 @@ import {
 import { apiQuery } from '../../api-query-contract.mts'
 
 app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/rss-feed-items', parseRssFeedItemsSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feed-items')
   const preparedSearchParams = prepareRssFeedItemsSearchParams(ctx.query, getPaginationLimits(10))
@@ -49,10 +50,6 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   if (!currentUser) searchOptions.limit = clampAnonLimit(searchOptions.limit)
 
   if (shouldReturnEmpty) {
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
-
     const output: Record<string, unknown> = {
       results: [],
       stories: {},
@@ -68,6 +65,7 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
       rss_feed_item_content_html: {},
       rss_feed_item_thumbnail_url: {},
       rss_feed_item_embeds: {},
+      rss_feed_item_hacker_news_references: {},
     }
 
     ctx.setType('json')
@@ -96,10 +94,6 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   const storyMemberItemIds = Object.values(storyMemberPagesMap).flatMap(page => page.item_ids)
   const allItemIds = [...new Set([...itemIds, ...storyMemberItemIds])]
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
-
   // Use streaming pattern: pass promises directly to allow independent streaming
   const itemsPromise = getRssFeedItemByIdCachedBatch(allItemIds)
   const electionsPromise = getRssFeedItemElectionByIdCachedBatch(allItemIds).then(indexById)
@@ -125,6 +119,9 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
         {},
         isAdminUser(currentUser) ? 'administrator' : 'public',
       ),
+    ),
+    rss_feed_item_hacker_news_references: itemsPromise.then(items =>
+      getRssFeedItemHackerNewsSummaries(items),
     ),
     stories: storyIds.length > 0 ? getStoriesByIdBatch(storyIds).then(indexById) : {},
     story_member_pages: storyMemberPagesMap,

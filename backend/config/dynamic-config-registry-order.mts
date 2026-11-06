@@ -1,4 +1,5 @@
 export const REGISTRY_ORDER = [
+  'hacker-news-reference-config',
   'paged-dispatch-work-config',
   'membership-verification-queue-config',
   'membership-stripe-purchase-collision-queue-config',
@@ -95,6 +96,7 @@ export const REGISTRY_ORDER = [
   'account-data-requests-work-config',
   'memberships-work-config',
   'copyright-notices-work-config',
+  'hacker-news-visibility-config',
   'web-risk-config',
   'moderation-ai-config',
   'moderation-ai-dispatch-config',

@@ -35,6 +35,7 @@ export const REQUEST_CONTRACT_EXEMPTIONS: Readonly<Record<string, RequestContrac
     'GET:/api/v1/countries': 'no-input',
     'GET:/api/v1/dynamic-config/namespaces': 'no-input',
     'GET:/api/v1/feature-flags': 'no-input',
+    'GET:/api/v1/hacker-news-config': 'no-input',
     'GET:/api/v1/mcp': 'fixed-status',
     'GET:/api/v1/memberships/me': 'no-input',
     'GET:/api/v1/memberships/plans': 'no-input',
