@@ -53,11 +53,12 @@ describe('web integration build phases', () => {
   })
   afterEach(() => vi.unstubAllEnvs())
 
-  it('starts both builders while held and waits for both before Next or copying assets', async () => {
+  it('keeps production build memory peaks sequential before copying assets', async () => {
     const fs = await import('node:fs')
     const { spawn } = await import('node:child_process')
     const held = new Map<string, MockChildProcess>()
-    const started = Promise.withResolvers<void>()
+    const workerStarted = Promise.withResolvers<MockChildProcess>()
+    const storybookStarted = Promise.withResolvers<MockChildProcess>()
     let releasing = false
     vi.mocked(spawn).mockImplementation((_command, args) => {
       const name = Array.isArray(args) ? args.join(' ') : ''
@@ -65,26 +66,27 @@ describe('web integration build phases', () => {
       child.stderr = new EventEmitter()
       if (!releasing && (name === WORKER_COMMAND || name === STORYBOOK_COMMAND)) {
         held.set(name, child)
-        started.resolve()
+        if (name === WORKER_COMMAND) workerStarted.resolve(child)
+        else storybookStarted.resolve(child)
       } else queueMicrotask(() => child.emit('close', 0))
       return child as unknown as ReturnType<typeof spawn>
     })
-    const modulePath = './setup-web-integration.mts?held-builders'
+    const modulePath = './setup-web-integration.mts?sequential-held-builders'
     const loading = import(modulePath)
     const outcome = loading.then(
       () => undefined,
       (err: unknown) => err,
     )
     try {
-      await started.promise
-      expect(held.size).toBe(2)
+      const worker = await workerStarted.promise
+      expect(held.size).toBe(1)
+      expect(spawn).toHaveBeenCalledTimes(1)
+      expect(fs.cpSync).not.toHaveBeenCalled()
+      worker.emit('close', 0)
+      const storybook = await storybookStarted.promise
       expect(spawn).toHaveBeenCalledTimes(2)
       expect(fs.cpSync).not.toHaveBeenCalled()
-      held.get(STORYBOOK_COMMAND)!.emit('close', 0)
-      await Promise.resolve()
-      expect(spawn).toHaveBeenCalledTimes(2)
-      expect(fs.cpSync).not.toHaveBeenCalled()
-      held.get(WORKER_COMMAND)!.emit('close', 0)
+      storybook.emit('close', 0)
       expect(await outcome).toBeUndefined()
       expect(spawn).toHaveBeenCalledTimes(3)
       expect(fs.cpSync).toHaveBeenCalled()
@@ -96,63 +98,39 @@ describe('web integration build phases', () => {
   })
 
   it.each([7, 0])(
-    'settles both builders and preserves error precedence with worker exit %i',
+    'stops later builds and records timings with worker exit %i',
     async workerExit => {
       const fs = await import('node:fs')
       const { spawn } = await import('node:child_process')
-      const held = new Map<string, MockChildProcess>()
-      const started = Promise.withResolvers<void>()
-      const timingPath = '/tmp/setup-web-timings-dual-failure.json'
+      const timingPath = '/tmp/setup-web-timings-build-failure.json'
       vi.stubEnv('VOUCHINGTON_SETUP_WEB_TIMINGS_JSON', timingPath)
-      let releasing = false
       vi.mocked(spawn).mockImplementation((_command, args) => {
         const name = Array.isArray(args) ? args.join(' ') : ''
         const child = new EventEmitter() as unknown as MockChildProcess
         child.stderr = new EventEmitter()
-        if (!releasing) {
-          held.set(name, child)
-          started.resolve()
-        } else queueMicrotask(() => child.emit('close', 0))
+        queueMicrotask(() => child.emit('close', name === WORKER_COMMAND ? workerExit : 9))
         return child as unknown as ReturnType<typeof spawn>
       })
-      const modulePath = './setup-web-integration.mts?dual-build-failure'
-      const loading = import(modulePath)
-      const outcome = loading.then(
-        () => undefined,
-        (err: unknown) => err,
-      )
-      try {
-        await started.promise
-        expect(held.size).toBe(2)
-        held.get(STORYBOOK_COMMAND)!.emit('close', 9)
-        held.get(WORKER_COMMAND)!.emit('close', workerExit)
-        expect(await outcome).toMatchObject({
-          message:
-            workerExit === 7
-              ? `pnpm ${WORKER_COMMAND} failed with exit code 7`
-              : `pnpm ${STORYBOOK_COMMAND} failed with exit code 9`,
-        })
-        expect(spawn).toHaveBeenCalledTimes(2)
-        expect(fs.cpSync).not.toHaveBeenCalled()
-        const reports = vi
-          .mocked(fs.writeFileSync)
-          .mock.calls.filter(([path]) => path === timingPath)
-          .map(
-            ([, json]) =>
-              JSON.parse(stringFromUnknown(json)) as { timings: Record<string, number> },
-          )
-        expect(reports.at(-1)?.timings).toEqual(
-          expect.objectContaining({
-            'cache-cleanup': expect.any(Number),
-            'cloudflare-worker-build': expect.any(Number),
-            'storybook-build': expect.any(Number),
-          }),
+      const modulePath = './setup-web-integration.mts?sequential-build-failure'
+      await expect(import(modulePath)).rejects.toMatchObject({
+        message:
+          workerExit === 7
+            ? `pnpm ${WORKER_COMMAND} failed with exit code 7`
+            : `pnpm ${STORYBOOK_COMMAND} failed with exit code 9`,
+      })
+      expect(spawn).toHaveBeenCalledTimes(workerExit === 7 ? 1 : 2)
+      expect(fs.cpSync).not.toHaveBeenCalled()
+      const reports = vi
+        .mocked(fs.writeFileSync)
+        .mock.calls.filter(([path]) => path === timingPath)
+        .map(
+          ([, json]) => JSON.parse(stringFromUnknown(json)) as { timings: Record<string, number> },
         )
-      } finally {
-        releasing = true
-        for (const child of held.values()) child.emit('close', 0)
-        await outcome
-      }
+      expect(Object.keys(reports.at(-1)!.timings)).toEqual(
+        workerExit === 7
+          ? ['cache-cleanup', 'cloudflare-worker-build']
+          : ['cache-cleanup', 'cloudflare-worker-build', 'storybook-build'],
+      )
     },
   )
 

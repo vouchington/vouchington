@@ -25,12 +25,14 @@ export async function processGooglePlayNotification(data: { evidenceId: string }
 export async function recoverGooglePlayNotifications(): Promise<void> {
   const batch = await findRecoverableGooglePlayNotificationJobs()
   await enqueueBulkProcessGooglePlayNotifications(batch.notifications)
+  // Advance the cursor only after every notification job above has been admitted.
   return advanceGooglePlayNotificationRecoveryCursor(batch)
 }
 
 export async function recoverGooglePlayActiveSources(): Promise<void> {
   const batch = await findRecoverableGooglePlayActiveSourceJobs()
   await enqueueBulkReconcileGooglePlayActiveSources(batch.sourceIds.map(sourceId => ({ sourceId })))
+  // Checkpoint this source page only after its reconciliation jobs are admitted.
   return advanceGooglePlayActiveSourceRecoveryCursor(batch)
 }
 
@@ -53,5 +55,6 @@ export async function recoverGooglePlayAcknowledgements(): Promise<void> {
   await enqueueBulkAcknowledgeGooglePlayPurchases(
     batch.acknowledgementIds.map(acknowledgementId => ({ acknowledgementId })),
   )
+  // Checkpoint this page only after its acknowledgement jobs are admitted.
   return advanceGooglePlayAcknowledgementRecoveryCursor(batch)
 }

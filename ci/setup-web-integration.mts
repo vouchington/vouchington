@@ -30,8 +30,8 @@ const nextBuildCache = !fsCache ? 'disabled' : existsSync(turbopackCachePath) ? 
 // watchdog SIGKILL mid-`next-build` still leaves partial data on disk for issue #10937.
 writeTimingReport()
 
-const cleanupStart = performance.now()
-try {
+// ast-grep-ignore: no-three-sequential-awaits -- finish cache cleanup before starting builds, then serialize worker, Storybook, and Next production builds so their memory peaks never overlap on one runner
+await timeStep('cache-cleanup', async () => {
   clearStaleTestCaches({
     rootDir: ROOT_DIR,
     preserveNextBuildCache: fsCache,
@@ -45,39 +45,30 @@ try {
       : [],
     log: message => process.stderr.write(`${message}\n`),
   })
-} finally {
-  timings['cache-cleanup'] = performance.now() - cleanupStart
-  writeTimingReport()
-}
+})
 
-// The small worker bundle and Storybook use separate outputs; keep the larger Next build after both.
-const [workerBuildResult, storybookBuildResult] = await Promise.allSettled([
-  timeStep('cloudflare-worker-build', () =>
-    runPnpm(ROOT_DIR, ['--dir', 'cloudflare-worker', 'build'], { NODE_ENV: 'production' }),
-  ),
-  timeStep('storybook-build', async () => {
-    await runPnpm(
-      ROOT_DIR,
-      [
-        '--dir',
-        'web',
-        'exec',
-        'storybook',
-        'build',
-        '--output-dir',
-        'storybook-static',
-        '--disable-telemetry',
-      ],
-      { STORYBOOK_BASE_PATH: '/storybook/', STORYBOOK_DISABLE_TELEMETRY: '1' },
-    )
-    // The worker CSP allows same-origin scripts and blocks inline scripts. Storybook's
-    // preview iframe keeps its runtime config in inline scripts, so move those into files.
-    externalizeStorybookInlineScripts(storybookStaticDir)
-  }),
-])
-if (workerBuildResult.status === 'rejected') throw workerBuildResult.reason
-if (storybookBuildResult.status === 'rejected') throw storybookBuildResult.reason
-
+await timeStep('cloudflare-worker-build', () =>
+  runPnpm(ROOT_DIR, ['--dir', 'cloudflare-worker', 'build'], { NODE_ENV: 'production' }),
+)
+await timeStep('storybook-build', async () => {
+  await runPnpm(
+    ROOT_DIR,
+    [
+      '--dir',
+      'web',
+      'exec',
+      'storybook',
+      'build',
+      '--output-dir',
+      'storybook-static',
+      '--disable-telemetry',
+    ],
+    { STORYBOOK_BASE_PATH: '/storybook/', STORYBOOK_DISABLE_TELEMETRY: '1' },
+  )
+  // The worker CSP allows same-origin scripts and blocks inline scripts. Storybook's
+  // preview iframe keeps its runtime config in inline scripts, so move those into files.
+  externalizeStorybookInlineScripts(storybookStaticDir)
+})
 await timeStep('next-build', () =>
   runPnpm(ROOT_DIR, ['--dir', 'web', 'build'], {
     NODE_ENV: 'production',

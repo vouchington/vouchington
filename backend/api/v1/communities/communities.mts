@@ -155,6 +155,7 @@ app
     assertNotSuspended(currentUser)
     assertCanCreateCommunity(currentUser)
 
+    // Finish request validation and admission checks before creating community rows.
     const body = await prepareCommunityCreateInput(ctx, currentUser)
 
     const community = await createCommunity(currentUser.id, provenance, body)
