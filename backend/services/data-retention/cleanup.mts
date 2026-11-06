@@ -41,10 +41,10 @@ export async function runDataRetentionCleanup(
   const retainedPageSize = Math.min(limits.batchSize, 1_000)
   const hackerNewsActive =
     options.families === undefined || options.families.includes('hackerNewsReferences')
-  // ast-grep-ignore: no-three-sequential-awaits -- retention phases stay in dependent cleanup order
   const hackerNewsReferences = hackerNewsActive
     ? await cleanupHackerNewsReferences()
     : { deleted: 0, hasMore: false }
+  // ast-grep-ignore: no-three-sequential-awaits -- retention phases stay in dependent cleanup order
   const account = await cleanupExpiredAccountFamilies(limits, options, topicImportLimits)
   const membership = await cleanupMembershipAuthFamilies(limits, options)
   const moderation = await cleanupModerationEmbeddingFamilies(limits, options)
