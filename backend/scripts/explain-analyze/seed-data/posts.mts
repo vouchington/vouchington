@@ -79,6 +79,7 @@ export async function seedPosts(count = 10_000): Promise<void> {
                    embedding_hash, moderation_hash, data_point_vertical, structured_data,
                    1, uuid_extract_timestamp(change_id), uuid_extract_timestamp(change_id)
                  FROM seeded
+               WHERE TRUE
                ON CONFLICT (id) DO UPDATE SET
                  clearance_version = posts.clearance_version + 1,
                  clearance_changed_at = EXCLUDED.clearance_changed_at,
