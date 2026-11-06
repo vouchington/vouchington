@@ -5,10 +5,15 @@ import { buildCommunitySources, buildLatestCommunityActivity } from './community
 type FollowedSourceOptions = {
   communityId?: string
   currentUserId?: string
+  proxyFollowInputLimit: number
+  communityListInputLimit: number
+  cutoffDate: Date | null
+  itemCutoffId: string | null
   followInputLimit: number
   sourceLimit: number
   cursorSortAt?: string
   cursorId?: string
+  cursorInclusive?: boolean
 }
 
 /** Both source kinds share the bounded direct/proxy follow shape; activity lookup stays kind-specific. */
@@ -18,9 +23,14 @@ export function buildFollowedSourceCTE(
     communityId,
     currentUserId,
     followInputLimit,
+    proxyFollowInputLimit,
+    communityListInputLimit,
+    cutoffDate,
+    itemCutoffId,
     sourceLimit,
     cursorSortAt,
     cursorId,
+    cursorInclusive,
   }: FollowedSourceOptions,
 ): SQLStatement {
   const followedHeader =
@@ -36,10 +46,14 @@ export function buildFollowedSourceCTE(
       ? buildProxyCommunityRankCTE(
           kind,
           currentUserId,
-          followInputLimit,
+          proxyFollowInputLimit,
+          communityListInputLimit,
           sourceLimit,
           cursorSortAt,
           cursorId,
+          cursorInclusive,
+          cutoffDate,
+          itemCutoffId,
         )
           .append(sql`, `)
           .append(followedHeader)
@@ -54,10 +68,13 @@ export function buildFollowedSourceCTE(
         buildCommunitySources(
           kind,
           sql`${communityId}`,
-          followInputLimit,
+          communityListInputLimit,
           sourceLimit + 1,
           cursorSortAt,
           cursorId,
+          cursorInclusive,
+          cutoffDate,
+          itemCutoffId,
         ),
       ).append(sql`) picked JOIN communities community ON community.id = ${communityId}
         AND community.deleted_at IS NULL`)
@@ -84,10 +101,13 @@ export function buildFollowedSourceCTE(
         buildCommunitySources(
           kind,
           sql`proxy.community_id`,
-          followInputLimit,
+          communityListInputLimit,
           sourceLimit + 1,
           cursorSortAt,
           cursorId,
+          cursorInclusive,
+          cutoffDate,
+          itemCutoffId,
         ),
       ).append(sql`) child
       WHERE proxy.community_rank <= ${sourceLimit}
@@ -115,10 +135,14 @@ export function buildFollowedSourceCTE(
 function buildProxyCommunityRankCTE(
   kind: SourceKind,
   currentUserId: string,
-  followInputLimit: number,
+  proxyFollowInputLimit: number,
+  communityListInputLimit: number,
   sourceLimit: number,
   cursorSortAt?: string,
   cursorId?: string,
+  cursorInclusive = false,
+  cutoffDate: Date | null = null,
+  itemCutoffId: string | null = null,
 ): SQLStatement {
   const name =
     kind === 'feed' ? sql`ranked_proxy_rss_feed_communities` : sql`ranked_proxy_topic_communities`
@@ -131,10 +155,9 @@ function buildProxyCommunityRankCTE(
     FROM (
       SELECT proxy.community_id, latest.activity_at, latest.activity_item_id
       FROM (
-        SELECT object_id AS community_id
-        FROM relation__user__proxy_follow__community
-        WHERE subject_id = ${currentUserId} AND deleted_at IS NULL
-        ORDER BY created_at DESC, object_id DESC LIMIT ${followInputLimit}
+        SELECT community_id FROM viewer_proxy_follows
+        ORDER BY created_at DESC, community_id DESC
+        LIMIT ${proxyFollowInputLimit}
       ) proxy
       JOIN communities community ON community.id = proxy.community_id
         AND community.deleted_at IS NULL
@@ -143,9 +166,12 @@ function buildProxyCommunityRankCTE(
       buildLatestCommunityActivity(
         kind,
         sql`proxy.community_id`,
-        followInputLimit,
+        communityListInputLimit,
         cursorSortAt,
         cursorId,
+        cursorInclusive,
+        cutoffDate,
+        itemCutoffId,
       ),
     ).append(sql`) latest ON TRUE
       WHERE community.visibility = 'public' OR EXISTS (

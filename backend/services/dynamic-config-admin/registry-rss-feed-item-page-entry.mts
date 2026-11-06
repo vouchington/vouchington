@@ -11,8 +11,26 @@ export const rssFeedItemPageRegistryEntry = defineDynamicConfigNamespace({
   config: rssFeedItemPageConfig,
   access: { update_roles: ['developer'] },
   fields: {
+    max_windows_per_page: {
+      description: 'Maximum bounded candidate windows inspected while seeking a nonempty page.',
+      minValue: 1,
+      maxValue: rssFeedItemPageMaxima.max_windows_per_page,
+      integer: true,
+    },
+    proxy_follow_input_limit: {
+      description: 'Maximum active proxy community follows considered per candidate window.',
+      minValue: 1,
+      maxValue: rssFeedItemPageMaxima.proxy_follow_input_limit,
+      integer: true,
+    },
+    community_list_input_limit: {
+      description: 'Maximum indexed list entries inspected per community and source kind.',
+      minValue: 1,
+      maxValue: rssFeedItemPageMaxima.community_list_input_limit,
+      integer: true,
+    },
     source_limit: {
-      description: 'Maximum followed RSS feed and topic sources considered per page.',
+      description: 'Maximum followed RSS feed and topic sources considered per candidate window.',
       minValue: 1,
       maxValue: rssFeedItemPageMaxima.source_limit,
       integer: true,

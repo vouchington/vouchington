@@ -10,6 +10,7 @@ export function appendSharedItemPoolCTEs(
     pageSize,
     cursorSortAt,
     cursorId,
+    cursorInclusive,
   }: {
     cutoffDate: Date | null
     currentUserId?: string
@@ -17,6 +18,7 @@ export function appendSharedItemPoolCTEs(
     pageSize: number
     cursorSortAt?: string
     cursorId?: string
+    cursorInclusive?: boolean
   },
 ): void {
   query.append(sql`, shared_item_pool AS MATERIALIZED (
@@ -27,7 +29,11 @@ export function appendSharedItemPoolCTEs(
   `)
   if (cutoffDate) query.append(sql` AND sort_at >= ${cutoffDate}`)
   if (cursorSortAt && cursorId)
-    query.append(sql` AND (sort_at, id) < (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`)
+    query.append(
+      cursorInclusive
+        ? sql` AND (sort_at, id) <= (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`
+        : sql` AND (sort_at, id) < (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`,
+    )
   query.append(sql`
       ORDER BY sort_at DESC, id DESC
       LIMIT ${pageSize + 1}

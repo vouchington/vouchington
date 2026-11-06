@@ -7,6 +7,7 @@ type StoryWinnerOptions = {
   currentUserId?: string
   feedType: RssFeedItemFeedType | undefined
   storyItemLimit: number
+  proxyFollowInputLimit: number
   eligibilityChildLimit: number
   minScoreFollowRssFeeds: number
   minScoreFollowTopics: number

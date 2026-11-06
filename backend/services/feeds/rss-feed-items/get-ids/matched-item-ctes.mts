@@ -12,6 +12,7 @@ export function appendMatchedItemCTEs(
     cutoffDate,
     cursorSortAt,
     cursorId,
+    cursorInclusive,
   }: {
     feedType: RssFeedItemFeedType | undefined
     itemCutoffId: string | null
@@ -20,6 +21,7 @@ export function appendMatchedItemCTEs(
     cutoffDate: Date | null
     cursorSortAt?: string
     cursorId?: string
+    cursorInclusive?: boolean
   },
 ): void {
   query.append(sql`, active_rss_feed_sources AS MATERIALIZED (
@@ -32,7 +34,17 @@ export function appendMatchedItemCTEs(
         AND latest_item_sort_at IS NOT NULL LIMIT 1
     ) live_feed
     CROSS JOIN LATERAL (`)
-  query.append(buildSourceHead('feed', sql`live_feed.id`, cursorSortAt, cursorId))
+  query.append(
+    buildSourceHead(
+      'feed',
+      sql`live_feed.id`,
+      cursorSortAt,
+      cursorId,
+      cursorInclusive,
+      cutoffDate,
+      itemCutoffId,
+    ),
+  )
   query.append(sql`) head
     WHERE ${feedType !== 'follow_topics'}
     ORDER BY head.sort_at DESC, head.item_id DESC, followed.rss_feed_id DESC
@@ -42,7 +54,17 @@ export function appendMatchedItemCTEs(
       head.sort_at AS activity_at, head.item_id AS activity_item_id
     FROM followed_topics followed
     CROSS JOIN LATERAL (`)
-  query.append(buildSourceHead('topic', sql`followed.topic_id`, cursorSortAt, cursorId))
+  query.append(
+    buildSourceHead(
+      'topic',
+      sql`followed.topic_id`,
+      cursorSortAt,
+      cursorId,
+      cursorInclusive,
+      cutoffDate,
+      itemCutoffId,
+    ),
+  )
   query.append(sql`) head
     WHERE ${feedType !== 'follow_rss_feeds'}
     ORDER BY head.sort_at DESC, head.item_id DESC, followed.topic_id DESC
@@ -78,8 +100,13 @@ export function appendMatchedItemCTEs(
       WHERE source.rss_feed_id = selected.source_id
         AND source.item_sort_at IS NOT NULL`)
   if (cursorSortAt && cursorId)
-    query.append(sql` AND (source.item_sort_at, source.rss_feed_item_id)
-      < (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`)
+    query.append(
+      cursorInclusive
+        ? sql` AND (source.item_sort_at, source.rss_feed_item_id)
+        <= (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`
+        : sql` AND (source.item_sort_at, source.rss_feed_item_id)
+        < (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`,
+    )
   if (cutoffDate) query.append(sql` AND source.item_sort_at >= ${cutoffDate}`)
   if (itemCutoffId) query.append(sql` AND source.rss_feed_item_id >= ${itemCutoffId}::uuid`)
   query.append(sql`
@@ -95,8 +122,13 @@ export function appendMatchedItemCTEs(
       FROM rss_feed_item_topic_candidates candidate
       WHERE candidate.topic_id = selected.source_id AND candidate.sort_at IS NOT NULL`)
   if (cursorSortAt && cursorId)
-    query.append(sql` AND (candidate.sort_at, candidate.rss_feed_item_id)
-      < (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`)
+    query.append(
+      cursorInclusive
+        ? sql` AND (candidate.sort_at, candidate.rss_feed_item_id)
+        <= (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`
+        : sql` AND (candidate.sort_at, candidate.rss_feed_item_id)
+        < (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`,
+    )
   if (cutoffDate) query.append(sql` AND candidate.sort_at >= ${cutoffDate}`)
   if (itemCutoffId) query.append(sql` AND candidate.rss_feed_item_id >= ${itemCutoffId}::uuid`)
   query.append(sql`

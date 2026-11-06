@@ -29,8 +29,10 @@ export function appendDeliveryCTEs(
     pageSize,
     storyItemLimit,
     eligibilityChildLimit,
+    proxyFollowInputLimit,
     cursorSortAt,
     cursorId,
+    cursorInclusive,
   }: {
     communityId?: string
     cutoffDate: Date | null
@@ -53,9 +55,11 @@ export function appendDeliveryCTEs(
     sourceLimit: number
     pageSize: number
     storyItemLimit: number
+    proxyFollowInputLimit: number
     eligibilityChildLimit: number
     cursorSortAt?: string
     cursorId?: string
+    cursorInclusive?: boolean
   },
 ): SQLStatement {
   appendSharedItemPoolCTEs(query, {
@@ -65,6 +69,7 @@ export function appendDeliveryCTEs(
     pageSize,
     cursorSortAt,
     cursorId,
+    cursorInclusive,
   })
   appendDirectCandidateCTE(query, {
     communityId,
@@ -88,8 +93,10 @@ export function appendDeliveryCTEs(
     pageSize,
     cursorSortAt,
     cursorId,
+    cursorInclusive,
     storyItemLimit,
     eligibilityChildLimit,
+    proxyFollowInputLimit,
   })
   appendDirectWinnerCTE(query, {
     communityId,
@@ -97,6 +104,7 @@ export function appendDeliveryCTEs(
     feedType,
     storyItemLimit,
     eligibilityChildLimit,
+    proxyFollowInputLimit,
     minScoreFollowRssFeeds,
     minScoreFollowTopics,
   })

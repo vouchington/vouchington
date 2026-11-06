@@ -6,6 +6,7 @@ import {
   createTestTopic,
   createTestUser,
   followRssFeed,
+  followTopic,
   followUser,
   insertTestStory,
   insertTestCommunity,
@@ -14,6 +15,7 @@ import {
   setRssFeedItemShareSortAtForTest,
   setTestItemStoryId,
   setTestRssFeedItemVotes,
+  addCategoryToRssFeedItem,
 } from '@voucha/test-helpers'
 import { getRssFeedItemFeedIds } from '../get-ids.mts'
 import { rssFeedItemPageConfig } from '../feed-page-config.mts'
@@ -167,21 +169,21 @@ describe('bounded personalized RSS source pool', () => {
     const now = Date.now()
     const atRank = (rank: number) => new Date(now - (200 - rank) * 1000)
     const rankedItems = await Promise.all(
-      [100, 90, 80, 70, 60].map(rank =>
+      [100, 95, 90, 85, 80, 75, 70, 60].map(rank =>
         createTestRssFeedItemWithUrl(feedId, { createdAt: atRank(rank) }),
       ),
     )
-    const [itemA100, itemB90, itemC80, itemD70, itemE60] = rankedItems
+    const [itemA100, itemB95, itemC90, itemD85, itemE80, itemF75, itemG70, itemH60] = rankedItems
     const duplicateStory = await insertTestStory({ officialRssFeedItemId: itemA100!.id })
     await Promise.all([
       setTestItemStoryId(itemA100!.id, duplicateStory.id),
-      setTestItemStoryId(itemB90!.id, duplicateStory.id),
-      setTestItemStoryId(itemC80!.id, duplicateStory.id),
-      setTestItemStoryId(itemD70!.id, duplicateStory.id),
+      ...[itemB95, itemC90, itemD85, itemE80, itemF75, itemG70].map(item =>
+        setTestItemStoryId(item!.id, duplicateStory.id),
+      ),
       setTestRssFeedItemVotes(itemA100!.id, 1),
-      setTestRssFeedItemVotes(itemB90!.id, 0),
-      setTestRssFeedItemVotes(itemC80!.id, 0),
-      setTestRssFeedItemVotes(itemD70!.id, 0),
+      ...[itemB95, itemC90, itemD85, itemE80, itemF75, itemG70].map(item =>
+        setTestRssFeedItemVotes(item!.id, 0),
+      ),
     ])
 
     const shareItem = await createTestRssFeedItemWithUrl(
@@ -197,10 +199,10 @@ describe('bounded personalized RSS source pool', () => {
       sortAt: atRank(50).toISOString(),
     })
 
-    const options = { feed_type: 'any', time_range: 'all', limit: 3 } as const
+    const options = { feed_type: 'any', time_range: 'all', limit: 1 } as const
     const expected = [
       [itemA100!.id, 'direct'],
-      [itemE60!.id, 'direct'],
+      [itemH60!.id, 'direct'],
       [shareItem.id, 'share'],
     ]
     let after: string | undefined
@@ -209,6 +211,31 @@ describe('bounded personalized RSS source pool', () => {
       expect(page.results.map(row => [row.entity_id, row.delivery_type])).toEqual([delivery])
       expect(page.page_info.has_next_page).toBe(index < expected.length - 1)
       after = page.page_info.end_cursor ?? undefined
+    }
+  })
+
+  it('returns once an item matched by both followed source kinds with a source cap of one', async () => {
+    const viewer = await createTestUser()
+    const topic = await createTestTopic()
+    const feedId = await createTestRssFeedWithTiming(topic.id)
+    await Promise.all([followRssFeed(viewer, feedId), followTopic(viewer, topic)])
+    const item = await createTestRssFeedItemWithUrl(feedId)
+    await Promise.all([
+      addCategoryToRssFeedItem(item.id, topic.id),
+      setTestRssFeedItemVotes(item.id, 1),
+    ])
+    const restore = overrideDynamicConfigFieldsForTest(rssFeedItemPageConfig, {
+      source_limit: 1,
+    })
+    try {
+      const page = await getRssFeedItemFeedIds(viewer, {
+        feed_type: 'all',
+        time_range: 'all',
+        limit: 10,
+      })
+      expect(page.results.map(row => row.entity_id)).toEqual([item.id])
+    } finally {
+      restore()
     }
   })
 })

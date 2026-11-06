@@ -5,6 +5,7 @@ type MatchOptions = {
   communityId?: string
   currentUserId?: string
   feedType: RssFeedItemFeedType | undefined
+  proxyFollowInputLimit: number
   eligibilityChildLimit: number
   minScoreFollowRssFeeds: number
   minScoreFollowTopics: number
@@ -73,7 +74,7 @@ export function buildStableStoryMatch(
 }
 
 function buildFollowedPair(kind: 'feed' | 'topic', childId: SQLStatement, options: MatchOptions) {
-  const { communityId, currentUserId, eligibilityChildLimit } = options
+  const { communityId, currentUserId, proxyFollowInputLimit } = options
   const listTable = kind === 'feed' ? sql`community_list_rss_feeds` : sql`community_list_topics`
   const childColumn = kind === 'feed' ? sql`rss_feed_id` : sql`topic_id`
   if (communityId)
@@ -96,21 +97,25 @@ function buildFollowedPair(kind: 'feed' | 'topic', childId: SQLStatement, option
       AND direct_follow.object_id = `)
     .append(childId)
     .append(sql` AND direct_follow.deleted_at IS NULL)`)
-  const proxyPage = sql`SELECT listing.community_id FROM `
+  // Bound the viewer's active follows before visibility checks, as in source selection.
+  const proxyPage = sql`SELECT community_id FROM viewer_proxy_follows
+    ORDER BY created_at DESC, community_id DESC LIMIT ${proxyFollowInputLimit}`
+  const proxy = sql`EXISTS (
+    SELECT 1 FROM (`
+    .append(proxyPage)
+    .append(sql`) proxy_follow
+    JOIN communities community ON community.id = proxy_follow.community_id
+      AND community.deleted_at IS NULL
+    CROSS JOIN LATERAL (
+      SELECT 1 FROM `)
     .append(listTable)
-    .append(sql` listing WHERE listing.`)
+    .append(sql` listing WHERE listing.community_id = proxy_follow.community_id
+      AND listing.removed_at IS NULL AND listing.`)
     .append(childColumn)
     .append(sql` = `)
-    .append(childId).append(sql` AND listing.removed_at IS NULL
-      ORDER BY listing.community_id DESC LIMIT ${eligibilityChildLimit + 1}`)
-  const proxy = sql`EXISTS (
-    SELECT 1 FROM (`.append(proxyPage).append(sql`) listed
-    JOIN relation__user__proxy_follow__community proxy_follow
-      ON proxy_follow.subject_id = ${currentUserId}
-      AND proxy_follow.object_id = listed.community_id
-      AND proxy_follow.deleted_at IS NULL
-    JOIN communities community ON community.id = listed.community_id
-      AND community.deleted_at IS NULL
+    .append(childId).append(sql`
+      LIMIT 1
+    ) listing
     WHERE community.visibility = 'public' OR EXISTS (
       SELECT 1 FROM community_members member
       WHERE member.community_id = community.id AND member.user_id = ${currentUserId}
@@ -122,9 +127,6 @@ function buildFollowedPair(kind: 'feed' | 'topic', childId: SQLStatement, option
     .append(sql` OR `)
     .append(proxy)
   if (options.allowUnknown)
-    match
-      .append(sql` OR (SELECT COUNT(*) FROM (`)
-      .append(proxyPage)
-      .append(sql`) listed) > ${eligibilityChildLimit}`)
+    match.append(sql` OR (SELECT COUNT(*) FROM viewer_proxy_follows) > ${proxyFollowInputLimit}`)
   return match.append(sql`)`)
 }
