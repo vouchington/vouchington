@@ -42,7 +42,7 @@
     "@services/post-publication": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/users": "workspace:^",
-    "@vouchington/sentry": "^0.5.0",
+    "@vouchington/sentry": "^0.6.0",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.15.0"
