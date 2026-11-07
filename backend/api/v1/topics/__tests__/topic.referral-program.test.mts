@@ -7,14 +7,11 @@ import {
   insertTestTopic,
 } from '@voucha/test-helpers'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
-import { registerTopicProgramAttributeRouteTests } from '../../../../test-helpers/topic-program-attribute-route-tests.mts'
 
 const longPublicCacheControl = `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`
 
 describe('topic.referral-program', () => {
   describe('Topic Referral Program Routes', () => {
-    registerTopicProgramAttributeRouteTests('referral', ['get'], longPublicCacheControl)
-
     describe('GET /api/v1/topics/:idOrSlug/referral-program/validation-info', () => {
       it('returns 404 for non-existent topic', async () => {
         const request = createRequest()
@@ -171,13 +168,10 @@ describe('topic.referral-program', () => {
           .send({ validation_id: validationId })
           .expect(204)
 
-        // Verify linked via the program attributes
         const attrRes = await adminRequest
-          .get(`/api/v1/topics/${topicId}/referral-program`)
+          .get(`/api/v1/topics/${topicId}/referral-program/validations`)
           .expect(200)
-        expect(
-          attrRes.body.referral_program_attributes.referral_program_link_validation_ids,
-        ).toContain(validationId)
+        expect(attrRes.body.results.map((row: { id: string }) => row.id)).toContain(validationId)
       })
     })
 

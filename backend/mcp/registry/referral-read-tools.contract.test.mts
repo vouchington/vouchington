@@ -35,14 +35,14 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>) => ({
 })
 type Caller = ReturnType<typeof asCaller>
 
-describe('read_topic.referral_program — real DB', () => {
+describe('read_topic.details referral program — real DB', () => {
   let caller: Caller
   let program: { referralProgramId: string }
   let slug: string
   let switchedOff: string
 
   const read = (topic_id: string) =>
-    callStructuredMcpTool(caller, 'read_topic', optionArgs('referral_program', { topic_id }), [
+    callStructuredMcpTool(caller, 'read_topic', optionArgs('details', { topic_id }), [
       'topics:read',
     ])
 
@@ -55,16 +55,17 @@ describe('read_topic.referral_program — real DB', () => {
     await disableReferralProgramByTopicId(switchedOff)
   })
 
-  it('returns the state REST returns, by topic id or by slug', async () => {
+  it('returns the company and enabled state REST returns, by topic id or by slug', async () => {
     const rest = await createRequest()
-      .get(`/api/v1/topics/${program.referralProgramId}/referral-program`)
+      .get(`/api/v1/topics/${program.referralProgramId}`)
       .expect(200)
     const attributes = rest.body.referral_program_attributes
 
     for (const reference of [program.referralProgramId, slug]) {
-      expect(await read(reference)).toEqual({
+      expect(await read(reference)).toMatchObject({
         success: true,
-        topic_id: program.referralProgramId,
+        id: program.referralProgramId,
+        topic_type: 'referral_program',
         company_topic_id: attributes.company_topic_id,
         enabled_at: attributes.enabled_at,
         disabled_at: null,
@@ -75,13 +76,14 @@ describe('read_topic.referral_program — real DB', () => {
   it('shows when a program was switched off', async () => {
     expect(await read(switchedOff)).toMatchObject({
       success: true,
-      topic_id: switchedOff,
+      id: switchedOff,
+      topic_type: 'referral_program',
       enabled_at: null,
       disabled_at: expect.any(String),
     })
   })
 
-  it('says why a topic gives no program', async () => {
+  it('omits program fields on other topic types and returns nulls when the extension row is missing', async () => {
     const plain = await createTestTopic()
     const stateless = await createTestTopic({ topic_type: 'referral_program' })
 
@@ -89,14 +91,22 @@ describe('read_topic.referral_program — real DB', () => {
       success: false,
       error: 'Topic not found',
     })
-    expect(await read(plain.id)).toEqual({
-      success: false,
-      error: 'Topic is not a referral program',
+    expect(await read(plain.id)).toMatchObject({
+      success: true,
+      id: plain.id,
+      topic_type: 'topic',
     })
-    expect(await read(stateless.id)).toEqual({
-      success: false,
-      error: 'Referral program attributes not found',
+    expect(await read(plain.id)).not.toHaveProperty('company_topic_id')
+    expect(await read(stateless.id)).toMatchObject({
+      success: true,
+      id: stateless.id,
+      topic_type: 'referral_program',
+      company_topic_id: null,
+      enabled_at: null,
+      disabled_at: null,
     })
+    const statelessRest = await createRequest().get(`/api/v1/topics/${stateless.id}`).expect(200)
+    expect(statelessRest.body.referral_program_attributes).toBeNull()
   })
 })
 

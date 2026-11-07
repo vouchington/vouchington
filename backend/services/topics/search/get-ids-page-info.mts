@@ -85,7 +85,7 @@ function encodeTopicSearchCursor(row: TopicSearchRow, sort: string, state: Topic
       id: row.id,
     })
   }
-  if (sort === 'best') {
+  if (sort === 'best' || sort === 'link_count') {
     return encodeCursor({ score: requiredNumber(row.sort_score, 'sort_score'), id: row.id })
   }
   return encodeCursor({ id: row.id })

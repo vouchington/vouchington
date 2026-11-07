@@ -28,7 +28,6 @@
     "@services/recommended-topics": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/topics": "workspace:^",
-    "@services/trending-referral-programs": "workspace:^",
     "@services/users": "workspace:^",
     "p-map": "^7.1.1",
     "sql-template-strings": "^2.2.2",

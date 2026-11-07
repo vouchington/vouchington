@@ -96,7 +96,7 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
     const state = await readTool(
       token,
       'read_topic',
-      optionArgs('referral_program', {
+      optionArgs('details', {
         topic_id: program.referralProgramId,
       }),
     )
@@ -106,8 +106,10 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
 
     expect(state).toMatchObject({
       success: true,
-      topic_id: program.referralProgramId,
+      id: program.referralProgramId,
+      topic_type: 'referral_program',
       disabled_at: null,
+      enabled_at: expect.any(String),
     })
     expect(resultIds(mine)).toEqual([link.id])
     expect(mine).toMatchObject({ page_info: { has_next_page: false } })
@@ -125,7 +127,7 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
     const programs = await readTool(
       token,
       'discover_topics',
-      optionArgs('trending_referral_programs', { limit: 1 }),
+      optionArgs('search', { sort: 'link_count', limit: 1 }),
     )
     const countries = await readTool(token, 'read_reference_data', optionArgs('countries', {}))
     const currencies = await readTool(

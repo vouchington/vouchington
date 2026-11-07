@@ -1,7 +1,7 @@
 import type { TopicTypes } from './topic.mts'
 import type { PaginatedResult } from '../pagination.mts'
 
-export type TopicSearchSort = 'new' | 'best' | 'relevance'
+export type TopicSearchSort = 'new' | 'best' | 'relevance' | 'link_count'
 
 // Result type for topic search responses
 export type TopicSearchResult = PaginatedResult<'topic'> & {
@@ -55,7 +55,17 @@ type RelevanceSortPagination = BasePaginationOptions & {
   after?: string // Base64-encoded cursor
 }
 
-type TopicSearchPaginationOptions = NewSortPagination | BestSortPagination | RelevanceSortPagination
+// Pagination for sort='link_count' (enabled referral programs by all-time active links)
+type LinkCountSortPagination = BasePaginationOptions & {
+  sort: 'link_count'
+  after?: string // Base64-encoded score cursor: active_link_count and topic id
+}
+
+type TopicSearchPaginationOptions =
+  | NewSortPagination
+  | BestSortPagination
+  | RelevanceSortPagination
+  | LinkCountSortPagination
 
 type TopicSearchQueryOptions = {
   // Internal cursor parameters (decoded from 'after', used by query builder)

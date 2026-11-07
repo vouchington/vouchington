@@ -14,6 +14,7 @@ import { getEntityRelations } from '@services/entity-relations/query'
 import renderMarkdown from '@services/markdown'
 import { getLatestTopicContentUpdate } from '@services/topic-revisions'
 import {
+  getReferralProgramAttributes,
   getTopicByAny,
   getTopicChildren,
   getTopicMetricsByAny,
@@ -93,6 +94,19 @@ app
       topic_parents: getTopicParents(topic.id),
       topic_children: getTopicChildren(topic.id),
       topic_content_update: getLatestTopicContentUpdate(topic.id),
+      ...(topic.topic_type === 'referral_program'
+        ? {
+            referral_program_attributes: getReferralProgramAttributes(topic).then(attributes =>
+              attributes
+                ? {
+                    company_topic_id: attributes.company_topic_id ?? null,
+                    enabled_at: attributes.enabled_at ?? null,
+                    disabled_at: attributes.disabled_at ?? null,
+                  }
+                : null,
+            ),
+          }
+        : {}),
     }
     if (currentUser) {
       output.bookmarks = getBookmarksForEntities(currentUser, 'topic', [topic.id]).then(b =>

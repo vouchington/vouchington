@@ -38,6 +38,7 @@ import { runMembershipRefundScenarios } from './run-scenarios/memberships.mts'
 import { runMembershipWorkSelectionScenarios } from './run-scenarios/membership-work-selection.mts'
 import { runEngagementEmailRecipientScenarios } from './run-scenarios/engagement-email-recipients.mts'
 import { runTopicAliasCategoryWorkScenarios } from './run-scenarios/topic-alias-category-work.mts'
+import { runTopicLinkCountSortScenario } from './run-scenarios/topic-link-count-sort.mts'
 import { runMembershipProviderRecoveryScenarios } from './run-scenarios/membership-provider-recovery.mts'
 import { runRetentionStagePageScenarios } from './run-scenarios/retention-stage-pages.mts'
 import { runStripeEventRecoveryScenario } from './run-scenarios/stripe-event-recovery.mts'
@@ -165,6 +166,7 @@ async function main() {
     await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
     await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
     await runStep(runCommentDescendantPartitionedPages.name, runCommentDescendantPartitionedPages)
+    await runStep(runTopicLinkCountSortScenario.name, runTopicLinkCountSortScenario)
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)

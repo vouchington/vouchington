@@ -212,7 +212,6 @@
     "@services/totp": "workspace:^",
     "@services/trending-communities": "workspace:^",
     "@services/trending-posts": "workspace:^",
-    "@services/trending-referral-programs": "workspace:^",
     "@services/trending-rss-feeds": "workspace:^",
     "@services/trending-topics": "workspace:^",
     "@services/urls": "workspace:^",

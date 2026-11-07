@@ -34,33 +34,14 @@ export function createTopicSettingsValidationsPage() {
     // Use the canonical UUID (not the URL slug) for API calls that require UUID
     const topicId = topicData.topic.id
 
-    interface ReferralProgramAttributes {
-      referral_program_link_validation_ids: string[]
-    }
-
-    const attributesData = await returnNullForMissingEntity(
-      serverApi.get<{ referral_program_attributes: ReferralProgramAttributes }>(
-        `/api/v1/topics/${topicId}/referral-program`,
+    const validationsData = await returnNullForMissingEntity(
+      serverApi.get<{ results: ReferralLinkValidation[] }>(
+        `/api/v1/topics/${topicId}/referral-program/validations`,
       ),
     )
-    if (!attributesData) notFound()
+    if (!validationsData) notFound()
 
-    const linkedIds =
-      attributesData.referral_program_attributes.referral_program_link_validation_ids ?? []
-
-    const linkedValidations = (
-      await Promise.all(
-        linkedIds.map(vid =>
-          returnNullForMissingEntity(
-            serverApi
-              .get<{ validation: ReferralLinkValidation }>(
-                `/api/v1/referral-link-validations/${vid}`,
-              )
-              .then(d => d.validation),
-          ),
-        ),
-      )
-    ).filter((v): v is ReferralLinkValidation => v !== null)
+    const linkedValidations = validationsData.results
 
     return (
       <ReferralValidationsSettings

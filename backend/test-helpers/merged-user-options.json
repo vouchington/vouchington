@@ -103,24 +103,10 @@
       "routes": ["GET:/api/v1/platform-stats"]
     },
     {
-      "target": "read_topic",
-      "option": "referral_program",
-      "args": {
-        "topic_id": "sample"
-      },
-      "routes": ["GET:/api/v1/topics/:idOrSlug/referral-program"]
-    },
-    {
       "target": "discover_communities",
       "option": "trending",
       "args": {},
       "routes": ["GET:/api/v1/trending-communities"]
-    },
-    {
-      "target": "discover_topics",
-      "option": "trending_referral_programs",
-      "args": {},
-      "routes": ["GET:/api/v1/trending-referral-programs"]
     },
     {
       "target": "read_reference_data",
@@ -801,14 +787,6 @@
       "option": "containing",
       "args": {
         "list_id": "00000000-0000-4000-8000-000000000001"
-      }
-    },
-    {
-      "target": "read_topic",
-      "option": "referral_program",
-      "args": {
-        "topic_id_a": "sample",
-        "topic_id_b": "sample"
       }
     },
     {
