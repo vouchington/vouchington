@@ -8,10 +8,8 @@ import { assessUrls } from '@services/urls/upsert'
 import { persistAssessedUrls } from '@services/urls/upsert-persist'
 import { getCanonicalUrlsByIdBatch } from '@services/urls/get-canonical'
 import { getUrlByAny } from '@services/urls/get'
-import {
-  findUrlIdByIdentity,
-  lockCanonicalRewritesForNewVariants,
-} from '@services/urls/url-identities'
+import { findUrlIdByIdentity } from '@services/urls/url-identities'
+import { lockCanonicalUrlRewrites } from '@services/urls/canonical-lock'
 import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import type { Post, UpdatePostChanges } from '../types.mts'
@@ -52,7 +50,7 @@ export async function persistPostLinkEdit(
   changes: UpdatePostChanges,
   urls: Awaited<ReturnType<typeof assessUrls>>,
 ): Promise<UpdatePostChanges> {
-  await lockCanonicalRewritesForNewVariants(query, urls, 'shared')
+  await lockCanonicalUrlRewrites(query, 'shared')
   await prepareAndLockPostLinkHostnames(query, userId, urls)
   // Persistence locks both assessed alias and terminal until the post transaction commits.
   const persisted = await persistAssessedUrls(userId, urls, { query })

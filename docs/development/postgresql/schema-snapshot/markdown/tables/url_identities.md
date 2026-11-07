@@ -6,10 +6,10 @@ Scheme-less page identity of URLs inserted through addUrls; the first row regist
 
 Not partitioned — growth: unbounded.
 
-| Column     | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                                                                  |
-| ---------- | ------ | -------- | ------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `url_id`   | `uuid` | no       |         |          |           |           | The oldest URL registered for this identity (UUIDv7 order within one batch); its canonical target is what later variants point at. Deleted with its URL. |
-| `identity` | `text` | no       |         |          |           |           | canonicalizeUrl(url).identity: scheme-less, without www. or m., tracking params, trailing slash, and YouTube aliases.                                    |
+| Column     | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                                                                                                                                                                           |
+| ---------- | ------ | -------- | ------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url_id`   | `uuid` | no       |         |          |           |           | The oldest URL registered for this identity (UUIDv7 order within one batch); its canonical target is what later variants point at. Deleted with its URL: variants then get canonical_url_id NULL (ON DELETE SET NULL) and the next new variant becomes the owner. |
+| `identity` | `text` | no       |         |          |           |           | canonicalizeUrl(url).identity: scheme-less, without www. or m., tracking params, trailing slash, and YouTube aliases.                                                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (url_id)`
 
