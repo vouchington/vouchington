@@ -94,7 +94,7 @@ test.describe('OAuth consent', () => {
     )
     await page.getByTestId('oauth-consent-approve').click()
     await decisionResponse
-    await expect(page).toHaveURL(new RegExp(`^${escapeRegExp(redirectUri)}\\?`))
+    await expect(page).toHaveURL(new RegExp(`^${RegExp.escape(redirectUri)}\\?`))
     const callback = new URL(page.url())
     expect(callback.searchParams.get('code')).toMatch(/^voucha_code_/)
     expect(callback.searchParams.get('state')).toBe(state)
@@ -145,7 +145,7 @@ test.describe('OAuth consent', () => {
       'excluding financial profile',
     )
     await page.getByTestId('oauth-consent-deny').click()
-    await expect(page).toHaveURL(new RegExp(`^${escapeRegExp(redirectUri)}\\?`))
+    await expect(page).toHaveURL(new RegExp(`^${RegExp.escape(redirectUri)}\\?`))
     const callback = new URL(page.url())
     expect(callback.searchParams.get('error')).toBe('access_denied')
     expect(callback.searchParams.get('code')).toBeNull()
@@ -163,8 +163,4 @@ async function discoverUserMcpResource(context: MetadataRequestContext): Promise
   const body = await response.text()
   expect(response.status(), body).toBe(200)
   return (JSON.parse(body) as { resource: string }).resource
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

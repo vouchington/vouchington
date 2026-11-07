@@ -96,7 +96,7 @@ function identifierRegex(value: string): string {
 }
 
 function identifierCharacterRegex(character: string): string {
-  const escapeRaw = character.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+  const escapeRaw = RegExp.escape(character)
   const hexadecimal = character.codePointAt(0)?.toString(16) ?? ''
   const fixed = hexadecimal.padStart(4, '0')
   const hexCase = (digit: string) =>

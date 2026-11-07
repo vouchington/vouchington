@@ -31,9 +31,7 @@ const cases = [
 function hasPhrase(text: string, expected: string): boolean {
   const normalized = text.replace(/\s+/gu, ' ')
   const phrase = expected.replace(/\s+/gu, ' ')
-  return new RegExp(`(?:^| )${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$| )`).test(
-    normalized,
-  )
+  return new RegExp(`(?:^| )${RegExp.escape(phrase)}(?:$| )`).test(normalized)
 }
 
 describe('CommentNodeHeader collapsed reply count', () => {

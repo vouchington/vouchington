@@ -209,7 +209,7 @@ describe('ROBOTS_DISALLOW_PREFIXES', () => {
       const anchored = pattern.endsWith('$')
       const body = (anchored ? pattern.slice(0, -1) : pattern)
         .split('*')
-        .map(part => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+        .map(part => RegExp.escape(part))
         .join('.*')
       return new RegExp(`^${body}${anchored ? '$' : ''}`).test(path)
     }

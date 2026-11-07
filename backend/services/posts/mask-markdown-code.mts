@@ -41,15 +41,11 @@ function getFenceClosingPrefix(openingPrefix: string): string {
   let closingPrefix = ''
   let end = 0
   for (const token of openingPrefix.matchAll(container)) {
-    closingPrefix += escapeRegExp(openingPrefix.slice(end, token.index!))
+    closingPrefix += RegExp.escape(openingPrefix.slice(end, token.index!))
     closingPrefix += token[0]!.includes('>') ? ' {0,3}>[ \\t]*' : spaces(token[0]!)
     end = token.index! + token[0]!.length
   }
-  return closingPrefix + escapeRegExp(openingPrefix.slice(end))
-}
-
-function escapeRegExp(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return closingPrefix + RegExp.escape(openingPrefix.slice(end))
 }
 
 function findUnclosedFenceEnd(

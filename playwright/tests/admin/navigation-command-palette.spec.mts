@@ -34,7 +34,7 @@ async function openPaletteAndNavigate(
   const pagesGroup = page.locator('[cmdk-group]').filter({
     has: page.locator('[cmdk-group-heading]').filter({ hasText: 'Pages' }),
   })
-  const escapedLabel = label.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
+  const escapedLabel = RegExp.escape(label)
   const pageOptions = href
     ? pagesGroup.locator(`[role="option"][href="${href}"]`)
     : pagesGroup.locator('[role="option"]')
