@@ -9,6 +9,11 @@ import { fetchPostDescendants } from '@/lib/api/client/posts'
 import { CommentTree } from '../comment-tree'
 import { useCommentTreeState } from '../use-comment-tree-state'
 
+vi.mock(import('@/lib/api/client/posts'), async importOriginal => ({
+  ...(await importOriginal()),
+  fetchPostDescendants: vi.fn<typeof fetchPostDescendants>(),
+}))
+
 describe('bounded descendant previews', () => {
   beforeEach(() => vi.clearAllMocks())
 
