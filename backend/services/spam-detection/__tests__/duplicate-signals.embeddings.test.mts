@@ -218,4 +218,10 @@ describe('checkEmbeddingsSimilarity', () => {
     const result = await checkEmbeddingsSimilarity(sourceId, userId2)
     expect(result.flagged).toBe(false)
   })
+
+  it('query failure — falls back to the skipped result', async () => {
+    const result = await checkEmbeddingsSimilarity('not-a-uuid', userId1)
+
+    expect(result).toMatchObject({ flagged: false, details: { skipped: true } })
+  })
 })

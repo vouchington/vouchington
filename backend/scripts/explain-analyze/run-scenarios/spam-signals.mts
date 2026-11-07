@@ -3,6 +3,8 @@ import { read } from '@data-stores/psql'
 import {
   checkContentHashDuplicate,
   checkEmbeddingsSimilarity,
+  SIMILARITY_MAX_SCAN_TUPLES,
+  SIMILARITY_SCAN_SETTINGS,
 } from '@services/spam-detection/duplicate-signals'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { heavyFollowUser, runAndCapture, seedPostId } from '../run-support.mts'
@@ -42,6 +44,8 @@ export async function runSpamSignalScenarios(): Promise<void> {
         indexes: ['posts__default_bedrock_nova_multimodal_v1_embedding_idx'],
         queryContains: '/* checkEmbeddingsSimilarity */',
       },
+      // The HNSW scan may visit at most max_scan_tuples index tuples under the replayed settings.
+      { kind: 'maxProcessedRows', relation: 'posts', max: SIMILARITY_MAX_SCAN_TUPLES },
     ],
   })
   // The probe embedding must have a zero self-distance; some seeded vectors round to a tiny
@@ -54,8 +58,18 @@ export async function runSpamSignalScenarios(): Promise<void> {
   )
   const probeId = probes[0]?.id
   assert.ok(probeId, 'Spam signal scenarios require an embedded seeded post')
-  await runAndCapture('spam-embeddings-similarity', async () => {
-    const result = await checkEmbeddingsSimilarity(probeId, heavyFollowUser.id)
-    assert.equal(result.details, undefined, 'The probe must run, not fall back to a skipped result')
-  })
+  await runAndCapture(
+    'spam-embeddings-similarity',
+    async () => {
+      const result = await checkEmbeddingsSimilarity(probeId, heavyFollowUser.id)
+      assert.equal(
+        result.details,
+        undefined,
+        'The probe must run, not fall back to a skipped result',
+      )
+    },
+    undefined,
+    'checkEmbeddingsSimilarity',
+    { localSettings: SIMILARITY_SCAN_SETTINGS },
+  )
 }

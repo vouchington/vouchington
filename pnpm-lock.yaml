@@ -11114,6 +11114,9 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils

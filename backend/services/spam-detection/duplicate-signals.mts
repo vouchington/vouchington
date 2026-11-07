@@ -1,3 +1,4 @@
+import onError from '@modules/on-error'
 import { beginTransaction, read, readPool } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { EMBEDDINGS_SIMILARITY_THRESHOLD } from './config.mts'
@@ -8,7 +9,13 @@ import { getSpamDetectionWorkLimit } from './work-limits.mts'
 const SIMILARITY_CANDIDATE_LIMIT = 10
 
 /** Cap on index tuples one similarity probe may visit while filters discard candidates. */
-const SIMILARITY_MAX_SCAN_TUPLES = 20000
+export const SIMILARITY_MAX_SCAN_TUPLES = 20000
+
+/** Transaction-local pgvector settings the similarity probe applies; the EXPLAIN replay reuses them. */
+export const SIMILARITY_SCAN_SETTINGS = {
+  'hnsw.iterative_scan': 'relaxed_order',
+  'hnsw.max_scan_tuples': String(SIMILARITY_MAX_SCAN_TUPLES),
+} as const
 
 export async function checkContentHashDuplicate(
   contentSha256: Buffer,
@@ -43,8 +50,8 @@ export async function checkEmbeddingsSimilarity(
     // walking the index until it has enough survivors (bounded by max_scan_tuples).
     await using transaction = await beginTransaction({ client: readPool })
     await transaction(sql`/* checkEmbeddingsSimilarity settings */
-      SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true),
-             set_config('hnsw.max_scan_tuples', ${String(SIMILARITY_MAX_SCAN_TUPLES)}, true)`)
+      SELECT set_config('hnsw.iterative_scan', ${SIMILARITY_SCAN_SETTINGS['hnsw.iterative_scan']}, true),
+             set_config('hnsw.max_scan_tuples', ${SIMILARITY_SCAN_SETTINGS['hnsw.max_scan_tuples']}, true)`)
     const { rows } = await transaction(sql`/* checkEmbeddingsSimilarity */
       SELECT 1
       FROM (
@@ -77,8 +84,9 @@ export async function checkEmbeddingsSimilarity(
       score: flagged ? 1.0 : 0.0,
       flagged,
     }
-  } catch {
-    // Embeddings not yet available or query failed — safe default
+  } catch (err) {
+    // Best-effort: keep the safe default, but surface transaction/settings/query failures.
+    onError(err)
     return {
       signal: 'embeddings_similarity',
       score: 0,

@@ -32,6 +32,7 @@
     "valkyries": "^0.15.0"
   },
   "devDependencies": {
+    "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
