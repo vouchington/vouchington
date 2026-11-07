@@ -55,12 +55,13 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
     await releaseStoryPostRelatedUrlProjectionWork(rotated)
     await releaseStoryPostRelatedUrlProjectionWork(heldSecond)
 
-    // A NULL high-water admits an empty prefix and keeps the job. The next pass completes
-    // that post. Three posts take two passes each, and the last completion has nothing left.
+    // A NULL high-water admits an empty prefix and keeps the job. Claims rotate by
+    // last_claimed_at, so each post is admitted before any of them is completed.
+    // The last completion finds nothing left, and the following claim is idle.
+    await assertEmptyPrefixSnapshot(true, 3)
+    await assertEmptyPrefixSnapshot(true, 3)
     await assertEmptyPrefixSnapshot(true, 3)
     await assertEmptyPrefixSnapshot(true, 2)
-    await assertEmptyPrefixSnapshot(true, 2)
-    await assertEmptyPrefixSnapshot(true, 1)
     await assertEmptyPrefixSnapshot(true, 1)
     await assertEmptyPrefixSnapshot(false, 0)
     await assertEmptyPrefixSnapshot(false, 0)
