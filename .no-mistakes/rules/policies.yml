@@ -586,11 +586,6 @@
           file: backend/workers/email-digests/processors/api-key-expiry.mts,
           callee: 'getApiKeysDueForExpiryReminder',
         }
-      # FIX (P2): per URL id of one post, a URL read, cache invalidate, crawler lookup and enqueue (post-created-recovery.mts:40); batch the reads and enqueues per post.
-      - {
-          file: backend/workers/entity-listeners/processors/post-created-recovery.mts,
-          callee: 'recoverUrlEffect',
-        }
       # Capped page loop: `for (batch < maxBatches)` (renewal-notification-check.mts:16), one keyset page per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/workers/memberships/processors/renewal-notification-check.mts,

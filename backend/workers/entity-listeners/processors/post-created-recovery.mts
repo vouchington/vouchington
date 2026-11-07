@@ -1,6 +1,6 @@
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { requestCommunityModerationRunForPost } from '@services/communities/publications/moderation-run'
-import { getOrCreateCrawlerForHostname } from '@services/crawlers'
+import { getOrCreateCrawlersForHostnames } from '@services/crawlers'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { invalidate } from '@services/entity-cache/invalidate'
 import {
@@ -9,7 +9,7 @@ import {
 } from '@services/posts/create/source-url-relation'
 import { invalidateStories } from '@services/stories/cache-invalidation'
 import { getPostStoryByPostId } from '@services/stories/get-post-stories'
-import { getUrlById } from '@services/urls/get'
+import { getUrlsByIdBatch } from '@services/urls/get-batch'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { hasPostCreationModerationBypass } from '@services/posts/create/moderation-bypass'
@@ -36,16 +36,17 @@ export async function recoverPostCreatedEffects(post: CreatedPost): Promise<void
 
 async function recoverPostUrlEffects(post: CreatedPost): Promise<void> {
   const urlIds = await getPostRecoveryUrlIds(post)
-  await Promise.all(urlIds.map(recoverUrlEffect))
-}
-
-async function recoverUrlEffect(urlId: string): Promise<void> {
-  const url = await getUrlById(urlId, { readOnly: false })
-  if (!url) return
-  await invalidate.urls(url.url)
-  if (url.hostname.is_blocked || !url.hostname.is_crawlable) return
-  await getOrCreateCrawlerForHostname(null, url.hostname.id)
-  await enqueueBulkCrawlUrls([{ urlId }])
+  if (urlIds.length === 0) return
+  const found = (await getUrlsByIdBatch(urlIds, { readOnly: false })).filter(url => url != null)
+  if (found.length === 0) return
+  await invalidate.urls(...found.map(url => url.url))
+  const crawlable = found.filter(url => !url.hostname.is_blocked && url.hostname.is_crawlable)
+  if (crawlable.length === 0) return
+  await getOrCreateCrawlersForHostnames(
+    null,
+    crawlable.map(url => url.hostname.id),
+  )
+  await enqueueBulkCrawlUrls(crawlable.map(url => ({ urlId: url.id })))
 }
 
 async function getPostRecoveryUrlIds(post: CreatedPost): Promise<string[]> {

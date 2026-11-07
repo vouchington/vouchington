@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import createError from 'http-errors'
@@ -22,7 +22,8 @@ export const getUrlsByIdBatch = async (
 
   const uniqueIds = [...new Set(normalizedIds)]
 
-  const { rows } = await read(
+  const query = options.readOnly === false ? write : read
+  const { rows } = await query(
     `/* getUrlsByIdBatch */
     SELECT vu.*
     FROM view_urls vu
