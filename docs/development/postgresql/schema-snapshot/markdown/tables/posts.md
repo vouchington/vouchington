@@ -153,6 +153,7 @@ _none_
 - `idx_posts__hacker_news_references__votes_score_sort__id`: `CREATE INDEX idx_posts__hacker_news_references__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))`
 - `idx_posts__id__post_type`: `CREATE INDEX idx_posts__id__post_type ON ONLY public.posts USING btree (id DESC, post_type) WHERE (deleted_at IS NULL)`
 - `idx_posts__lingua_rs_pending`: `CREATE INDEX idx_posts__lingua_rs_pending ON ONLY public.posts USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
+- `idx_posts__llm_moderation_content_sha256__id`: `CREATE INDEX idx_posts__llm_moderation_content_sha256__id ON ONLY public.posts USING btree (llm_moderation_content_sha256, id)`
 - `idx_posts__parent_id__id`: `CREATE INDEX idx_posts__parent_id__id ON ONLY public.posts USING btree (parent_post_id, id) WHERE (parent_post_id IS NOT NULL)`
 - `idx_posts__privacy_private`: `CREATE INDEX idx_posts__privacy_private ON ONLY public.posts USING btree (created_by_id, broadcast) WHERE ((privacy = 'private'::privacy_types) AND (deleted_at IS NULL))`
 - `idx_posts__root_id__community_id__id`: `CREATE INDEX idx_posts__root_id__community_id__id ON ONLY public.posts USING btree (root_post_id, community_id, id) WHERE (root_post_id IS NOT NULL)`
