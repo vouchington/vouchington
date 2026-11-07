@@ -1,5 +1,4 @@
 import assert from 'http-assert'
-import createHttpError, { isHttpError } from 'http-errors'
 import { getPaginationLimitsForContract } from '@services/pagination'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
 import {
@@ -36,23 +35,6 @@ type MyReferralLink = {
 type ToolResult = McpPage<MyReferralLink> | InvalidCursorResult
 
 const LIST_OPERATION = 'GET:/api/v1/referral-links'
-
-/** The pagination parser's 400 is not always an http-errors instance. MCP maps those. */
-function throwAsHttp(err: unknown): never {
-  if (isHttpError(err)) throw err
-  if (
-    typeof err === 'object' &&
-    err !== null &&
-    'status' in err &&
-    typeof err.status === 'number' &&
-    err.status >= 400 &&
-    err.status < 500
-  ) {
-    const message = err instanceof Error ? err.message : 'Invalid request'
-    throw createHttpError(err.status, message, { cause: err })
-  }
-  throw err
-}
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
@@ -112,15 +94,10 @@ const tool: Tool<ToolArgs, ToolResult> = {
     async (args: ToolArgs): Promise<ToolResult> => {
       const privateUser = await requirePrivateToolUser(currentUser)
       const bounds = getPaginationLimitsForContract(userReferralLinksParser.queryContract)
-      let pagination: { limit: number }
-      try {
-        pagination = userReferralLinksParser.parse(
-          args.limit === undefined ? {} : { limit: args.limit },
-          bounds,
-        )
-      } catch (err: unknown) {
-        throwAsHttp(err)
-      }
+      const pagination = userReferralLinksParser.parse(
+        args.limit === undefined ? {} : { limit: args.limit },
+        bounds,
+      )
       const query: Record<string, unknown> = {}
       if (args.user_id !== undefined) query.user_id = args.user_id
       if (args.referral_program_id !== undefined)
