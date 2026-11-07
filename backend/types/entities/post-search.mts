@@ -25,6 +25,8 @@ type PostSearchFilterOptions = {
   text_search_query?: string // Full-text search
   semantic_search_query?: string // Embedding similarity search
   post_types?: PostType[] // Filter by post type
+  // Profile totals inline one type so custom and generic plans use that type's author index.
+  profileCountPostType?: 'review' | 'discussion' | 'comment'
   data_point_vertical?: string // Filter data_point posts by vertical (e.g. 'credit_card', 'bank_account')
   story_id?: string // Filter posts linked to a specific story
   has_hacker_news_references?: boolean // Posts whose URL is seen or mentioned on Hacker News (true) or not (false)

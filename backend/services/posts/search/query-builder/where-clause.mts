@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visibility-config'
 import type { BasicUser } from '@services/users/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -57,7 +58,11 @@ export function appendPostSearchWhereClause(
 }
 
 function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchOptions): void {
-  if (options.post_types?.length) filters.push(sql`posts.post_type = ANY(${options.post_types})`)
+  if (options.profileCountPostType) {
+    filters.push(profilePostTypeEquality(options.profileCountPostType))
+  } else if (options.post_types?.length) {
+    filters.push(sql`posts.post_type = ANY(${options.post_types})`)
+  }
   if (options.data_point_vertical) {
     filters.push(sql`posts.data_point_vertical = ${options.data_point_vertical}`)
   }
@@ -72,6 +77,19 @@ function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchO
   if (areHackerNewsReferencesVisible() && options.has_hacker_news_references !== undefined) {
     const references = buildPostHasHackerNewsReferences()
     filters.push(options.has_hacker_news_references ? references : sql`NOT `.append(references))
+  }
+}
+
+function profilePostTypeEquality(postType: 'review' | 'discussion' | 'comment'): SQLStatement {
+  switch (postType) {
+    case 'review':
+      return sql`posts.post_type = 'review'`
+    case 'discussion':
+      return sql`posts.post_type = 'discussion'`
+    case 'comment':
+      return sql`posts.post_type = 'comment'`
+    default:
+      return assertNever(postType, 'profile count post type')
   }
 }
 

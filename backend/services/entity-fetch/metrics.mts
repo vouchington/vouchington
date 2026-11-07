@@ -71,9 +71,9 @@ async function buildUserMetrics(
     ])
 
   const counts = {
-    reviews: postTypeFacets.counts.review,
-    discussions: postTypeFacets.counts.discussion,
-    comments: postTypeFacets.counts.comment,
+    reviews: postTypeFacets.review,
+    discussions: postTypeFacets.discussion,
+    comments: postTypeFacets.comment,
     users_following: collectionVisibility.follows
       ? (bookmarkCounts.bookmarks.users.follow ?? 0)
       : 0,
@@ -98,7 +98,6 @@ async function buildUserMetrics(
     __entity_type: 'user_metrics',
     id: row.id,
     count: counts,
-    ...(postTypeFacets.capped ? { post_counts_capped: true } : {}),
     ...(privateCount ? { private_count: privateCount } : {}),
     bookmarks: {
       follow: {
