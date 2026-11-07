@@ -4,7 +4,7 @@ import { buildPostSearchQuery } from './query-builder.mts'
 import { executePostSearchQuery } from './execute-query.mts'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import { buildCountQuery, hasSemanticSearch } from '@modules/search-utils'
-import { beginTransaction, readPool } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
 type PostSearchFacets = {
@@ -106,18 +106,20 @@ function countFrom(rows: readonly Record<string, unknown>[], column: string): nu
   return typeof value === 'number' || typeof value === 'string' ? Number(value) : 0
 }
 
+/** One statement per type. A combined count would sum every type into one plan-row budget. */
+async function readProfileCount(statement: SQLStatement, column: string): Promise<number> {
+  const { rows } = await read(statement)
+  return countFrom(rows, column)
+}
+
 export async function getUserPostTypeFacets(
   userId: string,
   currentUser?: PrivateUser,
 ): Promise<UserPostTypeFacets> {
-  await using transaction = await beginTransaction({ client: readPool })
-  const review = await transaction(buildReviewProfileCount(userId, currentUser))
-  const discussion = await transaction(buildDiscussionProfileCount(userId, currentUser))
-  const comment = await transaction(buildCommentProfileCount(userId, currentUser))
-  await transaction.commit()
-  return {
-    review: countFrom(review.rows, 'review_count'),
-    discussion: countFrom(discussion.rows, 'discussion_count'),
-    comment: countFrom(comment.rows, 'comment_count'),
-  }
+  const [review, discussion, comment] = await Promise.all([
+    readProfileCount(buildReviewProfileCount(userId, currentUser), 'review_count'),
+    readProfileCount(buildDiscussionProfileCount(userId, currentUser), 'discussion_count'),
+    readProfileCount(buildCommentProfileCount(userId, currentUser), 'comment_count'),
+  ])
+  return { review, discussion, comment }
 }
