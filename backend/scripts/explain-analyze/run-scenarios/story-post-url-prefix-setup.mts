@@ -121,7 +121,9 @@ export async function restorePrefixItems(): Promise<void> {
   }
   await removeExtraPrefixItems()
   await write(`/* restoreStoryPostUrlPrefix:story */ DELETE FROM stories WHERE id = $1`, [STORY_ID])
-  await write(`/* restoreStoryPostUrlPrefix:analyze */ ANALYZE rss_feed_items`)
+  // Deleting the extra prefix rows leaves dead tuples. Vacuum the way the seed does so later
+  // plans see the restored rss_feed_items table.
+  await write(`/* restoreStoryPostUrlPrefix:analyze */ VACUUM (ANALYZE) rss_feed_items`)
 }
 
 async function removeExtraPrefixItems(): Promise<void> {
