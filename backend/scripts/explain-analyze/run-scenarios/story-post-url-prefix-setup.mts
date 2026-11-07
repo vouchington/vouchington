@@ -4,6 +4,12 @@ import { seedUuid } from '../seed-data/common.mts'
 import { POST_URL_CAPACITY_SEED as seed } from '../seed-data/post-related-url-capacity.mts'
 
 const PREFIX_ITEM_COUNT = 10_000
+// The maximum cap has to stay a prefix of this story. When LIMIT equals every
+// story row, the planner sorts a sequential scan instead of stopping on
+// idx_rss_feed_items__story_id__deleted_at__id.
+const EXTRA_ITEM_COUNT = 30_000
+const EXTRA_ITEM_BATCH = 5_000
+const EXTRA_ITEM_ID_PREFIX = '019f0000-f800-7000-8000-'
 export const STORY_ID = seedUuid(1, 'f7')
 export const HIGH_WATER_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 export const ITEM_INDEX = 'idx_rss_feed_items__story_id__deleted_at__id'
@@ -40,7 +46,52 @@ export async function attachPrefixItems(): Promise<void> {
   )
   previousItems = rows
   assert.equal(rows.length, PREFIX_ITEM_COUNT)
+  await insertExtraPrefixItems()
   await write(`/* prepareStoryPostUrlPrefix:analyze */ ANALYZE rss_feed_items`)
+}
+
+async function insertExtraPrefixItems(): Promise<void> {
+  const { rows } = await write<{ url_id: string; hostname_id: string }>(
+    `/* prepareStoryPostUrlPrefix:extra-anchor */
+     SELECT id AS url_id, hostname_id
+     FROM urls
+     WHERE hostname_id IS NOT NULL
+     ORDER BY id
+     LIMIT 1`,
+  )
+  const anchor = rows[0]
+  assert.ok(anchor)
+  for (let start = 0; start < EXTRA_ITEM_COUNT; start += EXTRA_ITEM_BATCH) {
+    const end = Math.min(start + EXTRA_ITEM_BATCH, EXTRA_ITEM_COUNT) - 1
+    // no-mistakes-disable-next-line query-reached-per-item: six fixed 5,000-row batches keep the maximum cap a prefix of this story
+    await write(
+      `/* prepareStoryPostUrlPrefix:extra-items */
+       WITH ids AS (
+         SELECT ($1 || lpad(to_hex(n), 12, '0'))::uuid AS id,
+                'explain-prefix-extra-' || n::text AS guid
+         FROM generate_series($2::int, $3::int) AS n
+       ), inserted AS (
+         INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
+         SELECT id, $4, guid FROM ids
+         RETURNING id
+       )
+       INSERT INTO rss_feed_items (
+         id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, story_id
+       )
+       SELECT inserted.id, $5, '{"title":"EXPLAIN prefix extra"}'::jsonb,
+              decode(repeat('00', 32), 'hex'), $6
+       FROM inserted`,
+      [EXTRA_ITEM_ID_PREFIX, start, end, anchor.hostname_id, anchor.url_id, STORY_ID],
+    )
+  }
+  const { rows: counts } = await write<{ count: number }>(
+    `/* prepareStoryPostUrlPrefix:story-count */
+     SELECT count(*)::int AS count
+     FROM rss_feed_items
+     WHERE story_id = $1 AND deleted_at IS NULL`,
+    [STORY_ID],
+  )
+  assert.equal(counts[0]?.count, PREFIX_ITEM_COUNT + EXTRA_ITEM_COUNT)
 }
 
 export async function leasePruneJobs(): Promise<void> {
@@ -67,7 +118,25 @@ export async function restorePrefixItems(): Promise<void> {
     )
     previousItems = []
   }
+  await removeExtraPrefixItems()
   await write(`/* restoreStoryPostUrlPrefix:story */ DELETE FROM stories WHERE id = $1`, [STORY_ID])
+  await write(`/* restoreStoryPostUrlPrefix:analyze */ ANALYZE rss_feed_items`)
+}
+
+async function removeExtraPrefixItems(): Promise<void> {
+  for (let start = 0; start < EXTRA_ITEM_COUNT; start += EXTRA_ITEM_BATCH) {
+    const end = Math.min(start + EXTRA_ITEM_BATCH, EXTRA_ITEM_COUNT) - 1
+    // no-mistakes-disable-next-line query-reached-per-item: six fixed 5,000-row deletes remove only this scenario's extra prefix rows
+    await write(
+      `/* restoreStoryPostUrlPrefix:extra-items */
+       DELETE FROM rss_feed_item_guids
+       WHERE id IN (
+         SELECT ($1 || lpad(to_hex(n), 12, '0'))::uuid
+         FROM generate_series($2::int, $3::int) AS n
+       )`,
+      [EXTRA_ITEM_ID_PREFIX, start, end],
+    )
+  }
 }
 
 export async function prefixUrlIds(cap: number): Promise<string[]> {
