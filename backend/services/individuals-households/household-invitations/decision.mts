@@ -18,6 +18,38 @@ import {
 } from '../household-limits.mts'
 import { getOrCreateIndividual } from '../individuals/individuals.mts'
 
+async function lockHouseholdForDecision(
+  currentUserId: string,
+  invitationId: string,
+  decision: 'accept' | 'decline',
+  options: QueryOptions,
+) {
+  if (decision === 'accept') {
+    await write(
+      sql`/* decideHouseholdInvitation:lock-member-admission */
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(${householdMemberAdmissionLockPrefix} || household_id::text, 0)
+        )
+        FROM household_invitations
+        WHERE id = ${invitationId} AND invited_user_id = ${currentUserId}`,
+      options,
+    )
+  }
+  return write<{
+    id: string
+    owner_user_id: string
+    invited_by_id: string
+  }>(
+    sql`/* decideHouseholdInvitation:lock-household */
+      SELECT h.id, h.owner_user_id, hi.invited_by_id
+      FROM households h
+      JOIN household_invitations hi ON hi.household_id = h.id
+      WHERE hi.id = ${invitationId} AND hi.invited_user_id = ${currentUserId}
+      FOR UPDATE OF h`,
+    options,
+  )
+}
+
 async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, options: QueryOptions) {
   await write(
     sql`/* decideHouseholdInvitation:lock-individual */
@@ -61,33 +93,10 @@ export async function decideHouseholdInvitation(
   validateUUID(invitationId)
   await using transaction = await beginTransaction()
   const options = { query: transaction }
-  const { rows: households } = await write<{
-    id: string
-    owner_user_id: string
-    invited_by_id: string
-  }>(
-    decision === 'accept'
-      ? sql`/* decideHouseholdInvitation:lock-household */
-      SELECT h.id, h.owner_user_id, invited.invited_by_id
-      FROM household_invitations invited
-      JOIN households h ON h.id = invited.household_id
-      WHERE invited.id = ${invitationId}
-        AND invited.invited_user_id = ${currentUser.id}
-        AND EXISTS (
-          SELECT pg_advisory_xact_lock(
-            hashtextextended(
-              ${householdMemberAdmissionLockPrefix} || invited.household_id::text,
-              0
-            )
-          )
-        )
-      FOR UPDATE OF h`
-      : sql`/* decideHouseholdInvitation:lock-household */
-      SELECT h.id, h.owner_user_id, hi.invited_by_id
-      FROM households h
-      JOIN household_invitations hi ON hi.household_id = h.id
-      WHERE hi.id = ${invitationId} AND hi.invited_user_id = ${currentUser.id}
-      FOR UPDATE OF h`,
+  const { rows: households } = await lockHouseholdForDecision(
+    currentUser.id,
+    invitationId,
+    decision,
     options,
   )
   const household = households[0]

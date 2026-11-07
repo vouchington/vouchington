@@ -13,7 +13,8 @@ import { getHouseholdLimits } from './household-limits-config.mts'
 /**
  * Admission fences are advisory locks, not row locks on the user or household parent.
  * See docs/development/postgresql/reference-transactions.md#lock-scope.
- * The member-admission key is also taken before any household row lock on the accept path.
+ * Accept takes the member-admission key in its own statement before FOR UPDATE on the household.
+ * An EXISTS target list does not run the lock.
  */
 export const householdMemberAdmissionLockPrefix = 'household-member-admission:'
 export const householdIndividualAdmissionLockPrefix = 'household-individual-admission:'
