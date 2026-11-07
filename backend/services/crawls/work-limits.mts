@@ -1,7 +1,12 @@
+import { CRAWL_CLEANUP_MAX_AGE_DAYS } from '@voucha/config'
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
-export const crawlCleanupMaxValues = { batchSize: 5000, maxBatches: 100, ageDays: 365 }
+export const crawlCleanupMaxValues = {
+  batchSize: 5000,
+  maxBatches: 100,
+  ageDays: CRAWL_CLEANUP_MAX_AGE_DAYS,
+}
 
 export const crawlDispatchConfig = new DynamicConfig({
   key: 'crawl-dispatch-work-config',

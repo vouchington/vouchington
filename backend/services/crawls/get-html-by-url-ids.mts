@@ -44,7 +44,7 @@ async function readLatestHtmlRows(urlIds: string[], recentCutoffDate: Date) {
         c.html_sha256,
         c.html_snapshot_uploaded_at,
         c.url_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: URL IDs and completed_at do not give a safe UUIDv7 crawl-ID partition bound; a crawl may finish long after it starts
+      -- no-mistakes-disable-next-line postgres-required-predicates: no-mistakes FP jonathanong/no-mistakes#3112; remove when fixed. One LIMIT 1 probe per input URL id on idx_crawls__url_id__completed_at_desc (url_id, completed_at DESC, id DESC); the only caller passes at most 3 candidate ids (workers/crawl-dispatch/processors/boilerplate.mts via the limit-3 candidate search)
       FROM crawls c
       WHERE c.url_id = u.id
         AND c.response_status_code = 200

@@ -1,7 +1,10 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { getMaxUUIDv7ForDate } from '@modules/utils'
-import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from '@services/crawls/constants'
+import { getMaxUUIDv7ForDate, getMinUUIDv7ForDate } from '@modules/utils'
+import {
+  CRAWL_HTML_SNAPSHOT_RETENTION_DAYS,
+  CRAWL_CLEANUP_MAX_AGE_DAYS,
+} from '@services/crawls/constants'
 import sql from 'sql-template-strings'
 
 export type ParentPathCandidate = {
@@ -19,6 +22,9 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
     sampledNowMs - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   )
   const recentCutoffId = getMaxUUIDv7ForDate(recentCutoffDate)
+  const crawlIdFloor = getMinUUIDv7ForDate(
+    new Date(recentCutoffDate.getTime() - CRAWL_CLEANUP_MAX_AGE_DAYS * 24 * 60 * 60 * 1000),
+  )
   const query = sql`/* searchParentPathsNeedingBoilerplateRemoval */
     WITH recent_html_urls AS (
       SELECT
@@ -32,8 +38,8 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
         END AS parent_path
       FROM urls u
       JOIN url_hostnames h ON h.id = u.hostname_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: global candidate search includes crawls started in older retained ID partitions but completed within the snapshot window
       JOIN crawls c ON c.url_id = u.id
+        AND c.id >= ${crawlIdFloor}::uuid
       WHERE NOT h.is_blocked
         AND h.is_crawlable
         AND c.response_status_code = 200

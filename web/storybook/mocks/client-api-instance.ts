@@ -127,6 +127,7 @@ export function setModerationContextFixture(): void {
       trust_tier: 2,
       active_suspension: null,
       content_removal_count: 0,
+      content_removal_count_capped: false,
       community_removal_count: 0,
     },
     notes: [

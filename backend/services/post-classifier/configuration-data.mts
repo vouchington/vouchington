@@ -74,7 +74,6 @@ export async function getCurrentPostClassifierRemoteRows(
       threshold.id AS threshold_id,
       COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold)::float8 AS lower,
       COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold)::float8 AS upper
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge deletes source classifier_candidates rather than repointing their topic_id; configured candidate lookup still excludes deleted topics
     FROM classifiers classifier
     JOIN classifier_prompt_versions prompt ON prompt.classifier_id = classifier.id
       AND prompt.activated_at IS NOT NULL AND prompt.deactivated_at IS NULL
@@ -84,6 +83,7 @@ export async function getCurrentPostClassifierRemoteRows(
       AND candidate.deleted_at IS NULL
     JOIN topics topic ON topic.id = candidate.topic_id
       AND topic.deleted_at IS NULL
+      AND topic.merged_into_topic_id IS NULL
     JOIN classifier_candidate_thresholds threshold ON threshold.candidate_id = candidate.id
       AND threshold.prompt_version_id = prompt.id AND threshold.deactivated_at IS NULL
     WHERE classifier.slug = 'post-classifier'

@@ -49,12 +49,12 @@ export async function userTopicExportExceedsLimit(
 ): Promise<boolean> {
   const { rows } = await read<{ count: number }>(sql`/* userTopicExportExceedsLimit */
     SELECT COUNT(*)::int AS count
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge moves followed-topic relation object_id to the destination with collision handling; export counting still excludes deleted topics
     FROM relation__user__follow__topic r
     JOIN topics t ON t.id = r.object_id
     WHERE r.subject_id = ${currentUserId}
       AND r.deleted_at IS NULL
       AND t.deleted_at IS NULL
+      AND t.merged_into_topic_id IS NULL
   `)
   return rows[0]!.count > maxItems
 }

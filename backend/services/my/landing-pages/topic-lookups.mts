@@ -16,13 +16,13 @@ export async function getLandingPageReferralLinksByIds(
       topic.slug AS referral_program_slug,
       urpl.label,
       u.url
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints user_referral_program_links.referral_program_topic_id to the destination subtype; landing-page link hydration still excludes deleted topics
     FROM user_referral_program_links urpl
     JOIN topics topic ON topic.id = urpl.referral_program_topic_id
     JOIN urls u ON u.id = urpl.url_id
     WHERE urpl.user_id = ${userId}
       AND urpl.id = ANY(${ids}::uuid[])
       AND topic.deleted_at IS NULL
+      AND topic.merged_into_topic_id IS NULL
       AND urpl.deleted_at IS NULL
   `
   if (publicOnly) {

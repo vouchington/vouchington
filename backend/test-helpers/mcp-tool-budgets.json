@@ -1191,11 +1191,11 @@
       },
       "read_user_moderation": {
         "measured": {
-          "list": 4779,
+          "list": 4938,
           "core": 1231
         },
         "max": {
-          "list": 5000,
+          "list": 6000,
           "core": 2000
         }
       },

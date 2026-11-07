@@ -6055,6 +6055,9 @@
                 "content_removal_count": {
                   "type": "null"
                 },
+                "content_removal_count_capped": {
+                  "type": "null"
+                },
                 "trust_tier": {
                   "type": "null"
                 }
@@ -6064,6 +6067,7 @@
                 "active_suspension",
                 "community_removal_count",
                 "content_removal_count",
+                "content_removal_count_capped",
                 "trust_tier"
               ],
               "type": "object"
@@ -13480,10 +13484,10 @@
     "CommunityAgentPromptFalsePositiveEstimate": {
       "additionalProperties": false,
       "properties": {
-        "historical_approved_count": {
+        "sampled_approved_count": {
           "type": "number"
         },
-        "historical_flagged_count": {
+        "sampled_flagged_count": {
           "type": "number"
         },
         "rate": {
@@ -13497,7 +13501,7 @@
           ]
         }
       },
-      "required": ["historical_approved_count", "historical_flagged_count", "rate"],
+      "required": ["sampled_approved_count", "sampled_flagged_count", "rate"],
       "type": "object"
     },
     "CommunityAgentPromptHistoryEntry": {
@@ -38312,6 +38316,9 @@
         "content_removal_count": {
           "type": "number"
         },
+        "content_removal_count_capped": {
+          "type": "boolean"
+        },
         "trust_tier": {
           "anyOf": [
             {
@@ -38328,6 +38335,7 @@
         "active_suspension",
         "community_removal_count",
         "content_removal_count",
+        "content_removal_count_capped",
         "trust_tier"
       ],
       "type": "object"

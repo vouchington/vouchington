@@ -81,10 +81,9 @@ export async function getRssFeedImport(
     LEFT JOIN LATERAL (
       SELECT import_row.id, import_row.row_index, import_row.input_url, import_row.outcome,
         import_row.error_message, import_row.rss_feed_id, topic.slug AS topic_slug
-      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints rss_feeds.topic_id used by imported-feed status hydration; the topic join still excludes deleted topics
       FROM user_rss_feed_import_rows import_row
       LEFT JOIN rss_feeds feed ON feed.id = import_row.rss_feed_id
-      LEFT JOIN topics topic ON topic.id = feed.topic_id AND topic.deleted_at IS NULL
+      LEFT JOIN topics topic ON topic.id = feed.topic_id AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
       WHERE import_row.batch_id = batch.id`
   if (afterRowId) {
     query.append(sql`

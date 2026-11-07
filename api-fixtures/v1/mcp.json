@@ -34814,6 +34814,9 @@
                             "content_removal_count": {
                               "type": "null"
                             },
+                            "content_removal_count_capped": {
+                              "type": "null"
+                            },
                             "trust_tier": {
                               "type": "null"
                             }
@@ -34823,6 +34826,7 @@
                             "active_suspension",
                             "community_removal_count",
                             "content_removal_count",
+                            "content_removal_count_capped",
                             "trust_tier"
                           ],
                           "type": "object"
@@ -34859,6 +34863,9 @@
                             "content_removal_count": {
                               "type": "number"
                             },
+                            "content_removal_count_capped": {
+                              "type": "boolean"
+                            },
                             "trust_tier": {
                               "anyOf": [
                                 {
@@ -34875,6 +34882,7 @@
                             "active_suspension",
                             "community_removal_count",
                             "content_removal_count",
+                            "content_removal_count_capped",
                             "trust_tier"
                           ],
                           "type": "object"

@@ -35,10 +35,9 @@ export async function getUrlEmbedsByUrlIds(
         rf.id AS show_id, rf.title AS show_title,
         t.slug AS show_topic_slug, t.topic_type AS show_topic_type
       FROM item i
-      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints rss_feeds.topic_id to the destination; batch URL embed source selection still excludes deleted topics
       JOIN rss_feed_item_sources rfis ON rfis.rss_feed_item_id = i.rss_feed_item_id
       JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id AND rf.deleted_at IS NULL
-      JOIN topics t ON t.id = rf.topic_id AND t.deleted_at IS NULL
+      JOIN topics t ON t.id = rf.topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
       ORDER BY rfis.rss_feed_item_id, rf.id ASC
     ),
     canonical_urls AS (

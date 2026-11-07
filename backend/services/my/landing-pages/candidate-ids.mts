@@ -29,7 +29,6 @@ export async function getLandingPageCandidateIds(
   query.append(sql`
       ORDER BY post.id DESC LIMIT ${limit}
     ), referral_links AS MATERIALIZED (
-      -- no-mistakes-disable-next-line postgres-required-predicates: topic merges repoint referral-program owners; deletion remains checked
       SELECT link.id, 0 AS tier, NULL::integer AS sort_order, link.referral_program_topic_id
       FROM user_referral_program_links link
       WHERE link.user_id = ${userId} AND link.deleted_at IS NULL
@@ -48,9 +47,8 @@ export async function getLandingPageCandidateIds(
       SELECT referral_links.id, referral_links.tier, referral_links.sort_order,
         (topic.id IS NOT NULL) AS kept
       FROM referral_links
-      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints user_referral_program_links.referral_program_topic_id to the destination subtype; landing-page candidate pages still exclude deleted topics
       LEFT JOIN topics topic
-        ON topic.id = referral_links.referral_program_topic_id AND topic.deleted_at IS NULL
+        ON topic.id = referral_links.referral_program_topic_id AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
     ) candidates
     ORDER BY tier DESC, sort_order ASC NULLS LAST, CASE WHEN tier = 2 THEN id END ASC, id DESC
     LIMIT ${limit}

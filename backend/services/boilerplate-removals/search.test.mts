@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { searchParentPathsNeedingBoilerplateRemoval } from './search.mts'
 import { createBoilerplateRemoval } from './create.mts'
-import { createTestRetentionWindow, createTestUser } from '@voucha/test-helpers'
+import { createTestUser } from '@voucha/test-helpers'
 import { addUrls } from '@services/urls/upsert'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import type { PrivateUser } from '@services/users/types'
@@ -141,8 +141,7 @@ describe('search', () => {
     })
 
     it('uses the exact UUIDv7 seven-day removal cutoff', async () => {
-      const window = createTestRetentionWindow()
-      const asOf = new Date(window.firstEligibleDate.getTime() + 7 * 86400000)
+      const asOf = new Date()
       const cutoff = asOf.getTime() - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 86400000
       const hostname = `bp-cutoff-${randomUUID()}.example.com`
       const base = `https://${hostname}`

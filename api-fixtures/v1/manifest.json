@@ -85375,18 +85375,6 @@
           "CommunityAgentPromptFalsePositiveEstimate": {
             "additionalProperties": false,
             "properties": {
-              "historical_approved_count": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              },
-              "historical_flagged_count": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              },
               "rate": {
                 "required": true,
                 "schema": {
@@ -85399,6 +85387,18 @@
                       "type": "number"
                     }
                   ]
+                }
+              },
+              "sampled_approved_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "sampled_flagged_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
                 }
               }
             },

@@ -26,7 +26,7 @@ export async function getTopUrlsByHostnameIds(hostnameIds: string[]) {
         END AS feed_rank,
         COALESCE((
           SELECT MAX(rss_feed_items.published_at)
-          -- no-mistakes-disable-next-line postgres-required-predicates: URL ranking reads item publication times across item-ID partitions; URL assignment may change
+          -- no-mistakes-disable-next-line postgres-required-predicates: FIX: tracked in vouchington/vouchington#5310; URL ranking reads item publication times across item-ID partitions; URL assignment may change
           FROM rss_feed_items
           WHERE rss_feed_items.url_id = urls.id
         ), to_timestamp(0)) AS latest_published_at

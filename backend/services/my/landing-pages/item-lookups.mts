@@ -73,9 +73,8 @@ export async function getLandingPageReviewsByIds(
       t.name AS topic_name,
       t.slug AS topic_slug
     FROM selected_posts p
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge moves post_review_topic_ratings.topic_id to the destination with collision handling; review hydration still excludes deleted topics
     LEFT JOIN post_review_topic_ratings prtr ON prtr.post_id = p.id
-    LEFT JOIN topics t ON t.id = prtr.topic_id AND t.deleted_at IS NULL
+    LEFT JOIN topics t ON t.id = prtr.topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
     WHERE p.created_by_id = ${userId}
       AND p.post_type = 'review'
       AND p.deleted_at IS NULL
