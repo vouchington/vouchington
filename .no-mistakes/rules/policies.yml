@@ -3450,6 +3450,8 @@
   rule: workflow-topology-policy
   scope: repository
   options:
+    forbiddenActivityTypes:
+      - types: [ready_for_review, converted_to_draft]
     jobInventory:
       .github/workflows/actionlint.yml: [actionlint]
       .github/workflows/backend.yml:
@@ -3846,6 +3848,10 @@
       .github/workflows/web.yml:
         { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
     forbidConcurrencyGroupCollisions: true
+
+- name: Local GitHub Actions require a preceding checkout
+  rule: github-actions-local-action-checkout
+  scope: repository
 
 - name: btree indexes are not a strict prefix of another live index
   rule: postgres-redundant-index
