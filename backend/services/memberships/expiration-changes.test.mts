@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
-import { read } from '@data-stores/psql'
 import {
   beginTransaction,
   createTestSku,
   createTestUser,
   getTestGrantQueue,
+  readTestMembershipExpirationChanges,
   setTestMembershipGrantRemainingMilliseconds,
 } from '@voucha/test-helpers'
 import { createMembership, grantMembership } from './create.mts'
@@ -41,16 +40,7 @@ describe('exhausted paused grants on direct termination', () => {
     await resumeDirect(member.id, terminal.id, transaction)
     await transaction.commit()
 
-    const { rows } = await read<{ latest: boolean; effects: number; expired: boolean }>(
-      sql`/* expirationChange */
-      SELECT membership.latest_change_id = change.id AS latest, change.expired_at IS NOT NULL AS expired,
-        (SELECT count(*)::int FROM membership_entitlement_effects effect
-          WHERE effect.membership_change_id = change.id) AS effects
-      FROM membership_changes change
-      JOIN memberships membership ON membership.id = change.membership_id
-      WHERE change.membership_grant_id = ${pausedGrantId}
-        AND change.change_type = 'expiration'`,
-    )
+    const rows = await readTestMembershipExpirationChanges(pausedGrantId!)
     expect(rows).toEqual([{ latest: true, expired: true, effects: 1 }])
   })
 })
