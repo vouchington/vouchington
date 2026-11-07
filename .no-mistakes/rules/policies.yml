@@ -439,6 +439,8 @@
           file: backend/services/memberships/grants/expire-elapsed-batch.mts,
           callee: 'expireElapsedMembershipsForUserInTransaction',
         }
+      # FIX: tracked in vouchington/vouchington#5325 (per-membership activate, query, recordMembershipChange
+      # and restoreFallback still run per row inside the user's FOR UPDATE transaction).
       - {
           file: backend/services/memberships/grants/expire-elapsed.mts,
           callee: 'activateOldestQueuedGrant',
