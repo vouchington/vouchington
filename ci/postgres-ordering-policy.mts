@@ -38,6 +38,7 @@ export const expectedCatalogOrderingRules = [
       ...expectedCatalogOptions,
       ...executorOptions,
       executorNames: ['query', 'write'],
+      excludeExecutorNames: ['read'],
       unanalyzableSql: 'ignore',
     },
   },

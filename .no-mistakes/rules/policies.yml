@@ -2407,6 +2407,7 @@
     sqlInclude:
       - backend/data-stores/psql/config-driven/**/*.sql
     executorNames: [query, write]
+    excludeExecutorNames: [read]
     unanalyzableSql: ignore
     include:
       - backend/**/*.mts
@@ -4757,7 +4758,7 @@
     importSpecifier: '@data-stores/psql'
     executorFactoryNames: [beginTransaction, beginBoundedTransaction]
     executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
-    executorNames: [readPool, writePool]
+    extraExecutorNames: [readPool, writePool]
     exclude:
       - '**/*.test.*'
       - '**/__tests__/**'
