@@ -1,24 +1,21 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import { SEMANTIC_RSS_STORY_MEMBER_COUNT } from '../seed-data/semantic-rss-feed-items.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT } from '../seed-data/story-post-related-url-projection.mts'
 import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
 import { getLargeTableSeqScanRelations } from '../plan-warnings.mts'
 import {
   RSS_FEED_WEEKLY_STORY_ITEM_COUNT,
-  RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT,
   RSS_FEED_WEEKLY_WORKLOAD_SOURCE_COUNT,
 } from '../seed-data/rss-feed-weekly-workload.mts'
-import {
-  HOSTNAME_COUNT,
-  RSS_FEED_ITEM_SEED_COUNT,
-  RSS_FEED_SEED_COUNT,
-} from '../seed-data/common.mts'
+import { HOSTNAME_COUNT, RSS_FEED_SEED_COUNT } from '../seed-data/common.mts'
 
-const TOTAL_RSS_ITEM_ROWS = RSS_FEED_ITEM_SEED_COUNT + RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT + 1
+const TOTAL_RSS_ITEM_ROWS = SEEDED_ROWS_BY_RELATION.rss_feed_items!
 const MAX_SOURCES_PER_BASE_ITEM = Math.ceil(RSS_FEED_SEED_COUNT / HOSTNAME_COUNT)
-const TOTAL_RSS_SOURCE_ROWS =
-  RSS_FEED_ITEM_SEED_COUNT * MAX_SOURCES_PER_BASE_ITEM + RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT + 1
+const TOTAL_RSS_SOURCE_ROWS = SEEDED_ROWS_BY_RELATION.rss_feed_item_sources!
 const MAX_SOURCE_MEMBERSHIP_PASSES = 2
+const MAX_CATEGORY_MEMBERSHIP_PASSES = 2
+const ANCILLARY_CATEGORY_ROW_ALLOWANCE = 1_000
 const TOTAL_STORY_MEMBER_ROWS =
   RSS_FEED_WEEKLY_STORY_ITEM_COUNT +
   STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT +
@@ -68,9 +65,16 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
     throw new Error(
       `${result.name} processed ${sourcesProcessed} source rows; the corpus permits ${MAX_SOURCE_MEMBERSHIP_PASSES} membership passes over ${TOTAL_RSS_SOURCE_ROWS} source links`,
     )
-  if (categoriesProcessed > TOTAL_RSS_ITEM_ROWS * 2)
+  // Follow and mute each probe item categories. Winner lookups can revisit the
+  // story cohorts; small ancillary fixtures are outside the base/weekly ledger.
+  const categoryRowCeiling =
+    (SEEDED_ROWS_BY_RELATION.rss_feed_item_categories! +
+      TOTAL_STORY_MEMBER_ROWS +
+      ANCILLARY_CATEGORY_ROW_ALLOWANCE) *
+    MAX_CATEGORY_MEMBERSHIP_PASSES
+  if (categoriesProcessed > categoryRowCeiling)
     throw new Error(
-      `${result.name} processed ${categoriesProcessed} category rows; the fixture has one category per item and permits direct and newer-member probes`,
+      `${result.name} processed ${categoriesProcessed} category rows; the seeded category corpus, story revisits and ancillary fixtures permit ${categoryRowCeiling} follow/mute probes`,
     )
   const joinRejectionCeiling =
     TOTAL_RSS_ITEM_ROWS *

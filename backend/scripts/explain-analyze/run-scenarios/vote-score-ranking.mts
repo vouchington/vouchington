@@ -6,8 +6,9 @@ import { searchRssFeeds } from '@services/rss-feeds/search'
 import { getRssFeedItemFeedIds } from '@services/feeds/rss-feed-items/get-ids'
 import { seedPostId, seedTopicId, seedUser, runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
-import { seedUuid } from '../seed-data/common.mts'
+import { HOSTNAME_COUNT, RSS_FEED_SEED_COUNT, seedUuid } from '../seed-data/common.mts'
+import { STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT } from '../seed-data/story-post-related-url-projection.mts'
+import { RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT } from '../seed-data/rss-feed-weekly-workload.mts'
 import {
   seedVoteScoreHostnameFixture,
   seedVoteScorePublisherAndPostFixture,
@@ -29,6 +30,17 @@ type RankingScenario = Readonly<{
   expectations: Parameters<typeof registerScenarioContract>[1]['expectations']
   seededRows: Readonly<Record<string, number>>
 }>
+
+// The base items are minute-spaced; at most seven days of them can pass the
+// publication cutoff. Each hostname has at most this many seeded feed sources.
+// The story fixture can move older base items into the week. Semantic items
+// already belong to the base cohort. Allow 1k ancillary source probes and 1k
+// extra story-winner probes without admitting a scan of all 75k source links.
+const PUBLISHER_WEEK_SOURCE_PROBE_BOUND =
+  (7 * 24 * 60 + STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT) *
+    Math.ceil(RSS_FEED_SEED_COUNT / HOSTNAME_COUNT) +
+  RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT +
+  2_000
 
 export function getVoteScoreHostnameScenarios(
   cursors: VoteScoreRankingCursors,
@@ -138,8 +150,8 @@ export function getVoteScorePublisherScenarios(): readonly RankingScenario[] {
         {
           kind: 'maxProcessedRows',
           relation: 'relation__topic__publisher_type__topic',
-          // The full-week item walk checks the indexed publisher winner per source link.
-          max: SEEDED_ROWS_BY_RELATION.rss_feed_item_sources!,
+          // A full-week walk may probe every recent source, including story members.
+          max: PUBLISHER_WEEK_SOURCE_PROBE_BOUND,
         },
       ],
       seededRows: VOTE_SCORE_PUBLISHER_ROWS,
