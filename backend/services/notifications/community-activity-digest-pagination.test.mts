@@ -46,6 +46,32 @@ describe('community activity digest recipient pagination', () => {
     expect(done).toEqual({ page: [], hasMore: false, nextUserId: null })
   })
 
+  it('counts each eligible user once before applying the page limit', async () => {
+    const first = await createTestUserDirect()
+    const second = await createTestUserDirect()
+    const communities = await Promise.all([
+      insertTestCommunity({ createdById: first.id }),
+      insertTestCommunity({ createdById: first.id }),
+    ])
+    for (const community of communities) {
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: first.id,
+        role: 'moderator',
+      })
+    }
+    await insertTestCommunityMember({
+      communityId: communities[0]!.id,
+      userId: second.id,
+      role: 'moderator',
+    })
+    const ids = [first.id, second.id].toSorted()
+    const page = await listCommunityActivityDigestRecipientPage(undefined, undefined, ids, 1)
+    expect(page).toEqual({ page: [{ user_id: ids[0] }], hasMore: true, nextUserId: ids[0] })
+    const next = await listCommunityActivityDigestRecipientPage(page.nextUserId!, undefined, ids, 1)
+    expect(next).toEqual({ page: [{ user_id: ids[1] }], hasMore: false, nextUserId: null })
+  })
+
   it('advances past a deleted moderator without dropping the next live recipient', async () => {
     const liveBefore = await createTestUserDirect()
     const deleted = await createTestUserDirect()
@@ -73,6 +99,6 @@ describe('community activity digest recipient pagination', () => {
     }
 
     expect(seen).toEqual([liveBefore.id, liveAfter.id].toSorted())
-    expect(emptyContinuation).toBe(true)
+    expect(emptyContinuation).toBe(false)
   })
 })

@@ -41,18 +41,15 @@ describe('deleted post moderation pages', () => {
     await expireTestPostModerationVersion(deletedVersion.id)
     await expireTestPostModerationVersion(liveVersion.id)
 
-    let cursor: Awaited<ReturnType<typeof reconcilePostModerationWork>>['nextCursor']
-    let finished = false
-    for (let step = 0; step < 6; step++) {
-      const page = await reconcilePostModerationWork(1, [deletedPostId, livePostId], cursor)
-      if (!page.hasMore) {
-        finished = true
-        break
-      }
-      cursor = page.nextCursor
-    }
+    const first = await reconcilePostModerationWork(1, [deletedPostId, livePostId])
+    expect(first).toMatchObject({ due: [], exhausted_post_ids: [livePostId], hasMore: true })
+    expect(first.nextCursor).toMatchObject({
+      afterVersionId: liveVersion.id,
+      afterSource: 'openai_omni',
+    })
+    const last = await reconcilePostModerationWork(1, [deletedPostId, livePostId], first.nextCursor)
+    expect(last).toMatchObject({ due: [], exhausted_post_ids: [livePostId], hasMore: false })
 
-    expect(finished).toBe(true)
     expect(await countTestPostModerationIncompleteWork(livePostId)).toBe(0)
   })
 
@@ -97,31 +94,18 @@ describe('deleted post moderation pages', () => {
       secondDeletedPostId,
       livePostId,
     ])
-    expect(first.due).toEqual([])
-    expect(first.nextCursor?.afterVersionId).toBe(secondDeletedVersion.id)
-    expect(first.nextCursor?.afterSource).toBe('spam_detection')
+    expect(first).toMatchObject({ due: [], exhausted_post_ids: [livePostId], hasMore: true })
+    expect(first.nextCursor).toMatchObject({
+      afterVersionId: liveVersion.id,
+      afterSource: 'openai_omni',
+    })
+    const last = await reconcilePostModerationWork(
+      1,
+      [firstDeletedPostId, secondDeletedPostId, livePostId],
+      first.nextCursor,
+    )
+    expect(last).toMatchObject({ due: [], exhausted_post_ids: [livePostId], hasMore: false })
 
-    let cursor = first.nextCursor
-    const cursors = [`${cursor?.afterVersionId}:${cursor?.afterSource}`]
-    let finished = false
-    for (let step = 0; step < 8; step++) {
-      const page = await reconcilePostModerationWork(
-        1,
-        [firstDeletedPostId, secondDeletedPostId, livePostId],
-        cursor,
-      )
-      if (page.nextCursor) {
-        cursors.push(`${page.nextCursor.afterVersionId}:${page.nextCursor.afterSource}`)
-      }
-      if (!page.hasMore) {
-        finished = true
-        break
-      }
-      cursor = page.nextCursor
-    }
-
-    expect(new Set(cursors).size).toBe(cursors.length)
-    expect(finished).toBe(true)
     expect(await countTestPostModerationIncompleteWork(livePostId)).toBe(0)
   })
 })

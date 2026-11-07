@@ -1,7 +1,6 @@
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { readPostsForDayPage } from './daily-queries.mts'
 import { generateSitemapPage, type GenerationPageResult } from './generation-page.mts'
-import { sitemapSourcePage } from './sitemap-source-page.mts'
 import {
   buildPostDayIndexStorageKey,
   buildPostDayPageRoutePath,
@@ -35,8 +34,7 @@ export async function generatePostDaySitemapFiles(
       getManifest: () => getPostDayManifest(postType, day),
       putProgress: progress => putPostDayProgress(postType, day, progress),
       deleteProgress: () => deletePostDayProgress(postType, day),
-      readPage: async options =>
-        sitemapSourcePage(await readPostsForDayPage(postType, day, options), options.limit),
+      readPage: options => readPostsForDayPage(postType, day, options),
       pageStorageKey: (generationId, page) =>
         buildPostDayPageStorageKey(postType, day, generationId, page),
       pageRoutePath: (generationId, page) =>

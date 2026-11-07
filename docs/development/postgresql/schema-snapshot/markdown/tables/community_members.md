@@ -44,14 +44,15 @@ _none_
 **Indexes:**
 
 - `community_members_pkey`: `CREATE UNIQUE INDEX community_members_pkey ON public.community_members USING btree (id)`
-- `idx_community_members__active_community_id_id`: `CREATE INDEX idx_community_members__active_community_id_id ON public.community_members USING btree (community_id, id) WHERE (removed_at IS NULL)`
-- `idx_community_members__active_community_role_id`: `CREATE INDEX idx_community_members__active_community_role_id ON public.community_members USING btree (community_id, role, id) WHERE (removed_at IS NULL)`
+- `idx_community_members__active_community_id_id`: `CREATE INDEX idx_community_members__active_community_id_id ON public.community_members USING btree (community_id, id) INCLUDE (user_id, role) WHERE (removed_at IS NULL)`
+- `idx_community_members__active_community_role_id`: `CREATE INDEX idx_community_members__active_community_role_id ON public.community_members USING btree (community_id, role, id) INCLUDE (user_id) WHERE (removed_at IS NULL)`
 - `idx_community_members__active_moderator_user_id`: `CREATE INDEX idx_community_members__active_moderator_user_id ON public.community_members USING btree (user_id, community_id) WHERE ((removed_at IS NULL) AND (role = ANY (ARRAY['owner'::community_member_roles, 'moderator'::community_member_roles])))`
 - `idx_community_members__active_moderators`: `CREATE INDEX idx_community_members__active_moderators ON public.community_members USING btree (community_id, user_id) WHERE ((removed_at IS NULL) AND (role = ANY (ARRAY['owner'::community_member_roles, 'moderator'::community_member_roles])))`
 - `idx_community_members__approved_by_id`: `CREATE INDEX idx_community_members__approved_by_id ON public.community_members USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)`
 - `idx_community_members__community_id`: `CREATE INDEX idx_community_members__community_id ON public.community_members USING btree (community_id)`
 - `idx_community_members__departed`: `CREATE INDEX idx_community_members__departed ON public.community_members USING btree (community_id, removed_at) WHERE (removed_at IS NOT NULL)`
 - `idx_community_members__moderator_community_id`: `CREATE INDEX idx_community_members__moderator_community_id ON public.community_members USING btree (community_id, id) WHERE ((role = 'moderator'::community_member_roles) AND (removed_at IS NULL))`
+- `idx_community_members__owner_community_id_id`: `CREATE INDEX idx_community_members__owner_community_id_id ON public.community_members USING btree (community_id, id) INCLUDE (user_id, role) WHERE ((removed_at IS NULL) AND (role = 'owner'::community_member_roles))`
 - `idx_community_members__owner_user_community`: `CREATE INDEX idx_community_members__owner_user_community ON public.community_members USING btree (user_id, community_id) WHERE ((role = 'owner'::community_member_roles) AND (removed_at IS NULL))`
 - `idx_community_members__removed_by_id`: `CREATE INDEX idx_community_members__removed_by_id ON public.community_members USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)`
 - `idx_community_members__suspected_ban_evader_dismissed_by_id`: `CREATE INDEX idx_community_members__suspected_ban_evader_dismissed_by_id ON public.community_members USING btree (suspected_ban_evader_dismissed_by_id) WHERE (suspected_ban_evader_dismissed_by_id IS NOT NULL)`

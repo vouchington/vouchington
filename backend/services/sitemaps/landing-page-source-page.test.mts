@@ -5,7 +5,7 @@ import {
   createTestUser,
   softDeleteUser,
 } from '@voucha/test-helpers'
-import { readLandingSitemapSourcePage } from './family-queries.mts'
+import { readSitemapFamilyPage } from './family-queries.mts'
 
 describe('landing page sitemap source pages', () => {
   it('continues past a deleted owner without skipping the next live page', async () => {
@@ -23,28 +23,17 @@ describe('landing page sitemap source pages', () => {
       pages.push(page)
     }
     await softDeleteUser(deleted.id)
-    const owned = new Set(pages.map(page => page.landingPageId))
     const highWaterId = pages[2]!.landingPageId
 
-    const seen: string[] = []
-    let afterId: string | undefined
-    let emptyContinuation = false
-    for (let step = 0; step < 8; step++) {
-      const page = await readLandingSitemapSourcePage({
-        highWaterId,
-        limit: 2,
-        ...(afterId ? { afterId } : {}),
-      })
-      seen.push(...page.entries.flatMap(entry => (owned.has(entry.id) ? [entry.id] : [])))
-      if (page.entries.length === 0 && !page.exhausted) emptyContinuation = true
-      if (page.exhausted || !page.afterId || page.afterId <= pages[0]!.landingPageId) {
-        if (page.entries.some(entry => entry.id === pages[0]!.landingPageId)) break
-        if (page.exhausted || (page.afterId && page.afterId < pages[0]!.landingPageId)) break
-      }
-      afterId = page.afterId ?? undefined
-    }
-
-    expect(seen).toEqual([pages[2]!.landingPageId, pages[0]!.landingPageId])
-    expect(emptyContinuation).toBe(true)
+    const rows = await readSitemapFamilyPage('landing-pages', { highWaterId, limit: 2 })
+    expect(rows).toHaveLength(2)
+    expect(rows[0]?.id).toBe(pages[2]!.landingPageId)
+    expect(rows.map(row => row.id)).not.toContain(pages[1]!.landingPageId)
+    const older = await readSitemapFamilyPage('landing-pages', {
+      highWaterId,
+      afterId: pages[1]!.landingPageId,
+      limit: 100,
+    })
+    expect(older.map(row => row.id)).toContain(pages[0]!.landingPageId)
   })
 })

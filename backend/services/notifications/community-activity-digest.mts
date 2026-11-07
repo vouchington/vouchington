@@ -21,13 +21,13 @@ export async function createCommunityActivityDigestBatch(input: {
 }> {
   const batchSize =
     input.batchSize ?? getNotificationsWorkLimit('community_digest_recipient_batch_size')
-  const { page, hasMore, nextUserId } = await listCommunityActivityDigestRecipientPage(
+  const { page, nextUserId } = await listCommunityActivityDigestRecipientPage(
     input.afterUserId,
     input.throughUserId,
     input.userIds,
     batchSize,
   )
-  if (page.length === 0) return { created: [], nextUserId: hasMore ? nextUserId : null }
+  if (page.length === 0) return { created: [], nextUserId: null }
   const digestRows = await aggregateCommunityActivityDigestBatch({
     recipientIds: page.map(row => row.user_id),
     windowStart: input.windowStart,

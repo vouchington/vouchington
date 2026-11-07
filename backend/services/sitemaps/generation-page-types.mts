@@ -4,14 +4,6 @@ import type { SitemapUrl } from './types.mts'
 
 export type SourceEntry = { id: string; path?: string }
 
-export type SitemapSourcePage<T extends SourceEntry> = {
-  entries: T[]
-  exhausted: boolean
-  afterId: string | null
-  afterPath: string | null
-  boundId: string | null
-}
-
 export type GenerationPageDependencies<T extends SourceEntry> = {
   getProgress: () => Promise<SitemapGenerationProgress | null>
   getManifest: () => Promise<PostDayManifest | null>
@@ -22,7 +14,7 @@ export type GenerationPageDependencies<T extends SourceEntry> = {
     afterId?: string
     afterPath?: string
     limit: number
-  }) => Promise<SitemapSourcePage<T>>
+  }) => Promise<T[]>
   pageStorageKey: (generationId: string, page: number) => string
   pageRoutePath: (generationId: string, page: number) => string
   indexStorageKey: string

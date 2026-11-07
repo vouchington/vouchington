@@ -202,13 +202,17 @@ CREATE OR REPLACE TRIGGER trigger_community_members_updated_at
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members__unique ON community_members (community_id, user_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__active_community_id_id
-  ON community_members (community_id, id)
+  ON community_members (community_id, id) INCLUDE (user_id, role)
   WHERE removed_at IS NULL;
 -- Role pages must not walk lower-id regular members to reach owners or moderators.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__active_community_role_id
-  ON community_members (community_id, role, id)
+  ON community_members (community_id, role, id) INCLUDE (user_id)
   WHERE removed_at IS NULL;
+-- Generic plans must not scan a large regular-member cohort to find its one owner.
+CREATE INDEX IF NOT EXISTS idx_community_members__owner_community_id_id
+  ON community_members (community_id, id) INCLUDE (user_id, role)
+  WHERE removed_at IS NULL AND role = 'owner';
 -- Moderator discovery must skip regular members even in a large community.
 CREATE INDEX IF NOT EXISTS idx_community_members__active_moderators
   ON community_members (community_id, user_id)
