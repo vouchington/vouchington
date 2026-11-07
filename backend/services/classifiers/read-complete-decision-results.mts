@@ -24,7 +24,6 @@ type ResultRow = {
   threshold_id: string | null
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 export async function readResults(
   query: QueryExecutor,
   batchId: string,
@@ -102,7 +101,6 @@ async function readCommunityPromptResults(
   return rows.map(row => toPersistedResult(row, 'community_prompt'))
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 function toPersistedResult(
   row: ResultRow & { entity_id?: string },
   candidateKind: ClassifierDecisionInputResult['candidateKind'],

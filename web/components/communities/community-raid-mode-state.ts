@@ -52,7 +52,6 @@ export const initialRaidModeState: RaidModeState = {
   isSaving: false,
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 export function raidModeReducer(state: RaidModeState, action: RaidModeAction): RaidModeState {
   switch (action.type) {
     case 'toggleRestriction': {

@@ -61,7 +61,6 @@ export async function readSitemapFamilyPage(
   return rows as SitemapFamilyEntry[]
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed family switch is exhaustive; Oxlint misses its terminal flow.
 function buildSitemapFamilyQuery(family: SitemapFamilyType, options: FamilyPageOptions) {
   switch (family) {
     case 'users':

@@ -16,7 +16,6 @@ type MetricPage = {
 }
 
 /** One indexed source page, within the operation row's transaction. */
-// oxlint-disable-next-line typescript/consistent-return -- Typed phase switch is exhaustive; Oxlint misses its terminal flow.
 export async function processTopicMergeMetricsPage(
   query: TransactionQuery,
   operationId: string,

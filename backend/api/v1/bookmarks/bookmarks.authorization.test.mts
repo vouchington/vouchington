@@ -187,7 +187,6 @@ describe('bookmark mutation authorization', () => {
   })
 })
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed entityType switch is exhaustive; Oxlint misses its terminal flow.
 async function createVisibleTarget(
   entityType:
     | 'post'

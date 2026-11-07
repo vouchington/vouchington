@@ -14,7 +14,6 @@ import {
 import { runNodeChecksCli } from './run-node-checks-cli.mts'
 export type { CheckName, CheckResult } from './node-check-types.mts'
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed check switch is exhaustive; Oxlint misses its terminal flow.
 async function runOne(check: CheckName, ctx: SharedContext): Promise<CheckResult> {
   switch (check) {
     case 'config-inventory-policy': {

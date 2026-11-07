@@ -27,7 +27,6 @@ describe('follow and subscription limits', () => {
       await relationLimitsConfig.waitForInitialization()
       onTestFinished(overrideDynamicConfigFieldsForTest(relationLimitsConfig, { [field]: 1 }))
       const user = await createTestUser()
-      // oxlint-disable-next-line typescript/consistent-return -- Typed objectType switch is exhaustive; Oxlint misses its terminal flow.
       const createObject = async () => {
         switch (objectType) {
           case 'user':

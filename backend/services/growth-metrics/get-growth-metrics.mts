@@ -52,7 +52,6 @@ async function loadGrowthMetrics(range: GrowthRange): Promise<GrowthMetrics> {
   }
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed range switch is exhaustive; Oxlint misses its terminal flow.
 function getRangeStart(range: GrowthRange, now: Date): Date {
   const d = new Date(now)
   switch (range) {

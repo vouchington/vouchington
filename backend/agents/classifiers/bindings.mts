@@ -38,7 +38,6 @@ export function candidatesForBinding(
 }
 
 /** The concrete entity a candidate or its result names, whichever kind it is. */
-// oxlint-disable-next-line typescript/consistent-return -- Typed candidate.candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 export function classifierCandidateEntityId(
   candidate: ClassifierDecisionCandidate | ClassifierDecisionInputResult,
 ): string {

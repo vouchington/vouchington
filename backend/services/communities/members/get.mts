@@ -153,7 +153,6 @@ function memberRosterFilter(
   )
   return regularMembersVisible ? 'privacy' : 'moderators'
 }
-// oxlint-disable-next-line typescript/consistent-return -- Typed rosterVisibility switch is exhaustive; Oxlint misses its terminal flow.
 function communityRosterAllowsRegularMembers(
   rosterVisibility: CommunityMemberRosterVisibility,
   currentUser: PrivateUser | null,

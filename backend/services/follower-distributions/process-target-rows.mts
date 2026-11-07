@@ -6,7 +6,6 @@ import {
   insertRssFeedItemManualSendNotifications,
 } from './rss-feed-item-target-rows.mts'
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed distribution.action switch is exhaustive; Oxlint misses its terminal flow.
 export async function processTargetRows(
   distribution: DistributionRow,
   recipientIds: string[],

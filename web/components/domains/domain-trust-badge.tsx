@@ -18,7 +18,6 @@ function getTrustColor(tier: TrustTier): string {
   return trustColors[tier]
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed tier switch is exhaustive; Oxlint misses its terminal flow.
 function getTrustTooltip(tier: TrustTier, t: ReturnType<typeof useTranslations>): string {
   switch (tier) {
     case 'trusted': {

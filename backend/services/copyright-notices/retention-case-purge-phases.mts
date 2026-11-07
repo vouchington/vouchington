@@ -28,7 +28,6 @@ import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state
 type PageResult = { data: CopyrightCasePurgeJobData; hasMore: boolean; deferred?: boolean }
 type EligibleNotice = { id: string; jurisdiction: string; last_legal_activity_at: Date }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed data.phase switch is exhaustive; Oxlint misses its terminal flow.
 export async function runLockedPage(
   query: TransactionQuery,
   data: CopyrightCasePurgeJobData,

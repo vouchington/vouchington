@@ -67,7 +67,6 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
   })
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed tableName switch is exhaustive; Oxlint misses its terminal flow.
 function topicAttributeUpsertQuery(
   tableName: TopicAttributeTableName,
   columns: string,
