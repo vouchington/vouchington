@@ -28,20 +28,6 @@ RUN set -- /usr/lib/*-linux-gnu/libssl.so.3 && \
     dpkg-query -s libssl3t64 > "$overlay/var/lib/dpkg/status.d/libssl3t64" && \
     dpkg-query -s openssl-provider-legacy > "$overlay/var/lib/dpkg/status.d/openssl-provider-legacy"
 
-# Distroless lags the zlib security upload the same way. Copy the upgraded library and its
-# package status from base-node so the runtime image and the Trivy scan see that package.
-FROM base-node AS zlib-overlay
-RUN set -- /usr/lib/*-linux-gnu/libz.so.1 && \
-    [ "$#" -eq 1 ] && \
-    multiarch_dir="${1%/libz.so.1}" && \
-    overlay=/distroless-zlib && \
-    mkdir -p "$overlay/var/lib/dpkg/status.d" && \
-    cp -a --parents \
-      "$multiarch_dir/libz.so.1" \
-      "$multiarch_dir"/libz.so.1.* \
-      "$overlay" && \
-    dpkg-query -s zlib1g > "$overlay/var/lib/dpkg/status.d/zlib1g"
-
 # Distroless runtime base: glibc and libstdc++ for the compiled Bun executables and their native
 # addons, with no shell, apt, or package managers; nonroot user (65532) is built in.
 # nodejs26-debian13 uses Debian trixie (glibc 2.40), matching base-node, so
@@ -50,7 +36,6 @@ RUN set -- /usr/lib/*-linux-gnu/libz.so.1 && \
 # (/nodejs/bin is NOT on PATH), and the worker CLI smoke stages run the typed wrapper with it.
 FROM ghcr.io/vouchington/dependency-distroless-nodejs:nonroot@sha256:96455baef11b178fc135b32206e3922c515dbed2400676c94f907f8f84e6abf6 AS runtime-base
 COPY --from=openssl-overlay /distroless-openssl/ /
-COPY --from=zlib-overlay /distroless-zlib/ /
 
 # Stage 1: Install the workspace and compile the backend executables. Each runtime image ships one
 # executable and the files it reads from disk, not a node_modules tree.
