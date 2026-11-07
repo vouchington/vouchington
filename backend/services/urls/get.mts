@@ -1,6 +1,6 @@
 import { isUUID, normalizeUrlForUrlTable } from '@modules/utils'
 import { read, write } from '@data-stores/psql'
-import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
+import type { QueryOptions } from '@data-stores/psql/types'
 import type { ViewUrl } from './types.mts'
 import createHttpError from 'http-errors'
 import { caches } from '@services/entity-cache/caches'
@@ -10,18 +10,16 @@ export const getUrlById = async (
   id: string,
   options: QueryOptions = {},
 ): Promise<ViewUrl | null> => {
-  const lookup = (runQuery: QueryExecutor) =>
-    runQuery<ViewUrl>(
-      `/* getUrlById */
+  const query = options.readOnly === false ? write : read
+  const { rows } = await query<ViewUrl>(
+    `/* getUrlById */
     SELECT * FROM view_urls
     WHERE id = $1
     LIMIT 1
   `,
-      [id],
-    )
-  const query: QueryExecutor = (input, values) =>
-    (options.readOnly === false ? write : read)(input, values, options)
-  const { rows } = await lookup(query)
+    [id],
+    options,
+  )
   return rows[0] || null
 }
 

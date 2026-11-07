@@ -2612,7 +2612,7 @@
     unanalyzableSql: advise
     importSpecifier: '@data-stores/psql'
     executorFactoryNames: [beginTransaction, beginBoundedTransaction]
-    executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+    executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, Pool, QueryOptions]
     include:
       - backend/**/*.{ts,mts}
     exclude:
@@ -4757,7 +4757,7 @@
     unanalyzable: advise
     importSpecifier: '@data-stores/psql'
     executorFactoryNames: [beginTransaction, beginBoundedTransaction]
-    executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+    executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, Pool, QueryOptions]
     extraExecutorNames: [readPool, writePool]
     exclude:
       - '**/*.test.*'

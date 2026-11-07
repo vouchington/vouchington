@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
+import type { QueryOptions } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import createError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -51,9 +51,9 @@ export const getPublicUserByAny = async (
 ): Promise<PublicUser | null> => {
   const [filters, values] = getUserByAnyArguments(string, { private: false, ...options })
   if (!filters || !values) return null
-  const lookup = async (runQuery: QueryExecutor): Promise<PublicUser | null> => {
-    const { rows } = await runQuery<PublicUser>(
-      `/* getPublicUserByAny */
+  const query = options.readOnly === false ? write : read
+  const { rows } = await query<PublicUser>(
+    `/* getPublicUserByAny */
     WITH user_data AS (
       SELECT *
       FROM users
@@ -65,13 +65,10 @@ export const getPublicUserByAny = async (
     JOIN user_data ON user_data.id = view_users_public.id
     LIMIT 1
   `,
-      values,
-    )
-    return rows[0] || null
-  }
-  const query: QueryExecutor = (input, params) =>
-    (options.readOnly === false ? write : read)(input, params, options)
-  return lookup(query)
+    values,
+    options,
+  )
+  return rows[0] || null
 }
 
 export const getPrivateUserByAny = async (
@@ -80,9 +77,9 @@ export const getPrivateUserByAny = async (
 ): Promise<PrivateUser | null> => {
   const [filters, values] = getUserByAnyArguments(string, { private: true, ...options })
   if (!filters || !values) return null
-  const lookup = async (runQuery: QueryExecutor): Promise<PrivateUser | null> => {
-    const { rows } = await runQuery<PrivateUser>(
-      `/* getPrivateUserByAny */
+  const query = options.readOnly === false ? write : read
+  const { rows } = await query<PrivateUser>(
+    `/* getPrivateUserByAny */
     WITH user_data AS (
       SELECT *
       FROM users
@@ -94,13 +91,10 @@ export const getPrivateUserByAny = async (
     JOIN user_data ON user_data.id = view_users_private.id
     LIMIT 1
   `,
-      values,
-    )
-    return rows[0] || null
-  }
-  const query: QueryExecutor = (input, params) =>
-    (options.readOnly === false ? write : read)(input, params, options)
-  return lookup(query)
+    values,
+    options,
+  )
+  return rows[0] || null
 }
 
 // Route handlers must use these wrappers when the input comes from a :idOrSlug

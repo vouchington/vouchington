@@ -1,4 +1,4 @@
-import { read, type QueryExecutor, type QueryOptions } from '@data-stores/psql'
+import { read, type QueryOptions } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
 import { isModerationStaff } from '@services/users'
@@ -29,15 +29,11 @@ export async function canViewPostsBatch(
     JOIN posts candidate_post ON candidate_post.id = input.post_id
     JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE `.append(eligibility)
-  const select = (execute: QueryExecutor) =>
-    execute<{ post_id: string }>(
-      `/* canViewPostsBatch */
-    WITH ${query.text}`,
-      query.values,
-    )
+  const statement = `/* canViewPostsBatch */
+    WITH ${query.text}`
   const { rows } = options.query
-    ? await select(options.query)
-    : await select((input, values) => read(input, values, options))
+    ? await options.query<{ post_id: string }>(statement, query.values)
+    : await read<{ post_id: string }>(statement, query.values, options)
   const visible = new Set(rows.map(row => row.post_id))
   return new Map(posts.map(post => [post.id, visible.has(post.id)]))
 }

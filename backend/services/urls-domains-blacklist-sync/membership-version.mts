@@ -1,4 +1,5 @@
 import { readPool, writePool, type TransactionQuery } from '@data-stores/psql'
+import type { Pool } from '@data-stores/psql/types'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
 import { writeCommDiff } from './diff-files.mts'
 import type { MembershipDiffPaths } from './membership-diff-stage.mts'
@@ -42,8 +43,11 @@ async function prepareVersionedMembership(
   return version
 }
 
-async function sourceVersion(sourceId: DomainBlacklistSourceId): Promise<string | null> {
-  const { rows } = await writePool.query<{ version: string }>(
+async function sourceVersion(
+  sourceId: DomainBlacklistSourceId,
+  pool: Pool = writePool,
+): Promise<string | null> {
+  const { rows } = await pool.query<{ version: string }>(
     `/* syncDomainsWithDatabase:sourceVersion */
      SELECT xmin::text AS version FROM domain_blocklist_sources WHERE id = $1`,
     [sourceId],

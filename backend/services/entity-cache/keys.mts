@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { getCacheKeys } from './classify-cache-keys.mts'
 
@@ -109,18 +109,16 @@ export const getPostCacheKeysWithOptions = async (
   if (ids.size > 0) filters.push(`post_id = ANY($${values.push([...ids])}::uuid[])`)
   if (slugs.size > 0) filters.push(`slug = ANY($${values.push([...slugs])})`)
 
-  const lookup = (runQuery: QueryExecutor) =>
-    runQuery(
-      `/* getPostCacheKeys */
+  const query = options.readOnly === false ? write : read
+  const { rows } = await query(
+    `/* getPostCacheKeys */
     SELECT post_id, slug
     FROM post_slugs
     WHERE ${filters.join(' OR ')}
   `,
-      values,
-    )
-  const query: QueryExecutor = (input, params) =>
-    (options.readOnly === false ? write : read)(input, params, options)
-  const { rows } = await lookup(query)
+    values,
+    options,
+  )
 
   for (const row of rows) {
     ids.add(normalizeKey(row.post_id))
