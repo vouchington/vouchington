@@ -4,6 +4,7 @@ import sql from 'sql-template-strings'
 import { appendTopicDescendantsCte } from '@services/topics/descendants-sql'
 import type { RssFeedSearchRow, SearchRssFeedsOptions } from './types.mts'
 import { mutedPublisherTypeFilter, publisherTypeCandidateJoin } from './search-publisher-types.mts'
+import { feedStateFilters } from './search-state-filters.mts'
 import { searchTrendingRssFeeds } from './search-trending.mts'
 export type { SearchRssFeedsOptions }
 
@@ -90,17 +91,7 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     )`)
   }
   if (cursorId) filters.push(sql`rss_feeds.id < ${cursorId}::uuid`)
-  // is_enabled/discoverable === null means no filter
-  if (is_enabled === true) {
-    filters.push(sql`rss_feeds.is_enabled = TRUE`)
-  } else if (is_enabled === false) {
-    filters.push(sql`rss_feeds.is_enabled = FALSE`)
-  }
-  if (discoverable === true) {
-    filters.push(sql`rss_feeds.is_discoverable = TRUE`)
-  } else if (discoverable === false) {
-    filters.push(sql`rss_feeds.is_discoverable = FALSE`)
-  }
+  filters.push(...feedStateFilters(is_enabled, discoverable))
 
   const hasTextSearch = text_search_query && typeof text_search_query === 'string'
   const shouldIncludeTopicDescendants = include_descendants && effectiveTopicIds.length > 0
