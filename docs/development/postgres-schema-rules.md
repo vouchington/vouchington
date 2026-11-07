@@ -152,7 +152,8 @@ recovery follow [One current contract](../../AGENTS.md).
   helper.
 - Explicit column lists for tables (no `SELECT *`, `alias.*`, `RETURNING *`); a view may be read
   with `*` because its column list is the reviewed contract. No `OFFSET`. A `MATERIALIZED` CTE is
-  an optimizer fence that computes every row up to its own LIMIT before outer filters run, so use it
+  an optimizer fence: outer filters and ordering cannot reach its indexes, so when they reject most
+  of its rows, or sort or aggregate them, the query reads every row up to the CTE's own LIMIT. Use it
   only when it holds the final LIMIT or a small viewer-scoped set.
 - **A list or feed read is one walk over the listed entity.** Filters go in WHERE and are served by
   an index. Use `ORDER BY key, id DESC LIMIT page+1` and a plain keyset cursor; the page LIMIT plus a
