@@ -19,11 +19,12 @@ ON url_hostnames (topic_id, votes_score_sort DESC, id DESC)
 WHERE topic_id IS NOT NULL;
 
 -- Serves searchUrlHostnames with sort=trust and no topic filter. The generic
--- idx_url_hostnames__votes_score_sort__id orders id ascending, so a descending id tiebreak would
--- sort every row sharing a score; this index matches the order exactly and holds only the
--- publicly introduced hostnames the search lists.
-CREATE INDEX IF NOT EXISTS idx_url_hostnames__public_votes_score_sort__id
+-- idx_url_hostnames__votes_score_sort__id orders id ascending, and a listing that filters
+-- is_blocked outside the index walks every blocked row ahead of the first unblocked one in a score
+-- tie group. Non-administrators always list publicly introduced, unblocked hostnames, so this index
+-- holds exactly those rows in the query's order.
+CREATE INDEX IF NOT EXISTS idx_url_hostnames__listed_votes_score_sort__id
 ON url_hostnames (votes_score_sort DESC, id DESC)
-WHERE publicly_introduced_at IS NOT NULL;
+WHERE publicly_introduced_at IS NOT NULL AND NOT is_blocked;
 `.trim()
 }

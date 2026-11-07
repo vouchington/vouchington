@@ -32,6 +32,7 @@ export const RSS_FEED_CRAWL_TIERS_VIEW = 'mv_rss_feed_crawl_tiers'
 export const TOP_HASHTAGS_VIEW = 'mv_top_hashtags'
 export const PLATFORM_STATS_VIEW = 'mv_platform_stats'
 export const TRENDING_RSS_FEEDS_VIEW = 'mv_trending_rss_feeds'
+export const TRENDING_COMMUNITIES_VIEW = 'mv_trending_communities'
 export const REVENUE_MEMBERSHIPS_VIEW = 'mv_revenue_memberships'
 export const REVENUE_CHANGES_VIEW = 'mv_revenue_changes'
 
@@ -43,6 +44,7 @@ export const REFRESH_RSS_FEED_CRAWL_TIERS_SCHEDULER_ID = 'refresh-rss-feed-crawl
 export const REFRESH_TOP_HASHTAGS_SCHEDULER_ID = 'refresh-top-hashtags'
 export const REFRESH_PLATFORM_STATS_SCHEDULER_ID = 'refresh-platform-stats'
 export const REFRESH_TRENDING_RSS_FEEDS_SCHEDULER_ID = 'refresh-trending-rss-feeds'
+export const REFRESH_TRENDING_COMMUNITIES_SCHEDULER_ID = 'refresh-trending-communities'
 export const REFRESH_REVENUE_MEMBERSHIPS_SCHEDULER_ID = 'refresh-revenue-memberships'
 export const REFRESH_REVENUE_CHANGES_SCHEDULER_ID = 'refresh-revenue-changes'
 export const RECONCILE_VOTE_DRIFT_SCHEDULER_ID = 'reconcile-vote-drift'
@@ -58,9 +60,10 @@ export const DATA_RETENTION_CRON = '0 4 * * *'
 export const REFRESH_RSS_FEED_CRAWL_TIERS_CRON = '0 1 * * *'
 // Hourly safety-net refresh. Content changes enqueue the same view with a debounce.
 export const REFRESH_TOP_HASHTAGS_CRON = '0 * * * *'
-// Stagger the four refreshes across five-minute cycles to avoid the shared advisory lock.
+// Stagger the five refreshes across five-minute cycles to avoid the shared advisory lock.
 export const REFRESH_PLATFORM_STATS_CRON = '0,5,10,15,20,25,30,35,40,45,50,55 * * * *'
 export const REFRESH_TRENDING_RSS_FEEDS_CRON = '1,6,11,16,21,26,31,36,41,46,51,56 * * * *'
+export const REFRESH_TRENDING_COMMUNITIES_CRON = '4,9,14,19,24,29,34,39,44,49,54,59 * * * *'
 export const REFRESH_REVENUE_MEMBERSHIPS_CRON = '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
 export const REFRESH_REVENUE_CHANGES_CRON = '3,8,13,18,23,28,33,38,43,48,53,58 * * * *'
 // Daily at 6:00 AM UTC

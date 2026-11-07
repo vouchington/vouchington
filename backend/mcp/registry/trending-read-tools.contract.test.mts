@@ -15,6 +15,7 @@ import {
   createReferralProgramFixture,
   disableReferralProgramByTopicId,
 } from '@voucha/test-helpers/entities/referral-programs'
+import { refreshMaterializedViewForTest } from '../../test-helpers/refresh-materialized-view-for-test.mts'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Entry = { id: string; trending_score: number } & Record<string, unknown>
@@ -122,6 +123,7 @@ describe('discover_communities.search sort trending — real DB', () => {
       createCommunity('public', 1, 1),
       createCommunity('private', 4, 2),
     ])
+    await refreshMaterializedViewForTest('mv_trending_communities')
   })
 
   it('ranks a public community by its reviewed posts and members, like REST', async () => {

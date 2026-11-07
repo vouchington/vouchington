@@ -7,12 +7,21 @@ const hostnameTextQuery = 'host-2'
 const hostnameTextPageLimit = 25
 
 export async function runViewDrivenHostnameScenarios(): Promise<void> {
+  registerScenarioContract('search-hostnames-trust', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_url_hostnames__listed_votes_score_sort__id'] },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 100 },
+    ],
+  })
   registerScenarioContract('search-hostnames-trust-by-topic', {
     expectations: [
       { kind: 'usesIndexes', indexes: ['idx_url_hostnames__topic_id__votes_score_sort__id'] },
       { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 100 },
     ],
   })
+  await runAndCapture('search-hostnames-trust', () =>
+    searchUrlHostnames({ sort: 'trust', is_blocked: false, limit: 25 }),
+  )
   await runAndCapture('search-hostnames-trust-by-topic', () =>
     searchUrlHostnames({ sort: 'trust', is_blocked: false, topic_id: seedTopicId, limit: 25 }),
   )

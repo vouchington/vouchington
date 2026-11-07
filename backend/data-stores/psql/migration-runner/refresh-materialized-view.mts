@@ -8,6 +8,7 @@ const REFRESHABLE_MATERIALIZED_VIEWS = new Set([
   'mv_top_hashtags',
   'mv_platform_stats',
   'mv_trending_rss_feeds',
+  'mv_trending_communities',
   'mv_revenue_memberships',
   'mv_revenue_changes',
 ])

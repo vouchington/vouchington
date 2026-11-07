@@ -20,6 +20,8 @@ describe('explain materialized view maintenance', () => {
       'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_platform_stats"',
       'refresh:mv_trending_rss_feeds',
       'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_trending_rss_feeds"',
+      'refresh:mv_trending_communities',
+      'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_trending_communities"',
       'refresh:mv_revenue_memberships',
       'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_revenue_memberships"',
       'refresh:mv_revenue_changes',
