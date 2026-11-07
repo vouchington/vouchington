@@ -23,14 +23,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_02 = [
     consumers: ['dotnet', 'swift'],
   },
   {
-    key: 'extracted.my.preferencesForm.hackerNewsDiscussions_065664a4',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
-    key: 'extracted.my.preferencesForm.showRelatedHackerNewsThreadsWhen_00754911',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
     key: 'extracted.my.rewardsProgramStatusesManager.sinceMustBeBeforeUntil_a4745364',
     consumers: ['dotnet', 'swift'],
   },
