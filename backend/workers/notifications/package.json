@@ -39,6 +39,7 @@
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",
     "@services/bookmarks": "workspace:^",
+    "@services/moderation-threads": "workspace:^",
     "@services/modmail": "workspace:^",
     "@types/web-push": "^3.6.4",
     "@voucha/test-helpers": "workspace:^",

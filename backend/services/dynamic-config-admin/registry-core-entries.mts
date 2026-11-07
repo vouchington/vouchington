@@ -3,7 +3,7 @@ import { appAttestationConfig } from '@services/app-attestation/config'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import { turnstileConfig } from '@services/captcha/config'
 import { moderationConfig } from '@services/moderation/config'
-import { communityMembershipLimitsRegistryEntry } from './registry-community-membership-entry.mts'
+import { admissionLimitRegistryEntries } from './registry-community-membership-entry.mts'
 import {
   DEFAULT_POST_CONTENT_LIMITS,
   POST_CONTENT_LIMITS_MAX_VALUES,
@@ -17,7 +17,7 @@ import { bedrockField } from './registry-bedrock-field.mts'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { validateRequestSigningModeConfig } from './product-config-validators.mts'
 export const coreDynamicConfigRegistryEntries = [
-  communityMembershipLimitsRegistryEntry,
+  ...admissionLimitRegistryEntries,
   communityAgentPromptsRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'request-client-info',

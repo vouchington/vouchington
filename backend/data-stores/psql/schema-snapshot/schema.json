@@ -24680,7 +24680,7 @@
         "idx_conversation_participants__conversation_user": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_conversation_participants__conversation_user ON public.conversation_participants USING btree (conversation_id, user_id) WHERE ((user_id IS NOT NULL) AND (removed_at IS NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_conversation_participants__conversation_user ON public.conversation_participants USING btree (conversation_id, user_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -24698,7 +24698,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((user_id IS NOT NULL) AND (removed_at IS NULL))",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": true,

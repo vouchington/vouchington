@@ -5,6 +5,9 @@ import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import type { DirectConversation, DirectMessage } from './types.mts'
 import createHttpError from 'http-errors'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
+import { admitConversationParticipants } from './participant-admission.mts'
+import { conversationMessageInsert } from './conversation-message-insert.mts'
+import { createModInternalMessageForLiveStaff } from './create-mod-internal-message.mts'
 
 export async function findOrCreateDirectConversation(
   currentUserId: string,
@@ -51,12 +54,10 @@ export async function findOrCreateDirectConversation(
     `)
     const conversation = convRows[0] as DirectConversation
 
-    await query(sql`/* findOrCreateDirectConversation:participants */
-      INSERT INTO conversation_participants (conversation_id, user_id, role)
-      VALUES
-        (${conversation.id}, ${currentUserId}, 'owner'),
-        (${conversation.id}, ${recipientUserId}, 'member')
-    `)
+    await admitConversationParticipants(query, conversation.id, [
+      { userId: currentUserId, role: 'owner' },
+      { userId: recipientUserId, role: 'member' },
+    ])
 
     return conversation
   }
@@ -111,14 +112,10 @@ export async function createGroupConversation(
     `)
   const conversation = convRows[0] as DirectConversation
 
-  const participantSql = sql`/* createGroupConversation:participants */
-      INSERT INTO conversation_participants (conversation_id, user_id, role)
-      VALUES (${conversation.id}, ${currentUserId}, 'owner')`
-  for (const recipientId of recipientUserIds) {
-    participantSql.append(sql`, (${conversation.id}, ${recipientId}, 'member')`)
-  }
-
-  await query(participantSql)
+  await admitConversationParticipants(query, conversation.id, [
+    { userId: currentUserId, role: 'owner' },
+    ...recipientUserIds.map(userId => ({ userId, role: 'member' as const })),
+  ])
   await query.commit()
   return conversation
 }
@@ -128,31 +125,23 @@ export async function createConversationMessage(
   provenance: ContentProvenance,
   conversationId: string,
   bodyText: string,
+  options?: { observedTime?: Date | null },
 ): Promise<DirectMessage> {
-  // CTE atomically guards participant membership, inserts message, and records conversation activity.
-  const { rows } = await write(sql`/* createConversationMessage */
-    WITH participant_check AS (
-      SELECT 1 FROM conversation_participants
-      WHERE conversation_id = ${conversationId}
-        AND user_id = ${currentUserId}
-        AND removed_at IS NULL
-    ),
-    new_message AS (
-      INSERT INTO conversation_messages (
-        conversation_id, kind, body_text, created_by_id, created_via, created_via_oauth_client_id
-      )
-      SELECT ${conversationId}, 'message', ${bodyText}, ${currentUserId},
-        ${provenance.createdVia}, ${provenance.oauthClientId}
-      WHERE EXISTS (SELECT 1 FROM participant_check)
-      RETURNING id, conversation_id, body_text, created_by_id, created_at, updated_at, deleted_at
-    ),
-    touch_conversation AS (
-      UPDATE conversations SET last_activity_at = CURRENT_TIMESTAMP
-      WHERE id = ${conversationId} AND EXISTS (SELECT 1 FROM participant_check)
-    )
-    SELECT * FROM new_message
-  `)
-  const message = rows[0] as DirectMessage | undefined
+  assertObservedTime(options?.observedTime)
+  // Direct messages keep the single-statement participant check. A staff-only miss admits
+  // a live owner or moderator in a later transaction, then inserts the message there.
+  const { rows } = await write(
+    conversationMessageInsert(currentUserId, provenance, conversationId, bodyText),
+  )
+  const message =
+    (rows[0] as DirectMessage | undefined) ??
+    (await createModInternalMessageForLiveStaff(
+      currentUserId,
+      provenance,
+      conversationId,
+      bodyText,
+      options?.observedTime,
+    ))
   if (!message) throw createHttpError(403, 'Not a participant')
 
   await awaitReportedEnqueueAdmission(() =>
@@ -160,4 +149,11 @@ export async function createConversationMessage(
   )
 
   return message
+}
+
+function assertObservedTime(observedTime: Date | null | undefined): void {
+  if (observedTime == null) return
+  if (!Number.isFinite(observedTime.getTime())) {
+    throw new RangeError('Moderation vacation clock must return a valid Date')
+  }
 }

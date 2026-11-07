@@ -3738,6 +3738,9 @@ importers:
       '@services/community-agent-prompts':
         specifier: workspace:^
         version: link:../services/community-agent-prompts
+      '@services/community-member-vacations':
+        specifier: workspace:^
+        version: link:../services/community-member-vacations
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../services/conversations-messages
@@ -6441,6 +6444,9 @@ importers:
       '@services/memberships':
         specifier: workspace:^
         version: link:../memberships
+      '@services/messaging':
+        specifier: workspace:^
+        version: link:../messaging
       '@services/moderation':
         specifier: workspace:^
         version: link:../moderation
@@ -8171,6 +8177,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -8186,6 +8195,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
+      '@services/community-member-vacations':
+        specifier: workspace:^
+        version: link:../community-member-vacations
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -8210,6 +8222,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8591,9 +8606,12 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@services/entity-cache':
+      '@services/community-member-vacations':
         specifier: workspace:^
-        version: link:../entity-cache
+        version: link:../community-member-vacations
+      '@services/messaging':
+        specifier: workspace:^
+        version: link:../messaging
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../moderation-reports
@@ -8693,9 +8711,9 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
-      '@services/entity-cache':
+      '@services/messaging':
         specifier: workspace:^
-        version: link:../entity-cache
+        version: link:../messaging
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -14582,6 +14600,9 @@ importers:
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
+      '@services/moderation-threads':
+        specifier: workspace:^
+        version: link:../../services/moderation-threads
       '@services/modmail':
         specifier: workspace:^
         version: link:../../services/modmail
