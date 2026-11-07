@@ -1,5 +1,12 @@
 import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visibility-config'
 import type { BasicUser } from '@services/users/types'
+import {
+  BANK_ACCOUNT_RESULTS,
+  CREDIT_CARD_RESULTS,
+  CREDIT_SCORE_RANGES,
+  DATA_POINT_VERTICALS,
+} from '@ts-shared/data-points'
+import { VALID_FILTERABLE_POST_TYPES } from '@ts-shared/feed-capabilities'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PostSearchOptions } from '../types.mts'
 import { buildPostHasHackerNewsReferences } from '@modules/feed-query-builders'
@@ -57,34 +64,47 @@ export function appendPostSearchWhereClause(
 }
 
 // A generic prepared plan only proves a partial index predicate when the leading
-// equality is a constant. These closed values are the story and data-point indexes.
-const POST_TYPE_LITERALS: Readonly<Record<string, () => SQLStatement>> = {
-  story: () => sql`posts.post_type = 'story'::post_types`,
-  data_point: () => sql`posts.post_type = 'data_point'::post_types`,
+// equality is a constant. The literals are the enum values, so a new member cannot
+// fall through to a parameter.
+const CLOSED_LITERAL = /^[a-z0-9]+(?:[_-][a-z0-9]+)*$/
+
+function quoteClosedLiteral(value: string): string {
+  if (!CLOSED_LITERAL.test(value)) throw new Error(`Closed filter value is not a SQL literal`)
+  return `'${value}'`
 }
 
-const VERTICAL_LITERALS: Readonly<Record<string, () => SQLStatement>> = {
-  credit_card: () => sql`posts.data_point_vertical = 'credit_card'`,
-  bank_account: () => sql`posts.data_point_vertical = 'bank_account'`,
+function closedLiterals(
+  values: readonly string[],
+  predicate: (quoted: string) => string,
+): Readonly<Record<string, () => SQLStatement>> {
+  return Object.fromEntries(
+    values.map(value => {
+      const quoted = quoteClosedLiteral(value)
+      return [value, () => sql``.append(predicate(quoted))]
+    }),
+  )
 }
 
-const RESULT_LITERALS: Readonly<Record<string, () => SQLStatement>> = {
-  approved: () => sql`posts.structured_data->>'result' = 'approved'`,
-  denied: () => sql`posts.structured_data->>'result' = 'denied'`,
-  pending: () => sql`posts.structured_data->>'result' = 'pending'`,
-  counter_offer: () => sql`posts.structured_data->>'result' = 'counter_offer'`,
-  retention_offer: () => sql`posts.structured_data->>'result' = 'retention_offer'`,
-  sign_up_bonus: () => sql`posts.structured_data->>'result' = 'sign_up_bonus'`,
-  offer: () => sql`posts.structured_data->>'result' = 'offer'`,
+function optionValues(...groups: ReadonlyArray<readonly { value: string }[]>): readonly string[] {
+  return [...new Set(groups.flatMap(group => group.map(option => option.value)))]
 }
 
-const CREDIT_SCORE_LITERALS: Readonly<Record<string, () => SQLStatement>> = {
-  '300-579': () => sql`posts.structured_data->>'credit_score_range' = '300-579'`,
-  '580-669': () => sql`posts.structured_data->>'credit_score_range' = '580-669'`,
-  '670-739': () => sql`posts.structured_data->>'credit_score_range' = '670-739'`,
-  '740-799': () => sql`posts.structured_data->>'credit_score_range' = '740-799'`,
-  '800-850': () => sql`posts.structured_data->>'credit_score_range' = '800-850'`,
-}
+const POST_TYPE_LITERALS = closedLiterals(
+  VALID_FILTERABLE_POST_TYPES,
+  quoted => `posts.post_type = ${quoted}::post_types`,
+)
+const VERTICAL_LITERALS = closedLiterals(
+  optionValues(DATA_POINT_VERTICALS),
+  quoted => `posts.data_point_vertical = ${quoted}`,
+)
+const RESULT_LITERALS = closedLiterals(
+  optionValues(CREDIT_CARD_RESULTS, BANK_ACCOUNT_RESULTS),
+  quoted => `posts.structured_data->>'result' = ${quoted}`,
+)
+const CREDIT_SCORE_LITERALS = closedLiterals(
+  optionValues(CREDIT_SCORE_RANGES),
+  quoted => `posts.structured_data->>'credit_score_range' = ${quoted}`,
+)
 
 function closedFilter(
   value: string,

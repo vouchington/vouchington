@@ -7,6 +7,9 @@ export type PostSearchSort = 'new' | 'best' | 'hot' | 'relevance' | 'following_n
 // Result type for post search responses
 export type PostSearchResult = PaginatedResult<'post'> & {
   post_type: string
+  title?: string
+  data_point_vertical?: string | null
+  structured_data?: unknown
 }
 
 type PostSearchFilterOptions = {
@@ -97,6 +100,8 @@ type PostSearchPaginationOptions =
 type PostSearchQueryOptions = {
   // Pre-computed embedding for semantic search (computed before SQL)
   semanticSearchEmbedding?: number[]
+  // Data-point search returns title, vertical, and structured_data from this read.
+  hydrateDataPointPage?: boolean
   // Internal cursor parameters (decoded from 'after', used by query builder)
   id_lt?: string
   vote_score_lt?: number

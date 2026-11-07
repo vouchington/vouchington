@@ -1,6 +1,5 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import { getPostIds } from '@services/posts/search/get-ids'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import {
@@ -76,7 +75,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         after: {
           type: 'string',
           description:
-            'Opaque cursor. Pass page_info.end_cursor from the previous response with the same filters while has_next_page is true, including when that page is empty. Stop when has_next_page is false.',
+            'Opaque cursor. Pass page_info.end_cursor from the previous response with the same filters while has_next_page is true. Stop when has_next_page is false.',
         },
       },
       required: [],
@@ -120,32 +119,30 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           data_point_vertical: args.vertical,
           data_point_result: args.result,
           data_point_credit_score_range: args.credit_score_range,
+          hydrateDataPointPage: true,
           limit,
           after: args.after,
         }),
       )
       if (!page) return INVALID_CURSOR_RESULT
 
-      const posts = await getPostByAnyCachedBatch(page.results.map(result => result.id))
-      const byId = new Map(posts.flatMap(post => (post ? [[post.id, post] as const] : [])))
       const sanitizedResults = await Promise.all(
-        page.results.flatMap(result => {
-          const post = byId.get(result.id)
-          if (!post) return []
+        page.results.map(result => {
+          if (result.title === undefined) {
+            throw new Error(`Data-point search row ${result.id} was not hydrated`)
+          }
           const structuredData =
-            post.structured_data &&
-            typeof post.structured_data === 'object' &&
-            !Array.isArray(post.structured_data)
-              ? (post.structured_data as Record<string, unknown>)
+            result.structured_data &&
+            typeof result.structured_data === 'object' &&
+            !Array.isArray(result.structured_data)
+              ? (result.structured_data as Record<string, unknown>)
               : {}
-          return [
-            sanitizePromptInjection(post.title, { isTitle: true }).then(title => ({
-              id: post.id,
-              title,
-              data_point_vertical: post.data_point_vertical ?? null,
-              structured_data: structuredData,
-            })),
-          ]
+          return sanitizePromptInjection(result.title, { isTitle: true }).then(title => ({
+            id: result.id,
+            title,
+            data_point_vertical: result.data_point_vertical ?? null,
+            structured_data: structuredData,
+          }))
         }),
       )
 
