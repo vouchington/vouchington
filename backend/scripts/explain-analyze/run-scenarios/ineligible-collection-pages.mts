@@ -163,20 +163,32 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
       throw new Error('Import source did not fill from eligible memberships')
   })
 
-  for (const sort of ['newest', 'best'] as const) {
-    await captureFilled(
-      `collection-relation-${sort}-ineligible-page`,
-      'relation__post__related__post',
-      [],
-      async () => {
-        const page = await getEntityRelationsPage('post', ids.subjectPostId, 'related', 'post', {
-          viewer: relationViewer,
-          sort,
-          limit: LIMIT,
-        })
-        return { length: page.results.length, hasNextPage: page.hasNextPage }
-      },
-      RELATION_MEMBERSHIP_SCAN,
-    )
-  }
+  await captureFilled(
+    'collection-relation-newest-ineligible-page',
+    'relation__post__related__post',
+    [],
+    async () => {
+      const page = await getEntityRelationsPage('post', ids.subjectPostId, 'related', 'post', {
+        viewer: relationViewer,
+        sort: 'newest',
+        limit: LIMIT,
+      })
+      return { length: page.results.length, hasNextPage: page.hasNextPage }
+    },
+    RELATION_MEMBERSHIP_SCAN,
+  )
+  await captureFilled(
+    'collection-relation-best-ineligible-page',
+    'relation__post__related__post',
+    [],
+    async () => {
+      const page = await getEntityRelationsPage('post', ids.subjectPostId, 'related', 'post', {
+        viewer: relationViewer,
+        sort: 'best',
+        limit: LIMIT,
+      })
+      return { length: page.results.length, hasNextPage: page.hasNextPage }
+    },
+    RELATION_MEMBERSHIP_SCAN,
+  )
 }
