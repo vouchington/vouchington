@@ -2613,6 +2613,7 @@
     importSpecifier: '@data-stores/psql'
     executorFactoryNames: [beginTransaction, beginBoundedTransaction]
     executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+    extraExecutorNames: [readPool, writePool]
     include:
       - backend/**/*.{ts,mts}
     exclude:
