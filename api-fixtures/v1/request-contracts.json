@@ -48301,15 +48301,8 @@
       "body": {
         "additionalProperties": false,
         "properties": {
-          "amount_minor_units": {
-            "maximum": 9007199254740991,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "currency_code": {
-            "maxLength": 3,
-            "minLength": 3,
-            "type": "string"
+          "amount": {
+            "$ref": "#/components/schemas/Money"
           },
           "period_ends_at": {
             "format": "date-time",

@@ -1,6 +1,7 @@
 import { createPaginationParser } from '@modules/pagination'
 import { createCodedError } from '@vouchington/sentry'
 import { INVALID_INPUT, NOT_FOUND } from '@modules/on-error/error-codes'
+import type { Money } from '@ts-shared/money'
 import { isAdminUser } from '@services/users'
 import {
   getStripePurchaseCollisionReview,
@@ -31,9 +32,8 @@ const reviewPagination = createPaginationParser({
 })
 
 type DispositionBody = {
-  amount_minor_units?: number
+  amount?: Money
   stripe_price_id?: string
-  currency_code?: string
   period_started_at?: string
   period_ends_at?: string
 }
@@ -73,22 +73,23 @@ app
     await requireAuthAndRateLimit(ctx, isAdminUser, DISPOSE)
     const reviewId = validateUUIDParam(ctx, 'id')
     const body = await parseJsonBody<DispositionBody>(ctx)
-    if (body.amount_minor_units !== undefined) {
-      if (typeof body.amount_minor_units !== 'number')
+    if (body.amount !== undefined) {
+      const minorUnits = body.amount?.amount
+      if (typeof minorUnits !== 'number')
         throw createCodedError(
           400,
           'Staff reversal amount must be a positive safe integer.',
           INVALID_INPUT,
         )
-      rejectNonPositiveStaffReversalAmount(body.amount_minor_units)
+      rejectNonPositiveStaffReversalAmount(minorUnits)
     }
     validateRequestContract(ctx, DISPOSE, { path: ctx.params, body })
     ctx.json(
       await disposeStripePurchaseCollisionReview({
         reviewId,
-        amountMinorUnits: body.amount_minor_units,
+        amountMinorUnits: body.amount?.amount,
         stripePriceId: body.stripe_price_id,
-        currencyCode: body.currency_code,
+        currencyCode: body.amount?.currency,
         periodStartedAt: optionalDate(body.period_started_at),
         periodEndsAt: optionalDate(body.period_ends_at),
       }),

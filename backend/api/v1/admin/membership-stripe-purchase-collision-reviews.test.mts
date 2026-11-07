@@ -120,7 +120,7 @@ describe('admin Stripe purchase collision reviews', () => {
     await request.authenticateAs(admin)
     await request
       .post(`${LIST}/${seeded.review.id}/disposition`)
-      .send({ ...staffBody(seeded), amount_minor_units: 0 })
+      .send({ ...staffBody(seeded), amount: { amount: 0, currency: 'usd' } })
       .expect(400)
     await expect(
       readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
@@ -130,9 +130,8 @@ describe('admin Stripe purchase collision reviews', () => {
 
 function staffBody(seeded: Awaited<ReturnType<typeof seedTestStripePurchaseCollisionReview>>) {
   return {
-    amount_minor_units: 900,
+    amount: { amount: 900, currency: 'usd' },
     stripe_price_id: seeded.stripePriceId,
-    currency_code: 'usd',
     period_started_at: '2025-03-01T00:00:00.000Z',
     period_ends_at: '2025-04-01T00:00:00.000Z',
   }
