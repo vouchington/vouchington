@@ -55,7 +55,6 @@ export const getPostMetricsByAnyBatch = async (
       count: {
         descendants: Number(metricsData.count__descendants) || 0,
         children: Number(metricsData.count__children) || 0,
-        ancestors: Number(metricsData.count__ancestors) || 0,
       },
       updated_at: metricsData.updated_at,
       bookmarks: {
@@ -72,7 +71,7 @@ type NormalizedInput = { value: string; isId: boolean; index: number }
 
 function buildPostMetricsBatchQuery(idInputs: NormalizedInput[], slugInputs: NormalizedInput[]) {
   const query = sql`/* getPostMetricsByAnyBatch */
-    WITH RECURSIVE id_input AS (
+    WITH id_input AS (
       SELECT unnest(${idInputs.map(i => i.value)}::uuid[]) AS input_value,
              unnest(${idInputs.map(i => i.index)}::int[]) AS input_order
     ),
@@ -130,38 +129,12 @@ function buildPostMetricsBatchQuery(idInputs: NormalizedInput[], slugInputs: Nor
   query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
   query.append(sql`
       GROUP BY requested.id
-    ),
-    ancestor_chain AS (
-      SELECT requested.id AS requested_id, post.parent_post_id AS ancestor_id
-      FROM requested_posts requested
-      JOIN posts post ON post.id = requested.id
-      WHERE post.post_type = 'comment'
-        AND post.parent_post_id IS NOT NULL
-
-      UNION ALL
-
-      SELECT chain.requested_id, parent.parent_post_id
-      FROM ancestor_chain chain
-      JOIN posts parent ON parent.id = chain.ancestor_id
-      WHERE parent.post_type = 'comment'
-        AND parent.parent_post_id IS NOT NULL
-    ),
-    ancestor_counts AS (
-      SELECT chain.requested_id AS id, COUNT(*)::bigint AS count
-      FROM ancestor_chain chain
-      JOIN posts candidate_post ON candidate_post.id = chain.ancestor_id
-      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-      WHERE `)
-  query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
-  query.append(sql`
-      GROUP BY chain.requested_id
     )
     SELECT
       cp.id,
       cp.input_order,
       COALESCE(descendant_metrics.count, 0)::bigint AS count__descendants,
       COALESCE(child_metrics.count, 0)::bigint AS count__children,
-      COALESCE(ancestor_counts.count, 0)::bigint AS count__ancestors,
       COALESCE(follow_counts.count, 0)::bigint AS bookmarks__follow,
       COALESCE(save_counts.count, 0)::bigint AS bookmarks__save,
       GREATEST(
@@ -172,7 +145,6 @@ function buildPostMetricsBatchQuery(idInputs: NormalizedInput[], slugInputs: Nor
     FROM combined_posts cp
     LEFT JOIN descendant_metrics ON descendant_metrics.id = cp.id
     LEFT JOIN child_metrics ON child_metrics.id = cp.id
-    LEFT JOIN ancestor_counts ON ancestor_counts.id = cp.id
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::bigint AS count
       FROM relation__user__follow__post relation

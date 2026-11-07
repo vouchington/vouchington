@@ -44,7 +44,7 @@ export function completePostMetrics(postId: string, index: number) {
   return {
     __entity_type: 'post_metrics',
     id: postId,
-    count: { descendants: index + 1, children: index, ancestors: index + 2 },
+    count: { descendants: index + 1, children: index },
     updated_at: timestamp,
     bookmarks: { follow: 0, save: 0 },
   }

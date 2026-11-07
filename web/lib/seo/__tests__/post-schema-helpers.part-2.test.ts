@@ -32,7 +32,6 @@ describe('post-schema-helpers', () => {
         count: {
           descendants: 15,
           children: 10,
-          ancestors: 2,
         },
         updated_at: '2026-03-01T00:00:00.000Z',
         bookmarks: {
@@ -63,7 +62,6 @@ describe('post-schema-helpers', () => {
         count: {
           descendants: 15,
           children: 10,
-          ancestors: 2,
         },
         updated_at: '2026-03-01T00:00:00.000Z',
         bookmarks: {
@@ -94,7 +92,6 @@ describe('post-schema-helpers', () => {
         count: {
           descendants: 0,
           children: 0,
-          ancestors: 0,
         },
         updated_at: '2026-03-01T00:00:00.000Z',
         bookmarks: {

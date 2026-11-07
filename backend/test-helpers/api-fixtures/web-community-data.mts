@@ -163,7 +163,7 @@ export const communityPostsBody = {
       __entity_type: 'post_metrics',
       id: communityPost.id,
       bookmarks: { follow: 1, save: 0 },
-      count: { ancestors: 0, children: 0, descendants: 0 },
+      count: { children: 0, descendants: 0 },
       updated_at: timestamp,
     },
   },
