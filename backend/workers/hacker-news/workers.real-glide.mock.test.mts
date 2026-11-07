@@ -20,6 +20,7 @@ import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { MockAgent, withMockAgentDefaultFetchForTest } from '@voucha/test-helpers/provider-http'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { heartbeat } from '@workers/heartbeat/workers'
+import { write } from '@data-stores/psql'
 import recording from '../../services/urls/hacker-news-algolia-recording.json' with { type: 'json' }
 import { hackerNews } from './workers.mts'
 
@@ -41,6 +42,7 @@ describe('Hacker News lookup worker', () => {
     expect(hackerNewsQueueConfig.defaultFields.lookups_enabled).toBe(true)
     const row = await insertTestUrlDirect(null, `${recording.query}?utm_source=${randomUUID()}`)
     if (!row) throw new Error('Expected a test URL')
+    await forgetLookup(row.id)
     const neverAdmitted = randomUUID()
     const runAt = new Date(Date.now() + 2500).toISOString()
     const refreshId = `hacker-news-refresh__${row.id}__${Buffer.from(runAt).toString('base64url')}`
@@ -102,6 +104,7 @@ describe('Hacker News lookup worker', () => {
     const url = `${recording.query}?utm_source=${randomUUID()}`
     const row = await insertTestUrlDirect(null, url)
     if (!row) throw new Error('Expected a test URL')
+    await forgetLookup(row.id)
     const agent = new MockAgent()
     agent.disableNetConnect()
     const pool = agent.get('https://hn.algolia.com')
@@ -219,4 +222,11 @@ function completion(worker: Worker, id?: string) {
     forId,
     stop: () => worker.off('completed', onCompleted),
   }
+}
+
+/** Tracking params collapse into one stored row, so earlier runs can leave lookup state behind. */
+async function forgetLookup(urlId: string) {
+  await write('/* forgetHackerNewsLookup */ DELETE FROM url_hacker_news_totals WHERE url_id = $1', [
+    urlId,
+  ])
 }
