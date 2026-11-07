@@ -15,7 +15,7 @@ const SMOKE_TIMEOUT_MS = 5_000
 // Runs inside the worker-io CLI image and from the host smoke test. `sort -u`
 // and `comm` go through the typed wrapper, and TMPDIR must be writable because
 // GNU sort spills there.
-async function runWorkerIoCliSmoke(): Promise<void> {
+export async function runWorkerIoCliSmoke(): Promise<void> {
   const root = process.env.TMPDIR
   if (root === undefined || root.length === 0) {
     throw new Error('TMPDIR must point at writable ephemeral storage')

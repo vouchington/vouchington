@@ -73,20 +73,10 @@ if [ "$JOB_DONE" = false ]; then
 fi
 echo "✓ Heartbeat job completed"
 
-# worker-io is the IO-only image: the compile script fails the image build when its
-# executable bundles sharp or vurst-ai, and this checks that none of their shared
-# libraries (libvips, onnxruntime) ship beside it. A separate container reads the
-# directory with the base image's Node, so it does not compete with the running worker.
-WORKER_IO_LIBRARIES=$(docker run --rm --entrypoint /nodejs/bin/node "$IMAGE" -e \
-  'process.stdout.write(require("node:fs").readdirSync("/app/backend/lib").sort().join(" "))')
-if [ "$WORKER_IO_LIBRARIES" != "libduckdb.so" ]; then
-  echo "✗ Worker-io ships shared libraries beyond libduckdb.so (should be IO-only): $WORKER_IO_LIBRARIES"
-  exit 1
-fi
-echo "✓ Worker-io ships only libduckdb.so"
+# The image command also checks that worker-io ships only libduckdb.so.
 # The executable runs embedded native addons from temporary copies in TMPDIR, so that
 # directory must be writable by the nonroot user the image runs as.
-docker exec "$WORKER_CONTAINER" /nodejs/bin/node -e 'const fs=require("node:fs");const dir=process.env.TMPDIR;if(process.getuid()!==65532)throw new Error("not uid 65532");fs.accessSync(dir,fs.constants.W_OK);const addons=fs.readdirSync(dir).filter(name=>name.startsWith(".bun-65532-")&&name.endsWith(".node"));if(addons.length===0)throw new Error("no embedded native addon extracted to "+dir);console.log("✓ "+addons.length+" native addons extracted to "+dir+" as uid 65532")'
+docker exec "$WORKER_CONTAINER" /app/backend/worker-io image-smoke.mts io
 # NODE_ENV=test skips the signal handlers; prove a deployed-mode boot and a clean stop.
 "$GITHUB_ACTION_PATH/deployed-boot-smoke.sh" "$IMAGE" "Workers: workers loaded." \
   -e QUEUES="$WORKER_QUEUE_EXCLUDES"

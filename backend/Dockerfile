@@ -39,7 +39,7 @@ RUN set -- /usr/lib/*-linux-gnu/libssl.so.3 && \
 # nodejs26-debian13 uses Debian trixie (glibc 2.40), matching base-node, so
 # @glidemq/speedkey's prebuilt native binary (__isoc23_sscanf, added in glibc 2.38) works.
 # The executables don't use its Node. The ECS health check runs /nodejs/bin/node -e fetch(...)
-# (/nodejs/bin is NOT on PATH), and the worker CLI smoke stages run the typed wrapper with it.
+# until infrastructure switches to the supported healthcheck.mts executable command.
 FROM ghcr.io/vouchington/dependency-distroless-nodejs:nonroot@sha256:96455baef11b178fc135b32206e3922c515dbed2400676c94f907f8f84e6abf6 AS runtime-base
 COPY --from=openssl-overlay /distroless-openssl/ /
 
@@ -141,7 +141,7 @@ ENV LOCALIZATION_SQLITE_PATH=/app/localization/catalog.sqlite
 EXPOSE 3000
 
 # No HEALTHCHECK here — add one in your orchestration layer:
-#   ECS task definition: healthCheck.command (use /nodejs/bin/node — /nodejs/bin is not on PATH)
+#   ECS task definition: ["CMD", "/app/backend/api", "healthcheck.mts"]
 #   Kubernetes:          livenessProbe / readinessProbe
 #   Docker Compose:      healthcheck: section
 #   docker run:          --health-cmd
@@ -189,10 +189,10 @@ RUN set -eu; \
 # typed wrapper. The bake plan builds this target with the backend images.
 FROM runtime-base AS worker-io-cli-smoke
 COPY --from=worker-io-cli /worker-io-cli/ /
+COPY --from=builder --chown=65532:65532 /out/worker-io /app/backend/worker-io
 ENV TMPDIR=/tmp
 WORKDIR /app
-COPY --chown=65532:65532 backend/modules/child-process/index.mts backend/modules/child-process/command-failed-error.mts backend/modules/child-process/run-command.mts backend/modules/child-process/run-command-process.mts backend/modules/child-process/image-smoke.mts /app/
-RUN ["/nodejs/bin/node", "/app/image-smoke.mts"]
+RUN ["/app/backend/worker-io", "cli-smoke.mts"]
 
 # Stage 2b: Production runtime — CPU worker (Rust NAPI, sharp).
 # Lightpanda browser crawling connects to Lightpanda's cloud CDP endpoint over
@@ -228,8 +228,7 @@ CMD ["serve.mts"]
 # through the typed wrapper. It inherits the CLI tree and TMPDIR from worker-cpu.
 FROM worker-cpu AS worker-cpu-cli-smoke
 WORKDIR /app
-COPY --chown=65532:65532 backend/modules/child-process/index.mts backend/modules/child-process/command-failed-error.mts backend/modules/child-process/run-command.mts backend/modules/child-process/run-command-process.mts backend/modules/child-process/image-smoke.mts /app/
-RUN ["/nodejs/bin/node", "/app/image-smoke.mts"]
+RUN ["/app/backend/worker-cpu", "cli-smoke.mts"]
 
 # Stage 2c: Production runtime — IO worker (IO-only).
 # Sized for a 256 CPU / 512 MiB Fargate task (4 libuv threads).

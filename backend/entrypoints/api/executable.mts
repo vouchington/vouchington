@@ -5,6 +5,11 @@ import { selectExecutableEntrypoint } from '@modules/utils/executable-entrypoint
 
 /* v8 ignore start -- process entrypoint exercised by the compiled image smoke tests. */
 const ENTRYPOINTS: Record<string, () => Promise<unknown>> = {
+  'image-smoke.mts': async () => {
+    const { checkImageRuntime } = await import('@modules/utils/image-smoke')
+    checkImageRuntime()
+  },
+  'healthcheck.mts': () => import('./healthcheck.mts'),
   'migrate.mts': () => import('./migrate.mts'),
   'schema-reset.mts': () => import('./schema-reset.mts'),
   'serve.mts': () => import('./serve.mts'),
