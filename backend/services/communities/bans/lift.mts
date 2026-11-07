@@ -43,7 +43,7 @@ export async function liftCommunityBan(
   // untouched and are not mislabeled as manually lifted.
   await write(
     sql`/* liftCommunityBan */
-    -- no-mistakes-disable-next-line postgres-bounded-statements: lifting a community ban must lift every currently active ban for this user in the same transaction after checking all issuers; active-ban count is uncapped, so a LIMIT would leave the user banned.
+    -- no-mistakes-disable-next-line postgres-bounded-statements: update through partial index idx_community_bans__lookup (community_id, user_id) WHERE lifted_at IS NULL, so it touches only the unlifted bans of one user in one community; each row is a separate moderator ban action and no write cap exists, but a lift must clear every active ban in one transaction after checking all issuers, and a LIMIT would leave the user banned.
     UPDATE community_bans
     SET lifted_at = CURRENT_TIMESTAMP, lifted_by_id = ${currentUser.id}
     WHERE community_id = ${communityId}

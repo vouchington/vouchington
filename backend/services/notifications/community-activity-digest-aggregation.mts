@@ -11,7 +11,7 @@ export async function aggregateCommunityActivityDigestBatch(input: {
   windowEndId: string
 }): Promise<Array<CommunityActivityDigestCounts & { user_id: string }>> {
   const now = input.now ?? new Date()
-  // no-mistakes-disable-next-line postgres-bounded-statements: the recipient page needs complete weekly activity and pending-review totals for every eligible community; memberships are capped per user, but the weekly activity rows in each community have no cap, and a LIMIT would undercount the digest.
+  // no-mistakes-disable-next-line postgres-bounded-statements: the read is keyed by the recipient page (cm.user_id = ANY(recipientIds)) and the eligible active memberships of each recipient (at most communities_per_user, default 1000 and hard maximum 10000 from COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES in entity-cache/community-memberships.mts:21, enforced at admission by communities/membership-limits.mts); the activity aggregates read only the UUIDv7 id window [windowStartId, windowEndId) of the digest week, and totals must be complete, so a LIMIT would undercount the digest.
   const { rows } = await read<CommunityActivityDigestCounts & { user_id: string }>(sql`
     /* aggregateCommunityActivityDigestBatch */
     WITH eligible AS (

@@ -2680,7 +2680,26 @@
     schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
     include: ['backend/**/*.{ts,mts,js}']
     exclude: ['**/*.test.*', '**/__tests__/**', '**/test-helpers/**', 'backend/scripts/**']
+    allow:
+      - object: table:countries
+        reason: 'ISO 3166-1 alpha-2 catalogue; code is UNIQUE with CHECK ^[A-Z]{2}$ (0000-00-00-core-functions-sites.sql), so at most 676 rows'
+      - object: table:membership_products
+        reason: 'plan catalogue; idx_membership_products__active_plan_interval is unique on (plan, billing_interval) for active rows, so active rows are bounded by the plan and billing_interval enums and retired rows are staff-only history'
+      - object: table:domain_blocklist_sources
+        reason: 'configuration-seeded catalogue (config-driven/0050-00-01-seed-blacklist-sources.mts seeds the BLACKLISTS constant); name is UNIQUE and staff add sources only by code change'
+      - object: table:referral_program_link_validation_rule_sets
+        reason: 'staff-curated catalogue written only by staff routes and the admin topic CSV import (backend/services/admin-imports/process-topic-row-referral.mts), never by user content; NO write cap exists on rule sets per program or in total, so growth is bounded only by staff data entry, and link validation reads every enabled rule set of one program per call'
+      - object: table:referral_program_link_validation_rules
+        reason: 'staff-curated catalogue written only by staff routes and the admin topic CSV import (backend/services/admin-imports/process-topic-row-referral.mts), never by user content; NO write cap exists on rules per rule set or in total, so growth is bounded only by staff data entry, and link validation reads every enabled rule of one program per call'
+      - object: table:migrations
+        reason: 'migration ledger; one row per file in backend/data-stores/psql/migrations (id is the primary key), written only by the migration runner'
+      - object: table:activitypub_replay_rejection_floors
+        reason: 'singleton; is_singleton is the primary key with CHECK (is_singleton), so the table holds at most one row (0355-00-00-follower-distributions.sql)'
     columnBounds:
+      user_landing_pages.user_id:
+        {
+          reason: 'MAX_LANDING_PAGES = 20 (my/landing-pages/shared.mts:12) is enforced inside the create INSERT (create.mts:37) and pages are hard-deleted (delete.mts), so a user has at most 20 rows',
+        }
       post_images.post_id: { reason: 'a post carries at most 20 attached images' }
       post_images.image_id: { reason: 'an uploaded image attaches to one post' }
       image_placements.post_id: { reason: 'one placement per attached image of a post' }

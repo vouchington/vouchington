@@ -31,7 +31,7 @@ export const finalizeChunksIfCompleteForMany = async (crawlIds: string[]): Promi
     ),
     superseded_crawls AS (
       -- Older crawls lose their chunks below, so their pending marker has no work left.
-      -- no-mistakes-disable-next-line postgres-bounded-statements: completion must clear pending flags on every superseded crawl in the same statement that removes its chunks; older crawl history per URL is uncapped.
+      -- no-mistakes-disable-next-line postgres-bounded-statements: the join is keyed by crawls.url_id for only the URLs completed in this call (updated_crawls) and matches only crawls whose has_pending_embeddings is still true, so in steady state it touches the one just-superseded crawl per URL; crawls per URL are one row per recrawl with no write cap, and the pending flag of each superseded crawl must clear in the same statement that removes its chunks.
       UPDATE crawls
       SET has_pending_embeddings = false
       FROM updated_crawls
@@ -40,7 +40,7 @@ export const finalizeChunksIfCompleteForMany = async (crawlIds: string[]): Promi
         AND crawls.has_pending_embeddings
         AND NOT EXISTS (SELECT 1 FROM updated_crawls newer WHERE newer.crawl_id = crawls.id)
     )
-    -- no-mistakes-disable-next-line postgres-bounded-statements: the embedding-completion statement must delete every chunk belonging to superseded crawls of its completed URLs; neither older crawls nor chunks per crawl have a cardinality cap.
+    -- no-mistakes-disable-next-line postgres-bounded-statements: the join is keyed by old_crawl.url_id for only the URLs completed in this call (updated_crawls) and then probes crawl_chunks by crawl_id, so in steady state it deletes the chunks of the one just-superseded crawl per URL; crawls per URL (one per recrawl) and chunks per crawl (one page) have no write cap, and completion must delete every chunk of every superseded crawl of those URLs.
     DELETE FROM crawl_chunks
     USING updated_crawls, crawls old_crawl
     WHERE old_crawl.url_id = updated_crawls.url_id
