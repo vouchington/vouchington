@@ -11,7 +11,7 @@ export async function verifyTotpCode(
 ): Promise<{ authenticatorId: string } | null> {
   const now = options.now ?? Date.now()
   const query = options.query ?? write
-  const { rows } = await query(sql`/* verifyTotpCode */
+  const { rows } = await query<{ id: string; secret_ciphertext: string }>(sql`/* verifyTotpCode */
     SELECT id, secret_ciphertext
     FROM user_totp_authenticators
     WHERE user_id = ${userId} AND verified_at IS NOT NULL

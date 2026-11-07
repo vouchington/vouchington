@@ -138,7 +138,7 @@ export async function updateProfileLink(
   void enqueueReconcileMediaDeliveryRegistry()
   // For partial updates without url field, fetch the existing url from database
   if (input.url === undefined) {
-    const { rows: urlRows } = await read(sql`/* updateProfileLink */
+    const { rows: urlRows } = await read<{ url: string }>(sql`/* updateProfileLink */
       SELECT u.url
       FROM urls u
       WHERE u.id = ${row.url_id}

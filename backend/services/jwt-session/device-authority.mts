@@ -39,8 +39,8 @@ export async function readSessionDeviceAuthority(
     FROM user_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sid} AND u.deleted_at IS NULL`
   if (lock) statement.append(' FOR UPDATE OF s')
-  const { rows } = await query(statement)
-  const row = (rows[0] as SessionDeviceAuthorityRow | undefined) ?? null
+  const { rows } = await query<SessionDeviceAuthorityRow>(statement)
+  const row = rows[0] ?? null
   if (row?.device_token_binding)
     row.device_token_binding = parseSessionClientBinding(
       row.device_token_binding,

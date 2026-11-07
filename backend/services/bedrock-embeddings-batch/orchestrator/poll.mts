@@ -5,7 +5,13 @@ import { lifecycleColumnForBedrockStatus } from '../derive-status.mts'
 import { cleanupBatchLocks } from './cleanup.mts'
 
 export const processBatch = async (batchId: string): Promise<void> => {
-  const { rows: batchRows } = await read(
+  const { rows: batchRows } = await read<{
+    id: string
+    job_arn: string | null
+    completed_at: Date | null
+    failed_at: Date | null
+    cancelled_at: Date | null
+  }>(
     `/* processBatch */
     SELECT id, job_arn, completed_at, failed_at, cancelled_at
     FROM bedrock_embedding_batches
@@ -27,6 +33,7 @@ export const processBatch = async (batchId: string): Promise<void> => {
     return
   }
 
+  if (persistedBatch.job_arn === null) throw new Error(`Batch has no job ARN: ${batchId}`)
   const batch = await retrieveBedrockBatch(persistedBatch.job_arn)
   const status = batch.status || 'Submitted'
   // Treat unrecognised statuses as failed to prevent indefinite polling

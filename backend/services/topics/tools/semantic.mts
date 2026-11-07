@@ -31,7 +31,7 @@ export async function toolsSearchTopicsSemantic(
     LIMIT ${safeLimit}
   `
 
-  const { rows } = await read(queryStatement)
+  const { rows } = await read<ToolsTopicSearchResult & { similarity_score: number }>(queryStatement)
 
   return rows.map(row => ({
     id: row.id,

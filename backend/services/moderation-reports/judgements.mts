@@ -77,8 +77,8 @@ export async function insertReportJudgement(
     sql` AS entity_id, ${input.entityType}::moderation_report_entity_types AS entity_type`,
   )
 
-  const { rows } = await write(query)
-  return rows[0] as ModerationReportJudgement
+  const { rows } = await write<ModerationReportJudgement>(query)
+  return rows[0]
 }
 
 export async function getLatestJudgementForEntity(
@@ -93,8 +93,8 @@ export async function getLatestJudgementForEntity(
   query.append(fkColumn)
   query.append(sql` = ${entityId}::uuid ORDER BY id DESC LIMIT 1`)
 
-  const { rows } = await read(query)
-  return (rows[0] as ModerationReportJudgement | undefined) ?? null
+  const { rows } = await read<ModerationReportJudgement>(query)
+  return rows[0] ?? null
 }
 
 export async function getLatestJudgementsForEntitiesBatch(
@@ -159,9 +159,9 @@ export async function getLatestJudgementsForEntitiesBatch(
     }),
   )
 
-  const { rows } = await read(query)
+  const { rows } = await read<ModerationReportJudgement>(query)
   const result = new Map<string, ModerationReportJudgement>()
-  for (const row of rows as ModerationReportJudgement[]) {
+  for (const row of rows) {
     result.set(`${row.entity_type}:${row.entity_id}`, row)
   }
   return result

@@ -17,7 +17,7 @@ export const getCommunityCacheKeys = async (...keys: unknown[]): Promise<string[
   if (ids.size > 0) filters.push(`id = ANY($${values.push([...ids])})`)
   if (slugs.size > 0)
     filters.push(`LOWER(slug) = ANY($${values.push([...slugs].map(slug => slug.toLowerCase()))})`)
-  const { rows } = await read(
+  const { rows } = await read<{ id: string; slug: string | null }>(
     `/* getCommunityCacheKeys */
     SELECT id, slug
     FROM communities
@@ -39,7 +39,7 @@ export const getUserCacheKeys = async (...keys: unknown[]): Promise<string[]> =>
   const values = []
   if (ids.size > 0) filters.push(`id = ANY($${values.push([...ids])})`)
   if (slugs.size > 0) filters.push(`LOWER(username) = ANY($${values.push([...slugs])})`)
-  const { rows } = await read(
+  const { rows } = await read<{ id: string; username: string | null }>(
     `/* getUserCacheKeys */
     SELECT id, username
     FROM users
@@ -65,7 +65,7 @@ export const getTopicCacheKeys = async (...keys: unknown[]): Promise<string[]> =
     filters.push(`t.slug = ANY($${slugPosition})`)
     filters.push(`ta.alias = ANY($${slugPosition})`)
   }
-  const { rows } = await read(
+  const { rows } = await read<{ id: string; slug: string; alias: string | null }>(
     `/* getTopicCacheKeys */
     WITH matched_topics AS (
       SELECT DISTINCT t.id, t.slug
@@ -110,7 +110,7 @@ export const getPostCacheKeysWithOptions = async (
   if (slugs.size > 0) filters.push(`slug = ANY($${values.push([...slugs])})`)
 
   const query = options.readOnly === false ? write : read
-  const { rows } = await query(
+  const { rows } = await query<{ post_id: string; slug: string }>(
     `/* getPostCacheKeys */
     SELECT post_id, slug
     FROM post_slugs

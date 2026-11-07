@@ -40,7 +40,7 @@ export async function resolveModerationReport(
     assert(context, 404, 'Report not found')
     if (options.communityId) assert(context.is_in_community_scope, 403, 'Forbidden')
     assert(context.status === 'pending', 409, 'Report is already resolved')
-    const { rows } = await write(
+    const { rows } = await write<ModerationReport>(
       sql`/* resolveModerationReport */
           WITH updated AS (
             UPDATE moderation_reports
@@ -83,7 +83,7 @@ export async function resolveModerationReport(
         `,
       { query },
     )
-    const report = rows[0] as ModerationReport | undefined
+    const report = rows[0]
     assert(report, 409, 'Report is already resolved')
     const [notifications] = await Promise.all([
       createModerationReportReviewedNotification(report.id, { query }),

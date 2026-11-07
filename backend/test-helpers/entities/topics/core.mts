@@ -31,7 +31,7 @@ export async function insertTestTopic(data: {
   const allowReviews = data.allowReviews ?? true
   const hostnameId = data.hostnameId === undefined ? null : data.hostnameId
   const aliases = data.aliases ?? []
-  const { rows } = await write(sql`/* insertTestTopic */
+  const { rows } = await write<{ id: string }>(sql`/* insertTestTopic */
     INSERT INTO topics (id, name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews, hostname_id, bedrock_nova_multimodal_v1_content_sha256, aliases, created_via, created_via_oauth_client_id)
     VALUES (COALESCE(${data.id ?? null}::uuid, uuidv7()), ${data.name}, ${data.slug}, ${data.createdById}, ${topicType}, ${noindex}, ${allowReviews}, ${hostnameId}, ${embeddingSha256}, ${aliases}, ${data.provenance?.createdVia ?? 'system'}, ${data.provenance?.oauthClientId ?? null})
     RETURNING id
@@ -148,7 +148,7 @@ export async function hasUniqueSlugIndexOnTopics(): Promise<boolean> {
 }
 
 export async function addSpendingCategoryToTopic(topicId: string): Promise<string> {
-  const { rows } = await write(sql`/* addSpendingCategoryToTopic */
+  const { rows } = await write<{ topic_id: string }>(sql`/* addSpendingCategoryToTopic */
     INSERT INTO spending_category_topics (topic_id)
     VALUES (${topicId})
     RETURNING topic_id

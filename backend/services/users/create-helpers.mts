@@ -118,7 +118,7 @@ export const getUser = async ({
 }
 
 async function createUserId(options: QueryOptions, referrerId?: string | null) {
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     sql`/* createUserId */
     INSERT INTO users (referrer_user_id)
     VALUES (${referrerId ?? null})

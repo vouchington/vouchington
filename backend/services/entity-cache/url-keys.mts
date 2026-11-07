@@ -71,7 +71,7 @@ export const getUrlHostnameCacheKeys = async (...keys: unknown[]): Promise<strin
   const values = []
   if (ids.size > 0) filters.push(`id = ANY($${values.push([...ids])})`)
   if (hostnames.size > 0) filters.push(`LOWER(hostname) = ANY($${values.push([...hostnames])})`)
-  const { rows } = await read(
+  const { rows } = await read<{ id: string; hostname: string }>(
     `/* getUrlHostnameCacheKeys */
     SELECT id, hostname
     FROM url_hostnames

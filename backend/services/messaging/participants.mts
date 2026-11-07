@@ -60,7 +60,7 @@ export async function addConversationParticipant(
     throw createHttpError(403, 'Cannot add a blocked or muted user')
   }
 
-  const { rows } = await query(sql`/* addConversationParticipant */
+  const { rows } = await query<ConversationParticipant>(sql`/* addConversationParticipant */
       WITH inserted AS (
         INSERT INTO conversation_participants (conversation_id, user_id, role)
         VALUES (${conversationId}, ${newUserId}, 'member')
@@ -73,7 +73,7 @@ export async function addConversationParticipant(
   await query(sql`/* addConversationParticipant:record_activity */
       UPDATE conversations SET last_activity_at = CURRENT_TIMESTAMP WHERE id = ${conversationId}
     `)
-  const result = rows[0] as ConversationParticipant
+  const result = rows[0]
   await query.commit()
   return result
 }

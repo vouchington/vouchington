@@ -54,7 +54,7 @@ async function rotateApiKeyInTransaction(
     throw createError(409, 'API key is inactive or already replaced')
   }
   const { rawKey, prefix, keyHash } = generateApiKey(old.type)
-  const replacement = await query(sql`/* rotateApiKey */
+  const replacement = await query<ApiKey>(sql`/* rotateApiKey */
     WITH new_key AS (SELECT uuidv7() AS id)
     INSERT INTO api_keys (id, user_id, prefix, key_hash, type, label, scopes, expires_at)
     SELECT new_key.id, user_id, ${prefix}, ${keyHash}, type, label, scopes,
@@ -68,7 +68,7 @@ async function rotateApiKeyInTransaction(
     RETURNING id, user_id, prefix, type, label, scopes::text[] AS permissions, created_at, last_used_at,
       revoked_at, expires_at, replaced_by_api_key_id, expiry_reminder_sent_at, updated_at
   `)
-  const apiKey = replacement.rows[0] as ApiKey
+  const apiKey = replacement.rows[0]
   await query(sql`/* linkRotatedApiKey */
     UPDATE api_keys SET replaced_by_api_key_id = ${apiKey.id}::uuid,
       expires_at = LEAST(expires_at, NOW() + INTERVAL '24 hours')

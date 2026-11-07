@@ -38,8 +38,8 @@ export async function getMyDirectConversations(
   }
   query.append(sql` ORDER BY c.last_activity_at DESC, c.id DESC LIMIT ${limit + 1}`)
 
-  const { rows } = await read(query)
-  return rows as Array<DirectConversation & { cursor_timestamp: string }>
+  const { rows } = await read<DirectConversation & { cursor_timestamp: string }>(query)
+  return rows
 }
 
 export async function getConversationMessages(
@@ -82,8 +82,8 @@ export async function getConversationMessages(
       ORDER BY m.id ASC`
   }
 
-  const { rows } = await read(query)
-  return rows as DirectMessage[]
+  const { rows } = await read<DirectMessage>(query)
+  return rows
 }
 
 export async function getConversationParticipants(
@@ -106,15 +106,17 @@ export async function getConversationParticipants(
     LEFT JOIN view_embedded_users u ON u.id = cp.user_id
     ORDER BY cp.id ASC
   `)
-  const { rows } = await read(query)
-  return rows as ConversationParticipant[]
+  const { rows } = await read<ConversationParticipant>(query)
+  return rows
 }
 
 export async function getConversationForThread(
   currentUserId: string,
   conversationId: string,
 ): Promise<(DirectConversation & { participant_add_policy: 'owner_only' | 'all_members' }) | null> {
-  const { rows } = await read(sql`/* getConversationForThread */
+  const { rows } = await read<
+    DirectConversation & { participant_add_policy: 'owner_only' | 'all_members' }
+  >(sql`/* getConversationForThread */
     SELECT c.id, c.channel_type, c.title, c.created_at, c.created_by_id, c.updated_at,
            c.participant_add_policy
     FROM conversations c
@@ -127,9 +129,5 @@ export async function getConversationForThread(
       AND c.deleted_at IS NULL
     LIMIT 1
   `)
-  return (
-    (rows[0] as
-      | (DirectConversation & { participant_add_policy: 'owner_only' | 'all_members' })
-      | undefined) ?? null
-  )
+  return rows[0] ?? null
 }

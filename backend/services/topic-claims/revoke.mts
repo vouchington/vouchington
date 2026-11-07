@@ -12,7 +12,7 @@ export async function revokeTopicClaim(
 ): Promise<TopicClaim> {
   assert(revocationReason.trim().length > 0, 422, 'revocation_reason is required')
   return runWithTransaction(undefined, async (transaction: TransactionQuery) => {
-    const { rows } = await transaction(sql`/* revokeTopicClaim */
+    const { rows } = await transaction<TopicClaim>(sql`/* revokeTopicClaim */
     UPDATE topic_claims
     SET revoked_at = NOW(),
         revoked_by_id = ${staffUserId},
@@ -28,7 +28,7 @@ export async function revokeTopicClaim(
       verification_hostname_id, verification_token_issued_at,
       domain_verified_at, created_at, updated_at
   `)
-    const updated = rows[0] as TopicClaim | undefined
+    const updated = rows[0]
     assert(updated, 404, 'Claim not found or not verified/already revoked')
     await recordModeratorAction(
       staffUserId,

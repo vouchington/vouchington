@@ -26,7 +26,7 @@ export async function searchTopicsByPostEmbedding(
     LIMIT ${safeLimit}
   `
 
-  const { rows } = await query(queryStatement)
+  const { rows } = await query<{ id: string; name: string }>(queryStatement)
 
   return rows.map(row => ({
     id: row.id,

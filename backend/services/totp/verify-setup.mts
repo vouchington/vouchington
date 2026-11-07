@@ -14,7 +14,13 @@ export async function verifyTotpSetup(
 ): Promise<PublicTotpAuthenticator> {
   return runWithTransaction(options.query, async query => {
     await query(sql`/* verifyTotpSetup */ SELECT fn_lock_active_user_for_mutation(${userId})`)
-    const { rows } = await query(sql`/* verifyTotpSetup */
+    const { rows } = await query<{
+      id: string
+      name: string
+      secret_ciphertext: string
+      verified_at: Date | null
+      created_at: Date
+    }>(sql`/* verifyTotpSetup */
     SELECT id, name, secret_ciphertext, verified_at, created_at
     FROM user_totp_authenticators
     WHERE id = ${authenticatorId} AND user_id = ${userId}

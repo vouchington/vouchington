@@ -56,7 +56,7 @@ export async function setScoredPostTopicCategoryRelationScore(
 }
 
 export async function countPostRelatedTopics(postId: string): Promise<number> {
-  const { rows } = await read(
+  const { rows } = await read<{ count: number }>(
     sql`/* countPostRelatedTopics */ SELECT COUNT(*)::int AS count FROM relation__post__category__topic WHERE subject_id = ${postId}`,
   )
   return rows[0]?.count ?? 0

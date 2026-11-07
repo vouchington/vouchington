@@ -46,7 +46,7 @@ export async function insertTestReview(data: {
 }): Promise<string> {
   const sha256 = `\\x${'0'.repeat(64)}`
   const id = data.createdAt ? uuidv7({ msecs: data.createdAt.getTime() }) : null
-  const { rows: postRows } = await write(
+  const { rows: postRows } = await write<{ id: string }>(
     sql`/* insertTestReviewPost */
     INSERT INTO posts (
       id, post_type, title, markdown, created_by_id,
@@ -75,16 +75,14 @@ export async function insertTestReview(data: {
 }
 
 export async function getTopicRatingsUpdatedAt(topicId: string): Promise<Date | null> {
-  const { rows } = await read(
+  const { rows } = await read<{ ratings__updated_at: Date | null }>(
     sql`/* getTopicRatingsUpdatedAt */
     SELECT ratings__updated_at
     FROM topic_metrics
     WHERE topic_id = ${topicId}
   `,
   )
-  const ratingsUpdatedAt = rows[0]?.ratings__updated_at
-  if (!ratingsUpdatedAt) return null
-  return ratingsUpdatedAt instanceof Date ? ratingsUpdatedAt : new Date(String(ratingsUpdatedAt))
+  return rows[0]?.ratings__updated_at ?? null
 }
 
 export async function setTestTopicRatingsUpdatedAt(

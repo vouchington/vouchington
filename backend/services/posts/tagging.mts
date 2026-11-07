@@ -24,7 +24,7 @@ export async function tagPostWithTopics(
   // destination topic. A slug can only ever belong to one row -- active or merged-away --
   // (topics.slug has a global unique index), so the two branches below never match the
   // same requested slug.
-  const { rows: topics } = await read(
+  const { rows: topics } = await read<{ id: string; slug: string }>(
     `/* tagPostWithTopics */
     SELECT id, slug
     FROM topics

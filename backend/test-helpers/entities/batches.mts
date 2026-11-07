@@ -75,7 +75,7 @@ export const createTestBatch = async (
  * Counts batch entities for a given batch ID
  */
 export const countBatchEntities = async (batchId: string): Promise<number> => {
-  const { rows } = await read(
+  const { rows } = await read<{ count: number }>(
     `/* countBatchEntities */
     SELECT COUNT(*)::int as count
     FROM bedrock_embedding_batch_entities

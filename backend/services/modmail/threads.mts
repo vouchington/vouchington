@@ -10,7 +10,7 @@ export async function openModmailThread(
   subjectUserId: string,
 ): Promise<ModmailThread> {
   await using query = await beginTransaction()
-  const { rows: convRows } = await query(sql`/* openModmailThread */
+  const { rows: convRows } = await query<ModmailThread>(sql`/* openModmailThread */
       INSERT INTO conversations (
         channel_type, title, community_id, subject_user_id, created_by_id
       )
@@ -28,7 +28,7 @@ export async function openModmailThread(
 
   // If no row was returned, an open thread already exists — fetch it.
   if (convRows.length === 0) {
-    const { rows: existingRows } = await query(sql`/* openModmailThread:existing */
+    const { rows: existingRows } = await query<ModmailThread>(sql`/* openModmailThread:existing */
         SELECT
           id, channel_type, title, community_id, subject_user_id,
           assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
@@ -44,9 +44,9 @@ export async function openModmailThread(
     // Race: the conflicting thread was resolved between INSERT and SELECT.
     if (!existingRows[0])
       throw createError(409, 'Modmail thread was resolved concurrently — please try again')
-    thread = existingRows[0] as ModmailThread
+    thread = existingRows[0]
   } else {
-    thread = convRows[0] as ModmailThread
+    thread = convRows[0]
 
     // Add subject user as member participant
     await query(sql`/* openModmailThread:subjectParticipant */
@@ -111,7 +111,7 @@ export async function assignModmailThread(
   conversationId: string,
   modUserId: string,
 ): Promise<ModmailThread | null> {
-  const { rows } = await write(sql`/* assignModmailThread */
+  const { rows } = await write<ModmailThread>(sql`/* assignModmailThread */
     UPDATE conversations
     SET last_activity_at = CURRENT_TIMESTAMP, assigned_moderator_user_id = ${modUserId},
         assigned_at = CURRENT_TIMESTAMP
@@ -123,14 +123,14 @@ export async function assignModmailThread(
       assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
       created_by_id, created_at, updated_at
   `)
-  return (rows[0] as ModmailThread | undefined) ?? null
+  return rows[0] ?? null
 }
 
 export async function resolveModmailThread(
   conversationId: string,
   resolvedBy: string,
 ): Promise<ModmailThread | null> {
-  const { rows } = await write(sql`/* resolveModmailThread */
+  const { rows } = await write<ModmailThread>(sql`/* resolveModmailThread */
     UPDATE conversations
     SET last_activity_at = CURRENT_TIMESTAMP, resolved_at = CURRENT_TIMESTAMP,
         resolved_by_id = ${resolvedBy}
@@ -142,13 +142,13 @@ export async function resolveModmailThread(
       assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
       created_by_id, created_at, updated_at
   `)
-  return (rows[0] as ModmailThread | undefined) ?? null
+  return rows[0] ?? null
 }
 
 export async function unresolveModmailThread(
   conversationId: string,
 ): Promise<ModmailThread | null> {
-  const { rows } = await write(sql`/* unresolveModmailThread */
+  const { rows } = await write<ModmailThread>(sql`/* unresolveModmailThread */
     UPDATE conversations
     SET last_activity_at = CURRENT_TIMESTAMP, resolved_at = NULL,
         resolved_by_id = NULL
@@ -160,5 +160,5 @@ export async function unresolveModmailThread(
       assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
       created_by_id, created_at, updated_at
   `)
-  return (rows[0] as ModmailThread | undefined) ?? null
+  return rows[0] ?? null
 }

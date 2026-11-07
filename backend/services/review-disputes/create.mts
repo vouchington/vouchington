@@ -89,7 +89,9 @@ async function insertReviewDispute(
   const canDispute = await currentUserCanDisputeReviewsOfTopic(currentUser, topicId)
   assert(canDispute, 403, 'You must have a verified claim on this topic to file a dispute')
 
-  const { rows } = await query(sql`/* createReviewDispute */
+  const { rows } = await query<
+    ReviewDispute & { inserted: boolean; ai_draft_request_token: string }
+  >(sql`/* createReviewDispute */
     WITH lifecycle_change_id AS (
       SELECT uuidv7() AS id
     ),
@@ -150,9 +152,7 @@ async function insertReviewDispute(
     FROM upserted
   `)
 
-  const row = rows[0] as
-    | (ReviewDispute & { inserted: boolean; ai_draft_request_token: string })
-    | undefined
+  const row = rows[0]
   assert(row, 500, 'Failed to create dispute')
   const result = { disputeId: row.id, isDuplicate: !row.inserted }
 

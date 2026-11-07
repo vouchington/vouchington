@@ -109,7 +109,7 @@ export async function updateTestUserUiLocale(
 }
 
 export async function countUserRoleAssignments(userId: string, roleSlug: string): Promise<number> {
-  const { rows } = await write(
+  const { rows } = await write<{ count: number }>(
     sql`/* countUserRoleAssignments */
     SELECT COUNT(*)::int AS count
     FROM user_roles ur

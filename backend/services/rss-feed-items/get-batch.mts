@@ -44,7 +44,7 @@ export const getRssFeedItemsByIdBatch = async (
     }
   }
 
-  const { rows } = await read(
+  const { rows } = await read<ViewRssFeedItem>(
     `/* getRssFeedItemsByIdBatch */
     SELECT vrfi.*
     FROM view_rss_feed_items vrfi
@@ -57,7 +57,7 @@ export const getRssFeedItemsByIdBatch = async (
   // Build a map of id -> row for O(1) lookups
   const rowMap = new Map<string, ViewRssFeedItem>()
   for (const row of rows) {
-    rowMap.set(row.id, row as ViewRssFeedItem)
+    rowMap.set(row.id, row)
   }
 
   // Return results in input order with nulls for missing entries

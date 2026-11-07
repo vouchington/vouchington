@@ -152,7 +152,7 @@ export async function getReferralLinksFeed(
     LIMIT ${limit + 1}
   `)
 
-  const { rows } = await read(
+  const { rows } = await read<ReferralLinkFeedRow & Omit<ReferralLinkFeedUserRow, 'id'>>(
     `/* getReferralLinksFeed */
     WITH ${query.text}`,
     query.values,

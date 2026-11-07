@@ -60,10 +60,10 @@ export const getUserBookmarkCounts = async (userId: string) => {
     }
   }
 
-  const { rows } = await read(
-    `/* getUserBookmarkCounts */ \n      SELECT\n${selects.join(' UNION ALL ')}`,
-    [userId],
-  )
+  const { rows } = await read<
+    | { direction: 'bookmarks'; entity_type: string; bookmark_type: string; count: number }
+    | { direction: 'bookmarkers'; entity_type: null; bookmark_type: string; count: number }
+  >(`/* getUserBookmarkCounts */ \n      SELECT\n${selects.join(' UNION ALL ')}`, [userId])
 
   for (const row of rows) {
     if (row.direction === 'bookmarks') {

@@ -101,7 +101,7 @@ export const getDeletedPostByAny = async (
     LIMIT 1
   `)
 
-  const { rows } = await read(query, options)
+  const { rows } = await read<DeletedPostLookup>(query, options)
   const row = rows[0]
   if (!row) return null
 

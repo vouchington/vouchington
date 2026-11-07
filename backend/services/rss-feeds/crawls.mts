@@ -27,7 +27,7 @@ async function insertRssFeedCrawl(params: {
   feed_data_sha256?: Buffer | null
   redirect_url_id?: string | null
 }): Promise<string> {
-  const { rows } = await write(sql`/* insertRssFeedCrawl */
+  const { rows } = await write<{ id: string }>(sql`/* insertRssFeedCrawl */
     INSERT INTO rss_feed_crawls (rss_feed_id, response_code, feed_data, feed_data_sha256, redirect_url_id)
     VALUES (${params.rss_feed_id}, ${params.response_code}, ${params.feed_data ?? null}, ${params.feed_data_sha256 ?? null}, ${params.redirect_url_id ?? null})
     RETURNING id
@@ -43,7 +43,10 @@ export async function getLatestRssFeedCrawlForFeedWithOptions(
   feed_data_sha256: Buffer | null
 } | null> {
   const feedDataColumn = options.includeFeedData ? sql`feed_data` : sql`NULL::jsonb AS feed_data`
-  const { rows } = await read(
+  const { rows } = await read<{
+    feed_data: Record<string, unknown> | null
+    feed_data_sha256: Buffer | null
+  }>(
     sql`/* getLatestRssFeedCrawlForFeed */ SELECT `.append(feedDataColumn)
       .append(sql`, feed_data_sha256
         FROM rss_feed_crawls
@@ -119,7 +122,7 @@ export async function getRssFeedCrawlById(
   rssFeedId: string,
   crawlId: string,
 ): Promise<RssFeedCrawlDetail | null> {
-  const { rows } = await read(
+  const { rows } = await read<RssFeedCrawlDetail>(
     sql`/* getRssFeedCrawlById */ SELECT id, response_code, uuid_extract_timestamp(id) AS created_at,
         feed_data, feed_data_sha256, redirect_url_id
         FROM rss_feed_crawls
@@ -128,21 +131,21 @@ export async function getRssFeedCrawlById(
         LIMIT 1`,
   )
   const row = rows[0]
-  return row ? (row as RssFeedCrawlDetail) : null
+  return row ? row : null
 }
 
 export async function getRssFeedCrawlSummaryById(
   rssFeedId: string,
   crawlId: string,
 ): Promise<RssFeedCrawlSummary | null> {
-  const { rows } = await read(
+  const { rows } = await read<RssFeedCrawlSummary>(
     sql`/* getRssFeedCrawlSummaryById */ SELECT id, response_code, uuid_extract_timestamp(id) AS created_at
         FROM rss_feed_crawls
         WHERE rss_feed_id = ${rssFeedId}
           AND id = ${crawlId}
         LIMIT 1`,
   )
-  return (rows[0] as RssFeedCrawlSummary | undefined) ?? null
+  return rows[0] ?? null
 }
 
 export async function searchRssFeedCrawls(
@@ -161,8 +164,8 @@ export async function searchRssFeedCrawls(
   `
   if (after) query.append(sql` AND id < ${after.id}`)
   query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
-  const { rows } = await read(query)
-  const crawls = rows as RssFeedCrawlSummary[]
+  const { rows } = await read<RssFeedCrawlSummary>(query)
+  const crawls = rows
   const results = crawls.slice(0, limit)
   return {
     results,

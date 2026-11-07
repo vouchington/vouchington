@@ -62,7 +62,7 @@ export async function clearCrawlCompletedAt(urlId: string, crawlId: string): Pro
 }
 
 export async function getLatestCrawlNetworkError(urlId: string): Promise<string | null> {
-  const { rows } = await read(
+  const { rows } = await read<{ network_error: string | null }>(
     sql`/* getLatestCrawlNetworkError */
     SELECT network_error FROM crawls
     WHERE url_id = ${urlId}
@@ -74,7 +74,7 @@ export async function getLatestCrawlNetworkError(urlId: string): Promise<string 
 }
 
 export async function getLatestCrawlStatusCode(urlId: string): Promise<number | null> {
-  const { rows } = await read(
+  const { rows } = await read<{ response_status_code: number | null }>(
     sql`/* getLatestCrawlStatusCode */
     SELECT response_status_code FROM crawls
     WHERE url_id = ${urlId}
@@ -114,7 +114,11 @@ export type LatestCrawlRedirectStatus = {
 export async function getLatestCrawlRedirectStatus(
   urlId: string,
 ): Promise<LatestCrawlRedirectStatus | null> {
-  const { rows } = await read(
+  const { rows } = await read<{
+    response_status_code: number
+    redirect_url_id: string | null
+    network_error: string | null
+  }>(
     sql`/* getLatestCrawlRedirectStatus */
     SELECT response_status_code, redirect_url_id, network_error
     FROM crawls

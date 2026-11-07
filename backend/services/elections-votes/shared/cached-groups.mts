@@ -115,13 +115,15 @@ async function readMissingElectionGroups(
         ON entity.id = input.id`)
     if (config.deletedAtFilter) query.append(' WHERE entity.deleted_at IS NULL')
   })
-  const { rows } = await read(query)
+  const { rows } = await read<ViewBaseElection & { request_index: number; input_position: number }>(
+    query,
+  )
   const results = pending.map(request =>
     new Array<ViewBaseElection | null>(request.ids.length).fill(null),
   )
   for (const row of rows) {
     const { request_index, input_position, ...election } = row
-    results[request_index]![input_position - 1] = election as ViewBaseElection
+    results[request_index]![input_position - 1] = election
   }
   return results
 }

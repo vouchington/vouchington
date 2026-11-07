@@ -105,12 +105,12 @@ export async function searchModeratorActions(
     LIMIT ${limit + 1}
   `)
 
-  const { rows } = await read(query, options)
+  const { rows } = await read<ModeratorAction>(query, options)
 
   const hasNextPage = rows.length > limit
   const results: ModeratorAction[] = []
   for (let i = 0; i < Math.min(rows.length, limit); i++) {
-    results.push(rows[i]! as ModeratorAction)
+    results.push(rows[i]!)
   }
 
   return {

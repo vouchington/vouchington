@@ -27,7 +27,7 @@ export async function resolveReviewDisputeRemove(
 ): Promise<ReviewDisputeResponse> {
   const now = new Date()
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
-    const { rows } = await query(
+    const { rows } = await query<ReviewDisputeResolutionRow>(
       sql`/* resolveReviewDisputeRemove */
       UPDATE review_disputes
       SET resolution_action = 'remove',
@@ -36,7 +36,7 @@ export async function resolveReviewDisputeRemove(
       WHERE id = ${disputeId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(DISPUTE_RETURNING),
     )
-    const row = rows[0] as ReviewDisputeResolutionRow | undefined
+    const row = rows[0]
     if (!row) return rejectUnresolvableDispute(disputeId, { query })
 
     const [, lifecycleId] = await Promise.all([
@@ -88,7 +88,7 @@ export async function resolveReviewDisputeAnnotate(
   const now = new Date()
 
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
-    const { rows: disputeRows } = await query(
+    const { rows: disputeRows } = await query<ReviewDisputeResolutionRow>(
       sql`/* resolveReviewDisputeAnnotate:resolve */
       UPDATE review_disputes
       SET resolution_action = 'annotate',
@@ -97,7 +97,7 @@ export async function resolveReviewDisputeAnnotate(
       WHERE id = ${disputeId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(DISPUTE_RETURNING),
     )
-    const row = disputeRows[0] as ReviewDisputeResolutionRow | undefined
+    const row = disputeRows[0]
     if (!row) return rejectUnresolvableDispute(disputeId, { query })
 
     const [lifecycleId] = await Promise.all([

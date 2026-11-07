@@ -15,7 +15,7 @@ async function insertRssFeedCrawl(params: {
   const feedData = params.feed_data === undefined ? null : params.feed_data
   const feedDataSha256 = params.feed_data_sha256 === undefined ? null : params.feed_data_sha256
   const redirectUrlId = params.redirect_url_id === undefined ? null : params.redirect_url_id
-  const { rows } = await write(sql`/* insertRssFeedCrawl */
+  const { rows } = await write<{ id: string }>(sql`/* insertRssFeedCrawl */
     INSERT INTO rss_feed_crawls (rss_feed_id, response_code, feed_data, feed_data_sha256, redirect_url_id)
     VALUES (${params.rss_feed_id}, ${params.response_code}, ${feedData}, ${feedDataSha256}, ${redirectUrlId})
     RETURNING id

@@ -12,7 +12,12 @@ export interface PendingCrawlEmbed {
 
 export async function getPendingCrawlEmbed(crawlId: string): Promise<PendingCrawlEmbed | null> {
   if (!isUUID(crawlId)) throw createError(422, `Invalid crawl ID: ${crawlId}`)
-  const { rows } = await write(
+  const { rows } = await write<{
+    id: string
+    url_id: string
+    embed_metadata: ResolvedEmbed
+    embed_oembed_url: string
+  }>(
     `/* getPendingCrawlEmbed */
     SELECT id, url_id, embed_metadata, embed_oembed_url
     FROM crawls

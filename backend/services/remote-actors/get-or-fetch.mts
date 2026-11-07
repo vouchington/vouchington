@@ -43,7 +43,7 @@ function getCacheAgeMs(row: RemoteActorRow, now: () => number): number {
 }
 
 export async function getRemoteActorByKeyId(keyId: string): Promise<RemoteActorRow | null> {
-  const { rows } = await read(sql`/* getRemoteActorByKeyId */
+  const { rows } = await read<RemoteActorRow>(sql`/* getRemoteActorByKeyId */
     SELECT actor.id, identity.actor_uri, actor.key_id, actor.public_key_pem,
            actor.inbox_url, actor.shared_inbox_url, actor.fetched_at, actor.created_at,
            actor.updated_at, actor.hostname_id
@@ -53,7 +53,7 @@ export async function getRemoteActorByKeyId(keyId: string): Promise<RemoteActorR
       AND actor.deleted_at IS NULL
     LIMIT 1
   `)
-  return (rows[0] as RemoteActorRow) ?? null
+  return rows[0] ?? null
 }
 
 // DB-only lookup for a previously verified durable inbox checkpoint. Inactive actors are terminal:
@@ -61,7 +61,7 @@ export async function getRemoteActorByKeyId(keyId: string): Promise<RemoteActorR
 export async function getCheckpointedRemoteActorByIdFromPrimary(
   id: string,
 ): Promise<RemoteActorRow | null> {
-  const { rows } = await write(sql`/* getCheckpointedRemoteActorByIdFromPrimary */
+  const { rows } = await write<RemoteActorRow>(sql`/* getCheckpointedRemoteActorByIdFromPrimary */
     SELECT actor.id, identity.actor_uri, actor.key_id, actor.public_key_pem,
            actor.inbox_url, actor.shared_inbox_url, actor.fetched_at, actor.created_at,
            actor.updated_at, actor.hostname_id
@@ -70,7 +70,7 @@ export async function getCheckpointedRemoteActorByIdFromPrimary(
     WHERE actor.id = ${id} AND actor.deleted_at IS NULL
     LIMIT 1
   `)
-  return (rows[0] as RemoteActorRow) ?? null
+  return rows[0] ?? null
 }
 
 // Read-only lookup — never creates a url_hostnames row. Only instances already added to the
@@ -147,7 +147,7 @@ async function upsertRemoteActor(document: RemoteActorDocument): Promise<RemoteA
     RETURNING id
   `)
   const id = identities[0]!.id
-  const { rows } = await query(sql`/* upsertRemoteActor */
+  const { rows } = await query<Omit<RemoteActorRow, 'actor_uri'>>(sql`/* upsertRemoteActor */
     INSERT INTO remote_actors (id, key_id, public_key_pem, inbox_url, shared_inbox_url, fetched_at, hostname_id)
     VALUES (
       ${id}, ${document.keyId}, ${document.publicKeyPem},
@@ -166,5 +166,5 @@ async function upsertRemoteActor(document: RemoteActorDocument): Promise<RemoteA
   `)
   if (!rows[0]) throw createHttpError(403, 'Remote actor is no longer active')
   await query.commit()
-  return { ...(rows[0] as Omit<RemoteActorRow, 'actor_uri'>), actor_uri: document.actorUri }
+  return { ...rows[0], actor_uri: document.actorUri }
 }

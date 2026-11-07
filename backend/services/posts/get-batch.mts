@@ -29,7 +29,7 @@ export const getPostsByAnyBatch = async (
   const idInputs = normalizedInputs.filter(i => i.isId)
   const slugInputs = normalizedInputs.filter(i => !i.isId)
 
-  const { rows } = await read(
+  const { rows } = await read<Post & { input_order: number }>(
     `/* getPostsByAnyBatch */
     WITH id_input AS (
       SELECT unnest($1::uuid[]) AS input_value,
@@ -73,7 +73,7 @@ export const getPostsByAnyBatch = async (
 
   for (const row of rows) {
     const { input_order, ...postData } = row
-    results[input_order] = postData as Post
+    results[input_order] = postData
   }
 
   return results

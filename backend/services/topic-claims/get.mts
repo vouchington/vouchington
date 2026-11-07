@@ -46,7 +46,7 @@ export async function getVerifiedTopicClaim(
   topicId: string,
   userId: string,
 ): Promise<TopicClaim | null> {
-  const { rows } = await read(
+  const { rows } = await read<TopicClaim>(
     sql`/* getVerifiedTopicClaim */
     SELECT `
       .append(CLAIM_SELECT)
@@ -58,7 +58,7 @@ export async function getVerifiedTopicClaim(
     LIMIT 1
   `),
   )
-  return (rows[0] as TopicClaim | undefined) ?? null
+  return rows[0] ?? null
 }
 
 type TopicClaimPage = { results: TopicClaim[]; page_info: PageInfo }
@@ -83,8 +83,8 @@ export async function listTopicClaimsForTopic(
   if (options.activeOnly) query.append(sql` AND tc.rejected_at IS NULL AND tc.revoked_at IS NULL`)
   if (afterId) query.append(sql` AND tc.id < ${afterId}`)
   query.append(sql` ORDER BY tc.id DESC LIMIT ${limit + 1}`)
-  const { rows } = await read(query)
-  return buildClaimPage(rows as TopicClaim[], limit, scope)
+  const { rows } = await read<TopicClaim>(query)
+  return buildClaimPage(rows, limit, scope)
 }
 
 export async function listTopicClaimsForUser(
@@ -112,8 +112,8 @@ export async function listTopicClaimsForUser(
     query.append(sql` AND tc.verified_at IS NOT NULL AND tc.revoked_at IS NULL`)
   if (afterId) query.append(sql` AND tc.id < ${afterId}`)
   query.append(sql` ORDER BY tc.id DESC LIMIT ${limit + 1}`)
-  const { rows } = await read(query)
-  return buildClaimPage(rows as TopicClaim[], limit, scope)
+  const { rows } = await read<TopicClaim>(query)
+  return buildClaimPage(rows, limit, scope)
 }
 
 function buildClaimPage(rows: TopicClaim[], limit: number, scope: string): TopicClaimPage {
@@ -129,7 +129,7 @@ function buildClaimPage(rows: TopicClaim[], limit: number, scope: string): Topic
 }
 
 export async function listPendingTopicClaims(): Promise<TopicClaim[]> {
-  const { rows } = await read(
+  const { rows } = await read<TopicClaim>(
     sql`/* listPendingTopicClaims */
     SELECT `
       .append(CLAIM_SELECT)
@@ -140,5 +140,5 @@ export async function listPendingTopicClaims(): Promise<TopicClaim[]> {
     ORDER BY tc.submitted_at DESC
   `),
   )
-  return rows as TopicClaim[]
+  return rows
 }

@@ -24,7 +24,7 @@ export async function listMonthlyDropCandidates(
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_PARTITION_CLEANUP_LIMIT)
     throw new Error('Monthly partition page limit is outside the supported range')
   const managed = filterRetainedMonthlyPartitionTables(ALL_MONTHLY_PARTITION_TABLES)
-  const { rows } = await query(
+  const { rows } = await query<{ parent_table: string; partition_table: string; priority: number }>(
     `/* listMonthlyDropCandidates */
       SELECT parent.relname::text AS parent_table,
              child.relname::text AS partition_table,
@@ -64,7 +64,7 @@ export async function listMonthlyDropCandidates(
     }),
     hasMore,
     ...(next && {
-      nextCursor: { priority: Number(next.priority), partition: String(next.partition_table) },
+      nextCursor: { priority: next.priority, partition: next.partition_table },
     }),
   }
 }

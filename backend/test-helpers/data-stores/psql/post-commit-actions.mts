@@ -137,7 +137,9 @@ export async function runTransactionActionSettlementProbe(
   let id: string | undefined
   try {
     await using transaction = await beginTransaction()
-    const inserted = await transaction(sql`/* runTransactionActionSettlementProbe insert */
+    const inserted = await transaction<{
+      id: string
+    }>(sql`/* runTransactionActionSettlementProbe insert */
       INSERT INTO url_hostnames (hostname) VALUES (${`actions-${crypto.randomUUID()}.example.com`})
       RETURNING id
     `)

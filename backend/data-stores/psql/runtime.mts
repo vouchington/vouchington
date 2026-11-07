@@ -1,3 +1,4 @@
+import type { QueryMethod } from './types.mts'
 import { createBoundedCursorApi } from './bounded-cursor-api.mts'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import pg from 'pg'
@@ -29,7 +30,11 @@ const vouchaMigrationExtensions = [
   'unaccent',
 ] as const
 
-export const psql: Psql = createPsql({
+export const psql: Omit<Psql, 'query' | 'read' | 'write'> & {
+  query: QueryMethod
+  read: QueryMethod
+  write: QueryMethod
+} = createPsql({
   connectionString,
   readConnectionString,
   databaseName,
@@ -57,15 +62,15 @@ const primaryReadScope = new AsyncLocalStorage<boolean>()
 export function withPrimaryReads<T>(callback: () => Promise<T>): Promise<T> {
   return primaryReadScope.run(true, callback)
 }
-export const query: Psql['query'] = (input, valuesOrOptions, options) =>
+export const query: QueryMethod = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeQuery(input, valuesOrOptions, options))
-export const read: Psql['read'] = (input, valuesOrOptions, options) =>
+export const read: QueryMethod = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() =>
     primaryReadScope.getStore()
       ? runtimeWrite(input, valuesOrOptions, options)
       : runtimeRead(input, valuesOrOptions, options),
   )
-export const write: Psql['write'] = (input, valuesOrOptions, options) =>
+export const write: QueryMethod = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeWrite(input, valuesOrOptions, options))
 
 export const { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } =

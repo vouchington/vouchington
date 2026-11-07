@@ -5,7 +5,7 @@ import onError from '@modules/on-error'
 
 export async function getSignupCountByReferrerId(referrerId: string): Promise<number> {
   if (!isUUID(referrerId)) return 0
-  const { rows } = await read(sql`/* getSignupCountByReferrerId */
+  const { rows } = await read<{ total_signups: number }>(sql`/* getSignupCountByReferrerId */
     SELECT COUNT(*)::INT AS total_signups
     FROM users
     WHERE referrer_user_id = ${referrerId}
@@ -21,7 +21,7 @@ export async function getReferrerIdForSession(sessionId: string): Promise<string
     onError(error)
     return null
   }
-  const { rows } = await read(sql`/* getReferrerIdForSession */
+  const { rows } = await read<{ referrer_user_id: string }>(sql`/* getReferrerIdForSession */
     SELECT referrer_user_id
     FROM session_referral_attributions
     WHERE session_id = ${sessionId}

@@ -18,7 +18,13 @@ export async function setTestApiKeyExpiry(apiKeyId: string, expiresAt: Date | nu
 }
 
 export async function getTestApiKeyLifecycle(apiKeyId: string) {
-  const { rows } = await write(sql`/* getTestApiKeyLifecycle */
+  const { rows } = await write<{
+    expires_at: Date | null
+    replaced_by_api_key_id: string | null
+    expiry_reminder_sent_at: Date | null
+    last_used_at: Date | null
+    lifetime_seconds: string | null
+  }>(sql`/* getTestApiKeyLifecycle */
     SELECT expires_at, replaced_by_api_key_id, expiry_reminder_sent_at, last_used_at,
       EXTRACT(EPOCH FROM (expires_at - created_at)) AS lifetime_seconds
     FROM api_keys WHERE id = ${apiKeyId}::uuid`)

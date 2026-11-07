@@ -18,9 +18,9 @@ export async function searchApiKeys(
     `
     if (options.afterId) query.append(sql` AND id < ${options.afterId}`)
     query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
-    const { rows } = await read(query)
+    const { rows } = await read<ApiKey>(query)
     const hasNextPage = rows.length > limit
-    const results = rows.slice(0, limit) as ApiKey[]
+    const results = rows.slice(0, limit)
     return { results, hasNextPage }
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))

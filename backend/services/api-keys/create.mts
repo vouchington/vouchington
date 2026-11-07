@@ -23,7 +23,7 @@ export async function createApiKey(
     const days = resolveApiKeyLifetimeDays(isAdministrator, lifetimeDays)
     const permissionResult = validateApiKeyCreationScopeSet(type, permissions)
     if (!permissionResult.valid) throw new Error(`createApiKey: ${permissionResult.error}`)
-    const result = await query(sql`/* createApiKey */
+    const result = await query<ApiKey>(sql`/* createApiKey */
         WITH new_key AS (SELECT uuidv7() AS id)
         INSERT INTO api_keys (id, user_id, prefix, key_hash, type, label, scopes, expires_at)
         SELECT new_key.id,
@@ -47,7 +47,7 @@ export async function createApiKey(
 
     await addKeyHashToBloomFilter(keyHash)
 
-    return { apiKey: apiKey as ApiKey, rawKey }
+    return { apiKey, rawKey }
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
     throw err

@@ -19,8 +19,8 @@ export async function getCommunitySavedReplies(
     query.append(sql` AND (order_index, id) > (${options.after.ranking}, ${options.after.id})`)
   }
   query.append(sql` ORDER BY order_index ASC, id ASC LIMIT ${limit + 1}`)
-  const { rows } = await read(query)
-  return rows as CommunitySavedReply[]
+  const { rows } = await read<CommunitySavedReply>(query)
+  return rows
 }
 
 export async function createSavedReply(
@@ -34,7 +34,7 @@ export async function createSavedReply(
   await query(
     sql`/* createSavedReply:lock */ SELECT pg_advisory_xact_lock(hashtext(${communityId})::bigint)`,
   )
-  const { rows } = await query(sql`/* createSavedReply */
+  const { rows } = await query<CommunitySavedReply>(sql`/* createSavedReply */
     INSERT INTO community_saved_replies (community_id, title, body, order_index, created_by_id)
     VALUES (
       ${communityId}, ${title}, ${body},
@@ -43,7 +43,7 @@ export async function createSavedReply(
     )
     RETURNING id, community_id, title, body, order_index, created_by_id, created_at, updated_at, deleted_at
   `)
-  const result = rows[0] as CommunitySavedReply
+  const result = rows[0]
   await query.commit()
   return result
 }

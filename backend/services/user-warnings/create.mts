@@ -23,7 +23,7 @@ export async function createUserWarning(
     }
     if (code === '23505') {
       if (options.returnExistingForReport && input.reportId) {
-        const { rows: existingRows } = await read(
+        const { rows: existingRows } = await read<UserWarning>(
           sql`/* createUserWarning:existingForReport */
             SELECT id, case_id, user_id, community_id, issued_by_id, reason, public_message, report_id,
               revoked_at, revoked_by_id, created_at
@@ -33,7 +33,7 @@ export async function createUserWarning(
             LIMIT 1
           `,
         )
-        if (existingRows[0]) return existingRows[0] as UserWarning
+        if (existingRows[0]) return existingRows[0]
       }
       assert(false, 409, 'A warning has already been issued for this report')
     }
@@ -66,7 +66,7 @@ async function createWarningInTransaction(
     assert(userCheck[0], 404, 'User not found')
     caseId = await openOrGetOpenCase({ entityType: 'user', entityId: input.userId }, { query })
   }
-  const { rows } = await write(
+  const { rows } = await write<UserWarning>(
     sql`/* createUserWarning */
           WITH target_check AS (
             SELECT id FROM users
@@ -97,7 +97,7 @@ async function createWarningInTransaction(
         `,
     { query },
   )
-  const created = rows[0] as UserWarning | undefined
+  const created = rows[0]
   assert(created, 404, 'User not found')
 
   // Derive community from the report target when not explicitly provided
