@@ -18,7 +18,7 @@ describe('GET /api/v1/posts/:idOrSlug metrics cache', () => {
     const cachedMetrics: PostMetrics = {
       __entity_type: 'post_metrics',
       id: postId,
-      count: { descendants: 41, children: 7, ancestors: 0 },
+      count: { descendants: 41, children: 7 },
       updated_at: new Date('2026-01-02T03:04:05.000Z'),
       bookmarks: { follow: 0, save: 0 },
     }
@@ -30,7 +30,7 @@ describe('GET /api/v1/posts/:idOrSlug metrics cache', () => {
       expect(response.body.post.id).toBe(postId)
       expect(response.body.post_metrics).toMatchObject({
         id: postId,
-        count: { descendants: 41, children: 7, ancestors: 0 },
+        count: { descendants: 41, children: 7 },
       })
     } finally {
       await caches.post_metrics.delete(postId)

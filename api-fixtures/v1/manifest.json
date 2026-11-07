@@ -210,7 +210,7 @@
     },
     "DELETE:/api/v1/report-integrity/penalties/:id": {
       "bodyKind": "content",
-      "hash": "565b3ed06b57a1cbde7f53e993c3a2bd2a25a74bc2d0bf8cca96cb3b0bb9858a",
+      "hash": "201de00b32abc05762e50271bed8f4d539506de0d6f2dc02251d07b7c63da301",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "DELETE",
@@ -503,7 +503,7 @@
     },
     "DELETE:/api/v1/vote-integrity/penalties/:id": {
       "bodyKind": "content",
-      "hash": "e07e964ea52659a001b9526814e7d97d09ac27466ae617f6bafc618478779877",
+      "hash": "587741c52d13d57ea6afc36a272894b2071e9dbe87f0a850afbb4e23ed6d9bb3",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "DELETE",
@@ -4734,7 +4734,7 @@
     },
     "GET:/api/v1/appeals#staff": {
       "bodyKind": "content",
-      "hash": "b0d25ced15a8c86e99543d10b0ce5661b5a09193f08ee6dcf91da46cb3223100",
+      "hash": "683dd54bb9545c8a27887f4ad0d35cc8a6280b86ffc9cfdc0f5fa533c20fef00",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -8388,7 +8388,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/agent-prompts": {
       "bodyKind": "content",
-      "hash": "d6ea785a6272d16473607daaac5ac23dd75fbc10295dbb3b03de6e4c57f97798",
+      "hash": "040f9dfe9d7b950cb8191cb2da7d0fdc4bdd5f1108c954aa7e234dab19ad73be",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -9183,7 +9183,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/applications/:id": {
       "bodyKind": "content",
-      "hash": "d8af6451a5b26fb7ac2af21ad890ede24f05e8c04859842decb4c287d2d47633",
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -10293,7 +10293,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderation-queue": {
       "bodyKind": "content",
-      "hash": "26ac3fbc29a278647b1a7eb10ce29a92533690462444832d369b52dd9059aa5c",
+      "hash": "1c37bbe8d6d9a074a5b6e31f693b16c76d5a93cbe714d90647a4475d2fc34817",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -11780,7 +11780,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
       "bodyKind": "content",
-      "hash": "11f0016d8059506715d34f91d1991116ec29876fbbb060175e1e18762e4f5a17",
+      "hash": "b5e9ef258d75dac4df562614c9f96d5e57fcca4948ca7121abe38a01ee77d8f7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13643,7 +13643,7 @@
     },
     "GET:/api/v1/communities/:idOrSlug/reports/pending": {
       "bodyKind": "content",
-      "hash": "2f613b7eac16e3e14db23e2a64c49ce50b9bdb9768f1586130b5b1e0412478cb",
+      "hash": "70337b443e94a9fcadccb6d8d2babbb263f871f9f6bb3ffee595a2c75c277486",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -17057,7 +17057,7 @@
     },
     "GET:/api/v1/copyright-notices/:id/territorial-claimants": {
       "bodyKind": "content",
-      "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544",
+      "hash": "68b3c477efb0789c310fd892b0c9c4fc62f3d52f5609bd74552169ef637fad2e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -17419,7 +17419,7 @@
     },
     "GET:/api/v1/copyright-notices/:id/territorial-posters": {
       "bodyKind": "content",
-      "hash": "c27a1d00593623a274083a1fd77a99863b73d713451e7b55897b9fdc0aee8544",
+      "hash": "73ab9c8999cf81852fbaee204d1cf7af02ab9ed15e8a4c74e0bf4e933a23f8fe",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -17689,7 +17689,7 @@
     },
     "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary": {
       "bodyKind": "content",
-      "hash": "6df00e69ea30956099c87c1069fc483c609cca261dd4a8f201c3f80fd4d114ee",
+      "hash": "d22beee0d7c1ed488caf0e1e979d7736750bb9fcfedaaa0ac730030854197878",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -17823,7 +17823,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "311046c51b92a5d3a665a0e63a594b330165c2777ac8b0d7ab7c5e0c0e647031",
+      "hash": "3f3dc23df42200768047c37a562d076047770e5d2726d1f0e428b844f881c317",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -21269,7 +21269,7 @@
     },
     "GET:/api/v1/disputes/:id#member": {
       "bodyKind": "content",
-      "hash": "4e34a2fb31f1dd9a19cc7e84419190d6e94877bccd22c001288357510e3ea7a8",
+      "hash": "582d08d046fc5a828ae990349af73ffb7a21b18db47c762a6f78f0f89b5151b7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -21541,7 +21541,7 @@
     },
     "GET:/api/v1/disputes/:id#staff": {
       "bodyKind": "content",
-      "hash": "abeffd81b135dd893756c33991b67c620fbb72997bacdc98d4c5171868323745",
+      "hash": "038f6234ba8d156f88810b69a0fd6bbf2a1b037219ed1a39d8d58d1dcc03a9f4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -34699,7 +34699,7 @@
     },
     "GET:/api/v1/my/identity": {
       "bodyKind": "content",
-      "hash": "e1466a56af2bce1816c399ae489ba58684bbb23978ece77a096ed1b582cb7371",
+      "hash": "b5842882ac43cb94fa24a3b2d3be4499001ca842b38ffc7ab0b646959f8831f6",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -38073,7 +38073,7 @@
     },
     "GET:/api/v1/my/notifications": {
       "bodyKind": "content",
-      "hash": "5013d6c0161ad17ecbec0e0e8ef539d348c5111bb291d16497fcb6638ad9f220",
+      "hash": "86083ef2da129eea0742fa6a8fdef9ffc57a6f1c2e60ad9a93374a0acbfe839d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -40171,7 +40171,7 @@
     },
     "GET:/api/v1/my/rewards-program-statuses": {
       "bodyKind": "content",
-      "hash": "e178075f37355ecccdd823971a1153c600e8fb9080339155291afc8d6fcc8d2b",
+      "hash": "76eed44b5707cff1f7e8d3aeba94c68d966d8ffee1e9fc0a1faa5de18b95aff0",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -40329,7 +40329,7 @@
     },
     "GET:/api/v1/my/spending-categories": {
       "bodyKind": "content",
-      "hash": "0de08c52cfc38e93425cdfecd8bede086f504c7eeea9e4820f689441bab77ea7",
+      "hash": "2456dbb18033059734c1c94b60a6e796908b0b2475dee27a806bba8d8da3ea82",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -40558,7 +40558,7 @@
     },
     "GET:/api/v1/my/topic-claims": {
       "bodyKind": "content",
-      "hash": "a3831aceea90825f1e82a57d999c8e68ab42f45ef008a6cff23fe8ca674809bb",
+      "hash": "f4c16d24e5edbed14e30293c023203487298ad2eaa29dc8efb83b9d82f10bf7d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -41089,7 +41089,7 @@
     },
     "GET:/api/v1/posts": {
       "bodyKind": "content",
-      "hash": "ff91ea497707af80a262af4f88a6c7f892d11d7caafac77ed36f179d28cd1338",
+      "hash": "51b5ba7832f4ad8c6363232b7f1490bb2bfb7b9d909a11d2bff4241f3dcc1a7b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -42994,12 +42994,6 @@
                 "schema": {
                   "additionalProperties": false,
                   "properties": {
-                    "ancestors": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
                     "children": {
                       "required": true,
                       "schema": {
@@ -44216,7 +44210,7 @@
     },
     "GET:/api/v1/posts/review-queue": {
       "bodyKind": "content",
-      "hash": "f0c025e444df82c957c8b30436150d1e3ced47b2a77e917926a21dba22c86e5f",
+      "hash": "016161e83f9e935b8e000f9246c840d3c2297ecd17e20f2ae95e3281449b08d3",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -45067,7 +45061,7 @@
     },
     "GET:/api/v1/report-integrity/flags": {
       "bodyKind": "content",
-      "hash": "261a5636d06e9f619a06cecd55fc442e43b4c484b60c9f8e5c9f3d47b5c557be",
+      "hash": "d4e8c5ff93376c6efb58f45c02d938eec63fad0497fd7298904021911607319f",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -45346,7 +45340,7 @@
     },
     "GET:/api/v1/report-integrity/flags/:id": {
       "bodyKind": "content",
-      "hash": "ceb7cbd54afa70595f923135dfaf4f10e91f9726551acb1683b6f488e1ce2c6d",
+      "hash": "d9a2bbe00f0becdf42299d0717382397b099e0bb59e5528e77089e0f1f2d7297",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -45575,7 +45569,7 @@
     },
     "GET:/api/v1/report-integrity/penalties": {
       "bodyKind": "content",
-      "hash": "f5e1e0467a69bb0bc1f3c26a1cbdf9465c9fd7ef508d41eb042ef0d4e823e7f1",
+      "hash": "57758c3f7662da71913511957844229b96646af86dae2826bf85c901f79a6d44",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -45880,7 +45874,7 @@
     },
     "GET:/api/v1/report-integrity/penalties/:id": {
       "bodyKind": "content",
-      "hash": "ca1cad77c4cee673add04f1153390e130352c64eb3deaff41d515124652a654c",
+      "hash": "8c4e32f3786a128c70db488faae826235c8dfcf34f81fc0b9e5ccfaa6e8018bf",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -46131,7 +46125,7 @@
     },
     "GET:/api/v1/report-integrity/penalties/review-due": {
       "bodyKind": "content",
-      "hash": "040cafbad6c8417aefcf0685a705f09775fe828bafde76a3c23e024b15e7e8d4",
+      "hash": "551adc24ab1cbf1fe21f7b807e3b3c7e9c5124e107b00e1276b581a5f4cdc55a",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -46679,7 +46673,7 @@
     },
     "GET:/api/v1/reports#clustered": {
       "bodyKind": "content",
-      "hash": "5da3dc5bbc4e0aa68b6b6177e5e8c5e582a102487eeeaef3f54e33ddefce0443",
+      "hash": "fd3e04fd29b68247d8abefa93826e32bdffc9f774f62837a08aa96501acb1793",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -48000,7 +47994,7 @@
     },
     "GET:/api/v1/reports#member": {
       "bodyKind": "content",
-      "hash": "e9aad2df9cf973e8f51c5c1909dc53c20bf7762bc49897965029b2c7b41bbeaf",
+      "hash": "f3958b2235b491dc472d3c009c383afbc8917880f4048b812188351c022cf1b7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -48442,7 +48436,7 @@
     },
     "GET:/api/v1/reports#staff": {
       "bodyKind": "content",
-      "hash": "be0f511bc4cd6a3427b52a79589c865ca1e350418456db0828eebb1203dd058c",
+      "hash": "baf38b8600dc8f366b97681e2ca82eec501a50eb25a7af15c4f29a393730ae82",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -49146,7 +49140,7 @@
     },
     "GET:/api/v1/reports/:id/judgements/:runId": {
       "bodyKind": "content",
-      "hash": "be23e1061ca6ba49055cbed6c9343d5b8f906236e12aaa26a97219c9f9010641",
+      "hash": "f0d33f06f7d1158701223df088fabef18ee1cc24e85728524cabc57b290621d5",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -51510,7 +51504,7 @@
     },
     "GET:/api/v1/stories/:id": {
       "bodyKind": "content",
-      "hash": "f0e5af549719b8a47632414ba4295b51e62a1ed5fdb5b8c382a2c9fde49ca4c8",
+      "hash": "21e9fd834244bca3efc7a74a74f7ae7e01ad7e4ce186844205c7dc6301d6ccd4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -53296,12 +53290,6 @@
                 "schema": {
                   "additionalProperties": false,
                   "properties": {
-                    "ancestors": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
                     "children": {
                       "required": true,
                       "schema": {
@@ -56980,7 +56968,7 @@
     },
     "GET:/api/v1/topics/:idOrSlug/claims": {
       "bodyKind": "content",
-      "hash": "a3831aceea90825f1e82a57d999c8e68ab42f45ef008a6cff23fe8ca674809bb",
+      "hash": "f4c16d24e5edbed14e30293c023203487298ad2eaa29dc8efb83b9d82f10bf7d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -59904,7 +59892,7 @@
     },
     "GET:/api/v1/users#search": {
       "bodyKind": "content",
-      "hash": "5823000345a00db6c9425efaa12e78b8de8e748474751e598015e05a80f0ff30",
+      "hash": "be731b675b3c5dfda8a21af22592275c22deccdee0d469115236f8ff4c26c794",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -61785,7 +61773,7 @@
     },
     "GET:/api/v1/users/:idOrSlug": {
       "bodyKind": "content",
-      "hash": "3de317411d5d66f27c1337bf9df93cffc9bb33e0dcf2d355c113d93731775189",
+      "hash": "508bd3bce72abb5160d9414028173d7a8325b1e9f7703ad5217450c4aa736302",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -63667,7 +63655,7 @@
     },
     "GET:/api/v1/users/:idOrSlug#self": {
       "bodyKind": "content",
-      "hash": "2fd36762e63c84ccbb2fcd5a7603e9f549da6b439ee36a4afb8e21e26cb14154",
+      "hash": "ddea85c515c72a5ad63ffe3406c97ab64e6a531406497ffcc48ae363929d2976",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -73814,7 +73802,7 @@
     },
     "GET:/api/v1/vote-integrity/flags": {
       "bodyKind": "content",
-      "hash": "36ee7f0c66923cf2c8e1c12ce968630cf509d5460dc0c1a7747a56b53b653474",
+      "hash": "0fe20c0fcee81642ddccbbe061c0065699a8258b411dc049948cbc625551d383",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -74108,7 +74096,7 @@
     },
     "GET:/api/v1/vote-integrity/penalties": {
       "bodyKind": "content",
-      "hash": "12633b4fab41bb2c1f965f44e00e7b8c8396a2c3651cd07eea8affb83196b376",
+      "hash": "be5ac47ad1d0271f889825d0d12faa63e2854ec7b8b60dc0a16a6333781de053",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -74435,7 +74423,7 @@
     },
     "GET:/api/v1/vote-integrity/penalties/:id": {
       "bodyKind": "content",
-      "hash": "e07e964ea52659a001b9526814e7d97d09ac27466ae617f6bafc618478779877",
+      "hash": "587741c52d13d57ea6afc36a272894b2071e9dbe87f0a850afbb4e23ed6d9bb3",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -74678,7 +74666,7 @@
     },
     "GET:/api/v1/vote-integrity/penalties/review-due": {
       "bodyKind": "content",
-      "hash": "a9482fee32e8988f5c837513d3634aa9c948518b09cdd30d33602150fcb3f7ca",
+      "hash": "88c7f5acb73553a9f97922327837dfff7fab29d2acb1bee15586e0c7a3d4de6d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -77977,7 +77965,7 @@
     },
     "PATCH:/api/v1/disputes/:id#staff": {
       "bodyKind": "content",
-      "hash": "abeffd81b135dd893756c33991b67c620fbb72997bacdc98d4c5171868323745",
+      "hash": "038f6234ba8d156f88810b69a0fd6bbf2a1b037219ed1a39d8d58d1dcc03a9f4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -79683,7 +79671,7 @@
     },
     "PATCH:/api/v1/my/rewards-program-statuses/:id": {
       "bodyKind": "content",
-      "hash": "e6c48df729c74f0ff81aded991c408b6dada826fe4f82b3873730d37e161c08f",
+      "hash": "1b4d4a49eac78ca516b74952c3c7acbbf0cac2ec3cae0e344746b4b13af53159",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -79787,7 +79775,7 @@
     },
     "PATCH:/api/v1/my/spending-categories/:id": {
       "bodyKind": "content",
-      "hash": "f2127ada892422d1160e35df570d52f828ca8e9d8fd6b27cdc6a0b53171833c8",
+      "hash": "aeb9ae6d8411b5cd58991746107c16a93df79f29e3a020c0b2e4261c49216f3d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -79962,7 +79950,7 @@
     },
     "PATCH:/api/v1/report-integrity/flags/:id": {
       "bodyKind": "content",
-      "hash": "ceb7cbd54afa70595f923135dfaf4f10e91f9726551acb1683b6f488e1ce2c6d",
+      "hash": "d9a2bbe00f0becdf42299d0717382397b099e0bb59e5528e77089e0f1f2d7297",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -80191,7 +80179,7 @@
     },
     "PATCH:/api/v1/reports/:id": {
       "bodyKind": "content",
-      "hash": "1bacfeaddeea85f745d47dbfc060ca6d2fa7f30d8bcd0205ee71ca749246c316",
+      "hash": "338db8afaf566d56e06d1dd7988899066439f7c197300e158e105356e4dd0a6d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -80442,7 +80430,7 @@
     },
     "PATCH:/api/v1/vote-integrity/flags/:id": {
       "bodyKind": "content",
-      "hash": "1c19c73ae54847be2523fa31bc0d2e7283a2d7e9571916f4aeed2ef3da7565e8",
+      "hash": "8fd72bd50a00bdc2cf0d6a6dd7f1939e3647977ac0d45015ca4319d1c1454d74",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -86685,7 +86673,7 @@
     },
     "POST:/api/v1/disputes/:id/approval#staff": {
       "bodyKind": "content",
-      "hash": "abeffd81b135dd893756c33991b67c620fbb72997bacdc98d4c5171868323745",
+      "hash": "038f6234ba8d156f88810b69a0fd6bbf2a1b037219ed1a39d8d58d1dcc03a9f4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -87386,7 +87374,7 @@
     },
     "POST:/api/v1/disputes/:id/delivery#staff": {
       "bodyKind": "content",
-      "hash": "abeffd81b135dd893756c33991b67c620fbb72997bacdc98d4c5171868323745",
+      "hash": "038f6234ba8d156f88810b69a0fd6bbf2a1b037219ed1a39d8d58d1dcc03a9f4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -88087,7 +88075,7 @@
     },
     "POST:/api/v1/disputes/:id/resolution#staff": {
       "bodyKind": "content",
-      "hash": "abeffd81b135dd893756c33991b67c620fbb72997bacdc98d4c5171868323745",
+      "hash": "038f6234ba8d156f88810b69a0fd6bbf2a1b037219ed1a39d8d58d1dcc03a9f4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -92286,7 +92274,7 @@
     },
     "POST:/api/v1/my/rewards-program-statuses": {
       "bodyKind": "content",
-      "hash": "e6c48df729c74f0ff81aded991c408b6dada826fe4f82b3873730d37e161c08f",
+      "hash": "1b4d4a49eac78ca516b74952c3c7acbbf0cac2ec3cae0e344746b4b13af53159",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -92391,7 +92379,7 @@
     },
     "POST:/api/v1/my/spending-categories": {
       "bodyKind": "content",
-      "hash": "f2127ada892422d1160e35df570d52f828ca8e9d8fd6b27cdc6a0b53171833c8",
+      "hash": "aeb9ae6d8411b5cd58991746107c16a93df79f29e3a020c0b2e4261c49216f3d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -92766,7 +92754,7 @@
     },
     "POST:/api/v1/report-integrity/flags/:id/penalties": {
       "bodyKind": "content",
-      "hash": "840544471687e948346e898e5b29d4d062332f3fe6d3d371970910dce1ed4170",
+      "hash": "52819150105c0e667ccc52828d150b54b49cf4107728248e21e56603d7ca1cbb",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -93034,7 +93022,7 @@
     },
     "POST:/api/v1/report-integrity/penalties/:id/reviews": {
       "bodyKind": "content",
-      "hash": "ca1cad77c4cee673add04f1153390e130352c64eb3deaff41d515124652a654c",
+      "hash": "8c4e32f3786a128c70db488faae826235c8dfcf34f81fc0b9e5ccfaa6e8018bf",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -93285,7 +93273,7 @@
     },
     "POST:/api/v1/reports/:reportId/judgements": {
       "bodyKind": "content",
-      "hash": "e858196b2dbd42699e4e515febd51c36eae27df00c7a92ac542bf32cda25fcb4",
+      "hash": "20108ec03ddb8c9970eb9ddb87c4e113966edaf4129e6671ce35550d316f869d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -94541,7 +94529,7 @@
     },
     "POST:/api/v1/vote-integrity/flags/:id/penalties": {
       "bodyKind": "content",
-      "hash": "b15ae76c05e4434db016e89a4379b563a188d9b8bf2dd6b28108092c997a571e",
+      "hash": "1e240156064e8041e314cbc86153382bc9c3cac04c08fe36636f52b87f67e49e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -94795,7 +94783,7 @@
     },
     "POST:/api/v1/vote-integrity/penalties/:id/reviews": {
       "bodyKind": "content",
-      "hash": "e07e964ea52659a001b9526814e7d97d09ac27466ae617f6bafc618478779877",
+      "hash": "587741c52d13d57ea6afc36a272894b2071e9dbe87f0a850afbb4e23ed6d9bb3",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -100111,7 +100099,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "2a8a3c7bf674e7b5e26bee0e60077161919c7d2ce75b780a9d049f45bb6835ac",
+        "hash": "9cf7a6fd427abed1968b9094c848167bd2ad9d777cb638efd475316324fe2e06",
         "key": "web.communities.posts.default"
       },
       "route": {
@@ -100219,7 +100207,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "7db47a51de11f1e77ecb7bde3873909bd9485caebb74948ff3da653c06fea0e0",
+        "hash": "49bbd3ec9131819ad64d8c0b52c2caacf5a74033cc1928925cf22e9988797c2f",
         "key": "web.communities.list-items.posts.default"
       },
       "route": {
@@ -101740,7 +101728,7 @@
         "limit": "1"
       },
       "responseSchema": {
-        "hash": "0cd5a9603f7d1f2c9ad63f2e699973a8b88330219eab26a665ab9fab65b280f7",
+        "hash": "4e224177d8d74fd0c7918a58b84705ae2ff7d867fa34d5377fc423e6f9d298d2",
         "key": "native.stories.get.default"
       },
       "route": {
@@ -101769,7 +101757,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "94aa1b66dc50e3400c6726c9126aa4d7aa9cd8b20d5e9358df0f1318e3c4ef86",
+        "hash": "5280131ef6ab334da15f49f0e05c9c6f7d7915860447e8960063662297e23d6f",
         "key": "native.stories.get.after"
       },
       "route": {
@@ -101824,7 +101812,7 @@
       ],
       "path": "/api/v1/topic-recommendations/recommendation-1",
       "responseSchema": {
-        "hash": "e53274521ac91a5bc5b0dd7c82e74a3ec38270c031a2c9e9d81bc1729b2bd692",
+        "hash": "ad67899f8748a04500482be875f9c9f4c40cef1ff78a9d3a64c29fdfea848eb4",
         "key": "native.topic-recommendation.detail.default"
       },
       "route": {
@@ -103338,7 +103326,7 @@
       "migratedFrom": ["predecessor-issue#6573"],
       "path": "/api/v1/posts/comment-root",
       "responseSchema": {
-        "hash": "f82acaf2869d31d4f1b303cb89adddc0952a8493a3639d413a2eea159432ee0f",
+        "hash": "e46771024d64be20bab4861b47d9911565da652377d769289338510e176a7ee6",
         "key": "native.comments.post-detail.default"
       },
       "route": {
@@ -103366,7 +103354,7 @@
         "limit": "2"
       },
       "responseSchema": {
-        "hash": "8dde802dbfb62965df15a201b5cd92d02ddf59e3b199f6bd1dc2a487e0af6a6e",
+        "hash": "b57264982c9271929f0cf4d804b19fd00ebec5e0c745590e1a990d1557cb7662",
         "key": "native.comments.descendants.default"
       },
       "route": {
@@ -103390,7 +103378,7 @@
       "migratedFrom": ["predecessor-issue#6573"],
       "path": "/api/v1/posts/comment-b/ancestors",
       "responseSchema": {
-        "hash": "2fcad9efc8321c147048ef33695b0fc408315bd3642ab484b82f6efca2b84533",
+        "hash": "03647680d01f1cfff30f01907640a0219b171dcd7bc08bad78ed2571c4606a48",
         "key": "native.comments.ancestors.permalink"
       },
       "route": {
@@ -103417,7 +103405,7 @@
         "limit": "5"
       },
       "responseSchema": {
-        "hash": "d83a5af3417f6f0174ab52b2ecf028a02c03aa13dee30c44ccdaafadef524720",
+        "hash": "ee5bc4184095ec39ec8009e6d3af157f251f1b0267867e52cd4743f1c6bf4c0c",
         "key": "native.comments.ancestors.bounded.shallow"
       },
       "route": {
@@ -103444,7 +103432,7 @@
         "limit": "5"
       },
       "responseSchema": {
-        "hash": "36a15b7d5cffd28ba9037f731bed6a36e1ee3087b76c7d7ba7a5ea7e2a7ec9ae",
+        "hash": "36ec494999c424d32cf0bbfdcfae77497dc44c263d51d4b4769d9e84935ce644",
         "key": "native.comments.ancestors.bounded.deep-initial"
       },
       "route": {
@@ -103472,7 +103460,7 @@
         "limit": "5"
       },
       "responseSchema": {
-        "hash": "4c6acb5259d1bd9389dd5a0e20608368bb5134355ad6ba08cf9ecd8d6642bb59",
+        "hash": "4c3fc2c9842dcdb43be29779f31ca751a57701a8edd0738ec31be7662e22a38b",
         "key": "native.comments.ancestors.bounded.deep-continuation"
       },
       "route": {
@@ -106967,7 +106955,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "5c18da4b17f05e4113942a2c908e2b8bd31f0ad4fdfa529d1b001bb35aad2df1",
+        "hash": "e254a38df70c08cb1ad90fce0c05f743fbd6b94d9ea8822f0dbd8bfd69c4f817",
         "key": "native.users.profile.posts.all"
       },
       "route": {
@@ -106994,7 +106982,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "b9da3df140f4580d6278e5ef5469e78b53039d32e8ef6799c39e7218b29512b0",
+        "hash": "b1e8bb9c18047e0226a493e24942b10fe8006934af9c0dd6fa3467e764fa572f",
         "key": "native.users.profile.posts.reviews"
       },
       "route": {
@@ -107021,7 +107009,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "8f71395e45d2142d2e246ce33f6473fe768bf788c0b87568852b0a0f6aad1a54",
+        "hash": "aa7dcdea5c65f120f8c878061eba2375d7b5a92a6bc0d3a5224e40e80fe7d893",
         "key": "native.users.profile.posts.discussions"
       },
       "route": {
@@ -107048,7 +107036,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "4968f60df60a579d076cfa7f5d6d1f4c94c9171203e9197ec31c67a354b464bc",
+        "hash": "8f90bf103c2a3c76839244287d1c52ab6b4929b0257ca04f3a34403a467cce58",
         "key": "native.users.profile.posts.provenance"
       },
       "route": {
@@ -107075,7 +107063,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "02a42181768471ce67884108e8d8a3762fc6a7bc2a5cd8eb8fe4369c6210107d",
+        "hash": "91dfd38c5ee522a12702edbcfc2065d353584ab6dbcc352ab4be5547e3eb3fc7",
         "key": "native.users.profile.posts.staff-provenance"
       },
       "route": {
@@ -107102,7 +107090,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "8585858b04075806ca3855065c81f23689df7102a7cde4f8c15683275079e3ef",
+        "hash": "a9fb454af3665c6469495f5568d0e8316e4791a2c502e6ab7a60a9b18fc4c7a1",
         "key": "native.users.profile.posts.comments"
       },
       "route": {

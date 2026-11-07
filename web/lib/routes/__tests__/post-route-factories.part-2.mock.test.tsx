@@ -63,7 +63,7 @@ const basePostResponse = {
   post_metrics: {
     __entity_type: 'post_metrics',
     id: 'post-1',
-    count: { descendants: 1000, children: 0, ancestors: 0 },
+    count: { descendants: 1000, children: 0 },
     bookmarks: { follow: 0, save: 0 },
     updated_at: '2026-01-01T00:00:00.000Z',
   },

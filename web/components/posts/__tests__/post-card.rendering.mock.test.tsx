@@ -73,7 +73,6 @@ describe('PostCard', () => {
     count: {
       descendants: 5,
       children: 3,
-      ancestors: 0,
     },
     updated_at: '2024-01-15T10:00:00Z',
     bookmarks: {

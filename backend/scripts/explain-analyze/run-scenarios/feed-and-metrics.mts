@@ -153,7 +153,7 @@ export async function runFeedAndMetricScenarios() {
     expectations: [
       { kind: 'queryBinds', token: 'requested_posts' },
       { kind: 'forbidCorrelatedAggregates' },
-      { kind: 'maxProcessedRows', relation: 'posts', max: 10_000 },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 221 },
       { kind: 'maxProcessedRows', relation: 'relation__user__follow__post', max: 1_000 },
       { kind: 'maxProcessedRows', relation: 'relation__user__save__post', max: 1_000 },
     ],
@@ -164,7 +164,7 @@ export async function runFeedAndMetricScenarios() {
     expectations: [
       { kind: 'queryBinds', token: 'requested_posts' },
       { kind: 'forbidCorrelatedAggregates' },
-      { kind: 'maxProcessedRows', relation: 'posts', max: 1_000 },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 27 },
       { kind: 'maxProcessedRows', relation: 'relation__user__follow__post', max: 100 },
       { kind: 'maxProcessedRows', relation: 'relation__user__save__post', max: 100 },
     ],

@@ -29833,9 +29833,6 @@
         "count": {
           "additionalProperties": false,
           "properties": {
-            "ancestors": {
-              "type": "number"
-            },
             "children": {
               "type": "number"
             },
@@ -29843,7 +29840,7 @@
               "type": "number"
             }
           },
-          "required": ["ancestors", "children", "descendants"],
+          "required": ["children", "descendants"],
           "type": "object"
         },
         "id": {
