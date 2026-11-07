@@ -28,9 +28,9 @@ while (!stop.signal.aborted && Date.now() < deadline) {
     // oxlint-disable-next-line no-await-in-loop -- one connection attempt per interval until the deadline
     await write('/* stagingAuroraWake */ SELECT 1')
     queried = true
-  } catch (err) {
+  } catch {
     // The first attempts can land while Aurora is still resuming.
-    console.error('staging wake query failed', err)
+    console.error('staging wake query failed')
   }
   // oxlint-disable-next-line no-await-in-loop -- the next attempt waits for the interval or the deadline
   await sleep(Math.min(QUERY_INTERVAL_MS, Math.max(0, deadline - Date.now())), undefined, {

@@ -142,7 +142,6 @@ export async function runAllMigrations(
         ? 'Migrations committed, but schema verification did not complete successfully.'
         : 'Migration application did not complete; previously applied schema changes may have committed.'
     const failure = new Error(message, { cause: err })
-    logger.error(failure)
     onError(failure)
     await flushSentry()
     return exit(1)
