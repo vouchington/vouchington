@@ -34,6 +34,7 @@ import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-com
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
 import { runHeavyFollowScenarios } from './run-scenarios/heavy-follows.mts'
 import { runHotPathLoaderScenarios } from './run-scenarios/hot-path-loaders.mts'
+import { runStorySearchScenarios } from './run-scenarios/story-search.mts'
 import { runMembershipRefundScenarios } from './run-scenarios/memberships.mts'
 import { runMembershipWorkSelectionScenarios } from './run-scenarios/membership-work-selection.mts'
 import { runEngagementEmailRecipientScenarios } from './run-scenarios/engagement-email-recipients.mts'
@@ -115,6 +116,9 @@ async function main() {
     await runStep(analyzeAgentModerationRetention.name, analyzeAgentModerationRetention)
     await runStep(runAgentModerationRetentionScenarios.name, runAgentModerationRetentionScenarios)
     await runStep(runHotPathLoaderScenarios.name, runHotPathLoaderScenarios)
+    // Hidden-feed story search leaves 240 story_posts rows. Profile collection pages join
+    // that table, and the generic plan sorts once those rows exist.
+    await runStep(runStorySearchScenarios.name, runStorySearchScenarios)
     await runStep(runSharedLoaderScenarios.name, runSharedLoaderScenarios)
     await runStep(runMembershipRefundScenarios.name, runMembershipRefundScenarios)
     await runStep(runMembershipWorkSelectionScenarios.name, runMembershipWorkSelectionScenarios)
