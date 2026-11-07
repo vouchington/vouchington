@@ -5,6 +5,7 @@ import {
   assertCanCreateHousehold,
 } from '@services/individuals-households/household-limits'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { seedUuid } from '../seed-data/common.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 
 const countQuery = '/* assertCanCreateHousehold */'
@@ -66,7 +67,10 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
     'household-member-capacity',
     async () => {
       await using transaction = await beginTransaction()
-      await assertCanAddHouseholdMember(seedUser.id, seedUser.id, { query: transaction })
+      // Household tag 20 and individual tag 1b are the seeded owner row and its member.
+      await assertCanAddHouseholdMember(seedUuid(0, '20'), seedUuid(0, '1b'), {
+        query: transaction,
+      })
       await transaction.rollback()
     },
     undefined,
