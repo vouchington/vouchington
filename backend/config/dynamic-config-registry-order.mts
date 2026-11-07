@@ -3,6 +3,7 @@ export const REGISTRY_ORDER = [
   'paged-dispatch-work-config',
   'membership-verification-queue-config',
   'membership-stripe-purchase-collision-queue-config',
+  'membership-stripe-purchase-collision-review-config',
   'feature-flags',
   'membership-billing',
   'request-client-info',

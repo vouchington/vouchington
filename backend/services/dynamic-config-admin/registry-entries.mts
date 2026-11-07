@@ -1,6 +1,7 @@
 import { relationLimitsRegistryEntry } from './registry-relation-limits-entry.mts'
 import { sessionLimitsRegistryEntry } from './registry-session-limits-entry.mts'
 import { landingPageLimitsRegistryEntry } from './registry-landing-page-limits.mts'
+import { membershipCollisionReviewRegistryEntry } from './registry-membership-collision-review-entry.mts'
 import { hackerNewsRegistryEntries } from './registry-hacker-news-entry.mts'
 import {
   pagedDispatchRegistryEntry,
@@ -39,6 +40,7 @@ const unorderedRegistryEntries = [
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
   membershipPurchaseCollisionQueueRegistryEntry,
+  membershipCollisionReviewRegistryEntry,
   ...paginationRegistryEntries,
   ...backgroundWorkEntries1,
   ...backgroundWorkEntries2,
