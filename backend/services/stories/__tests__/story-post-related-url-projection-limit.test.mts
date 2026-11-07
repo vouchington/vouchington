@@ -20,7 +20,7 @@ describe('story projection capacity', () => {
     await upsertSystemUser('story-teller')
   })
 
-  it('admits an eligible URL when a second source is a referral URL', async () => {
+  it('does not refill past a referral URL that occupies the prefix', async () => {
     await relationLimitsConfig.waitForInitialization()
     onTestFinished(
       overrideDynamicConfigFieldsForTest(relationLimitsConfig, { post_related_url: 1 }),
@@ -51,7 +51,7 @@ describe('story projection capacity', () => {
     await drainStoryPostRelatedUrlProjection(post.id)
     expect(
       await getEntityRelation('relation__post__related__url', post.id, allowed.id),
-    ).toHaveLength(1)
+    ).toHaveLength(0)
     expect(
       await getEntityRelation('relation__post__related__url', post.id, referralUrlId),
     ).toHaveLength(0)

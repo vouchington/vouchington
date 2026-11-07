@@ -1,15 +1,17 @@
-import { getStoriesWorkLimit, storiesWorkConfig } from '@services/stories/work-limits'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { createHash, randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
   getPostRelatedUrlIds,
   getTestStoryPostRelatedUrlDeletedById,
   getTestStoryPostProjectionReceiptCount,
+  insertTestRssFeedItem,
   insertTestStory,
   insertTestStoryRssFeedItemsBatch,
   insertTestUrlDirect,
+  setTestItemStoryId,
 } from '@voucha/test-helpers'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
@@ -27,51 +29,29 @@ describe('story post related URL projection', () => {
     testUser = await createTestUserDirect()
   })
 
-  it('processes a story through bounded pages and one terminal URL decision', async () => {
-    const restorePageSize = overrideDynamicConfigFieldsForTest(storiesWorkConfig, {
-      post_related_url_projection_page_size: 2,
+  it('admits one eligible prefix and drops its receipts when the generation finishes', async () => {
+    const itemCount = 3
+    const story = await insertTestStory({ title: `Projection scale ${crypto.randomUUID()}` })
+    const url = await insertTestUrlDirect(
+      null,
+      `https://story-projection-scale-${crypto.randomUUID()}.example.test/article`,
+    )
+    expect(url).toBeDefined()
+    await insertTestStoryRssFeedItemsBatch({
+      storyId: story.id,
+      urlId: url!.id,
+      count: itemCount,
     })
-    try {
-      const itemCount = getStoriesWorkLimit('post_related_url_projection_page_size') + 1
-      const story = await insertTestStory({ title: `Projection scale ${crypto.randomUUID()}` })
-      const url = await insertTestUrlDirect(
-        null,
-        `https://story-projection-scale-${crypto.randomUUID()}.example.test/article`,
-      )
-      expect(url).toBeDefined()
-      await insertTestStoryRssFeedItemsBatch({
-        storyId: story.id,
-        urlId: url!.id,
-        count: itemCount,
-      })
-      const prepared = await prepareStoryPost(story.id, testUser)
-      const { post } = prepared.response
+    const prepared = await prepareStoryPost(story.id, testUser)
+    const { post } = prepared.response
 
-      let processed = 0
-      let maxPageSize = 0
-      let observedReceiptCount: number | undefined
-      const iterationLimit =
-        2 * Math.ceil(itemCount / getStoriesWorkLimit('post_related_url_projection_page_size')) + 10
-      for (let iteration = 0; iteration < iterationLimit; iteration += 1) {
-        const result = await processOwnedStoryProjectionPage(post.id)
-        maxPageSize = Math.max(maxPageSize, result.processed)
-        processed += result.processed
-        if (processed === itemCount && observedReceiptCount === undefined) {
-          observedReceiptCount = await getTestStoryPostProjectionReceiptCount(post.id)
-        }
-        if (!result.continue) break
-      }
+    const first = await processOwnedStoryProjectionPage(post.id)
+    expect(first).toMatchObject({ processed: itemCount, continue: true })
+    await expect(getTestStoryPostProjectionReceiptCount(post.id)).resolves.toBe(1)
 
-      expect(maxPageSize).toBeLessThanOrEqual(
-        getStoriesWorkLimit('post_related_url_projection_page_size'),
-      )
-      expect(processed).toBe(2 * itemCount)
-      expect(observedReceiptCount).toBe(1)
-      await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([url!.id])
-      await expect(getTestStoryPostProjectionReceiptCount(post.id)).resolves.toBe(0)
-    } finally {
-      restorePageSize()
-    }
+    await drainProjection(post.id)
+    await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([url!.id])
+    await expect(getTestStoryPostProjectionReceiptCount(post.id)).resolves.toBe(0)
   })
 
   it('keeps a generation at its captured high-water until a later refresh', async () => {
@@ -170,13 +150,38 @@ describe('story post related URL projection', () => {
     await expect(getTestStoryPostProjectionReceiptCount(post.id)).resolves.toBe(0)
   })
 
-  it('attributes a pruned related URL to story-teller', async () => {
-    const { post, story } = await createProjectablePost('prune-attribution')
-    const manualUrl = await insertTestUrlDirect(
-      null,
-      `https://story-projection-prune-${crypto.randomUUID()}.example.test/article`,
-    )
-    if (!manualUrl) throw new Error('Expected manual projection URL')
+  it('attributes a pruned projection to story-teller and keeps a hand-added URL', async () => {
+    const suffix = randomUUID()
+    const [feed, story, sourceUrl, manualUrl] = await Promise.all([
+      createTestRssFeed({}),
+      insertTestStory({ title: `Projection prune ${suffix}` }),
+      insertTestUrlDirect(null, `https://story-projection-source-${suffix}.example.test/article`),
+      insertTestUrlDirect(null, `https://story-projection-manual-${suffix}.example.test/article`),
+    ])
+    if (!sourceUrl || !manualUrl) throw new Error('Expected projection URLs')
+    const itemData = { title: suffix, link: `https://example.com/${suffix}` }
+    const companionData = {
+      title: `${suffix}-companion`,
+      link: `https://example.com/${suffix}-companion`,
+    }
+    const itemId = await insertTestRssFeedItem({
+      rssFeedId: feed.id,
+      urlId: sourceUrl.id,
+      guid: suffix,
+      itemData,
+      contentSha256: createHash('sha256').update(JSON.stringify(itemData)).digest(),
+    })
+    const companionId = await insertTestRssFeedItem({
+      rssFeedId: feed.id,
+      urlId: sourceUrl.id,
+      guid: `${suffix}-companion`,
+      itemData: companionData,
+      contentSha256: createHash('sha256').update(JSON.stringify(companionData)).digest(),
+    })
+    await setTestItemStoryId(itemId, story.id)
+    await setTestItemStoryId(companionId, story.id)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    const { post } = prepared.response
     await drainProjection(post.id)
     const relatedUrl = getEntityRelationMetadataOrThrow({
       subjectType: 'post',
@@ -184,15 +189,18 @@ describe('story post related URL projection', () => {
       objectType: 'url',
     })
     await upsertEntityRelation(testUser, relatedUrl, { id: post.id }, [{ id: manualUrl.id }])
-
+    await setTestItemStoryId(itemId, null)
+    await setTestItemStoryId(companionId, null)
     await refreshStoryPostForStory(story.id)
     await drainProjection(post.id)
 
     const storyTeller = await getSystemUserByUsername('story-teller')
     if (!storyTeller) throw new Error('Expected story-teller system user')
-    await expect(getTestStoryPostRelatedUrlDeletedById(post.id, manualUrl.id)).resolves.toBe(
+    await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([manualUrl.id])
+    await expect(getTestStoryPostRelatedUrlDeletedById(post.id, sourceUrl.id)).resolves.toBe(
       storyTeller.id,
     )
+    await expect(getTestStoryPostRelatedUrlDeletedById(post.id, manualUrl.id)).resolves.toBeNull()
   })
 })
 

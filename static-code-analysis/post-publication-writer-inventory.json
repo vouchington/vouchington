@@ -38,7 +38,7 @@
     "backend/services/stories/story-post-create.mts",
     "backend/services/stories/story-post-related-url-projection-reconcile.mts",
     "backend/services/stories/story-post-related-url-projection-relations.mts",
-    "backend/services/stories/story-post-related-url-projection-replacements.mts",
+    "backend/services/stories/story-post-related-url-projection-prune.mts",
     "backend/services/users/suspension.mts",
     "backend/services/users/delete-entity-relation-votes.mts",
     "backend/services/users/delete-entity-relation-votes-batches.mts",

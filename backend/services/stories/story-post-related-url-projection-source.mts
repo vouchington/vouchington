@@ -1,10 +1,13 @@
-import { getStoriesWorkLimit } from './work-limits.mts'
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write, type QueryOptions } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
+import { getRelationTypeLimit } from '@services/entity-relations/relation-limits-config'
 import { containsReferralLinks } from '@services/referral-program-link-validations/contains-referral-links'
-import { assertUrlsHaveNoBlockedHostnames } from '@services/urls/assert-hostname-not-blocked'
 import pMap from 'p-map'
-import sql from 'sql-template-strings'
-import { publicationStoryItemPageCtes } from '@services/post-publication/story-item-pages'
+import {
+  decidePendingRowsInOrder,
+  decidePendingStoryPostRelatedUrlProjectionRow,
+  type PendingEligibilityInput,
+} from './story-post-related-url-projection-source-decisions.mts'
 import type {
   ProjectionWork,
   SourceDecision,
@@ -14,47 +17,54 @@ import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related
 
 const SAFETY_CONCURRENCY = 5
 
-export async function getStoryPostRelatedUrlProjectionSourcePage(input: {
-  storyId: string
-  sourceCursorId: string | null
-  sourceHighWaterId: string
-  limit: number
-}): Promise<SourceRow[]> {
-  const cursor = input.sourceCursorId ?? '00000000-0000-0000-0000-000000000000'
-  const scope = sql`SELECT ${input.storyId}::uuid AS story_id, ${cursor}::uuid AS cursor_id, ${input.sourceHighWaterId}::uuid AS high_water_id`
-  const statement = sql`/* storyPostRelatedUrlProjectionSourcePage */ `.append(
-    publicationStoryItemPageCtes(scope, input.limit, input.sourceCursorId === null, true),
-  ).append(sql`SELECT items.id, items.url_id, urls.url FROM items
-      JOIN urls ON urls.id = items.url_id ORDER BY items.id`)
-  const { rows } = await write<SourceRow>(statement)
+export async function getStoryPostRelatedUrlProjectionPrefix(
+  input: {
+    storyId: string
+    sourceHighWaterId: string
+    limit: number
+  },
+  query?: TransactionQuery,
+): Promise<SourceRow[]> {
+  const statement = `/* getStoryPostRelatedUrlProjectionPrefix */
+    SELECT items.id, items.url_id, urls.url
+    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
+    FROM rss_feed_items items
+    JOIN urls ON urls.id = items.url_id
+    WHERE items.story_id = $1 AND items.deleted_at IS NULL AND items.id <= $2
+    -- deleted_at is NULL for every admitted row, so this is item-id order on
+    -- idx_rss_feed_items__story_id__deleted_at__id.
+    ORDER BY items.story_id, items.deleted_at, items.id
+    LIMIT $3`
+  const values = [input.storyId, input.sourceHighWaterId, input.limit]
+  const { rows } = query
+    ? await query<SourceRow>(statement, values)
+    : await write<SourceRow>(statement, values)
   return rows
 }
 
 export async function getStoryPostRelatedUrlProjectionSourcePageForWork(
   work: ProjectionWork,
+  query?: TransactionQuery,
 ): Promise<SourceRow[]> {
-  const STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE = getStoriesWorkLimit(
-    'post_related_url_projection_page_size',
-  )
+  const capacity = getRelationTypeLimit('relation__post__related__url')
+  if (capacity === null) throw new Error('Missing post related URL limit')
   // A NULL high-water is a real empty snapshot, not an unbounded scan that could
   // accidentally absorb items assigned after this generation began.
   if (!work.sweep_upper_bound_source_id) return []
-  return getStoryPostRelatedUrlProjectionSourcePage({
-    storyId: work.story_id,
-    sourceCursorId: work.cursor_source_id,
-    sourceHighWaterId: work.sweep_upper_bound_source_id,
-    limit: STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE,
-  })
-}
-
-type PendingEligibilityInput = {
-  row: SourceRow
-  referralUrls: ReadonlySet<string>
+  return getStoryPostRelatedUrlProjectionPrefix(
+    {
+      storyId: work.story_id,
+      sourceHighWaterId: work.sweep_upper_bound_source_id,
+      limit: capacity,
+    },
+    query,
+  )
 }
 
 export async function decideStoryPostRelatedUrlProjectionRows(
   work: ProjectionWork,
   rows: SourceRow[],
+  options: QueryOptions = {},
 ): Promise<SourceDecision[]> {
   const uniqueByUrlId = new Map<string, SourceRow>()
   for (const row of rows) {
@@ -63,29 +73,39 @@ export async function decideStoryPostRelatedUrlProjectionRows(
   const uniqueRows = [...uniqueByUrlId.values()]
   const uniqueUrlIds: string[] = []
   for (const row of uniqueRows) uniqueUrlIds.push(row.url_id)
-  const { rows: receiptRows } = await write<{ url_id: string; is_eligible: boolean }>(
-    `/* storyPostRelatedUrlProjectionExistingReceipts */
-      SELECT url_id, is_eligible FROM story_post_related_url_projection_receipts
-      WHERE post_id = $1 AND generation = $2 AND url_id = ANY($3::uuid[])`,
-    [work.post_id, work.generation, uniqueUrlIds],
-  )
   const receiptDecisions = new Map<string, boolean>()
-  for (const row of receiptRows) receiptDecisions.set(row.url_id, row.is_eligible)
+  // The admission transaction rechecks every prefix URL under the hostname locks.
+  if (!options.query && uniqueUrlIds.length > 0) {
+    const { rows: receiptRows } = await write<{ url_id: string; is_eligible: boolean }>(
+      `/* storyPostRelatedUrlProjectionExistingReceipts */
+        SELECT url_id, is_eligible FROM story_post_related_url_projection_receipts
+        WHERE post_id = $1 AND generation = $2 AND url_id = ANY($3::uuid[])`,
+      [work.post_id, work.generation, uniqueUrlIds],
+      options,
+    )
+    for (const row of receiptRows) receiptDecisions.set(row.url_id, row.is_eligible)
+  }
   const pendingRows: SourceRow[] = []
   for (const row of uniqueRows) {
     if (!receiptDecisions.has(row.url_id)) pendingRows.push(row)
   }
   const pendingUrls: string[] = []
   for (const row of pendingRows) pendingUrls.push(row.url)
-  const { matched_urls: matched } = await containsReferralLinks(pendingUrls, { readOnly: false })
+  const { matched_urls: matched } = await containsReferralLinks(pendingUrls, {
+    ...options,
+    readOnly: false,
+  })
   const referralUrls = new Set<string>()
   for (const row of matched) referralUrls.add(row.url)
   const pendingInputs: PendingEligibilityInput[] = []
   for (const row of pendingRows) pendingInputs.push({ row, referralUrls })
-  const decisions = await pMap(pendingInputs, decidePendingStoryPostRelatedUrlProjectionRow, {
-    concurrency: SAFETY_CONCURRENCY,
-    stopOnError: true,
-  })
+  const decisions = options.query
+    ? await decidePendingRowsInOrder(pendingInputs, options)
+    : await pMap(
+        pendingInputs,
+        input => decidePendingStoryPostRelatedUrlProjectionRow(input, options),
+        { concurrency: SAFETY_CONCURRENCY, stopOnError: true },
+      )
   const pendingDecisions = new Map<string, boolean>()
   for (let index = 0; index < pendingInputs.length; index++) {
     pendingDecisions.set(pendingInputs[index]!.row.url_id, decisions[index]!)
@@ -100,27 +120,28 @@ export async function decideStoryPostRelatedUrlProjectionRows(
   return sourceDecisions
 }
 
-async function decidePendingStoryPostRelatedUrlProjectionRow(
-  input: PendingEligibilityInput,
-): Promise<boolean> {
-  if (input.referralUrls.has(input.row.url)) return false
-  try {
-    // No user id: historical RSS URLs must never penalize @story-teller.
-    await assertUrlsHaveNoBlockedHostnames([input.row.url_id])
-    return true
-  } catch (err) {
-    if (isUnsafeUrlError(err)) return false
-    throw err
-  }
-}
-
 export async function stageStoryPostRelatedUrlProjectionReceipts(
   work: ProjectionWork,
   rows: SourceDecision[],
+  existingQuery?: TransactionQuery,
 ): Promise<boolean> {
-  if (rows.length === 0) return isStoryPostRelatedUrlProjectionWorkCurrent(work)
+  if (rows.length === 0)
+    return isStoryPostRelatedUrlProjectionWorkCurrent(work, existingQuery, false)
+  if (existingQuery)
+    return stageStoryPostRelatedUrlProjectionReceiptsOn(existingQuery, work, rows, false)
   await using query = await beginTransaction()
-  if (!(await isStoryPostRelatedUrlProjectionWorkCurrent(work, query, true))) return false
+  const staged = await stageStoryPostRelatedUrlProjectionReceiptsOn(query, work, rows, true)
+  if (staged) await query.commit()
+  return staged
+}
+
+async function stageStoryPostRelatedUrlProjectionReceiptsOn(
+  query: TransactionQuery,
+  work: ProjectionWork,
+  rows: SourceDecision[],
+  lock: boolean,
+): Promise<boolean> {
+  if (!(await isStoryPostRelatedUrlProjectionWorkCurrent(work, query, lock))) return false
   await query(
     `/* stageStoryPostRelatedUrlProjectionReceipts */
       INSERT INTO story_post_related_url_projection_receipts
@@ -137,7 +158,6 @@ export async function stageStoryPostRelatedUrlProjectionReceipts(
       sourceRowEligibility(rows),
     ],
   )
-  await query.commit()
   return true
 }
 
@@ -157,13 +177,4 @@ function sourceRowEligibility(rows: SourceDecision[]): boolean[] {
   const eligibility: boolean[] = []
   for (const row of rows) eligibility.push(row.is_eligible)
   return eligibility
-}
-
-function isUnsafeUrlError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'status' in error &&
-    (error.status === 400 || error.status === 422)
-  )
 }
