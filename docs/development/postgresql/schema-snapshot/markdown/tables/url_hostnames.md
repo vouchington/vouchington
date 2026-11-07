@@ -88,9 +88,8 @@ Not partitioned — growth: unbounded.
 - `idx_url_hostnames__reversed_hostname__id`: `CREATE INDEX idx_url_hostnames__reversed_hostname__id ON public.url_hostnames USING btree (reversed_hostname COLLATE "C", id)`
 - `idx_url_hostnames__reversed_hostname__text_pattern_ops`: `CREATE INDEX idx_url_hostnames__reversed_hostname__text_pattern_ops ON public.url_hostnames USING btree (reversed_hostname text_pattern_ops)`
 - `idx_url_hostnames__skip_web_risk`: `CREATE INDEX idx_url_hostnames__skip_web_risk ON public.url_hostnames USING btree (hostname text_pattern_ops) WHERE (should_skip_web_risk = true)`
-- `idx_url_hostnames__top_sort`: `CREATE INDEX idx_url_hostnames__top_sort ON public.url_hostnames USING btree (votes_score_sort DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0))`
-- `idx_url_hostnames__top_sort_by_topic`: `CREATE INDEX idx_url_hostnames__top_sort_by_topic ON public.url_hostnames USING btree (topic_id, votes_score_sort DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))`
 - `idx_url_hostnames__topic_id`: `CREATE INDEX idx_url_hostnames__topic_id ON public.url_hostnames USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
+- `idx_url_hostnames__topic_id__votes_score_sort__id`: `CREATE INDEX idx_url_hostnames__topic_id__votes_score_sort__id ON public.url_hostnames USING btree (topic_id, votes_score_sort DESC, id DESC) WHERE (topic_id IS NOT NULL)`
 - `idx_url_hostnames__updated_at_id_blocked`: `CREATE INDEX idx_url_hostnames__updated_at_id_blocked ON public.url_hostnames USING btree (updated_at, ((id)::text)) WHERE is_blocked`
 - `idx_url_hostnames__updated_at_id_not_crawlable`: `CREATE INDEX idx_url_hostnames__updated_at_id_not_crawlable ON public.url_hostnames USING btree (updated_at, ((id)::text)) WHERE ((NOT is_crawlable) AND (NOT is_blocked))`
 - `idx_url_hostnames__votes_score_sort__id`: `CREATE INDEX idx_url_hostnames__votes_score_sort__id ON public.url_hostnames USING btree (votes_score_sort DESC, id DESC)`

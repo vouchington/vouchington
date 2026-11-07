@@ -148594,79 +148594,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_url_hostnames__top_sort": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__top_sort ON public.url_hostnames USING btree (votes_score_sort DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "votes_score_sort",
-              "descending": true,
-              "expression": "votes_score_sort",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.float8_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((NOT is_blocked) AND (votes_count_up > 0))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_url_hostnames__top_sort_by_topic": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__top_sort_by_topic ON public.url_hostnames USING btree (topic_id, votes_score_sort DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "votes_score_sort",
-              "descending": true,
-              "expression": "votes_score_sort",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.float8_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((NOT is_blocked) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_url_hostnames__topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -148679,6 +148606,47 @@
               "descending": false,
               "expression": "topic_id",
               "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostnames__topic_id__votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__topic_id__votes_score_sort__id ON public.url_hostnames USING btree (topic_id, votes_score_sort DESC, id DESC) WHERE (topic_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.float8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
