@@ -1,16 +1,14 @@
 import { read } from '@data-stores/psql'
-import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import * as services from '../run-services.mts'
 import { runFeedRssScenarios } from './feed-rss.mts'
+import { runTopicMetricsBatchScenario } from './topic-metrics.mts'
 import { runPrioritizedReferralLinkScenarios } from './prioritized-referral-links.mts'
 import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
 import { runCommentDescendantDepthScenario } from './comment-descendant-depth.mts'
-
-const METRICS_ANCILLARY_ROW_ALLOWANCE = 1_000
 
 const {
   getCommentAncestorsByAny,
@@ -22,7 +20,6 @@ const {
   getPostMetricsByAny,
   getPostMetricsByAnyBatch,
   getTopicIds,
-  getTopicMetricsByAnyBatch,
   getTopicViewerCounts,
   getTopUrlsByHostnameIds,
   getTrendingTopics,
@@ -126,37 +123,7 @@ export async function runFeedAndMetricScenarios() {
     `${SEED_PREFIX}-0100-7000-8000-000000000004`,
   ]
   await runAndCapture('user-metrics-batch', () => getUserMetricsByAnyBatch(seedUserIds))
-  registerScenarioContract('topic-metrics-batch', {
-    expectations: [
-      { kind: 'queryBinds', token: 'requested_topic_ids' },
-      { kind: 'forbidCorrelatedAggregates' },
-      ...Object.entries({
-        posts: 5_000,
-        relation__post__category__topic: 5_000,
-        relation__post__category__topic_alias: 5_000,
-        post_review_topic_ratings: 5_000,
-        post_data_point_topics: 5_000,
-        // Category and feed-topic branches can each visit the RSS corpus.
-        rss_feed_item_categories:
-          SEEDED_ROWS_BY_RELATION.rss_feed_item_categories! + METRICS_ANCILLARY_ROW_ALLOWANCE,
-        rss_feed_item_sources:
-          (SEEDED_ROWS_BY_RELATION.rss_feed_item_sources! + METRICS_ANCILLARY_ROW_ALLOWANCE) * 2,
-        rss_feed_items:
-          SEEDED_ROWS_BY_RELATION.rss_feed_items! +
-          SEEDED_ROWS_BY_RELATION.rss_feed_item_sources! +
-          METRICS_ANCILLARY_ROW_ALLOWANCE * 2,
-        rss_feeds: 6_000,
-      }).map(([relation, max]) => ({ kind: 'maxProcessedRows' as const, relation, max })),
-    ],
-    crossPartition: {
-      posts: 'Topic metrics aggregate posts for 100 requested topics across their id ranges.',
-      relation__post__category__topic: 'Topic metrics aggregate category relations across posts.',
-      post_review_topic_ratings: 'Topic metrics aggregate ratings across posts.',
-      post_data_point_topics: 'Topic metrics aggregate data points across posts.',
-      rss_feed_items: 'Topic metrics aggregate matching RSS items across the seed window.',
-    },
-  })
-  await runAndCapture('topic-metrics-batch', () => getTopicMetricsByAnyBatch(seedAllTopicIds))
+  await runTopicMetricsBatchScenario(seedAllTopicIds)
   const seedPostIds = Array.from({ length: 200 }, (_, index) => seedUuid(index, '05'))
   registerScenarioContract('post-metrics-batch', {
     expectations: [
