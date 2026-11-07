@@ -39,11 +39,11 @@ _none_
 **Indexes:**
 
 - `community_bans_pkey`: `CREATE UNIQUE INDEX community_bans_pkey ON public.community_bans USING btree (id)`
+- `idx_community_bans__active_expiry`: `CREATE INDEX idx_community_bans__active_expiry ON public.community_bans USING btree (community_id, user_id, COALESCE(expires_at, 'infinity'::timestamp with time zone), id) WHERE (lifted_at IS NULL)`
 - `idx_community_bans__banned_by_id`: `CREATE INDEX idx_community_bans__banned_by_id ON public.community_bans USING btree (banned_by_id) WHERE (banned_by_id IS NOT NULL)`
 - `idx_community_bans__case_id`: `CREATE INDEX idx_community_bans__case_id ON public.community_bans USING btree (case_id)`
-- `idx_community_bans__community_id`: `CREATE INDEX idx_community_bans__community_id ON public.community_bans USING btree (community_id) WHERE (community_id IS NOT NULL)`
+- `idx_community_bans__community_id_id`: `CREATE INDEX idx_community_bans__community_id_id ON public.community_bans USING btree (community_id, id)`
 - `idx_community_bans__lifted_by_id`: `CREATE INDEX idx_community_bans__lifted_by_id ON public.community_bans USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)`
-- `idx_community_bans__lookup`: `CREATE INDEX idx_community_bans__lookup ON public.community_bans USING btree (community_id, user_id) WHERE (lifted_at IS NULL)`
 - `idx_community_bans__user`: `CREATE INDEX idx_community_bans__user ON public.community_bans USING btree (user_id, id DESC) WHERE (lifted_at IS NULL)`
 - `idx_community_bans__user_id`: `CREATE INDEX idx_community_bans__user_id ON public.community_bans USING btree (user_id) WHERE (user_id IS NOT NULL)`
 
