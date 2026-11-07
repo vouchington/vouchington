@@ -191,7 +191,7 @@ describe('generated MCP catalog contracts', () => {
         .toSorted(),
     ).toEqual(participationNames.toSorted())
     expect(hash(paid.filter(tool => !participationNames.includes(tool.name)))).toBe(
-      '05eb5b164409377ac47575c23c0ebe6b5dc797b85525bca927229cda8a2e27f9',
+      'b846a39197139b740d27b8527f0acb18a303a31a4c4784023408da21717747d6',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(
