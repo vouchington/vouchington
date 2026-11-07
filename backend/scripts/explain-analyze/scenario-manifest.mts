@@ -19,7 +19,11 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'url-blocklist-hostnames',
   'hostname-cache-invalidation-claim',
   ...(['mv-top-hashtags-refresh', 'mv-rss-feed-crawl-tiers-refresh'] as const),
-  ...(['mv-platform-stats-refresh', 'mv-trending-rss-feeds-refresh'] as const),
+  ...([
+    'mv-platform-stats-refresh',
+    'mv-trending-rss-feeds-refresh',
+    'mv-trending-communities-refresh',
+  ] as const),
   ...(['mv-revenue-memberships-refresh', 'mv-revenue-changes-refresh'] as const),
   ...INGESTION_PAGE_SCENARIO_IDS,
   'post-search-similar-post-new',
