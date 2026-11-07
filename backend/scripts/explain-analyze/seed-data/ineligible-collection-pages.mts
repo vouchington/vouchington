@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 
-/** One keyset page is 21 rows. Live targets sit on every 10th key, so the first page stays short. */
+/** One keyset page is 21 rows. Live targets sit on every 10th key, so a filled page reads past them. */
 export const INELIGIBLE_COLLECTION_PAGE_COUNT = 400
 export const INELIGIBLE_COLLECTION_PAGE_LIMIT = 21
 

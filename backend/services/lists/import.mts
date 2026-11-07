@@ -16,28 +16,21 @@ export function importCommunityListPostsSourceSql(
   limit: number,
   delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string },
 ): SQLStatement {
-  // Newest live memberships for one community. ORDER BY id DESC matches
-  // idx_community_list_posts__community_id__id, the same shape as a user-list page.
+  // One walk of idx_community_list_posts__community_id__id. Eligibility is in WHERE, so a
+  // deleted newest membership does not consume the copy limit.
   const statement = sql`/* importCommunityListPostsSource */
-    WITH source_page AS MATERIALIZED (
-      SELECT item.post_id
-      FROM community_list_posts item
-      WHERE item.community_id = ${communityId}::uuid
-        AND item.removed_at IS NULL
-      ORDER BY item.id DESC
-      LIMIT ${limit}
-    )
     SELECT ${targetListId}::uuid, picked.id
     FROM (
     SELECT candidate_post.id
-    FROM source_page item
-    JOIN posts candidate_post
-      ON candidate_post.id = item.post_id
-     AND candidate_post.deleted_at IS NULL
+    FROM community_list_posts item
+    JOIN posts candidate_post ON candidate_post.id = item.post_id
     JOIN posts access_post
       ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-     AND access_post.deleted_at IS NULL
-    WHERE `
+    WHERE item.community_id = ${communityId}::uuid
+      AND item.removed_at IS NULL
+      AND candidate_post.deleted_at IS NULL
+      AND access_post.deleted_at IS NULL
+      AND `
   const eligibility = buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'listed')
   statement.append(eligibility)
   if (delegated) {
@@ -56,6 +49,8 @@ export function importCommunityListPostsSourceSql(
       )`)
   }
   statement.append(sql`
+    ORDER BY item.id DESC
+    LIMIT ${limit}
     ) picked
     ORDER BY picked.id ASC NULLS LAST`)
   return statement
@@ -66,15 +61,15 @@ export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeed
   FROM (
   SELECT rfi.id
   FROM (
-    SELECT rss_feed_id
-    FROM community_list_rss_feeds
-    WHERE community_id = $2 AND removed_at IS NULL
-    ORDER BY rss_feed_id
+    SELECT item.rss_feed_id
+    FROM community_list_rss_feeds item
+    JOIN rss_feeds rf ON rf.id = item.rss_feed_id
+      AND rf.deleted_at IS NULL
+      AND rf.is_enabled = true
+    WHERE item.community_id = $2 AND item.removed_at IS NULL
+    ORDER BY item.rss_feed_id
     LIMIT $5
   ) item
-  JOIN rss_feeds rf ON rf.id = item.rss_feed_id
-    AND rf.deleted_at IS NULL
-    AND rf.is_enabled = true
   JOIN LATERAL (
     SELECT rfis.rss_feed_item_id, rfis.published_at
     FROM rss_feed_item_sources rfis
@@ -91,10 +86,10 @@ export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeed
 
 /**
  * Copies a community's posts and feed items into a list the caller already loaded through
- * `getManageableList`, which has answered the 404 and 403 for it. Posts use one raw membership
- * page of `limit` newest live rows, then list-read discovery eligibility. Ineligible rows inside
- * that page are not replaced from older memberships. A delegated copy also drops a private root
- * the items path would refuse. Each source is bounded by the same runtime limit.
+ * `getManageableList`, which has answered the 404 and 403 for it. Posts are one walk of the
+ * newest live memberships with list-read discovery eligibility in WHERE, up to the import limit.
+ * A delegated copy also drops a private root the items path would refuse. Each source is bounded
+ * by the same runtime limit.
  */
 export async function importCommunityList(
   targetList: ManageableList,
