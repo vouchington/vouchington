@@ -1,17 +1,24 @@
 import { encodeScopedUuidCursor } from '@modules/pagination'
-import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser } from '@voucha/test-helpers'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { readTestStripePurchaseCollisionReview } from '@voucha/test-helpers/stripe-purchase-collision-work'
-import {
-  restoreTestStripePurchaseCollisionReview,
-  seedTestStripePurchaseCollisionReview,
-} from '../../../services/memberships/ineligible-stripe-purchase-reversal/__tests__/collision-review-seed.mts'
-import { getTestIneligiblePurchaseReversalCase } from '@voucha/test-helpers/entities/memberships-reversals'
+import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import { collisionReviewPageConfig } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review-page'
+import { recordStripePurchaseCollisionReviews } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review'
+import { createProviderMembershipSource } from '@services/memberships/provider-source'
+import type { PrivateUser } from '@services/users/types'
+import { createTestUser } from '@voucha/test-helpers'
+import { createRequest } from '@voucha/test-helpers/api/server'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { getTestIneligiblePurchaseReversalCase } from '@voucha/test-helpers/entities/memberships-reversals'
+import { bindStripePurchaseCollisionReviewSeed } from '@voucha/test-helpers/stripe-purchase-collision-review-seed'
+import { readTestStripePurchaseCollisionReview } from '@voucha/test-helpers/stripe-purchase-collision-work'
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
-import type { PrivateUser } from '@services/users/types'
+
+const { restoreTestStripePurchaseCollisionReview, seedTestStripePurchaseCollisionReview } =
+  bindStripePurchaseCollisionReviewSeed({
+    getStripeMembershipSourceIdentity,
+    createProviderMembershipSource,
+    recordStripePurchaseCollisionReviews,
+  })
 
 const LIST = '/api/v1/admin/membership-stripe-purchase-collision-reviews'
 
