@@ -80,13 +80,13 @@ RUN echo "Refreshing Alpine security packages: ${ALPINE_SECURITY_REFRESH}" && \
 
 # A rm in a child of the Bun image only whiteouts files. The upstream layer
 # would still be pulled. Assemble the cleaned root at /out and copy that tree
-# onto scratch so bunx, the upstream Node alias, and local docs are absent
+# onto scratch so bunx and local docs are absent
 # from the runtime image. Copying `/` is rejected by Hadolint
 # DL3067; `/out` keeps the same merged filesystem without proc, sys, or dev.
-# scratch drops image config, so restore the Bun PATH and entrypoint
-# that `env` / `docker-entrypoint.sh` resolution depends on.
+# scratch drops image config, so restore the upstream Bun PATH, including its
+# existing node-to-bun alias, and the exec entrypoint.
 FROM base-alpine AS runtime-root
-RUN rm -rf /usr/local/bin/bunx /usr/local/bun-node-fallback-bin \
+RUN rm -rf /usr/local/bin/bunx \
            /usr/local/share/doc /usr/local/share/man \
            /usr/share/doc /usr/share/man /usr/share/info && \
     mkdir /out && \
@@ -94,7 +94,7 @@ RUN rm -rf /usr/local/bin/bunx /usr/local/bun-node-fallback-bin \
 
 FROM scratch AS runtime-base
 COPY --from=runtime-root /out /
-ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bun-node-fallback-bin
 ENV BUN_RUNTIME_TRANSPILER_CACHE_PATH=0
 ENTRYPOINT ["docker-entrypoint.sh"]
 
