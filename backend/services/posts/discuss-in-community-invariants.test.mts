@@ -105,9 +105,6 @@ describe('discuss-in-community-invariants', () => {
         parent_post_id: discussInCommunity.id,
       })
 
-      await expect(getPostMetricsByAny(discussInCommunity.id)).resolves.toMatchObject({
-        count: { ancestors: 0 },
-      })
       await expect(getCommentAncestorsByAny(comment.id)).resolves.toEqual([
         expect.objectContaining({ id: discussInCommunity.id }),
         expect.objectContaining({ id: comment.id }),

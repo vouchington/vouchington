@@ -195,7 +195,6 @@
         "save": 0
       },
       "count": {
-        "ancestors": 4,
         "children": 2,
         "descendants": 3
       },
@@ -209,7 +208,6 @@
         "save": 0
       },
       "count": {
-        "ancestors": 3,
         "children": 1,
         "descendants": 2
       },
@@ -223,7 +221,6 @@
         "save": 0
       },
       "count": {
-        "ancestors": 2,
         "children": 0,
         "descendants": 1
       },
