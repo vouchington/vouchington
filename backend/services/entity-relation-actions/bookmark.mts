@@ -44,14 +44,14 @@ export async function prepareBookmarkActions(
         type === 'topic' ? (await getTopicByAnyWithRedirectCached(entityId))?.topic.id : entityId
       assert(targetId, 404, 'Entity not found')
       assert(
-        // no-mistakes-disable-next-line query-reached-per-item: preserve individual target visibility errors before grouped mutation
+        // no-mistakes-disable-next-line query-reached-per-item: KEEP, work differs per entity type (topic redirect resolution above, then this type-specific currentUserCanBookmarkTarget check); read-only, no lock held across items (runs before relation-limit admission and the batched writes); capped at 500 (SET_BOOKMARK_LIMIT mcp/set-bookmark-batch.mts:26, MAX_IMPORT_ITEMS user-import-export/import-topics.mts:21)
         await currentUserCanBookmarkTarget(currentUser, type, targetId, predicate),
         404,
         'Entity not found',
       )
       let guard: Awaited<ReturnType<typeof assertPostTargetAccess>> | undefined
       if (type === 'post' && authority.kind === 'delegated') {
-        // no-mistakes-disable-next-line query-reached-per-item: delegated post guards preserve per-target consent refusals
+        // no-mistakes-disable-next-line query-reached-per-item: KEEP, delegated post-access guard is per post (per-target 403/404 consent refusal); read-only, no lock held across items (runs before relation-limit admission and the batched writes); capped at 500 (SET_BOOKMARK_LIMIT mcp/set-bookmark-batch.mts:26)
         guard = await assertPostTargetAccess(currentUser, authority, entityId)
       }
       return {

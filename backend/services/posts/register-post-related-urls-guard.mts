@@ -16,16 +16,16 @@ async function guardPostRelatedUrls(
   const communityId = post?.community_id
   if (!communityId) return
 
-  await Promise.all(
-    urlIds.map(urlId =>
-      assertCommunityNoLinksAllowed({
-        communityId,
-        currentUser: creator,
-        options,
-        updates: { url_id: urlId },
-      }),
-    ),
-  )
+  // The restriction only tests whether the post carries a url_id, so any one related URL decides
+  // for all of them and the membership and restriction reads happen once.
+  const [firstUrlId] = urlIds
+  if (!firstUrlId) return
+  await assertCommunityNoLinksAllowed({
+    communityId,
+    currentUser: creator,
+    options,
+    updates: { url_id: firstUrlId },
+  })
 }
 
 // Registers this package's community-link-restriction check as entity-relations' post/url

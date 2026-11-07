@@ -15,7 +15,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { rowToListItem } from './item-row.mts'
 import { postItemFactsSql } from './item-facts.mts'
 import { listItemEligibleSql } from './list-item-eligible-sql.mts'
-export { addListItem } from './add-item.mts'
+export { addListItem, addListItems } from './add-item.mts'
 
 type ListItemPageRow = Record<string, unknown> & {
   eligible: boolean

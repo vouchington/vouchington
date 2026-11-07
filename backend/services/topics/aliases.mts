@@ -10,7 +10,7 @@ import { runTopicAliasTransaction } from './alias-transaction.mts'
 import { finalizeClaimedTopicAliases } from './finalize-claimed-aliases.mts'
 
 export { unlinkTopicAlias } from './delete-topic-aliases.mts'
-export { createUnlinkedTopicAlias } from './create-unlinked-alias.mts'
+export { createUnlinkedTopicAlias, createUnlinkedTopicAliases } from './create-unlinked-alias.mts'
 export { finalizeClaimedTopicAliases } from './finalize-claimed-aliases.mts'
 export { claimTopicAlias } from './claim-topic-alias.mts'
 export { linkTopicAlias } from './link-topic-alias.mts'

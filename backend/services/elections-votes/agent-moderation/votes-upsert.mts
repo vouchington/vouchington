@@ -1,4 +1,4 @@
-import { recordModeratorAction } from '@services/moderator-actions'
+import { recordModeratorActions } from '@services/moderator-actions'
 import {
   registerPostCommitAction,
   runWithTransaction,
@@ -114,24 +114,22 @@ export async function upsertAgentModerationElectionVotes(
     if (onVote) {
       await Promise.all(inserted.map(vote => onVote(vote, query)))
     }
-    await Promise.all(
-      inserted.map(vote =>
-        recordModeratorAction(
-          userId,
-          {
-            actionType:
-              vote.score === null ? 'agent_moderation_vote_delete' : 'agent_moderation_vote_set',
-            agentModerationId: vote.entity_id,
-            agentModerationPostId: vote.post_id,
-            postId: vote.post_id,
-            metadata: {
-              before: { score: previousScores.get(vote.entity_id) ?? null },
-              after: { score: vote.score },
-            },
-          },
-          { query },
-        ),
-      ),
+    await recordModeratorActions(
+      userId,
+      inserted.map(vote => ({
+        actionType:
+          vote.score === null
+            ? ('agent_moderation_vote_delete' as const)
+            : ('agent_moderation_vote_set' as const),
+        agentModerationId: vote.entity_id,
+        agentModerationPostId: vote.post_id,
+        postId: vote.post_id,
+        metadata: {
+          before: { score: previousScores.get(vote.entity_id) ?? null },
+          after: { score: vote.score },
+        },
+      })),
+      { query },
     )
     const rows = inserted.map(({ post_id: _postId, ...vote }) => vote)
 

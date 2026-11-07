@@ -1,17 +1,8 @@
 import createError from 'http-errors'
-import {
-  beginTransaction,
-  read,
-  write,
-  withTransactionOptions,
-  type QueryOptions,
-} from '@data-stores/psql'
+import { read, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export const upsertMediaTypes = async (
-  mimeType: string,
-  options: QueryOptions = {},
-): Promise<string | null> => {
+function normalizeMimeType(mimeType: string): string {
   const normalizedMimeType = mimeType.trim().toLowerCase()
   if (
     normalizedMimeType.length > 255 ||
@@ -19,74 +10,64 @@ export const upsertMediaTypes = async (
   ) {
     throw createError(422, 'Invalid MIME type')
   }
-
-  const existing = await readMediaTypeId(normalizedMimeType, options)
-  if (existing) return existing
-
-  const run = (query: QueryOptions['query']) =>
-    upsertMissingMediaType(normalizedMimeType, { ...options, query })
-  if (options.query || options.client) return withTransactionOptions(options, run)
-  await using transaction = await beginTransaction()
-  const result = await run(transaction)
-  await transaction.commit()
-  return result
+  return normalizedMimeType
 }
 
-async function readMediaTypeId(
-  normalizedMimeType: string,
-  options: QueryOptions,
-): Promise<string | null> {
-  const { rows } = await read(
-    sql`/* getMediaTypeIdByMimeType */
-      SELECT id
-      FROM media_types
-      WHERE mime_type = ${normalizedMimeType}
-      LIMIT 1
-    `,
-    options,
-  )
-
-  return rows[0]?.id || null
+export const upsertMediaTypes = async (
+  mimeType: string,
+  options: QueryOptions = {},
+): Promise<string | null> => {
+  const normalizedMimeType = normalizeMimeType(mimeType)
+  return (await upsertMediaTypeIds([normalizedMimeType], options)).get(normalizedMimeType) ?? null
 }
 
-async function upsertMissingMediaType(
-  normalizedMimeType: string,
-  options: QueryOptions,
-): Promise<string | null> {
-  await write(
-    sql`/* lockMediaTypeByMimeType */
-      SELECT pg_advisory_xact_lock(hashtext('media_types'), hashtext(${normalizedMimeType}))
-    `,
-    options,
-  )
+type MediaTypeRow = { id: string; mime_type: string }
 
-  const existing = await readMediaTypeId(normalizedMimeType, options)
-  if (existing) return existing
-
-  const { rows } = await write(
-    sql`/* insertMediaType */
-      INSERT INTO media_types (mime_type)
-      VALUES (${normalizedMimeType})
-      RETURNING id
-    `,
-    options,
-  )
-
-  return rows[0]?.id || null
-}
-
-/** Resolve a bounded batch in one lock order, preserving the caller's transaction. */
+/**
+ * Resolves a bounded batch of MIME types to ids with one read and, for types not yet stored, one
+ * INSERT in sorted order, preserving the caller's transaction. Returns ids by normalized type.
+ */
 export async function upsertMediaTypeIds(
   mimeTypes: string[],
   options: QueryOptions = {},
 ): Promise<Map<string, string | null>> {
-  const normalizedTypes = [
-    ...new Set(mimeTypes.map(value => value.trim().toLowerCase())),
-  ].toSorted()
+  const normalizedTypes = [...new Set(mimeTypes.map(normalizeMimeType))].toSorted()
   const ids = new Map<string, string | null>()
-  for (const mimeType of normalizedTypes) {
-    // oxlint-disable-next-line no-await-in-loop -- acquire shared MIME lookup locks in a stable order.
-    ids.set(mimeType, await upsertMediaTypes(mimeType, options))
+  if (normalizedTypes.length === 0) return ids
+
+  const { rows: existing } = await read<MediaTypeRow>(
+    sql`/* getMediaTypeIdsByMimeType */
+      SELECT id, mime_type FROM media_types WHERE mime_type = ANY(${normalizedTypes}::text[])
+    `,
+    options,
+  )
+  for (const row of existing) ids.set(row.mime_type, row.id)
+
+  const missing = normalizedTypes.filter(type => !ids.has(type))
+  if (missing.length > 0) {
+    const { rows: inserted } = await write<MediaTypeRow>(
+      sql`/* insertMediaTypes */
+        INSERT INTO media_types (mime_type)
+        SELECT input.mime_type
+        FROM unnest(${missing}::text[]) AS input(mime_type)
+        ORDER BY input.mime_type ASC NULLS LAST
+        ON CONFLICT (mime_type) DO NOTHING
+        RETURNING id, mime_type
+      `,
+      options,
+    )
+    for (const row of inserted) ids.set(row.mime_type, row.id)
+    // A concurrent writer may have inserted a type first; read it from the primary.
+    const raced = missing.filter(type => !ids.has(type))
+    if (raced.length > 0) {
+      const { rows } = await write<MediaTypeRow>(
+        sql`/* getInsertedMediaTypeIds */
+          SELECT id, mime_type FROM media_types WHERE mime_type = ANY(${raced}::text[])
+        `,
+        options,
+      )
+      for (const row of rows) ids.set(row.mime_type, row.id)
+    }
   }
-  return ids
+  return new Map(normalizedTypes.map(type => [type, ids.get(type) ?? null]))
 }

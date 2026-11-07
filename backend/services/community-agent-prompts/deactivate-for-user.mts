@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
-  recordCommunityAgentPromptChange,
+  recordCommunityAgentPromptChanges,
   snapshotCommunityAgentPrompt,
 } from '@services/community-agent-prompt-audit'
 import type { CommunityAgentPrompt } from './types.mts'
@@ -67,21 +67,19 @@ export async function deactivateCommunityPromptsForUser(
 
   const deactivatedAt = new Date().toISOString()
   await query.commit()
-  await Promise.all(
-    rows.map(prompt =>
-      recordCommunityAgentPromptChange(
-        actorUserId,
-        communityId,
-        prompt.id,
-        'deactivated',
-        snapshotCommunityAgentPrompt(prompt),
-        {
-          ...snapshotCommunityAgentPrompt(prompt),
-          is_slot_allocated: false,
-          activated_at: null,
-          deactivated_at: deactivatedAt,
-        },
-      ),
-    ),
+  await recordCommunityAgentPromptChanges(
+    actorUserId,
+    communityId,
+    rows.map(prompt => ({
+      agentPromptId: prompt.id,
+      action: 'deactivated' as const,
+      previousFields: snapshotCommunityAgentPrompt(prompt),
+      nextFields: {
+        ...snapshotCommunityAgentPrompt(prompt),
+        is_slot_allocated: false,
+        activated_at: null,
+        deactivated_at: deactivatedAt,
+      },
+    })),
   )
 }
