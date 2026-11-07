@@ -13,11 +13,21 @@ import {
 } from '../households/household-membership-page-row.mts'
 import {
   assertCanAddHouseholdMember,
+  householdIndividualAdmissionLockPrefix,
   householdMemberAdmissionLockPrefix,
 } from '../household-limits.mts'
 import { getOrCreateIndividual } from '../individuals/individuals.mts'
 
 async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, options: QueryOptions) {
+  await write(
+    sql`/* decideHouseholdInvitation:lock-individual */
+      SELECT pg_advisory_xact_lock(
+        hashtextextended(${householdIndividualAdmissionLockPrefix} || individual_id::text, 0)
+      )
+      FROM users
+      WHERE id = ${currentUser.id} AND individual_id IS NOT NULL`,
+    options,
+  )
   await write(
     sql`/* decideHouseholdInvitation:lock-invitee */
       SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,

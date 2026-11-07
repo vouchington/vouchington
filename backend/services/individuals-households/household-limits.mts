@@ -16,6 +16,7 @@ import { getHouseholdLimits } from './household-limits-config.mts'
  * The member-admission key is also taken before any household row lock on the accept path.
  */
 export const householdMemberAdmissionLockPrefix = 'household-member-admission:'
+export const householdIndividualAdmissionLockPrefix = 'household-individual-admission:'
 export async function assertCanCreateHousehold(
   userId: string,
   options: QueryOptions,
@@ -35,7 +36,7 @@ export async function assertCanCreateHousehold(
   if (individualId) {
     await write(
       sql`/* assertCanCreateHousehold:lock-individual */
-        SELECT pg_advisory_xact_lock(hashtextextended('household-individual-admission:' || ${individualId}, 0))`,
+        SELECT pg_advisory_xact_lock(hashtextextended(${householdIndividualAdmissionLockPrefix} || ${individualId}, 0))`,
       options,
     )
   }
@@ -83,7 +84,7 @@ export async function assertCanAddHouseholdMember(
   )
   await write(
     sql`/* assertCanAddHouseholdMember:lock-individual */
-      SELECT pg_advisory_xact_lock(hashtextextended('household-individual-admission:' || ${individualId}, 0))`,
+      SELECT pg_advisory_xact_lock(hashtextextended(${householdIndividualAdmissionLockPrefix} || ${individualId}, 0))`,
     options,
   )
   const distinctLimit = limits.householdsPerIndividual + 1
