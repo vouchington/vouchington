@@ -8,8 +8,9 @@ describe('0190-00-00-hostname-elections-indexes', () => {
       /CREATE INDEX IF NOT EXISTS idx_url_hostnames__topic_id__votes_score_sort__id/,
     )
     expect(sql).toContain('ON url_hostnames (topic_id, votes_score_sort DESC, id DESC)')
-    expect(sql).toContain('idx_url_hostnames__public_votes_score_sort__id')
+    expect(sql).toContain('idx_url_hostnames__listed_votes_score_sort__id')
     expect(sql).toContain('ON url_hostnames (votes_score_sort DESC, id DESC)')
+    expect(sql).toContain('WHERE publicly_introduced_at IS NOT NULL AND NOT is_blocked')
     expect(sql).not.toContain('votes_count_up')
   })
 })

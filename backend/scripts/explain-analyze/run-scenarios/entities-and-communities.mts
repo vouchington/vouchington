@@ -89,9 +89,12 @@ export async function runEntityAndCommunityScenarios() {
     getTrendingPosts({ timeRange: 'week', topicId: seedTopicId, limit: 25 }),
   )
 
-  // Trending communities — candidates come from windowed post activity, then counts aggregate only for those
+  // Trending communities — one keyset walk over the materialized score ranking
   registerScenarioContract('search-communities-trending', {
-    expectations: [{ kind: 'custom', name: 'trendingCommunities' }],
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_mv_trending_communities__ranking'] },
+      { kind: 'maxProcessedRows', relation: 'mv_trending_communities', max: 26 },
+    ],
   })
   await runAndCapture('search-communities-trending', () =>
     searchCommunities({ sort: 'trending', limit: 25 }),

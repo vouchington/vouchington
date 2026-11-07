@@ -6,6 +6,7 @@ const EXPLAIN_MATERIALIZED_VIEWS = [
   'mv_rss_feed_crawl_tiers',
   'mv_platform_stats',
   'mv_trending_rss_feeds',
+  'mv_trending_communities',
   'mv_revenue_memberships',
   'mv_revenue_changes',
 ] as const

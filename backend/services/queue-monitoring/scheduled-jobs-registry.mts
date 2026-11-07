@@ -20,6 +20,7 @@ const SCHEDULED_JOB_API_ORDER = [
   'refreshTopHashtags',
   'refresh-platform-stats',
   'refresh-trending-rss-feeds',
+  'refresh-trending-communities',
   'refresh-revenue-memberships',
   'refresh-revenue-changes',
   'email-digests-engagement',

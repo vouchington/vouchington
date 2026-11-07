@@ -2830,6 +2830,45 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Refresh mv_trending_communities materialized view (every five minutes)",
+        "id": "refresh-trending-communities",
+        "kind": "scheduled-jobs",
+        "schedule": "4,9,14,19,24,29,34,39,44,49,54,59 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "4,9,14,19,24,29,34,39,44,49,54,59 * * * *",
+    },
+    "schedulerId": "refresh-trending-communities",
+    "template": {
+      "data": {
+        "viewName": "mv_trending_communities",
+      },
+      "name": "refreshMaterializedView",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "mv_refresh",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Refresh mv_revenue_memberships materialized view (every five minutes)",
         "id": "refresh-revenue-memberships",
         "kind": "scheduled-jobs",
@@ -3407,6 +3446,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "job_name": "refreshMaterializedView",
     "queue_name": "psql",
     "schedule": "1,6,11,16,21,26,31,36,41,46,51,56 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Refresh mv_trending_communities materialized view (every five minutes)",
+    "id": "refresh-trending-communities",
+    "job_name": "refreshMaterializedView",
+    "queue_name": "psql",
+    "schedule": "4,9,14,19,24,29,34,39,44,49,54,59 * * * *",
     "triggerName": "trigger",
   },
   {

@@ -11,6 +11,7 @@ export async function runMaterializedViewRefreshScenarios(): Promise<void> {
     ['mv-rss-feed-crawl-tiers-refresh', 'mv_rss_feed_crawl_tiers'],
     ['mv-platform-stats-refresh', 'mv_platform_stats'],
     ['mv-trending-rss-feeds-refresh', 'mv_trending_rss_feeds'],
+    ['mv-trending-communities-refresh', 'mv_trending_communities'],
     ['mv-revenue-memberships-refresh', 'mv_revenue_memberships'],
     ['mv-revenue-changes-refresh', 'mv_revenue_changes'],
   ] as const) {
@@ -164,6 +165,10 @@ registerScenarioContract('mv-trending-rss-feeds-refresh', {
     { kind: 'maxProcessedRows', relation: 'relation__user__follow__rss_feed', max: 12000 },
   ],
   crossPartition: { rss_feed_items: 'Publication date defines each rolling trend window.' },
+})
+registerScenarioContract('mv-trending-communities-refresh', {
+  expectations: [{ kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 200000 }],
+  crossPartition: { posts: 'The post id window defines the rolling trend window.' },
 })
 registerScenarioContract('mv-revenue-memberships-refresh', {
   expectations: [
