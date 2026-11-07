@@ -42,5 +42,6 @@ export async function deleteSitemapLandingPages(): Promise<void> {
     '/* deleteSitemapLandingPages */ DELETE FROM user_landing_pages WHERE id = ANY($1::uuid[])',
     [landingIds],
   )
+  await write('/* analyzeAfterDeleteSitemapLandingPages */ ANALYZE user_landing_pages')
   await write('/* deleteSitemapLandingPages:url */ DELETE FROM urls WHERE id = $1', [landingUrlId])
 }

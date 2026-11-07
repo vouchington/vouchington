@@ -8,6 +8,7 @@ export async function runCommunityMemberRolePageScenarios(): Promise<void> {
   const communityId = COMMUNITY_MEMBERSHIP_CAP_COMMUNITY_ID
   const boundedRoleIndexes = [
     'community_members_pkey',
+    'idx_community_members__owner_community_id_id',
     'idx_community_members__active_community_role_id',
     'idx_community_members__active_community_id_id',
     'idx_community_members__active_moderators',
@@ -39,7 +40,14 @@ export async function runCommunityMemberRolePageScenarios(): Promise<void> {
   for (const scenario of scenarios) {
     registerScenarioContract(scenario.id, {
       expectations: [
-        { kind: 'usesIndexes', indexes: boundedRoleIndexes, anyOf: true },
+        {
+          kind: 'usesIndexes',
+          indexes:
+            scenario.id === 'search-community-members-owner-role'
+              ? ['idx_community_members__owner_community_id_id']
+              : boundedRoleIndexes,
+          anyOf: true,
+        },
         { kind: 'maxProcessedRows', relation: 'community_members', max: scenario.maxMembers },
         { kind: 'maxProcessedRows', relation: 'users', max: scenario.maxUsers },
       ],
