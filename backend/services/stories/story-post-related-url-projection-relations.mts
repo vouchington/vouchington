@@ -87,8 +87,7 @@ async function admitPreparedRows(
   storyTeller: StoryTeller,
 ): Promise<PreparedAdmission | { ok: false }> {
   const urlIds = uniqueUrlIds(rows)
-  // The provider writes hostname blocks on its own connection. Screening here keeps that
-  // write from waiting on the locks taken just below.
+  // ast-grep-ignore: no-three-sequential-awaits -- Web Risk must commit its hostname blocks before these locks, and the locks must precede the local eligibility recheck
   const webRiskBlockedUrls = await blockedUrlsFromWebRiskScreen(uniqueUrls(rows))
   await lockPrefixHostnames(transaction, urlIds)
   const decisions = await decideStoryPostRelatedUrlProjectionRows(
