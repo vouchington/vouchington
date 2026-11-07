@@ -30,11 +30,9 @@ RUN set -- /usr/lib/*-linux-gnu/libssl.so.3 && \
 
 # Distroless runtime base: glibc and libstdc++ for the compiled Bun executables and their native
 # addons, with no shell, apt, or package managers; nonroot user (65532) is built in.
-# nodejs26-debian13 uses Debian trixie (glibc 2.40), matching base-node, so
+# cc-debian13 uses Debian trixie (glibc 2.40), matching base-node, so
 # @glidemq/speedkey's prebuilt native binary (__isoc23_sscanf, added in glibc 2.38) works.
-# The executables don't use its Node. The ECS health check runs /nodejs/bin/node -e fetch(...)
-# until infrastructure switches to the supported healthcheck.mts executable command.
-FROM ghcr.io/vouchington/dependency-distroless-nodejs:nonroot@sha256:96455baef11b178fc135b32206e3922c515dbed2400676c94f907f8f84e6abf6 AS runtime-base
+FROM ghcr.io/vouchington/dependency-distroless-cc:nonroot@sha256:08476c244888bfb425bae1ae4dd7c17f093e972aab8426883d97f3c6f280f7c1 AS runtime-base
 COPY --from=openssl-overlay /distroless-openssl/ /
 
 # Stage 1: Install the workspace and compile the backend executables. Each runtime image ships one

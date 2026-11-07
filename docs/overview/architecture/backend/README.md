@@ -51,7 +51,6 @@ page says which layer owns what.
   including a Node `--eval` script, fails instead of serving; the image's `CMD` supplies
   `serve.mts`. The API executable also owns a bounded local HTTP health probe so task
   health checks can run without an interpreter. Image smoke checks use the compiled executables
-  as well, exercising the same runtime as the deployed processes. Infrastructure must adopt the
-  executable health command before the runtime image can drop Node.
+  as well, exercising the same runtime as the deployed processes. The distroless runtime supplies native shared libraries without shipping Node.
 
 Test project names for focused runs are in the [project name reference](../../../development/reference-project-name-reference.md).
