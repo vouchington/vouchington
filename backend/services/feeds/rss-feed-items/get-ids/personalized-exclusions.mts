@@ -1,35 +1,19 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import {
-  buildCommunityListProxyMutedRssFeedsCTE,
-  buildCommunityListProxyMutedTopicsCTE,
-  buildExcludedCTE,
-  buildHiddenCTE,
-} from '../../sql-builders/index.mts'
+import { buildExcludedCTE, buildHiddenCTE } from '../../sql-builders/index.mts'
 
 export function appendPersonalizedExclusionCTEs(
   query: SQLStatement,
   currentUserId: string | undefined,
+  communityId?: string,
 ): SQLStatement {
-  const userId = currentUserId ?? '00000000-0000-0000-0000-000000000000'
-  query.append(sql`excluded_topics AS NOT MATERIALIZED (
-    SELECT object_id AS topic_id FROM relation__user__mute__topic
-    WHERE subject_id = ${userId} AND deleted_at IS NULL
-    UNION `)
-  query.append(
-    currentUserId
-      ? buildCommunityListProxyMutedTopicsCTE(currentUserId)
-      : sql`SELECT NULL::uuid AS topic_id WHERE FALSE`,
-  )
-  query.append(sql`), excluded_rss_feeds AS NOT MATERIALIZED (
-    SELECT object_id AS rss_feed_id FROM relation__user__mute__rss_feed
-    WHERE subject_id = ${userId} AND deleted_at IS NULL
-    UNION `)
-  query.append(
-    currentUserId
-      ? buildCommunityListProxyMutedRssFeedsCTE(currentUserId)
-      : sql`SELECT NULL::uuid AS rss_feed_id WHERE FALSE`,
-  )
-  query.append(sql`), `)
+  const userId = currentUserId ?? null
+  query.append(sql`viewer_scope AS MATERIALIZED (
+    SELECT ${userId}::uuid AS user_id, ${communityId ?? null}::uuid AS community_id,
+      EXISTS (SELECT 1 FROM relation__user__proxy_follow__community proxy
+        WHERE proxy.subject_id = ${userId}::uuid AND proxy.deleted_at IS NULL) AS has_proxy_follow,
+      EXISTS (SELECT 1 FROM relation__user__proxy_mute__community proxy
+        WHERE proxy.subject_id = ${userId}::uuid AND proxy.deleted_at IS NULL) AS has_proxy_mute
+  ), `)
   query.append(
     currentUserId
       ? buildExcludedCTE(
@@ -56,10 +40,10 @@ export function appendPersonalizedExclusionCTEs(
   return query.append(sql`, excluded_hostnames AS NOT MATERIALIZED (
     SELECT hostname.reversed_hostname FROM relation__user__block__url_hostname blocked
     JOIN url_hostnames hostname ON hostname.id = blocked.object_id
-    WHERE blocked.subject_id = ${userId} AND blocked.deleted_at IS NULL
+    WHERE blocked.subject_id = ${userId}::uuid AND blocked.deleted_at IS NULL
     UNION
     SELECT hostname.reversed_hostname FROM relation__user__mute__url_hostname muted
     JOIN url_hostnames hostname ON hostname.id = muted.object_id
-    WHERE muted.subject_id = ${userId} AND muted.deleted_at IS NULL
+    WHERE muted.subject_id = ${userId}::uuid AND muted.deleted_at IS NULL
   )`)
 }

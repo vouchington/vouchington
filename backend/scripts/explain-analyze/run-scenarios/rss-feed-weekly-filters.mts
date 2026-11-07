@@ -1,12 +1,26 @@
+import { seedUuid } from '../seed-data/common.mts'
+import {
+  RSS_FEED_WEEKLY_WORKLOAD_SOURCE_COUNT,
+  RSS_FEED_WEEKLY_WORKLOAD_OUTSIDE_TOKEN,
+} from '../seed-data/rss-feed-weekly-workload.mts'
 import { heavyFollowUser, runAndCapture } from '../run-support.mts'
 import { getRssFeedItemFeedIds } from '../run-services.mts'
-import { RSS_FEED_WEEKLY_WORKLOAD_OUTSIDE_TOKEN } from '../seed-data/rss-feed-weekly-workload.mts'
 import {
   registerRssFeedPageScenario,
   runRssFeedFirstAndContinuationScenarios,
 } from './rss-feed-pages.mts'
 
-export async function runRssFeedWeeklyTimeRangeScenarios(): Promise<void> {
+export async function runRssFeedWeeklyFilterScenarios(): Promise<void> {
+  await runRssFeedFirstAndContinuationScenarios(
+    'rss-feed-item-feed-hashtag-topic-filter',
+    heavyFollowUser,
+    {
+      feed_type: 'follow_rss_feeds',
+      limit: 25,
+      time_range: '1w',
+      hashtag_topic_ids: [seedUuid(RSS_FEED_WEEKLY_WORKLOAD_SOURCE_COUNT - 1, '04')],
+    },
+  )
   for (const [scenarioId, time_range] of [
     ['rss-feed-item-feed-1m', '1m'],
     ['rss-feed-item-feed-1y', '1y'],

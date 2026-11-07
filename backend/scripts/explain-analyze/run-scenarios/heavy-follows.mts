@@ -10,7 +10,8 @@ import {
   registerRssFeedPageScenario,
   runRssFeedFirstAndContinuationScenarios,
 } from './rss-feed-pages.mts'
-import { runRssFeedWeeklyTimeRangeScenarios } from './rss-feed-weekly-time-range.mts'
+import { runRssFeedWeeklyFilterScenarios } from './rss-feed-weekly-filters.mts'
+import { runRssFeedWeeklyProxyScenario } from './rss-feed-weekly-proxy.mts'
 
 const { getPostFeedIds, getPostIds, getRssFeedItemFeedIds } = services
 
@@ -160,7 +161,8 @@ export async function runHeavyFollowScenarios() {
     if (page.results.length !== 2 || page.page_info.has_next_page)
       throw new Error('Weekly selective RSS text search must find its two oldest in-window items')
   })
-  await runRssFeedWeeklyTimeRangeScenarios()
+  await runRssFeedWeeklyFilterScenarios()
+  await runRssFeedWeeklyProxyScenario()
 
   registerScenarioContract('post-search-heavy-follows', {
     expectations: [],

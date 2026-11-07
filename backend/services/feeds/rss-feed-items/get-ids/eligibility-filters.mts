@@ -3,6 +3,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { RssFeedItemFeedOptions } from '../../types.mts'
 import { appendRelatedPostsFilter } from '../query-utils.mts'
 import { appendRssFeedItemHashtagFilters } from './hashtag-filters.mts'
+import { buildItemSourceTopicMatch } from './item-membership.mts'
 import {
   buildRssFeedItemSourceMuteFilter,
   appendRssFeedItemViewerEligibilityFilters,
@@ -44,13 +45,13 @@ export function appendRssFeedItemEligibilityFilters(
     .append(sql`
       `)
     .append(rssFeedItemTable).append(sql`.deleted_at IS NULL
-      AND EXISTS (
-        SELECT 1
+      AND COALESCE((SELECT TRUE
         FROM rss_feed_item_sources rfis
         JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
           AND rf.is_enabled = TRUE AND rf.deleted_at IS NULL
         WHERE rfis.rss_feed_item_id = `)
-  query.append(rssFeedItemId).append(buildRssFeedItemSourceMuteFilter()).append(sql`)
+  query.append(rssFeedItemId).append(buildRssFeedItemSourceMuteFilter()).append(sql`
+        LIMIT 1), FALSE)
   `)
   appendRssFeedItemViewerEligibilityFilters(query, rssFeedItemId, rssFeedItemUrlId)
   appendRelatedPostsFilter(
@@ -83,18 +84,9 @@ export function appendRssFeedItemEligibilityFilters(
     `)
   }
   if (topicIds?.length) {
-    query.append(sql`
-      AND EXISTS (
-        SELECT 1
-        FROM rss_feed_item_sources topic_rfis
-        JOIN rss_feeds topic_rf ON topic_rf.id = topic_rfis.rss_feed_id
-        WHERE topic_rfis.rss_feed_item_id = `)
-    query.append(rssFeedItemId).append(sql`
-          AND topic_rf.topic_id = ANY(${topicIds}::uuid[])
-          AND topic_rf.is_enabled = TRUE
-          AND topic_rf.deleted_at IS NULL
-      )
-    `)
+    query
+      .append(sql` AND `)
+      .append(buildItemSourceTopicMatch(rssFeedItemId, sql`${topicIds}::uuid[]`))
   }
   appendRssFeedItemHashtagFilters(query, {
     aliasIds: hashtagAliasIds,

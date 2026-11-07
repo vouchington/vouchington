@@ -16,6 +16,11 @@ const feedPageExpectations = [
     max: RSS_FEED_SEEDED_ITEM_ROWS * 3,
   },
   { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: RSS_FEED_SEEDED_ITEM_ROWS * 2 },
+  {
+    kind: 'maxProcessedRows',
+    relation: 'rss_feed_item_categories',
+    max: RSS_FEED_SEEDED_ITEM_ROWS * 2,
+  },
 ] as const
 
 export function registerRssFeedPageScenario(scenarioId: string, allowEmptyResult = false): void {

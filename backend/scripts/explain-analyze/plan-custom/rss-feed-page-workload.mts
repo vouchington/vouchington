@@ -1,5 +1,6 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { getLargeTableSeqScanRelations } from '../plan-warnings.mts'
 import {
   RSS_FEED_WEEKLY_STORY_ITEM_COUNT,
   RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT,
@@ -21,11 +22,19 @@ const MAX_SOURCE_MEMBERSHIP_PASSES = 2
 export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void {
   if (!result.scenario_id?.startsWith('rss-feed-item-feed')) return
   const nodes = collectPlanNodes(result.plan)
+  const sequentialRelations = getLargeTableSeqScanRelations(result)
+  if (sequentialRelations.length)
+    throw new Error(
+      `${result.name} must keep the week and membership filters indexed; sequential scans: ${sequentialRelations.join(', ')}`,
+    )
   const rssItemsProcessed = nodes
     .filter(node => baseRelationName(node) === 'rss_feed_items')
     .reduce((sum, node) => sum + processedRows(node), 0)
   const sourcesProcessed = nodes
     .filter(node => baseRelationName(node) === 'rss_feed_item_sources')
+    .reduce((sum, node) => sum + processedRows(node), 0)
+  const categoriesProcessed = nodes
+    .filter(node => baseRelationName(node) === 'rss_feed_item_categories')
     .reduce((sum, node) => sum + processedRows(node), 0)
   const storyProbeRows = nodes
     .filter(node => node['Alias'] === 'newer')
@@ -48,6 +57,10 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
   if (sourcesProcessed > TOTAL_RSS_SOURCE_ROWS * MAX_SOURCE_MEMBERSHIP_PASSES)
     throw new Error(
       `${result.name} processed ${sourcesProcessed} source rows; the corpus permits ${MAX_SOURCE_MEMBERSHIP_PASSES} membership passes over ${TOTAL_RSS_SOURCE_ROWS} source links`,
+    )
+  if (categoriesProcessed > TOTAL_RSS_ITEM_ROWS * 2)
+    throw new Error(
+      `${result.name} processed ${categoriesProcessed} category rows; the fixture has one category per item and permits direct and newer-member probes`,
     )
   const joinRejectionCeiling =
     TOTAL_RSS_ITEM_ROWS *
@@ -86,10 +99,10 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
       throw new Error(`${result.name} must probe story winners through a story_id/id index`)
     if (
       result.scenario_id.includes('follow-topics') &&
-      !indexNames.has('idx_rss_feed_item_categories__topic_id')
+      !indexNames.has('rss_feed_item_categories_pkey')
     )
       throw new Error(
-        `${result.name} must probe followed categories through idx_rss_feed_item_categories__topic_id`,
+        `${result.name} must probe followed categories by the item-leading rss_feed_item_categories_pkey`,
       )
   }
 }

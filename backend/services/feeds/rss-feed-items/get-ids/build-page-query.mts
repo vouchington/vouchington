@@ -1,6 +1,6 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { RssFeedItemFeedOptions, RssFeedItemFeedType } from '../../types.mts'
-import { appendRelationCTEs } from './relation-ctes.mts'
+import { appendPersonalizedExclusionCTEs } from './personalized-exclusions.mts'
 import { appendRssFeedItemEligibilityFilters } from './eligibility-filters.mts'
 import { appendFollowMembershipFilter } from './follow-membership.mts'
 
@@ -24,7 +24,7 @@ export type FeedPageQueryOptions = {
 /** One statement: canonical item walk plus the recipient-indexed share delivery arm. */
 export function buildRssFeedItemPageQuery(options: FeedPageQueryOptions): SQLStatement {
   const { cutoffDate, itemCutoffId, cursorSortAt, cursorId, safeLimit } = options
-  const query = appendRelationCTEs(sql``, options)
+  const query = appendPersonalizedExclusionCTEs(sql``, options.currentUserId, options.communityId)
   query.append(sql`, direct_deliveries AS NOT MATERIALIZED (
     SELECT rss_feed_items.id AS result_id,
       rss_feed_items.id AS entity_id,
