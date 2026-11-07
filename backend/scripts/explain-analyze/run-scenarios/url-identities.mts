@@ -28,7 +28,7 @@ export async function runUrlIdentityScenarios(): Promise<void> {
     'url-identity-variant-insert',
     () => addUrls(seedUser.id, [variantHref], { skipCreatedEvents: true }),
     undefined,
-    ['findNewUrlVariants', 'registerUrlIdentities', 'findUrlIdentityOwners'],
+    ['registerUrlIdentities', 'linkNewUrlVariants'],
   )
 
   registerScenarioContract('url-identity-lookup', {

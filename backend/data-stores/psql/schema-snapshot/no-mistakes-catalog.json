@@ -148906,7 +148906,7 @@
           "ordinalPosition": 2
         },
         "url_id": {
-          "comment": "The oldest URL registered for this identity (UUIDv7 order within one batch); its canonical target is what later variants point at. Deleted with its URL.",
+          "comment": "The oldest URL registered for this identity (UUIDv7 order within one batch); its canonical target is what later variants point at. Deleted with its URL: variants then get canonical_url_id NULL (ON DELETE SET NULL) and the next new variant becomes the owner.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,

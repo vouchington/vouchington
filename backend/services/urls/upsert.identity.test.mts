@@ -55,6 +55,19 @@ describe('addUrls page identity', () => {
     expect(variant?.canonical_hostname_id).toBe(target!.hostname.id)
   })
 
+  it('links concurrent first inserts of variants of a new page to one owner', async () => {
+    const host = runHost()
+    const [first, second] = await Promise.all([
+      addUrl(null, `https://${host}/page`),
+      addUrl(null, `https://www.${host}/page/`),
+    ])
+
+    const rows = [first!, second!]
+    const owner = rows.find(row => row.canonical_url_id === null)
+    expect(owner).toBeDefined()
+    expect(rows.filter(row => row.canonical_url_id === owner!.id)).toHaveLength(1)
+  })
+
   it('keeps distinct pages apart', async () => {
     const host = runHost()
     const [page, other] = await addUrls(null, [
