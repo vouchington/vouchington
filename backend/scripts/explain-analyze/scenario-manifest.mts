@@ -155,7 +155,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'search-communities-virtual-subscriptions',
   'search-community-posts',
   'search-data-points',
-  ...(['search-hostnames-trust', 'search-hostnames-trust-by-topic'] as const),
+  'search-hostnames-trust-by-topic',
   ...([
     'search-topic-aliases',
     'search-users',
