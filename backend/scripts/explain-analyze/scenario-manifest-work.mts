@@ -185,20 +185,3 @@ export const BOUNDED_WORK_SCENARIOS = [
   'crawl-hostnames-due',
   'crawl-hostnames-due-capped',
 ] as const
-
-export const SEARCH_PAGE_SCENARIO_IDS = [
-  'search-data-points-credit-best',
-  'search-data-points-credit-hot',
-  'search-data-points-filtered-page',
-  'search-data-points-result-best',
-  'search-data-points-result-hot',
-  'search-data-points-result-new',
-  'search-data-points-topic-best',
-  'search-data-points-topic-hot',
-  'search-data-points-topic-new',
-  'search-data-points-vertical-best',
-  'search-data-points-vertical-hot',
-  'story-search-best',
-  'story-search-hot',
-  'story-search-new',
-] as const
