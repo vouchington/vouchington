@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getPaginatedPage } from '@/lib/api/client'
-import type { CommunityListItem, CommunityListPageData } from '@/types/api-responses'
+import type { CommunityListItem } from '@/types/api-responses'
+import type { CommunityListPageData } from '@/types/api-responses/community-list-pages'
 import { CommunityListItemsList } from '../community-list-items-list'
 
 type InfiniteScrollProps = Parameters<
