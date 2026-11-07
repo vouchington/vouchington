@@ -1,7 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { buildDirectMatchCondition } from './direct-match.mts'
-import type { PostFeedPageQueryOptions } from './page-query.mts'
+import type { PostFeedPageQueryOptions } from './page-options.mts'
 import { buildBroadcastVisibilityFilter } from './visibility-filter.mts'
 
 /**

@@ -1,29 +1,11 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
-import type { PostFeedOptions } from '../../types.mts'
-import {
-  appendEligiblePostsCTE,
-  appendEligiblePostsSelect,
-  type PostFeedEligibilityOptions,
-} from './eligible-posts-cte.mts'
+import { appendEligiblePostsCTE, appendEligiblePostsSelect } from './eligible-posts-cte.mts'
+import type { PostFeedPageQueryOptions } from './page-options.mts'
 import { buildDirectMatchCondition } from './direct-match.mts'
-import type { PostFeedCursor } from './feed-cursor.mts'
 import { appendBestWalk } from './best-walk.mts'
 import { appendPostFeedRelationCTEs } from './relation-ctes.mts'
 import { buildBroadcastVisibilityFilter } from './visibility-filter.mts'
-
-export type PostFeedPageQueryOptions = {
-  communityId?: string
-  currentUserId: string
-  cursor: PostFeedCursor | null
-  cutoff: Date | null
-  eligibilityOptions: PostFeedEligibilityOptions
-  feedType: PostFeedOptions['feed_type']
-  includeSharedPosts: boolean
-  minScoreFollowTopics: number
-  minScoreFollowUsers: number
-  safeLimit: number
-}
 
 const CURSOR_TIME_FORMAT = `'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'`
 
