@@ -1,38 +1,78 @@
 import { explainAnalyze, write } from '@data-stores/psql'
 
-// A users heap page holds 30 live minimum rows. The tip still accepts inserts.
-const COLD_WAL_FULL_PAGE_ROWS = 30
+// Fullness is the page hole, not a live-row count. A dirty users page can be
+// full with fewer than 30 rows when other tuples are wider or dead.
 const COLD_WAL_FILL_ROWS = 150
+const COLD_WAL_FILL_LIMIT = 600
 const COLD_WAL_MIN_PAGES = 3
+const USERS_PAGE_BYTES = 8192
+const PAGE_HEADER_BYTES = 24
+const LINE_POINTER_BYTES = 4
+const LINE_POINTER_NORMAL = 1
 
 const pageNumberSql = String.raw`substring(ctid::text FROM $re$^\((\d+),$re$)::integer`
+const lineNumberSql = String.raw`substring(ctid::text FROM $re$,(\d+)\)$re$)::integer`
 
-type PageRow = { id: string; page: number }
+type LocatedUser = { id: string; page: number; line: number }
 
-function selectColdWalUsers(rows: readonly PageRow[], owned: ReadonlySet<string>): string[] {
-  const byPage = new Map<number, { ids: string[]; total: number }>()
+function pageBytes(value: unknown): Buffer {
+  if (Buffer.isBuffer(value)) return value
+  if (value instanceof Uint8Array) return Buffer.from(value)
+  if (typeof value === 'string') {
+    const hex = value.startsWith('\\x') ? value.slice(2) : value
+    return Buffer.from(hex, 'hex')
+  }
+  throw new Error('Cold WAL page image was not bytea')
+}
+
+function linePointerLength(image: Buffer, line: number): number | undefined {
+  const offset = PAGE_HEADER_BYTES + (line - 1) * LINE_POINTER_BYTES
+  if (line < 1 || offset + LINE_POINTER_BYTES > image.length) return undefined
+  const raw = image.readUInt32LE(offset)
+  if (((raw >>> 15) & 0x3) !== LINE_POINTER_NORMAL) return undefined
+  return (raw >>> 17) & 0x7fff
+}
+
+function pageHole(image: Buffer): number | undefined {
+  if (image.length < 16) return undefined
+  const lower = image.readUInt16LE(12)
+  const upper = image.readUInt16LE(14)
+  if (upper < lower) return undefined
+  return upper - lower
+}
+
+// A page is sealed when another minimum users tuple cannot fit, including its
+// new line pointer. One owned row on that page is enough to update.
+function selectSealedUsers(
+  rows: readonly LocatedUser[],
+  images: ReadonlyMap<number, Buffer>,
+): string[] {
+  const lengths: number[] = []
   for (const row of rows) {
-    const page = row.page
-    const bucket = byPage.get(page) ?? { ids: [], total: 0 }
-    bucket.total += 1
-    if (owned.has(row.id)) bucket.ids.push(row.id)
-    byPage.set(page, bucket)
+    const image = images.get(row.page)
+    if (!image) continue
+    const length = linePointerLength(image, row.line)
+    if (length !== undefined) lengths.push(length)
   }
-  const pageNumbers = [...byPage.keys()]
-  if (pageNumbers.length === 0) return []
-  const tip = Math.max(...pageNumbers)
-  const chosen: string[] = []
-  for (const [page, bucket] of byPage) {
-    const id = bucket.ids[0]
-    if (page === tip || bucket.total < COLD_WAL_FULL_PAGE_ROWS || id === undefined) continue
-    chosen.push(id)
+  const minimum = lengths.length === 0 ? undefined : Math.min(...lengths)
+  if (minimum === undefined) return []
+  const sealedBelow = minimum + LINE_POINTER_BYTES
+  const chosen = new Map<number, string>()
+  for (const row of rows) {
+    if (chosen.has(row.page)) continue
+    const image = images.get(row.page)
+    if (!image) continue
+    const hole = pageHole(image)
+    if (hole === undefined || hole >= sealedBelow) continue
+    if (linePointerLength(image, row.line) === undefined) continue
+    chosen.set(row.page, row.id)
   }
-  return chosen
+  return [...chosen.values()]
 }
 
 async function insertColdWalUsers(): Promise<string[]> {
   const { rows } = await write<{ id: string }>(
-    `/* walConditionTestReserve */
+    `/* insertColdWalUsers */
      INSERT INTO users (username)
      SELECT NULL::text
      FROM generate_series(1, $1::integer)
@@ -42,32 +82,51 @@ async function insertColdWalUsers(): Promise<string[]> {
   return rows.map(row => row.id)
 }
 
-async function readColdWalPages(ids: readonly string[]): Promise<PageRow[]> {
-  const located = await write<PageRow>(
-    `/* walConditionTestLocate */
-     SELECT id::text AS id, ${pageNumberSql} AS page
+async function locateColdWalUsers(ids: readonly string[]): Promise<LocatedUser[]> {
+  const { rows } = await write<LocatedUser>(
+    `/* locateColdWalUsers */
+     SELECT id::text AS id, ${pageNumberSql} AS page, ${lineNumberSql} AS line
      FROM users
      WHERE id = ANY($1::uuid[])`,
     [ids],
   )
-  const pages = [...new Set(located.rows.map(row => row.page))]
-  const { rows } = await write<PageRow>(
-    `/* walConditionTestPages */
-     SELECT id::text AS id, ${pageNumberSql} AS page
-     FROM users
-     WHERE ${pageNumberSql} = ANY($1::integer[])`,
-    [pages],
-  )
   return rows
 }
 
+async function readUserPageImages(pages: readonly number[]): Promise<Map<number, Buffer>> {
+  const { rows } = await write<{ page: number | string; image: unknown }>(
+    `/* readUserPageImages */
+     SELECT page,
+            pg_read_binary_file(
+              pg_relation_filepath('users'),
+              page::bigint * ${USERS_PAGE_BYTES},
+              ${USERS_PAGE_BYTES}
+            ) AS image
+     FROM unnest($1::integer[]) AS page`,
+    [pages],
+  )
+  return new Map(rows.map(row => [Number(row.page), pageBytes(row.image)]))
+}
+
+async function sealedColdWalUsers(ids: readonly string[]): Promise<string[]> {
+  // pg_read_binary_file reads the heap file. Shared buffers stay stale on disk
+  // until a checkpoint, and the capture checkpoint still runs before the update.
+  await write('/* sealedColdWalUsers */ CHECKPOINT')
+  const located = await locateColdWalUsers(ids)
+  const pages = [...new Set(located.map(row => row.page))]
+  if (pages.length === 0) return []
+  return selectSealedUsers(located, await readUserPageImages(pages))
+}
+
 async function reserveColdWalUsers(ids: string[]): Promise<string[]> {
-  const inserted = await insertColdWalUsers()
-  ids.push(...inserted)
-  const chosen = selectColdWalUsers(await readColdWalPages(inserted), new Set(inserted))
+  let chosen: string[] = []
+  while (ids.length < COLD_WAL_FILL_LIMIT && chosen.length < COLD_WAL_MIN_PAGES) {
+    ids.push(...(await insertColdWalUsers()))
+    chosen = await sealedColdWalUsers(ids)
+  }
   if (chosen.length < COLD_WAL_MIN_PAGES) {
     throw new Error(
-      `Cold WAL capture reserved ${chosen.length} full users pages; need ${COLD_WAL_MIN_PAGES}`,
+      `Cold WAL capture reserved ${chosen.length} sealed users pages; need ${COLD_WAL_MIN_PAGES}`,
     )
   }
   return chosen
@@ -75,16 +134,14 @@ async function reserveColdWalUsers(ids: string[]): Promise<string[]> {
 
 async function deleteColdWalUsers(ids: readonly string[]) {
   if (ids.length === 0) return
-  await write(`/* walConditionTestCleanup */ DELETE FROM users WHERE id = ANY($1::uuid[])`, [ids])
+  await write(`/* deleteColdWalUsers */ DELETE FROM users WHERE id = ANY($1::uuid[])`, [ids])
 }
 
 export async function createExplainWalCaptureFixture(scenarioId: string) {
   const ids: string[] = []
   try {
-    // One newly inserted users row shares the heap page that every other test is filling.
-    // A checkpoint then an update of that row records no full-page image when another
-    // insert lands on the page first. Updating one owned row on several already-full
-    // pages keeps at least one cold heap page: later inserts do not fit there.
+    // Updating one owned row on several sealed pages keeps a cold full-page
+    // image when a concurrent insert cannot land on those pages.
     const userIds = await reserveColdWalUsers(ids)
     const input = {
       name: 'wal-condition-test',
