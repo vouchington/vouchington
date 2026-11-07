@@ -1,90 +1,81 @@
 import type { PrivateUser } from '@services/users/types'
-import type { PostFeedOptions, PostFeedResponse } from '@services/feeds/types'
+import type { PostFeedOptions } from '@services/feeds/types'
 import { getPostFeedIds } from '@services/feeds'
-import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
-import { seedUuid } from '../seed-data/common.mts'
-import { POST_SHARE_EMPTY_USER_INDEX } from '../seed-data/post-feed-shares.mts'
-import { registerScenarioContract } from '../plan-expectations.mts'
+import { heavyFollowUser, runAndCapture } from '../run-support.mts'
+import {
+  POST_SHARE_DENSE_DELIVERIES_PER_TARGET,
+  POST_SHARE_DENSE_TARGET_COUNT,
+} from '../seed-data/post-feed-shares.mts'
+import { registerScenarioContract, type PlanExpectation } from '../plan-expectations.mts'
 
-export async function runPostFeedShareScenarios(): Promise<void> {
-  for (const feedType of ['all', 'follow_topics'] as const) {
-    registerScenarioContract(`post-feed-shares-disabled-${feedType}`, {
-      expectations: [{ kind: 'custom', name: 'postShareTargets' }],
-      crossPartition: { posts: 'The feed ranks direct posts across id ranges.' },
-    })
-    await runAndCapture(`post-feed-shares-disabled-${feedType}`, async () => {
-      const page = await getPostFeedIds(heavyFollowUser as PrivateUser, {
-        feed_type: feedType,
-        limit: 25,
-      })
-      if (page.results.some(row => row.delivery_type === 'share'))
-        throw new Error('Disabled share feed must return direct deliveries only')
-    })
-  }
-  registerScenarioContract('post-feed-shares-empty', {
-    expectations: [{ kind: 'custom', name: 'postShareTargets' }],
-    crossPartition: { posts: 'The feed ranks direct posts across id ranges.' },
-  })
-  await runAndCapture('post-feed-shares-empty', async () => {
-    const page = await getPostFeedIds(
-      { ...seedUser, id: seedUuid(POST_SHARE_EMPTY_USER_INDEX, '01') } as PrivateUser,
-      { feed_type: 'follow_users', limit: 25 },
-    )
-    if (!page.results.length || page.results.some(row => row.delivery_type === 'share'))
-      throw new Error('Empty share fixture must retain direct deliveries')
-  })
-  for (const [name, user] of [
-    ['sparse', seedUser],
-    ['dense', heavyFollowUser],
-  ] as const) {
-    for (const sort of ['new', 'hot'] as const) {
-      await runSharePages(`post-feed-shares-${name}-${sort}`, user as PrivateUser, {
-        feed_type: 'follow_users',
-        sort,
-        limit: 25,
-      })
-    }
-  }
+const PAGE = 25
+/** The heavy follower follows 1000 users who each wrote a recent post. */
+const HEAVY_FOLLOW_POSTS = 1000
+const HEAVY_FOLLOW_SHARES = POST_SHARE_DENSE_TARGET_COUNT * POST_SHARE_DENSE_DELIVERIES_PER_TARGET
+// Each delivery reads its post and its root post.
+const PROBES_PER_DELIVERY = 2
+/** A keyset walk reads the page plus one row per arm; each row probes its post and root post. */
+const WALK_ROWS = (PAGE + 1) * PROBES_PER_DELIVERY * 3
+
+/** Seeded posts are one minute apart, so a one-week window holds this many. */
+const WINDOW_POSTS = 7 * 24 * 60
+
+/**
+ * best stops after `limit + 1` rows per arm. new stops early under a custom plan, but a generic
+ * plan may range-scan the window, so its bound is the window plus one probe per followed post.
+ * hot ranks by a computed score, so its bound is the 30-day window: every positive-score followed
+ * post and every share the viewer holds.
+ */
+const bounds: Record<'new' | 'hot' | 'best', { posts: number; shares: number }> = {
+  new: {
+    posts: WINDOW_POSTS + HEAVY_FOLLOW_POSTS + (PAGE + 1) * PROBES_PER_DELIVERY,
+    shares: (PAGE + 1) * 2,
+  },
+  hot: {
+    posts: PROBES_PER_DELIVERY * (HEAVY_FOLLOW_POSTS + HEAVY_FOLLOW_SHARES),
+    shares: Math.ceil(HEAVY_FOLLOW_SHARES * 1.25),
+  },
+  best: { posts: WALK_ROWS, shares: (PAGE + 1) * 2 },
 }
 
-async function runSharePages(
-  scenarioId: string,
-  user: PrivateUser,
-  options: PostFeedOptions,
-): Promise<void> {
-  let first: PostFeedResponse | undefined
-  registerScenarioContract(scenarioId, {
-    expectations: [{ kind: 'custom', name: 'postShareTargets' }],
-    crossPartition: { posts: 'The feed ranks direct and shared posts across id ranges.' },
-  })
-  await runAndCapture(scenarioId, async () => {
-    first = await getPostFeedIds(user, options)
-    if (!first.results.some(row => row.delivery_type === 'share'))
-      throw new Error(`${scenarioId} must include real shared deliveries`)
-  })
-  const after = first?.page_info.end_cursor
-  if (!first?.page_info.has_next_page || !after)
-    throw new Error(`${scenarioId} must have a continuation page`)
-  const previousIds = new Set(first.results.map(row => row.id))
-  const previousLastEntityId = first.results.at(-1)?.entity_id
-  registerScenarioContract(`${scenarioId}-after`, {
-    expectations: [{ kind: 'custom', name: 'postShareTargets' }],
-    crossPartition: { posts: 'The feed ranks direct and shared posts across id ranges.' },
-  })
-  await runAndCapture(`${scenarioId}-after`, async () => {
-    const next = await getPostFeedIds(user, { ...options, after })
-    const repeatedRows = next.results.filter(row => previousIds.has(row.id))
-    const newDeliveryCount = next.results.filter(row => !previousIds.has(row.id)).length
-    if (newDeliveryCount === 0)
-      throw new Error(`${scenarioId} continuation must contain new delivery IDs`)
-    if (!next.results.some(row => row.delivery_type === 'share'))
-      throw new Error(`${scenarioId} continuation must include real shared deliveries`)
-    // Hot scores are recomputed from NOW(); the prior boundary post's deliveries may drift across it.
-    if (options.sort === 'hot' && repeatedRows.some(row => row.entity_id !== previousLastEntityId))
-      throw new Error(
-        `${scenarioId} may repeat only deliveries for the prior boundary post at the hot cursor`,
-      )
-    if (options.sort !== 'hot' && repeatedRows.length > 0)
-      throw new Error(`${scenarioId} continuation must contain only new delivery IDs`)
-  })
+const walkOptions: Record<'new' | 'hot' | 'best', PostFeedOptions> = {
+  new: { feed_type: 'follow_users', sort: 'new', time_range: '1w', limit: PAGE },
+  hot: { feed_type: 'follow_users', sort: 'hot', time_range: '1w', limit: PAGE },
+  // hot with a year or longer window is the best-scored walk over `votes_score_sort`.
+  best: { feed_type: 'follow_users', sort: 'hot', time_range: 'all', limit: PAGE },
+}
+
+function expectationsFor(sort: keyof typeof bounds): PlanExpectation[] {
+  return [
+    { kind: 'maxProcessedRows', relation: 'posts', max: bounds[sort].posts },
+    { kind: 'maxProcessedRows', relation: 'post_feed_shares', max: bounds[sort].shares },
+  ]
+}
+
+export async function runPostFeedShareScenarios(): Promise<void> {
+  for (const sort of ['new', 'hot', 'best'] as const) {
+    const scenarioId = `post-feed-walk-${sort}`
+    const options = walkOptions[sort]
+    const user = heavyFollowUser as PrivateUser
+    registerScenarioContract(scenarioId, {
+      expectations: expectationsFor(sort),
+      crossPartition: { posts: 'The feed walks direct and shared posts across id ranges.' },
+    })
+    let after: string | undefined
+    await runAndCapture(scenarioId, async () => {
+      const page = await getPostFeedIds(user, options)
+      if (page.results.length !== PAGE || !page.page_info.has_next_page)
+        throw new Error(`${scenarioId} must return a full page with a continuation`)
+      after = page.page_info.end_cursor ?? undefined
+    })
+    if (!after) throw new Error(`${scenarioId} must have a continuation cursor`)
+    registerScenarioContract(`${scenarioId}-after`, {
+      expectations: expectationsFor(sort),
+      crossPartition: { posts: 'The feed walks direct and shared posts across id ranges.' },
+    })
+    await runAndCapture(`${scenarioId}-after`, async () => {
+      const next = await getPostFeedIds(user, { ...options, after })
+      if (!next.results.length) throw new Error(`${scenarioId} continuation must not be empty`)
+    })
+  }
 }

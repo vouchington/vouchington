@@ -10,19 +10,15 @@ Both feeds start with follow and exclusion relations and combine direct and shar
 flowchart TD
     subgraph Posts["Post feed - getPostFeedIds (sort=new default, or hot)"]
         PR["Relation CTEs: followed_users/topics, excluded_users/topics, hidden_posts, excluded_hostname_ids"] --> PE
-        PE["eligible_posts CTE: visibility, mute/block, hostname block, post_type, search filters"] --> PDirect
-        PDirect["direct_candidate_posts -> direct_posts (follow-match via followed_users/topics)"] --> PCombined
-        PR --> PTargets
-        PTargets["Enabled shares: recipient deliveries -> distinct target IDs"] --> PEligibleTargets
-        PEligibleTargets["Indexed target/root probes using the same eligibility builder"] --> PShared
-        PShared["shared_posts: eligible targets rejoin separate delivery events"] --> PCombined
-        PCombined["combined_posts = direct_posts UNION ALL shared_posts"] --> PSort
-        PSort{"sort=hot or sort=new?"}
-        PSort -- hot --> PHot["ORDER BY hot_score DESC"]
-        PSort -- new --> PNew["ORDER BY sort_at DESC"]
-        PHot --> PCursor
+        PE["eligible_posts (inlined): visibility, mute/block, hostname block, post_type, search filters"] --> PWalk
+        PWalk{"Sort"}
+        PWalk -- new --> PNew["Direct arm by id DESC + share arm by sort_at DESC, each LIMIT page+1"]
+        PWalk -- hot --> PHot["Positive-score window: ORDER BY hot_score DESC, id DESC LIMIT page+1"]
+        PWalk -- best --> PBest["Score index walk: votes_score_sort DESC, id DESC LIMIT page+1"]
         PNew --> PCursor
-        PCursor["LIMIT+1 -> page_info (opaque cursor: score|timestamp + id)"]
+        PHot --> PCursor
+        PBest --> PCursor
+        PCursor["LIMIT+1 -> page_info (plain keyset cursor of the last row)"]
     end
 
     subgraph RSS["RSS item feed - getRssFeedItemFeedIds"]
@@ -70,17 +66,18 @@ flowchart TD
 
 Users can share posts or RSS feed items with their followers. Share requests persist a bounded follower-distribution intent and workers fan it out in chunks to `post_feed_shares` and `rss_feed_item_feed_shares`. Only public, broadly-visible posts can be shared, users cannot share their own posts, and shared post deliveries still respect the post's current broadcast audience if the creator later tightens visibility.
 
-Post feeds include share delivery only for `follow_users` and `any`; `follow_topics` and `all`
-omit the share CTEs and union arm. Enabled shares first materialize recipient deliveries after
-sharer exclusions, delivery-time cutoff, and chronological cursor filtering. Distinct target IDs
-then drive indexed post/root eligibility probes through the same
-[eligibility SELECT builder](../../../backend/services/feeds/posts/get-ids/eligible-posts-cte.mts)
-used by direct posts. The lateral lookup returns at most the one row identified by the post's
-primary key, keeping eligibility work bounded without materializing the broad direct cohort.
-Eligible targets rejoin their deliveries, so repeated shares and a direct delivery of the same
-post remain separate events. Hot pagination applies the final score/delivery-ID boundary and
-does not push a timestamp cursor into share candidates. An old post can appear through a recent
-share because the share cutoff uses delivery time rather than target creation time.
+Post feeds include share delivery only for `follow_users` and `any`. A feed read is one SQL
+walk: every filter is an index-backed `WHERE` condition and the outer query is
+`ORDER BY <sort key>, id DESC LIMIT page + 1`, so a page is empty only when nothing is left.
+Direct posts and recipient shares each walk their own sort index (each arm needs at most
+`page + 1` rows of the merged order) through the same
+[eligibility SELECT builder](../../../backend/services/feeds/posts/get-ids/eligible-posts-cte.mts).
+Repeated shares and a direct delivery of the same post remain separate delivery events with their
+own ids. Hot ranks only a recent window (`HOT_WINDOW_MS` in
+[`get-ids.mts`](../../../backend/services/feeds/posts/get-ids.mts); decay makes older posts
+irrelevant), and `time_range` of
+`1y` or `all` with `sort=hot` is the `best` walk by `votes_score_sort`. An old post can appear
+through a recent share because the share cutoff uses delivery time rather than target creation time.
 
 ## Post Feed Sort Options
 

@@ -13,10 +13,13 @@ import {
   POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE,
 } from '@services/entity-relations/metadata'
 
+export type PostFeedWalkSort = 'new' | 'hot' | 'best'
+
 export type PostFeedEligibilityOptions = {
   currentUser: Pick<PrivateUser, '__entity_type' | 'id' | 'roles'>
   postTypes: PostFeedOptions['post_types']
-  sort: string
+  sort: PostFeedWalkSort
+  scoreReferenceDate?: Date
   textSearchQuery: PostFeedOptions['text_search_query']
   universalTopicIds: PostFeedOptions['universal_topic_ids']
   hashtagTopicIds: PostFeedOptions['hashtag_topic_ids']
@@ -39,6 +42,7 @@ export function appendEligiblePostsSelect(
     currentUser,
     postTypes,
     sort,
+    scoreReferenceDate,
     textSearchQuery,
     universalTopicIds,
     hashtagTopicIds,
@@ -58,11 +62,12 @@ export function appendEligiblePostsSelect(
         posts.created_at,
         posts.created_by_id,
         posts.broadcast,
-        posts.votes_score_net`)
+        posts.votes_score_net,
+        posts.votes_score_sort`)
   if (sort === 'hot')
     query
       .append(sql`,\n        `)
-      .append(buildHotScoreExpression())
+      .append(buildHotScoreExpression('posts', scoreReferenceDate))
       .append(sql` AS hot_score`)
   query.append(sql`
       FROM posts
@@ -165,6 +170,7 @@ export function appendEligiblePostsSelect(
   }
 }
 
-function hotScoreEligibilityFilter(sort: string): SQLStatement {
-  return sort === 'hot' ? sql`posts.votes_score_net > 0` : sql`TRUE`
+function hotScoreEligibilityFilter(sort: PostFeedWalkSort): SQLStatement {
+  // Ranked walks read only positively voted posts. `best` also names the partial index it walks.
+  return sort === 'new' ? sql`TRUE` : sql`posts.votes_score_net > 0 AND posts.deleted_at IS NULL`
 }
