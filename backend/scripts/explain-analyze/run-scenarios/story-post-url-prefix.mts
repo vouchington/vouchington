@@ -16,6 +16,7 @@ import {
   ITEM_INDEX,
   leasePruneJobs,
   MAXIMUM_LEASE,
+  NEWEST_INDEX,
   partitionIndexNames,
   prefixUrlIds,
   PRUNE_INDEX,
@@ -25,9 +26,10 @@ import {
 
 /** Admission, prefix hostname locks, and the post-bounded prune at both relation caps. */
 export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
-  const [itemIndexes, pruneIndexes] = await Promise.all([
+  const [itemIndexes, pruneIndexes, newestIndexes] = await Promise.all([
     partitionIndexNames(ITEM_INDEX),
     partitionIndexNames(PRUNE_INDEX),
+    partitionIndexNames(NEWEST_INDEX),
   ])
   try {
     await attachPrefixItems()
@@ -41,14 +43,14 @@ export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
       1000,
       seed.posts[0]!,
       DEFAULT_LEASE,
-      pruneIndexes,
+      [...pruneIndexes, ...newestIndexes],
     )
     await capturePrune(
       'story-post-related-url-prune-maximum',
       10_000,
       seed.posts[1]!,
       MAXIMUM_LEASE,
-      pruneIndexes,
+      [...pruneIndexes, ...newestIndexes],
     )
   } finally {
     await restorePrefixItems()
@@ -122,8 +124,16 @@ async function capturePrune(
   leaseToken: string,
   pruneIndexes: readonly string[],
 ): Promise<void> {
-  const admittedUrlIds = await activeUrlIds(postId)
+  const liveUrlIds = await activeUrlIds(postId)
+  assert.equal(liveUrlIds.length, cap)
+  const outsidePrefix = liveUrlIds.at(-1)
+  assert.ok(outsidePrefix)
+  // One live story-teller URL stays outside the prefix so the update changes a row.
+  // The substitute is already deleted, so the admitted length stays the cap.
+  const admittedUrlIds = liveUrlIds.slice(0, -1)
+  admittedUrlIds.push(seed.deletedUrl)
   assert.equal(admittedUrlIds.length, cap)
+  assert.equal(admittedUrlIds.includes(outsidePrefix), false)
   registerScenarioContract(id, {
     expectations: [
       {
@@ -132,7 +142,8 @@ async function capturePrune(
         anyOf: true,
         queryContains: 'pruneStoryPostRelatedUrlsOutsidePrefix',
       },
-      { kind: 'maxProcessedRows', relation: 'relation__post__related__url', max: cap },
+      // The heap read is this post's live cap. The update node also counts the row it changes.
+      { kind: 'maxProcessedRows', relation: 'relation__post__related__url', max: cap + 1 },
     ],
     forbidSequentialScans: ['relation__post__related__url'],
     seededRows: { relation__post__related__url: seed.relationRows },
