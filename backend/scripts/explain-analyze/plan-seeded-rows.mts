@@ -35,9 +35,9 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   urls: 10_000,
   rss_feeds: 2_500,
   rss_feed_items: 35_001, // 25k base + 10k weekly items + one eight-day witness.
-  rss_feed_item_guids: 25_000,
-  rss_feed_item_sources: 65_000,
-  rss_feed_item_categories: 5_000,
+  rss_feed_item_guids: 35_001,
+  rss_feed_item_sources: 75_001,
+  rss_feed_item_categories: 15_001,
   rss_category_identities: 201, // 200 category values plus seedTopHashtags' seedhashtag.
   relation__user__follow__user: 11_000,
   relation__user__mute__user: 2_500,
@@ -101,7 +101,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   classifier_decision_batches: 6_000,
   community_applications: ANCILLARY_SEED_ROW_UPPER_BOUND,
   community_list_posts: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  community_list_rss_feeds: ANCILLARY_SEED_ROW_UPPER_BOUND,
+  community_list_rss_feeds: ANCILLARY_SEED_ROW_UPPER_BOUND + 10_050,
   community_list_url_hostnames: ANCILLARY_SEED_ROW_UPPER_BOUND,
   community_list_urls: ANCILLARY_SEED_ROW_UPPER_BOUND,
   community_member_vacations: ANCILLARY_SEED_ROW_UPPER_BOUND,
