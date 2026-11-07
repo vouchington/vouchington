@@ -3,7 +3,7 @@ import { findUrlIdByIdentity } from '@services/urls/url-identities'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 
-/** Variant inserts find their identity owner through the identity primary key, never a urls scan. */
+/** Variant inserts find their identity owner through the unique identity index, never a urls scan. */
 export async function runUrlIdentityScenarios(): Promise<void> {
   const suffix = crypto.randomUUID()
   const ownerHref = `https://identity-${suffix}.example.test/page`
@@ -12,7 +12,7 @@ export async function runUrlIdentityScenarios(): Promise<void> {
 
   registerScenarioContract('url-identity-variant-insert', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['url_identities_pkey'] },
+      { kind: 'usesIndexes', indexes: ['url_identities_identity_key'] },
       { kind: 'maxProcessedRows', relation: 'url_identities', max: 3 },
     ],
   })
@@ -25,7 +25,7 @@ export async function runUrlIdentityScenarios(): Promise<void> {
 
   registerScenarioContract('url-identity-lookup', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['url_identities_pkey'] },
+      { kind: 'usesIndexes', indexes: ['url_identities_identity_key'] },
       { kind: 'maxProcessedRows', relation: 'url_identities', max: 2 },
     ],
   })

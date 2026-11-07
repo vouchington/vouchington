@@ -47,9 +47,9 @@ describe('normalizeUrlForUrlTable', () => {
   it('drops tracking params, credentials, default ports, fragments, and trailing slashes', () => {
     expect(
       normalizeUrlForUrlTable(
-        'http://user:pass@Example.com:80/a/b/?utm_source=x&z=2&fbclid=y&a=1#top',
+        'http://user:pass@Example.org:80/a/b/?utm_source=x&z=2&fbclid=y&a=1#top',
       ).href,
-    ).toBe('https://example.com/a/b?a=1&z=2')
+    ).toBe('https://example.org/a/b?a=1&z=2')
   })
 
   it('keeps the root path and content params', () => {
