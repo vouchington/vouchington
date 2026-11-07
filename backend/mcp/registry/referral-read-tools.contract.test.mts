@@ -17,7 +17,6 @@ import {
   disableReferralProgramByTopicId,
 } from '@voucha/test-helpers/entities/referral-programs'
 import { beforeAll, describe, expect, it } from 'vitest'
-import getMyReferralLinksTool from '../get-my-referral-links.mts'
 
 type Body = Record<string, unknown>
 type Link = Body & { id: string }
@@ -148,7 +147,7 @@ describe('get_my_referral_links — real DB', () => {
     const page = await mine()
     const request = createRequest()
     await request.authenticateAs(owner)
-    const rest = await request.get('/api/v1/referral-links?limit=25').expect(200)
+    const rest = await request.get('/api/v1/referral-links').expect(200)
 
     // The label is the one field the tool rewrites (it sanitizes it), so REST is compared without it.
     const keys = Object.keys(page.results[0]!).filter(key => key !== 'label')
@@ -177,14 +176,33 @@ describe('get_my_referral_links — real DB', () => {
     })
   })
 
-  it('rejects user_id before dispatch and scopes each caller to their own links', async () => {
+  it('reads the caller when user_id is their own id, and forbids another user the way REST does', async () => {
+    expect(ids(await mine({ user_id: owner.id }))).toEqual(ids(await mine()))
+
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    const rest = await request.get(`/api/v1/referral-links?user_id=${other.id}`)
+    expect(rest.status).toBe(403)
     expect(
-      await callRejectedMcpTool(owner, 'get_my_referral_links', { user_id: other.id }, [
-        'referral-links:read',
-      ]),
-    ).toContain('Invalid tool arguments')
-    expect(ids(await mine())).toEqual([...links].toReversed())
-    expect(ids(await mine({}, other))).toEqual([othersLink])
+      JSON.parse(
+        await callRejectedMcpTool(owner, 'get_my_referral_links', { user_id: other.id }, [
+          'referral-links:read',
+        ]),
+      ),
+    ).toMatchObject({
+      error: { status: rest.status, code: 'FORBIDDEN', message: rest.body.message },
+    })
+  })
+
+  it('lets an administrator read another user links, like REST', async () => {
+    const admin = asCaller(await createTestUser({ administrator: true }))
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    const rest = await request.get(`/api/v1/referral-links?user_id=${other.id}`).expect(200)
+    const page = await mine({ user_id: other.id }, admin)
+
+    expect(ids(page)).toEqual(rest.body.results.map((row: { id: string }) => row.id))
+    expect(ids(page)).toEqual([othersLink])
   })
 
   it('keeps only the links under one program and sanitizes the labels', async () => {
@@ -195,15 +213,43 @@ describe('get_my_referral_links — real DB', () => {
     expect(String(page.results[0]!['label'])).not.toContain('previous instructions')
   })
 
-  it('returns no links when the referral program reference names nothing', async () => {
-    const result = await getMyReferralLinksTool.function(owner)({ referral_program_id: 'nope' })
+  it('rejects a non-uuid filter the way REST does and returns an empty page for an unknown program', async () => {
+    const request = createRequest()
+    await request.authenticateAs(owner)
 
-    expect(result).toMatchObject({ success: true, results: [] })
+    for (const [field, args] of [
+      ['referral_program_id', { referral_program_id: 'not-a-uuid' }],
+      ['user_id', { user_id: 'not-a-uuid' }],
+    ] as const) {
+      const rest = await request.get(`/api/v1/referral-links?${field}=not-a-uuid`)
+      expect(rest.status).toBe(422)
+      expect(
+        JSON.parse(
+          await callRejectedMcpTool(owner, 'get_my_referral_links', args, ['referral-links:read']),
+        ),
+      ).toMatchObject({ error: { status: rest.status, message: rest.body.message } })
+    }
+
+    expect(ids(await mine({ referral_program_id: crypto.randomUUID() }))).toEqual([])
+  })
+
+  it('clamps an oversized limit and rejects zero the way REST does', async () => {
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    const rest = await request.get('/api/v1/referral-links?limit=200').expect(200)
+    expect(ids(await mine({ limit: 200 }))).toEqual(
+      rest.body.results.map((row: { id: string }) => row.id),
+    )
+
+    const rejected = await request.get('/api/v1/referral-links?limit=0')
+    expect(rejected.status).toBe(400)
     expect(
-      await callRejectedMcpTool(owner, 'get_my_referral_links', { limit: 0 }, [
-        'referral-links:read',
-      ]),
-    ).toEqual(expect.any(String))
+      JSON.parse(
+        await callRejectedMcpTool(owner, 'get_my_referral_links', { limit: 0 }, [
+          'referral-links:read',
+        ]),
+      ),
+    ).toMatchObject({ error: { status: rejected.status, message: rejected.body.message } })
   })
 
   it('pages by cursor, ends the pages cleanly and refuses a malformed cursor', async () => {
