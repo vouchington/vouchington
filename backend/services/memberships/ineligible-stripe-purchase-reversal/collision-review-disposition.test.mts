@@ -176,14 +176,11 @@ describe('Stripe purchase collision review disposition', () => {
       ),
     ).rejects.toThrow('Staff reversal case write did not return a count')
     let calls = 0
-    const disappearingReview: QueryExecutor = () => {
+    const disappearingReview = (() => {
       calls += 1
-      return Promise.resolve(
-        calls === 1
-          ? { command: '', fields: [], rowCount: 1, rows: [{ ...counts, reviewCount: 1 }] }
-          : { command: '', fields: [], rowCount: 0, rows: [] },
-      )
-    }
+      const rows = calls === 1 ? [{ ...counts, reviewCount: 1 }] : []
+      return Promise.resolve({ command: '', oid: 0, fields: [], rowCount: rows.length, rows })
+    }) as unknown as QueryExecutor
     await expect(
       applyStripePurchaseCollisionReviewDisposition(staffAmount(seeded), disappearingReview),
     ).rejects.toMatchObject({ status: 404 })
@@ -194,7 +191,14 @@ describe('Stripe purchase collision review disposition', () => {
 })
 
 function rowsQuery(rows: ReadonlyArray<Record<string, unknown>>): QueryExecutor {
-  return () => Promise.resolve({ command: '', fields: [], rowCount: rows.length, rows: [...rows] })
+  return (() =>
+    Promise.resolve({
+      command: '',
+      oid: 0,
+      fields: [],
+      rowCount: rows.length,
+      rows: [...rows],
+    })) as unknown as QueryExecutor
 }
 
 function staffAmount(seeded: Awaited<ReturnType<typeof seedTestStripePurchaseCollisionReview>>) {
