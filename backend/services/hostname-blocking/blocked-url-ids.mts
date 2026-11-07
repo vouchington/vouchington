@@ -10,20 +10,31 @@ export async function blockedUrlIdsForHostnameBlocks(
   if (urlIds.length === 0) return new Set()
   const { rows } = await write<{ url_id: string }>(
     sql`/* blockedUrlIdsForHostnameBlocks */
-      -- no-mistakes-disable-next-line postgres-bounded-statements: the caller passes one projection prefix, at most the post_related_url hard maximum of 10000; a LIMIT would hide a blocked URL and admit it
+      -- no-mistakes-disable-next-line postgres-bounded-statements: the caller passes one projection prefix, at most the post_related_url hard maximum of 10000; a LIMIT on this result would hide a blocked URL and admit it
       SELECT requested.id AS url_id
-      FROM unnest(${[...urlIds]}::uuid[]) AS requested(id)
-      JOIN urls ON urls.id = requested.id
-      JOIN url_hostnames AS child ON child.id = urls.hostname_id
+      FROM (SELECT DISTINCT id FROM unnest(${[...urlIds]}::uuid[]) AS input(id)) AS requested
+      CROSS JOIN LATERAL (
+        SELECT hostname_id FROM urls WHERE id = requested.id LIMIT 1
+      ) url
+      CROSS JOIN LATERAL (
+        SELECT hostname FROM url_hostnames WHERE id = url.hostname_id LIMIT 1
+      ) child
       WHERE EXISTS (
         SELECT 1
-        FROM generate_series(1, cardinality(string_to_array(child.hostname, '.'))) AS suffix(start_label)
-        JOIN url_hostnames AS blocked
-          ON blocked.hostname = array_to_string(
-            (string_to_array(child.hostname, '.'))[suffix.start_label:],
-            '.'
-          )
-         AND blocked.is_blocked
+        FROM generate_series(
+          1,
+          cardinality(string_to_array(child.hostname, '.'))
+        ) AS suffix(start_label)
+        CROSS JOIN LATERAL (
+          SELECT 1
+          FROM url_hostnames AS blocked
+          WHERE blocked.hostname = array_to_string(
+              (string_to_array(child.hostname, '.'))[suffix.start_label:],
+              '.'
+            )
+            AND blocked.is_blocked
+          LIMIT 1
+        ) hit
       )`,
     options,
   )
