@@ -43,16 +43,7 @@ describe('story post related URL projection relations', () => {
       processed: 2,
       continue: true,
     })
-
-    // Finish the eligibility scan before the source-writing page.
-    await expect(processOwnedStoryProjectionPage(post.id)).resolves.toMatchObject({
-      processed: 0,
-      continue: true,
-    })
-    await expect(processOwnedStoryProjectionPage(post.id)).resolves.toMatchObject({
-      processed: 2,
-      continue: true,
-    })
+    await expect(getTestStoryPostProjectionReceiptCount(post.id)).resolves.toBe(1)
 
     await expect(getTestStoryPostProjectionRelationStates(post.id)).resolves.toEqual([
       expect.objectContaining({ relationWrittenAt: expect.any(Date), votesScoreNet: 1 }),

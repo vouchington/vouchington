@@ -20,8 +20,8 @@ function makeResult(plan: unknown, opts?: Partial<ExplainResult>): ExplainResult
 
 describe('getResourcePressureFingerprints', () => {
   it('uses the scenario WAL limit for node and aggregate pressure after JSON serialization', () => {
-    const limit = 20 * 1024 * 1024
-    const scenarioId = 'post-url-replacement-maximum'
+    const limit = 10 * 1024 * 1024
+    const scenarioId = 'post-url-capacity-maximum-overcap'
     const single = (bytes: number) =>
       makeResult(
         { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': bytes } },
@@ -53,7 +53,7 @@ describe('getResourcePressureFingerprints', () => {
 
   it('retains the default WAL limit for missing or different scenario identities', () => {
     const plan = { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': 11 * 1024 * 1024 } }
-    for (const scenario_id of [undefined, 'post-url-replacement-default']) {
+    for (const scenario_id of [undefined, 'post-url-capacity-default-boundary']) {
       const result = makeResult(plan, { scenario_id })
       expect(getResourcePressureFingerprints(result)).toEqual(['ModifyTable:-:wal'])
       expect(analyzeResult(result).resourcePressure).toHaveLength(1)

@@ -82,6 +82,10 @@ describe('0000-00-01b-entity-relation-indexes', () => {
   it('generates active reverse indexes for bounded URL relation cleanup pages', () => {
     const sql = idempotent()
 
+    expect(sql).toContain('idx_relation__post__related__url__subject__projection_source')
+    expect(sql).toContain(
+      'ON relation__post__related__url (subject_id, created_by_id, object_id)\nWHERE deleted_at IS NULL;',
+    )
     expect(sql).toContain('idx_relation__post__related__url__active_reverse')
     expect(sql).toContain(
       'ON "relation__post__related__url" (object_id, subject_id)\nWHERE deleted_at IS NULL;',

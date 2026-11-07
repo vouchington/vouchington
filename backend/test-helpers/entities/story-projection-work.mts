@@ -1,6 +1,5 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getRelationTypeLimit } from '../../services/entity-relations/relation-limits-config.mts'
 import type { ProjectionWork } from '../../services/stories/story-post-related-url-projection-types.mts'
 
 /** Exact fixture identities only; an unclaimable lease is not proof of terminal absence. */
@@ -9,10 +8,9 @@ export async function readStoryProjectionWorkForTest(postIds: readonly string[])
   const { rows } = await read<{
     post_id: string
     lease_token: string | null
-    limit_reached_capacity: number | null
   }>(
     sql`/* readStoryProjectionWorkForTest */
-      SELECT post_id, lease_token, limit_reached_capacity
+      SELECT post_id, lease_token
       FROM story_post_related_url_projection_jobs
       WHERE post_id = ANY(${postIds}::uuid[])
       ORDER BY post_id
@@ -30,11 +28,9 @@ export async function createTestStoryProjectionLease(postId: string) {
       SET lease_token = uuidv7(), leased_at = clock_timestamp(),
           last_claimed_at = clock_timestamp(), lease_expires_at = clock_timestamp() + INTERVAL '2 minutes'
       WHERE post_id = ${postId}
-        AND (limit_reached_capacity IS NULL OR limit_reached_capacity <> ${getRelationTypeLimit('relation__post__related__url')})
         AND (lease_expires_at IS NULL OR lease_expires_at <= clock_timestamp())
       RETURNING post_id, story_id, generation, sweep_upper_bound_source_id,
-        sweep_upper_bound_relation_id, relation_snapshot_at, cursor_source_id,
-        eligibility_completed_at, source_completed_at, cursor_prune_id, limit_reached_capacity, lease_token`,
+        source_completed_at, lease_token`,
   )
   return rows[0] ?? null
 }

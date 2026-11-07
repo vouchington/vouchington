@@ -42,7 +42,7 @@ describe('story projection scheduler availability', () => {
       await deleteTestPost(post.id)
     })
     expect(await readStoryProjectionWorkForTest([post.id])).toEqual([
-      { post_id: post.id, lease_token: null, limit_reached_capacity: null },
+      { post_id: post.id, lease_token: null },
     ])
     await expect(hasClaimableStoryPostRelatedUrlProjectionWork()).resolves.toBe(true)
   })
