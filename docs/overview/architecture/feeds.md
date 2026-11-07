@@ -73,7 +73,9 @@ Direct posts and recipient shares each walk their own sort index (each arm needs
 `page + 1` rows of the merged order) through the same
 [eligibility SELECT builder](../../../backend/services/feeds/posts/get-ids/eligible-posts-cte.mts).
 Repeated shares and a direct delivery of the same post remain separate delivery events with their
-own ids. Hot ranks only the last 30 days (decay makes older posts irrelevant), and `time_range` of
+own ids. Hot ranks only a recent window (`HOT_WINDOW_MS` in
+[`get-ids.mts`](../../../backend/services/feeds/posts/get-ids.mts); decay makes older posts
+irrelevant), and `time_range` of
 `1y` or `all` with `sort=hot` is the `best` walk by `votes_score_sort`. An old post can appear
 through a recent share because the share cutoff uses delivery time rather than target creation time.
 
