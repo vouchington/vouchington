@@ -1,6 +1,9 @@
 import { encodeScopedUuidCursor } from '@modules/pagination'
+import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
+import { recordStripePurchaseCollisionReviews } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review'
+import { createProviderMembershipSource } from '@services/memberships/provider-source'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { seedTestStripePurchaseCollisionReview } from './__tests__/collision-review-seed.mts'
+import { bindStripePurchaseCollisionReviewSeed } from '@voucha/test-helpers/stripe-purchase-collision-review-seed'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -8,6 +11,12 @@ import {
   getStripePurchaseCollisionReview,
   listStripePurchaseCollisionReviews,
 } from './collision-review-page.mts'
+
+const { seedTestStripePurchaseCollisionReview } = bindStripePurchaseCollisionReviewSeed({
+  getStripeMembershipSourceIdentity,
+  createProviderMembershipSource,
+  recordStripePurchaseCollisionReviews,
+})
 
 describe('Stripe purchase collision review pages', () => {
   it('returns an owned review by id and omits a missing id', async () => {

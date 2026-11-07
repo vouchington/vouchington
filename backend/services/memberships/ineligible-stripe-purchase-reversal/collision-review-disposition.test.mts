@@ -1,12 +1,19 @@
+import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
+import { recordStripePurchaseCollisionReviews } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review'
+import { createProviderMembershipSource } from '@services/memberships/provider-source'
 import { getTestIneligiblePurchaseReversalCase } from '@voucha/test-helpers/entities/memberships-reversals'
+import { bindStripePurchaseCollisionReviewSeed } from '@voucha/test-helpers/stripe-purchase-collision-review-seed'
 import { readTestStripePurchaseCollisionReview } from '@voucha/test-helpers/stripe-purchase-collision-work'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import {
-  restoreTestStripePurchaseCollisionReview,
-  seedTestStripePurchaseCollisionReview,
-} from './__tests__/collision-review-seed.mts'
 import { disposeStripePurchaseCollisionReview } from './collision-review-disposition.mts'
+
+const { restoreTestStripePurchaseCollisionReview, seedTestStripePurchaseCollisionReview } =
+  bindStripePurchaseCollisionReviewSeed({
+    getStripeMembershipSourceIdentity,
+    createProviderMembershipSource,
+    recordStripePurchaseCollisionReviews,
+  })
 
 describe('Stripe purchase collision review disposition', () => {
   it('deletes a review without an amount and does not create a reversal case', async () => {
