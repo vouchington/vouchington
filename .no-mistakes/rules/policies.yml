@@ -321,6 +321,11 @@
           file: backend/services/copyright-notices/form-reviews-reversal.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
+      # Replays one LIMITed page of blocked restore intents: selectBlockedCopyrightRestoreIntentIds reads at most batchSize (hard max 100, work-limits.mts:41-43) in the request paths and the reconcile sweep passes a single intent id (hold-restoration-recovery.mts); intents past the page stay blocked for the sweep's keyset continuation. Each intent runs a heterogeneous replay (lock, deadline, blocker, authority, placement and readiness checks) that cannot be one statement.
+      - {
+          file: backend/services/copyright-notices/court-hold-restore-replay.mts,
+          callee: 'replayOriginalRestore',
+        }
       # Candidates of one deadline: at most one unlifted restriction per target (idx_copyright_restrictions__one_active_per_target) and at most 20 targets (http-input.mts:57), so at most 20 per call. Each runs its own transaction (no lock held across items) revalidating placement, authority and blockers. UNVERIFIED: the 20-target cap is a parse-time check, not a database constraint.
       - {
           file: backend/services/copyright-notices/statutory-restoration-schedule.mts,
