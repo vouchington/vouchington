@@ -8,12 +8,17 @@ import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import type { MediaDeliveryClaim } from './delivery-registry-claims.mts'
 import { getMediaDeliveryPath } from './delivery-registry-types.mts'
 
-/** Publishes every claimed record at the edge, then writes all completion receipts in one statement. */
+/** Most records claimed, published and acknowledged together: bounds concurrent edge calls and keeps the batch inside one claim lease. */
+export const EDGE_PUBLISH_BATCH_SIZE = 4
+
+/** Publishes up to EDGE_PUBLISH_BATCH_SIZE claimed records at the edge, then writes their completion receipts in one statement. */
 export async function publishPersistedDeliveryRecords(
   records: readonly MediaDeliveryClaim[],
   query: QueryExecutor,
 ): Promise<void> {
   if (records.length === 0) return
+  if (records.length > EDGE_PUBLISH_BATCH_SIZE)
+    throw new Error(`Edge publication batch exceeds ${EDGE_PUBLISH_BATCH_SIZE} records`)
   const ids = records.map(record => record.media_delivery_registry_record_id)
   const generations = records.map(record => record.generation)
   const leaseTokens = records.map(record => record.lease_token)
@@ -29,8 +34,7 @@ export async function publishPersistedDeliveryRecords(
   `)
   if (owned.length !== records.length)
     throw new Error(`Media delivery generation changed while publishing ${ids.join(',')}`)
-  // Records publish concurrently so the batch stays within one claim lease (the slowest record
-  // bounds it, as it did when each record was claimed and acknowledged alone).
+  // At most EDGE_PUBLISH_BATCH_SIZE records publish concurrently, so the slowest record bounds the lease.
   await Promise.all(
     records.map(async record => {
       await putMediaDeliveryRegistryRecord({
