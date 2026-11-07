@@ -151,8 +151,16 @@ recovery follow [One current contract](../../AGENTS.md).
   cannot use an index or skip partitions. Pass a TypeScript-computed bound or a STABLE inlinable
   helper.
 - Explicit column lists for tables (no `SELECT *`, `alias.*`, `RETURNING *`); a view may be read
-  with `*` because its column list is the reviewed contract. No `OFFSET`; an optimizer fence is a
-  `MATERIALIZED` CTE.
+  with `*` because its column list is the reviewed contract. No `OFFSET`. A `MATERIALIZED` CTE is
+  an optimizer fence that computes every row up to its own LIMIT before outer filters run, so use it
+  only when it holds the final LIMIT or a small viewer-scoped set.
+- **A list or feed read is one walk over the listed entity.** Filters go in WHERE and are served by
+  an index. Use `ORDER BY key, id DESC LIMIT page+1` and a plain keyset cursor; the page LIMIT plus a
+  time window or the keyset bound the read. No candidate pools: no capped or `MATERIALIZED` CTE of
+  the listed entity that is filtered or limited afterwards, no window loops or probes, no cursor
+  proof state, and no config fields that only cap a read. A page is never short or empty while
+  `has_next_page` is true. Small viewer-scoped sets (follows, mutes, blocks, memberships) may be
+  subqueries or semi-joins. Compare plans against that single walk.
 
 ## R7 — Every table, column and view has a comment
 
