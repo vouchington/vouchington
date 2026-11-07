@@ -1,14 +1,16 @@
 import { encodeCursor } from '@modules/pagination'
-import { deactivateUserReferralLink } from '@services/user-referral-program-links/activate'
-import { createUserReferralLink } from '@services/user-referral-program-links/create'
-import { deleteUserReferralLink } from '@services/user-referral-program-links/delete'
-import { createRandomString, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
-import { hardDeleteTestUrl } from '@voucha/test-helpers/entities/urls'
+import { createTestUser } from '@voucha/test-helpers'
+import {
+  insertTestUserReferralProgramLink,
+  softDeleteReferralLink,
+} from '@voucha/test-helpers/entities/referral-links'
+import { createTestUrlWithHostname, hardDeleteTestUrl } from '@voucha/test-helpers/entities/urls'
 import {
   createReferralProgramFixture,
   disableReferralProgramByTopicId,
 } from '@voucha/test-helpers/entities/referral-programs'
 import {
+  deactivateReferralLinkForCount,
   readHighestActiveLinkCount,
   readReferralProgramActiveLinkCount,
   setReferralProgramActiveLinkCountForTest,
@@ -20,54 +22,43 @@ import { getTopicIds } from './get-ids.mts'
 
 const HIGHEST_ID = 'ffffffff-ffff-7fff-bfff-ffffffffffff'
 
+async function insertActiveLink(
+  userId: string,
+  referralProgramId: string,
+): Promise<{ id: string; urlId: string }> {
+  const urlId = await createTestUrlWithHostname()
+  const id = await insertTestUserReferralProgramLink({ userId, referralProgramId, urlId })
+  return { id, urlId }
+}
+
 describe('active link count', () => {
   it('stays exact when a link owner is purged and when a link is deactivated, deleted, or cascaded', async () => {
     const creator = await createTestUser()
     const owner = await createTestUser()
     const other = await createTestUser()
     const program = await createReferralProgramFixture({ createdById: creator.id })
-    await createUserReferralLink(owner, WEB_PROVENANCE, {
-      user_id: owner.id,
-      referral_program_id: program.referralProgramId,
-      url: `https://${program.hostname}/ref/${createRandomString(8)}`,
-    })
-    const kept = await createUserReferralLink(other, WEB_PROVENANCE, {
-      user_id: other.id,
-      referral_program_id: program.referralProgramId,
-      url: `https://${program.hostname}/ref/${createRandomString(8)}`,
-    })
+    await insertActiveLink(owner.id, program.referralProgramId)
+    const kept = await insertActiveLink(other.id, program.referralProgramId)
 
     expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(2)
 
     await hardDeleteTestUser(owner.id)
     expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(1)
 
-    await deactivateUserReferralLink(other, kept.id)
+    await deactivateReferralLinkForCount(kept.id)
     expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(0)
 
-    const again = await createUserReferralLink(other, WEB_PROVENANCE, {
-      user_id: other.id,
-      referral_program_id: program.referralProgramId,
-      url: `https://${program.hostname}/ref/${createRandomString(8)}`,
-    })
+    const again = await insertActiveLink(other.id, program.referralProgramId)
     expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(1)
-    await deleteUserReferralLink(other, again.id)
+    await softDeleteReferralLink(again.id)
     expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(0)
 
-    const cascaded = await createUserReferralLink(other, WEB_PROVENANCE, {
-      user_id: other.id,
-      referral_program_id: program.referralProgramId,
-      url: `https://${program.hostname}/ref/${createRandomString(8)}`,
-    })
-    await hardDeleteTestUrl(cascaded.url_id)
+    const cascaded = await insertActiveLink(other.id, program.referralProgramId)
+    await hardDeleteTestUrl(cascaded.urlId)
     expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(0)
 
     const purged = await createReferralProgramFixture({ createdById: creator.id })
-    await createUserReferralLink(other, WEB_PROVENANCE, {
-      user_id: other.id,
-      referral_program_id: purged.referralProgramId,
-      url: `https://${purged.hostname}/ref/${createRandomString(8)}`,
-    })
+    await insertActiveLink(other.id, purged.referralProgramId)
     await hardDeleteTestTopic(purged.referralProgramId)
     expect(await readReferralProgramActiveLinkCount(purged.referralProgramId)).toBeNull()
   })

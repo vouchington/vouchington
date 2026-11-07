@@ -1,6 +1,16 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+export async function deactivateReferralLinkForCount(linkId: string): Promise<void> {
+  await write(
+    sql`/* deactivateReferralLinkForCount */
+      UPDATE user_referral_program_links
+      SET activated_at = NULL,
+          deactivated_at = CURRENT_TIMESTAMP
+      WHERE id = ${linkId}`,
+  )
+}
+
 export async function readReferralProgramActiveLinkCount(topicId: string): Promise<number | null> {
   const { rows } = await read<{ active_link_count: number | string }>(
     sql`/* readReferralProgramActiveLinkCount */
