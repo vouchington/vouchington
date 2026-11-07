@@ -81,7 +81,7 @@ async function lockPrefixHostnames(
 async function admitPreparedRows(
   transaction: TransactionQuery,
   work: ProjectionWork,
-  rows: SourceRow[],
+  rows: readonly SourceRow[],
   storyTeller: StoryTeller,
 ): Promise<PreparedAdmission | { ok: false }> {
   const urlIds = uniqueUrlIds(rows)

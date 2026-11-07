@@ -63,7 +63,7 @@ export async function getStoryPostRelatedUrlProjectionSourcePageForWork(
 
 export async function decideStoryPostRelatedUrlProjectionRows(
   work: ProjectionWork,
-  rows: SourceRow[],
+  rows: readonly SourceRow[],
   options: QueryOptions = {},
 ): Promise<SourceDecision[]> {
   const uniqueByUrlId = new Map<string, SourceRow>()
