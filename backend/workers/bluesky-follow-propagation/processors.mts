@@ -21,7 +21,7 @@ export async function disconnectRequested(data: DisconnectRequestedData): Promis
 
 /** Deletes one page of other followers' receipts and enqueues the next page when this one was full. */
 export async function drainFolloweeReceipts(data: DrainFolloweeReceiptsData): Promise<void> {
-  await drainBlueskyFolloweeReceiptsPage(data.userId, data.after ?? null)
+  await drainBlueskyFolloweeReceiptsPage(data.userId, data.after)
 }
 
 /**

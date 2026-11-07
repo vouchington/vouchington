@@ -119,35 +119,38 @@ export async function listBlueskyFollowReceiptsForFollower(
   return rows as BlueskyFollowReceipt[]
 }
 
+// Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
+export const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
+
 // Clears one keyset page of receipts where followeeUserId is followed by a different user. Those
 // records live in the other follower's repo, so followeeUserId cannot delete them remotely. A
 // self-follow receipt is excluded because followeeUserId also owns that remote record;
 // disconnect.mts deletes it through the follower cleanup before dropping the local receipt. A
 // full page (`hasMore`) means more may remain after `lastFollowerUserId`; the caller continues
 // through the drain job (drain-followee-receipts.mts), never a loop here.
+// The page rows are locked in the CTE, so their ctids stay valid for the delete in this statement;
+// deleting by ctid keeps the delete on the page instead of re-joining the whole table.
 export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
   followeeUserId: string,
-  afterFollowerUserId: string | null,
+  afterFollowerUserId: string,
   options: QueryOptions = {},
 ): Promise<{ lastFollowerUserId: string | null; hasMore: boolean }> {
   const batchSize = getBlueskyFollowsWorkLimit('backfill_batch_size')
   const { rows } = await write(
     sql`/* deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage */
       WITH page AS MATERIALIZED (
-        SELECT follower_user_id, followee_user_id
+        SELECT ctid AS row_id
         FROM bluesky_follow_records
         WHERE followee_user_id = ${followeeUserId}
           AND follower_user_id <> ${followeeUserId}
-          AND (${afterFollowerUserId}::uuid IS NULL OR follower_user_id > ${afterFollowerUserId}::uuid)
+          AND follower_user_id > ${afterFollowerUserId}::uuid
         ORDER BY follower_user_id
         LIMIT ${batchSize}
         FOR UPDATE
       )
-      DELETE FROM bluesky_follow_records receipt
-      USING page
-      WHERE receipt.follower_user_id = page.follower_user_id
-        AND receipt.followee_user_id = page.followee_user_id
-      RETURNING receipt.follower_user_id`,
+      DELETE FROM bluesky_follow_records
+      WHERE ctid = ANY (ARRAY(SELECT row_id FROM page))
+      RETURNING follower_user_id`,
     options,
   )
   const followerIds = (rows as { follower_user_id: string }[]).map(row => row.follower_user_id)

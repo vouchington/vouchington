@@ -44,7 +44,7 @@ describe('draining other followers receipts after a disconnect', () => {
     await insertTestBlueskyLinkedAccount({ userId: target.id })
     const followers = await Promise.all([followerReceipt(target.id), followerReceipt(target.id)])
 
-    await drainBlueskyFolloweeReceiptsPage(target.id, null)
+    await drainBlueskyFolloweeReceiptsPage(target.id)
 
     const present = await Promise.all(followers.map(follower => hasReceipt(follower, target.id)))
     expect(present.filter(Boolean)).toHaveLength(1)

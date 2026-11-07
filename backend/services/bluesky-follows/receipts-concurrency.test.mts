@@ -17,6 +17,7 @@ import {
   deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
   getBlueskyFollowReceipt,
   saveBlueskyFollowReceipt,
+  START_OF_IDS,
 } from './receipts.mts'
 import { blueskyFollowsWorkConfig } from './work-limits.mts'
 
@@ -57,9 +58,13 @@ describe('Bluesky followee receipt cleanup concurrency', () => {
         const cleanup = (async () => {
           await using query = await beginTransaction()
           cleanupProcessId = await getTestPostgresBackendProcessId(query)
-          await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(followee.id, null, {
-            query,
-          })
+          await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
+            followee.id,
+            START_OF_IDS,
+            {
+              query,
+            },
+          )
           await query.commit()
         })()
         void cleanup.catch(() => {})

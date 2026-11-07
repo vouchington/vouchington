@@ -64,6 +64,7 @@ import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-s
 import { runCrawlerBoilerplateScenario } from './run-scenarios/crawler-boilerplate.mts'
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
 import { runCommunityRoundTripScenarios } from './run-scenarios/community-round-trips.mts'
+import { runBlueskyFolloweeReceiptScenarios } from './run-scenarios/bluesky-followee-receipts.mts'
 import { runSessionLimitScenarios } from './run-scenarios/session-limits.mts'
 import { runImageDeliveryFoldScenarios } from './run-scenarios/image-delivery-folds.mts'
 import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
@@ -142,6 +143,7 @@ async function main() {
     await runStep(runRequestContextFoldScenarios.name, runRequestContextFoldScenarios)
     await runStep(runCommunityRoundTripScenarios.name, runCommunityRoundTripScenarios)
     await runStep(runSessionLimitScenarios.name, runSessionLimitScenarios)
+    await runStep(runBlueskyFolloweeReceiptScenarios.name, runBlueskyFolloweeReceiptScenarios)
     await runStep(runImageDeliveryFoldScenarios.name, runImageDeliveryFoldScenarios)
     await runStep(runUserProfileRoundTripScenarios.name, runUserProfileRoundTripScenarios)
     await runStep(runUploadCleanupScenarios.name, runUploadCleanupScenarios)

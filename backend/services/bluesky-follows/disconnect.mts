@@ -82,7 +82,7 @@ async function cleanupBlueskyFollowsBeforeAcceptedDisconnect(
 ): Promise<void> {
   // One page now; a full page enqueues its continuation before revocation, so a failed enqueue
   // leaves the generation retryable instead of stranding the remainder.
-  await drainBlueskyFolloweeReceiptsPage(userId, null)
+  await drainBlueskyFolloweeReceiptsPage(userId)
   await cleanupFollowerRoleBeforeDisconnect(userId, linked)
 }
 

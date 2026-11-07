@@ -3714,6 +3714,9 @@ importers:
       '@services/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../services/bedrock-embeddings-batch
+      '@services/bluesky-follows':
+        specifier: workspace:^
+        version: link:../services/bluesky-follows
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../services/bookmarks
