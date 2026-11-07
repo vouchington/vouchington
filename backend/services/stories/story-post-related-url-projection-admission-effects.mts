@@ -96,6 +96,17 @@ export async function requireStoryTeller(): Promise<StoryTeller> {
   return storyTeller
 }
 
+export function uniqueUrls(rows: readonly SourceRow[]): string[] {
+  const urls: string[] = []
+  const seen = new Set<string>()
+  for (const row of rows) {
+    if (seen.has(row.url)) continue
+    seen.add(row.url)
+    urls.push(row.url)
+  }
+  return urls
+}
+
 export function uniqueUrlIds(rows: readonly SourceRow[]): string[] {
   const urlIds: string[] = []
   const seen = new Set<string>()

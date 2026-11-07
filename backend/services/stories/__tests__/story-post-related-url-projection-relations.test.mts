@@ -15,6 +15,7 @@ import {
   updateUrlHostnameBlocked,
   expireTestStoryPostProjectionLeaseAfterLock,
 } from '@voucha/test-helpers'
+import { insertTestDomainBlacklist } from '@voucha/test-helpers/entities/domain-blacklists'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
@@ -82,6 +83,25 @@ describe('story post related URL projection relations', () => {
       await expect(
         admitStoryPostRelatedUrlProjectionPrefix(work, decisions),
       ).resolves.toMatchObject({
+        ok: true,
+      })
+      await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
+      await expect(
+        getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
+      ).resolves.toMatchObject({ is_eligible: false })
+    } finally {
+      await releaseStoryPostRelatedUrlProjectionWork(work)
+      await drainProjection(post.id)
+    }
+  })
+
+  it('omits a prefix URL whose domain is on the URL blocklist', async () => {
+    const { post, url } = await createProjectablePost('blocklisted-domain')
+    const work = await createTestStoryProjectionLease(post.id)
+    if (!work) throw new Error('Expected projection work')
+    try {
+      await insertTestDomainBlacklist(new URL(url.url).hostname)
+      await expect(admitStoryPostRelatedUrlProjectionPrefix(work)).resolves.toMatchObject({
         ok: true,
       })
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])

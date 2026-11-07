@@ -52,6 +52,7 @@
     "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/users": "workspace:^",
+    "@services/web-risk": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",

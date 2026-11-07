@@ -1,4 +1,4 @@
-import createHttpError from 'http-errors'
+import createHttpError, { isHttpError } from 'http-errors'
 import onError from '@modules/on-error'
 import { getDomain } from 'tldts'
 import {
@@ -31,6 +31,10 @@ type WebRiskCheckOptions = {
   localPolicies?: PrecomputedHostnamePolicies
   policies?: PrecomputedHostnamePolicies
   signal?: AbortSignal
+  /** Read blocklist rows directly. A stale Bloom negative must not admit a blocked URL. */
+  authoritative?: boolean
+  /** Record each blocked URL and keep screening the rest of the batch. */
+  blockedUrls?: Set<string>
 }
 
 const NO_PROVIDER_GATE: ProviderGate = { cleanCached: false, coolingDown: false }
@@ -100,21 +104,27 @@ export async function assertUrlsAllowedByWebRiskWithState(
   urls: readonly string[],
   options: WebRiskCheckOptions = {},
 ): Promise<void> {
-  const parsed = [...new Set(urls)].flatMap(url => {
+  const parsed: Array<{ original: string; url: URL }> = []
+  const seen = new Set<string>()
+  for (const url of urls) {
+    if (seen.has(url)) continue
+    seen.add(url)
     const value = parseWebRiskUrl(url)
-    return value ? [value] : []
-  })
+    if (value) parsed.push({ original: url, url: value })
+  }
   if (parsed.length === 0) return
-  const hostnames = parsed.map(url => url.hostname)
+  const hostnames = parsed.map(item => item.url.hostname)
+  const policyOptions = options.authoritative ? { readOnly: false as const } : {}
   const policies =
     options.policies ??
     (options.localPolicies
-      ? await getHostnamePoliciesFromLocal(hostnames, options.localPolicies)
-      : await getHostnamePolicies(hostnames))
+      ? await getHostnamePoliciesFromLocal(hostnames, options.localPolicies, policyOptions)
+      : await getHostnamePolicies(hostnames, policyOptions))
   const providerActive = isWebRiskEnabled() && hasWebRiskApiKey()
-  const decided = parsed.map(url => {
-    const policy = policies.get(normalizeHostnameForPolicy(url.hostname)) ?? EMPTY_HOSTNAME_POLICY
-    return { url, policy }
+  const decided = parsed.map(item => {
+    const policy =
+      policies.get(normalizeHostnameForPolicy(item.url.hostname)) ?? EMPTY_HOSTNAME_POLICY
+    return { ...item, policy }
   })
   const needingGate = decided.filter(
     item => providerActive && !item.policy.is_blocked && !item.policy.should_skip_web_risk,
@@ -122,17 +132,35 @@ export async function assertUrlsAllowedByWebRiskWithState(
   const gates = await state.readProviderGates(needingGate.map(item => item.url))
   const gateByUrl = new Map(needingGate.map((item, index) => [item.url.toString(), gates[index]!]))
   for (const item of decided) {
-    // oxlint-disable no-await-in-loop -- the rate-limit charge and provider cooldown are ordered per URL
-    // no-mistakes-disable-next-line query-reached-per-item: uris:search takes one uri; this URL's charge, cache write, and block depend on that response
-    await decideWebRiskUrl(
-      state,
-      item.url,
-      item.policy,
-      gateByUrl.get(item.url.toString()) ?? NO_PROVIDER_GATE,
-      options,
-    )
-    // oxlint-enable no-await-in-loop
+    try {
+      // oxlint-disable no-await-in-loop -- the rate-limit charge and provider cooldown are ordered per URL
+      // no-mistakes-disable-next-line query-reached-per-item: uris:search takes one uri; this URL's charge, cache write, and block depend on that response
+      await decideWebRiskUrl(
+        state,
+        item.url,
+        item.policy,
+        gateByUrl.get(item.url.toString()) ?? NO_PROVIDER_GATE,
+        options,
+      )
+      // oxlint-enable no-await-in-loop
+    } catch (err) {
+      if (options.blockedUrls && isHttpError(err) && err.status === 400) {
+        options.blockedUrls.add(item.original)
+        continue
+      }
+      throw err
+    }
   }
+}
+
+/** Screens every URL. A blocked URL is recorded and does not stop the rest of the batch. */
+export async function blockedUrlsFromWebRiskScreenWithState(
+  state: WebRiskState,
+  urls: readonly string[],
+): Promise<Set<string>> {
+  const blockedUrls = new Set<string>()
+  await assertUrlsAllowedByWebRiskWithState(state, urls, { blockedUrls, authoritative: true })
+  return blockedUrls
 }
 
 async function blockWebRiskDomain(
