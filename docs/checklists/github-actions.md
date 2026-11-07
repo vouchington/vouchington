@@ -21,11 +21,9 @@ Enforced rules name their check; the check owns the detail. Judgment calls stay 
 - **pnpm install** — one install per job, from the shared setup actions, keeps installs fast and script-free where required. `ci/check-workflow-cache-pnpm-policy.mts` runs in static CI.
 - **Concurrency** — an unlocked workflow duplicates runs and a wrong cancel policy drops merge-queue or main work. The `workflow-topology-policy` rule in [`.no-mistakes/rules/policies.yml`](../../.no-mistakes/rules/policies.yml) (reasoned exceptions, cancel intent, group collisions) and the literal area prefix in `area-workflows.test.mts`.
 - **CI dependency images** — anonymous Docker Hub and public mirror pulls hit shared quotas and ejected unrelated merge-queue entries ([#2653](https://github.com/vouchington/vouchington/issues/2653), [#3507](https://github.com/vouchington/vouchington/issues/3507)). Use reviewed digest-pinned GHCR dependency packages; the released Docker image mirror check guards workflow and Dockerfile image positions. See [bootstrap and recovery](../development/ci/workflows/reference-dependency-image-mirror.md#bootstrap-and-recovery).
-- **No draft-transition triggers** — no job reads draft state, so a draft transition must not start a run. `draft-event-triggers.test.mts`.
-- **Local composite actions follow a checkout** — `./` actions resolve from the workspace, which only a checkout fills. `local-action-checkout.test.mts`. Do not add a checkout to a job deliberately kept checkout-free (a required fan-in gate) just to dedupe script; weigh runner demand and registry reachability first.
+- **No draft-transition triggers** — no job reads draft state, so a draft transition must not start a run. The [`workflow-topology-policy`](../../.no-mistakes/rules/policies.yml) rule enforces this.
+- **Local composite actions follow a checkout** — `./` actions resolve from the workspace, which only a checkout fills. The [`github-actions-local-action-checkout`](../../.no-mistakes/rules/policies.yml) rule enforces this. Do not add a checkout to a job deliberately kept checkout-free (a required fan-in gate) just to dedupe script; weigh runner demand and registry reachability first.
 - **Workflow syntax** — `actionlint` runs in CI; run it on changed workflows before pushing.
-
-Delete `docker-hub-mirror.test.mts`, `draft-event-triggers.test.mts`, or `local-action-checkout.test.mts` only after no-mistakes ships a rule for that check.
 
 ### Judgment
 
