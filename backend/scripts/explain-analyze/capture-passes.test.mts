@@ -63,6 +63,7 @@ describe('EXPLAIN function-call capture', () => {
     const fixture = await createExplainWalCaptureFixture(scenarioId)
     const { input } = fixture
     try {
+      expect(fixture.ownedPageCount).toBeGreaterThanOrEqual(3)
       const cold = await fixture.captureCold()
       const walFpi = (plan: unknown) => (plan as { Plan: { 'WAL FPI': number } }).Plan['WAL FPI']
       const actualRows = (plan: unknown) =>
