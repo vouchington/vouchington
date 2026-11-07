@@ -3,22 +3,23 @@ import { coldWalPageAddress, selectSealedUsers, type LocatedUser } from './expla
 
 // Fullness is the page hole, not a live-row count. A dirty users page can be
 // full with fewer than 30 rows when other tuples are wider or dead.
-const COLD_WAL_FILL_ROWS = 150
-const COLD_WAL_FILL_LIMIT = 600
+// Wider rows avoid narrow reusable holes; physical validation still decides.
+const COLD_WAL_FILL_ROWS = 600
+const COLD_WAL_FILL_LIMIT = 2401
 const COLD_WAL_MIN_PAGES = 3
 const USERS_PAGE_BYTES = 8192
 
 const pageNumberSql = String.raw`substring(ctid::text FROM $re$^\((\d+),$re$)::integer`
 const lineNumberSql = String.raw`substring(ctid::text FROM $re$,(\d+)\)$re$)::integer`
 
-async function insertColdWalUsers(): Promise<string[]> {
+async function insertColdWalUsers(count: number, padding: number | null): Promise<string[]> {
   const { rows } = await write<{ id: string }>(
     `/* insertColdWalUsers */
-     INSERT INTO users (username)
-     SELECT NULL::text
+     INSERT INTO users (username, verified_full_name)
+     SELECT NULL::text, repeat('x', $2::integer)
      FROM generate_series(1, $1::integer)
      RETURNING id::text AS id`,
-    [COLD_WAL_FILL_ROWS],
+    [count, padding],
   )
   return rows.map(row => row.id)
 }
@@ -67,10 +68,10 @@ async function readUserPageImages(pages: readonly number[]) {
 }
 
 async function sealedColdWalUsers(ids: readonly string[]): Promise<string[]> {
-  // pg_read_binary_file reads the heap file. Shared buffers stay stale on disk
-  // until a checkpoint, and the capture checkpoint still runs before the update.
-  await write('/* sealedColdWalUsers */ CHECKPOINT')
+  // Locating can prune old versions from users' insert triggers. Flush those
+  // changes before reading the heap file; capture checkpoints again before UPDATE.
   const located = await locateColdWalUsers(ids)
+  await write('/* sealedColdWalUsers */ CHECKPOINT')
   const pages = [...new Set(located.map(row => row.page))]
   if (pages.length === 0) return []
   const { images, minimumTupleBytes } = await readUserPageImages(pages)
@@ -78,9 +79,19 @@ async function sealedColdWalUsers(ids: readonly string[]): Promise<string[]> {
 }
 
 async function reserveColdWalUsers(ids: string[]): Promise<string[]> {
+  ids.push(...(await insertColdWalUsers(1, null)))
+  // Four nearly-2-KiB rows seal a page instead of reusing narrow dirty holes.
+  // Measure the owned seed so padding follows the current users row shape.
+  const { rows } = await write<{ padding: number }>(
+    `/* reserveColdWalUsers */ SELECT 2016 - pg_column_size(u) AS padding
+     FROM users AS u WHERE id = $1::uuid`,
+    [ids[0]],
+  )
+  const padding = rows[0]!.padding
+  if (padding <= 0) throw new Error('Cold WAL users row exceeds inline page target')
   let chosen: string[] = []
   while (ids.length < COLD_WAL_FILL_LIMIT && chosen.length < COLD_WAL_MIN_PAGES) {
-    ids.push(...(await insertColdWalUsers()))
+    ids.push(...(await insertColdWalUsers(COLD_WAL_FILL_ROWS, padding)))
     chosen = await sealedColdWalUsers(ids)
   }
   if (chosen.length < COLD_WAL_MIN_PAGES) {
@@ -92,8 +103,11 @@ async function reserveColdWalUsers(ids: string[]): Promise<string[]> {
 }
 
 async function deleteColdWalUsers(ids: readonly string[]) {
-  if (ids.length === 0) return
-  await write(`/* deleteColdWalUsers */ DELETE FROM users WHERE id = ANY($1::uuid[])`, [ids])
+  for (let offset = 0; offset < ids.length; offset += 250) {
+    await write(`/* deleteColdWalUsers */ DELETE FROM users WHERE id = ANY($1::uuid[])`, [
+      ids.slice(offset, offset + 250),
+    ])
+  }
 }
 
 export async function createExplainWalCaptureFixture(scenarioId: string) {
