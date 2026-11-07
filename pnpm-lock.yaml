@@ -95,7 +95,7 @@ importers:
         specifier: ^18.7.0
         version: 18.7.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.109.9
+        specifier: ^0.109.10
         version: 0.109.11(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.1
@@ -122,7 +122,7 @@ importers:
         specifier: ^6
         version: 6.43.0
       no-mistakes:
-        specifier: ^0.109.9
+        specifier: ^0.109.10
         version: 0.109.10(vitest@5.1.0)
       oxfmt:
         specifier: ^0.76.0
@@ -1474,7 +1474,7 @@ importers:
         version: 0.85.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.4.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1163.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.10(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
     devDependencies:
       no-mistakes:
-        specifier: ^0.109.9
+        specifier: ^0.109.10
         version: 0.109.10(vitest@5.1.0)
       oxfmt:
         specifier: ^0.76.0
@@ -12812,7 +12812,7 @@ importers:
         specifier: ^6.2.15
         version: 6.2.15
       no-mistakes:
-        specifier: ^0.109.9
+        specifier: ^0.109.10
         version: 0.109.10(vitest@5.1.0)
       openai:
         specifier: ^7.43.0
@@ -15043,7 +15043,7 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.109.9
+        specifier: ^0.109.10
         version: 0.109.10(vitest@5.1.0)
       picomatch:
         specifier: ^4.0.4
@@ -15316,7 +15316,7 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.109.9
+        specifier: ^0.109.10
         version: 0.109.10(vitest@5.1.0)
       oxfmt:
         specifier: ^0.76.0
