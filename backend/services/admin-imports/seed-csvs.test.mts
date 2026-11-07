@@ -122,6 +122,22 @@ describe('seedTopicsFromRows', () => {
     })
   })
 
+  it('keeps a duplicate-slug validation error when the valid row is retried', async () => {
+    const suffix = crypto.randomUUID()
+    const slug = `seed-csvs-duplicate-${suffix}`
+
+    const result = await seedTopicsFromCsvs({
+      rows: [
+        { slug, name: `First ${suffix}`, parent_slugs: `seed-missing-parent-${suffix}` },
+        { slug, name: `Second ${suffix}` },
+      ],
+    })
+
+    expect(result.processed).toBe(1)
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0]).toMatchObject({ slug })
+  })
+
   it('rejects a seed row with more than 20 parent_slugs without importing it', async () => {
     const suffix = crypto.randomUUID()
     const slug = `seed-csvs-many-parents-${suffix}`

@@ -75,6 +75,8 @@ async function importSeedRows(
     })
   }
 
+  const validationErrorCount = errors.length
+
   // Pass 1: create / update every topic (establishes within-file parent relations)
   for (let i = 0; i < allRows.length; i++) {
     const row = allRows[i]!
@@ -90,7 +92,7 @@ async function importSeedRows(
   // - parent_slugs: silently skipped when parent didn't exist yet (cross-file links)
   // - pass-1 errors: may have failed due to referral_company_slug pointing to a
   //   topic defined in a later file; retrying after all topics exist may succeed.
-  const pass1ErrorSlugs = new Set(errors.map(e => e.slug))
+  const pass1ErrorSlugs = new Set(errors.slice(validationErrorCount).map(e => e.slug))
   const rowsToRetry = allRows.flatMap((row, originalIndex) =>
     row.parent_slugs?.trim() || pass1ErrorSlugs.has(row.slug?.trim() || '')
       ? [{ row, originalIndex }]
@@ -102,7 +104,9 @@ async function importSeedRows(
       // oxlint-disable-next-line no-await-in-loop -- retry rows remain serialized so a successful retry clears the matching first-pass error
       await processTopicRow(actor, makeSyntheticRow(row, originalIndex))
       // If pass 1 recorded an error for this row but pass 2 succeeded, clear it
-      const errorIdx = errors.findIndex(e => e.slug === slug)
+      const errorIdx = errors.findIndex(
+        (e, index) => index >= validationErrorCount && e.slug === slug,
+      )
       if (errorIdx >= 0) errors.splice(errorIdx, 1)
     } catch (err) {
       // Record pass-2 failures only for rows that succeeded in pass 1
