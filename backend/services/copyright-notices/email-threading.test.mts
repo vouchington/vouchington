@@ -11,7 +11,7 @@ import {
   markCopyrightDeliveryIntentSent,
   recordCopyrightEmailParse,
 } from './index.mts'
-import { getCopyrightStaffEmailIntake } from './read-models.mts'
+import { getCopyrightStaffEmailIntake } from './read-models-staff-email-intake.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'

@@ -7,7 +7,7 @@ import type { Post } from '@/types/posts'
 
 vi.mock(import('next/navigation'), () => navMockModule)
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   archivePost: vi.fn<VitestLooseMock>(),
   unarchivePost: vi.fn<VitestLooseMock>(),
 }))
@@ -24,7 +24,7 @@ vi.mock(
     }) as unknown as typeof import('sonner'),
 )
 
-import { archivePost, unarchivePost } from '@/lib/api/client/posts'
+import { archivePost, unarchivePost } from '@/lib/api/client/post-mutations'
 
 const mockArchivePost = vi.mocked(archivePost)
 const mockUnarchivePost = vi.mocked(unarchivePost)

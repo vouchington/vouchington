@@ -1,12 +1,7 @@
-/* oxlint-disable max-lines -- Automod feedback keeps source locking, feedback recording, and action application in one transaction. */
 import assert from 'http-assert'
-import sql from 'sql-template-strings'
 import { beginTransaction } from '@data-stores/psql'
-import { reviveClassifierRunRequests } from '@services/classifier-run-revival'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { recordModeratorAction } from '@services/moderator-actions'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
-import { hasOtherActiveAutomodSignals } from './active-signals.mts'
+import { lockPostPublication } from '@services/post-publication'
 import {
   getAutomodFeedbackContext,
   hasExistingAutomodFeedback,
@@ -16,19 +11,9 @@ import {
 } from './automod-feedback-context.mts'
 import { recordModerationTrainingFeedback } from './feedback.mts'
 import { parseAutomodActionSourceKey } from './recent-actions.mts'
-
-export type AutomodFeedbackOutcome = 'false_positive' | 'true_positive'
-export type AutomodFeedbackAction = 'reinstate' | 'keep_removed' | 'label_only'
-
-export type RecordAutomodActionFeedbackInput = {
-  communityId: string
-  sourceKey: string
-  actorUserId: string
-  outcome: AutomodFeedbackOutcome
-  action: AutomodFeedbackAction
-  reasonCode?: string | null
-  note?: string | null
-}
+import { applyAutomodReinstate } from './automod-feedback-reinstate.mts'
+import { applyAutomodKeepRemoved } from './automod-feedback-keep-removed.mts'
+import type { RecordAutomodActionFeedbackInput } from './automod-feedback-input.mts'
 
 export async function recordAutomodActionFeedback(input: RecordAutomodActionFeedbackInput) {
   const parsed = parseAutomodActionSourceKey(input.sourceKey)
@@ -108,165 +93,9 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
 
   let appliedAction = true
   if (input.action === 'reinstate') {
-    const hasOtherActiveSignals = await hasOtherActiveAutomodSignals({
-      communityId: input.communityId,
-      postId: context.post_id,
-      sourceType: parsed.sourceType,
-      sourceId: parsed.id,
-      inputSha256: parsed.inputSha256,
-      query,
-    })
-    if (hasOtherActiveSignals) {
-      appliedAction = false
-    } else if (parsed.sourceType === 'community_prompt') {
-      const reinstateResult =
-        await query(sql`/* recordAutomodActionFeedback:reinstateCommunityPost */
-          UPDATE community_post_reviews
-          SET unpublished_at = NULL,
-              unpublished_by_id = NULL
-          WHERE community_id = ${input.communityId}
-            AND post_id = ${context.post_id}
-            AND unpublished_at IS NOT NULL
-            AND unpublished_by_id IS NULL
-        `)
-      if ((reinstateResult.rowCount ?? 0) === 0) {
-        appliedAction = false
-      } else {
-        await recordPostPublicationChange(query, {
-          scope: { type: 'post', postId: context.post_id },
-          reason: 'community_publication_changed',
-          impactedCommunityIds: [input.communityId],
-          footprint: { priorCommunityId: input.communityId },
-        })
-      }
-    } else {
-      const reinstateResult = await query<{
-        input_sha256: Buffer | null
-      }>(sql`/* recordAutomodActionFeedback:reinstatePostClearance */
-          WITH target_post AS (
-            SELECT id
-            FROM posts
-            WHERE id = ${context.post_id}
-              AND (in_review_at IS NOT NULL OR rejected_at IS NOT NULL)
-          ),
-          inserted_change AS (
-            INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id, metadata)
-            SELECT
-              target_post.id,
-              'approve',
-              ${input.actorUserId},
-              ${JSON.stringify({ source_key: input.sourceKey, moderation_training: true })}::jsonb
-            FROM target_post
-            RETURNING id, post_id, created_at, changed_by_id
-          )
-          UPDATE posts
-          SET clearance_version = posts.clearance_version + 1,
-              clearance_changed_at = inserted_change.created_at,
-              clearance_changed_by_id = inserted_change.changed_by_id,
-              clearance_public_reason_code = NULL,
-              clearance_is_platform_override = FALSE,
-              approved_at = inserted_change.created_at,
-              rejected_at = NULL,
-              in_review_at = NULL,
-              updated_by_id = ${input.actorUserId}
-          FROM inserted_change
-          WHERE posts.id = inserted_change.post_id
-          RETURNING posts.llm_moderation_content_sha256 AS input_sha256
-        `)
-      if ((reinstateResult.rowCount ?? 0) === 0) {
-        appliedAction = false
-      } else {
-        const inputSha256 = reinstateResult.rows[0]?.input_sha256
-        if (inputSha256)
-          await reviveClassifierRunRequests(query, {
-            subject: { postId: context.post_id, rssFeedItemId: null },
-            inputSha256,
-          })
-        await recordPostPublicationChange(query, {
-          scope: { type: 'post', postId: context.post_id },
-          reason: 'post_clearance_changed',
-          footprint: { priorCommunityId: input.communityId },
-        })
-      }
-    }
-    if (appliedAction) {
-      await recordModeratorAction(
-        input.actorUserId,
-        {
-          actionType: 'approve',
-          communityId: input.communityId,
-          postId: context.post_id,
-          reason: input.note ?? null,
-          metadata: { source_key: input.sourceKey, moderation_training: true },
-        },
-        { query },
-      )
-    }
+    appliedAction = await applyAutomodReinstate(query, input, context, parsed)
   } else if (input.action === 'keep_removed' && parsed.sourceType !== 'community_prompt') {
-    const rejectResult = await query(sql`/* recordAutomodActionFeedback:rejectInReviewPost */
-        WITH inserted_change AS (
-          INSERT INTO post_clearance_changes (
-            post_id,
-            change_type,
-            changed_by_id,
-            metadata,
-            moderation_transparency_categories
-          )
-          SELECT
-            ${context.post_id},
-            'reject',
-            ${input.actorUserId},
-            ${JSON.stringify({ source_key: input.sourceKey, moderation_training: true })}::jsonb,
-            COALESCE((
-              SELECT array_agg(latest.source::text::moderation_transparency_categories ORDER BY latest.source)
-              FROM post_moderation_versions version
-              JOIN LATERAL (
-                SELECT DISTINCT ON (source) source, disposition
-                FROM post_moderation_dispositions
-                WHERE version_id = version.id
-                  AND source IN ('openai_omni', 'spam_detection')
-                ORDER BY source, id DESC
-              ) latest ON latest.disposition IN ('review', 'reject')
-              WHERE version.post_id = p.id
-                AND version.content_sha256 = p.llm_moderation_content_sha256
-                AND version.policy_revision = '2026-09-09.1'
-            ), '{}'::moderation_transparency_categories[])
-          FROM posts p
-          WHERE p.id = ${context.post_id}
-            AND p.in_review_at IS NOT NULL
-          RETURNING id, post_id, created_at, changed_by_id
-        )
-        UPDATE posts
-        SET clearance_version = posts.clearance_version + 1,
-              clearance_changed_at = inserted_change.created_at,
-            clearance_changed_by_id = inserted_change.changed_by_id,
-            clearance_public_reason_code = NULL,
-            clearance_is_platform_override = FALSE,
-            approved_at = NULL,
-            rejected_at = inserted_change.created_at,
-            in_review_at = NULL,
-            updated_by_id = ${input.actorUserId}
-        FROM inserted_change
-        WHERE posts.id = inserted_change.post_id
-      `)
-    if ((rejectResult.rowCount ?? 0) > 0) {
-      await recordPostPublicationChange(query, {
-        scope: { type: 'post', postId: context.post_id },
-        reason: 'post_clearance_changed',
-        footprint: { priorCommunityId: input.communityId },
-      })
-      await recordModeratorAction(
-        input.actorUserId,
-        {
-          actionType: 'reject',
-          communityId: input.communityId,
-          postId: context.post_id,
-          reason: input.note ?? null,
-          metadata: { source_key: input.sourceKey, moderation_training: true },
-        },
-        { query },
-      )
-    }
+    await applyAutomodKeepRemoved(query, input, context, parsed)
   }
 
   const feedback = Object.assign(trainingFeedback, { applied_action: appliedAction })

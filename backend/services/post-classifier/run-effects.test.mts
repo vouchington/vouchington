@@ -15,11 +15,11 @@ import {
   localOutcomeFor,
   remoteDecisionFor,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
+import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-clearance'
 import {
   getPostClearanceChanges,
   getPostClearanceStatus,
-  setTestPostClearanceStatus,
-} from '@voucha/test-helpers/entities/post-clearance'
+} from '@voucha/test-helpers/entities/post-clearance-reads'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { completeClassifierRun, persistClassifierRunOutcomes } from '@services/classifier-runs'

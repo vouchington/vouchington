@@ -11,25 +11,32 @@ vi.mock(
       clientApi: {
         delete: vi.fn<VitestLooseMock>(),
         get: vi.fn<VitestLooseMock>(),
+        patch: vi.fn<VitestLooseMock>(),
         post: vi.fn<VitestLooseMock>(),
+        put: vi.fn<VitestLooseMock>(),
       },
     }) as unknown as typeof import('../instance'),
 )
 
 import { clientApi } from '../instance'
+import { fetchPostAncestors, fetchPost, fetchPostDescendants } from '../posts'
 import {
+  addPostRating,
   createCommunityPost,
   createLinkPost,
   createPost,
   deletePost,
-  fetchPostAncestors,
-  fetchPost,
-  fetchPostDescendants,
-} from '../posts'
+  deletePostRating,
+  setPostImages,
+  updatePost,
+  updatePostRating,
+} from '../post-mutations'
 
 const mockDelete = vi.mocked(clientApi.delete)
 const mockGet = vi.mocked(clientApi.get)
+const mockPatch = vi.mocked(clientApi.patch)
 const mockPost = vi.mocked(clientApi.post)
+const mockPut = vi.mocked(clientApi.put)
 
 describe('posts client', () => {
   afterEach(() => {
@@ -155,6 +162,85 @@ describe('posts client', () => {
           options,
           { headers: { 'Idempotency-Key': expect.any(String) } },
         ],
+      })
+    })
+  })
+
+  describe('post writes', () => {
+    const updatedPost: PostMutationResponseBody = {
+      post: {
+        id: 'post-1',
+        post_type: 'discussion',
+        title: 'Updated',
+        markdown: 'Edited',
+        root_post_id: null,
+        created_by_id: 'user-1',
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+        deleted_at: null,
+        deleted_by_id: null,
+        archived_at: null,
+        archived_by_id: null,
+        broadcast: 'everyone',
+        privacy: 'public',
+        is_anonymous: false,
+        community_id: 'community-1',
+        clearance_status: 'pending',
+      },
+    }
+
+    it('patches an existing post', async () => {
+      const changes = { title: 'Updated', markdown: 'Edited' }
+      await expectApiWrapperCall({
+        mock: mockPatch,
+        response: updatedPost,
+        call: () => updatePost('post-1', changes),
+        expectedArgs: ['/api/v1/posts/post-1', changes],
+      })
+    })
+
+    it('posts a review rating', async () => {
+      const input = { topic_id: 'topic-1', rating: 4, order_index: 1 }
+      await expectApiWrapperCall({
+        mock: mockPost,
+        response: undefined,
+        call: async () => {
+          await addPostRating('post-1', input)
+        },
+        expectedArgs: ['/api/v1/posts/post-1/ratings', input],
+      })
+    })
+
+    it('patches a review rating', async () => {
+      const changes = { rating: 2, order_index: 0 }
+      await expectApiWrapperCall({
+        mock: mockPatch,
+        response: undefined,
+        call: async () => {
+          await updatePostRating('post-1', 'topic-1', changes)
+        },
+        expectedArgs: ['/api/v1/posts/post-1/ratings/topic-1', changes],
+      })
+    })
+
+    it('deletes a review rating', async () => {
+      await expectApiWrapperCall({
+        mock: mockDelete,
+        response: undefined,
+        call: async () => {
+          await deletePostRating('post-1', 'topic-1')
+        },
+        expectedArgs: ['/api/v1/posts/post-1/ratings/topic-1'],
+      })
+    })
+
+    it('replaces the post image list', async () => {
+      const images = [{ image_id: 'image-1', order_index: 0, caption: 'Cover' }]
+      await expectApiWrapperCall({
+        mock: mockPut,
+        response: loadWebApiFixture('native.posts.images.placement.default'),
+        call: () => setPostImages('post-1', images),
+        expectedArgs: ['/api/v1/posts/post-1/images', { images }],
       })
     })
   })

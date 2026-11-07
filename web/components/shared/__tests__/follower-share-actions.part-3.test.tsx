@@ -5,7 +5,10 @@ import {
 
 import { FollowerShareActions } from '../follower-share-actions'
 
-import { sendPostToFollowers, sharePostWithFollowers } from '@/lib/api/client/posts'
+import {
+  sendPostToFollowers,
+  sharePostWithFollowers,
+} from '@/lib/api/client/post-follower-distributions'
 
 import { sendRssFeedItemToFollowers } from '@/lib/api/client/rss-feeds'
 

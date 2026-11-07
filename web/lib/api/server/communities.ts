@@ -6,18 +6,22 @@ import type {
   CommunityResponseBody,
   CommunityMembersResponseBody,
   CommunityPostsResponseBody,
+  CommunityAiAgentsResponseBody,
+  CommunityPinnedPostsResponseBody,
+} from '@/types/api-responses'
+import type {
   CommunityApplicationsResponseBody,
   CommunityApplicationQuestionsResponseBody,
   CommunityInvitesResponseBody,
+} from '@/types/api-responses/community-applications'
+import type {
   CommunityListTopicsResponseBody,
   CommunityListRssFeedsResponseBody,
   CommunityListPostsResponseBody,
   CommunityListDomainsResponseBody,
   CommunityListUrlsResponseBody,
   CommunityListItemCountsResponseBody,
-  CommunityAiAgentsResponseBody,
-  CommunityPinnedPostsResponseBody,
-} from '@/types/api-responses'
+} from '@/types/api-responses/community-list-pages'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 
 interface GetOptions {

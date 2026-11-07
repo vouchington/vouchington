@@ -1,6 +1,6 @@
 // @vitest-environment node
 import type { Translator } from '@ts-shared/ui-messages'
-import type { UserMetrics } from '@/types/user'
+import type { UserMetrics } from '@/types/user-metrics'
 import { describe, expect, it } from 'vitest'
 import { buildUserProfileDropdownItems } from '../user-detail-tab-definitions'
 

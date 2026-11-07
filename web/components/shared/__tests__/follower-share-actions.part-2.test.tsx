@@ -2,7 +2,7 @@ import { mockAuth } from '@/test-helpers/components/shared/follower-share-action
 
 import { FollowerShareActions } from '../follower-share-actions'
 
-import { sendPostToFollowers } from '@/lib/api/client/posts'
+import { sendPostToFollowers } from '@/lib/api/client/post-follower-distributions'
 
 import { fetchFollowerUsers } from '@/lib/api/client/users'
 

@@ -21,10 +21,8 @@ import { seedTestRetainedMediaOrphan } from '@voucha/test-helpers/entities/retai
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedMediaBindings } from '../cleanup-retained-media-bindings.mts'
 import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
-import {
-  runDataRetentionCleanup,
-  cleanupExpiredOAuthAuthorizationServerArtifacts,
-} from '../cleanup.mts'
+import { cleanupExpiredOAuthAuthorizationServerArtifacts } from '../cleanup-oauth-authorization-server.mts'
+import { runDataRetentionCleanup } from '../cleanup.mts'
 import {
   DATA_RETENTION_MAX_VALUES,
   DEFAULT_DATA_RETENTION_CONFIG,

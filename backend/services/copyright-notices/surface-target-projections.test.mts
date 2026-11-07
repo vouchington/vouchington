@@ -12,10 +12,8 @@ import {
 import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { readTestCopyrightStaffTargetProjection } from '@voucha/test-helpers/copyright-staff-target-projection'
 import { readAccountExport } from '@voucha/test-helpers/services/copyright-notices/read-account-export'
-import {
-  getCopyrightParticipantNoticeDetail,
-  getCopyrightPublicNoticeDetail,
-} from './read-models.mts'
+import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
+import { getCopyrightPublicNoticeDetail } from './read-models.mts'
 
 function caseRows(rows: Record<string, string>[], noticeId: string) {
   return rows.filter(row => row.notice_id === noticeId)

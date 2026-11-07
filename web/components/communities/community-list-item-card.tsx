@@ -6,11 +6,8 @@ import { Button } from '@/components/ui/button'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { removeCommunityListItem } from '@/lib/api/client'
 import onError, { onSuccess } from '@/lib/on-error'
-import type {
-  CommunityListItem,
-  CommunityListItemType,
-  CommunityListPageData,
-} from '@/types/api-responses'
+import type { CommunityListItem, CommunityListItemType } from '@/types/api-responses'
+import type { CommunityListPageData } from '@/types/api-responses/community-list-pages'
 import { CommunityListItemContent } from './community-list-item-content'
 import { getCommunityListItemLabel } from './community-list-item-label'
 import { useTranslations } from '@/lib/i18n/use-translations'

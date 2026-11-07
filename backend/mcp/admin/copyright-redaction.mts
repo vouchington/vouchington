@@ -1,4 +1,4 @@
-import type { CopyrightStaffEmailIntake } from '@services/copyright-notices/read-models'
+import type { CopyrightStaffEmailIntake } from '@services/copyright-notices/read-models-staff-email-intake'
 import type { CopyrightEuParticipantCase } from '@services/copyright-notices/read-models-notice-types'
 import type { CopyrightStaffQueueCase } from '@services/copyright-notices/read-models-staff-types'
 import { stripPersonalDetails } from '@services/copyright-notices/contact-redaction'

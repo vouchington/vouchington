@@ -7,7 +7,7 @@ import {
   notificationPushIntentExists,
   setTestNotificationPushIntentTerminalState,
 } from '@voucha/test-helpers'
-import { cleanupTerminalNotificationPushIntents } from '../cleanup.mts'
+import { cleanupTerminalNotificationPushIntents } from '../cleanup-notification-push-intents.mts'
 
 describe('terminal notification push intent cleanup', () => {
   it('removes old delivered and suppressed intents but preserves pending and recent work', async () => {

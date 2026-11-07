@@ -102,7 +102,7 @@
     "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt intents and the restriction-notice intents commit separately",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:356",
+    "code": "backend/services/copyright-notices/email-promotion-record.mts:121",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -110,7 +110,7 @@
     "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt message and the restriction-notice messages commit separately",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:345",
+    "code": "backend/services/copyright-notices/email-promotion-record.mts:110",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -405,7 +405,7 @@
     "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt recipient and the claimant decision recipient commit separately",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:356",
+    "code": "backend/services/copyright-notices/email-promotion-record.mts:121",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -619,7 +619,7 @@
     "maxCount": null,
     "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:74",
+    "code": "backend/services/copyright-notices/email-promotion-admission.mts:70",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -627,7 +627,7 @@
     "maxCount": null,
     "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:74",
+    "code": "backend/services/copyright-notices/email-promotion-admission.mts:70",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -635,7 +635,7 @@
     "maxCount": null,
     "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:65",
+    "code": "backend/services/copyright-notices/email-promotion-admission.mts:68",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -643,7 +643,7 @@
     "maxCount": null,
     "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:65",
+    "code": "backend/services/copyright-notices/email-promotion-admission.mts:68",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {

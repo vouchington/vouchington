@@ -1,7 +1,10 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { sharePostWithFollowers, sendPostToFollowers } from '@/lib/api/client/posts'
+import {
+  sharePostWithFollowers,
+  sendPostToFollowers,
+} from '@/lib/api/client/post-follower-distributions'
 import {
   shareRssFeedItemWithFollowers,
   sendRssFeedItemToFollowers,

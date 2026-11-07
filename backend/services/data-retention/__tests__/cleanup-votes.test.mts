@@ -21,7 +21,7 @@ import {
 import { cleanupSupersededVoteBallots } from '../cleanup-vote-ballots.mts'
 import { cleanupOrphanedUserAgentStrings } from '../cleanup-user-agent-strings.mts'
 import { cleanupVoteIntegrityDetails } from '../cleanup-vote-integrity-details.mts'
-import { runVoteRetentionCleanupPage } from '../cleanup.mts'
+import { runVoteRetentionCleanupPage } from '../cleanup-vote-retention.mts'
 import { getEngagement } from '@services/growth-metrics/get-engagement'
 import { deleteTestUserSession } from '../../../test-helpers/entities/user-sessions.mts'
 

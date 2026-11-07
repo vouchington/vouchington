@@ -8,7 +8,7 @@ import {
   importCommunityListFeedItemsSourceSql,
   importCommunityListPostsSourceSql,
 } from '@services/lists/import'
-import { getModerationSummaryRecipients } from '@services/communities/moderation-summary-emails'
+import { getModerationSummaryRecipients } from '@services/communities/moderation-summary-recipients'
 import { detectRssFeedItemLanguage } from '@services/language-detection/entities/rss-feed-items'
 import { detectRssFeedItemLanguageBatch } from '@services/language-detection/batch-detect'
 import { runIneligibleCollectionPageScenarios } from './ineligible-collection-pages.mts'

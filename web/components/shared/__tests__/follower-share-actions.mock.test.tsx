@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FollowerShareActions } from '../follower-share-actions'
 
-import { sharePostWithFollowers } from '@/lib/api/client/posts'
+import { sharePostWithFollowers } from '@/lib/api/client/post-follower-distributions'
 
 import { shareRssFeedItemWithFollowers } from '@/lib/api/client/rss-feeds'
 
@@ -36,7 +36,7 @@ vi.mock(
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-follower-distributions'), () => ({
   sharePostWithFollowers: vi.fn<VitestLooseMock>(),
   sendPostToFollowers: vi.fn<VitestLooseMock>(),
 }))

@@ -12,10 +12,8 @@ import {
   claimTestModerationEmailSend,
   createClockSkewModerationSummaryFixture,
 } from '@voucha/test-helpers/moderation-summary-retention'
-import {
-  formatLocalDate,
-  hasModerationEmailSent,
-} from '@services/communities/moderation-summary-emails'
+import { hasModerationEmailSent } from '@services/communities/moderation-summary-emails'
+import { formatLocalDate } from '@services/communities/moderation-summary-schedule'
 import { createSesBounceEvent } from '@services/ses-bounce-events'
 import { updateUserFields } from '@services/users/update-fields'
 import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'

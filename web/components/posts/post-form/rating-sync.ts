@@ -1,4 +1,4 @@
-import { addPostRating, deletePostRating, updatePostRating } from '@/lib/api/client/posts'
+import { addPostRating, deletePostRating, updatePostRating } from '@/lib/api/client/post-mutations'
 import type { Post } from '@/types/posts'
 import type { ReviewTopicEntry } from '../post-form-sections'
 

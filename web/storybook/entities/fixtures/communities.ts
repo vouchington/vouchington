@@ -1,4 +1,4 @@
-import type { UserMetrics } from './types'
+import type { UserMetrics } from '@/types/user-metrics'
 import { now } from './shared'
 import { publicUsers } from './users'
 

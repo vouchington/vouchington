@@ -17,7 +17,7 @@ export type {
 } from '../topics'
 export type { TopicDataPointInsights } from '../topic-data-point-insights'
 export type { AgentModeration, AgentModerationElection } from '../agents'
-export type { ProfileLink, PublicUser, User, UserMetrics, UserSearchResult } from '../user'
+export type { ProfileLink, PublicUser, User, UserSearchResult } from '../user'
 export type {
   LandingPage,
   LandingPageCandidates,

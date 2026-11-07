@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createEntityRelation } from '@/lib/api/client/entity-relations'
 import { loadMyCommunities } from '@/lib/api/client/communities'
-import { createCommunityPost } from '@/lib/api/client/posts'
+import { createCommunityPost } from '@/lib/api/client/post-mutations'
 import onError from '@/lib/on-error'
 import {
   createLinkedCommunityDiscussion,
@@ -17,7 +17,7 @@ vi.mock(import('@/lib/api/client/communities'), () => ({
   loadMyCommunities: vi.fn<VitestLooseMock>(),
 }))
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   createCommunityPost: vi.fn<VitestLooseMock>(),
 }))
 

@@ -9,9 +9,9 @@ import {
 } from '@voucha/test-helpers/entities/community-post-reviews'
 import {
   insertTestPostClearanceChange,
-  readTestPostClearanceAuthor,
   setTestPostClearanceStatus,
 } from '@voucha/test-helpers/entities/post-clearance'
+import { readTestPostClearanceAuthor } from '@voucha/test-helpers/entities/post-clearance-reads'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { insertPreservationHoldInTransactionForTest } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'

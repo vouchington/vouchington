@@ -3,6 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeComment, makeData } from '@/test-helpers/components/comment-tree-fixtures'
 import { fetchPostDescendants } from '@/lib/api/client/posts'
 import { bookmarkEntity } from '@/lib/api/client/bookmarks'
+
+vi.mock(import('@/lib/api/client/posts'), async importOriginal => ({
+  ...(await importOriginal()),
+  fetchPostDescendants: vi.fn<VitestLooseMock>(),
+}))
 import { getPreference, setPreference } from '@/lib/preferences/storage'
 import type { CommentNodeData } from '../comment-tree-utils'
 import { useCommentTreeState } from '../use-comment-tree-state'

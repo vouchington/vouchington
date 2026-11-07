@@ -60,7 +60,7 @@ const { mockCreateLinkPost } = vi.hoisted(() => ({
   mockCreateLinkPost: vi.fn<VitestLooseMock>(),
 }))
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   createLinkPost: mockCreateLinkPost,
 }))
 

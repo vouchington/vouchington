@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { deletePost } from '@/lib/api/client/posts'
+import { deletePost } from '@/lib/api/client/post-mutations'
 import onError, { onSuccess } from '@/lib/on-error'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { useTranslations } from '@/lib/i18n/use-translations'

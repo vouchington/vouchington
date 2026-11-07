@@ -32,7 +32,7 @@ function rejectionCase(
     body: { reply_queued: replyQueued },
     consumers: ['web'],
     migratedFrom: [
-      'backend/api/v1/copyright-notices/moderator-routes.mts',
+      'backend/api/v1/copyright-notices/copyright-intake-review-routes.mts',
       'web/lib/api/client/copyright-email-intakes.ts',
     ],
   }
@@ -63,7 +63,7 @@ export const webCopyrightEmailIntakeApiFixtureCases: ApiFixtureCase[] = [
     },
     consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: [
-      'backend/api/v1/copyright-notices/moderator-routes.mts',
+      'backend/api/v1/copyright-notices/copyright-email-intake-decision-routes.mts',
       'web/lib/api/client/copyright-notice-association-search.ts',
     ],
   },
@@ -84,7 +84,7 @@ export const webCopyrightEmailIntakeApiFixtureCases: ApiFixtureCase[] = [
     },
     consumers: ['web'],
     migratedFrom: [
-      'backend/api/v1/copyright-notices/moderator-routes.mts',
+      'backend/api/v1/copyright-notices/copyright-email-intake-decision-routes.mts',
       'web/lib/api/client/copyright-email-intakes.ts',
     ],
   },

@@ -18,3 +18,15 @@ export function ordinaryResolutionRemovesWholeCluster(
     results.every(result => result.status === 'fulfilled')
   )
 }
+
+export function formatSettledFailure(
+  message: string,
+  results: PromiseSettledResult<unknown>[],
+): Error {
+  const failures = results.filter(result => result.status === 'rejected')
+  const firstReason = failures[0]?.reason
+  const detail = firstReason instanceof Error ? firstReason.message : String(firstReason)
+  return new Error(
+    `${message}: ${failures.length} failed${detail ? `; first error: ${detail}` : ''}`,
+  )
+}

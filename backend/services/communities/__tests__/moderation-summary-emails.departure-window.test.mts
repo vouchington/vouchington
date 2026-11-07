@@ -5,7 +5,7 @@ import {
   removeTestCommunityMember,
 } from '@voucha/test-helpers/entities/community-members'
 import { insertBackdatedModerationSummaryCommunity } from '@voucha/test-helpers/moderation-summary-activity-community'
-import { getCommunityModerationSummaryCommunities } from '../moderation-summary-emails.mts'
+import { getCommunityModerationSummaryCommunities } from '../moderation-summary-communities.mts'
 
 describe('moderation summary departed-member window', () => {
   it('counts an owned removal only in its persisted millisecond window', async () => {

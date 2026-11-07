@@ -36,7 +36,7 @@ vi.mock(
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   archivePost: vi.fn<VitestLooseMock>(),
   createPost: vi.fn<VitestLooseMock>(),
   updatePost: vi.fn<VitestLooseMock>(),
@@ -109,7 +109,7 @@ vi.mock(import('../../../components/posts/topic-autocomplete'), () => ({
 import { createEntityRelation } from '@/lib/api/client/entity-relations'
 import { updateMyFinancialProfile } from '@/lib/api/client/financial-profile'
 import { previewMarkdown } from '@/lib/api/client/markdown'
-import { createPost, updatePost } from '@/lib/api/client/posts'
+import { createPost, updatePost } from '@/lib/api/client/post-mutations'
 
 export const mockCreatePost = vi.mocked(createPost)
 export const mockUpdatePost = vi.mocked(updatePost)

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { updatePost } from '@/lib/api/client/posts'
+import { updatePost } from '@/lib/api/client/post-mutations'
 import { CommentNodeEditForm } from '../comment-node-edit-form'
 import type { Post } from '@/types/posts'
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   updatePost: vi.fn<VitestLooseMock>(),
 }))
 

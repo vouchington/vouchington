@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { syncReviewRatings } from './rating-sync'
-import { addPostRating, deletePostRating, updatePostRating } from '@/lib/api/client/posts'
+import { addPostRating, deletePostRating, updatePostRating } from '@/lib/api/client/post-mutations'
 import type { Post } from '@/types/posts'
 import type { ReviewTopicEntry } from '../post-form-sections'
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   addPostRating: vi.fn<typeof addPostRating>(),
   deletePostRating: vi.fn<typeof deletePostRating>(),
   updatePostRating: vi.fn<typeof updatePostRating>(),

@@ -1,4 +1,4 @@
-import type { UserMetrics } from '@/types/user'
+import type { UserMetrics } from '@/types/user-metrics'
 import type { NumberFormatLocale } from '@ts-shared/utils/format'
 
 export interface UserDetailTab {

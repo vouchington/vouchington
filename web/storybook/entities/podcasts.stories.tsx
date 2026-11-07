@@ -1,15 +1,12 @@
-// oxlint-disable eslint/max-lines -- entity stories file covers many pod variants plus mini-player
-import { useRef } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { PodcastListItem } from '@/components/podcasts/podcast-list-item'
 import { PodcastShowMetadataAside } from '@/components/podcasts/podcast-show-metadata-aside'
 import { PodcastPlayerProvider } from '@/lib/podcast-player/context'
-import { PodcastMiniPlayer } from '@/lib/podcast-player/mini-player'
-import type { ViewRssFeed } from '@/types/rss-feeds'
 import { EntityStoryFrame } from './entity-story-frame'
-import podcastMiniPlayerAudioUrl from './fixtures/podcast-mini-player-silence.wav'
+import { makePodcastFeed } from './podcasts-story-fixtures'
+import { MiniPlayerDemo } from './podcasts-story-mini-player'
 
 const t = createTranslator('en', await loadJsonMessages('en'))
 
@@ -22,40 +19,6 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
-
-function makePodcastFeed(id: string, overrides?: Partial<ViewRssFeed>): ViewRssFeed {
-  return {
-    __entity_type: 'rss_feed',
-    id,
-    title: 'Planet Money',
-    is_enabled: true,
-    is_discoverable: true,
-    etag: null,
-    last_modified_at: '2024-01-01T00:00:00Z',
-    last_fetched_at: '2024-01-01T00:00:00Z',
-    feed_type: 'podcast',
-    rss_feed_url: { id: `url-${id}`, url: 'https://feeds.npr.org/510289/podcast.xml' },
-    home_page_url: { id: `home-${id}`, url: 'https://npr.org/planetmoney' },
-    topic: {
-      id: `topic-${id}`,
-      name: 'Planet Money',
-      slug: 'planet-money',
-      topic_type: 'topic',
-    },
-    podcast_show: {
-      itunes_author: 'NPR',
-      itunes_owner_name: 'NPR Podcasts',
-      cover_art_url: null,
-      is_explicit: false,
-      itunes_type: 'episodic',
-    },
-    categories: [
-      { category_text: 'business', topic_id: null, topic_slug: null },
-      { category_text: 'news', topic_id: null, topic_slug: null },
-    ],
-    ...overrides,
-  } as ViewRssFeed
-}
 
 export const ShowCard: Story = {
   render: () => (
@@ -157,29 +120,6 @@ export const ShowMetadataAside: Story = {
       </EntityStoryFrame>
     </PodcastPlayerProvider>
   ),
-}
-
-function MiniPlayerDemo() {
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  return (
-    <div className='relative h-32'>
-      <PodcastMiniPlayer
-        episode={{
-          episodeId: 'story-ep-1',
-          enclosureUrl: podcastMiniPlayerAudioUrl,
-          enclosureType: 'audio/wav',
-          durationSeconds: 3,
-          title: "The real horror of 'Alien: Romulus' – and what makes a great sci-fi horror film",
-          showId: 'show-1',
-          showTitle: 'Planet Money',
-          showHref: '/source/planet-money/latest',
-          coverArtUrl: '/sideload/storybook-podcast-mini-player.jpg',
-        }}
-        onClose={() => {}}
-        audioRef={audioRef}
-      />
-    </div>
-  )
 }
 
 export const MiniPlayerPlaying: Story = {

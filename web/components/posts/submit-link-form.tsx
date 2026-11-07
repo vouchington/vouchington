@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
-import { createLinkPost } from '@/lib/api/client/posts'
+import { createLinkPost } from '@/lib/api/client/post-mutations'
 import { getCanonicalPostPath } from '@/lib/post-helpers'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import {

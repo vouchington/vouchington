@@ -2,7 +2,7 @@ import {
   getFollowNewsSourcesRecipients,
   getFollowTopicsRecipients,
   getPostReferralLinkRecipients,
-} from '@services/engagement-emails/dispatch-engagement-emails'
+} from '@services/engagement-emails/engagement-email-recipients'
 import {
   COMMUNITY_AGENT_PROMPT_CREATOR_COUNT,
   COMMUNITY_AGENT_PROMPT_TOTAL_ROWS,

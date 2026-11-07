@@ -19,19 +19,21 @@ import type {
 } from '@/lib/api/client/modmail'
 import type {
   CommunityBansResponseBody,
-  CommunityListDomainsResponseBody,
-  CommunityListItemCountsResponseBody,
-  CommunityListPostsResponseBody,
-  CommunityListRssFeedsResponseBody,
-  CommunityListTopicsResponseBody,
-  CommunityListUrlsResponseBody,
-  CommunityModerationQueueResponseBody,
   CommunityModeratorStatsResponseBody,
   CommunityRestrictionsResponseBody,
   ModerationAnalytics,
   ModeratorVacationResponseBody,
   ModlogResponseBody,
 } from '@/types/api-responses'
+import type {
+  CommunityListDomainsResponseBody,
+  CommunityListItemCountsResponseBody,
+  CommunityListPostsResponseBody,
+  CommunityListRssFeedsResponseBody,
+  CommunityListTopicsResponseBody,
+  CommunityListUrlsResponseBody,
+} from '@/types/api-responses/community-list-pages'
+import type { CommunityModerationQueueResponseBody } from '@/types/api-responses/community-moderation-queue'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 const moderationQueueFixture =
