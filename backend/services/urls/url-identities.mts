@@ -17,6 +17,15 @@ export async function linkNewUrlVariants(
   rows: UpsertedUrlRow[],
   query: TransactionQuery,
 ): Promise<UpsertedUrlRow[]> {
+  const linked = await linkInsertedRows(rows, query)
+  await assertCanonicalHostnamesNotBlocked(linked, query)
+  return linked
+}
+
+async function linkInsertedRows(
+  rows: UpsertedUrlRow[],
+  query: TransactionQuery,
+): Promise<UpsertedUrlRow[]> {
   const inserted = rows.filter(row => row.inserted)
   if (inserted.length === 0) return rows
   const urlIds = inserted.map(row => row.id)
@@ -79,7 +88,7 @@ export async function findUrlIdByIdentity(
  * A row adopts its page's canonical destination when published, so a blocked destination hostname
  * blocks the submission just as a blocked submitted hostname does.
  */
-export async function assertCanonicalHostnamesNotBlocked(
+async function assertCanonicalHostnamesNotBlocked(
   rows: UpsertedUrlRow[],
   query: TransactionQuery,
 ): Promise<void> {

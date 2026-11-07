@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { write } from '@data-stores/psql'
+import { updateUrlHostnameBlocked } from '@voucha/test-helpers'
 import { getUrlByAny } from './get.mts'
 import { setCanonicalUrl } from './set-canonical.mts'
 import { addUrl, addUrls } from './upsert.mts'
@@ -91,11 +91,8 @@ describe('addUrls page identity', () => {
 
   it('rejects a variant whose canonical owner hostname became blocked', async () => {
     const host = runHost()
-    await addUrl(null, `https://www.${host}/page`)
-    await write(
-      `/* blockIdentityOwnerHost */ UPDATE url_hostnames SET is_blocked = TRUE WHERE hostname = $1`,
-      [`www.${host}`],
-    )
+    const owner = await addUrl(null, `https://www.${host}/page`)
+    await updateUrlHostnameBlocked(owner!.hostname.id, true)
 
     const error = await addUrl(null, `https://${host}/page`).catch((err: unknown) => err)
 
