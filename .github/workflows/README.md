@@ -7,6 +7,7 @@ keep each topic within one further link hop.
 
 - [Artifact rerun safety](../../docs/development/ci/workflows/reference-artifact-rerun-safety.md)
 - [Auto Harness automation](../../docs/development/ci/workflows/reference-harness-automation.md)
+- [Merge queue fail fast](../../docs/development/ci/workflows/reference-merge-queue-fail-fast.md)
 - [Merge queue run cancellation](../../docs/development/ci/workflows/reference-merge-queue-run-cancellation.md)
 - [PR-triggered workflow trust boundary checklist](../../docs/development/ci/workflows/reference-pr-triggered-workflow-trust-boundary-checklist.md)
 - [Sharding](../../docs/development/ci/workflows/reference-sharding.md)

@@ -3547,6 +3547,7 @@
         [detect-image-publication, publish-web-images, web-deploy-intent]
       .github/workflows/merge-queue-ejection.yml:
         [comment-session, dispatch, escalate, render-prompt]
+      .github/workflows/merge-queue-fail-fast.yml: [watch]
       .github/workflows/nightly.yml:
         [backend, backend-live-providers, cloudflare-worker, lambdas, static, tooling, web]
       .github/workflows/plan-completion.yml: [audit]
@@ -3772,6 +3773,7 @@
       .github/workflows/explain-analyze.yml: 'parallel-safe idempotent manual tests'
       .github/workflows/initialize-smoke-test.yml: 'parallel-safe idempotent manual tests'
       .github/workflows/label-pr.yml: 'idempotent PR labeling'
+      .github/workflows/merge-queue-fail-fast.yml: 'one watch per merge-group head; replaced and dequeued entries are cancelled by their cleanup workflows'
       .github/workflows/publish-backend-images.yml: "runs under its area or main caller's concurrency"
       .github/workflows/publish-web-images.yml: "runs under its area or main caller's concurrency"
       .github/workflows/static-code-analysis.yml: "runs under its caller's concurrency"
