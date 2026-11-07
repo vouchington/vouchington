@@ -1,4 +1,1 @@
-export {
-  buildTimeRangeFilter,
-  getTimeRangeLowerBoundDate,
-} from '@modules/feed-query-builders/time-range'
+export { getTimeRangeLowerBoundDate } from '@modules/feed-query-builders/time-range'
