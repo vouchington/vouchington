@@ -26,7 +26,7 @@ function buildTopicDataPointInsightsQuery(topicIds: string[], options?: { vertic
         posts.structured_data->>'credit_score_range' AS credit_score_range,
         (posts.structured_data #>> '{credit_limit,amount}')::bigint AS credit_limit_minor_units,
         posts.structured_data #>> '{credit_limit,currency}' AS credit_limit_currency
-      -- no-mistakes-disable-next-line postgres-bounded-statements: the live data-point aggregate over every public data_point post of the requested topics is deferred by the user's decision of 2026-11-07; the planned fix is a cached result, and anonymous responses are already CDN-cached.
+      -- no-mistakes-disable-next-line postgres-bounded-statements: the live data-point aggregate over every public data_point post of the requested topics is deferred by the user's decision of 2026-11-07, recorded at #4795 (comment 6711829151); the planned fix is a cached result, and anonymous responses are already CDN-cached.
       FROM posts
       JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       JOIN post_data_point_topics pdpt ON pdpt.post_id = posts.id AND pdpt.topic_id = ANY(${topicIds}::uuid[])
