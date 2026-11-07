@@ -11,7 +11,9 @@ import {
   QUEUE_NAME,
 } from './config.mts'
 import { findYourFriendsQueue } from './queues.mts'
+import { createHash } from 'node:crypto'
 import type {
+  FriendSyncResume,
   FriendsDispatchData,
   FindYourFriendsDispatcherJobs,
   FindYourFriendsSyncJobs,
@@ -60,7 +62,7 @@ function buildJobOptions(
 
 function createSyncEnqueues(config: SyncConfig) {
   const enqueueOne = createEnqueueFunction<
-    ReturnType<typeof buildSyncData>,
+    ReturnType<typeof buildSyncData> & { resume?: FriendSyncResume },
     FindYourFriendsSyncJobs
   >({
     queue: findYourFriendsQueue,
@@ -88,6 +90,18 @@ function createSyncEnqueues(config: SyncConfig) {
       await enqueueOne(
         buildSyncData(config.idField, id),
         buildJobOptions(`${config.deduplicationPrefix}__${id}`, config.ordering, priority),
+      )
+    },
+    // A continuation is a distinct job per position, so it must not share the throttled fresh-sync id.
+    resume: async (id: string, resume: FriendSyncResume): Promise<void> => {
+      const position = createHash('sha256').update(JSON.stringify(resume)).digest('hex')
+      await enqueueOne(
+        { ...buildSyncData(config.idField, id), resume },
+        buildJobOptions(
+          `${config.deduplicationPrefix}__${id}__resume__${position}`,
+          config.ordering,
+          PRIORITY_DEFAULT,
+        ),
       )
     },
     bulk: async (ids: string[], priority = PRIORITY_DEFAULT): Promise<void> => {
@@ -145,6 +159,9 @@ const enqueueDispatchFindYourFriendsJob = createEnqueueFunction<
 export const enqueueSyncFacebookFriends = facebookSync.one
 export const enqueueSyncXFriends = xSync.one
 export const enqueueSyncGithubFriends = githubSync.one
+export const enqueueResumeSyncFacebookFriends = facebookSync.resume
+export const enqueueResumeSyncXFriends = xSync.resume
+export const enqueueResumeSyncGithubFriends = githubSync.resume
 export const enqueueBulkSyncFacebookFriends = facebookSync.bulk
 export const enqueueBulkSyncXFriends = xSync.bulk
 export const enqueueBulkSyncGithubFriends = githubSync.bulk

@@ -17,7 +17,7 @@ import {
   recordModerationTrainingFeedback,
   type ModerationTrainingEvidence,
 } from '@services/moderation-training'
-import { maybeResolveCase } from '@services/moderation-cases'
+import { maybeResolveCase, maybeResolveCases } from '@services/moderation-cases'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import { enqueueReportResolutionNotificationsBestEffort } from './enqueue-report-resolution-notifications.mts'
 import { getReportResolutionContext } from './resolution-context.mts'
@@ -168,9 +168,7 @@ export async function dismissPendingReportsForDeletedEntity(
         { query },
       ),
       lockModerationCases(caseIds, { query }).then(() =>
-        Promise.all(
-          caseIds.map(caseId => maybeResolveCase(caseId, moderationSystemUserId, { query })),
-        ),
+        maybeResolveCases(caseIds, moderationSystemUserId, { query }),
       ),
       recordModeratorActions(
         moderationSystemUserId,

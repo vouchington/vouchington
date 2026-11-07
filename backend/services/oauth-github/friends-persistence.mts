@@ -18,21 +18,24 @@ export async function persistGithubFriendPage(
   return true
 }
 
+/** Deletes stale edges for at most one run's batch cap; true means a follow-up run must continue. */
 export async function finalizeGithubFriendSync(
   githubAccountId: string,
   userId: string,
   syncStartTime: string,
   options?: { onStaleFriendPage?: (friendIds: string[]) => void },
-): Promise<void> {
+): Promise<boolean> {
   const batchSize = getOauthGithubWorkLimit('friend_mutation_batch_size')
-  while (true) {
+  const maxBatches = getOauthGithubWorkLimit('max_finalize_batches_per_run')
+  for (let batch = 0; batch < maxBatches; batch += 1) {
+    // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
     const staleFriendIds = await getStaleGithubFriendIds(githubAccountId, syncStartTime, batchSize)
     options?.onStaleFriendPage?.(staleFriendIds)
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markGithubFriendSyncComplete(githubAccountId, userId, syncStartTime)
-      return
+      return false
     }
     // oxlint-disable-next-line no-await-in-loop -- each page reacquires the deletion fence.
     const deleted = await deleteGithubFriendBatch(
@@ -41,8 +44,9 @@ export async function finalizeGithubFriendSync(
       syncStartTime,
       staleFriendIds,
     )
-    if (!deleted) return
+    if (!deleted) return false
   }
+  return true
 }
 
 async function persistGithubFriendBatch(

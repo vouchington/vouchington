@@ -71,6 +71,10 @@ export const backgroundWorkEntries3 = [
     maxValues: oauthFacebookWorkMaxValues,
     descriptions: {
       friend_mutation_batch_size: 'Friend mutation batch size for oauth facebook processing.',
+      max_provider_pages_per_run:
+        'Provider friend pages one Facebook sync job reads before it continues in a follow-up job.',
+      max_finalize_batches_per_run:
+        'Stale friend delete batches one Facebook sync job runs before it continues in a follow-up job.',
     },
   }),
 ]

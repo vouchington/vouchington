@@ -28,6 +28,7 @@
     "@modules/queue-errors": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/find-your-friends": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@voucha/config": "workspace:^",
     "@vouchington/utils": "^0.12.0",

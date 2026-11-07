@@ -70,7 +70,7 @@ describe('syncXFriends', () => {
         }),
     })
 
-    await expect(syncXFriends(xUserId)).resolves.toBeUndefined()
+    await expect(syncXFriends(xUserId)).resolves.toBeNull()
 
     const rows = await getTestFriend('x', xUserId, friendXUserId)
     expect(rows).toHaveLength(1)

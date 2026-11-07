@@ -9,6 +9,54 @@
       # Each capped retention page locks, deletes, and checkpoints in one transaction.
       # A per-page PostgreSQL effect is required; the loop is bounded by maxBatches.
       - { file: backend/services/data-retention/cleanup-auth-sessions.mts, callee: 'cleanupPage' }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: persistFacebookFriendPage chunks one provider page (at most the asserted provider page size) by friend_mutation_batch_size, one set-based INSERT...UNNEST transaction per chunk.
+      - {
+          file: backend/services/oauth-facebook/friends-persistence.mts,
+          callee: 'persistFacebookFriendBatch',
+        }
+      # Each finalize pass is a counted loop of at most max_finalize_batches_per_run (DynamicConfig hard max 100) batches in backend/services/oauth-facebook/work-limits.mts; the run then returns a continuation job instead of looping on.
+      - {
+          file: backend/services/oauth-facebook/friends-persistence.mts,
+          callee: 'getStaleFacebookFriendIds',
+        }
+      - {
+          file: backend/services/oauth-facebook/friends-persistence.mts,
+          callee: 'markFacebookFriendSyncComplete',
+        }
+      - {
+          file: backend/services/oauth-facebook/friends-persistence.mts,
+          callee: 'deleteFacebookFriendBatch',
+        }
+      # The provider page loop is counted by max_provider_pages_per_run (DynamicConfig hard max 100); each page is one external fetch plus one persisted page, and the run returns a continuation job at the cap.
+      - { file: backend/services/oauth-facebook/friends.mts, callee: 'persistFacebookFriendPage' }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: persistGithubFriendPage chunks one provider page (at most the asserted provider page size) by friend_mutation_batch_size, one set-based INSERT...UNNEST transaction per chunk.
+      - {
+          file: backend/services/oauth-github/friends-persistence.mts,
+          callee: 'persistGithubFriendBatch',
+        }
+      # Each finalize pass is a counted loop of at most max_finalize_batches_per_run (DynamicConfig hard max 100) batches in backend/services/oauth-github/work-limits.mts; the run then returns a continuation job instead of looping on.
+      - {
+          file: backend/services/oauth-github/friends-persistence.mts,
+          callee: 'getStaleGithubFriendIds',
+        }
+      - {
+          file: backend/services/oauth-github/friends-persistence.mts,
+          callee: 'markGithubFriendSyncComplete',
+        }
+      - {
+          file: backend/services/oauth-github/friends-persistence.mts,
+          callee: 'deleteGithubFriendBatch',
+        }
+      # The provider page loop is counted by max_provider_pages_per_run (DynamicConfig hard max 100); each page is one external fetch plus one persisted page, and the run returns a continuation job at the cap.
+      - { file: backend/services/oauth-github/friends.mts, callee: 'persistGithubFriendPage' }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: persistXFriendPage chunks one provider page (at most the asserted provider page size) by friend_mutation_batch_size, one set-based INSERT...UNNEST transaction per chunk.
+      - { file: backend/services/oauth-x/friend-pages.mts, callee: 'persistXFriendBatch' }
+      # Each finalize pass is a counted loop of at most max_finalize_batches_per_run (DynamicConfig hard max 100) batches in backend/services/oauth-x/work-limits.mts; the run then returns a continuation job instead of looping on.
+      - { file: backend/services/oauth-x/friend-pages.mts, callee: 'getStaleXFriendIds' }
+      - { file: backend/services/oauth-x/friend-pages.mts, callee: 'markXFriendSyncComplete' }
+      - { file: backend/services/oauth-x/friend-pages.mts, callee: 'deleteXFriendBatch' }
+      # The provider page loop is counted by max_provider_pages_per_run (DynamicConfig hard max 100); each page is one external fetch plus one persisted page, and the run returns a continuation job at the cap.
+      - { file: backend/services/oauth-x/friends.mts, callee: 'persistXFriendPage' }
       # A user-tag create refreshes the primary stats of the few relations it just created
       # (bounded by the tag-add limit); each keeps the singular refresh's discoverability,
       # notification, and queue-fallback side effects, which the batch refresh does not run.
@@ -256,12 +304,7 @@
           file: backend/services/admin-imports/process-topic-row-relations.mts,
           callee: 'updateRetailerAttributes',
         }
-      # One upsert per parent topic of a single admin CSV row (parentTopics, process-topic-row-relations.mts:39), run by an admin import row by row. UNVERIFIED: no constant cap on the parent topic count per row.
-      - {
-          file: backend/services/admin-imports/process-topic-row-relations.mts,
-          callee: 'upsertEntityRelation',
-        }
-      # Operator-run seed over the rows of the repository seed CSVs (seed-csvs.mts:68) and then the retry rows (seed-csvs.mts:88), sequential on purpose: pass 1 must create each topic before child rows resolve their within-file parents. UNVERIFIED: row count is bounded only by the CSV files.
+      # Operator seed script, not a request or job path: backend/scripts/seed/index.mts runs seedTopicsFromCsvs() over the shipped backend/seed/*-topics.csv files (SEED_DIR, seed-csvs.mts:11); the barrel re-export in admin-imports/index.mts:8 has no production caller. Each row is a distinct topic upsert whose pass-2 retry clears its own pass-1 error.
       - { file: backend/services/admin-imports/seed-csvs.mts, callee: 'processTopicRow' }
       # Ordered article writes retain their service locks, transactions, and per-file results.
       - { file: backend/services/articles/sync-process.mts, callee: 'createPost' }
@@ -414,23 +457,11 @@
           file: backend/services/memberships/grants/expire-elapsed.mts,
           callee: 'restoreFallbackAfterCurrentAccessEndsInTransaction',
         }
-      # Failure path over the pending reversal operations plus the cancellation of one purchase (execute.mts:50), a handful per reversal. UNVERIFIED: no constant cap on pending operations.
-      - {
-          file: backend/services/memberships/ineligible-stripe-purchase-reversal/execute.mts,
-          callee: 'failIneligiblePurchaseReversal',
-        }
-      # One lookup per invoice id of a single Stripe dispute (reconcile-won-stripe-dispute.mts:41), a small list from the webhook payload. UNVERIFIED: no constant cap on invoiceIds.
-      - {
-          file: backend/services/memberships/reconcile-won-stripe-dispute.mts,
-          callee: 'getIneligiblePurchaseReversalCase',
-        }
       # Closed set: one publish per descriptor of the CATALOG constant (stripe-catalog.mts:88). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/memberships/stripe-catalog.mts,
           callee: 'publishStripeCatalogMapping',
         }
-      # Line 91 is a heterogeneous Promise.all of distinct calls (no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed); line 172 resolves one case per distinct case id of a single resolve call. UNVERIFIED: no constant cap on caseIds at line 172.
-      - { file: backend/services/moderation-reports/resolve.mts, callee: 'maybeResolveCase' }
       # Loop is closed by the recipient temp table, which is created with LIMIT pageSize (reconcile-batches.mts:73), so at most pageSize/batchSize iterations; each iteration mutates session temp tables before the cursor advances. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/notifications/reconcile-batches.mts,
@@ -446,52 +477,7 @@
           file: backend/services/oauth-authorization-server/retention.mts,
           callee: 'deleteExpiredRows',
         }
-      # FIX (P2): finalize loop is a bare `while (true)` (friends-persistence.mts:32) that ends only when no stale friend remains, with no constant page cap; add a maxBatches-style cap. persistFacebookFriendBatch is a fixed FRIEND_MUTATION_BATCH_SIZE chunk loop (no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed). Remove the finalize entries with the fix.
-      - {
-          file: backend/services/oauth-facebook/friends-persistence.mts,
-          callee: 'deleteFacebookFriendBatch',
-        }
-      - {
-          file: backend/services/oauth-facebook/friends-persistence.mts,
-          callee: 'getStaleFacebookFriendIds',
-        }
-      - {
-          file: backend/services/oauth-facebook/friends-persistence.mts,
-          callee: 'markFacebookFriendSyncComplete',
-        }
-      - {
-          file: backend/services/oauth-facebook/friends-persistence.mts,
-          callee: 'persistFacebookFriendBatch',
-        }
-      # One persist transaction per Facebook friends page (friends.mts:78); the page size is fixed by the provider request and the page count by the provider cursor. UNVERIFIED: no constant cap on provider pages.
-      - { file: backend/services/oauth-facebook/friends.mts, callee: 'persistFacebookFriendPage' }
-      # FIX (P2): finalize loop is a bare `while (true)` (friends-persistence.mts:28) that ends only when no stale friend remains, with no constant page cap; add a maxBatches-style cap. persistGithubFriendBatch is a fixed FRIEND_MUTATION_BATCH_SIZE chunk loop (no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed). Remove the finalize entries with the fix.
-      - {
-          file: backend/services/oauth-github/friends-persistence.mts,
-          callee: 'deleteGithubFriendBatch',
-        }
-      - {
-          file: backend/services/oauth-github/friends-persistence.mts,
-          callee: 'getStaleGithubFriendIds',
-        }
-      - {
-          file: backend/services/oauth-github/friends-persistence.mts,
-          callee: 'markGithubFriendSyncComplete',
-        }
-      - {
-          file: backend/services/oauth-github/friends-persistence.mts,
-          callee: 'persistGithubFriendBatch',
-        }
-      # One persist transaction per GitHub following page (friends.mts:73); the page count follows the provider hasNextPage flag. UNVERIFIED: no constant cap on provider pages.
-      - { file: backend/services/oauth-github/friends.mts, callee: 'persistGithubFriendPage' }
-      # FIX (P2): finalize loop is a bare `while (true)` (friend-pages.mts:27) that ends only when no stale friend remains, with no constant page cap; add a maxBatches-style cap. persistXFriendBatch is a fixed FRIEND_MUTATION_BATCH_SIZE chunk loop (no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed). Remove the finalize entries with the fix.
-      - { file: backend/services/oauth-x/friend-pages.mts, callee: 'deleteXFriendBatch' }
-      - { file: backend/services/oauth-x/friend-pages.mts, callee: 'getStaleXFriendIds' }
-      - { file: backend/services/oauth-x/friend-pages.mts, callee: 'markXFriendSyncComplete' }
-      - { file: backend/services/oauth-x/friend-pages.mts, callee: 'persistXFriendBatch' }
-      # One persist transaction per X following page (max_results 1000); the page count follows the provider pagination token. UNVERIFIED: no constant cap on provider pages.
-      - { file: backend/services/oauth-x/friends.mts, callee: 'persistXFriendPage' }
-      # Per flagged image row of one pending quarantine page (delete-flagged.mts:89): a storage transfer that must not run concurrently for the same source image. UNVERIFIED: page cap set by the caller.
+      # Rows are one LIMIT page of image_quarantine_batch_size (delete-flagged.mts:71,79), a DynamicConfig field with default 25 and hard max 1000 (openai-moderation/work-limits.mts:6,12). Per-image work is heterogeneous external work: S3 quarantine copy and source-object deletes, branching on the CSAM category, and a per-image audit record.
       - {
           file: backend/services/openai-moderation/delete-flagged.mts,
           callee: 'deleteFlaggedImage',
@@ -563,7 +549,7 @@
           file: backend/services/user-import-export/auto-follow-on-approval.mts,
           callee: 'followRequest',
         }
-      # Per new imported topic input (import-topics.mts:59): each admission checks contribution limits and attributes its own result, so it stays ordered. UNVERIFIED: no constant cap on import inputs.
+      # Items are bounded by MAX_IMPORT_ITEMS = 500, asserted before any work (import-topics.mts:21,34). Each topic runs its own idempotent contribution admission (per-actor daily limit, stable per-slug idempotency key) and can stop the loop with in_progress or fail alone, so results attribute per input and cannot share one statement.
       - {
           file: backend/services/user-import-export/import-topics.mts,
           callee: 'admitImportedTopicRecommendation',

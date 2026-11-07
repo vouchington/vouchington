@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
 import {
-  failIneligiblePurchaseReversal,
+  failIneligiblePurchaseReversals,
   recordIneligiblePurchaseReversalProviderRefund,
 } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
@@ -51,7 +51,7 @@ describe('recorded ineligible Stripe purchase failed-refund reconciliation', () 
     await recordIneligiblePurchaseReversalProviderRefund(initial.reversals[0]!, knownFailedRefundId)
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('known refund failed')),
+        failIneligiblePurchaseReversals([operation], new Error('known refund failed')),
       ),
     )
 

@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
 import {
-  failIneligiblePurchaseReversal,
+  failIneligiblePurchaseReversals,
   markIneligiblePurchaseReversalCompleted,
 } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
@@ -76,8 +76,8 @@ describe('reconcileRecordedIneligibleStripePurchaseReversal cancellation recover
       { currency: target.currency, qualifyingAmountMinorUnits: target.qualifyingAmountMinorUnits },
     ))!
     await markIneligiblePurchaseReversalCompleted(initial.cancellation!)
-    await failIneligiblePurchaseReversal(
-      initial.reversals[0]!,
+    await failIneligiblePurchaseReversals(
+      [initial.reversals[0]!],
       new Error('refund failed after cancellation completed'),
     )
     const cancelSubscriptionImmediately =

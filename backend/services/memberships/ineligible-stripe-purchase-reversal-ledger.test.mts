@@ -7,7 +7,7 @@ import {
   getTestIneligiblePurchaseReversal,
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
-import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
+import { failIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { createIneligiblePurchaseReversalRetryIdempotencyKey } from './ineligible-stripe-purchase-reversal-idempotency.mts'
 import { claimPersistedIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import { createOrRetrieveIneligiblePurchaseReversalRefund } from './ineligible-stripe-purchase-reversal-provider.mts'
@@ -70,7 +70,10 @@ describe('ineligible Stripe purchase reversal ledger', () => {
     ))!
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('Stripe rejected stale refund amount')),
+        failIneligiblePurchaseReversals(
+          [operation],
+          new Error('Stripe rejected stale refund amount'),
+        ),
       ),
     )
 
@@ -105,7 +108,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
     ))!
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('provider response was lost')),
+        failIneligiblePurchaseReversals([operation], new Error('provider response was lost')),
       ),
     )
 
@@ -137,7 +140,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
     ))!
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('Stripe refund is pending')),
+        failIneligiblePurchaseReversals([operation], new Error('Stripe refund is pending')),
       ),
     )
 
@@ -167,7 +170,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
     ))!
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('interrupted before response')),
+        failIneligiblePurchaseReversals([operation], new Error('interrupted before response')),
       ),
     )
 

@@ -23,15 +23,17 @@ export async function persistFacebookFriendPage(
   return true
 }
 
+/** Deletes stale edges for at most one run's batch cap; true means a follow-up run must continue. */
 export async function finalizeFacebookFriendSync(
   facebookAccountId: string,
   userId: string,
   syncStartTime: string,
-): Promise<void> {
+): Promise<boolean> {
   const batchSize = getOauthFacebookWorkLimit('friend_mutation_batch_size')
-  while (true) {
+  const maxBatches = getOauthFacebookWorkLimit('max_finalize_batches_per_run')
+  for (let batch = 0; batch < maxBatches; batch += 1) {
     // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
-    // oxlint-disable-next-line no-await-in-loop -- each page commits before selecting its successor.
+    // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
     const staleFriendIds = await getStaleFacebookFriendIds(
       facebookAccountId,
       syncStartTime,
@@ -40,7 +42,7 @@ export async function finalizeFacebookFriendSync(
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markFacebookFriendSyncComplete(facebookAccountId, userId, syncStartTime)
-      return
+      return false
     }
     // oxlint-disable-next-line no-await-in-loop -- each page reacquires the deletion fence.
     const deleted = await deleteFacebookFriendBatch(
@@ -49,8 +51,9 @@ export async function finalizeFacebookFriendSync(
       syncStartTime,
       staleFriendIds,
     )
-    if (!deleted) return
+    if (!deleted) return false
   }
+  return true
 }
 
 async function persistFacebookFriendBatch(

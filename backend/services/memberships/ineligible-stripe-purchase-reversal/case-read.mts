@@ -8,10 +8,17 @@ export type IneligiblePurchaseReversalCaseLookup = {
   providerEnvironment: 'test' | 'production'
 }
 
-export async function getIneligiblePurchaseReversalCase(
-  options: IneligiblePurchaseReversalCaseLookup,
-): Promise<IneligiblePurchaseReversalCase | null> {
-  const { rows } = await write(sql`/* getIneligiblePurchaseReversalCase */
+export type IneligiblePurchaseReversalCasesLookup = Omit<
+  IneligiblePurchaseReversalCaseLookup,
+  'originatingInvoiceId'
+> & { originatingInvoiceIds: string[] }
+
+/** Reads the unexpired reversal case for each invoice id in one statement. */
+export async function getIneligiblePurchaseReversalCases(
+  options: IneligiblePurchaseReversalCasesLookup,
+): Promise<IneligiblePurchaseReversalCase[]> {
+  if (options.originatingInvoiceIds.length === 0) return []
+  const { rows } = await write(sql`/* getIneligiblePurchaseReversalCases */
     SELECT reversal_case.id, reversal_case.membership_source_id AS "membershipSourceId",
       reversal_case.membership_provider_lineage_id AS "membershipProviderLineageId",
       reversal_case.membership_lineage_binding_id AS "membershipLineageBindingId",
@@ -32,25 +39,32 @@ export async function getIneligiblePurchaseReversalCase(
     WHERE provider_context.provider = 'stripe' AND provider_context.environment = ${options.providerEnvironment}
       AND provider_context.application_id = ${options.providerApplicationId ?? 'voucha-web'}
       AND binding.source_kind = 'direct'
-      AND reversal_case.originating_invoice_id = ${options.originatingInvoiceId}
+      AND reversal_case.originating_invoice_id = ANY(${options.originatingInvoiceIds}::text[])
       AND NOT fn_membership_reversal_case_expired(reversal_case.id)
   `)
-  if (rows.length > 1)
-    throw new Error('Stripe reversal case lookup matched more than one immutable case')
-  const row = rows[0] as
-    | (Omit<
-        IneligiblePurchaseReversalCase,
-        'qualifyingAmountMinorUnits' | 'refundCapMinorUnits'
-      > & {
+  return (
+    rows as Array<
+      Omit<IneligiblePurchaseReversalCase, 'qualifyingAmountMinorUnits' | 'refundCapMinorUnits'> & {
         qualifyingAmountMinorUnits: string
         refundCapMinorUnits: string
-      })
-    | undefined
-  return row
-    ? {
-        ...row,
-        qualifyingAmountMinorUnits: Number(row.qualifyingAmountMinorUnits),
-        refundCapMinorUnits: Number(row.refundCapMinorUnits),
       }
-    : null
+    >
+  ).map(row => ({
+    ...row,
+    qualifyingAmountMinorUnits: Number(row.qualifyingAmountMinorUnits),
+    refundCapMinorUnits: Number(row.refundCapMinorUnits),
+  }))
+}
+
+export async function getIneligiblePurchaseReversalCase(
+  options: IneligiblePurchaseReversalCaseLookup,
+): Promise<IneligiblePurchaseReversalCase | null> {
+  const { originatingInvoiceId, ...scope } = options
+  const cases = await getIneligiblePurchaseReversalCases({
+    ...scope,
+    originatingInvoiceIds: [originatingInvoiceId],
+  })
+  if (cases.length > 1)
+    throw new Error('Stripe reversal case lookup matched more than one immutable case')
+  return cases[0] ?? null
 }

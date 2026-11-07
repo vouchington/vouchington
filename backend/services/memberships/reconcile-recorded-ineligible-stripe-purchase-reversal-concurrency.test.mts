@@ -6,7 +6,7 @@ import {
   getTestIneligiblePurchaseReversalExecutionClaimCount,
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
-import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
+import { failIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
 import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
@@ -47,7 +47,7 @@ describe('recorded ineligible Stripe purchase reconciliation concurrency', () =>
     ))!
     await Promise.all(
       [initial.cancellation!, ...initial.reversals].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('simulate interrupted reversal')),
+        failIneligiblePurchaseReversals([operation], new Error('simulate interrupted reversal')),
       ),
     )
     const cancelSubscriptionImmediately =

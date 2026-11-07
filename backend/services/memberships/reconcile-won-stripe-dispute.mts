@@ -7,7 +7,7 @@ import { DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT } from './create-types.mt
 import { IneligiblePurchaseReversalInProgressError } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { claimWonStripeDisputeRecovery } from './ineligible-stripe-purchase-reversal/won-dispute-recovery-ledger.mts'
 import { executeIneligibleStripePurchaseReversal } from './ineligible-stripe-purchase-reversal/execute.mts'
-import { getIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/case-read.mts'
+import { getIneligiblePurchaseReversalCases } from './ineligible-stripe-purchase-reversal/case-read.mts'
 import {
   createStripeRefundScanCallBudget,
   getDurableStripeRefundHistory,
@@ -36,17 +36,11 @@ export async function reconcileWonStripeDispute(options: {
   if (!dispute) return false
   const providerApplicationId =
     options.providerApplicationId ?? DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT.applicationId
-  const reversalCases = (
-    await Promise.all(
-      dispute.invoiceIds.map(originatingInvoiceId =>
-        getIneligiblePurchaseReversalCase({
-          originatingInvoiceId,
-          providerApplicationId,
-          providerEnvironment: options.providerEnvironment,
-        }),
-      ),
-    )
-  ).filter(reversalCase => reversalCase !== null)
+  const reversalCases = await getIneligiblePurchaseReversalCases({
+    originatingInvoiceIds: dispute.invoiceIds,
+    providerApplicationId,
+    providerEnvironment: options.providerEnvironment,
+  })
   if (reversalCases.length === 0) return false
   if (reversalCases.length > 1)
     throw new Error(`Stripe dispute ${options.disputeId} matched more than one reversal case`)
