@@ -115,6 +115,38 @@ describe('CrawlDetailPage', () => {
     expect(screen.getByTestId('og-image-sideload').textContent).toContain('/sideload/')
   })
 
+  it('marks the crawl title and markdown with the declared page language', async () => {
+    mockGetUrlCrawl.mockResolvedValue({
+      ...crawlData,
+      crawl: {
+        ...crawlData.crawl,
+        title: 'عنوان الصفحة',
+        language: 'ar',
+        markdown: 'محتوى الصفحة',
+      },
+    })
+
+    const jsx = await CrawlDetailPage({
+      params: Promise.resolve({
+        urlValue: encodeURIComponent('https://example.com/page'),
+        crawlId: 'crawl-1',
+      }),
+    })
+    render(jsx)
+
+    const title = screen.getByText('عنوان الصفحة')
+    expect(title.tagName).toBe('DD')
+    expect(title).toHaveAttribute('lang', 'ar')
+    expect(title).toHaveAttribute('dir', 'rtl')
+
+    const markdown = screen.getByText('محتوى الصفحة')
+    expect(markdown.tagName).toBe('PRE')
+    expect(markdown).toHaveAttribute('lang', 'ar')
+    expect(markdown).toHaveAttribute('dir', 'rtl')
+    expect(screen.getByText('200')).not.toHaveAttribute('lang')
+    expect(screen.getByText('200')).not.toHaveAttribute('dir')
+  })
+
   it('returns not found for malformed URL escaping before lookup', async () => {
     await expect(
       CrawlDetailPage({

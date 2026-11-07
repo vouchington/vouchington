@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect, within } from 'storybook/test'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
+import { CrawlAuthoredText } from '@/components/urls/crawl-authored-text'
 import { CrawlMetaTags } from '@/components/urls/crawl-meta-tags'
 import { UrlAdminAside } from '@/components/urls/url-admin-aside'
 import { UrlCrawlsPage } from '@/components/urls/url-crawls-page'
@@ -98,6 +100,51 @@ export const MainPageContent: Story = {
       />
     </EntityStoryFrame>
   ),
+}
+
+export const CrawlText: Story = {
+  render: () => (
+    <EntityStoryFrame title='Crawled page text'>
+      <dl>
+        <div>
+          <dt className='text-sm font-medium text-muted-foreground'>Title</dt>
+          <CrawlAuthoredText
+            as='dd'
+            className='mt-1 text-sm text-foreground'
+            lang='ar'
+            text='عنوان الصفحة'
+          />
+        </div>
+      </dl>
+      <CrawlAuthoredText
+        as='pre'
+        className='mt-4 whitespace-pre-wrap text-sm text-foreground'
+        lang='en-US'
+        text='Page markdown'
+      />
+      <CrawlAuthoredText
+        as='pre'
+        className='mt-4 whitespace-pre-wrap text-sm text-muted-foreground'
+        lang={null}
+        text='Markdown without a page language'
+      />
+    </EntityStoryFrame>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const title = canvas.getByText('عنوان الصفحة')
+    await expect(title).toHaveAttribute('lang', 'ar')
+    await expect(title).toHaveAttribute('dir', 'rtl')
+
+    const markdown = canvas.getByText('Page markdown')
+    await expect(markdown).toHaveAttribute('lang', 'en')
+    await expect(markdown).toHaveAttribute('dir', 'ltr')
+
+    const unknown = canvas.getByText('Markdown without a page language')
+    await expect(unknown.getAttribute('lang')).toBeNull()
+    await expect(unknown).toHaveAttribute('dir', 'auto')
+    await expect(canvas.getByText('Title')).not.toHaveAttribute('lang')
+  },
 }
 
 export const Asides: Story = {

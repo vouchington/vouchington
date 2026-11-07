@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getUrl, getUrlCrawl } from '@/lib/api/server/urls'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { PageWithAside } from '@/components/page-with-aside'
+import { CrawlAuthoredText } from '@/components/urls/crawl-authored-text'
 import { CrawlMetaTags } from '@/components/urls/crawl-meta-tags'
 import { domainHref, urlCrawlHref, urlHref } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
@@ -106,7 +107,12 @@ export default async function CrawlDetailPage({
                 <dt className='text-sm font-medium text-muted-foreground'>
                   {t('extracted.crawlid.page.title_7e8cd205')}
                 </dt>
-                <dd className='mt-1 text-sm text-foreground'>{crawl.title}</dd>
+                <CrawlAuthoredText
+                  as='dd'
+                  className='mt-1 text-sm text-foreground'
+                  lang={crawl.language}
+                  text={crawl.title}
+                />
               </div>
             )}
           </dl>
@@ -132,7 +138,12 @@ export default async function CrawlDetailPage({
             </h2>
           </div>
           <div className='border-t px-4 py-5 sm:px-6'>
-            <pre className='whitespace-pre-wrap text-sm text-foreground'>{crawl.markdown}</pre>
+            <CrawlAuthoredText
+              as='pre'
+              className='whitespace-pre-wrap text-sm text-foreground'
+              lang={crawl.language}
+              text={crawl.markdown}
+            />
           </div>
         </div>
       )}
