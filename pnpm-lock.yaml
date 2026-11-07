@@ -13830,9 +13830,6 @@ importers:
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.10.0)(@sentry/core@11.10.0)(@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
