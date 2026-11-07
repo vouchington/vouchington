@@ -6,7 +6,7 @@ import {
   hasSemanticSearch as hasSemanticSearchFn,
   hasTextSearch as hasTextSearchFn,
 } from '@modules/search-utils'
-import { buildHotScoreExpression, buildPostRankingScoreExpression } from './query-builder-utils.mts'
+import { buildPostRankingScoreExpression } from './query-builder-utils.mts'
 import { appendCtes, buildPostSearchCtes } from './query-builder/ctes.mts'
 import { appendPostSearchOrderAndLimit } from './query-builder/order-and-limit.mts'
 import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins.mts'
@@ -57,20 +57,6 @@ export function buildPostSearchQuery(
     )
   }
   appendCtes(query, ctes)
-  // The positive votes index matches votes_score_net > 0, then filters a rare result or credit
-  // value. Read those matches in id order first. Score and page that set afterward.
-  const fenceHotExpressionFilter =
-    sort === 'hot' &&
-    !useHackerNewsHotCandidates &&
-    (options.data_point_result !== undefined || options.data_point_credit_score_range !== undefined)
-  if (fenceHotExpressionFilter) {
-    query.append(
-      ctes.length > 0
-        ? sql`,
-      data_point_hot_matches AS MATERIALIZED (`
-        : sql`WITH data_point_hot_matches AS MATERIALIZED (`,
-    )
-  }
   appendPostSearchSelectAndJoins(query, {
     useSemanticCandidates: hasSemanticSearch,
     useHackerNewsHotCandidates,
@@ -84,7 +70,6 @@ export function buildPostSearchQuery(
         ? sql`posts.ranking_score`
         : rankingScoreExpression,
     sort,
-    deferHotScore: fenceHotExpressionFilter,
   })
   appendPostSearchWhereClause(query, {
     paginationOnly: useHackerNewsHotCandidates,
@@ -96,39 +81,16 @@ export function buildPostSearchQuery(
     options,
     rankingScoreExpression,
     sort,
-    deferHotPredicate: fenceHotExpressionFilter,
   })
   appendPostSearchOrderAndLimit(query, {
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
     limit,
-    omitLimit: fenceHotExpressionFilter || omitLimit,
-    omitOrderBy: fenceHotExpressionFilter || omitOrderBy,
+    omitLimit,
+    omitOrderBy,
     sort,
   })
-  if (fenceHotExpressionFilter) {
-    query.append(sql`
-    ORDER BY id DESC)
-  SELECT id, post_type, `)
-    query.append(buildHotScoreExpression('data_point_hot_matches'))
-    query.append(sql` AS hot_score`)
-    if (options.hydrateDataPointPage)
-      query.append(sql`, title, data_point_vertical, structured_data`)
-    query.append(sql`
-    FROM data_point_hot_matches
-    WHERE votes_score_net > 0`)
-    if (options.hot_score_lt !== undefined) {
-      query.append(sql` AND (`)
-      query.append(buildHotScoreExpression('data_point_hot_matches'))
-      query.append(sql`, id) < (${options.hot_score_lt}, ${options.id_lt})`)
-    }
-    if (!omitOrderBy) query.append(sql` ORDER BY hot_score DESC, id DESC`)
-    if (!omitLimit)
-      query.append(sql`
-    LIMIT ${limit ?? 100}
-  `)
-  }
 
   return query
 }

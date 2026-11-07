@@ -27,7 +27,6 @@ export function appendPostSearchWhereClause(
     options,
     rankingScoreExpression,
     sort,
-    deferHotPredicate = false,
   }: {
     currentUser?: BasicUser
     paginationOnly?: boolean
@@ -38,13 +37,12 @@ export function appendPostSearchWhereClause(
     options: PostSearchOptions
     rankingScoreExpression: SQLStatement | null
     sort: string
-    deferHotPredicate?: boolean
   },
 ): void {
   const filters: SQLStatement[] = []
   // The Hacker News cohort (sort 'new') stays the newest eligible rows so its walk is index-bounded;
   // this filter then trims it in the outer pagination statement.
-  if (sort === 'hot' && !deferHotPredicate) filters.push(sql`posts.votes_score_net > 0`)
+  if (sort === 'hot') filters.push(sql`posts.votes_score_net > 0`)
   // A materialized eligible cohort already applied these filters in this statement's snapshot.
   if (!paginationOnly) {
     appendBaseFilters(filters, currentUser, options)
@@ -61,7 +59,6 @@ export function appendPostSearchWhereClause(
     options,
     rankingScoreExpression,
     sort,
-    omitHotCursor: deferHotPredicate,
   })
   appendFilters(query, filters)
 }

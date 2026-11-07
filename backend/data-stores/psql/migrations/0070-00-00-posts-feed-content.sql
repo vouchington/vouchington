@@ -474,6 +474,29 @@ CREATE INDEX IF NOT EXISTS idx_posts__credit_score_range__votes_score_sort__id
   ON posts ((structured_data->>'credit_score_range'), votes_score_sort DESC, id DESC)
   WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
 
+-- Hot pages for one data-point result. The result and the id window are the index
+-- condition. Positive votes stay in the predicate so the votes index is not the scan.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__data_point_result__positive__id
+  ON posts ((structured_data->>'result'), id DESC)
+  INCLUDE (votes_score_sort)
+  WHERE deleted_at IS NULL
+    AND community_id IS NULL
+    AND post_type = 'data_point'
+    AND votes_score_net > 0
+    AND structured_data IS NOT NULL;
+
+-- Hot pages for one data-point credit-score range, same access path as the result index.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__data_point_credit_score_range__positive__id
+  ON posts ((structured_data->>'credit_score_range'), id DESC)
+  INCLUDE (votes_score_sort)
+  WHERE deleted_at IS NULL
+    AND community_id IS NULL
+    AND post_type = 'data_point'
+    AND votes_score_net > 0
+    AND structured_data IS NOT NULL;
+
 -- root-post visibility lookups: privacy filter checks root post broadcast/creator for comments
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__root_post_visibility
