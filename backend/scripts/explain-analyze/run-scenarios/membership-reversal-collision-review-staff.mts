@@ -96,7 +96,7 @@ export async function runMembershipReversalCollisionReviewStaffScenario(input: {
       {
         kind: 'maxProcessedRows',
         relation: 'membership_ineligible_purchase_reversal_cases',
-        max: 1,
+        max: 3,
       },
       { kind: 'maxProcessedRows', relation: 'membership_provider_products', max: 1 },
       { kind: 'maxProcessedRows', relation: 'membership_provider_lineages', max: 1 },
