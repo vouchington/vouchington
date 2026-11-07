@@ -11,5 +11,11 @@
   test's timeout. A bare `worker.once` on those events hangs the shard until the runner kills it.
   Bare `delay-changed`, `added`, and `retrying` QueueEvents waits, and SQS `message-deleted` /
   `poll-error` waits, still have no named deadline.
+- Owned post-election and vote-route admission on the default project budget uses
+  `admissionObservationDeadline`, the same bound as `waitForRealGlideEvent`, so a stalled owned
+  job is named before that budget. User-vouch observation keeps a longer deadline because its
+  callers set a longer per-test timeout and the observation outlasts the default budget. The
+  entity-listener lifetime outlasts the default project budget: teardown abort names cleanup
+  after the test finishes, and a stall during the body surfaces as the runner timeout.
 - Close resources and remove unexpected `console.*` output before handoff.
 - Follow the [test suite rules](../../docs/development/tests.md#test-suite-rules).

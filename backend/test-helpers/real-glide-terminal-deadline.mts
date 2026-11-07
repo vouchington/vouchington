@@ -5,6 +5,11 @@
  */
 export const REAL_GLIDE_EVENT_DEADLINE_MS = 4_000
 
+/** Owned admission waits on the default project budget. A stall rejects by name before that budget. */
+export function admissionObservationDeadline(): AbortSignal {
+  return AbortSignal.timeout(REAL_GLIDE_EVENT_DEADLINE_MS)
+}
+
 /**
  * Wait for a GlideMQ terminal event (`completed`, `failed`, or drained). The event resolves
  * the wait. A stall rejects with a named error instead of hanging the shard.
