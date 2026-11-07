@@ -53,6 +53,7 @@ export async function classifyCreatedFediverseInstance(
     FROM topics t
     WHERE fi.topic_id = ${topicId} AND t.id = fi.topic_id
       AND t.deleted_at IS NULL
+      AND t.merged_into_topic_id IS NULL
     RETURNING fi.topic_id
   `)
   if (updated.rows.length > 0) await invalidate.topics(topicId)

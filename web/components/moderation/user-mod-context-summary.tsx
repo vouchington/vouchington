@@ -1,6 +1,8 @@
 'use client'
 
+import { formatNumber } from '@ts-shared/utils/format'
 import { fmtAge } from './user-mod-notes-helpers'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { UserModerationContext } from '@/types/api-responses'
 
@@ -10,6 +12,7 @@ interface UserModContextSummaryProps {
 
 export function UserModContextSummary({ context }: UserModContextSummaryProps) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   return (
     <div className='space-y-1 rounded bg-muted px-3 py-2 text-xs'>
       <div className='flex gap-2'>
@@ -36,8 +39,8 @@ export function UserModContextSummary({ context }: UserModContextSummaryProps) {
               'extracted.moderation.userModContextSummary.contentcountContentCommunitycountCommunity_93476367',
               {
                 contentCount: context.content_removal_count_capped
-                  ? `${context.content_removal_count}+`
-                  : context.content_removal_count,
+                  ? `${formatNumber(context.content_removal_count, uiLocale)}+`
+                  : formatNumber(context.content_removal_count, uiLocale),
                 communityCount: context.community_removal_count,
               },
             )}
