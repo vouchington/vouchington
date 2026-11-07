@@ -6,7 +6,7 @@ Project definitions live in `test-helpers/vitest-config/*`; the root `vitest.con
 
 ## Concurrency
 
-Never set `fileParallelism: false` or a literal `maxWorkers` in a Vitest config (`dev/vitest-config.test.mts` enforces this). Vitest applies the repository-owned `VITEST_MAX_WORKERS` policy after merging project config and overwrites both knobs, so neither works per project. A test that cannot run in parallel is fixed, not quarantined behind a worker pin: assert properties scoped to owned rows (randomized ids, prefix matching) instead of a global snapshot of shared state. A `sequence.groupOrder` barrier remains available for the rare case that genuinely cannot be made parallel-safe.
+Keep Vitest files parallel and derive worker counts from the repository-owned environment policy; the declared source policy in `.no-mistakes/rules/policies.yml` enforces this across the root config and its helpers. Vitest applies `VITEST_MAX_WORKERS` after merging project config, so a project-level worker literal is misleading and can defeat parallel execution without supplying a reliable CI cap. For shared-database tests, scope assertions to owned rows (randomized ids, prefix matching) instead of relying on serial order or a global snapshot. A `sequence.groupOrder` barrier remains available for the rare case that genuinely cannot be made parallel-safe.
 
 ## Timeouts
 

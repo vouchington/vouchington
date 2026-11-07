@@ -800,6 +800,16 @@
           module: uuid
           export: v4
 
+- name: Vitest configs allow parallel files and derive worker counts from the environment
+  rule: vitest-project-policy
+  scope: repository
+  options:
+    config: vitest.config.mts
+    helpers: ['test-helpers/vitest-config/*.mts']
+    declared:
+      forbiddenValues: { fileParallelism: [false] }
+      forbidLiteralKinds: { maxWorkers: [number] }
+
 - name: Tests use the shared database
   rule: forbidden-calls
   scope: repository
