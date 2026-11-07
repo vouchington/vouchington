@@ -43,7 +43,7 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
     .filter(node => baseRelationName(node) === 'rss_feed_item_categories')
     .reduce((sum, node) => sum + processedRows(node), 0)
   const storyProbeRows = nodes
-    .filter(node => node['Alias'] === 'newer')
+    .filter(node => /^feed_story_member(?:_\d+)?$/.test(String(node['Alias'])))
     .reduce((sum, node) => sum + processedRows(node), 0)
   const indexNames = new Set(
     nodes
@@ -54,6 +54,10 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
     (sum, node) =>
       sum + Number(node['Rows Removed by Join Filter'] ?? 0) * Number(node['Actual Loops'] ?? 1),
     0,
+  )
+  const directWalkExecuted = nodes.some(
+    node =>
+      /^feed_item(?:_\d+)?$/.test(String(node['Alias'])) && Number(node['Actual Loops'] ?? 0) > 0,
   )
 
   if (rssItemsProcessed > TOTAL_RSS_ITEM_ROWS * 2)
@@ -79,9 +83,11 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
     )
   if (storyProbeRows > TOTAL_STORY_MEMBER_ROWS * 2)
     throw new Error(
-      `${result.name} examined ${storyProbeRows} newer story rows; the ${TOTAL_STORY_MEMBER_ROWS} members across the seeded story cohorts must use indexed winner probes`,
+      `${result.name} examined ${storyProbeRows} story winner rows; the ${TOTAL_STORY_MEMBER_ROWS} members across the seeded story cohorts must use indexed winner probes`,
     )
   if (
+    !/eligible_direct_items\s+AS\s+MATERIALIZED/i.test(result.query_text) ||
+    !/story_winners\s+AS\s+MATERIALIZED/i.test(result.query_text) ||
     !/direct_deliveries\s+AS\s+NOT\s+MATERIALIZED/i.test(result.query_text) ||
     !/shared_deliveries\s+AS\s+NOT\s+MATERIALIZED/i.test(result.query_text) ||
     !/ORDER\s+BY\s+sort_at\s+DESC,\s*result_id\s+DESC/i.test(result.query_text) ||
@@ -97,11 +103,13 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
         `${result.name} must probe source membership through idx_rss_feed_item_sources__item_feed`,
       )
     if (
+      directWalkExecuted &&
       !result.query_text.includes('search_vector @@') &&
       !nodes.some(node => {
         const indexName = node['Index Name']
         return (
-          node['Alias'] === 'rss_feed_items' &&
+          /^feed_item(?:_\d+)?$/.test(String(node['Alias'])) &&
+          Number(node['Actual Loops'] ?? 0) > 0 &&
           typeof indexName === 'string' &&
           !indexName.includes('story_id') &&
           (/^(?:idx_rss_feed_items__published_at__id|idx_rss_feed_items__media_type__published)$/.test(
@@ -117,7 +125,8 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
       !nodes.some(node => {
         const indexName = node['Index Name']
         return (
-          node['Alias'] === 'newer' &&
+          /^feed_story_member(?:_\d+)?$/.test(String(node['Alias'])) &&
+          Number(node['Actual Loops'] ?? 0) > 0 &&
           typeof indexName === 'string' &&
           (indexName === 'idx_rss_feed_items__story_id__published_at__id' ||
             /story_id_published_at_id_idx$/.test(indexName))

@@ -25,30 +25,41 @@ export type FeedPageQueryOptions = {
 export function buildRssFeedItemPageQuery(options: FeedPageQueryOptions): SQLStatement {
   const { cutoffDate, itemCutoffId, cursorSortAt, cursorId, safeLimit } = options
   const query = appendPersonalizedExclusionCTEs(sql``, options.currentUserId, options.communityId)
-  query.append(sql`, direct_deliveries AS NOT MATERIALIZED (
-    SELECT rss_feed_items.id AS result_id,
-      rss_feed_items.id AS entity_id,
-      rss_feed_items.published_at, rss_feed_items.published_at AS sort_at,
-      rss_feed_items.story_id, 'direct'::text AS delivery_type,
+  query.append(sql`, eligible_direct_items AS MATERIALIZED (
+    SELECT feed_item.id AS result_id,
+      feed_item.id AS entity_id,
+      feed_item.published_at, feed_item.published_at AS sort_at,
+      feed_item.story_id, 'direct'::text AS delivery_type,
       NULL::uuid AS shared_by_id, NULL::timestamptz AS shared_at
-    FROM rss_feed_items
+    FROM rss_feed_items feed_item
     WHERE ${options.includeDirectItems}
-      AND rss_feed_items.published_at >= ${cutoffDate}
-      AND rss_feed_items.id >= ${itemCutoffId}::uuid`)
+      AND feed_item.published_at >= ${cutoffDate}
+      AND feed_item.id >= ${itemCutoffId}::uuid`)
   if (cursorSortAt && cursorId)
-    query.append(sql` AND (rss_feed_items.published_at, rss_feed_items.id)
+    query.append(sql` AND (feed_item.published_at, feed_item.id)
       < (${cursorSortAt}::timestamptz, ${cursorId}::uuid)`)
   query.append(sql` AND `)
-  appendCandidatePredicate(query, sql`rss_feed_items`, options, true)
-  query.append(sql` AND (rss_feed_items.story_id IS NULL OR NOT EXISTS (
-    SELECT 1 FROM rss_feed_items newer
-    WHERE newer.story_id = rss_feed_items.story_id
-      AND (newer.published_at, newer.id) > (rss_feed_items.published_at, rss_feed_items.id)
-      AND newer.published_at >= ${cutoffDate} AND newer.id >= ${itemCutoffId}::uuid
-      AND `)
-  appendCandidatePredicate(query, sql`newer`, options, true)
+  appendCandidatePredicate(query, sql`feed_item`, options, true)
+  // Resolve each represented story over the full horizon, independently of the delivery cursor.
   query.append(sql`
-  ))
+  ), story_winners AS MATERIALIZED (
+    SELECT story_keys.story_id, selected.id AS item_id
+    FROM (SELECT DISTINCT story_id FROM eligible_direct_items
+      WHERE story_id IS NOT NULL) story_keys
+    CROSS JOIN LATERAL (
+      SELECT feed_story_member.id FROM rss_feed_items feed_story_member
+      WHERE feed_story_member.story_id = story_keys.story_id
+        AND feed_story_member.published_at >= ${cutoffDate}
+        AND feed_story_member.id >= ${itemCutoffId}::uuid
+        AND `)
+  appendCandidatePredicate(query, sql`feed_story_member`, options, true)
+  query.append(sql`
+      ORDER BY feed_story_member.published_at DESC, feed_story_member.id DESC LIMIT 1
+    ) selected
+  ), direct_deliveries AS NOT MATERIALIZED (
+    SELECT eligible.* FROM eligible_direct_items eligible
+    LEFT JOIN story_winners winner ON winner.story_id = eligible.story_id
+    WHERE eligible.story_id IS NULL OR eligible.entity_id = winner.item_id
   ), shared_deliveries AS NOT MATERIALIZED (
     SELECT share.id AS result_id, rss_feed_items.id AS entity_id,
       rss_feed_items.published_at, share.sort_at, rss_feed_items.story_id,
