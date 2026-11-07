@@ -1743,6 +1743,18 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  cohort RECORD;\n  delta_sign INTEGER := CASE WHEN TG_OP = 'DELETE' THEN -1 ELSE 1 END;\nBEGIN\n  FOR cohort IN EXECUTE format(\n    'SELECT (uuid_extract_timestamp(id) AT TIME ZONE ''UTC'')::date AS day,\n      NULL::uuid AS community_id, $1::moderation_transparency_metrics AS metric, %I::text::moderation_transparency_categories AS category,\n      count(*)::integer AS count FROM %I\n      WHERE moderation_transparency_community_id IS NULL\n      GROUP BY 1, 2, 3, 4 ORDER BY 1, 2 NULLS FIRST, 3, 4', TG_ARGV[1], TG_ARGV[0])\n    USING TG_ARGV[2]\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, delta_sign * cohort.count);\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
       "returnsSet": false
     },
+    "fn_project_user_landing_page_candidate_profile_link()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_landing_page_candidate_profile_link()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO user_landing_page_candidates (user_id, profile_link_id, tier, sort_order)\n  VALUES (NEW.user_id, NEW.id, 2, NEW.sort_order)\n  ON CONFLICT (profile_link_id) WHERE profile_link_id IS NOT NULL DO UPDATE\n    SET user_id = EXCLUDED.user_id, sort_order = EXCLUDED.sort_order\n    WHERE (user_landing_page_candidates.user_id, user_landing_page_candidates.sort_order)\n      IS DISTINCT FROM (EXCLUDED.user_id, EXCLUDED.sort_order);\n  RETURN NEW;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
+    "fn_project_user_landing_page_candidate_referral_link()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_landing_page_candidate_referral_link()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO user_landing_page_candidates (user_id, referral_link_id, tier)\n  VALUES (NEW.user_id, NEW.id, 0)\n  ON CONFLICT (referral_link_id) WHERE referral_link_id IS NOT NULL\n    DO UPDATE SET user_id = EXCLUDED.user_id\n      WHERE user_landing_page_candidates.user_id IS DISTINCT FROM EXCLUDED.user_id;\n  RETURN NEW;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
+    "fn_project_user_landing_page_candidate_review_post()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_landing_page_candidate_review_post()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.post_type = 'review' AND NEW.created_by_id IS NOT NULL THEN\n    INSERT INTO user_landing_page_candidates (user_id, review_post_id, tier)\n    VALUES (NEW.created_by_id, NEW.id, 1)\n    ON CONFLICT (review_post_id) WHERE review_post_id IS NOT NULL DO UPDATE SET user_id = EXCLUDED.user_id\n      WHERE user_landing_page_candidates.user_id IS DISTINCT FROM EXCLUDED.user_id;\n  ELSE\n    DELETE FROM user_landing_page_candidates WHERE review_post_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
     "fn_project_user_profile_image_placement()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_profile_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-image', NEW.profile_image_id, NEW.id, NULL, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
@@ -22525,7 +22537,7 @@
         "idx_community_members__active_community_id_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_members__active_community_id_id ON public.community_members USING btree (community_id, id) WHERE (removed_at IS NULL)",
+          "definition": "CREATE INDEX idx_community_members__active_community_id_id ON public.community_members USING btree (community_id, id) INCLUDE (user_id, role) WHERE (removed_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -22557,7 +22569,7 @@
         "idx_community_members__active_community_role_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_members__active_community_role_id ON public.community_members USING btree (community_id, role, id) WHERE (removed_at IS NULL)",
+          "definition": "CREATE INDEX idx_community_members__active_community_role_id ON public.community_members USING btree (community_id, role, id) INCLUDE (user_id) WHERE (removed_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -22764,6 +22776,38 @@
           ],
           "live": true,
           "predicate": "((role = 'moderator'::community_member_roles) AND (removed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_members__owner_community_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__owner_community_id_id ON public.community_members USING btree (community_id, id) INCLUDE (user_id, role) WHERE ((removed_at IS NULL) AND (role = 'owner'::community_member_roles))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((removed_at IS NULL) AND (role = 'owner'::community_member_roles))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -94028,6 +94072,38 @@
         }
       },
       "indexes": {
+        "idx_post_moderation_versions__policy_revision__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_versions__policy_revision__id ON public.post_moderation_versions USING btree (policy_revision, id) INCLUDE (post_id, content_sha256, deadline_at)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "policy_revision",
+              "descending": false,
+              "expression": "policy_revision",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_moderation_versions__post_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -97933,38 +98009,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_posts__created_by_id__review": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__created_by_id__review ON ONLY public.posts USING btree (created_by_id, id) WHERE (post_type = 'review'::post_types)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "created_by_id",
-              "descending": false,
-              "expression": "created_by_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(post_type = 'review'::post_types)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_posts__created_by_rejected_at_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -98961,6 +99005,12 @@
         },
         "trigger_posts_creation_source_url_id_immutable": {
           "definition": "CREATE TRIGGER trigger_posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW WHEN ((old.creation_source_url_id IS DISTINCT FROM new.creation_source_url_id)) EXECUTE FUNCTION fn_reject_mutation()"
+        },
+        "trigger_posts_landing_page_candidate_insert": {
+          "definition": "CREATE TRIGGER trigger_posts_landing_page_candidate_insert AFTER INSERT ON public.posts FOR EACH ROW WHEN (((new.post_type = 'review'::post_types) AND (new.created_by_id IS NOT NULL))) EXECUTE FUNCTION fn_project_user_landing_page_candidate_review_post()"
+        },
+        "trigger_posts_landing_page_candidate_update": {
+          "definition": "CREATE TRIGGER trigger_posts_landing_page_candidate_update AFTER UPDATE OF post_type, created_by_id ON public.posts FOR EACH ROW WHEN (((old.post_type = 'review'::post_types) OR (new.post_type = 'review'::post_types))) EXECUTE FUNCTION fn_project_user_landing_page_candidate_review_post()"
         },
         "trigger_posts_post_moderation_retention_hash": {
           "definition": "CREATE TRIGGER trigger_posts_post_moderation_retention_hash AFTER UPDATE OF llm_moderation_content_sha256 ON public.posts FOR EACH ROW WHEN ((old.llm_moderation_content_sha256 IS DISTINCT FROM new.llm_moderation_content_sha256)) EXECUTE FUNCTION fn_create_post_moderation_retention_post_hash_work_item()"
@@ -153943,6 +153993,312 @@
       },
       "uniqueConstraints": {}
     },
+    "user_landing_page_candidates": {
+      "checkConstraints": {
+        "user_landing_page_candidates_check": {
+          "definition": "CHECK ((((tier = 2) AND (profile_link_id IS NOT NULL) AND (review_post_id IS NULL) AND (referral_link_id IS NULL) AND (sort_order IS NOT NULL)) OR ((tier = 1) AND (profile_link_id IS NULL) AND (review_post_id IS NOT NULL) AND (referral_link_id IS NULL) AND (sort_order IS NULL)) OR ((tier = 0) AND (profile_link_id IS NULL) AND (review_post_id IS NULL) AND (referral_link_id IS NOT NULL) AND (sort_order IS NULL))))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "id": {
+          "comment": "Identity of the candidate projection row.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "position_sort": {
+          "comment": "Profile link order or zero for sources ordered by descending id.",
+          "dataType": "integer",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "COALESCE(sort_order, 0)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10
+        },
+        "profile_link_id": {
+          "comment": "Profile link source for tier 2.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "referral_link_id": {
+          "comment": "Referral link source for tier 0.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
+        "review_post_id": {
+          "comment": "Review post source for tier 1.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "sort_order": {
+          "comment": "Profile link ordering within its tier; null for other source types.",
+          "dataType": "integer",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
+        "source_sort_key": {
+          "comment": "Source UUID bytes in ascending profile order or complemented for descending review and referral order.",
+          "dataType": "bytea",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "\nCASE\n    WHEN (profile_link_id IS NOT NULL) THEN uuid_send(profile_link_id)\n    ELSE decode(translate(encode(uuid_send(COALESCE(review_post_id, referral_link_id)), 'hex'::text), '0123456789abcdef'::text, 'fedcba9876543210'::text), 'hex'::text)\nEND",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11
+        },
+        "tier": {
+          "comment": "Candidate type ordering: profile link 2, review 1, referral link 0.",
+          "dataType": "smallint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7
+        },
+        "tier_sort": {
+          "comment": "Negated tier for ascending index order.",
+          "dataType": "smallint",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "(- tier)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
+        },
+        "user_id": {
+          "comment": "Owner whose landing page may include the source.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "Owner-ordered projection of potential landing page items; source eligibility remains on source rows.",
+      "foreignKeys": {
+        "fk_user_landing_page_candidates__profile_link_id": {
+          "columns": ["profile_link_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_profile_links",
+          "validated": true
+        },
+        "fk_user_landing_page_candidates__referral_link_id": {
+          "columns": ["referral_link_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_referral_program_links",
+          "validated": true
+        },
+        "fk_user_landing_page_candidates__review_post_id": {
+          "columns": ["review_post_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "fk_user_landing_page_candidates__user_id": {
+          "columns": ["user_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_user_landing_page_candidates__profile_link_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_user_landing_page_candidates__profile_link_id ON public.user_landing_page_candidates USING btree (profile_link_id) WHERE (profile_link_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "profile_link_id",
+              "descending": false,
+              "expression": "profile_link_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(profile_link_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_user_landing_page_candidates__referral_link_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_user_landing_page_candidates__referral_link_id ON public.user_landing_page_candidates USING btree (referral_link_id) WHERE (referral_link_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "referral_link_id",
+              "descending": false,
+              "expression": "referral_link_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(referral_link_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_user_landing_page_candidates__review_post_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_user_landing_page_candidates__review_post_id ON public.user_landing_page_candidates USING btree (review_post_id) WHERE (review_post_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "review_post_id",
+              "descending": false,
+              "expression": "review_post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(review_post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_user_landing_page_candidates__user_order": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_landing_page_candidates__user_order ON public.user_landing_page_candidates USING btree (user_id, tier_sort, position_sort, source_sort_key)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "tier_sort",
+              "descending": false,
+              "expression": "tier_sort",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int2_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "position_sort",
+              "descending": false,
+              "expression": "position_sort",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "source_sort_key",
+              "descending": false,
+              "expression": "source_sort_key",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bytea_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "user_landing_page_candidates_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_landing_page_candidates_pkey ON public.user_landing_page_candidates USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "user_landing_page_group_members": {
       "checkConstraints": {
         "user_landing_page_group_members_check": {
@@ -157522,6 +157878,9 @@
         "trigger_sync_user_profile_link_image_placement": {
           "definition": "CREATE TRIGGER trigger_sync_user_profile_link_image_placement AFTER INSERT OR UPDATE OF image_id ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_project_user_profile_link_image_placement()"
         },
+        "trigger_user_profile_links_landing_page_candidate": {
+          "definition": "CREATE TRIGGER trigger_user_profile_links_landing_page_candidate AFTER INSERT OR UPDATE OF user_id, sort_order ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_project_user_landing_page_candidate_profile_link()"
+        },
         "trigger_user_profile_links_updated_at": {
           "definition": "CREATE TRIGGER trigger_user_profile_links_updated_at BEFORE UPDATE ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
@@ -158313,6 +158672,9 @@
         },
         "trigger_user_referra_program_links_content_provenance_immutable": {
           "definition": "CREATE TRIGGER trigger_user_referra_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()"
+        },
+        "trigger_user_referral_program_links_landing_page_candidate": {
+          "definition": "CREATE TRIGGER trigger_user_referral_program_links_landing_page_candidate AFTER INSERT OR UPDATE OF user_id ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_project_user_landing_page_candidate_referral_link()"
         },
         "trigger_user_referral_program_links_updated_at": {
           "definition": "CREATE TRIGGER trigger_user_referral_program_links_updated_at BEFORE UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
