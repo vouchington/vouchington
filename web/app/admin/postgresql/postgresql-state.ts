@@ -63,25 +63,24 @@ export function usePostgreSQLAdminState() {
   useEffect(() => {
     const es = new EventSource('/api/v1/admin/postgresql/stream')
     esRef.current = es
-    let fallbackInterval: ReturnType<typeof setInterval> | null = null
-    let fallbackGeneration = 0
+    const fallback = { interval: null as ReturnType<typeof setInterval> | null, generation: 0 }
 
     function runRestFallback() {
-      const generation = fallbackGeneration
-      void loadData(true, () => generation === fallbackGeneration)
+      const generation = fallback.generation
+      void loadData(true, () => generation === fallback.generation)
     }
 
     function startRestFallback() {
-      if (fallbackInterval !== null) return
+      if (fallback.interval !== null) return
       runRestFallback()
-      fallbackInterval = setInterval(runRestFallback, STREAM_FALLBACK_INTERVAL_MS)
+      fallback.interval = setInterval(runRestFallback, STREAM_FALLBACK_INTERVAL_MS)
     }
 
     function stopRestFallback() {
-      fallbackGeneration += 1
-      if (fallbackInterval !== null) {
-        clearInterval(fallbackInterval)
-        fallbackInterval = null
+      fallback.generation += 1
+      if (fallback.interval !== null) {
+        clearInterval(fallback.interval)
+        fallback.interval = null
       }
     }
 
@@ -120,8 +119,7 @@ export function usePostgreSQLAdminState() {
       es.removeEventListener('snapshot', onSnapshot)
       es.close()
       esRef.current = null
-      fallbackGeneration += 1
-      if (fallbackInterval !== null) clearInterval(fallbackInterval)
+      stopRestFallback()
     }
   }, [])
 

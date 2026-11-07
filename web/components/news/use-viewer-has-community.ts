@@ -23,12 +23,12 @@ export function useViewerHasCommunity(enabled: boolean): boolean {
           return false
         })
     }
-    let active = true
+    const lifetime = new AbortController()
     void cachedPromise.then(v => {
-      if (active) setHasCommunity(v)
+      if (!lifetime.signal.aborted) setHasCommunity(v)
     })
     return () => {
-      active = false
+      lifetime.abort()
       // Reset on logout or unmount so a subsequent login starts from false until
       // the new fetch settles — prevents stale membership leaking across accounts.
       setHasCommunity(false)

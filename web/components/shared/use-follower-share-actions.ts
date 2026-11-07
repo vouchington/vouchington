@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { sharePostWithFollowers, sendPostToFollowers } from '@/lib/api/client/posts'
 import {
   shareRssFeedItemWithFollowers,
@@ -34,23 +34,25 @@ export const useFollowerShareActions = ({
   const [selectedFollowers, setSelectedFollowers] = useState<PublicUser[]>([])
   const contextKey = `${currentUserId ?? ''}\u0000${entityType}\u0000${entityId}`
   const [stateContextKey, setStateContextKey] = useState(contextKey)
-  const selectedFollowersRef = useRef<PublicUser[]>([])
   const sharePendingRef = useRef(false)
   const sendPendingRef = useRef(false)
   const contextGenerationRef = useRef(0)
 
   if (stateContextKey !== contextKey) {
-    contextGenerationRef.current += 1
     setStateContextKey(contextKey)
-    sharePendingRef.current = false
-    sendPendingRef.current = false
     setIsSharePending(false)
     setIsSendPending(false)
     setIsDialogOpen(false)
     setAudience('all_followers')
-    selectedFollowersRef.current = []
     setSelectedFollowers([])
   }
+
+  // A context change invalidates in-flight share/send results for the previous context.
+  useEffect(() => {
+    contextGenerationRef.current += 1
+    sharePendingRef.current = false
+    sendPendingRef.current = false
+  }, [contextKey])
 
   async function handleShare() {
     if (sharePendingRef.current) return
@@ -128,8 +130,8 @@ export const useFollowerShareActions = ({
   }
 
   function toggleFollowerSelection(follower: PublicUser) {
-    const next = toggleSelection(selectedFollowersRef.current, follower)
-    if (next === selectedFollowersRef.current) {
+    const next = toggleSelection(selectedFollowers, follower)
+    if (next === selectedFollowers) {
       const message = t('extracted.shared.useFollowerShareActions.youCanSelectUpTo100_ca2448f2')
       onError(new Error(message), {
         fallback: message,
@@ -137,7 +139,6 @@ export const useFollowerShareActions = ({
       })
       return
     }
-    selectedFollowersRef.current = next
     setSelectedFollowers(next)
   }
 
@@ -146,7 +147,6 @@ export const useFollowerShareActions = ({
 
     if (!open) {
       setAudience('all_followers')
-      selectedFollowersRef.current = []
       setSelectedFollowers([])
     }
   }

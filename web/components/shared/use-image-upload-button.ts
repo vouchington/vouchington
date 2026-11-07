@@ -128,16 +128,15 @@ export function useImageUploadButton({
   }
 
   async function notifyUploadedImages(successfulUploads: { id: string; file: File }[]) {
-    let callbackFailures = 0
-    await successfulUploads.reduce(async (prev, { id, file }) => {
-      await prev
+    return successfulUploads.reduce(async (prev, { id, file }) => {
+      const failures = await prev
       try {
         await onUploaded(id, file)
+        return failures
       } catch {
-        callbackFailures += 1
+        return failures + 1
       }
-    }, Promise.resolve())
-    return callbackFailures
+    }, Promise.resolve(0))
   }
 
   function resetUploadState() {

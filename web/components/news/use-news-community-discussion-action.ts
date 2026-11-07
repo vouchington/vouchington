@@ -53,9 +53,9 @@ export function useNewsCommunityDiscussionAction({
   async function loadCommunities() {
     if (fixedCommunity || hasLoadedCommunities || isLoadingCommunities) return
     setIsLoadingCommunities(true)
-    let hasAvailableCommunities = communities.length > 0
+    const availability = { hasAny: communities.length > 0 }
     const showAvailableCommunities = (available: NewsCommunityDiscussionTarget[]) => {
-      hasAvailableCommunities = available.length > 0
+      availability.hasAny = available.length > 0
       setCommunities(available)
       setCommunitySlug(current =>
         current && available.some(community => community.slug === current)
@@ -70,7 +70,7 @@ export function useNewsCommunityDiscussionAction({
       setHasLoadedCommunities(true)
     } catch {
       onError(null, {
-        fallback: hasAvailableCommunities
+        fallback: availability.hasAny
           ? 'Could not load every community.'
           : 'Could not load your communities.',
         skipSentry: true,

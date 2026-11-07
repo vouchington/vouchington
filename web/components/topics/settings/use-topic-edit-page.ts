@@ -46,12 +46,12 @@ export function useTopicEditPage(
     if (id !== initialIdRef.current) hasLeftInitialIdRef.current = true
     if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return
     if (!isValidTopicType) return
-    let active = true
+    const lifetime = new AbortController()
     void loadTopicEditState(id).then(nextState => {
-      if (active) dispatch(nextState)
+      if (!lifetime.signal.aborted) dispatch(nextState)
     })
     return () => {
-      active = false
+      lifetime.abort()
     }
   }, [id, isValidTopicType])
 

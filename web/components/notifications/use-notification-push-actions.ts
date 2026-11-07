@@ -67,12 +67,12 @@ export function useNotificationPushActions(
 
   useEffect(() => {
     let cancelled = false
-    let retryTimer: number | undefined
+    const retry: { timer?: number } = {}
 
     function scheduleRetry() {
-      if (cancelled || retryTimer !== undefined) return
-      retryTimer = window.setTimeout(() => {
-        retryTimer = undefined
+      if (cancelled || retry.timer !== undefined) return
+      retry.timer = window.setTimeout(() => {
+        retry.timer = undefined
         void bootstrap()
       }, BOOTSTRAP_RETRY_DELAY_MS)
     }
@@ -104,7 +104,7 @@ export function useNotificationPushActions(
     void bootstrap()
     return () => {
       cancelled = true
-      if (retryTimer !== undefined) window.clearTimeout(retryTimer)
+      if (retry.timer !== undefined) window.clearTimeout(retry.timer)
     }
   }, [subscriptionIdentity, setCurrentBinding])
 

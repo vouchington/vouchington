@@ -27,7 +27,7 @@ export function usePendingAiRefresh(
   }, [refresh, onTimeout])
   useEffect(() => {
     const visible = new Set(pendingKeys)
-    let active = true
+    const lifetime = new AbortController()
     for (const key of deadlines.current.keys()) {
       if (!visible.has(key)) deadlines.current.delete(key)
     }
@@ -38,7 +38,7 @@ export function usePendingAiRefresh(
       if (!visible.has(key)) finalRefreshRequested.current.delete(key)
     }
     queueMicrotask(() => {
-      if (!active) return
+      if (lifetime.signal.aborted) return
       setExpiredVisible(current => {
         const next = new Set([...current].filter(key => visible.has(key)))
         return next.size === current.size ? current : next
@@ -50,15 +50,15 @@ export function usePendingAiRefresh(
     }
     if (pendingKeys.length === 0)
       return () => {
-        active = false
+        lifetime.abort()
       }
-    let inFlight = false
+    const flight = { inFlight: false }
     const interval = window.setInterval(() => {
       const now = Date.now()
       const newlyExpired = pendingKeys.filter(
         key => now >= deadlines.current.get(key)! && !expired.current.has(key),
       )
-      if (inFlight) return
+      if (flight.inFlight) return
       const needsFinalRefresh = newlyExpired.some(key => !finalRefreshRequested.current.has(key))
       if (needsFinalRefresh) {
         for (const key of newlyExpired) finalRefreshRequested.current.add(key)
@@ -71,18 +71,18 @@ export function usePendingAiRefresh(
         window.clearInterval(interval)
         return
       }
-      inFlight = true
+      flight.inFlight = true
       void Promise.resolve()
         .then(() => latestRefresh.current())
         .catch((err: unknown) => {
           console.error('Could not refresh pending AI result', err)
         })
         .finally(() => {
-          inFlight = false
+          flight.inFlight = false
         })
     }, 5000)
     return () => {
-      active = false
+      lifetime.abort()
       window.clearInterval(interval)
     }
   }, [pendingKeys])
