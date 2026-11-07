@@ -702,8 +702,8 @@
       # FIX (P2): per-alias-token UPDATE inside the canonical lineage lock; batch the markFetched updates. Remove this entry with the fix.
       - { file: backend/services/memberships/google/lineage.mts, callee: 'query', line: 163 }
       # FIX (P2): per-membership source/activation updates inside the user lock; batch per page with unnest. Remove these entries with the fix.
-      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 61 }
-      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 67 }
+      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 63 }
+      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 70 }
       # FIX (P2): per-root fn_ensure_retained_identity loop (batch with unnest) and an uncapped while(true) retry loop (add a constant retry cap). Remove these entries with the fix.
       - {
           file: backend/services/users/record-deleted-relation-impacts.mts,
