@@ -8,6 +8,7 @@ import { assessUrls } from '@services/urls/upsert'
 import { persistAssessedUrls } from '@services/urls/upsert-persist'
 import { getCanonicalUrlsByIdBatch } from '@services/urls/get-canonical'
 import { getUrlByAny } from '@services/urls/get'
+import { findUrlIdByIdentity } from '@services/urls/url-identities'
 import { lockCanonicalUrlRewrites } from '@services/urls/canonical-lock'
 import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
@@ -29,11 +30,13 @@ export async function assessPostLinkEdit(post: Post, changes: UpdatePostChanges)
     return { changes: { ...changes, url_id: destination.id }, urls }
   }
   const sourceHref = normalizeUrlForUrlTable(changes.url!).toString()
+  // A new variant of a known page is inserted pointing at that page's canonical destination.
   const source = await getUrlByAny(sourceHref, { readOnly: false })
-  const [destination] = source
-    ? await getCanonicalUrlsByIdBatch([source.id], { readOnly: false })
+  const sourceId = source?.id ?? (await findUrlIdByIdentity(sourceHref, { readOnly: false }))
+  const [destination] = sourceId
+    ? await getCanonicalUrlsByIdBatch([sourceId], { readOnly: false })
     : []
-  assert(!source || destination, 422, 'URL destination changed; retry the edit')
+  assert(!sourceId || destination, 422, 'URL destination changed; retry the edit')
   const hrefs = destination ? [sourceHref, destination.url] : [sourceHref]
   const urls = await assessUrls(hrefs, { preserveHttp: true })
   assert(urls.length === new Set(hrefs).size, 422, 'URL is blocked or not allowed')

@@ -36,7 +36,7 @@
     "@ts-shared/money": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/pagination": "^0.0.4",
-    "@vouchington/utils": "^0.11.1",
+    "@vouchington/utils": "^0.12.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2"
