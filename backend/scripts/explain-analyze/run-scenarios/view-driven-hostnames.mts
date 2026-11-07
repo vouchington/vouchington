@@ -9,7 +9,7 @@ const hostnameTextPageLimit = 25
 export async function runViewDrivenHostnameScenarios(): Promise<void> {
   registerScenarioContract('search-hostnames-trust', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_url_hostnames__votes_score_sort__id'] },
+      { kind: 'usesIndexes', indexes: ['idx_url_hostnames__public_votes_score_sort__id'] },
       { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 100 },
     ],
   })
