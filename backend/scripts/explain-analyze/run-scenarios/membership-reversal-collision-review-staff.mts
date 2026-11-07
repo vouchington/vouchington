@@ -104,10 +104,19 @@ export async function runMembershipReversalCollisionReviewStaffScenario(input: {
         kind: 'usesIndexes',
         indexes: [
           REVIEW_INDEX,
-          'idx_membership_ineligible_purchase_reversal_cases__invoice',
           'idx_membership_provider_lineages__id_context',
           'idx_membership_provider_products__provider_identity',
         ],
+      },
+      // The explain custom plan probes existing cases on originating_invoice_id.
+      // The unique lineage/invoice index is the other bounded probe.
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'idx_membership_ineligible_purchase_reversal_cases__invoice',
+          'idx_membership_ineligible_purchase_reversal_cases__invoice_id',
+        ],
+        anyOf: true,
       },
     ],
     seededRows: {
