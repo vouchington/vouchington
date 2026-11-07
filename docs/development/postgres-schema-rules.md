@@ -153,8 +153,10 @@ recovery follow [One current contract](../../AGENTS.md).
 - Explicit column lists for tables (no `SELECT *`, `alias.*`, `RETURNING *`); a view may be read
   with `*` because its column list is the reviewed contract. No `OFFSET`. A `MATERIALIZED` CTE is
   an optimizer fence: outer filters and ordering cannot reach its indexes, so when they reject most
-  of its rows, or sort or aggregate them, the query reads every row up to the CTE's own LIMIT. Use it
-  only when it holds the final LIMIT or a small viewer-scoped set.
+  of its rows, or sort or aggregate them, the query reads every row up to the CTE's own LIMIT. A
+  `MATERIALIZED` CTE or subquery must always be bounded: allowed only when it holds the final LIMIT,
+  or when it is a viewer-scoped set (follows, mutes, blocks, memberships) capped by a per-type write
+  limit with a hard maximum. A set with no such cap is a candidate pool and is forbidden. Unenforced.
 - **A list or feed read is one walk over the listed entity** or, for membership-ordered lists
   (saved posts, lists), over the membership index joined to the targets, with eligibility in WHERE. Filters go in WHERE and are served by
   an index. Use, for example, `ORDER BY key DESC, id DESC LIMIT page+1` with a `(key, id) < ($1, $2)` keyset
@@ -201,6 +203,34 @@ A UUIDv7 key already encodes creation time. A separate `created_at DEFAULT now()
 independently drifting source of the same fact, and an index sorting by it duplicates the ordering
 `id` provides. Define `created_at` as `GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL`
 (`STORED` only when indexed), and order and paginate by `id`.
+
+## Stored counters stay exact
+
+A denormalized count column is updated in the same transaction as the rows it counts, or by a row
+trigger when `ON DELETE CASCADE` or hard deletes can remove those rows, because a cascade bypasses
+application code. It carries `CHECK (count >= 0)` and has a test proving a purge keeps it exact. No
+periodic recount repairs drift: a repair job hides the write path that lost the update and leaves
+readers wrong until it runs. Unenforced.
+
+## No per-row queries while holding locks
+
+Inside a transaction that holds row or advisory locks, a check over many rows is one set-based
+statement (for example `= ANY($1)` or a `VALUES`/`unnest` join), not a loop of awaited queries. A
+loop multiplies lock hold time by the row count, so every writer waiting on those locks queues behind
+it. See [lock scope](postgresql/reference-transactions.md#lock-scope) for which rows may be locked and
+[set-based IO](../../.agents/skills/postgres-node-performance-tuning/SKILL.md) for batching.
+Unenforced.
+
+## Materialized views: bounded refresh, indexed read
+
+A materialized view's defining query is limited by an indexed id range or time window (for example
+`fn_min_uuidv7(...)` on a UUIDv7 key), never a full-history scan of a growing table, so refresh cost
+tracks the window instead of table history. The view has a unique index on its key and a ranking
+index matching its read order, and reads are one keyset walk on that ranking index (see
+[R6](#r6--query-shape)). The defining query has an
+[explain-analyze scenario](postgresql/explain-analyze/README.md), which explains it from
+`pg_get_viewdef` because `REFRESH` cannot be explained. View composition rules live in
+[views](postgresql/reference-views.md). Unenforced.
 
 ## Related
 
