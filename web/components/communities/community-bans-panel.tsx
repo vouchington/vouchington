@@ -10,7 +10,7 @@ import { liftBan, liftAllBans, fetchCommunityBan, fetchCommunityBans } from '@/l
 import { LiftAllBansDialog } from './lift-all-bans-dialog'
 import { ApiError } from '@vouchington/api-client'
 import type { Community, CommunityBan, CommunityBansResponseBody } from '@/types/api-responses'
-import { isBanActive } from './community-bans-panel-state'
+import { isBanActive, uniqueBans } from './community-bans-panel-state'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getUserLabel } from '@/lib/users/user-helpers'
 interface Props {
@@ -195,7 +195,4 @@ export function CommunityBansPanel({ community, initialData }: Props) {
       </CardContent>
     </Card>
   )
-}
-function uniqueBans(bans: CommunityBansResponseBody['community_bans'][string][]) {
-  return [...new Map(bans.map(ban => [ban.id, ban])).values()]
 }
