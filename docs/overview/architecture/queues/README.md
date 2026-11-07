@@ -371,6 +371,9 @@ Ambiguous invoices become durable staff-review records while valid sibling cases
 reconcile independently. Discovery then completes; staff review does not poll Stripe. Transient
 provider failures retain retryable work. Reviews preserve the retained source, binding, invoice
 identity and observed ambiguity until explicit staff disposition; they do not authorize a refund.
+Disposition deletes that review. When staff supply a positive amount, the same transaction records
+the reversal case from the stored lineage price and currency, unless that lineage and invoice
+already have a case. The case insert precedes the review delete, the same order as discovery.
 
 | Failure mode                     | Detectable state                                                 | Recovery and idempotency                                                   | Evidence                                                                                  |
 | -------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |

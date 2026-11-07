@@ -668,6 +668,139 @@
       "required": ["analytics", "landing_page"],
       "type": "object"
     },
+    "GET:/api/v1/admin/membership-stripe-purchase-collision-reviews": {
+      "additionalProperties": false,
+      "properties": {
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
+        "results": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "collision_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "created_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "invoice_line_count": {
+                "type": "integer"
+              },
+              "mapped_membership_line_count": {
+                "type": "integer"
+              },
+              "membership_lineage_binding_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "membership_provider_lineage_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "membership_source_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "originating_invoice_id": {
+                "type": "string"
+              },
+              "winning_plan": {
+                "enum": ["plus", "pro"],
+                "type": "string"
+              },
+              "winning_source_kind": {
+                "enum": ["direct", "family"],
+                "type": "string"
+              }
+            },
+            "required": [
+              "collision_at",
+              "created_at",
+              "id",
+              "invoice_line_count",
+              "mapped_membership_line_count",
+              "membership_lineage_binding_id",
+              "membership_provider_lineage_id",
+              "membership_source_id",
+              "originating_invoice_id",
+              "winning_plan",
+              "winning_source_kind"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["page_info", "results"],
+      "type": "object"
+    },
+    "GET:/api/v1/admin/membership-stripe-purchase-collision-reviews/:id": {
+      "additionalProperties": false,
+      "properties": {
+        "collision_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "invoice_line_count": {
+          "type": "integer"
+        },
+        "mapped_membership_line_count": {
+          "type": "integer"
+        },
+        "membership_lineage_binding_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "membership_provider_lineage_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "membership_source_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "originating_invoice_id": {
+          "type": "string"
+        },
+        "winning_plan": {
+          "enum": ["plus", "pro"],
+          "type": "string"
+        },
+        "winning_source_kind": {
+          "enum": ["direct", "family"],
+          "type": "string"
+        }
+      },
+      "required": [
+        "collision_at",
+        "created_at",
+        "id",
+        "invoice_line_count",
+        "mapped_membership_line_count",
+        "membership_lineage_binding_id",
+        "membership_provider_lineage_id",
+        "membership_source_id",
+        "originating_invoice_id",
+        "winning_plan",
+        "winning_source_kind"
+      ],
+      "type": "object"
+    },
     "GET:/api/v1/admin/modlog": {
       "additionalProperties": false,
       "properties": {
@@ -7316,6 +7449,19 @@
         }
       },
       "required": ["flag"],
+      "type": "object"
+    },
+    "POST:/api/v1/admin/membership-stripe-purchase-collision-reviews/:id/disposition": {
+      "additionalProperties": false,
+      "properties": {
+        "disposed": {
+          "const": true
+        },
+        "reversal_case_created": {
+          "type": "boolean"
+        }
+      },
+      "required": ["disposed", "reversal_case_created"],
       "type": "object"
     },
     "POST:/api/v1/admin/topic-claims/:id/rejection": {
@@ -42288,6 +42434,33 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/admin/membership-stripe-purchase-collision-reviews": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/admin/membership-stripe-purchase-collision-reviews/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/admin/moderation-analytics": {
       "query": {
         "properties": {
@@ -48233,6 +48406,46 @@
     },
     "POST:/api/v1/admin/mcp": {
       "body": {}
+    },
+    "POST:/api/v1/admin/membership-stripe-purchase-collision-reviews/:id/disposition": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "amount_minor_units": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "currency_code": {
+            "maxLength": 3,
+            "minLength": 3,
+            "type": "string"
+          },
+          "period_ends_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "period_started_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "stripe_price_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
     },
     "POST:/api/v1/admin/topic-claims/:id/rejection": {
       "body": {
