@@ -228,7 +228,7 @@ jobs:
 
   backend:
     name: backend
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs:
       [
         changes,

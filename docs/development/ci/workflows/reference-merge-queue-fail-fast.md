@@ -1,8 +1,8 @@
 # Merge Queue Fail Fast
 
-[Merge Queue Fail Fast](../../../../.github/workflows/merge-queue-fail-fast.yml) cancels a
-merge-queue entry's area runs as soon as a job that feeds a required gate fails. Pull requests keep
-running every suite to the end.
+[Merge Queue Fail Fast](../../../../.github/workflows/merge-queue-fail-fast.yml) is a scheduled sweep
+that cancels a merge-queue entry's area runs once a job that feeds a required gate has failed.
+Pull requests keep running every suite to the end.
 
 ## Why only the merge queue
 
@@ -21,31 +21,38 @@ nobody else waits for it. In the merge queue the trade-off reverses:
 
 ## How it works
 
-Cancelling a workflow run gives each gate job that has not run the conclusion `cancelled`, and the
-queue treats a cancelled required check as a failure, so the entry is ejected within one poll of the
-first failure. The failed job keeps its `failure` conclusion, so
-[ejection triage](../../../prompts/automation/merge-queue-ejection.md) and
-[Cancel Dequeued Merge Group Runs](reference-merge-queue-run-cancellation.md#dequeued-pull-requests)
-still see the evidence; only the run-level conclusion becomes `cancelled`.
+The sweep lists active merge-group runs, reads each entry's failed jobs, and cancels the area runs
+of an entry whose failed job feeds a gate. Jobs no gate waits on (the coverage upload and the
+informational credentialed suites) never eject an entry, so the sweep ignores them. Its workflow
+test keeps the watched workflows and the ignored jobs equal to what the required gates wait on.
 
-A failure in a job no gate waits on (the coverage upload and the informational credentialed suites)
-does not eject an entry today, so the watcher ignores those jobs. Its workflow test keeps the
-watched workflows and the ignored jobs equal to what the required gates actually wait on.
+On a merge group, each area gate also runs after its run is cancelled. It sees the failed job
+among its needs and fails, so:
 
-The watcher is never a required check, so its own failure cannot eject an entry. Cancel Replaced and
-Cancel Dequeued Merge Group Runs already cancel a superseded entry's watcher with its other runs.
+- the entry's required check fails on the real failed job, never with `cancelled`;
+- the queue ejects the entry the same way as any other CI failure, so
+  [Merge Queue Ejection](../../../prompts/automation/merge-queue-ejection.md) still dispatches its
+  triage session;
+- the failed job keeps its `failure` conclusion, so triage and
+  [Cancel Dequeued Merge Group Runs](reference-merge-queue-run-cancellation.md#dequeued-pull-requests)
+  still see the evidence.
 
-## Policy exception and rejected alternatives
+On pull requests and other events the gates keep `!cancelled()`, so a superseded pull-request run
+that concurrency cancels reports nothing.
 
-The canonical Actions checklist forbids polling workflow state and asks for event-driven phases.
-Actions offers no event for this. A job cannot start when a sibling job fails, and the Checks events
-of Actions-created runs do not trigger workflows. The watcher is a scoped exception: one small
-request per poll for the whole entry, run on the smallest runner in sequential matrix legs so each
-job stays within the ubuntu-slim platform cap and the repository's job timeout budget.
+The sweep is never a required check, so its own failure cannot eject an entry, and it waits inside no
+job. Its savings depend on GitHub's scheduler, which can start scheduled runs late under load; a late
+sweep is never slower than letting the slowest suite finish.
 
-- **A cancel step in every job** (`if: failure()` on merge groups) is event-driven, but every job in
-  the merge-group graph would need `actions: write`, including on pull-request runs, because job
-  permissions cannot depend on the event. Every new job would also have to remember the step.
+## Rejected alternatives
+
+- **A watcher job per entry** that polls until the entry's runs finish holds a runner for the whole
+  merge-group run only to wait, which the canonical Actions checklist rejects. Actions has no event
+  for a sibling job failing, and the Checks events of Actions-created runs do not trigger
+  workflows, so a schedule is the event.
+- **A cancel step in every job** (`if: failure()` on merge groups) needs `actions: write` on every
+  job in the merge-group graph, including on pull-request runs, because job permissions cannot
+  depend on the event. Every new job would also have to remember the step.
 - **Making each suite a required check** would let the queue eject on the first failure natively,
   but it replaces the stable area gates with a required-check list that changes with every job.
 - **Synthesizing a failed required check** through the Checks API is forbidden by the canonical

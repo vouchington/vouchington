@@ -4,6 +4,7 @@ import { parse } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 type Job = {
+  if?: string
   name?: string
   needs?: string | string[]
   permissions?: Record<string, string>
@@ -14,9 +15,9 @@ type Workflow = { name?: string; on?: Record<string, unknown>; jobs: Record<stri
 type Policy = { rule?: string; options?: { requiredJobs?: string[] } }
 
 const readWorkflow = (path: string): Workflow => parse(readFileSync(path, 'utf8')) as Workflow
-const watcher = readWorkflow('.github/workflows/merge-queue-fail-fast.yml')
-const watch = watcher.jobs.watch
-const env = watch?.steps?.[0]?.env ?? {}
+const sweeper = readWorkflow('.github/workflows/merge-queue-fail-fast.yml')
+const sweep = sweeper.jobs.sweep
+const env = sweep?.steps?.[0]?.env ?? {}
 
 // The required area gates, as `<workflow path>#<gate job>`.
 const requiredGates =
@@ -33,8 +34,20 @@ const areas = requiredGates.map(gate => {
 })
 
 describe('merge-queue fail fast workflow', () => {
-  it('runs only for merge-queue entries, so pull requests keep every failure', () => {
-    expect(watcher.on).toEqual({ merge_group: { types: ['checks_requested'] } })
+  it('sweeps on a schedule instead of waiting inside a job', () => {
+    expect(Object.keys(sweeper.on ?? {}).toSorted()).toEqual(['schedule', 'workflow_dispatch'])
+  })
+
+  it('lets every required gate fail on a cancelled merge group, and only there', () => {
+    expect(
+      requiredGates.filter(gate => {
+        const [path = '', job = ''] = gate.split('#')
+        return (
+          readWorkflow(path).jobs[job]?.if !==
+          "${{ !cancelled() || github.event_name == 'merge_group' }}"
+        )
+      }),
+    ).toEqual([])
   })
 
   it('watches exactly the workflows that run a required gate on merge_group', () => {
@@ -51,7 +64,7 @@ describe('merge-queue fail fast workflow', () => {
     expect(new Set(JSON.parse(env.NON_GATING_JOBS ?? '[]'))).toEqual(
       new Set(areas.flatMap(({ nonGating }) => nonGating)),
     )
-    // The watcher matches check-run names by job id, which a display `name:` would replace.
+    // The sweep matches check-run names by job id, which a display `name:` would replace.
     expect(
       areas.flatMap(({ path, workflow, nonGating }) =>
         nonGating.filter(job => workflow.jobs[job]?.name).map(job => `${path}#${job}`),
@@ -60,7 +73,7 @@ describe('merge-queue fail fast workflow', () => {
   })
 
   it('cancels runs with no checkout and only the permissions it uses', () => {
-    expect(watch?.permissions).toEqual({ actions: 'write', checks: 'read' })
-    expect(watch?.steps?.some(step => step.uses?.startsWith('actions/checkout@'))).toBe(false)
+    expect(sweep?.permissions).toEqual({ actions: 'write', checks: 'read' })
+    expect(sweep?.steps?.some(step => step.uses?.startsWith('actions/checkout@'))).toBe(false)
   })
 })

@@ -2,60 +2,51 @@ name: Merge Queue Fail Fast
 
 # A merge-queue entry is ejected only when a required area gate (`backend`, `web`, ...) reports, and
 # each gate `needs` every suite in its area, so one early failure is reported only after the slowest
-# suite finishes. Every entry behind it waits, then is rebuilt. This workflow watches one entry's
-# area runs and cancels them as soon as a job that feeds a gate fails. Each cancelled gate then
-# reports `cancelled`, which the queue treats as a failure, so the ejection happens within a minute.
-# The failed job keeps its `failure` conclusion for ejection triage. Pull requests are not affected:
-# their authors want every failure from one run.
+# suite finishes. Every entry behind it waits, then is rebuilt. This scheduled sweep finds active
+# merge-group entries whose gate-feeding job has already failed and cancels that entry's area runs.
+# On a merge group each area gate still runs after its run is cancelled, so it fails on the real
+# failed job instead of waiting for the slowest suite, and the queue ejects the entry the usual way.
+# Pull requests are not affected: their authors want every failure from one run.
 #
-# Actions cannot start a job when a sibling job fails, and the Checks events of Actions-created
-# runs do not trigger workflows, so the watch polls with one GraphQL request a minute. Each matrix
-# leg watches for at most 8 minutes, inside the ubuntu-slim platform cap, and the legs run in turn.
-# A leg exits at once when the entry has finished or was already cancelled.
-#
-# This job is never a required check, so a failure cannot eject an entry. It checks out nothing and
-# runs no repository code. Replaced and dequeued entries' watch runs are cancelled by the Cancel
-# Replaced and Cancel Dequeued Merge Group Runs workflows. See
+# Each sweep is one short pass: one runs listing plus one GraphQL query per active entry. Nothing
+# waits inside a job. It is never a required check, so a failure cannot eject an entry. It checks
+# out nothing and runs no repository code. See
 # docs/development/ci/workflows/reference-merge-queue-fail-fast.md.
 
 on:
-  merge_group:
-    types: [checks_requested]
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: merge-queue-fail-fast
+  cancel-in-progress: false
 
 permissions: {}
 
 jobs:
-  watch:
-    name: Cancel failed merge group
+  sweep:
+    name: Cancel failed merge groups
     runs-on: ubuntu-slim
-    timeout-minutes: 10
+    timeout-minutes: 5
     permissions:
       actions: write
       checks: read
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        leg: [1, 2, 3, 4, 5, 6]
     steps:
-      - name: Cancel the entry's area runs after a gating job fails
-        timeout-minutes: 9
+      - name: Cancel area runs of entries with a failed gating job
+        timeout-minutes: 4
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
-          LEG: ${{ matrix.leg }}
-          LAST_LEG: '6'
           # Workflows that own a required area gate. merge-queue-fail-fast.test.mts keeps this list
           # equal to the workflows that run a required gate on merge_group.
           AREA_WORKFLOWS: '["Static","Backend","Web","Cloudflare Worker","Lambdas","Tooling","Gitleaks"]'
           # Jobs no gate waits on; their failure must not eject an entry. A reusable caller's jobs
           # report as `<caller> / <callee job>`. The same test keeps this list exact.
           NON_GATING_JOBS: '["codecov","test-backend-credentialed","test-playwright-credentialed"]'
-          POLL_SECONDS: '60'
-          WATCH_SECONDS: '480'
         run: |
           set -euo pipefail
-          # GitHub Actions is app 15368. Only failed, timed-out, and unstarted jobs are returned.
+          # GraphQL variables, not shell expansions.
+          # shellcheck disable=SC2016
           query='query($owner: String!, $repo: String!, $sha: GitObjectID!) {
             repository(owner: $owner, name: $repo) {
               object(oid: $sha) {
@@ -73,76 +64,74 @@ jobs:
               }
             }
           }'
-          area_count=$(jq 'length' <<< "$AREA_WORKFLOWS")
-          deadline=$((SECONDS + $WATCH_SECONDS))
+          # GitHub Actions is app 15368. The query returns only failed, timed-out, and unstarted jobs.
 
-          while :; do
+          if ! shas=$(gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/runs?event=merge_group&status=in_progress&per_page=100" \
+            --jq '.workflow_runs[].head_sha' 2>"$RUNNER_TEMP/list-error.txt"); then
+            echo "::warning::Could not list active merge-group runs: $(tr '\n' ' ' < "$RUNNER_TEMP/list-error.txt")"
+            exit 0
+          fi
+
+          rows=
+          while read -r sha; do
+            [[ -n "$sha" ]] || continue
             if ! response=$(gh api graphql -f query="$query" -f owner="${GITHUB_REPOSITORY%/*}" \
-              -f repo="${GITHUB_REPOSITORY#*/}" -f sha="$HEAD_SHA" 2>"$RUNNER_TEMP/graphql-error.txt"); then
-              echo "::warning::Could not read check suites: $(tr '\n' ' ' < "$RUNNER_TEMP/graphql-error.txt")"
-            else
-              state=$(jq -c --argjson areas "$AREA_WORKFLOWS" --argjson ignored "$NON_GATING_JOBS" '
-                [.data.repository.object.checkSuites.nodes[]?
-                  | select(.workflowRun.event? == "merge_group")
-                  | select(.workflowRun.workflow.name as $name | $areas | index($name))
-                  | {
-                      run: .workflowRun.databaseId,
-                      workflow: .workflowRun.workflow.name,
-                      status,
-                      failed: [.checkRuns.nodes[].name
-                        | select(. as $job | $ignored
-                          | all(. as $prefix | $job != $prefix and ($job | startswith($prefix + " / ") | not)))]
-                    }]
+              -f repo="${GITHUB_REPOSITORY#*/}" -f sha="$sha" 2>"$RUNNER_TEMP/graphql-error.txt"); then
+              echo "::warning::Could not read check suites for $sha: $(tr '\n' ' ' < "$RUNNER_TEMP/graphql-error.txt")"
+              continue
+            fi
+            state=$(jq -c --argjson areas "$AREA_WORKFLOWS" --argjson ignored "$NON_GATING_JOBS" '
+              [.data.repository.object.checkSuites.nodes[]?
+                | select(.workflowRun.event? == "merge_group")
+                | select(.workflowRun.workflow.name as $name | $areas | index($name))
                 | {
-                    failed: [.[] | select(.failed != []) | {workflow, job: .failed[0]}],
-                    active: [.[] | select(.status != "COMPLETED") | {run, workflow}],
-                    seen: ([.[].workflow] | unique | length)
-                  }' <<< "$response")
-
-              if [[ $(jq '.failed | length' <<< "$state") -gt 0 ]]; then
-                {
-                  echo "### Merge-group fail fast"
-                  echo
-                  echo "Gating job failures:"
-                  jq -r '.failed[] | "- \(.workflow): `\(.job)`"' <<< "$state"
-                  echo
-                  echo "| Workflow | Run | Result |"
-                  echo "| --- | --- | --- |"
-                } >> "$GITHUB_STEP_SUMMARY"
-                # A 409 means the run finished first. Gateway errors are retried up to three times.
-                while IFS=$'\t' read -r id workflow; do
-                  for attempt in 1 2 3; do
-                    if error=$(gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/cancel" 2>&1 >/dev/null); then
-                      result=cancelled
-                      break
-                    elif [[ "$error" == *"HTTP 409"* ]]; then
-                      result='already completed'
-                      break
-                    elif [[ "$attempt" -lt 3 && ( "$error" == *"HTTP 502"* || "$error" == *"HTTP 503"* || "$error" == *"HTTP 504"* ) ]]; then
-                      sleep 1
-                    else
-                      result=failed
-                      echo "::warning::Could not cancel $workflow run $id: $error"
-                      break
-                    fi
-                  done
-                  echo "$result: $workflow run $id"
-                  echo "| $workflow | [$id]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$id) | $result |" >> "$GITHUB_STEP_SUMMARY"
-                done < <(jq -r '.active[] | [.run, .workflow] | @tsv' <<< "$state")
-                exit 0
-              fi
-
-              if [[ $(jq '.seen' <<< "$state") -eq "$area_count" && $(jq '.active | length' <<< "$state") -eq 0 ]]; then
-                echo "Every area run for $HEAD_SHA has finished."
-                exit 0
-              fi
+                    run: .workflowRun.databaseId,
+                    workflow: .workflowRun.workflow.name,
+                    status,
+                    failed: [.checkRuns.nodes[].name
+                      | select(. as $job | $ignored
+                        | all(. as $prefix | $job != $prefix and ($job | startswith($prefix + " / ") | not)))]
+                  }]
+              | {
+                  failed: [.[] | select(.failed != []) | "\(.workflow): `\(.failed[0])`"],
+                  active: [.[] | select(.status != "COMPLETED") | {run, workflow}]
+                }' <<< "$response")
+            if [[ $(jq '.failed | length' <<< "$state") -eq 0 ]]; then
+              continue
             fi
+            cause=$(jq -r '.failed | join(", ")' <<< "$state")
 
-            if (( SECONDS >= deadline )); then
-              if [[ "$LEG" == "$LAST_LEG" ]]; then
-                echo "::warning::Stopped watching $HEAD_SHA before its area runs finished."
-              fi
-              exit 0
+            # A 409 means the run finished first. Gateway errors are retried up to three times.
+            while IFS=$'\t' read -r id workflow; do
+              for attempt in 1 2 3; do
+                if error=$(gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/cancel" 2>&1 >/dev/null); then
+                  result=cancelled
+                  break
+                elif [[ "$error" == *"HTTP 409"* ]]; then
+                  result='already completed'
+                  break
+                elif [[ "$attempt" -lt 3 && ( "$error" == *"HTTP 502"* || "$error" == *"HTTP 503"* || "$error" == *"HTTP 504"* ) ]]; then
+                  sleep 1
+                else
+                  result=failed
+                  echo "::warning::Could not cancel $workflow run $id: $error"
+                  break
+                fi
+              done
+              echo "$result: $workflow run $id ($sha) after $cause"
+              rows="$rows| \`${sha:0:12}\` | $cause | $workflow | [$id]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$id) | $result |"$'\n'
+            done < <(jq -r '.active[] | [.run, .workflow] | @tsv' <<< "$state")
+          done < <(sort -u <<< "$shas")
+
+          {
+            echo "### Merge-group fail fast"
+            echo
+            if [[ -z "$rows" ]]; then
+              echo "No active merge-group entry had a failed gating job."
+            else
+              echo "| Group | Failed gating job | Workflow | Run | Result |"
+              echo "| --- | --- | --- | --- | --- |"
+              printf '%s' "$rows"
             fi
-            sleep "$POLL_SECONDS"
-          done
+          } >> "$GITHUB_STEP_SUMMARY"

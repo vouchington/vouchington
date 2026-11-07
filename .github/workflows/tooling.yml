@@ -101,7 +101,7 @@ jobs:
 
   tooling:
     name: tooling
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs:
       [changes, test-ts-shared, test-tooling, test-portability, initialize-smoke-test, coverage]
     runs-on: ubuntu-latest

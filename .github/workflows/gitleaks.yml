@@ -23,7 +23,7 @@ jobs:
   # `<caller job> / <callee job>`.
   gitleaks:
     needs: [gitleaks-scan]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     runs-on: ubuntu-slim
     timeout-minutes: 2
     steps:

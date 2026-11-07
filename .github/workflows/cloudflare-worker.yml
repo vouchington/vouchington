@@ -75,7 +75,7 @@ jobs:
 
   cloudflare-worker:
     name: cloudflare-worker
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs: [changes, static-cloudflare-worker, test-cloudflare-worker, coverage]
     runs-on: ubuntu-latest
     timeout-minutes: 5

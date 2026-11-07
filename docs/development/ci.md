@@ -173,8 +173,8 @@ immediately before writing. The contract is in
   changes an ejected PR. Replaced or dequeued queue entries leave runs that nothing else cancels, so
   two cancel workflows handle them; see
   [merge queue run cancellation](ci/workflows/reference-merge-queue-run-cancellation.md) for why
-  `concurrency:` cannot. A queue entry's area runs are cancelled as soon as a gate-feeding job fails,
-  while pull requests run every suite to the end; see
+  `concurrency:` cannot. A scheduled sweep cancels a queue entry's area runs once a gate-feeding job
+  has failed, and the gate then fails on that job, while pull requests run every suite to the end; see
   [merge queue fail fast](ci/workflows/reference-merge-queue-fail-fast.md).
 - **Plan completion** ([`plan-completion.yml`](../../.github/workflows/plan-completion.yml)) is an
   advisory snapshot after every `main` push. It updates only its own marker comment and never edits

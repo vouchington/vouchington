@@ -29,7 +29,7 @@ jobs:
 
   static:
     name: static
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs: [static-code-analysis]
     runs-on: ubuntu-latest
     timeout-minutes: 5
