@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { getLandingPageCandidateIds } from '@services/my/landing-pages/candidate-ids'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -9,18 +9,6 @@ const OTHER_POST_COUNT = 2_000
 
 function newerDiscussionId(index: number): string {
   return seedUuidAtTimestamp(postSeedTimestampMs(0) + (index + 1) * 60_000, 810_000 + index)
-}
-
-async function reviewAuthorIndexLeaves(): Promise<string[]> {
-  const { rows } = await read<{ index_name: string }>(
-    `/* landingPageReviewAuthorIndexes */
-     SELECT index_class.relname AS index_name
-     FROM pg_partition_tree('idx_posts__created_by_id__review'::regclass) tree
-     JOIN pg_class index_class ON index_class.oid = tree.relid
-     WHERE tree.isleaf`,
-  )
-  if (rows.length === 0) throw new Error('Landing review plans need the review author index')
-  return rows.map(row => row.index_name)
 }
 
 /** Newer non-review posts by the heavy author must stay outside the review candidate page. */
@@ -39,14 +27,16 @@ export async function runLandingPageReviewTypeScenario(): Promise<void> {
   )
   await write(`/* analyzeExplainLandingOtherPosts */ ANALYZE posts`)
   try {
-    const reviewIndexes = await reviewAuthorIndexLeaves()
     registerScenarioContract('landing-page-candidates-among-other-posts', {
       expectations: [
-        { kind: 'usesIndexes', indexes: reviewIndexes, anyOf: true },
+        { kind: 'usesIndexes', indexes: ['idx_user_landing_page_candidates__user_order'] },
+        { kind: 'maxProcessedRows', relation: 'user_landing_page_candidates', max: 150 },
         { kind: 'maxProcessedRows', relation: 'posts', max: 407 },
       ],
+      seededRows: { user_landing_page_candidates: 12_000 },
       crossPartition: {
-        posts: 'Owned reviews span post-id ranges; the review author index skips other post types.',
+        posts:
+          'Candidate review ids can span post-id ranges; source eligibility is checked by post id.',
       },
     })
     await runAndCapture('landing-page-candidates-among-other-posts', async () => {

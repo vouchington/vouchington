@@ -22,44 +22,25 @@ export async function searchPendingPosts(
   const { limit, cursorId } = resolveCommunityIdCursorPage(options)
 
   const query = sql`/* searchPendingPosts */
-    WITH review_page AS MATERIALIZED (
-      SELECT cpr.post_id, cpr.escalated_at, cpr.escalated_by_id
-      FROM community_post_reviews cpr
-      WHERE cpr.community_id = ${communityId}
-        AND cpr.approved_at IS NULL
-        AND cpr.rejected_at IS NULL
-        AND cpr.unpublished_at IS NULL
+    SELECT hydrated.*, cpr.escalated_at, cpr.escalated_by_id
+    FROM community_post_reviews cpr
+    INNER JOIN posts live_post ON live_post.id = cpr.post_id
+    INNER JOIN view_posts hydrated ON hydrated.id = live_post.id
+    WHERE cpr.community_id = ${communityId}
+      AND cpr.approved_at IS NULL
+      AND cpr.rejected_at IS NULL
+      AND cpr.unpublished_at IS NULL
+      AND live_post.community_id = ${communityId}
+      AND live_post.deleted_at IS NULL
   `
   if (cursorId !== undefined) query.append(sql` AND cpr.post_id > ${cursorId}`)
-  query.append(sql`
-      ORDER BY cpr.post_id ASC
-      LIMIT ${limit + 1}
-    )
-    SELECT hydrated.*, page.escalated_at, page.escalated_by_id, page.post_id AS inspected_post_id,
-      (hydrated.id IS NOT NULL) AS kept
-    FROM review_page page
-    LEFT JOIN posts live_post
-      ON live_post.id = page.post_id
-     AND live_post.community_id = ${communityId}
-     AND live_post.deleted_at IS NULL
-    LEFT JOIN view_posts hydrated ON hydrated.id = live_post.id
-    ORDER BY page.post_id ASC
-  `)
+  query.append(sql` ORDER BY cpr.post_id ASC LIMIT ${limit + 1}`)
 
-  const { rows } = await read<CommunityFeedPost & { kept: boolean; inspected_post_id: string }>(
-    query,
-    options,
-  )
+  const { rows } = await read<CommunityFeedPost>(query, options)
   const hasNextPage = rows.length > limit
-  const inspected = rows.slice(0, limit)
-  const results = inspected.flatMap(row => {
-    if (!row.kept) return []
-    const { kept, inspected_post_id: _inspectedPostId, ...result } = row
-    void kept
-    void _inspectedPostId
-    return [result]
-  })
-  const endId = inspected.at(-1)?.inspected_post_id
+  const results = rows.slice(0, limit)
+  const endId = results.at(-1)?.id
+
   return {
     results,
     page_info: {

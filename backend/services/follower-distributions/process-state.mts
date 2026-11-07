@@ -26,7 +26,6 @@ export async function getDistributionForUpdate(
 
 export type RecipientBatch = {
   ids: string[]
-  inspectedIds: string[]
   hasMore: boolean
 }
 
@@ -36,30 +35,21 @@ export async function getNextRecipientBatch(
   query: TransactionQuery,
 ): Promise<RecipientBatch> {
   if (distribution.audience === 'selected_followers') {
-    const { rows } = await query<{
-      id: string
-      kept: boolean
-    }>(sql`/* getNextRecipientBatch:selected */
-      WITH recipient_page AS MATERIALIZED (
-        SELECT recipients.recipient_user_id AS id
-        FROM follower_distribution_selected_recipients recipients
-        WHERE recipients.distribution_id = ${distribution.id}
-          AND (
-            ${distribution.cursor_recipient_id}::uuid IS NULL
-            OR recipients.recipient_user_id > ${distribution.cursor_recipient_id}
-          )
-        ORDER BY recipients.recipient_user_id
-        LIMIT ${chunkSize}
-      )
-      SELECT page.id, (users.id IS NOT NULL) AS kept
-      FROM recipient_page page
-      LEFT JOIN users ON users.id = page.id AND users.deleted_at IS NULL
-      ORDER BY page.id
-    `)
+    const statement = sql`/* getNextRecipientBatch:selected */
+      SELECT recipients.recipient_user_id AS id
+      FROM follower_distribution_selected_recipients recipients
+      JOIN users ON users.id = recipients.recipient_user_id
+      WHERE recipients.distribution_id = ${distribution.id}
+        AND users.deleted_at IS NULL
+    `
+    if (distribution.cursor_recipient_id) {
+      statement.append(sql` AND recipients.recipient_user_id > ${distribution.cursor_recipient_id}`)
+    }
+    statement.append(sql` ORDER BY recipients.recipient_user_id LIMIT ${chunkSize + 1}`)
+    const { rows } = await query<{ id: string }>(statement)
     return {
-      ids: rows.flatMap(row => (row.kept ? [row.id] : [])),
-      inspectedIds: rows.map(row => row.id),
-      hasMore: rows.length === chunkSize,
+      ids: rows.slice(0, chunkSize).map(row => row.id),
+      hasMore: rows.length > chunkSize,
     }
   }
 
@@ -80,7 +70,7 @@ export async function getNextRecipientBatch(
     LIMIT ${chunkSize}
   `)
   const ids = rows.map(row => row.user_id)
-  return { ids, inspectedIds: ids, hasMore: ids.length === chunkSize }
+  return { ids, hasMore: ids.length === chunkSize }
 }
 
 export async function ensureDeliveryRows(

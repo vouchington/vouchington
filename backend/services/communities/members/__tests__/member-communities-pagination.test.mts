@@ -8,7 +8,7 @@ import { updateUserFields } from '@services/users/update-fields'
 import { countUserMemberCommunities, listUserMemberCommunities } from '../member-communities.mts'
 
 describe('listUserMemberCommunities pagination', () => {
-  it('returns every visible community across short pages when hidden communities sit between them', async () => {
+  it('returns every visible community across full pages when hidden communities sit between them', async () => {
     const target = await createTestUser()
     await updateUserFields(target.id, { community_memberships_visibility: 'everyone' })
 
@@ -42,7 +42,7 @@ describe('listUserMemberCommunities pagination', () => {
     }
 
     expect(seen).toEqual(visibleIds)
-    expect(shortPage).toBe(true)
+    expect(shortPage).toBe(false)
   })
 
   it('keeps list and count visibility aligned for anonymous, user, member, and admin viewers', async () => {

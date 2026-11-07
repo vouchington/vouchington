@@ -312,12 +312,6 @@ WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id
 ON posts (created_by_id, id);
 
--- Landing review candidates page one author's reviews without reading that author's other post types.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__review
-ON posts (created_by_id, id)
-WHERE post_type = 'review';
-
 -- Profile counts prove post_type and deleted_at from the query text. is_anonymous = false is a
 -- range on the second column for a stranger or anonymous viewer.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

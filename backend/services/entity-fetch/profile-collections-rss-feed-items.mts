@@ -3,7 +3,6 @@ import {
   buildPageInfo,
   decodeScopedScoreCursor,
   decodeScopedTimestampUuidCursor,
-  encodeCursor,
 } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import { RECENTLY_VIEWED_ZSET_LIMIT, searchRecentlyViewedPage } from '@services/recently-viewed'
@@ -35,8 +34,7 @@ async function getUserRssFeedItemRelationCollection(
         `Invalid ${listType}-rss-feed-item cursor`,
       )
     : undefined
-  // Media type is applied after the raw relation page, so a page can be short while
-  // has_next_page stays true. The cursor is the last inspected relation, including misses.
+  // Media type and target liveness are applied in the relation walk before LIMIT.
   const relationRows = await getRssFeedItemRelationRows(
     RSS_FEED_ITEM_LIST_TABLES[listType],
     userId,
@@ -45,19 +43,11 @@ async function getUserRssFeedItemRelationCollection(
     { mediaType: filterOptions.mediaType, after: afterCursor },
   )
   const hasNextPage = relationRows.length > pagination.limit
-  const inspected = relationRows.slice(0, pagination.limit)
-  const pageRows = inspected.filter(row => row.kept)
-  const end = inspected.at(-1)
-  const page_info: PageInfo = {
-    has_next_page: hasNextPage,
-    start_cursor: pageRows[0]
-      ? encodeCursor({ timestamp: pageRows[0].created_us, id: pageRows[0].entity_id, scope })
-      : null,
-    end_cursor:
-      hasNextPage && end
-        ? encodeCursor({ timestamp: end.created_us, id: end.entity_id, scope })
-        : null,
-  }
+  const pageRows = relationRows.slice(0, pagination.limit)
+  const page_info = buildPageInfo(pageRows, {
+    hasNextPage,
+    getCursor: row => ({ timestamp: row.created_us, id: row.entity_id, scope }),
+  })
   if (pageRows.length === 0) return { results: [], page_info }
 
   const items = await getRssFeedItemsByIdBatch(

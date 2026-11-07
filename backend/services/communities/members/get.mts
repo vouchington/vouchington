@@ -11,7 +11,6 @@ import type {
   CommunityMemberRosterVisibility,
 } from '../types.mts'
 import { appendUserMembershipPrivacyFilter } from './member-privacy-filter.mts'
-import { appendMembershipPageSource, membershipPageRoles } from './member-roster-page.mts'
 
 export async function getCommunityMember(
   communityId: string,
@@ -47,52 +46,37 @@ export async function searchCommunityMembers(
   assert(Number.isInteger(limit), 422, 'limit must be an integer')
   assert(limit > 0 && limit <= 100, 422, 'limit must be between 1 and 100')
 
-  let cursorName: string | undefined
   let cursorId: string | undefined
 
   if (options?.after) {
     const cursor = decodeUuidCursor(options.after, isNameCursor, 'Invalid cursor format')
-    cursorName = cursor.name
     cursorId = cursor.id
   }
 
   const roster = memberRosterFilter(options)
-  // The id page is index-only, so a low row estimate cannot bitmap the member heap.
-  const afterId =
-    cursorName !== undefined && cursorId !== undefined
-      ? cursorId
-      : '00000000-0000-0000-0000-000000000000'
   const query = sql`/* searchCommunityMembers */
-    WITH membership_page AS MATERIALIZED (
-      SELECT full_member.*
-      FROM (SELECT ${communityId}::uuid AS community_id, ${afterId}::uuid AS after_id LIMIT 1) requested
+    SELECT loaded.*
+    FROM (
+    SELECT cm.id
+    FROM community_members cm
+    INNER JOIN users member_user ON member_user.id = cm.user_id
+    WHERE cm.community_id = ${communityId}
+      AND cm.removed_at IS NULL
+      AND member_user.deleted_at IS NULL
   `
-  appendMembershipPageSource(query, membershipPageRoles(options?.role, roster), limit)
-  query.append(sql`
-      JOIN LATERAL (
-        SELECT loaded.* FROM community_members loaded
-        WHERE loaded.id = page.id
-        LIMIT 1
-      ) full_member ON TRUE
-    )
-    SELECT cm.*, (member_user.id IS NOT NULL) AS kept
-    FROM membership_page cm
-    LEFT JOIN LATERAL (
-      SELECT live_user.id, live_user.community_memberships_visibility
-      FROM users live_user
-      WHERE live_user.id = cm.user_id
-        AND live_user.deleted_at IS NULL
-      LIMIT 1
-    ) member_user ON TRUE
-  `)
+  if (cursorId !== undefined) query.append(sql` AND cm.id > ${cursorId}`)
+  if (options?.role) appendMemberRoleFilter(query, options.role)
+  if (roster === 'moderators') query.append(sql` AND cm.role IN ('owner', 'moderator')`)
   appendMemberRosterVisibilityFilter(query, roster, options?.currentUser ?? null)
-  query.append(sql` ORDER BY cm.id ASC`)
+  query.append(sql` ORDER BY cm.id ASC LIMIT ${limit + 1}
+    ) page
+    INNER JOIN community_members loaded ON loaded.id = page.id
+    ORDER BY page.id ASC`)
 
-  const { rows } = await read<CommunityMember & { kept: boolean }>(query, options)
+  const { rows } = await read<CommunityMember>(query, options)
   const hasNextPage = rows.length > limit
-  const inspected = rows.slice(0, limit)
-  const results = inspected.flatMap(row => (row.kept ? [membershipWithoutKept(row)] : []))
-  const end = inspected.at(-1)
+  const results = rows.slice(0, limit)
+  const end = results.at(-1)
 
   return {
     results,
@@ -104,10 +88,22 @@ export async function searchCommunityMembers(
   }
 }
 
-function membershipWithoutKept(row: CommunityMember & { kept: boolean }): CommunityMember {
-  const { kept, ...member } = row
-  void kept
-  return member
+function appendMemberRoleFilter(query: SQLStatement, role: CommunityMemberRole): void {
+  switch (role) {
+    case 'owner':
+      query.append(sql` AND cm.role = 'owner'`)
+      return
+    case 'moderator':
+      query.append(sql` AND cm.role = 'moderator'`)
+      return
+    case 'member':
+      query.append(sql` AND cm.role = 'member'`)
+      return
+    default: {
+      const unexpected: never = role
+      throw new Error(`Unexpected member role ${String(unexpected)}`)
+    }
+  }
 }
 
 function appendMemberRosterVisibilityFilter(

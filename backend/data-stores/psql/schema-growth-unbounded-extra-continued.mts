@@ -52,6 +52,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'user_deletion_requests',
   'user_email_addresses',
   'user_engagement_email_sends',
+  'user_landing_page_candidates',
   'user_landing_page_group_members',
   'user_landing_page_items',
   'user_landing_pages',
