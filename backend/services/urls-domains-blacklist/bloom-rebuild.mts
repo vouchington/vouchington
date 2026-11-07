@@ -19,6 +19,9 @@ import { getUrlsDomainsBlacklistWorkLimit } from './work-limits.mts'
 const publishBlocklistReadyMarkerIfGenerationScript = registerScript(
   loadScript('publish-blocklist-ready-marker-if-generation.lua', import.meta.url),
 )
+const incrementBlocklistVisibilityRetriesScript = registerScript(
+  loadScript('increment-blocklist-visibility-retries.lua', import.meta.url),
+)
 
 /** The counter outlives a stuck rebuild by at most this long, then expires on its own. */
 const visibilityRetriesTtlSeconds = 3_600
@@ -78,14 +81,26 @@ async function retryWhenGenerationNotVisible(
     return
   }
   const retriesKey = blocklistBloomVisibilityRetriesKey(filter)
-  const retries = await bloomValkeyClient.incr(retriesKey)
-  await bloomValkeyClient.expire(retriesKey, visibilityRetriesTtlSeconds)
+  const retries = await incrementVisibilityRetries(retriesKey)
   if (retries > getUrlsDomainsBlacklistWorkLimit('blocklist_bloom_visibility_retries')) {
     await bloomValkeyClient.unlink([retriesKey])
     onError(new Error(`${filter} rebuild gave up: replica never saw generation ${generation}`))
     return
   }
   await enqueueRebuildBloomFilter({ filter })
+}
+
+async function incrementVisibilityRetries(key: string): Promise<number> {
+  const retries = Number(
+    await bloomValkeyClient.invokeScript(incrementBlocklistVisibilityRetriesScript, {
+      keys: [key],
+      args: [String(visibilityRetriesTtlSeconds)],
+    }),
+  )
+  if (!Number.isSafeInteger(retries) || retries < 1) {
+    throw new Error('blocklist visibility retry script returned an invalid count')
+  }
+  return retries
 }
 
 async function streamBlocklistOnReplicaSnapshot(
