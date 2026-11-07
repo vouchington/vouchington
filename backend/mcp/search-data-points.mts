@@ -51,7 +51,7 @@ type ToolResult =
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search for data point posts with optional JSONB filters. Use this to find approval rates, credit limits, and application outcomes for a specific card or topic.',
+      'Search for data point posts from the last 30 days with optional JSONB filters. has_next_page covers only matches within that window. Use this to find approval rates, credit limits, and application outcomes for a specific card or topic.',
     parameters: {
       type: 'object',
       properties: {
@@ -75,7 +75,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         after: {
           type: 'string',
           description:
-            'Opaque cursor. Pass page_info.end_cursor from the previous response with the same filters while has_next_page is true. Stop when has_next_page is false.',
+            'Opaque cursor. Pass page_info.end_cursor from the previous response with the same filters while has_next_page is true. Stop when has_next_page is false. has_next_page covers only matches within the last 30 days.',
         },
       },
       required: [],
