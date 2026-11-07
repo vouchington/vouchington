@@ -1,9 +1,30 @@
 import { createServer } from 'node:http'
 import { once } from 'node:events'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { checkLocalHealth } from './local-healthcheck.mts'
 
 describe('compiled API local health probe', () => {
+  it('sets the actual health command exit status after probing the configured port', async () => {
+    const server = createServer((_request, response) => response.writeHead(204).end())
+    const previousExitCode = process.exitCode
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    try {
+      const address = server.address()
+      if (!address || typeof address === 'string') throw new Error('missing HTTP listener')
+      vi.stubEnv('PORT', String(address.port))
+      await import('../../entrypoints/api/healthcheck.mts')
+      expect(process.exitCode).toBe(0)
+    } finally {
+      process.exitCode = previousExitCode
+      vi.unstubAllEnvs()
+      server.closeAllConnections()
+      await new Promise<void>((resolve, reject) => {
+        server.close(error => (error ? reject(error) : resolve()))
+      })
+    }
+  })
+
   it.each([
     { response: 200, healthy: true },
     { response: 204, healthy: true },
