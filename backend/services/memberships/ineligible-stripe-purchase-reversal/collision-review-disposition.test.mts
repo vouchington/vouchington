@@ -43,6 +43,7 @@ describe('Stripe purchase collision review disposition', () => {
       expect.objectContaining({
         actor_user_id: actor.id,
         action_type: 'stripe_purchase_collision_review_dispose',
+        membership_ineligible_purchase_reversal_case_id: null,
         reason: null,
         metadata: { review_id: seeded.review.id, disposition: 'dismissed' },
       }),
@@ -88,11 +89,11 @@ describe('Stripe purchase collision review disposition', () => {
       expect.objectContaining({
         actor_user_id: actor.id,
         action_type: 'stripe_purchase_collision_review_dispose',
+        membership_ineligible_purchase_reversal_case_id: reversalCase?.id,
         reason: null,
         metadata: {
           review_id: seeded.review.id,
           disposition: 'reversal_case_created',
-          reversal_case_id: reversalCase?.id,
         },
       }),
     ])

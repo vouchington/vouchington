@@ -254,3 +254,11 @@ COMMENT ON COLUMN membership_ineligible_purchase_reversal_case_operations.member
   'Immutable reversal case that owns the associated payment-target operation.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_case_operations.membership_operation_id IS
   'Ineligible-purchase reversal operation associated with this immutable case.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- The full column name does not fit after fk_moderator_actions__ within 63 bytes.
+ALTER TABLE moderator_actions DROP CONSTRAINT IF EXISTS fk_moderator_actions__ineligible_purchase_reversal_case_id;
+ALTER TABLE moderator_actions ADD CONSTRAINT fk_moderator_actions__ineligible_purchase_reversal_case_id
+  FOREIGN KEY (membership_ineligible_purchase_reversal_case_id)
+  REFERENCES membership_ineligible_purchase_reversal_cases (id) ON DELETE SET NULL NOT VALID;
+ALTER TABLE moderator_actions VALIDATE CONSTRAINT fk_moderator_actions__ineligible_purchase_reversal_case_id;

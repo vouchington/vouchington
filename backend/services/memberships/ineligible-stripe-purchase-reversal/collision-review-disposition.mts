@@ -35,7 +35,8 @@ function rejectNonPositiveStaffReversalAmount(amount: number): void {
  * order: the case insert takes FOR KEY SHARE on membership_sources, then
  * membership_lineage_bindings, then currencies, and only then deletes the review.
  * The review is not row-locked before the case insert. The moderator action is recorded
- * after that delete, in the same transaction.
+ * after that delete, in the same transaction. When a case was created, that insert's
+ * case foreign key takes FOR KEY SHARE on the reversal case before the retained actor.
  */
 export async function disposeStripePurchaseCollisionReview(
   input: StaffCollisionReviewDisposition,
@@ -99,10 +100,10 @@ async function recordDisposition(
     actorUserId,
     {
       actionType: 'stripe_purchase_collision_review_dispose',
+      membershipIneligiblePurchaseReversalCaseId: reversalCaseId ?? null,
       metadata: {
         review_id: reviewId,
         disposition,
-        ...(reversalCaseId === undefined ? {} : { reversal_case_id: reversalCaseId }),
       },
     },
     { query },

@@ -29,6 +29,7 @@ export interface RecordModeratorActionInput {
   backfillKey?: string | null
   rssCategoryText?: string | null
   adminImportBatchId?: string | null
+  membershipIneligiblePurchaseReversalCaseId?: string | null
   reason?: string | null
   /** Community restrictions this action activated or lifted; stored as child rows, not metadata. */
   communityRestrictionIds?: string[]
@@ -40,7 +41,7 @@ export type RecordModeratorActionsInput = Omit<
   'communityRestrictionIds'
 >
 
-const INSERT_COLUMNS = `actor_user_id, action_type, community_id, post_id, target_user_id, report_id, review_dispute_id, moderation_appeal_id, community_application_id, topic_claim_id, report_integrity_flag_id, report_abuse_penalty_id, vote_integrity_flag_id, vote_weight_penalty_id, agent_moderation_id, agent_moderation_post_id, oauth_client_id, user_moderator_note_id, hostname_crawler_configuration_id, topic_id, operation_request_action_id, queue_name, scheduled_job_key, backfill_key, rss_category_text, admin_import_batch_id, reason, metadata`
+const INSERT_COLUMNS = `actor_user_id, action_type, community_id, post_id, target_user_id, report_id, review_dispute_id, moderation_appeal_id, community_application_id, topic_claim_id, report_integrity_flag_id, report_abuse_penalty_id, vote_integrity_flag_id, vote_weight_penalty_id, agent_moderation_id, agent_moderation_post_id, oauth_client_id, user_moderator_note_id, hostname_crawler_configuration_id, topic_id, operation_request_action_id, queue_name, scheduled_job_key, backfill_key, rss_category_text, admin_import_batch_id, membership_ineligible_purchase_reversal_case_id, reason, metadata`
 
 function actionRow(actorId: string | null, input: RecordModeratorActionsInput) {
   return {
@@ -70,6 +71,8 @@ function actionRow(actorId: string | null, input: RecordModeratorActionsInput) {
     backfill_key: input.backfillKey ?? null,
     rss_category_text: input.rssCategoryText ?? null,
     admin_import_batch_id: input.adminImportBatchId ?? null,
+    membership_ineligible_purchase_reversal_case_id:
+      input.membershipIneligiblePurchaseReversalCaseId ?? null,
     reason: input.reason ?? null,
     metadata: input.metadata ?? {},
   }
