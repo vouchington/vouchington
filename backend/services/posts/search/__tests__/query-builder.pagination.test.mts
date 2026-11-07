@@ -128,7 +128,7 @@ describe('query-builder (pagination and moderation)', () => {
     })
 
     expect(query.sql).toContain("posts.structured_data->>'result' = 'pending'")
-    expect(query.sql).toContain('OFFSET 0')
+    expect(query.sql).toContain('data_point_hot_matches AS MATERIALIZED')
     expect(query.sql).toContain('data_point_hot_matches')
     expect(query.sql).toContain('ORDER BY hot_score DESC, id DESC')
     expect(query.values).not.toContain('pending')
