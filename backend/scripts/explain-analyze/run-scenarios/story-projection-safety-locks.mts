@@ -24,7 +24,9 @@ export async function captureStoryProjectionSafetyLocks(): Promise<void> {
     await captureActiveBlockedRead()
   } finally {
     await cleanupStoryProjectionSafetyHosts(fixture)
-    await write('/* analyzeStoryProjectionSafetyHostCleanup */ ANALYZE urls, url_hostnames')
+    // The deleted 10k-host cohort leaves GIN pending entries. ANALYZE alone retains their
+    // startup cost, making later trigram plans depend on whether autovacuum has run.
+    await write('/* vacuumStoryProjectionSafetyHostCleanup */ VACUUM (ANALYZE) urls, url_hostnames')
   }
 }
 
