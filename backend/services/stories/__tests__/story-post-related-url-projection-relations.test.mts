@@ -19,7 +19,7 @@ import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
-import { writeStoryPostRelatedUrlProjectionRelations } from '../story-post-related-url-projection-relations.mts'
+import { admitStoryPostRelatedUrlProjectionPrefix } from '../story-post-related-url-projection-relations.mts'
 import { drainPendingStoryPostRelatedUrlProjectionCrawlEffects } from '../story-post-related-url-projection-relation-safety.mts'
 import {
   decideStoryPostRelatedUrlProjectionRows,
@@ -79,7 +79,11 @@ describe('story post related URL projection relations', () => {
       await expect(stageStoryPostRelatedUrlProjectionReceipts(work, decisions)).resolves.toBe(true)
       await updateUrlHostnameBlocked(url.hostname.id, true)
 
-      await expect(writeStoryPostRelatedUrlProjectionRelations(work, decisions)).resolves.toBe(true)
+      await expect(
+        admitStoryPostRelatedUrlProjectionPrefix(work, decisions),
+      ).resolves.toMatchObject({
+        ok: true,
+      })
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
@@ -106,7 +110,11 @@ describe('story post related URL projection relations', () => {
         pathname: parsedUrl.pathname,
       })
 
-      await expect(writeStoryPostRelatedUrlProjectionRelations(work, decisions)).resolves.toBe(true)
+      await expect(
+        admitStoryPostRelatedUrlProjectionPrefix(work, decisions),
+      ).resolves.toMatchObject({
+        ok: true,
+      })
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
@@ -123,8 +131,8 @@ describe('story post related URL projection relations', () => {
     const first = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions),
-      ).resolves.toBe(true)
+        admitStoryPostRelatedUrlProjectionPrefix(first.work, first.decisions),
+      ).resolves.toMatchObject({ ok: true })
     } finally {
       await releaseStoryPostRelatedUrlProjectionWork(first.work)
     }
@@ -134,8 +142,8 @@ describe('story post related URL projection relations', () => {
     const restarted = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(restarted.work, restarted.decisions),
-      ).resolves.toBe(true)
+        admitStoryPostRelatedUrlProjectionPrefix(restarted.work, restarted.decisions),
+      ).resolves.toMatchObject({ ok: true })
       expect(crawls.ownedPromises()).toHaveLength(1)
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, restarted.work.generation, url.id),
@@ -153,15 +161,15 @@ describe('story post related URL projection relations', () => {
     const staged = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(staged.work, staged.decisions),
+        admitStoryPostRelatedUrlProjectionPrefix(staged.work, staged.decisions),
       ).rejects.toThrow('crawl queue unavailable')
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, staged.work.generation, url.id),
       ).resolves.toMatchObject({ crawlRequired: true, effectsDispatchedAt: null })
 
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(staged.work, staged.decisions),
-      ).resolves.toBe(true)
+        admitStoryPostRelatedUrlProjectionPrefix(staged.work, staged.decisions),
+      ).resolves.toMatchObject({ ok: true })
       expect(enqueueSpy.mock.calls).toEqual([[[{ urlId: url.id }]], [[{ urlId: url.id }]]])
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, staged.work.generation, url.id),
@@ -180,7 +188,7 @@ describe('story post related URL projection relations', () => {
     const first = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions),
+        admitStoryPostRelatedUrlProjectionPrefix(first.work, first.decisions),
       ).rejects.toThrow('crawl queue unavailable')
     } finally {
       enqueueSpy.mockRestore()
