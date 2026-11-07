@@ -42,7 +42,7 @@ export default defineConfig({
     // not here —
     // and never via a project-level `maxWorkers` literal: VITEST_MAX_WORKERS unconditionally
     // overwrites any per-project value during vitest's config resolution, so a literal is both
-    // banned (see dev/vitest-config.test.mts) and non-functional whenever the env var is set.
+    // banned by .no-mistakes/rules/policies.yml and non-functional whenever the env var is set.
     fileParallelism: true,
     maxWorkers: parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS),
     // Persist transformed modules across local `vitest run` processes. Path stays under the

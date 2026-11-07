@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import picomatch from 'picomatch'
 import { describe, expect, it } from 'vitest'
@@ -23,14 +23,6 @@ const rootConfigSource = readFileSync(new URL('../vitest.config.mts', import.met
 const rootConfig = (await import('../vitest.config.mts')).default
 const vitestProjects = (rootConfig.test?.projects ?? []) as VitestProjectConfig[]
 
-const configHelperDir = new URL('../test-helpers/vitest-config/', import.meta.url)
-const configHelperFiles = readdirSync(configHelperDir)
-  .filter(f => f.endsWith('.mts'))
-  .toSorted()
-const allConfigSources = [
-  rootConfigSource,
-  ...configHelperFiles.map(f => readFileSync(new URL(f, configHelperDir), 'utf8')),
-].join('\n')
 describe('dev-tools Vitest config', () => {
   it('collects dev test files directly', () => {
     const devTools = vitestProjects.find(project => project.test?.name === 'dev-tools')
@@ -142,38 +134,8 @@ describe('Vitest project exclude invariant', () => {
 })
 
 describe('Vitest fileParallelism invariant', () => {
-  it('fileParallelism is never false in any vitest config file', () => {
-    // All projects must allow parallel file execution. DB safety comes from randomized IDs
-    // (the dirty-DB design in backend/test-helpers/AGENTS.md), not serial ordering.
-    // Concurrency is throttled only by the repo-owned VITEST_MAX_WORKERS environment policy — see the
-    // 'Vitest worker-count invariant' describe block below for why a project-level
-    // `maxWorkers` literal is both banned and non-functional.
-    //
-    // Strip comments before matching to avoid false positives from explanatory comments,
-    // and handle optional quotes around the key for robustness.
-    const strippedSources = allConfigSources.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
-    expect(strippedSources).not.toMatch(/['"]?fileParallelism['"]?\s*:\s*false/)
-  })
-
   it('root vitest.config.mts explicitly sets fileParallelism to true', () => {
     expect(rootConfigSource).toContain('fileParallelism: true')
-  })
-})
-
-describe('Vitest worker-count invariant', () => {
-  it('never hardcodes a project maxWorkers literal', () => {
-    // vitest's config resolution reads VITEST_MAX_WORKERS *after* merging project config, so it
-    // unconditionally overwrites any project-level `maxWorkers` the moment the env var is set —
-    // which each workflow either sets explicitly or receives from the CI fallback. A
-    // literal maxWorkers is therefore both misleading (reads as a real cap; is not one in CI) and,
-    // for fileParallelism-style serialization, actively harmful (maxWorkers: 1 is how
-    // fileParallelism: false is implemented internally, so pinning it defeats the invariant above
-    // the same way). Worker counts must always be derived from the environment via
-    // parseVitestMaxWorkers()/parseStorybookBrowserMaxWorkers()
-    // (test-helpers/vitest-config/environment.mts) — function calls, not literals — so this
-    // matches only a hardcoded number.
-    const strippedSources = allConfigSources.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
-    expect(strippedSources).not.toMatch(/['"]?maxWorkers['"]?\s*:\s*\d/)
   })
 })
 
