@@ -63,7 +63,6 @@ import { communityListMembershipReadTools } from './community-list-membership-re
 import { entityRelationWriteTools } from './entity-relation-write-tools.mts'
 import { ownDataReadTools } from './own-data-read-tools.mts'
 import { searchReferenceReadTools } from './search-reference-read-tools.mts'
-import { rssReadTools } from './rss-read-tools.mts'
 import { communityModerationTools } from '../community-moderation-tools.mts'
 import { brandTopicClaimTools } from '../brand/topic-claims.mts'
 
@@ -109,7 +108,6 @@ export const ALL_TOOLS: readonly Tool[] = [
   ...entityRelationWriteTools,
   ...ownDataReadTools,
   ...searchReferenceReadTools,
-  ...rssReadTools,
   ...communityModerationTools,
   ...brandTopicClaimTools,
   activateReferralLinkTool,
