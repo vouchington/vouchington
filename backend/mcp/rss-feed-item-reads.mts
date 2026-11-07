@@ -55,7 +55,7 @@ type DetailResult =
 export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
   schema: {
     description:
-      'Search and page RSS feed items by keyword, semantic text, similar item, feed, media type or read state. Returns at most 100 items per page and page_info.end_cursor for the next page. The old internal search_rss_feed_items tool has no cursor; use this tool for MCP reads.',
+      'Search and page RSS feed items by keyword, semantic text, similar item, feed, media type or read state. Returns at most 100 items per page and page_info.end_cursor for the next page.',
     parameters: {
       type: 'object',
       properties: {

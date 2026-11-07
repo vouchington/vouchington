@@ -1,7 +1,7 @@
 id: tool-limit-clamping
 language: Tsx
 severity: error
-message: 'Use clampToolLimit() or normalizeSearchToolArgs() from ./search-system.mts instead of inline Math.min() for limit clamping'
+message: 'Use clampToolLimit() from ./search-system.mts instead of inline Math.min() for limit clamping'
 files:
   - 'backend/mcp/**/*.mts'
 ignores:
