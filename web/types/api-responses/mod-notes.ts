@@ -17,6 +17,8 @@ export interface UserModerationContext {
   active_suspension: { suspended_at: string; suspended_reason: string | null } | null
   /** null for non-staff callers (staff-gated) */
   content_removal_count: number | null
+  /** true when content_removal_count saturated at the server cap, so the real count is at least that; null for non-staff callers */
+  content_removal_count_capped: boolean | null
   /** null for non-staff callers (staff-gated) */
   community_removal_count: number | null
 }

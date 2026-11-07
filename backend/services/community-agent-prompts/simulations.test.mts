@@ -206,8 +206,8 @@ describe('community agent prompt simulations', () => {
     })
 
     const estimate = await getCommunityAgentPromptFalsePositiveEstimate(community.id, prompt.id)
-    expect(estimate.historical_flagged_count).toBe(3)
-    expect(estimate.historical_approved_count).toBe(1)
+    expect(estimate.sampled_flagged_count).toBe(3)
+    expect(estimate.sampled_approved_count).toBe(1)
     expect(estimate.rate).toBe(1 / 3)
   })
 

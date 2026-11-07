@@ -22,8 +22,8 @@ describe('CommunityAgentPromptItem simulation', () => {
         would_flag_count: 1,
         community_automod_action: 'record_only',
         false_positive_estimate: {
-          historical_flagged_count: 0,
-          historical_approved_count: 0,
+          sampled_flagged_count: 0,
+          sampled_approved_count: 0,
           rate: null,
         },
       },

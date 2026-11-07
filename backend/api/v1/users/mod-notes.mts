@@ -54,6 +54,7 @@ app.route('/api/v1/users/:userId/moderation-context').get(async (ctx: Context) =
           trust_tier: null,
           active_suspension: null,
           content_removal_count: null,
+          content_removal_count_capped: null,
           community_removal_count: null,
         },
     notes,

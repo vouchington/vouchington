@@ -40,8 +40,8 @@ export interface CommunityAutomodSimulation {
     would_flag_count: number
     community_automod_action: CommunityAutomodActionSetting
     false_positive_estimate: {
-      historical_flagged_count: number
-      historical_approved_count: number
+      sampled_flagged_count: number
+      sampled_approved_count: number
       rate: number | null
     } | null
   }

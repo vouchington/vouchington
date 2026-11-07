@@ -10,9 +10,9 @@ export async function estimatePartitionedRowCount(
   const { rows } = await read<{ count: number }>(
     `/* estimatePartitionedRowCount */
     SELECT COALESCE(SUM(GREATEST(partition.reltuples, 0)), 0)::float8 AS count
-    FROM pg_inherits inheritance
-    JOIN pg_class partition ON partition.oid = inheritance.inhrelid
-    WHERE inheritance.inhparent = $1::regclass`,
+    FROM pg_partition_tree($1::regclass) tree
+    JOIN pg_class partition ON partition.oid = tree.relid
+    WHERE tree.isleaf`,
     [table],
   )
   return rows[0]?.count ?? 0

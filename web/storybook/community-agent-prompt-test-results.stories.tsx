@@ -10,8 +10,8 @@ const simulation = {
     would_flag_count: 3,
     community_automod_action: 'review_queue',
     false_positive_estimate: {
-      historical_flagged_count: 12,
-      historical_approved_count: 200,
+      sampled_flagged_count: 12,
+      sampled_approved_count: 200,
       rate: 0.06,
     },
   },

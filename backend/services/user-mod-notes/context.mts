@@ -12,6 +12,8 @@ export interface UserModerationContext {
   trust_tier: number | null
   active_suspension: { suspended_at: Date; suspended_reason: string | null } | null
   content_removal_count: number
+  /** true when content_removal_count reached CONTENT_REMOVAL_COUNT_CAP, so the real count is at least that */
+  content_removal_count_capped: boolean
   community_removal_count: number
 }
 
@@ -64,6 +66,7 @@ export async function getUserModerationContext(
     trust_tier,
     active_suspension,
     content_removal_count: counts.content_removal_count,
+    content_removal_count_capped: counts.content_removal_count >= CONTENT_REMOVAL_COUNT_CAP,
     community_removal_count: counts.community_removal_count,
   }
 }

@@ -42,6 +42,7 @@ const makeContext = (overrides: Partial<UserModerationContext> = {}): UserModera
   trust_tier: 2,
   active_suspension: null,
   content_removal_count: 3,
+  content_removal_count_capped: false,
   community_removal_count: 1,
   ...overrides,
 })

@@ -35,7 +35,9 @@ export function UserModContextSummary({ context }: UserModContextSummaryProps) {
             {t(
               'extracted.moderation.userModContextSummary.contentcountContentCommunitycountCommunity_93476367',
               {
-                contentCount: context.content_removal_count,
+                contentCount: context.content_removal_count_capped
+                  ? `${context.content_removal_count}+`
+                  : context.content_removal_count,
                 communityCount: context.community_removal_count,
               },
             )}

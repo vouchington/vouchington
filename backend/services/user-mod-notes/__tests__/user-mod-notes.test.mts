@@ -265,6 +265,7 @@ describe('getUserModerationContext', () => {
     const context = await getUserModerationContext(staff, target, true)
     expect(typeof context.content_removal_count).toBe('number')
     expect(context.content_removal_count).toBeGreaterThanOrEqual(0)
+    expect(context.content_removal_count_capped).toBe(false)
   })
 
   it('counts community removals', async () => {

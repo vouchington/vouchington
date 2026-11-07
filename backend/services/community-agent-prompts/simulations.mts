@@ -21,8 +21,8 @@ export type CommunityAgentPromptSimulationPost = {
 export const FALSE_POSITIVE_ESTIMATE_SAMPLE_SIZE = 1000
 
 export type CommunityAgentPromptFalsePositiveEstimate = {
-  historical_flagged_count: number
-  historical_approved_count: number
+  sampled_flagged_count: number
+  sampled_approved_count: number
   rate: number | null
 }
 
@@ -119,13 +119,13 @@ export async function getCommunityAgentPromptFalsePositiveEstimate(
       LIMIT ${FALSE_POSITIVE_ESTIMATE_SAMPLE_SIZE}
     )
     SELECT
-      COUNT(*)::integer AS historical_flagged_count,
+      COUNT(*)::integer AS sampled_flagged_count,
       COUNT(*) FILTER (
         WHERE cpr.approved_at IS NOT NULL
           AND cpr.unpublished_at IS NULL
           AND cpr.rejected_at IS NULL
           AND p.approved_at IS NOT NULL
-      )::integer AS historical_approved_count
+      )::integer AS sampled_approved_count
     FROM sampled_moderations sample
     LEFT JOIN view_posts p ON p.id = sample.post_id
     LEFT JOIN community_post_reviews cpr
@@ -134,13 +134,13 @@ export async function getCommunityAgentPromptFalsePositiveEstimate(
   `)
 
   const row = rows[0] as
-    | { historical_flagged_count: number; historical_approved_count: number }
+    | { sampled_flagged_count: number; sampled_approved_count: number }
     | undefined
-  const historicalFlaggedCount = row?.historical_flagged_count ?? 0
-  const historicalApprovedCount = row?.historical_approved_count ?? 0
+  const historicalFlaggedCount = row?.sampled_flagged_count ?? 0
+  const historicalApprovedCount = row?.sampled_approved_count ?? 0
   return {
-    historical_flagged_count: historicalFlaggedCount,
-    historical_approved_count: historicalApprovedCount,
+    sampled_flagged_count: historicalFlaggedCount,
+    sampled_approved_count: historicalApprovedCount,
     rate: historicalFlaggedCount === 0 ? null : historicalApprovedCount / historicalFlaggedCount,
   }
 }
