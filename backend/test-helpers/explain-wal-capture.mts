@@ -1,83 +1,25 @@
 import { explainAnalyze, write } from '@data-stores/psql'
+import { coldWalPageAddress, selectSealedUsers, type LocatedUser } from './explain-wal-pages.mts'
 
 // Fullness is the page hole, not a live-row count. A dirty users page can be
 // full with fewer than 30 rows when other tuples are wider or dead.
-const COLD_WAL_FILL_ROWS = 150
-const COLD_WAL_FILL_LIMIT = 600
+// Wider rows avoid narrow reusable holes; physical validation still decides.
+const COLD_WAL_FILL_ROWS = 600
+const COLD_WAL_FILL_LIMIT = 2401
 const COLD_WAL_MIN_PAGES = 3
 const USERS_PAGE_BYTES = 8192
-const PAGE_HEADER_BYTES = 24
-const LINE_POINTER_BYTES = 4
-const LINE_POINTER_NORMAL = 1
 
 const pageNumberSql = String.raw`substring(ctid::text FROM $re$^\((\d+),$re$)::integer`
 const lineNumberSql = String.raw`substring(ctid::text FROM $re$,(\d+)\)$re$)::integer`
 
-type LocatedUser = { id: string; page: number; line: number }
-
-function pageBytes(value: unknown): Buffer {
-  if (Buffer.isBuffer(value)) return value
-  if (value instanceof Uint8Array) return Buffer.from(value)
-  if (typeof value === 'string') {
-    const hex = value.startsWith('\\x') ? value.slice(2) : value
-    return Buffer.from(hex, 'hex')
-  }
-  throw new Error('Cold WAL page image was not bytea')
-}
-
-function linePointerLength(image: Buffer, line: number): number | undefined {
-  const offset = PAGE_HEADER_BYTES + (line - 1) * LINE_POINTER_BYTES
-  if (line < 1 || offset + LINE_POINTER_BYTES > image.length) return undefined
-  const raw = image.readUInt32LE(offset)
-  if (((raw >>> 15) & 0x3) !== LINE_POINTER_NORMAL) return undefined
-  return (raw >>> 17) & 0x7fff
-}
-
-function pageHole(image: Buffer): number | undefined {
-  if (image.length < 16) return undefined
-  const lower = image.readUInt16LE(12)
-  const upper = image.readUInt16LE(14)
-  if (upper < lower) return undefined
-  return upper - lower
-}
-
-// A page is sealed when another minimum users tuple cannot fit, including its
-// new line pointer. One owned row on that page is enough to update.
-function selectSealedUsers(
-  rows: readonly LocatedUser[],
-  images: ReadonlyMap<number, Buffer>,
-): string[] {
-  const lengths: number[] = []
-  for (const row of rows) {
-    const image = images.get(row.page)
-    if (!image) continue
-    const length = linePointerLength(image, row.line)
-    if (length !== undefined) lengths.push(length)
-  }
-  const minimum = lengths.length === 0 ? undefined : Math.min(...lengths)
-  if (minimum === undefined) return []
-  const sealedBelow = minimum + LINE_POINTER_BYTES
-  const chosen = new Map<number, string>()
-  for (const row of rows) {
-    if (chosen.has(row.page)) continue
-    const image = images.get(row.page)
-    if (!image) continue
-    const hole = pageHole(image)
-    if (hole === undefined || hole >= sealedBelow) continue
-    if (linePointerLength(image, row.line) === undefined) continue
-    chosen.set(row.page, row.id)
-  }
-  return [...chosen.values()]
-}
-
-async function insertColdWalUsers(): Promise<string[]> {
+async function insertColdWalUsers(count: number, padding: number | null): Promise<string[]> {
   const { rows } = await write<{ id: string }>(
     `/* insertColdWalUsers */
-     INSERT INTO users (username)
-     SELECT NULL::text
+     INSERT INTO users (username, verified_full_name)
+     SELECT NULL::text, repeat('x', $2::integer)
      FROM generate_series(1, $1::integer)
      RETURNING id::text AS id`,
-    [COLD_WAL_FILL_ROWS],
+    [count, padding],
   )
   return rows.map(row => row.id)
 }
@@ -93,35 +35,63 @@ async function locateColdWalUsers(ids: readonly string[]): Promise<LocatedUser[]
   return rows
 }
 
-async function readUserPageImages(pages: readonly number[]): Promise<Map<number, Buffer>> {
-  const { rows } = await write<{ page: number | string; image: unknown }>(
-    `/* readUserPageImages */
-     SELECT page,
-            pg_read_binary_file(
-              pg_relation_filepath('users'),
-              page::bigint * ${USERS_PAGE_BYTES},
-              ${USERS_PAGE_BYTES}
-            ) AS image
-     FROM unnest($1::integer[]) AS page`,
-    [pages],
+async function readUserPageImages(pages: readonly number[]) {
+  // This test role needs pg_read_server_files (or superuser) in addition to
+  // CHECKPOINT privileges. Paths are server-relative, never local client paths.
+  const settings = await write<{
+    path: string
+    blockBytes: number
+    segmentBytes: number
+    minimumTupleBytes: number
+  }>(
+    `/* coldWalHeapSettings */ SELECT pg_relation_filepath('users') AS path,
+      current_setting('block_size')::integer AS "blockBytes",
+      pg_size_bytes(current_setting('segment_size'))::float8 AS "segmentBytes",
+      (23 + (SELECT COALESCE(sum(attlen), 0) FROM pg_attribute
+        WHERE attrelid = 'users'::regclass AND attnum > 0
+          AND attnotnull AND attlen > 0 AND NOT attisdropped AND attgenerated <> 'v'))::integer AS "minimumTupleBytes"`,
   )
-  return new Map(rows.map(row => [Number(row.page), pageBytes(row.image)]))
+  const setting = settings.rows[0]!
+  if (setting.blockBytes !== USERS_PAGE_BYTES)
+    throw new Error('Cold WAL capture requires 8 KiB heap pages')
+  const addresses = pages.map(page => coldWalPageAddress(setting.path, page, setting.segmentBytes))
+  const { rows } = await write<{ page: number; image: Buffer }>(
+    `/* readUserPageImages */
+     SELECT page, pg_read_binary_file(path, offset_bytes, ${USERS_PAGE_BYTES}) AS image
+     FROM unnest($1::integer[], $2::text[], $3::bigint[]) AS input(page, path, offset_bytes)`,
+    [pages, addresses.map(address => address.path), addresses.map(address => address.offset)],
+  )
+  return {
+    images: new Map(rows.map(row => [row.page, row.image])),
+    minimumTupleBytes: setting.minimumTupleBytes,
+  }
 }
 
 async function sealedColdWalUsers(ids: readonly string[]): Promise<string[]> {
-  // pg_read_binary_file reads the heap file. Shared buffers stay stale on disk
-  // until a checkpoint, and the capture checkpoint still runs before the update.
-  await write('/* sealedColdWalUsers */ CHECKPOINT')
+  // Locating can prune old versions from users' insert triggers. Flush those
+  // changes before reading the heap file; capture checkpoints again before UPDATE.
   const located = await locateColdWalUsers(ids)
+  await write('/* sealedColdWalUsers */ CHECKPOINT')
   const pages = [...new Set(located.map(row => row.page))]
   if (pages.length === 0) return []
-  return selectSealedUsers(located, await readUserPageImages(pages))
+  const { images, minimumTupleBytes } = await readUserPageImages(pages)
+  return selectSealedUsers(located, images, minimumTupleBytes)
 }
 
 async function reserveColdWalUsers(ids: string[]): Promise<string[]> {
+  ids.push(...(await insertColdWalUsers(1, null)))
+  // Four nearly-2-KiB rows seal a page instead of reusing narrow dirty holes.
+  // Measure the owned seed so padding follows the current users row shape.
+  const { rows } = await write<{ padding: number }>(
+    `/* reserveColdWalUsers */ SELECT 2016 - pg_column_size(u) AS padding
+     FROM users AS u WHERE id = $1::uuid`,
+    [ids[0]],
+  )
+  const padding = rows[0]!.padding
+  if (padding <= 0) throw new Error('Cold WAL users row exceeds inline page target')
   let chosen: string[] = []
   while (ids.length < COLD_WAL_FILL_LIMIT && chosen.length < COLD_WAL_MIN_PAGES) {
-    ids.push(...(await insertColdWalUsers()))
+    ids.push(...(await insertColdWalUsers(COLD_WAL_FILL_ROWS, padding)))
     chosen = await sealedColdWalUsers(ids)
   }
   if (chosen.length < COLD_WAL_MIN_PAGES) {
@@ -133,15 +103,20 @@ async function reserveColdWalUsers(ids: string[]): Promise<string[]> {
 }
 
 async function deleteColdWalUsers(ids: readonly string[]) {
-  if (ids.length === 0) return
-  await write(`/* deleteColdWalUsers */ DELETE FROM users WHERE id = ANY($1::uuid[])`, [ids])
+  for (let offset = 0; offset < ids.length; offset += 250) {
+    await write(`/* deleteColdWalUsers */ DELETE FROM users WHERE id = ANY($1::uuid[])`, [
+      ids.slice(offset, offset + 250),
+    ])
+  }
 }
 
 export async function createExplainWalCaptureFixture(scenarioId: string) {
   const ids: string[] = []
   try {
-    // Updating one owned row on several sealed pages keeps a cold full-page
-    // image when a concurrent insert cannot land on those pages.
+    // Every occupied slot on each sealed page belongs to this fixture. Foreign
+    // updates/deletes cannot warm these pages. Autovacuum visibility changes can
+    // still consume an FPI when checksums or wal_log_hints are enabled; this is
+    // a shared database fixture, not an exclusion lock against maintenance.
     const userIds = await reserveColdWalUsers(ids)
     const input = {
       name: 'wal-condition-test',
@@ -155,6 +130,7 @@ export async function createExplainWalCaptureFixture(scenarioId: string) {
     return {
       input,
       rowCount: userIds.length,
+      ownedPageCount: userIds.length,
       async captureCold() {
         await write('/* walConditionTestCheckpoint */ CHECKPOINT')
         return explainAnalyze(input.name, input.text, input.values, {
