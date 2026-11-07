@@ -29,7 +29,9 @@ describe('discover_rss_feeds.search sort trending — REST and MCP parity', () =
       results: unknown[]
     }>
   const query = (args: Record<string, unknown>) =>
-    new URLSearchParams(Object.entries(args).map(([key, value]) => [key, String(value)])).toString()
+    new URLSearchParams(
+      Object.fromEntries(Object.entries(args).map(([key, value]) => [key, String(value)])),
+    ).toString()
   const rest = async (args: Record<string, unknown>) => {
     const request = createRequest()
     await request.authenticateAs(caller)
