@@ -925,6 +925,7 @@
         "story_item_remove",
         "story_official_item_set",
         "story_rename",
+        "stripe_purchase_collision_review_dispose",
         "suspend",
         "topic_claim_reject",
         "topic_claim_revoke",
@@ -1010,7 +1011,8 @@
         "article_sync_run",
         "import_batch_create",
         "preservation_hold_place",
-        "preservation_hold_release"
+        "preservation_hold_release",
+        "stripe_purchase_collision_review_dispose"
       ]
     },
     "notification_delete_reasons": {
@@ -74431,7 +74433,7 @@
           "ordinalPosition": 6
         }
       },
-      "comment": "Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation or audit history.",
+      "comment": "Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation. The disposition is recorded as a moderator action.",
       "foreignKeys": {
         "fk_membership_stripe_purchase_collision_reviews__binding": {
           "columns": ["membership_lineage_binding_id", "membership_provider_lineage_id"],
