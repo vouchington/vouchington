@@ -40,7 +40,7 @@ export function getVoteScoreHostnameScenarios(
       id: 'vote-score-hostnames-trust-after',
       queryName: 'searchUrlHostnames',
       run: () => runTrustHostnameContinuation(cursors.top),
-      expectations: hostnameIndex('idx_url_hostnames__votes_score_sort__id'),
+      expectations: hostnameIndex('idx_url_hostnames__public_votes_score_sort__id'),
       seededRows: VOTE_SCORE_HOSTNAME_ROWS,
     },
     {
@@ -67,14 +67,14 @@ export function getVoteScoreHostnameScenarios(
       id: 'vote-score-hostnames-trust-first',
       queryName: 'searchUrlHostnames',
       run: () => searchUrlHostnames({ sort: 'trust', is_blocked: false, limit: 25 }),
-      expectations: hostnameIndex('idx_url_hostnames__votes_score_sort__id'),
+      expectations: hostnameIndex('idx_url_hostnames__public_votes_score_sort__id'),
       seededRows: VOTE_SCORE_HOSTNAME_ROWS,
     },
     {
       id: 'vote-score-hostnames-trust-deep-zero-after',
       queryName: 'searchUrlHostnames',
       run: () => runZeroTrustContinuation(cursors.trustZero),
-      expectations: hostnameIndex('idx_url_hostnames__votes_score_sort__id'),
+      expectations: hostnameIndex('idx_url_hostnames__public_votes_score_sort__id'),
       seededRows: VOTE_SCORE_HOSTNAME_ROWS,
     },
   ]
