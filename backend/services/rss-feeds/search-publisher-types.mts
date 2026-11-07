@@ -6,6 +6,7 @@ export function publisherTypeCandidateJoin(publisherTypeIds: readonly string[]) 
     SELECT DISTINCT requested.subject_id
     FROM relation__topic__publisher_type__topic requested
     JOIN topics requested_type ON requested_type.id = requested.object_id
+      AND requested_type.merged_into_topic_id IS NULL
       AND requested_type.deleted_at IS NULL
     JOIN LATERAL (
       SELECT relation.object_id
@@ -15,6 +16,7 @@ export function publisherTypeCandidateJoin(publisherTypeIds: readonly string[]) 
         AND relation.deleted_at IS NULL
         AND relation.votes_score_net > 0
         AND publisher_type.deleted_at IS NULL
+        AND publisher_type.merged_into_topic_id IS NULL
       ORDER BY relation.votes_score_sort DESC, relation.created_at DESC, relation.object_id DESC
       LIMIT 1
     ) dominant ON dominant.object_id = requested.object_id
@@ -32,6 +34,7 @@ export function mutedPublisherTypeFilter(userId: string) {
     JOIN relation__topic__publisher_type__topic requested
       ON requested.object_id = mute.object_id
     JOIN topics requested_type ON requested_type.id = requested.object_id
+      AND requested_type.merged_into_topic_id IS NULL
       AND requested_type.deleted_at IS NULL
     JOIN LATERAL (
       SELECT relation.object_id
@@ -41,6 +44,7 @@ export function mutedPublisherTypeFilter(userId: string) {
         AND relation.deleted_at IS NULL
         AND relation.votes_score_net > 0
         AND publisher_type.deleted_at IS NULL
+        AND publisher_type.merged_into_topic_id IS NULL
       ORDER BY relation.votes_score_sort DESC, relation.created_at DESC, relation.object_id DESC
       LIMIT 1
     ) dominant ON dominant.object_id = requested.object_id
