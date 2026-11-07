@@ -117,22 +117,17 @@ export async function insertTestUrl(options: {
     searchParams[key] = value
   })
 
-  let query = sql`/* insertTestUrl */
+  const values = sql`${url}, ${hostnameId}, ${pathname}, ${JSON.stringify(searchParams)}::jsonb`
+  if (canonicalUrlId !== undefined) values.append(sql`, ${canonicalUrlId}`)
+  if (urlContentTypeId !== undefined) values.append(sql`, ${urlContentTypeId}`)
+
+  const query = sql`/* insertTestUrl */
     INSERT INTO urls (url, hostname_id, pathname, search_params`
-  let values = sql`${url}, ${hostnameId}, ${pathname}, ${JSON.stringify(searchParams)}::jsonb`
-
-  if (canonicalUrlId !== undefined) {
-    query = query.append(sql`, canonical_url_id`)
-    values = values.append(sql`, ${canonicalUrlId}`)
-  }
-  if (urlContentTypeId !== undefined) {
-    query = query.append(sql`, media_type_id`)
-    values = values.append(sql`, ${urlContentTypeId}`)
-  }
-
-  query = query.append(sql`) VALUES (`)
-  query = query.append(values)
-  query = query.append(sql`) RETURNING id`)
+    .append(canonicalUrlId !== undefined ? sql`, canonical_url_id` : sql``)
+    .append(urlContentTypeId !== undefined ? sql`, media_type_id` : sql``)
+    .append(sql`) VALUES (`)
+    .append(values)
+    .append(sql`) RETURNING id`)
 
   const result = await write(query)
   return result.rows[0].id
