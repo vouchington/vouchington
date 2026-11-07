@@ -258,12 +258,16 @@ describe('query-builder (basic)', () => {
     expect(known.values).not.toContain('pending')
     expect(known.values).not.toContain('300-579')
 
+    const discussion = buildPostSearchQuery(undefined, { post_types: ['discussion'] })
+    expect(discussion.sql).toContain("posts.post_type = 'discussion'::post_types")
+    expect(discussion.values).not.toContain('discussion')
+
     const unknown = buildPostSearchQuery(undefined, {
-      post_types: ['discussion'],
+      post_types: ['topic_recommendation'],
       data_point_vertical: 'mortgage',
       data_point_topic_ids: ['not-a-uuid'],
     })
-    expect(unknown.values).toContain('discussion')
+    expect(unknown.values).toContain('topic_recommendation')
     expect(unknown.values).toContain('mortgage')
     expect(unknown.values).toContain('not-a-uuid')
 

@@ -159,6 +159,7 @@ describe('read_data_points.search tool — real DB', () => {
       expect(page.success).toBe(true)
       if (!page.success) return
       expect(page.results.length).toBeLessThanOrEqual(1)
+      expect(page.page_info.has_next_page ? page.results.length : 1).toBe(1)
       for (const row of page.results) {
         expect(seen.has(row.id)).toBe(false)
         seen.add(row.id)

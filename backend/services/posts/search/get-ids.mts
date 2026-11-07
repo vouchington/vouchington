@@ -74,6 +74,13 @@ export async function getPostIds(
     __entity_type: 'post',
     id: row.id,
     post_type: row.post_type,
+    ...(row.title === undefined
+      ? {}
+      : {
+          title: row.title,
+          data_point_vertical: row.data_point_vertical ?? null,
+          structured_data: row.structured_data ?? null,
+        }),
   }))
   return {
     results,

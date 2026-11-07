@@ -34,6 +34,13 @@ export function appendPostSearchSelectAndJoins(
       posts.id,
       posts.post_type
   `)
+  if (options.hydrateDataPointPage) {
+    query.append(sql`,
+      posts.title,
+      posts.data_point_vertical,
+      posts.structured_data
+    `)
+  }
   if (includeHotCandidateColumns) query.append(sql`, posts.votes_score_sort, posts.votes_score_net`)
   if (rankingScoreExpression) appendSelectExpression(query, rankingScoreExpression, 'ranking_score')
   if (followingRankExpression)

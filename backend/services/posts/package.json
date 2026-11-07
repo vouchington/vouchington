@@ -69,6 +69,8 @@
     "@services/user-deletions": "workspace:^",
     "@services/user-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
+    "@ts-shared/data-points": "workspace:^",
+    "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/languages": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
