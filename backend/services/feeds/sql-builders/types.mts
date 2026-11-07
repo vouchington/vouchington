@@ -21,16 +21,3 @@ export type FollowedTopicsCondition =
       tableName: string
       itemIdColumn: string
     }
-
-export type FeedTypeConfig = {
-  sourceType: 'users' | 'rss_feeds'
-  sourceIdColumn?: string
-  scoreColumn: string
-  followedCTEAlias: string
-  followedCTEColumn: string
-  topicsConditions: FollowedTopicsCondition[]
-  minScoreSource: number
-  minScoreTopics: number
-  sourceMatchColumn?: string
-  topicsMatchColumn?: string
-}

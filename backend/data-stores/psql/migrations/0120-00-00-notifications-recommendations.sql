@@ -728,6 +728,11 @@ CREATE INDEX IF NOT EXISTS idx_post_feed_shares__post_id
 ON post_feed_shares (post_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Recipient-first share probe for the best-sorted post feed walk.
+CREATE INDEX IF NOT EXISTS idx_post_feed_shares__recipient__post__id
+ON post_feed_shares (recipient_user_id, post_id, id DESC);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_feed_shares_updated_at
 BEFORE UPDATE ON post_feed_shares
 FOR EACH ROW

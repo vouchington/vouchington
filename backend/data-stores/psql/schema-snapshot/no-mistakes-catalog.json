@@ -92283,6 +92283,47 @@
           "unique": false,
           "valid": true
         },
+        "idx_post_feed_shares__recipient__post__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_feed_shares__recipient__post__id ON ONLY public.post_feed_shares USING btree (recipient_user_id, post_id, id DESC)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "recipient_user_id",
+              "descending": false,
+              "expression": "recipient_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_feed_shares__recipient__sort": {
           "accessMethod": "btree",
           "constraintBacked": false,
