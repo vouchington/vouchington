@@ -1218,7 +1218,7 @@
     "I081": [["post_id"]],
     "I082": [["after", "limit", "post_id"]],
     "I083": [["limit"]],
-    "I084": [["after", "limit", "referral_program_id"]],
+    "I084": [["after", "limit", "referral_program_id", "user_id"]],
     "I085": [
       [
         "after",

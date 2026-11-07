@@ -17,10 +17,12 @@ import {
   deactivateUserReferralLink,
 } from '@services/user-referral-program-links'
 import { assertNotSuspended } from '@services/users'
-import { defineQueryContract, queryUuid } from '@vouchington/pagination'
-import { createPaginationParser } from '@modules/pagination'
+import {
+  prepareUserReferralLinksListQuery,
+  userReferralLinksParser,
+  userReferralLinksQueryContract,
+} from '@services/user-referral-program-links/list-query'
 import { apiQuery } from '../../api-query-contract.mts'
-import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   assertCurrentUserCanCreateUserReferralLink,
   assertCurrentUserCanUpdateUserReferralLink,
@@ -38,29 +40,15 @@ type UpdateReferralLinkBody = {
 }
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
-// Pagination parser for referral links
-const referralLinksParser = createPaginationParser({
-  cursor: { type: 'simple' },
-  limit: { min: 1, max: 100, default: 50 },
-})
-const referralLinksQueryContract = defineQueryContract({
-  user_id: queryUuid(),
-  referral_program_id: queryUuid(),
-})
-
 // GET /api/v1/referral-links - list user's referral links
 // POST /api/v1/referral-links - create a referral link
 app
   .route('/api/v1/referral-links')
   .get(async (ctx: Context) => {
-    apiQuery('GET:/api/v1/referral-links', referralLinksParser, referralLinksQueryContract)
+    apiQuery('GET:/api/v1/referral-links', userReferralLinksParser, userReferralLinksQueryContract)
     const currentUser = await requireAuth(ctx, 'GET:/api/v1/referral-links')
-    const paginationOptions = parseRuntimePagination(referralLinksParser, ctx.query)
-    const validationQuery = prepareQueryForValidation(ctx.query, {
-      ...referralLinksParser.queryContract,
-      ...referralLinksQueryContract.queryContract,
-    })
-    if (ctx.query.limit !== undefined) validationQuery.limit = paginationOptions.limit
+    const paginationOptions = parseRuntimePagination(userReferralLinksParser, ctx.query)
+    const validationQuery = prepareUserReferralLinksListQuery(ctx.query, paginationOptions.limit)
     validateRequestContract(ctx, 'GET:/api/v1/referral-links', {
       query: validationQuery,
     })

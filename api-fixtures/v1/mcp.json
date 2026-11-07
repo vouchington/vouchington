@@ -15099,19 +15099,21 @@
           "tool": {
             "name": "get_my_referral_links",
             "title": "Get My Referral Links",
-            "description": "List the current user's referral links, newest first, optionally filtered by referral_program_id. Other users' links never appear; use get_referral_links for links under a program.",
+            "description": "List a user's referral links, newest first. user_id defaults to the caller. An administrator may list another user; anyone else is forbidden. Use get_referral_links for prioritized links under a topic.",
             "inputSchema": {
               "type": "object",
               "properties": {
+                "user_id": {
+                  "type": "string",
+                  "description": "User id whose links to list. Defaults to the caller."
+                },
                 "referral_program_id": {
                   "type": "string",
-                  "description": "Only links under this referral program topic"
+                  "description": "Only links for this referral program id."
                 },
                 "limit": {
                   "type": "integer",
-                  "minimum": 1,
-                  "maximum": 25,
-                  "description": "Links per page; defaults to 20."
+                  "description": "Links per page. Same default and clamp as GET /api/v1/referral-links."
                 },
                 "after": {
                   "type": "string"

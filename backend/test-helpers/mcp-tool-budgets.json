@@ -495,11 +495,11 @@
       },
       "get_my_referral_links": {
         "measured": {
-          "list": 1865,
-          "core": 546
+          "list": 1992,
+          "core": 673
         },
         "max": {
-          "list": 2000,
+          "list": 3000,
           "core": 1000
         }
       },

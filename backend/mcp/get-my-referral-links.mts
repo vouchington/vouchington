@@ -1,22 +1,21 @@
+import assert from 'http-assert'
+import createHttpError, { isHttpError } from 'http-errors'
+import { getPaginationLimitsForContract } from '@services/pagination'
+import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
+import {
+  prepareUserReferralLinksListQuery,
+  userReferralLinksParser,
+} from '@services/user-referral-program-links/list-query'
 import { getUserReferralLinks } from '@services/user-referral-program-links'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
-import { topicReferenceSchema } from './entity-reference-schema.mts'
-import { canonicalEntityId } from './resolve-entity-reference.mts'
-import {
-  iso,
-  pageInputProperties,
-  pageProperties,
-  sanitizedTitle,
-  type McpPage,
-  type McpPageLimit,
-} from './mcp-read-output.mts'
+import { iso, pageProperties, sanitizedTitle, type McpPage } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
-import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
+  user_id?: string
   referral_program_id?: string
   limit?: number
   after?: string
@@ -36,24 +35,50 @@ type MyReferralLink = {
 
 type ToolResult = McpPage<MyReferralLink> | InvalidCursorResult
 
-/** Signed-in REST allows 100 links per page; the tool pages like the other MCP read tools. */
-const REFERRAL_LINK_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 20 }
-const { default: defaultLimit, max } = REFERRAL_LINK_PAGE_LIMIT
+const LIST_OPERATION = 'GET:/api/v1/referral-links'
+
+/** The pagination parser's 400 is not always an http-errors instance. MCP maps those. */
+function throwAsHttp(err: unknown): never {
+  if (isHttpError(err)) throw err
+  if (
+    typeof err === 'object' &&
+    err !== null &&
+    'status' in err &&
+    typeof err.status === 'number' &&
+    err.status >= 400 &&
+    err.status < 500
+  ) {
+    const message = err instanceof Error ? err.message : 'Invalid request'
+    throw createHttpError(err.status, message, { cause: err })
+  }
+  throw err
+}
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'get_my_referral_links',
     type: 'function',
     description:
-      "List the current user's referral links, newest first, optionally filtered by referral_program_id. Other users' links never appear; use get_referral_links for links under a program.",
+      "List a user's referral links, newest first. user_id defaults to the caller. An administrator may list another user; anyone else is forbidden. Use get_referral_links for prioritized links under a topic.",
     parameters: {
       type: 'object',
       properties: {
-        referral_program_id: {
-          ...topicReferenceSchema,
-          description: 'Only links under this referral program topic',
+        user_id: {
+          type: 'string',
+          description: 'User id whose links to list. Defaults to the caller.',
         },
-        ...pageInputProperties('Links', REFERRAL_LINK_PAGE_LIMIT),
+        referral_program_id: {
+          type: 'string',
+          description: 'Only links for this referral program id.',
+        },
+        // No minimum or maximum: GET /api/v1/referral-links clamps an oversized limit and rejects 0.
+        limit: {
+          type: 'integer',
+          description: 'Links per page. Same default and clamp as GET /api/v1/referral-links.',
+        },
+        after: {
+          type: 'string',
+        },
       },
       required: [],
     },
@@ -85,22 +110,33 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const programId = args.referral_program_id
-        ? await canonicalEntityId('topic', args.referral_program_id)
-        : undefined
-      if (args.referral_program_id && !programId) {
-        return {
-          success: true,
-          results: [],
-          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-        }
-      }
       const privateUser = await requirePrivateToolUser(currentUser)
+      const bounds = getPaginationLimitsForContract(userReferralLinksParser.queryContract)
+      let pagination: { limit: number }
+      try {
+        pagination = userReferralLinksParser.parse(
+          args.limit === undefined ? {} : { limit: args.limit },
+          bounds,
+        )
+      } catch (err: unknown) {
+        throwAsHttp(err)
+      }
+      const query: Record<string, unknown> = {}
+      if (args.user_id !== undefined) query.user_id = args.user_id
+      if (args.referral_program_id !== undefined)
+        query.referral_program_id = args.referral_program_id
+      if (args.limit !== undefined) query.limit = args.limit
+      if (args.after !== undefined) query.after = args.after
+      const error = RuntimeRequestValidatorRegistry.shared.validateAuthenticated(LIST_OPERATION, {
+        query: prepareUserReferralLinksListQuery(query, pagination.limit),
+      })
+      assert(!error, 422, error?.message ?? 'Invalid request query')
+      const userId = args.user_id ? args.user_id : privateUser.id
       const page = await findPageOrNull(args.after, () =>
-        getUserReferralLinks(privateUser, privateUser.id, {
-          limit: clampToolLimit(args.limit, defaultLimit, max),
+        getUserReferralLinks(privateUser, userId, {
+          limit: pagination.limit,
           after: args.after,
-          referral_program_id: programId ?? undefined,
+          referral_program_id: args.referral_program_id,
         }),
       )
       if (!page) return INVALID_CURSOR_RESULT

@@ -22,9 +22,9 @@ describe('trending, referral, search and reference-data read tool gating', () =>
       ['read_reference_data', 'reference-data:read', optionArgs('currencies', {})],
       ['read_reference_data', 'reference-data:read', optionArgs('platform_stats', {})],
     ],
+    // get_my_referral_links uses the REST page-size contract, not the 1 through 25 cap.
     pagedTools: [
       ['discover_communities', 'search'],
-      ['get_my_referral_links'],
       ['search_web'],
       ['read_reference_data', 'currencies'],
     ],

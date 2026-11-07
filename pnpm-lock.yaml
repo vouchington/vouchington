@@ -12274,6 +12274,9 @@ importers:
       '@services/referral-program-link-validations':
         specifier: workspace:^
         version: link:../referral-program-link-validations
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../search-params
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
@@ -12286,6 +12289,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/pagination':
+        specifier: ^0.0.4
+        version: 0.0.4
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.11.0)(@sentry/core@11.11.0)(@sentry/node@11.11.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
