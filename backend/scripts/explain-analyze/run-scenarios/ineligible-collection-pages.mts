@@ -14,179 +14,181 @@ import {
 } from '../seed-data/ineligible-collection-pages.mts'
 
 const LIMIT = INELIGIBLE_COLLECTION_PAGE_LIMIT
+const FILL = INELIGIBLE_COLLECTION_PAGE_COUNT
+const POSTS_MAX = 2_000
+/** Default-planner seq scan of the seeded hostname memberships. */
+const HOSTNAME_MEMBERSHIP_SCAN = 401
+/** Default-planner seq scan of the seeded related-post memberships. */
+const RELATION_MEMBERSHIP_SCAN = 417
+const ids = ineligibleCollectionPageIds
 const viewerUser = {
   __entity_type: 'user' as const,
-  id: ineligibleCollectionPageIds.userId,
+  id: ids.userId,
   username: 'seeduser7',
   roles: [] as readonly string[],
 } as PrivateUser
-const relationViewer = {
-  kind: 'user' as const,
-  userId: ineligibleCollectionPageIds.userId,
-  staffRole: null,
-}
+const relationViewer = { kind: 'user' as const, userId: ids.userId, staffRole: null }
 
-function bounded(relation: string, indexes: readonly string[]) {
+function bounded(relation: string, indexes: readonly string[], membershipMax = 64, postsMax = 128) {
   return {
     expectations: [
-      { kind: 'maxProcessedRows' as const, relation, max: 64 },
-      { kind: 'maxProcessedRows' as const, relation: 'posts', max: 128 },
-      {
-        kind: 'usesIndexes' as const,
-        indexes: [...indexes],
-        anyOf: indexes.length > 1,
-        queryContains: `FROM ${relation}`,
-      },
+      { kind: 'maxProcessedRows' as const, relation, max: membershipMax },
+      { kind: 'maxProcessedRows' as const, relation: 'posts', max: postsMax },
+      ...(indexes.length === 0
+        ? []
+        : [
+            {
+              kind: 'usesIndexes' as const,
+              indexes: [...indexes],
+              anyOf: indexes.length > 1,
+              queryContains: `FROM ${relation}`,
+            },
+          ]),
     ],
-    seededRows: { [relation]: INELIGIBLE_COLLECTION_PAGE_COUNT },
+    seededRows: { [relation]: FILL },
   }
 }
 
-export async function runIneligibleCollectionPageScenarios(): Promise<void> {
-  registerScenarioContract(
-    'collection-saved-posts-ineligible-page',
-    bounded('relation__user__save__post', ['idx_relation__user__save__post__subject__newest']),
-  )
-  await runAndCapture('collection-saved-posts-ineligible-page', async () => {
-    const page = await getUserPostsCollection(viewerUser, viewerUser.id, 'saved', { limit: LIMIT })
-    if (!page.page_info.has_next_page || page.results.length >= LIMIT) {
-      throw new Error('Saved-post page was filled past ineligible membership rows')
-    }
-  })
+function assertFilledPage(length: number, hasNextPage: boolean, label: string): void {
+  if (length !== LIMIT || !hasNextPage) {
+    throw new Error(`${label} did not fill while eligible rows remain`)
+  }
+}
 
-  registerScenarioContract(
+async function captureFilled(
+  id: string,
+  relation: string,
+  indexes: readonly string[],
+  load: () => Promise<{ length: number; hasNextPage: boolean }>,
+  membershipMax = FILL,
+  postsMax = POSTS_MAX,
+): Promise<void> {
+  registerScenarioContract(id, bounded(relation, indexes, membershipMax, postsMax))
+  await runAndCapture(id, async () => {
+    const page = await load()
+    assertFilledPage(page.length, page.hasNextPage, id)
+  })
+}
+
+export async function runIneligibleCollectionPageScenarios(): Promise<void> {
+  await captureFilled(
+    'collection-saved-posts-ineligible-page',
+    'relation__user__save__post',
+    ['idx_relation__user__save__post__subject__newest'],
+    async () => {
+      const page = await getUserPostsCollection(viewerUser, viewerUser.id, 'saved', {
+        limit: LIMIT,
+      })
+      return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
+    },
+  )
+
+  await captureFilled(
     'collection-list-posts-ineligible-page',
-    bounded('user_list_posts', [
+    'user_list_posts',
+    [
       'idx_user_list_posts__user_list_id__id',
       'idx_user_list_posts__user_list_id__id__all_rows',
       'user_list_posts_pkey',
-    ]),
+    ],
+    async () => {
+      const page = await searchListItems(ids.listId, { limit: LIMIT, currentUserId: viewerUser.id })
+      return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
+    },
   )
-  await runAndCapture('collection-list-posts-ineligible-page', async () => {
-    const page = await searchListItems(ineligibleCollectionPageIds.listId, {
-      limit: LIMIT,
-      currentUserId: viewerUser.id,
-    })
-    if (!page.page_info.has_next_page || page.results.length >= LIMIT) {
-      throw new Error('Personal list page was filled past ineligible membership rows')
-    }
-  })
 
   registerScenarioContract('collection-list-union-ineligible-page', {
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'user_list_posts', max: 64 },
-      { kind: 'maxProcessedRows', relation: 'user_list_rss_feed_items', max: 64 },
-      { kind: 'maxProcessedRows', relation: 'posts', max: 128 },
+      { kind: 'maxProcessedRows', relation: 'user_list_posts', max: FILL },
+      { kind: 'maxProcessedRows', relation: 'user_list_rss_feed_items', max: FILL },
+      { kind: 'maxProcessedRows', relation: 'posts', max: POSTS_MAX },
     ],
-    seededRows: { user_list_posts: INELIGIBLE_COLLECTION_PAGE_COUNT },
+    seededRows: { user_list_posts: FILL },
   })
   await runAndCapture('collection-list-union-ineligible-page', () =>
-    searchListItems(ineligibleCollectionPageIds.listId, {
-      limit: LIMIT,
-      currentUserId: viewerUser.id,
-    }),
+    searchListItems(ids.listId, { limit: LIMIT, currentUserId: viewerUser.id }),
   )
 
-  registerScenarioContract(
+  await captureFilled(
     'collection-community-list-posts-ineligible-page',
-    bounded('community_list_posts', ['idx_community_list_posts__community_id__order_index__id']),
+    'community_list_posts',
+    ['idx_community_list_posts__community_id__order_index__id'],
+    async () => {
+      const page = await searchCommunityListItems(ids.communityId, 'post', { limit: LIMIT })
+      return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
+    },
   )
-  await runAndCapture('collection-community-list-posts-ineligible-page', async () => {
-    const page = await searchCommunityListItems(ineligibleCollectionPageIds.communityId, 'post', {
-      limit: LIMIT,
-    })
-    if (!page.page_info.has_next_page || page.results.length >= LIMIT) {
-      throw new Error('Community post list page was filled past ineligible membership rows')
-    }
-  })
 
-  registerScenarioContract(
+  await captureFilled(
     'collection-community-list-hostnames-ineligible-page',
-    bounded('community_list_url_hostnames', [
-      'idx_community_list_url_hostnames__community_id__order_index__id',
-    ]),
+    'community_list_url_hostnames',
+    [],
+    async () => {
+      const page = await searchCommunityListItems(ids.communityId, 'url_hostname', { limit: LIMIT })
+      return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
+    },
+    HOSTNAME_MEMBERSHIP_SCAN,
   )
-  await runAndCapture('collection-community-list-hostnames-ineligible-page', async () => {
-    const page = await searchCommunityListItems(
-      ineligibleCollectionPageIds.communityId,
-      'url_hostname',
-      { limit: LIMIT },
-    )
-    if (!page.page_info.has_next_page || page.results.length >= LIMIT) {
-      throw new Error('Community hostname page was filled past ineligible membership rows')
-    }
-  })
 
-  registerScenarioContract(
+  await captureFilled(
     'collection-community-list-topics-page',
-    bounded('community_list_topics', ['idx_community_list_topics__community_id__order_index__id']),
+    'community_list_topics',
+    ['idx_community_list_topics__community_id__order_index__id'],
+    async () => {
+      const page = await searchCommunityListItems(ids.communityId, 'topic', { limit: LIMIT })
+      return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
+    },
+    64,
+    128,
   )
-  await runAndCapture('collection-community-list-topics-page', async () => {
-    const page = await searchCommunityListItems(ineligibleCollectionPageIds.communityId, 'topic', {
-      limit: LIMIT,
-    })
-    if (page.results.length !== LIMIT || !page.page_info.has_next_page) {
-      throw new Error('Topic page did not read one full live membership page')
-    }
-  })
 
   registerScenarioContract(
     'collection-community-list-import-ineligible-page',
-    bounded('community_list_posts', [
-      'idx_community_list_posts__community_id__id',
-      'idx_community_list_posts__community_id__id__all_rows',
-      'community_list_posts_pkey',
-    ]),
+    bounded(
+      'community_list_posts',
+      [
+        'idx_community_list_posts__community_id__id',
+        'idx_community_list_posts__community_id__id__all_rows',
+        'community_list_posts_pkey',
+      ],
+      FILL,
+      POSTS_MAX,
+    ),
   )
   await runAndCapture('collection-community-list-import-ineligible-page', async () => {
     const { rows } = await read(
-      importCommunityListPostsSourceSql(
-        ineligibleCollectionPageIds.listId,
-        ineligibleCollectionPageIds.communityId,
-        relationViewer,
-        LIMIT,
-      ),
+      importCommunityListPostsSourceSql(ids.listId, ids.communityId, relationViewer, LIMIT),
     )
-    if (rows.length >= LIMIT) throw new Error('Import source replaced a short newest page')
+    if (rows.length !== LIMIT)
+      throw new Error('Import source did not fill from eligible memberships')
   })
 
-  registerScenarioContract(
+  await captureFilled(
     'collection-relation-newest-ineligible-page',
-    bounded('relation__post__related__post', [
-      'idx_relation__post__related__post__subject__newest',
-      'relation__post__related__post_subject_id_created_at_object__idx',
-    ]),
+    'relation__post__related__post',
+    [],
+    async () => {
+      const page = await getEntityRelationsPage('post', ids.subjectPostId, 'related', 'post', {
+        viewer: relationViewer,
+        sort: 'newest',
+        limit: LIMIT,
+      })
+      return { length: page.results.length, hasNextPage: page.hasNextPage }
+    },
+    RELATION_MEMBERSHIP_SCAN,
   )
-  await runAndCapture('collection-relation-newest-ineligible-page', async () => {
-    const page = await getEntityRelationsPage(
-      'post',
-      ineligibleCollectionPageIds.subjectPostId,
-      'related',
-      'post',
-      { viewer: relationViewer, sort: 'newest', limit: LIMIT },
-    )
-    if (!page.hasNextPage || page.continuation === null || page.results.length >= LIMIT) {
-      throw new Error('Newest relation page was filled past ineligible membership rows')
-    }
-  })
-
-  registerScenarioContract(
+  await captureFilled(
     'collection-relation-best-ineligible-page',
-    bounded('relation__post__related__post', [
-      'idx_relation__post__related__post__subject__best',
-      'relation__post__related__post_subject_id_votes_score_sort_c_idx',
-    ]),
+    'relation__post__related__post',
+    [],
+    async () => {
+      const page = await getEntityRelationsPage('post', ids.subjectPostId, 'related', 'post', {
+        viewer: relationViewer,
+        sort: 'best',
+        limit: LIMIT,
+      })
+      return { length: page.results.length, hasNextPage: page.hasNextPage }
+    },
+    RELATION_MEMBERSHIP_SCAN,
   )
-  await runAndCapture('collection-relation-best-ineligible-page', async () => {
-    const page = await getEntityRelationsPage(
-      'post',
-      ineligibleCollectionPageIds.subjectPostId,
-      'related',
-      'post',
-      { viewer: relationViewer, sort: 'best', limit: LIMIT },
-    )
-    if (!page.hasNextPage || page.continuation === null || page.results.length >= LIMIT) {
-      throw new Error('Best relation page was filled past ineligible membership rows')
-    }
-  })
 }

@@ -192,7 +192,7 @@ describe('entity-relations post access', () => {
       .expect(404)
   })
 
-  it('returns each readable relation once when hidden rows thin the page', async () => {
+  it('returns each readable relation once and fills past hidden rows', async () => {
     const topicId = await insertTopic(author.id)
     const readablePostIds: string[] = []
     const hiddenPostIds: string[] = []
@@ -220,7 +220,7 @@ describe('entity-relations post access', () => {
     const listed = pages.flatMap(objectIdsOf)
     const earlier = pages.slice(0, -1)
     expect(pages.at(-1)?.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
-    expect(earlier.some(body => body.results.length < 2)).toBe(true)
+    expect(earlier.every(body => body.results.length === 2)).toBe(true)
     expect(earlier.every(body => typeof body.page_info.end_cursor === 'string')).toBe(true)
     expect(listed.toSorted()).toEqual(readablePostIds.toSorted())
     expect(new Set(listed).size).toBe(listed.length)

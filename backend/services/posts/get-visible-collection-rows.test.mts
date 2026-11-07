@@ -11,7 +11,6 @@ describe('post collection relation table allowlist', () => {
   it.each(Object.values(POST_LIST_TABLES))('accepts configured table %s', async tableName => {
     await expect(getVisiblePostCollectionRows(null, tableName, randomUUID(), 1)).resolves.toEqual({
       rows: [],
-      inspected: [],
       hasMore: false,
     })
   })

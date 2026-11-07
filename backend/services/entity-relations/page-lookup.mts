@@ -1,10 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { EntityRelationEntityType } from './config.mts'
 import type { EntityRelationMetadata } from './metadata.mts'
-import {
-  entityRelationObjectColumns,
-  isProjectedEntityRelationObjectType,
-} from './object-projection.mts'
 import { anonymousAuthorMaskFor, type EntityRelationViewer } from './viewer.mts'
 
 export type EntityRelationPageCursor = {
@@ -12,47 +7,6 @@ export type EntityRelationPageCursor = {
   createdAt?: string
   votesScoreSort?: number
   orderIndex?: number
-}
-
-export const POST_PAGE_COLUMNS =
-  'id, root_post_id, post_type, title, declared_language, lingua_rs_detected_language, deleted_at, approved_at, created_by_id, community_id, privacy, broadcast, archived_at, is_anonymous'
-
-export function objectLookupColumns(
-  objectType: EntityRelationEntityType,
-  hasSoftDelete: boolean,
-): string {
-  if (!isProjectedEntityRelationObjectType(objectType)) {
-    throw new Error(`Entity relation reads do not project ${objectType} objects`)
-  }
-  if (objectType === 'post') return POST_PAGE_COLUMNS
-  const columns: string[] = [...entityRelationObjectColumns[objectType]]
-  if (hasSoftDelete) columns.push('deleted_at')
-  return columns.join(', ')
-}
-
-/** One indexed child row. LIMIT 1 keeps the planner on the primary key for a page of ids. */
-export function appendBoundedLookup(
-  query: SQLStatement,
-  alias: string,
-  table: string,
-  columns: string,
-  predicate: SQLStatement,
-): void {
-  query.append(sql`
-    LEFT JOIN LATERAL (
-      SELECT `)
-  query.append(columns)
-  query.append(sql`
-      FROM `)
-  query.append(table)
-  query.append(sql` AS source
-      WHERE `)
-  query.append(predicate)
-  query.append(sql`
-      LIMIT 1
-    ) `)
-  query.append(alias)
-  query.append(sql` ON TRUE`)
 }
 
 export function appendFilters(query: SQLStatement, filters: readonly SQLStatement[]): void {
@@ -77,30 +31,6 @@ export function appendRelationOrder(
   } else {
     query.append(sql`r.order_index ASC, r.object_id ASC`)
   }
-}
-
-export function buildEligibleExpression(
-  objectHasSoftDelete: boolean,
-  objectPostFilter: SQLStatement | null,
-  subjectPostFilter: SQLStatement | null,
-): SQLStatement {
-  const parts: SQLStatement[] = [sql`obj.id IS NOT NULL`]
-  if (objectHasSoftDelete && !objectPostFilter) parts.push(sql`obj.deleted_at IS NULL`)
-  if (objectPostFilter) {
-    parts.push(sql`obj_access.id IS NOT NULL`)
-    parts.push(objectPostFilter)
-  }
-  if (subjectPostFilter) {
-    parts.push(sql`subject_post.id IS NOT NULL`)
-    parts.push(sql`subject_access.id IS NOT NULL`)
-    parts.push(subjectPostFilter)
-  }
-  const statement = sql`(`
-  parts.forEach((part, index) => {
-    if (index > 0) statement.append(sql` AND `)
-    statement.append(part)
-  })
-  return statement.append(sql`)`)
 }
 
 export function buildCreatedByColumn(

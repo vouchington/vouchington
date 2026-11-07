@@ -21,7 +21,6 @@ type CommunityListItemPageRow = {
   order_index: number
   added_by_id: string | null
   created_at: Date
-  eligible: boolean
 }
 
 export async function searchCommunityListItems(
@@ -49,58 +48,40 @@ export async function searchCommunityListItems(
   const { table, entityColumn } = getCommunityListItemStorageConfig(itemType)
 
   const query = sql`/* searchCommunityListItems */
-    WITH driving_page AS MATERIALIZED (
-      SELECT
-        list_item.id,
-        list_item.community_id,
-        `
-  query.append(`list_item.${entityColumn}`).append(sql` AS entity_id,
-        list_item.order_index,
-        list_item.added_by_id,
-        list_item.created_at
-      FROM `)
-  query.append(table).append(sql` list_item
-      WHERE list_item.community_id = ${communityId}
-        AND list_item.removed_at IS NULL`)
-  if (cursorOrderIndex !== undefined && cursorId !== undefined) {
-    query.append(
-      sql` AND (list_item.order_index, list_item.id) > (${cursorOrderIndex}, ${cursorId})`,
-    )
-  }
-  query.append(sql`
-      ORDER BY list_item.order_index ASC, list_item.id ASC
-      LIMIT ${limit + 1}
-    )
-    SELECT page.id,
-           page.community_id,
-           page.entity_id,
-           page.order_index,
-           page.added_by_id,
-           page.created_at,
-           COALESCE((`)
-  query.append(listItemPageEligible(itemType, options?.currentUser))
-  query.append(sql`), FALSE) AS eligible
-    FROM driving_page page`)
+    SELECT
+      page.id,
+      page.community_id,
+      `
+  query.append(`page.${entityColumn}`).append(sql` AS entity_id,
+      page.order_index,
+      page.added_by_id,
+      page.created_at
+    FROM `)
+  query.append(table).append(sql` page`)
   query.append(listItemJoins(itemType))
   query.append(sql`
-    ORDER BY page.order_index ASC, page.id ASC`)
+    WHERE page.community_id = ${communityId}
+      AND page.removed_at IS NULL`)
+  if (cursorOrderIndex !== undefined && cursorId !== undefined) {
+    query.append(sql` AND (page.order_index, page.id) > (${cursorOrderIndex}, ${cursorId})`)
+  }
+  query.append(sql` AND `).append(listItemPageEligible(itemType, options?.currentUser))
+  query.append(sql`
+    ORDER BY page.order_index ASC, page.id ASC
+    LIMIT ${limit + 1}`)
 
   const { rows } = await read<CommunityListItemPageRow>(query, options)
   const { window, hasMore } = sliceRawKeysetPage(rows, limit)
-  const results: CommunityListItem[] = []
-  for (const row of window) {
-    if (!row.eligible) continue
-    results.push({
-      __entity_type: 'community_list_item' as const,
-      id: row.id,
-      community_id: row.community_id,
-      item_type: itemType,
-      entity_id: row.entity_id,
-      order_index: row.order_index,
-      added_by_id: row.added_by_id,
-      created_at: row.created_at,
-    })
-  }
+  const results: CommunityListItem[] = window.map(row => ({
+    __entity_type: 'community_list_item' as const,
+    id: row.id,
+    community_id: row.community_id,
+    item_type: itemType,
+    entity_id: row.entity_id,
+    order_index: row.order_index,
+    added_by_id: row.added_by_id,
+    created_at: row.created_at,
+  }))
 
   return {
     results,

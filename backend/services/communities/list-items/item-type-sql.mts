@@ -19,33 +19,18 @@ function postEligibility(currentUser: BasicUser | null | undefined): SQLStatemen
       })
 }
 
-/** Lookup joins for one already-limited membership page. Alias is `page`, key is `entity_id`. */
+/** Target joins for one membership walk. Alias is `page`. */
 export function listItemJoins(itemType: CommunityListItemType): SQLStatement {
   switch (itemType) {
     case 'post':
       return sql`
-      LEFT JOIN LATERAL (
-        SELECT id, root_post_id, post_type, deleted_at, approved_at, created_by_id,
-               community_id, privacy, broadcast, archived_at
-        FROM posts candidate_post
-        WHERE candidate_post.id = page.entity_id
-        LIMIT 1
-      ) candidate_post ON TRUE
-      LEFT JOIN LATERAL (
-        SELECT id, post_type, deleted_at, approved_at, created_by_id, community_id,
-               privacy, broadcast, archived_at
-        FROM posts root_post
-        WHERE root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-        LIMIT 1
-      ) root_post ON TRUE`
+      JOIN posts candidate_post ON candidate_post.id = page.post_id
+      JOIN posts root_post
+        ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)`
     case 'url_hostname':
       return sql`
-      LEFT JOIN LATERAL (
-        SELECT id, publicly_introduced_at, is_blocked
-        FROM url_hostnames candidate_hostname
-        WHERE candidate_hostname.id = page.entity_id
-        LIMIT 1
-      ) candidate_hostname ON TRUE`
+      JOIN url_hostnames candidate_hostname
+        ON candidate_hostname.id = page.url_hostname_id`
     case 'topic':
     case 'rss_feed':
     case 'url':
