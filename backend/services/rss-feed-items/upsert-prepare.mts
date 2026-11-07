@@ -47,7 +47,8 @@ export const prepareRssFeedItemsForUpsert = async (feedItems: RssFeedItemToUpser
     // eslint-disable-next-line no-await-in-loop -- Sequential URL chunks limit write pressure.
     urls.push(...(await addUrls(null, chunk)))
   }
-  const urlMap = new Map(urls.map(u => [u.url, u.id]))
+  // A variant's item attaches to its canonical page row, the id link posts store as url_id.
+  const urlMap = new Map(urls.map(u => [u.url, u.canonical_url_id ?? u.id]))
 
   const itemsWithHashesOrNull = await Promise.all(
     sanitizedFeedItems.map(async (feedItem, index) => {
