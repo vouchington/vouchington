@@ -10650,9 +10650,6 @@ importers:
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../classifier-runs
-      '@services/crawls':
-        specifier: workspace:^
-        version: link:../crawls
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
