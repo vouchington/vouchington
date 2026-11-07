@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { mapWithConcurrency } from '@vouchington/utils/async'
-import { getIneligiblePurchaseReversalCase } from '@services/memberships/ineligible-stripe-purchase-reversal/case-read'
+import { getIneligiblePurchaseReversalCases } from '@services/memberships/ineligible-stripe-purchase-reversal/case-read'
 import { getLockedIneligiblePurchaseReversalCase } from '@services/memberships/ineligible-stripe-purchase-reversal/case-ledger'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -13,7 +13,7 @@ export async function runMembershipReversalReadScenarios(lookup: {
 }): Promise<void> {
   await mapWithConcurrency(
     [
-      ['membership-reversal-case-read', 'getIneligiblePurchaseReversalCase'],
+      ['membership-reversal-case-read', 'getIneligiblePurchaseReversalCases'],
       ['membership-reversal-case-locked-read', 'getLockedIneligiblePurchaseReversalCase'],
     ] as const,
     1,
@@ -40,8 +40,13 @@ export async function runMembershipReversalReadScenarios(lookup: {
         scenario,
         async () => {
           if (scenario === 'membership-reversal-case-read') {
-            if (!(await getIneligiblePurchaseReversalCase(lookup)))
-              throw new Error('Expected reversal case')
+            // Production passes one page of invoice ids; an absent id shows the probe per id.
+            const { originatingInvoiceId, ...scope } = lookup
+            const cases = await getIneligiblePurchaseReversalCases({
+              ...scope,
+              originatingInvoiceIds: [originatingInvoiceId, `${originatingInvoiceId}-absent`],
+            })
+            if (cases.length !== 1) throw new Error('Expected reversal case')
           } else {
             await using transaction = await beginTransaction()
             if (!(await getLockedIneligiblePurchaseReversalCase(lookup, transaction)))
