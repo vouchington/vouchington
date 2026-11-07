@@ -3,7 +3,7 @@ import {
   terminalFailedGithubActionsStepLog,
 } from 'vouchington-tooling/transient-retry'
 import {
-  hasCurlGithubReleaseTransportFailure,
+  hasCurlGithubReleaseTransportExit,
   isGithubReleasesDownloadFlake,
 } from './github-releases-download-fingerprint.mts'
 import type { TransientRetryRule } from './types.mts'
@@ -81,9 +81,9 @@ function hasSetupLycheeReleasesDownloadFlake(log: string): boolean {
     return true
   }
 
-  if (!setupLog.includes('Process completed with exit code 1.')) return false
+  if (hasCurlGithubReleaseTransportExit(setupLog)) return true
 
-  if (hasCurlGithubReleaseTransportFailure(setupLog)) return true
+  if (!setupLog.includes('Process completed with exit code 1.')) return false
 
   const downloadFailedIndex = setupLog.lastIndexOf('DOWNLOAD FAILED: ')
   if (downloadFailedIndex === -1) return false
@@ -131,7 +131,7 @@ export const lintLinksSetupLycheeDownloadFlakeRule: TransientRetryRule = {
   description:
     'Lint Links fails before link checking because the Install lychee step cannot download the pinned Lychee release asset from GitHub Releases, including when DNS cannot resolve github.com or release-assets.githubusercontent.com.',
   rationale:
-    'The Markdown link checker never starts; the only failed job is lint-links and the stable fingerprint is an external GitHub Releases download or DNS failure for github.com or release-assets.githubusercontent.com, not a broken repository link.',
+    'The Markdown link checker never starts. The only failed job is lint-links, and the fingerprint is an external GitHub Releases download or a DNS failure for github.com or release-assets.githubusercontent.com. The shared installer propagates curl status 22, 28, or 56, and DNS resolution failure exits 6. A broken repository link stays closed.',
   exampleRunIds: ['29263881027'],
   maxAttempts: 1,
   needsLogs: true,
