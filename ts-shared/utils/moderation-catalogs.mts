@@ -116,5 +116,6 @@ export const MODERATOR_ACTION_TYPES = [
   'import_batch_create',
   'preservation_hold_place',
   'preservation_hold_release',
+  'stripe_purchase_collision_review_dispose',
 ] as const
 export type ModeratorActionType = (typeof MODERATOR_ACTION_TYPES)[number]

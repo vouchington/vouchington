@@ -116,6 +116,7 @@ describe('moderation catalogs', () => {
       'import_batch_create',
     ]
     const legalProcessActions = ['preservation_hold_place', 'preservation_hold_release']
+    const membershipStaffActions = ['stripe_purchase_collision_review_dispose']
 
     expect(MODERATOR_ACTION_TYPES).toEqual([
       ...contentAndMembershipActions,
@@ -128,6 +129,7 @@ describe('moderation catalogs', () => {
       ...rssCategoryActions,
       ...queueAndMaintenanceActions,
       ...legalProcessActions,
+      ...membershipStaffActions,
     ])
   })
 })

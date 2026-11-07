@@ -1,6 +1,7 @@
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT, INVALID_INPUT, NOT_FOUND } from '@modules/on-error/error-codes'
+import { recordModeratorAction } from '@services/moderator-actions'
 import sql from 'sql-template-strings'
 import {
   insertStaffStripePurchaseCollisionCase,
@@ -10,6 +11,7 @@ import {
 const MAX_MINOR_UNITS = 9_007_199_254_740_991
 
 export type StaffCollisionReviewDisposition = {
+  actorUserId: string
   reviewId: string
   amountMinorUnits?: number
   stripePriceId?: string
@@ -19,7 +21,7 @@ export type StaffCollisionReviewDisposition = {
 }
 
 /** Rejects a missing or non-positive amount before a review is dismissed. */
-export function rejectNonPositiveStaffReversalAmount(amount: number): void {
+function rejectNonPositiveStaffReversalAmount(amount: number): void {
   if (!Number.isSafeInteger(amount) || amount < 1 || amount > MAX_MINOR_UNITS)
     throw createCodedError(
       400,
@@ -32,7 +34,8 @@ export function rejectNonPositiveStaffReversalAmount(amount: number): void {
  * Discovery inserts the reversal case, then the review. Dispose uses that same
  * order: the case insert takes FOR KEY SHARE on membership_sources, then
  * membership_lineage_bindings, then currencies, and only then deletes the review.
- * The review is not row-locked before the case insert.
+ * The review is not row-locked before the case insert. The moderator action is recorded
+ * after that delete, in the same transaction.
  */
 export async function disposeStripePurchaseCollisionReview(
   input: StaffCollisionReviewDisposition,
@@ -52,6 +55,7 @@ export async function applyStripePurchaseCollisionReviewDisposition(
   if (amount === undefined) {
     if (!(await deleteReview(input.reviewId, query)))
       throw createCodedError(404, 'Stripe purchase collision review not found.', NOT_FOUND)
+    await recordDisposition(input.actorUserId, input.reviewId, 'dismissed', undefined, query)
     return { disposed: true, reversal_case_created: false }
   }
   const staffCase = assertStaffCase(input, amount)
@@ -72,7 +76,37 @@ export async function applyStripePurchaseCollisionReviewDisposition(
     )
   if (!(await deleteReview(staffCase.reviewId, query)))
     throw createCodedError(404, 'Stripe purchase collision review not found.', NOT_FOUND)
+  if (!counts.insertedId)
+    throw new Error('Staff reversal case write did not return the inserted case')
+  await recordDisposition(
+    input.actorUserId,
+    staffCase.reviewId,
+    'reversal_case_created',
+    counts.insertedId,
+    query,
+  )
   return { disposed: true, reversal_case_created: true }
+}
+
+async function recordDisposition(
+  actorUserId: string,
+  reviewId: string,
+  disposition: 'dismissed' | 'reversal_case_created',
+  reversalCaseId: string | undefined,
+  query: QueryExecutor,
+): Promise<void> {
+  await recordModeratorAction(
+    actorUserId,
+    {
+      actionType: 'stripe_purchase_collision_review_dispose',
+      metadata: {
+        review_id: reviewId,
+        disposition,
+        ...(reversalCaseId === undefined ? {} : { reversal_case_id: reversalCaseId }),
+      },
+    },
+    { query },
+  )
 }
 
 function assertStaffCase(input: StaffCollisionReviewDisposition, amount: number): StaffCaseFields {

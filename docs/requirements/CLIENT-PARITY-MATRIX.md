@@ -65,7 +65,10 @@ no dependent native work or new UI parity claim is required.
 ## Stripe purchase collision reviews
 
 The administrator collision-review read returns `results` and `page_info`. Disposition removes the
-review; an amount records the reversal case from the lineage's stored price and currency. Web,
+review; an amount records the reversal case from the lineage's stored price and currency. The same
+transaction records a moderator action for the staff actor, the review id, and the disposition
+code (`dismissed` or `reversal_case_created`), plus the reversal case id when a case is created.
+Web,
 Swift, and .NET have no consumers of this administrative endpoint, and no staff membership MCP tool
 exists for it. The vouchington-clients screen is a follow-up. This adds no native UI parity claim.
 

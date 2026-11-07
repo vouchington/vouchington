@@ -67,7 +67,8 @@ BEGIN
     'article_sync_run',
     'import_batch_create',
     'preservation_hold_place',
-    'preservation_hold_release'
+    'preservation_hold_release',
+    'stripe_purchase_collision_review_dispose'
   );
 EXCEPTION
   WHEN duplicate_object THEN NULL;

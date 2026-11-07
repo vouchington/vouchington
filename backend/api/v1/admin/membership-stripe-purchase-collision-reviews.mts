@@ -7,10 +7,7 @@ import {
   getStripePurchaseCollisionReview,
   listStripePurchaseCollisionReviews,
 } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review-page'
-import {
-  disposeStripePurchaseCollisionReview,
-  rejectNonPositiveStaffReversalAmount,
-} from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review-disposition'
+import { disposeStripePurchaseCollisionReview } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review-disposition'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import type { Context } from '@jongleberry/api-server'
 import { apiQuery } from '../../api-query-contract.mts'
@@ -70,22 +67,19 @@ app
 app
   .route('/api/v1/admin/membership-stripe-purchase-collision-reviews/:id/disposition')
   .post(async (ctx: Context) => {
-    await requireAuthAndRateLimit(ctx, isAdminUser, DISPOSE)
+    const currentUser = await requireAuthAndRateLimit(ctx, isAdminUser, DISPOSE)
     const reviewId = validateUUIDParam(ctx, 'id')
     const body = await parseJsonBody<DispositionBody>(ctx)
-    if (body.amount !== undefined) {
-      const minorUnits = body.amount?.amount
-      if (typeof minorUnits !== 'number')
-        throw createCodedError(
-          400,
-          'Staff reversal amount must be a positive safe integer.',
-          INVALID_INPUT,
-        )
-      rejectNonPositiveStaffReversalAmount(minorUnits)
-    }
+    if (body.amount !== undefined && typeof body.amount?.amount !== 'number')
+      throw createCodedError(
+        400,
+        'Staff reversal amount must be a positive safe integer.',
+        INVALID_INPUT,
+      )
     validateRequestContract(ctx, DISPOSE, { path: ctx.params, body })
     ctx.json(
       await disposeStripePurchaseCollisionReview({
+        actorUserId: currentUser.id,
         reviewId,
         amountMinorUnits: body.amount?.amount,
         stripePriceId: body.stripe_price_id,

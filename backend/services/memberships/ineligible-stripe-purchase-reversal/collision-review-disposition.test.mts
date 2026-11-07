@@ -1,7 +1,8 @@
-import type { QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import { recordStripePurchaseCollisionReviews } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review'
 import { createProviderMembershipSource } from '@services/memberships/provider-source'
+import { createTestUser, getModeratorActionRowsForTest } from '@voucha/test-helpers'
 import { getTestIneligiblePurchaseReversalCase } from '@voucha/test-helpers/entities/memberships-reversals'
 import { bindStripePurchaseCollisionReviewSeed } from '@voucha/test-helpers/stripe-purchase-collision-review-seed'
 import { readTestStripePurchaseCollisionReview } from '@voucha/test-helpers/stripe-purchase-collision-work'
@@ -20,16 +21,28 @@ const { restoreTestStripePurchaseCollisionReview, seedTestStripePurchaseCollisio
     recordStripePurchaseCollisionReviews,
   })
 
+const UNSAVED_ACTOR_ID = '019e0000-0100-7000-8000-000000000099'
+
 describe('Stripe purchase collision review disposition', () => {
   it('deletes a review without an amount and does not create a reversal case', async () => {
+    const actor = await createTestUser({ administrator: true })
     const seeded = await seedTestStripePurchaseCollisionReview()
     await expect(
       disposeStripePurchaseCollisionReview({
+        actorUserId: actor.id,
         reviewId: seeded.review.id,
         stripePriceId: seeded.stripePriceId,
         currencyCode: 'usd',
       }),
     ).resolves.toEqual({ disposed: true, reversal_case_created: false })
+    await expect(getModeratorActionRowsForTest({ actorId: actor.id })).resolves.toEqual([
+      expect.objectContaining({
+        actor_user_id: actor.id,
+        action_type: 'stripe_purchase_collision_review_dispose',
+        reason: null,
+        metadata: { review_id: seeded.review.id, disposition: 'dismissed' },
+      }),
+    ])
     await expect(
       readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
     ).resolves.toBeNull()
@@ -39,11 +52,13 @@ describe('Stripe purchase collision review disposition', () => {
   })
 
   it('records the stored lineage price and currency, then deletes the review', async () => {
+    const actor = await createTestUser({ administrator: true })
     const seeded = await seedTestStripePurchaseCollisionReview()
     const periodStartedAt = new Date('2025-03-01T00:00:00.000Z')
     const periodEndsAt = new Date('2025-04-01T00:00:00.000Z')
     await expect(
       disposeStripePurchaseCollisionReview({
+        actorUserId: actor.id,
         reviewId: seeded.review.id,
         amountMinorUnits: 1_200,
         stripePriceId: seeded.stripePriceId,
@@ -55,23 +70,58 @@ describe('Stripe purchase collision review disposition', () => {
     await expect(
       readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
     ).resolves.toBeNull()
-    await expect(
-      getTestIneligiblePurchaseReversalCase(seeded.subscriptionId, 'production'),
-    ).resolves.toEqual({
+    const reversalCase = await getTestIneligiblePurchaseReversalCase(
+      seeded.subscriptionId,
+      'production',
+    )
+    expect(reversalCase).toMatchObject({
       currency_code: 'usd',
       qualifying_amount_minor_units: '1200',
       refund_cap_minor_units: '1200',
       stripe_price_id: seeded.stripePriceId,
     })
+    await expect(getModeratorActionRowsForTest({ actorId: actor.id })).resolves.toEqual([
+      expect.objectContaining({
+        actor_user_id: actor.id,
+        action_type: 'stripe_purchase_collision_review_dispose',
+        reason: null,
+        metadata: {
+          review_id: seeded.review.id,
+          disposition: 'reversal_case_created',
+          reversal_case_id: reversalCase?.id,
+        },
+      }),
+    ])
+  })
+
+  it('writes no staff action when the disposition rolls back', async () => {
+    const actor = await createTestUser({ administrator: true })
+    const seeded = await seedTestStripePurchaseCollisionReview()
+    await using transaction = await beginTransaction()
+    await applyStripePurchaseCollisionReviewDisposition(
+      { actorUserId: actor.id, reviewId: seeded.review.id },
+      transaction,
+    )
+    await transaction.rollback()
+    await expect(getModeratorActionRowsForTest({ actorId: actor.id })).resolves.toEqual([])
+    await expect(
+      readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
+    ).resolves.toMatchObject({ id: seeded.review.id })
   })
 
   it('keeps the review when an amount is sent for an invoice that already has a case', async () => {
+    const actor = await createTestUser({ administrator: true })
     const seeded = await seedTestStripePurchaseCollisionReview()
-    await disposeStripePurchaseCollisionReview(staffAmount(seeded))
+    await disposeStripePurchaseCollisionReview({ ...staffAmount(seeded), actorUserId: actor.id })
     const restored = await restoreTestStripePurchaseCollisionReview(seeded)
     await expect(
-      disposeStripePurchaseCollisionReview({ ...staffAmount(seeded), reviewId: restored.id }),
+      disposeStripePurchaseCollisionReview({
+        ...staffAmount(seeded),
+        actorUserId: actor.id,
+        reviewId: restored.id,
+      }),
     ).rejects.toMatchObject({ status: 409 })
+    await expect(getModeratorActionRowsForTest({ actorId: actor.id })).resolves.toHaveLength(1)
     await expect(
       readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
     ).resolves.toMatchObject({ id: restored.id })
@@ -119,7 +169,10 @@ describe('Stripe purchase collision review disposition', () => {
 
   it('returns not found when the review is already gone', async () => {
     await expect(
-      disposeStripePurchaseCollisionReview({ reviewId: randomUUID() }),
+      disposeStripePurchaseCollisionReview({
+        actorUserId: UNSAVED_ACTOR_ID,
+        reviewId: randomUUID(),
+      }),
     ).rejects.toMatchObject({ status: 404 })
     const seeded = await seedTestStripePurchaseCollisionReview()
     await expect(
@@ -134,6 +187,7 @@ describe('Stripe purchase collision review disposition', () => {
     const seeded = await seedTestStripePurchaseCollisionReview()
     await expect(
       disposeStripePurchaseCollisionReview({
+        actorUserId: UNSAVED_ACTOR_ID,
         reviewId: seeded.review.id,
         amountMinorUnits: 1_200,
       }),
@@ -203,6 +257,7 @@ function rowsQuery(rows: ReadonlyArray<Record<string, unknown>>): QueryExecutor 
 
 function staffAmount(seeded: Awaited<ReturnType<typeof seedTestStripePurchaseCollisionReview>>) {
   return {
+    actorUserId: UNSAVED_ACTOR_ID,
     reviewId: seeded.review.id,
     amountMinorUnits: 1_200,
     stripePriceId: seeded.stripePriceId,

@@ -15,6 +15,7 @@ type CaseWriteCounts = {
   existingCount: number
   matchedCount: number
   insertedCount: number
+  insertedId: string | null
 }
 
 /**
@@ -73,7 +74,8 @@ export async function insertStaffStripePurchaseCollisionCase(
     SELECT (SELECT COUNT(*)::int FROM review) AS "reviewCount",
       (SELECT COUNT(*)::int FROM existing) AS "existingCount",
       (SELECT COUNT(*)::int FROM matched) AS "matchedCount",
-      (SELECT COUNT(*)::int FROM inserted) AS "insertedCount"
+      (SELECT COUNT(*)::int FROM inserted) AS "insertedCount",
+      (SELECT id::text FROM inserted) AS "insertedId"
   `)
   const row = rows[0] as Record<string, unknown> | undefined
   if (!row) throw new Error('Staff reversal case write did not return a count')
@@ -82,7 +84,16 @@ export async function insertStaffStripePurchaseCollisionCase(
     existingCount: countOf(row, 'existingCount'),
     matchedCount: countOf(row, 'matchedCount'),
     insertedCount: countOf(row, 'insertedCount'),
+    insertedId: insertedIdOf(row),
   }
+}
+
+function insertedIdOf(row: Record<string, unknown>): string | null {
+  const value = row.insertedId ?? row.insertedid
+  if (value == null) return null
+  if (typeof value !== 'string')
+    throw new Error('Staff reversal case write did not return the inserted case')
+  return value
 }
 
 function countOf(row: Record<string, unknown>, key: string): number {

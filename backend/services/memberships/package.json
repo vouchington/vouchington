@@ -59,6 +59,7 @@
     "@queues/memberships": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@services/pagination": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",

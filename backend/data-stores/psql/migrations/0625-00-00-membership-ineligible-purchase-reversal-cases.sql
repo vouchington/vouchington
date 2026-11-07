@@ -87,7 +87,7 @@ ALTER TABLE membership_stripe_purchase_collision_reviews
 CREATE TRIGGER trigger_membership_stripe_purchase_collision_reviews_guard
   BEFORE UPDATE ON membership_stripe_purchase_collision_reviews
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
-COMMENT ON TABLE membership_stripe_purchase_collision_reviews IS 'Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation or audit history.';
+COMMENT ON TABLE membership_stripe_purchase_collision_reviews IS 'Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation. The disposition is recorded as a moderator action.';
 COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.id IS 'UUIDv7 staff-review identity; bounded staff inspection orders by this key.';
 COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_source_id IS 'Retained losing Stripe source; this evidence does not authorize a deleted owner.';
 COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_provider_lineage_id IS 'Canonical Stripe lineage identifying the subscription and provider context for staff investigation.';

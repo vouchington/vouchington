@@ -96,12 +96,14 @@ export async function getTestIneligiblePurchaseReversalCase(
   environment: 'test' | 'production',
 ) {
   const { rows } = await read<{
+    id: string
     currency_code: string
     qualifying_amount_minor_units: string
     refund_cap_minor_units: string
     stripe_price_id: string
   }>(sql`/* getTestIneligiblePurchaseReversalCase */
-    SELECT reversal_case.currency_code, reversal_case.qualifying_amount_minor_units,
+    SELECT reversal_case.id, reversal_case.currency_code,
+      reversal_case.qualifying_amount_minor_units,
       reversal_case.refund_cap_minor_units, reversal_case.stripe_price_id
     FROM membership_ineligible_purchase_reversal_cases reversal_case
     INNER JOIN membership_provider_lineages lineage

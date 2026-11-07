@@ -6,7 +6,7 @@ import {
   listStripePurchaseCollisionReviews,
 } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review-page'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { runAndCapture } from '../run-support.mts'
+import { runAndCapture, seedUser } from '../run-support.mts'
 
 const STAFF_PRICE_ID = 'price_explain_staff_collision'
 const PERIOD_STARTED_AT = new Date('2025-02-01T00:00:00.000Z')
@@ -79,7 +79,10 @@ export async function runMembershipReversalCollisionReviewStaffScenario(input: {
     'membership-reversal-collision-review-delete',
     async () => {
       await using transaction = await beginTransaction()
-      await applyStripePurchaseCollisionReviewDisposition({ reviewId: deleteReviewId }, transaction)
+      await applyStripePurchaseCollisionReviewDisposition(
+        { actorUserId: seedUser.id, reviewId: deleteReviewId },
+        transaction,
+      )
       await transaction.rollback()
     },
     undefined,
@@ -130,6 +133,7 @@ export async function runMembershipReversalCollisionReviewStaffScenario(input: {
       await using transaction = await beginTransaction()
       await applyStripePurchaseCollisionReviewDisposition(
         {
+          actorUserId: seedUser.id,
           reviewId: caseReviewId,
           amountMinorUnits: 2_500,
           stripePriceId: STAFF_PRICE_ID,

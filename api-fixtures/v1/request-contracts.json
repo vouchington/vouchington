@@ -28587,6 +28587,9 @@
         "story_rename": {
           "type": "number"
         },
+        "stripe_purchase_collision_review_dispose": {
+          "type": "number"
+        },
         "suspend": {
           "type": "number"
         },
@@ -42541,7 +42544,8 @@
               "article_sync_run",
               "import_batch_create",
               "preservation_hold_place",
-              "preservation_hold_release"
+              "preservation_hold_release",
+              "stripe_purchase_collision_review_dispose"
             ],
             "type": "string"
           },
@@ -43432,7 +43436,8 @@
               "article_sync_run",
               "import_batch_create",
               "preservation_hold_place",
-              "preservation_hold_release"
+              "preservation_hold_release",
+              "stripe_purchase_collision_review_dispose"
             ],
             "type": "string"
           },
