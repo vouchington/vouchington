@@ -16,7 +16,7 @@ describe('exhausted paused grants on direct termination', () => {
     const member = await createTestUser()
     const grantSku = await createTestSku({ plan: 'plus' })
     await grantMembership(admin.id, member.id, 'plus', grantSku.id, 1)
-    const [pausedGrantId] = (await getTestGrantQueue(member.id)).grant_ids
+    const pausedGrantIds = (await getTestGrantQueue(member.id)).grant_ids
     const directSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
     const stripeSubscriptionId = `sub_exhausted_changes_${member.id}`
     await createMembership({
@@ -25,7 +25,8 @@ describe('exhausted paused grants on direct termination', () => {
       skuId: directSku.id,
       stripeSubscriptionId,
     })
-    await setTestMembershipGrantRemainingMilliseconds(pausedGrantId!, 0.5)
+    for (const pausedGrantId of pausedGrantIds)
+      await setTestMembershipGrantRemainingMilliseconds(pausedGrantId, 0.5)
     const terminal = await createMembership({
       userId: member.id,
       plan: 'pro',
@@ -40,7 +41,10 @@ describe('exhausted paused grants on direct termination', () => {
     await resumeDirect(member.id, terminal.id, transaction)
     await transaction.commit()
 
-    const rows = await readTestMembershipExpirationChanges(pausedGrantId!)
+    const rows = await readTestMembershipExpirationChanges(pausedGrantIds)
+    // Exactly one expiration change per exhausted grant, read back in change-id order.
+    expect(pausedGrantIds).toHaveLength(1)
+    expect(rows).toHaveLength(pausedGrantIds.length)
     expect(rows).toEqual([{ latest: true, expired: true, effects: 1 }])
   })
 })

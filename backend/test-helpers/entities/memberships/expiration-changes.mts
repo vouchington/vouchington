@@ -1,8 +1,9 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+/** Expiration changes recorded for the grants, in change-id order. */
 export async function readTestMembershipExpirationChanges(
-  grantId: string,
+  grantIds: readonly string[],
 ): Promise<Array<{ latest: boolean; effects: number; expired: boolean }>> {
   const { rows } = await read<{ latest: boolean; effects: number; expired: boolean }>(
     sql`/* readTestMembershipExpirationChanges */
@@ -11,8 +12,9 @@ export async function readTestMembershipExpirationChanges(
           WHERE effect.membership_change_id = change.id) AS effects
       FROM membership_changes change
       JOIN memberships membership ON membership.id = change.membership_id
-      WHERE change.membership_grant_id = ${grantId}
-        AND change.change_type = 'expiration'`,
+      WHERE change.membership_grant_id = ANY(${grantIds}::uuid[])
+        AND change.change_type = 'expiration'
+      ORDER BY change.id`,
   )
   return rows
 }

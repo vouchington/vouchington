@@ -638,7 +638,7 @@
       # FIX (P2): per-membership source/activation updates inside the user lock; batch per page with unnest. Remove these entries with the fix.
       - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 63 }
       - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 70 }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the retry is a counter loop capped by MAX_RETAINED_IDENTITY_PIN_ATTEMPTS (record-deleted-relation-impacts.mts:8); each pass is two set statements over unnest.
+      # Capped retry, not a per-item or chunked lock loop: the pass repeats the same two set statements over unnest at most MAX_RETAINED_IDENTITY_PIN_ATTEMPTS = 5 times (record-deleted-relation-impacts.mts:8) and throws on exhaustion, so the lock work is bounded by that constant.
       - {
           file: backend/services/users/record-deleted-relation-impacts.mts,
           callee: 'query',
