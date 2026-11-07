@@ -17,6 +17,7 @@ export async function pruneStoryPostRelatedUrlsOutsidePrefix(
 ): Promise<void> {
   const { rows } = await query<{ subject_id: string }>(
     `/* pruneStoryPostRelatedUrlsOutsidePrefix */
+      -- no-mistakes-disable-next-line postgres-bounded-statements: the relation write guard keeps this post's live story-teller rows at or under the post_related_url hard maximum of 10000; this pass must remove every projected URL outside the admitted prefix, and a LIMIT would leave outsiders attached
       UPDATE relation__post__related__url AS relation
       SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = $2
       WHERE relation.subject_id = $1
