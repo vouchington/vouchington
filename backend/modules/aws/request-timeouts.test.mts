@@ -1,4 +1,4 @@
-import { createServer, type Server } from 'node:http'
+import { createServer, type IncomingMessage, type Server } from 'node:http'
 import { FirehoseClient, ListDeliveryStreamsCommand } from '@aws-sdk/client-firehose'
 import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3'
 import { ListQueuesCommand, SQSClient } from '@aws-sdk/client-sqs'
@@ -8,6 +8,9 @@ import { createResponseBodyBoundAwsRequestHandler } from './config.mts'
 
 const TEST_TIMEOUT_MS = 200
 const REJECTION_DEADLINE_MS = 1_000
+// The SDK registers an idle timeout of at least this length only after a 3000 ms deferral.
+const DEFERRED_SOCKET_TIMEOUT_MS = 6_000
+const AFTER_DEFERRED_SOCKET_REGISTRATION_MS = 3_500
 const TEST_CREDENTIALS = {
   accessKeyId: 'test-access-key-id',
   secretAccessKey: 'test-secret-access-key',
@@ -66,6 +69,52 @@ describe('AWS request timeouts', () => {
     try {
       const error = await captureRejectionBeforeDeadline(client.send(new ListBucketsCommand({})))
       expect(error).toMatchObject({ name: 'TimeoutError', code: 'ETIMEDOUT' })
+    } finally {
+      client.destroy()
+    }
+  })
+
+  it('keeps a deferred SDK socket timeout from replacing the body timeout', async () => {
+    server = createServer((_request, response) => {
+      response.writeHead(200, { 'content-type': 'application/xml' })
+      response.flushHeaders()
+    })
+    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+    const handler = createResponseBodyBoundAwsRequestHandler({
+      connectionTimeout: TEST_TIMEOUT_MS,
+      socketTimeout: DEFERRED_SOCKET_TIMEOUT_MS,
+    })
+    const handle = handler.handle
+    let socket: IncomingMessage['socket'] = null
+    handler.handle = async (...args: Parameters<typeof handle>) => {
+      const output = await handle.call(handler, ...args)
+      const body: unknown = output.response.body
+      if (isIncomingMessage(body)) socket = body.socket
+      return output
+    }
+    const client = new S3Client({
+      credentials: TEST_CREDENTIALS,
+      endpoint: `http://127.0.0.1:${port}`,
+      forcePathStyle: true,
+      maxAttempts: 1,
+      region: 'us-west-2',
+      requestHandler: handler,
+    })
+    const outcome = client.send(new ListBucketsCommand({})).then(
+      () => 'resolved' as const,
+      () => 'rejected' as const,
+    )
+    const checkpoint = new Promise<'checkpoint'>(resolve => {
+      AbortSignal.timeout(AFTER_DEFERRED_SOCKET_REGISTRATION_MS).addEventListener(
+        'abort',
+        () => resolve('checkpoint'),
+        { once: true },
+      )
+    })
+
+    try {
+      expect(await Promise.race([outcome, checkpoint])).toBe('checkpoint')
+      expect(socket?.listenerCount('timeout')).toBe(1)
     } finally {
       client.destroy()
     }
@@ -141,6 +190,10 @@ async function captureRejectionBeforeDeadline(request: Promise<unknown>): Promis
     ),
     deadlineExceeded,
   ])
+}
+
+function isIncomingMessage(body: unknown): body is IncomingMessage {
+  return typeof body === 'object' && body !== null && 'socket' in body && 'setTimeout' in body
 }
 
 function closeServer(server: Server): Promise<void> {
