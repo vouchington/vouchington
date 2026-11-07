@@ -1,7 +1,11 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
-import { resolveCommunityHashtagQuery, searchCommunities } from '@services/communities'
+import {
+  COMMUNITY_SORT_MODES,
+  resolveCommunityHashtagQuery,
+  searchCommunities,
+} from '@services/communities'
 import type { BasicUser } from '@services/users/types'
 import {
   COMMUNITY_PAGE_LIMIT,
@@ -22,7 +26,7 @@ import { closedObject, foundOrNotFoundSchema } from './read-tool-output-schema.m
 import { clampToolLimit } from './search-system.mts'
 
 // The sorts GET /api/v1/communities accepts.
-const COMMUNITY_SORTS = ['name', 'members', 'virtual_subscriptions'] as const
+const COMMUNITY_SORTS = COMMUNITY_SORT_MODES
 
 type ToolArgs = {
   q?: string
@@ -45,7 +49,7 @@ const { default: defaultLimit, max } = COMMUNITY_PAGE_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search public communities as a signed-out reader sees them; private communities never appear. q matches names, descriptions and #hashtags. Sort by name (default), members or virtual_subscriptions.',
+      'Search public communities as a signed-out reader sees them; private communities never appear. q matches names, descriptions and #hashtags. Sort by name (default), members, virtual_subscriptions or trending (most activity over the last 30 days, among the 1000 most active).',
     parameters: {
       type: 'object',
       properties: {
@@ -54,7 +58,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           type: 'string',
           enum: [...COMMUNITY_SORTS],
           description:
-            'Sort order: name (A to Z, the default), members (most members first), virtual_subscriptions (most follows first)',
+            'Sort order: name (A to Z, the default), members (most members first), virtual_subscriptions (most follows first), trending (most activity over the last 30 days first)',
         },
         ...communityPageInputProperties('Communities'),
         feed_category: { type: 'string', enum: ['posts', 'news', 'news_sources', 'news_topics'] },

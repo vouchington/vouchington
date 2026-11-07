@@ -3722,36 +3722,10 @@
           "tool": {
             "name": "discover_communities",
             "title": "Discover Communities",
-            "description": "trending: List public communities with the most activity over the last 30 days, as a signed-out reader sees them. Private communities never appear. Results contain an id, trending score and counts; use read_community (option details) for the community.\nsearch: Search public communities as a signed-out reader sees them; private communities never appear. q matches names, descriptions and #hashtags. Sort by name (default), members or virtual_subscriptions.",
+            "description": "search: Search public communities as a signed-out reader sees them; private communities never appear. q matches names, descriptions and #hashtags. Sort by name (default), members, virtual_subscriptions or trending (most activity over the last 30 days, among the 1000 most active).",
             "inputSchema": {
               "type": "object",
               "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
-                      "enum": ["trending"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "limit": {
-                          "type": "integer",
-                          "minimum": 1,
-                          "maximum": 25,
-                          "description": "Communities per page; defaults to 10."
-                        },
-                        "after": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                },
                 {
                   "type": "object",
                   "properties": {
@@ -3767,8 +3741,8 @@
                         },
                         "sort": {
                           "type": "string",
-                          "enum": ["name", "members", "virtual_subscriptions"],
-                          "description": "Sort order: name (A to Z, the default), members (most members first), virtual_subscriptions (most follows first)"
+                          "enum": ["name", "members", "virtual_subscriptions", "trending"],
+                          "description": "Sort order: name (A to Z, the default), members (most members first), virtual_subscriptions (most follows first), trending (most activity over the last 30 days first)"
                         },
                         "limit": {
                           "type": "integer",
@@ -3813,309 +3787,230 @@
             },
             "outputSchema": {
               "type": "object",
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "success": {
-                          "const": true
-                        },
-                        "results": {
-                          "type": "array",
-                          "items": {
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "community": {
                             "type": "object",
                             "properties": {
                               "id": {
                                 "type": "string"
                               },
-                              "trending_score": {
-                                "type": "number"
+                              "slug": {
+                                "type": "string"
                               },
-                              "member_count": {
-                                "type": "number"
+                              "name": {
+                                "type": "string"
                               },
-                              "post_count": {
-                                "type": "number"
+                              "markdown": {
+                                "$ref": "#/$defs/S1"
                               },
-                              "virtual_subscription_count": {
-                                "type": "number"
-                              }
-                            },
-                            "required": [
-                              "id",
-                              "trending_score",
-                              "member_count",
-                              "post_count",
-                              "virtual_subscription_count"
-                            ],
-                            "additionalProperties": false
-                          }
-                        },
-                        "page_info": {
-                          "$ref": "#/$defs/S1"
-                        }
-                      },
-                      "required": ["success", "results", "page_info"],
-                      "additionalProperties": false
-                    },
-                    {
-                      "$ref": "#/$defs/S2"
-                    }
-                  ]
-                },
-                {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "success": {
-                          "const": true
-                        },
-                        "results": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "community": {
-                                "type": "object",
+                              "rules_markdown": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "member_roster_visibility": {
+                                "enum": ["members", "moderators", "public", "users"],
+                                "type": "string"
+                              },
+                              "list_type": {
+                                "anyOf": [
+                                  {
+                                    "const": "follow"
+                                  },
+                                  {
+                                    "const": "mute"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "should_allow_review_posts": {
+                                "type": "boolean"
+                              },
+                              "should_allow_data_point_posts": {
+                                "type": "boolean"
+                              },
+                              "archived_at": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "updated_at": {
+                                "type": "string"
+                              },
+                              "provenance": {
+                                "additionalProperties": false,
                                 "properties": {
-                                  "id": {
-                                    "type": "string"
-                                  },
-                                  "slug": {
-                                    "type": "string"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "markdown": {
-                                    "$ref": "#/$defs/S3"
-                                  },
-                                  "rules_markdown": {
-                                    "$ref": "#/$defs/S3"
-                                  },
-                                  "member_roster_visibility": {
-                                    "enum": ["members", "moderators", "public", "users"],
-                                    "type": "string"
-                                  },
-                                  "list_type": {
+                                  "app": {
                                     "anyOf": [
                                       {
-                                        "const": "follow"
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "client_id": {
+                                            "type": "string"
+                                          },
+                                          "client_name": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "const": "verified"
+                                          }
+                                        },
+                                        "required": ["client_id", "client_name", "kind"],
+                                        "type": "object"
                                       },
                                       {
-                                        "const": "mute"
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "hostname": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "const": "hostname"
+                                          }
+                                        },
+                                        "required": ["hostname", "kind"],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "kind": {
+                                            "const": "known"
+                                          }
+                                        },
+                                        "required": ["key", "kind"],
+                                        "type": "object"
                                       },
                                       {
                                         "type": "null"
                                       }
                                     ]
                                   },
-                                  "should_allow_review_posts": {
-                                    "type": "boolean"
-                                  },
-                                  "should_allow_data_point_posts": {
-                                    "type": "boolean"
-                                  },
-                                  "archived_at": {
-                                    "$ref": "#/$defs/S3"
-                                  },
-                                  "created_at": {
+                                  "via": {
+                                    "enum": ["api", "mcp"],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["app", "via"],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "slug",
+                              "name",
+                              "markdown",
+                              "rules_markdown",
+                              "member_roster_visibility",
+                              "list_type",
+                              "should_allow_review_posts",
+                              "should_allow_data_point_posts",
+                              "archived_at",
+                              "created_at",
+                              "updated_at"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "owner": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
                                     "type": "string"
                                   },
-                                  "updated_at": {
-                                    "type": "string"
+                                  "username": {
+                                    "$ref": "#/$defs/S1"
+                                  }
+                                },
+                                "required": ["id", "username"],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "metrics": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "member_count": {
+                                    "type": "number"
                                   },
-                                  "provenance": {
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "app": {
-                                        "anyOf": [
-                                          {
-                                            "additionalProperties": false,
-                                            "properties": {
-                                              "client_id": {
-                                                "type": "string"
-                                              },
-                                              "client_name": {
-                                                "type": "string"
-                                              },
-                                              "kind": {
-                                                "const": "verified"
-                                              }
-                                            },
-                                            "required": ["client_id", "client_name", "kind"],
-                                            "type": "object"
-                                          },
-                                          {
-                                            "additionalProperties": false,
-                                            "properties": {
-                                              "hostname": {
-                                                "type": "string"
-                                              },
-                                              "kind": {
-                                                "const": "hostname"
-                                              }
-                                            },
-                                            "required": ["hostname", "kind"],
-                                            "type": "object"
-                                          },
-                                          {
-                                            "additionalProperties": false,
-                                            "properties": {
-                                              "key": {
-                                                "type": "string"
-                                              },
-                                              "kind": {
-                                                "const": "known"
-                                              }
-                                            },
-                                            "required": ["key", "kind"],
-                                            "type": "object"
-                                          },
-                                          {
-                                            "type": "null"
-                                          }
-                                        ]
-                                      },
-                                      "via": {
-                                        "enum": ["api", "mcp"],
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["app", "via"],
-                                    "type": "object"
+                                  "post_count": {
+                                    "type": "number"
+                                  },
+                                  "list_item_count": {
+                                    "type": "number"
+                                  },
+                                  "proxy_follow_count": {
+                                    "type": "number"
+                                  },
+                                  "proxy_mute_count": {
+                                    "type": "number"
+                                  },
+                                  "virtual_subscription_count": {
+                                    "type": "number"
                                   }
                                 },
                                 "required": [
-                                  "id",
-                                  "slug",
-                                  "name",
-                                  "markdown",
-                                  "rules_markdown",
-                                  "member_roster_visibility",
-                                  "list_type",
-                                  "should_allow_review_posts",
-                                  "should_allow_data_point_posts",
-                                  "archived_at",
-                                  "created_at",
-                                  "updated_at"
+                                  "member_count",
+                                  "post_count",
+                                  "list_item_count",
+                                  "proxy_follow_count",
+                                  "proxy_mute_count",
+                                  "virtual_subscription_count"
                                 ],
                                 "additionalProperties": false
-                              },
-                              "owner": {
-                                "anyOf": [
-                                  {
-                                    "type": "null"
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "id": {
-                                        "type": "string"
-                                      },
-                                      "username": {
-                                        "$ref": "#/$defs/S3"
-                                      }
-                                    },
-                                    "required": ["id", "username"],
-                                    "additionalProperties": false
-                                  }
-                                ]
-                              },
-                              "metrics": {
-                                "anyOf": [
-                                  {
-                                    "type": "null"
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "member_count": {
-                                        "type": "number"
-                                      },
-                                      "post_count": {
-                                        "type": "number"
-                                      },
-                                      "list_item_count": {
-                                        "type": "number"
-                                      },
-                                      "proxy_follow_count": {
-                                        "type": "number"
-                                      },
-                                      "proxy_mute_count": {
-                                        "type": "number"
-                                      },
-                                      "virtual_subscription_count": {
-                                        "type": "number"
-                                      }
-                                    },
-                                    "required": [
-                                      "member_count",
-                                      "post_count",
-                                      "list_item_count",
-                                      "proxy_follow_count",
-                                      "proxy_mute_count",
-                                      "virtual_subscription_count"
-                                    ],
-                                    "additionalProperties": false
-                                  }
-                                ]
                               }
-                            },
-                            "required": ["community", "owner", "metrics"],
-                            "additionalProperties": false
+                            ]
                           }
                         },
-                        "page_info": {
+                        "required": ["community", "owner", "metrics"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "end_cursor": {
                           "$ref": "#/$defs/S1"
                         }
                       },
-                      "required": ["success", "results", "page_info"],
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
                       "additionalProperties": false
-                    },
-                    {
-                      "$ref": "#/$defs/S2"
-                    }
-                  ]
-                }
-              ],
-              "$defs": {
-                "S1": {
-                  "type": "object",
-                  "properties": {
-                    "has_next_page": {
-                      "type": "boolean"
-                    },
-                    "start_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "end_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
                     }
                   },
-                  "required": ["has_next_page", "start_cursor", "end_cursor"],
+                  "required": ["success", "results", "page_info"],
                   "additionalProperties": false
                 },
-                "S2": {
+                {
                   "type": "object",
                   "properties": {
                     "success": {
@@ -4127,8 +4022,10 @@
                   },
                   "required": ["success", "error"],
                   "additionalProperties": false
-                },
-                "S3": {
+                }
+              ],
+              "$defs": {
+                "S1": {
                   "anyOf": [
                     {
                       "type": "null"
@@ -4147,18 +4044,13 @@
             "_meta": {
               "voucha/requiredScopes": ["communities:read"],
               "voucha/optionOutputPointers": {
-                "trending": "#/anyOf/0",
-                "search": "#/anyOf/1"
+                "search": "#"
               }
             }
           },
           "plan": "free",
           "roles": null,
           "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/trending-communities"
-            },
             {
               "method": "GET",
               "path": "/api/v1/communities"
@@ -4558,7 +4450,7 @@
           "tool": {
             "name": "discover_rss_feeds",
             "title": "Discover Rss Feeds",
-            "description": "search: Search RSS feeds by title, type and current state. Returns at most 25 feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST.\ntrending: List trending RSS feed IDs, scores and counts. Use read_rss_feed (option details) for details. Returns at most 100 per page and a cursor for the next page.\nrecommended: List RSS feed recommendations for the current user, with scores and reasons. Use read_rss_feed (option details) for details. Returns at most 100 per page and a cursor for the next page.",
+            "description": "search: Search RSS feeds by title, type and current state. Returns at most 25 feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST. sort=trending ranks the feeds that gained follows or items in time_range (day, week or month; default week) and takes no filter besides apply_mutes, limit and after.\nrecommended: List RSS feed recommendations for the current user, with scores and reasons. Use read_rss_feed (option details) for details. Returns at most 100 per page and a cursor for the next page.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -4611,7 +4503,7 @@
                           }
                         },
                         "topic": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "topic_match": {
                           "type": "string",
@@ -4620,8 +4512,18 @@
                         "topics": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/$defs/S2"
+                            "$ref": "#/$defs/S1"
                           }
+                        },
+                        "sort": {
+                          "type": "string",
+                          "enum": ["trending"],
+                          "description": "trending ranks the most followed and most active feeds in time_range."
+                        },
+                        "time_range": {
+                          "type": "string",
+                          "enum": ["day", "week", "month"],
+                          "description": "The trending window. Defaults to week. Only with sort=trending."
                         },
                         "limit": {
                           "type": "integer",
@@ -4643,44 +4545,15 @@
                   "type": "object",
                   "properties": {
                     "option": {
-                      "enum": ["trending"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "limit": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "after": {
-                          "type": "string"
-                        },
-                        "time_range": {
-                          "type": "string",
-                          "enum": ["day", "week", "month"]
-                        },
-                        "min_score": {
-                          "type": "number",
-                          "minimum": 0
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
                       "enum": ["recommended"]
                     },
                     "arguments": {
                       "type": "object",
                       "properties": {
                         "limit": {
-                          "$ref": "#/$defs/S1"
+                          "type": "integer",
+                          "minimum": 1,
+                          "description": "Defaults to 20; clamped to 100."
                         },
                         "after": {
                           "type": "string"
@@ -4700,11 +4573,6 @@
               ],
               "$defs": {
                 "S1": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "description": "Defaults to 20; clamped to 100."
-                },
-                "S2": {
                   "type": "string",
                   "description": "Topic id, slug, or exact name"
                 }
@@ -4847,49 +4715,6 @@
                               "id": {
                                 "type": "string"
                               },
-                              "trending_score": {
-                                "type": "number"
-                              },
-                              "follow_count": {
-                                "type": "number"
-                              },
-                              "item_count": {
-                                "type": "number"
-                              }
-                            },
-                            "required": ["id", "trending_score", "follow_count", "item_count"],
-                            "additionalProperties": false
-                          }
-                        },
-                        "page_info": {
-                          "$ref": "#/$defs/S1"
-                        }
-                      },
-                      "required": ["success", "results", "page_info"],
-                      "additionalProperties": false
-                    },
-                    {
-                      "$ref": "#/$defs/S2"
-                    }
-                  ]
-                },
-                {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "success": {
-                          "const": true
-                        },
-                        "results": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
                               "recommendation_score": {
                                 "type": "number"
                               },
@@ -4971,8 +4796,7 @@
               "voucha/requiredScopes": ["rss-feeds:read"],
               "voucha/optionOutputPointers": {
                 "search": "#/anyOf/0",
-                "trending": "#/anyOf/1",
-                "recommended": "#/anyOf/2"
+                "recommended": "#/anyOf/1"
               }
             }
           },
@@ -4982,10 +4806,6 @@
             {
               "method": "GET",
               "path": "/api/v1/rss-feeds"
-            },
-            {
-              "method": "GET",
-              "path": "/api/v1/rss-feeds/trending"
             },
             {
               "method": "GET",
@@ -7296,36 +7116,10 @@
           "tool": {
             "name": "read_hostnames",
             "title": "Read Hostnames",
-            "description": "top: List hostnames with at least one positive trust vote, ranked by confidence in trust votes, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic id, slug, or exact name; an unknown topic gives no results.\nsearch: Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or confidence in trust votes (highest first).",
+            "description": "search: Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or confidence in trust votes (highest first).",
             "inputSchema": {
               "type": "object",
               "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
-                      "enum": ["top"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "topic": {
-                          "$ref": "#/$defs/S2"
-                        },
-                        "limit": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "after": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                },
                 {
                   "type": "object",
                   "properties": {
@@ -7342,7 +7136,7 @@
                           "type": "string"
                         },
                         "topic": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "sort": {
                           "type": "string",
@@ -7350,7 +7144,10 @@
                           "description": "trust sorts by confidence in trust votes, highest first. Omit it to sort by hostname."
                         },
                         "limit": {
-                          "$ref": "#/$defs/S1"
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 25,
+                          "description": "Hostnames per page; defaults to 25."
                         },
                         "after": {
                           "type": "string"
@@ -7365,7 +7162,7 @@
                         "topics": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/$defs/S2"
+                            "$ref": "#/$defs/S1"
                           }
                         }
                       },
@@ -7379,12 +7176,6 @@
               ],
               "$defs": {
                 "S1": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 25,
-                  "description": "Hostnames per page; defaults to 25."
-                },
-                "S2": {
                   "type": "string",
                   "description": "Topic id, slug, or exact name"
                 }
@@ -7499,7 +7290,6 @@
             "_meta": {
               "voucha/requiredScopes": ["hostnames:read"],
               "voucha/optionOutputPointers": {
-                "top": "#",
                 "search": "#"
               }
             }
@@ -7507,10 +7297,6 @@
           "plan": "free",
           "roles": null,
           "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/hostnames/top"
-            },
             {
               "method": "GET",
               "path": "/api/v1/hostnames"

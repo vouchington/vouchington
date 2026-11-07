@@ -3376,19 +3376,6 @@
         "decision": false
       }
     ],
-    "GET:/api/v1/hostnames/top": [
-      {
-        "audience": "user",
-        "facts": "F50",
-        "inputFields": "I076",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "read_hostnames",
-          "option": "top"
-        },
-        "decision": false
-      }
-    ],
     "GET:/api/v1/lists": [
       {
         "audience": "user",
@@ -3825,19 +3812,6 @@
         "decision": false
       }
     ],
-    "GET:/api/v1/rss-feeds/trending": [
-      {
-        "audience": "user",
-        "facts": "F63",
-        "inputFields": "I093",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "discover_rss_feeds",
-          "option": "trending"
-        },
-        "decision": false
-      }
-    ],
     "GET:/api/v1/topic-recommendations": [
       {
         "audience": "user",
@@ -3912,19 +3886,6 @@
         "operation": {
           "tool": "read_topic",
           "option": "compare"
-        },
-        "decision": false
-      }
-    ],
-    "GET:/api/v1/trending-communities": [
-      {
-        "audience": "user",
-        "facts": "F47",
-        "inputFields": "I005",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "discover_communities",
-          "option": "trending"
         },
         "decision": false
       }

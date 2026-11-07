@@ -141,7 +141,6 @@ describe('deriveCacheTags entity routes', () => {
   })
 
   it('uses the html fallback for static rss-feeds API subroutes instead of mistaking the literal segment for an rss-feed id', () => {
-    expect(deriveCacheTags('/api/v1/rss-feeds/trending', noContext)).toEqual(['html'])
     expect(deriveCacheTags('/api/v1/rss-feeds/recommended', noContext)).toEqual(['html'])
   })
 
@@ -171,7 +170,6 @@ describe('deriveCacheTags entity routes', () => {
   })
 
   it('uses the html fallback for static hostname API subroutes instead of mistaking the literal segment for a hostname id', () => {
-    expect(deriveCacheTags('/api/v1/hostnames/top', noContext)).toEqual(['html'])
     expect(deriveCacheTags('/api/v1/hostnames/compare', noContext)).toEqual(['html'])
     expect(deriveCacheTags('/api/v1/hostnames/social', noContext)).toEqual(['html'])
     expect(deriveCacheTags('/api/v1/hostnames/blocked', noContext)).toEqual(['html'])

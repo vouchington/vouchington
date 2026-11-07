@@ -4,13 +4,11 @@ import { describe, expect, it } from 'vitest'
 // when any migrated cursor caller changes; dynamic imports execute the cases below.
 import '../../rss-feed-items/search-filters.mts'
 import '../../topics/search/get-ids-page-info.mts'
-import '../../trending-communities/get-trending-communities.mts'
 import '../../trending-posts/get-trending-posts.mts'
 import '../../trending-referral-programs/get-trending-referral-programs.mts'
-import '../../trending-rss-feeds/get-trending-rss-feeds.mts'
+import '../../rss-feeds/search-page.mts'
 import '../../trending-topics/get-trending-topics.mts'
 import '../../urls-hostnames/search-query.mts'
-import '../../urls-hostnames/search-top.mts'
 import '../../urls-hostnames/search.mts'
 import '../../urls-hostnames/social.mts'
 import '../../urls/search.mts'
@@ -79,14 +77,6 @@ const cases: CursorCase[] = [
       { hasTextSearch: false, useSemanticRelevanceRanking: false } as never,
     ),
   ),
-  cursorCase('getTrendingCommunities', async () =>
-    (
-      await import('../../trending-communities/get-trending-communities.mts')
-    ).getTrendingCommunities({
-      after: score,
-      limit: 1,
-    }),
-  ),
   cursorCase('getTrendingPosts', async () =>
     (await import('../../trending-posts/get-trending-posts.mts')).getTrendingPosts({
       after: score,
@@ -99,12 +89,11 @@ const cases: CursorCase[] = [
       await import('../../trending-referral-programs/get-trending-referral-programs.mts')
     ).getTrendingReferralPrograms({ after: score, limit: 1 }),
   ),
-  cursorCase('getTrendingRssFeeds', async () =>
-    (await import('../../trending-rss-feeds/get-trending-rss-feeds.mts')).getTrendingRssFeeds({
-      after: score,
-      limit: 1,
-      timeRange: 'day',
-    }),
+  cursorCase('decodeRssFeedsCursor trending', async () =>
+    (await import('../../rss-feeds/search-page.mts')).decodeRssFeedsCursor(score, 'trending'),
+  ),
+  cursorCase('decodeRssFeedsCursor default', async () =>
+    (await import('../../rss-feeds/search-page.mts')).decodeRssFeedsCursor(simple, undefined),
   ),
   cursorCase('getTrendingTopics', async () =>
     (await import('../../trending-topics/get-trending-topics.mts')).getTrendingTopics({
@@ -123,12 +112,6 @@ const cases: CursorCase[] = [
   cursorCase('buildSearchUrlHostnamesQuery name', async () =>
     (await import('../../urls-hostnames/search-query.mts')).buildSearchUrlHostnamesQuery({
       after: name,
-      limit: 1,
-    }),
-  ),
-  cursorCase('searchTopHostnames', async () =>
-    (await import('../../urls-hostnames/search-top.mts')).searchTopHostnames({
-      after: score,
       limit: 1,
     }),
   ),

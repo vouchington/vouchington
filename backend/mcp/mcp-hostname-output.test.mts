@@ -2,7 +2,6 @@ import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
 import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
-import getTopHostnamesTool from './get-top-hostnames.mts'
 import { HOSTNAME_PAGE_LIMIT, hostnamesPageProperties } from './mcp-hostname-output.mts'
 import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import searchHostnamesTool from './search-hostnames.mts'
@@ -33,10 +32,7 @@ function branches(tool: { meta?: Tool['meta'] }): JsonSchema[] {
   return schema.oneOf
 }
 
-const TOOLS = [
-  ['read_hostnames', searchHostnamesTool, '/api/v1/hostnames'],
-  ['read_hostnames', getTopHostnamesTool, '/api/v1/hostnames/top'],
-] as const
+const TOOLS = [['read_hostnames', searchHostnamesTool, '/api/v1/hostnames']] as const
 
 describe('hostname read tool output schemas', () => {
   it('takes the hostname fields from the public hostname contracts and no moderation field', () => {
@@ -109,17 +105,12 @@ describe('hostname read tool output schemas', () => {
     })
   })
 
-  it('offers the trust sort only on read_hostnames.search', () => {
+  it('offers the trust sort on read_hostnames.search', () => {
     const properties = searchHostnamesTool.schema.parameters?.['properties'] as Record<
       string,
       unknown
     >
 
     expect(properties['sort']).toMatchObject({ enum: ['trust'] })
-    expect(Object.keys(getTopHostnamesTool.schema.parameters?.['properties'] ?? {})).toEqual([
-      'topic',
-      'limit',
-      'after',
-    ])
   })
 })

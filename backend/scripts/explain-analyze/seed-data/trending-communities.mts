@@ -1,11 +1,11 @@
 import { beginTransaction } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
-// getTrendingCommunities' candidate_reviewed_posts CTE requires a real, approved
+// searchCommunities' trending candidate_reviewed_posts CTE requires a real, approved
 // community_post_reviews row AND a matching posts.community_id — but seedCommunities' bulk
 // insert only ever sets community_post_reviews.community_id, leaving posts.community_id NULL
 // except for the two rows seedCommunityPosts() targets. Left as-is, only one seed community would
-// ever have windowed post activity, giving the trending-communities EXPLAIN scenario a
+// ever have windowed post activity, giving the search-communities-trending EXPLAIN scenario a
 // single-candidate plan that can't tell a candidate-bounded join from an accidental one.
 //
 // This used to be fixed by pairing posts.community_id with every one of seedCommunities' 1000
@@ -17,7 +17,7 @@ import { seedUuid } from './common.mts'
 // posts.community_id IS NULL (backend/services/feeds/posts/get-ids/eligible-posts-cte.mts).
 // Seed a dedicated batch of reviewed community posts instead, offset far enough into the past to
 // clear every 1-week feed window while staying inside TRENDING_WINDOW_DAYS (30 days,
-// backend/services/trending-communities/get-trending-communities.mts) — real trending-communities
+// backend/services/communities/search/trending-candidates.mts) — real trending communities
 // candidates that are never candidates for the general feed.
 //
 // postsPerCommunity used to be throttled to 20 (from a realistic 200) because
@@ -80,7 +80,7 @@ export async function seedTrendingCommunityPostIds(
   }
 }
 
-// getTrendingCommunities' proxy_follow_counts/proxy_mute_counts CTEs are the only scenario
+// the trending candidates' proxy_follow_counts/proxy_mute_counts CTEs are the only scenario
 // consumers of these two relation tables — nothing else in explain-analyze seeds them.
 export async function seedCommunityProxyFollowsAndMutes(
   communityCount = 5,

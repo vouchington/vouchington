@@ -36277,50 +36277,6 @@
       "required": ["post"],
       "type": "object"
     },
-    "TrendingCommunitiesResult": {
-      "additionalProperties": false,
-      "properties": {
-        "communities": {
-          "items": {
-            "$ref": "#/components/schemas/TrendingCommunity"
-          },
-          "type": "array"
-        },
-        "page_info": {
-          "$ref": "#/components/schemas/PageInfo"
-        }
-      },
-      "required": ["communities", "page_info"],
-      "type": "object"
-    },
-    "TrendingCommunity": {
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "member_count": {
-          "type": "number"
-        },
-        "post_count": {
-          "type": "number"
-        },
-        "trending_score": {
-          "type": "number"
-        },
-        "virtual_subscription_count": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "id",
-        "member_count",
-        "post_count",
-        "trending_score",
-        "virtual_subscription_count"
-      ],
-      "type": "object"
-    },
     "TrendingReferralProgram": {
       "additionalProperties": false,
       "properties": {
@@ -42510,7 +42466,7 @@
             "type": "string"
           },
           "sort": {
-            "enum": ["name", "members", "virtual_subscriptions"],
+            "enum": ["name", "members", "virtual_subscriptions", "trending"],
             "type": "string"
           },
           "topic": {
@@ -44301,25 +44257,6 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/hostnames/top": {
-      "query": {
-        "properties": {
-          "after": {
-            "type": "string"
-          },
-          "limit": {
-            "default": 25,
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "topic": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      }
-    },
     "GET:/api/v1/households": {
       "query": {
         "properties": {
@@ -45937,7 +45874,15 @@
           "q": {
             "type": "string"
           },
+          "sort": {
+            "enum": ["trending"],
+            "type": "string"
+          },
           "text_search_query": {
+            "type": "string"
+          },
+          "time_range": {
+            "enum": ["day", "week", "month"],
             "type": "string"
           },
           "topic": {
@@ -46020,28 +45965,6 @@
             "type": "integer"
           },
           "source": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/rss-feeds/trending": {
-      "query": {
-        "properties": {
-          "after": {
-            "type": "string"
-          },
-          "limit": {
-            "default": 20,
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "min_score": {
-            "type": "number"
-          },
-          "time_range": {
             "type": "string"
           }
         },
@@ -46537,22 +46460,6 @@
               "type": "string"
             },
             "type": "array"
-          }
-        },
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/trending-communities": {
-      "query": {
-        "properties": {
-          "after": {
-            "type": "string"
-          },
-          "limit": {
-            "default": 10,
-            "maximum": 50,
-            "minimum": 1,
-            "type": "integer"
           }
         },
         "type": "object"
@@ -52205,9 +52112,6 @@
     "GET:/api/v1/rss-feeds/recommended": {
       "$ref": "#/components/schemas/Record_string_unknown"
     },
-    "GET:/api/v1/rss-feeds/trending": {
-      "$ref": "#/components/schemas/Record_string_unknown"
-    },
     "GET:/api/v1/stories/:id": {
       "$ref": "#/components/schemas/StoryPageResponse"
     },
@@ -52254,9 +52158,6 @@
     },
     "GET:/api/v1/topics/compare": {
       "$ref": "#/components/schemas/Record_string_unknown"
-    },
-    "GET:/api/v1/trending-communities": {
-      "$ref": "#/components/schemas/TrendingCommunitiesResult"
     },
     "GET:/api/v1/trending-posts": {
       "$ref": "#/components/schemas/Record_string_unknown"

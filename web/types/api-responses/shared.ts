@@ -7,7 +7,7 @@ export type {
   ElectionVote,
   AuthorAside,
 } from '../posts'
-export type { Hostname, HostnameElection, HostnameListResponse } from '../hostnames'
+export type { Hostname, HostnameElection } from '../hostnames'
 export type {
   Topic,
   TopicContentUpdate,

@@ -17,7 +17,6 @@ import { createNativeTrendingFeed } from '../../test-helpers/native-trending-rss
 interface TrendingHttpBody {
   results: Array<{ id: string }>
   page_info: { has_next_page: boolean; end_cursor: string | null }
-  rss_feeds: Record<string, unknown>
 }
 
 function boundaryAfter(feedId: string): string {
@@ -59,7 +58,7 @@ async function verifyOrdinaryReadProfileThreshold(
         async address => {
           const host = address.host === '::1' ? '[::1]' : address.host
           const response = await requestFetch(
-            `http://${host}:${address.port}/api/v1/rss-feeds/trending`,
+            `http://${host}:${address.port}/api/v1/rss-feeds?sort=trending`,
           )
           const body = await response.text()
           assert.equal(response.status, 200, body)
@@ -107,7 +106,8 @@ export async function checkTrendingHttpContracts(): Promise<void> {
         query: Record<string, string | number>,
         authenticated = false,
       ): Promise<{ body: TrendingHttpBody; headers: Headers }> {
-        const url = new URL('/api/v1/rss-feeds/trending', origin)
+        const url = new URL('/api/v1/rss-feeds', origin)
+        url.searchParams.set('sort', 'trending')
         for (const [key, value] of Object.entries(query)) url.searchParams.set(key, String(value))
         requestCounter += 1
         const headers: Record<string, string> = {
@@ -141,40 +141,31 @@ export async function checkTrendingHttpContracts(): Promise<void> {
         assert.ok(unscoped.headers.get('cache-control')?.includes('public'))
         const owned = await getTrending({ time_range: timeRange, after: boundaryAfter(trendingId) })
         assert.equal(owned.body.results[0]?.id, trendingId)
-        assert.ok(owned.body.rss_feeds[trendingId])
       }
 
       const ownedBoundary = boundaryAfter(trendingId)
-      const large = await getTrending({ limit: 100, min_score: 3, after: ownedBoundary }, true)
+      const large = await getTrending({ limit: 25, after: ownedBoundary }, true)
       const largeIds = large.body.results.map(row => row.id)
       assert.ok(largeIds.includes(trendingId))
       assert.ok(!largeIds.includes(hiddenId))
       assert.equal(large.headers.get('cache-control'), null)
-      const enabled = await getTrending({ limit: 1, min_score: 3, after: ownedBoundary }, true)
+      const enabled = await getTrending({ limit: 1, after: ownedBoundary }, true)
       assert.equal(enabled.body.results[0]?.id, trendingId)
-      const hidden = await getTrending(
-        { limit: 1, min_score: 3, after: boundaryAfter(hiddenId) },
-        true,
-      )
+      const hidden = await getTrending({ limit: 1, after: boundaryAfter(hiddenId) }, true)
       assert.equal(hidden.body.results.length, 1)
       assert.notEqual(hidden.body.results[0]?.id, hiddenId)
-      const belowThreshold = await getTrending(
-        { limit: 100, min_score: 4, after: ownedBoundary },
-        true,
-      )
-      assert.deepEqual(belowThreshold.body.results, [])
 
-      const first = await getTrending({ limit: 1, min_score: 3, after: ownedBoundary }, true)
+      const first = await getTrending({ limit: 1, after: ownedBoundary }, true)
       assert.equal(first.body.results[0]?.id, trendingId)
       assert.equal(first.body.results.length, 1)
       assert.equal(first.body.page_info.has_next_page, true)
       const cursor = first.body.page_info.end_cursor
       assert.ok(cursor)
-      const second = await getTrending({ limit: 1, min_score: 3, after: cursor }, true)
+      const second = await getTrending({ limit: 1, after: cursor }, true)
       assert.notEqual(second.body.results[0]?.id, first.body.results[0]?.id)
       assert.equal(second.body.results.length, 1)
       const ownedSecondary = await getTrending(
-        { limit: 1, min_score: 3, after: boundaryAfter(secondaryId) },
+        { limit: 1, after: boundaryAfter(secondaryId) },
         true,
       )
       assert.equal(ownedSecondary.body.results[0]?.id, secondaryId)

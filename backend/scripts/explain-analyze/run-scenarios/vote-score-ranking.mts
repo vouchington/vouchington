@@ -1,7 +1,6 @@
 import { getPostByAny } from '@services/posts/get'
 import { getDominantPublisherTypeSlug } from '@services/topics/get-dominant-publisher-type'
 import { searchUrlHostnames } from '@services/urls-hostnames/search'
-import { searchTopHostnames } from '@services/urls-hostnames/search-top'
 import { searchRssFeeds } from '@services/rss-feeds/search'
 import { getRssFeedItemFeedIds } from '@services/feeds/rss-feed-items/get-ids'
 import { seedPostId, seedTopicId, seedUser, runAndCapture } from '../run-support.mts'
@@ -13,7 +12,7 @@ import {
 } from '../seed-data/vote-score-ranking.mts'
 import {
   prepareVoteScoreRankingCursors,
-  runTopHostnameContinuation,
+  runTrustHostnameContinuation,
   runZeroTrustContinuation,
   VOTE_SCORE_HOSTNAME_ROWS,
   VOTE_SCORE_PUBLISHER_ROWS,
@@ -38,45 +37,44 @@ export function getVoteScoreHostnameScenarios(
   ]
   return [
     {
-      id: 'vote-score-hostnames-top-first',
-      queryName: 'readHostnameCandidatePage',
-      run: () => searchTopHostnames({ limit: 25 }),
-      expectations: hostnameIndex('idx_url_hostnames__top_sort'),
+      id: 'vote-score-hostnames-trust-after',
+      queryName: 'searchUrlHostnames',
+      run: () => runTrustHostnameContinuation(cursors.top),
+      expectations: hostnameIndex('idx_url_hostnames__listed_votes_score_sort__id'),
       seededRows: VOTE_SCORE_HOSTNAME_ROWS,
     },
     {
-      id: 'vote-score-hostnames-top-after',
-      queryName: 'readHostnameCandidatePage',
-      run: () => runTopHostnameContinuation(cursors.top),
-      expectations: hostnameIndex('idx_url_hostnames__top_sort'),
+      id: 'vote-score-hostnames-trust-by-topic-first',
+      queryName: 'searchUrlHostnames',
+      run: () =>
+        searchUrlHostnames({
+          sort: 'trust',
+          is_blocked: false,
+          topic_id: seedTopicId,
+          limit: 25,
+        }),
+      expectations: hostnameIndex('idx_url_hostnames__topic_id__votes_score_sort__id'),
       seededRows: VOTE_SCORE_HOSTNAME_ROWS,
     },
     {
-      id: 'vote-score-hostnames-top-by-topic-first',
-      queryName: 'readHostnameCandidatePage',
-      run: () => searchTopHostnames({ topic_id: seedTopicId, limit: 25 }),
-      expectations: hostnameIndex('idx_url_hostnames__top_sort_by_topic'),
-      seededRows: VOTE_SCORE_HOSTNAME_ROWS,
-    },
-    {
-      id: 'vote-score-hostnames-top-by-topic-after',
-      queryName: 'readHostnameCandidatePage',
-      run: () => runTopHostnameContinuation(cursors.topicTop, seedTopicId),
-      expectations: hostnameIndex('idx_url_hostnames__top_sort_by_topic'),
+      id: 'vote-score-hostnames-trust-by-topic-after',
+      queryName: 'searchUrlHostnames',
+      run: () => runTrustHostnameContinuation(cursors.topicTop, seedTopicId),
+      expectations: hostnameIndex('idx_url_hostnames__topic_id__votes_score_sort__id'),
       seededRows: VOTE_SCORE_HOSTNAME_ROWS,
     },
     {
       id: 'vote-score-hostnames-trust-first',
       queryName: 'searchUrlHostnames',
-      run: () => searchUrlHostnames({ sort: 'trust', limit: 25 }),
-      expectations: hostnameIndex('idx_url_hostnames__votes_score_sort__id'),
+      run: () => searchUrlHostnames({ sort: 'trust', is_blocked: false, limit: 25 }),
+      expectations: hostnameIndex('idx_url_hostnames__listed_votes_score_sort__id'),
       seededRows: VOTE_SCORE_HOSTNAME_ROWS,
     },
     {
       id: 'vote-score-hostnames-trust-deep-zero-after',
       queryName: 'searchUrlHostnames',
       run: () => runZeroTrustContinuation(cursors.trustZero),
-      expectations: hostnameIndex('idx_url_hostnames__votes_score_sort__id'),
+      expectations: hostnameIndex('idx_url_hostnames__listed_votes_score_sort__id'),
       seededRows: VOTE_SCORE_HOSTNAME_ROWS,
     },
   ]

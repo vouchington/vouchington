@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../../backend/entrypoints/api/index.mts'
 import * as serverRoutes from '@/lib/api/server'
-import type { TopHostnamesResponse } from '@/types/api-responses'
 import {
   createTestPost,
   createTestTopic,
@@ -156,15 +155,17 @@ describe('routes — public and direct', () => {
       expect(result.results).toEqual([])
     })
 
-    it('getTrendingRssFeeds returns a list of rss feeds', async () => {
-      const result = await serverRoutes.getTrendingRssFeeds({
-        searchParams: { time_range: 'week' },
+    it('getRssFeeds sorted by trending returns a list of rss feeds', async () => {
+      const result = await serverRoutes.getRssFeeds({
+        searchParams: { sort: 'trending', time_range: 'week' },
       })
       expect(Array.isArray(result.results)).toBe(true)
     })
 
-    it('top hostnames endpoint returns a list of hostnames', async () => {
-      const result = await serverRoutes.serverApi.get<TopHostnamesResponse>('/api/v1/hostnames/top')
+    it('hostnames search sorted by trust returns a list of hostnames', async () => {
+      const result = await serverRoutes.serverApi.get<{ results: unknown[] }>(
+        '/api/v1/hostnames?sort=trust',
+      )
       expect(Array.isArray(result.results)).toBe(true)
     })
 

@@ -16,6 +16,7 @@ type CommunitySearchRow = Community & {
   proxy_follow_count?: number
   proxy_mute_count?: number
   virtual_subscription_count?: number
+  trending_score?: number
 }
 
 export function mapCommunitySearchResult(
@@ -30,6 +31,7 @@ export function mapCommunitySearchResult(
   const results: Community[] = []
   const usersMap: Record<string, CommunityOwner> = {}
   const metricsMap: Record<string, CommunityMetrics> = {}
+  const trendingScores: Record<string, number> = {}
 
   for (let i = 0; i < Math.min(rows.length, options.limit); i++) {
     const row = rows[i]! as CommunitySearchRow
@@ -64,6 +66,8 @@ export function mapCommunitySearchResult(
       rules_markdown: row.rules_markdown,
     })
 
+    if (row.trending_score !== undefined) trendingScores[row.id] = row.trending_score
+
     if (row.owner_id && !usersMap[row.owner_id]) {
       usersMap[row.owner_id] = {
         id: row.owner_id,
@@ -89,18 +93,23 @@ export function mapCommunitySearchResult(
   const pageInfo =
     options.sort === 'name'
       ? buildPageInfo(results, { hasNextPage, getCursor: c => ({ name: c.name, id: c.id }) })
-      : options.sort === 'members'
+      : options.sort === 'trending'
         ? buildPageInfo(results, {
             hasNextPage,
-            getCursor: c => ({ score: metricsMap[c.id]?.member_count ?? 0, id: c.id }),
+            getCursor: c => ({ score: trendingScores[c.id] ?? 0, id: c.id }),
           })
-        : buildPageInfo(results, {
-            hasNextPage,
-            getCursor: c => ({
-              score: metricsMap[c.id]?.virtual_subscription_count ?? 0,
-              id: c.id,
-            }),
-          })
+        : options.sort === 'members'
+          ? buildPageInfo(results, {
+              hasNextPage,
+              getCursor: c => ({ score: metricsMap[c.id]?.member_count ?? 0, id: c.id }),
+            })
+          : buildPageInfo(results, {
+              hasNextPage,
+              getCursor: c => ({
+                score: metricsMap[c.id]?.virtual_subscription_count ?? 0,
+                id: c.id,
+              }),
+            })
 
   return { results, users: usersMap, page_info: pageInfo, community_metrics: metricsMap }
 }

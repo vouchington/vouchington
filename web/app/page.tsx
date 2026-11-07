@@ -10,7 +10,7 @@ import { TrendingTopicsPreview } from '@/components/home/trending-topics-preview
 import { TrendingTopicsPreviewStreaming } from '@/components/home/trending-topics-preview-streaming'
 import { renderAuthGatedStreaming } from '@/components/tags/render-auth-gated-streaming'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
-import { getTrendingRssFeeds } from '@/lib/api/server/rss-feeds'
+import { getRssFeeds } from '@/lib/api/server/rss-feeds'
 import { getPlatformStats } from '@/lib/api/server/platform-stats'
 import { getTrendingTopics } from '@/lib/api/server/trending-topics'
 import { createPageMetadata } from '@/lib/seo/metadata'
@@ -56,8 +56,8 @@ export default async function Home() {
     redirect('/feed/news')
   }
 
-  const trendingFeedsPromise = getTrendingRssFeeds({
-    searchParams: { limit: 10, time_range: 'week' },
+  const trendingFeedsPromise = getRssFeeds({
+    searchParams: { sort: 'trending', time_range: 'week', limit: 10 },
   }).then(projectTrendingFeeds)
   const platformStatsPromise = getPlatformStats().then(projectPlatformStats)
   const trendingTopicsPromise = getTrendingTopics({
