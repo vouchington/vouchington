@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import type { buildHackerNewsReadmissionPageQuery } from '@services/urls/hacker-news-lookup-readmission'
 type LookupReadmissionWindow = Parameters<typeof buildHackerNewsReadmissionPageQuery>[0]
+import { deleteOwnedUrlsInBatches } from './hacker-news-readmission-cleanup.mts'
 import { seedUuid, seedUuidAtTimestamp } from './common.mts'
 
 export const READMISSION_FIXTURE_ROWS = 100_000
@@ -78,11 +79,10 @@ export async function seedHackerNewsReadmissionFixture(
 }
 
 export async function cleanupHackerNewsReadmissionFixture(): Promise<void> {
-  await write(
-    `/* cleanupHackerNewsReadmissionFixture:urls */
-    WITH owned AS (SELECT id FROM urls WHERE hostname_id=$1 LIMIT $2)
-    DELETE FROM urls USING owned WHERE urls.id=owned.id`,
-    [HOSTNAME_ID, READMISSION_FIXTURE_ROWS],
+  await deleteOwnedUrlsInBatches(
+    (text, values) => write(text, [...values]),
+    HOSTNAME_ID,
+    READMISSION_FIXTURE_ROWS,
   )
   await write(
     '/* cleanupHackerNewsReadmissionFixture:hostname */ DELETE FROM url_hostnames WHERE id=$1',
