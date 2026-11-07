@@ -3,7 +3,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
-import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
+import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
 
 describe('private participant statement projection', () => {
   useCopyrightIntakeEnvironment()

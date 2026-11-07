@@ -13,7 +13,8 @@ export function appendDirectCandidateCTE(
     ,
     direct_candidate_rss_feed_items AS MATERIALIZED (
       SELECT
-        NULL::uuid AS item_id, NULL::int AS votes_score_net,
+        NULL::uuid AS item_id, NULL::double precision AS votes_score_net,
+        NULL::double precision AS votes_score_sort,
         NULL::timestamptz AS published_at, NULL::uuid AS story_id,
         NULL::boolean AS matches_source, NULL::boolean AS matches_topics
       WHERE false
@@ -28,6 +29,7 @@ export function appendDirectCandidateCTE(
       SELECT
         rss_feed_items.id AS item_id,
         rss_feed_items.votes_score_net,
+        rss_feed_items.votes_score_sort,
         rss_feed_items.published_at,
         rss_feed_items.story_id,
         (
@@ -51,6 +53,7 @@ export type DirectCandidateFilterOptions = {
   currentUserIsAdministrator: boolean
   feedType: RssFeedItemFeedType | undefined
   hasRelatedPosts: boolean | undefined
+  hasHackerNewsReferences?: boolean
   includeDirectItems: boolean
   itemCutoffId: string | null
   mediaTypes: string[]

@@ -4,6 +4,7 @@ import {
 } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import assert from 'http-assert'
+import createHttpError from 'http-errors'
 import { isSlug, isUUID, isUsername } from '@modules/utils'
 import { entityCacheBloomFilterEnabled } from '@services/entity-cache/backfill-bloom-filter'
 import { getTopicByAny } from '@services/topics/get'
@@ -142,7 +143,7 @@ export async function checkAvailability(
       return { available: false, conflict: null }
     }
     default:
-      assert(false, 422, `Unknown kind: ${kind as string}`)
+      throw createHttpError(422, `Unknown kind: ${String(kind)}`)
   }
 }
 

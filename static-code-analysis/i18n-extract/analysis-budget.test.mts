@@ -13,11 +13,17 @@ describe('withI18nAnalysisBudget', () => {
       delay: () => Promise.reject(new Error('budget elapsed')),
     }
     await expect(
-      withI18nAnalysisBudget('analyzeProject', new Promise(() => undefined), {
-        clock,
-        budgetMs: 25,
-      }),
-    ).rejects.toThrowError('no-mistakes analyzeProject exceeded 25ms (lock wait or hung analysis)')
+      withI18nAnalysisBudget(
+        'analyzeProject',
+        new Promise(() => {
+          // Intentionally never settles; the budget path must finish independently.
+        }),
+        {
+          clock,
+          budgetMs: 25,
+        },
+      ),
+    ).rejects.toThrow('no-mistakes analyzeProject exceeded 25ms (lock wait or hung analysis)')
   })
 
   it('names a host lock holder instead of a generic timeout', async () => {
@@ -26,7 +32,7 @@ describe('withI18nAnalysisBudget', () => {
         'resolveCheck',
         Promise.reject(new Error('waiting for lock held by pid 2309074 for 0s')),
       ),
-    ).rejects.toThrowError(
+    ).rejects.toThrow(
       'no-mistakes resolveCheck blocked on host lock: waiting for lock held by pid 2309074 for 0s',
     )
   })
@@ -35,9 +41,15 @@ describe('withI18nAnalysisBudget', () => {
     expect(task.timeout).toBe(5_000)
     vi.useFakeTimers()
     let settled = false
-    const result = withI18nAnalysisBudget('analyzeProject', new Promise(() => undefined), {
-      budgetMs: task.timeout,
-    }).catch((err: unknown) => {
+    const result = withI18nAnalysisBudget(
+      'analyzeProject',
+      new Promise(() => {
+        // Intentionally never settles; the budget path must finish independently.
+      }),
+      {
+        budgetMs: task.timeout,
+      },
+    ).catch((err: unknown) => {
       settled = true
       return err
     })
@@ -63,13 +75,19 @@ describe('withI18nAnalysisBudget', () => {
       delay: ms => Promise.reject(new Error(`delay ${ms}`)),
     }
     await expect(
-      withI18nAnalysisBudget('resolveCheck', new Promise(() => undefined), {
-        clock,
-        budgetMs: 25_000,
-        startedAt: 0,
-        now: () => now,
-      }),
-    ).rejects.toThrowError('no-mistakes resolveCheck exceeded 15000ms (lock wait or hung analysis)')
+      withI18nAnalysisBudget(
+        'resolveCheck',
+        new Promise(() => {
+          // Intentionally never settles; the budget path must finish independently.
+        }),
+        {
+          clock,
+          budgetMs: 25_000,
+          startedAt: 0,
+          now: () => now,
+        },
+      ),
+    ).rejects.toThrow('no-mistakes resolveCheck exceeded 15000ms (lock wait or hung analysis)')
   })
 
   it('does not impose a timeout when no budget is requested', async () => {

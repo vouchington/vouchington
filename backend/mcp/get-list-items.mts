@@ -78,7 +78,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       return {
         success: true,
         results: await Promise.all(
-          page.results.filter(item => !hidden.has(item)).map(toMcpListItem),
+          page.results.flatMap(item => (hidden.has(item) ? [] : [toMcpListItem(item)])),
         ),
         // The cursor comes from the unfiltered page, so it advances past every hidden item.
         page_info: page.page_info,

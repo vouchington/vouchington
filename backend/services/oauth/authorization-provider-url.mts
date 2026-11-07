@@ -10,6 +10,7 @@ import {
 } from '@voucha/config'
 import type { BrokerCallbackMode, BrokerOAuthProvider } from './broker-config.mts'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed options.provider switch is exhaustive; Oxlint misses its terminal flow.
 export function buildProviderAuthorizationUrl(options: {
   provider: BrokerOAuthProvider
   callbackMode: BrokerCallbackMode

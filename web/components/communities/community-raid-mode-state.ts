@@ -52,6 +52,7 @@ export const initialRaidModeState: RaidModeState = {
   isSaving: false,
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 export function raidModeReducer(state: RaidModeState, action: RaidModeAction): RaidModeState {
   switch (action.type) {
     case 'toggleRestriction': {
@@ -97,21 +98,15 @@ export function getExpiresAt(duration: DurationValue): string | null {
   return new Date(Date.now() + option.hours * 60 * 60 * 1000).toISOString()
 }
 
+const restrictionTypeLabels: Record<CommunityRestrictionType, string> = {
+  require_post_approval: 'Require post approval',
+  no_new_member_posts: 'Block new member posts',
+  no_links: 'Block links',
+  approved_members_only: 'Approved members only',
+}
+
 export function formatRestrictionType(type: CommunityRestrictionType): string {
-  switch (type) {
-    case 'require_post_approval': {
-      return 'Require post approval'
-    }
-    case 'no_new_member_posts': {
-      return 'Block new member posts'
-    }
-    case 'no_links': {
-      return 'Block links'
-    }
-    case 'approved_members_only': {
-      return 'Approved members only'
-    }
-  }
+  return restrictionTypeLabels[type]
 }
 
 export function formatRestrictionExpiry(expiresAt: string | null): string {

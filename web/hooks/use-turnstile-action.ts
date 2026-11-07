@@ -57,7 +57,7 @@ export function useTurnstileAction({
 
   useEffect(() => {
     const turnstile: TurnstileApi | undefined = window.turnstile
-    if (!isLoaded || !container || !turnstile) return
+    if (!isLoaded || !container || !turnstile) return undefined
     const options: TurnstileActionRenderParameters = {
       sitekey: siteKey,
       action: toTurnstileAction(actionTag),
@@ -76,7 +76,7 @@ export function useTurnstileAction({
     if (widgetId === undefined) {
       queueMicrotask(() => setWidgetError(true))
       callbacksRef.current.onError?.()
-      return
+      return undefined
     }
     widgetIdRef.current = widgetId
     return () => {

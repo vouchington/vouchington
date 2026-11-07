@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict'
+import { cleanupExpiredOAuthAuthorizations } from '@services/data-retention/cleanup-oauth-authorizations'
 import { cleanupRetainedIdentityRoots } from '@services/data-retention/cleanup-retained-identities'
 import { cleanupRetainedRelationIdentities } from '@services/data-retention/cleanup-retained-relation-identities'
-import { cleanupExpiredOAuthAuthorizations } from '@services/data-retention/cleanup-oauth-authorizations'
 import { write } from '@data-stores/psql'
 import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { runHackerNewsRetentionScenario } from './hacker-news-retention.mts'
 
 /** The daily cleanup runs this after retained relations and media bindings. */
 export async function runRetentionStagePageScenarios(): Promise<void> {
+  await runHackerNewsRetentionScenario()
   await seedOAuthRetentionRows()
   await write(`/* seedExplainOAuthRetention:analyze */ ANALYZE oauth_authorizations`)
   registerScenarioContract('retention-expired-oauth-authorizations', {

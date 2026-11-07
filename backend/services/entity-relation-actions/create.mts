@@ -72,7 +72,7 @@ export async function createEntityRelationAction(
       parsed.metadata.object_type === 'post' ? parsed.objectIds.map(object => object.id) : [],
   }
   const membershipPlan = getLoadedMembershipPlan(currentUser)
-  // ast-grep-ignore: no-three-sequential-awaits -- preserve visibility, user-tag/community admission, relation quota, then delegated-private authorization error order.
+  // ast-grep-ignore: no-three-sequential-awaits -- Visibility, user-tag/contribution, community, quota and delegated-private checks must reject in this order before upsertEntityRelation writes.
   const loaded = await loadPostMutationAccess(viewer, postIds)
   await assertRelatablePostAccess(viewer, postIds, undefined, loaded)
   const resolvedUserTagTargetId = await resolveUserTagTarget(currentUser, parsed, membershipPlan)

@@ -39,5 +39,10 @@ export function mergeClusterPages(
       page => page.rss_feed_bookmarks,
     ),
     allUsers: mergeRecords(feedPages, page => page.users ?? {}),
+    allHackerNewsReferences: mergeSidecars(
+      feedPages,
+      continuationPages,
+      page => page.rss_feed_item_hacker_news_references ?? {},
+    ),
   }
 }

@@ -136,7 +136,11 @@ describe('ModQueueReports', () => {
 
   it('disables the Send Message button while the request is in flight', async () => {
     let resolve!: (v: unknown) => void
-    mockOpenModmailThreadForReport.mockReturnValueOnce(new Promise(r => (resolve = r)))
+    mockOpenModmailThreadForReport.mockReturnValueOnce(
+      new Promise(r => {
+        resolve = r
+      }),
+    )
 
     render(
       <ModQueueReports

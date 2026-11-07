@@ -4,7 +4,6 @@ import type { CreateCommunityInput, UpdateCommunityInput } from './community-inp
 import { searchMyCommunities } from './community-search'
 import type {
   Community,
-  CommunityApplicationResponseBody,
   CommunityResponseBody,
   CommunityInvite,
   CreatedCommunityInvite,
@@ -12,6 +11,7 @@ import type {
   CommunityPinnedPostsResponseBody,
   CommunityPostTypeSettingsResponseBody,
 } from '@/types/api-responses'
+import type { CommunityApplicationResponseBody } from '@/types/api-responses/community-applications'
 export { banMember, liftBan, fetchCommunityBans } from './community-bans'
 export { fetchCommunities, searchMyCommunities } from './community-search'
 export { archiveCommunity, unarchiveCommunity } from './community-archive'

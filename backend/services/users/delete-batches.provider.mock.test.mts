@@ -32,6 +32,7 @@ import {
 } from '@voucha/test-helpers'
 import { addTestStripeDeletionWork } from '@voucha/test-helpers/entities/stripe-customer-deletion'
 import { markUserDeletionAttemptStartedForTest } from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
+import { executeUserDeletionExternalWork } from './delete-external-work-dispatch.mts'
 import { processUserDeletionExternalWork } from './delete-phase-external-work.mts'
 
 const SANITIZED_CUSTOMER = { email: '', name: '', metadata: { redacted: 'true' } }
@@ -48,6 +49,44 @@ describe('user deletion provider work', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('rejects an unsupported persisted work kind before invoking providers', async () => {
+    const work = {
+      id: randomUUID(),
+      work_kind: 'unknown' as 's3-export',
+      work_key: 'test/ignored',
+      relation_impact_id: null,
+      stripe_customer_id: null,
+    }
+
+    await expect(
+      executeUserDeletionExternalWork(work, randomUUID(), async () => undefined),
+    ).rejects.toThrow('Unsupported user deletion external work kind: unknown')
+    expect(mockS3Send).not.toHaveBeenCalled()
+    expect(mockStripeUpdate).not.toHaveBeenCalled()
+  })
+
+  it('routes relation-impact work to the fenced relation effects callback', async () => {
+    const requestId = randomUUID()
+    const impactId = randomUUID()
+    const processRelationEffects = vi.fn<(requestId: string, impactId: string) => Promise<void>>(
+      async () => undefined,
+    )
+
+    await executeUserDeletionExternalWork(
+      {
+        id: randomUUID(),
+        work_kind: 'entity-relation-effects',
+        work_key: null,
+        relation_impact_id: impactId,
+        stripe_customer_id: null,
+      },
+      requestId,
+      processRelationEffects,
+    )
+
+    expect(processRelationEffects).toHaveBeenCalledExactlyOnceWith(requestId, impactId)
   })
 
   it('keeps required provider work pending until the provider succeeds', async () => {

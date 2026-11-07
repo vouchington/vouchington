@@ -151,9 +151,12 @@ describe('InfiniteScroll', () => {
 
   it('does not call onLoadMore concurrently while a load is in progress', async () => {
     let resolveLoad!: () => void
-    const onLoadMore = vi
-      .fn<() => Promise<void>>()
-      .mockImplementation(() => new Promise<void>(r => (resolveLoad = r)))
+    const onLoadMore = vi.fn<() => Promise<void>>().mockImplementation(
+      () =>
+        new Promise<void>(r => {
+          resolveLoad = r
+        }),
+    )
 
     render(
       <InfiniteScroll
@@ -235,7 +238,12 @@ describe('InfiniteScroll', () => {
     let resolveFirstLoad!: (started: boolean) => void
     const onLoadMore = vi
       .fn<VitestLooseMock>()
-      .mockImplementationOnce(() => new Promise(resolve => (resolveFirstLoad = resolve)))
+      .mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveFirstLoad = resolve
+          }),
+      )
       .mockResolvedValue(undefined)
     const { rerender } = render(
       <InfiniteScroll

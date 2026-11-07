@@ -88,7 +88,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     resumePositionRef.current = null
   }, [clearTimer, currentEpisode, doReport])
   useEffect(() => {
-    if (!currentEpisode || !isAuthenticatedRef.current) return
+    if (!currentEpisode || !isAuthenticatedRef.current) return undefined
     const lifetime = new AbortController()
     fetchPlaybackPosition(currentEpisode.episodeId)
       .then(pos => {
@@ -111,7 +111,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   }, [currentEpisode])
   useEffect(() => {
     const audio = audioRef.current
-    if (!audio || !currentEpisode) return
+    if (!audio || !currentEpisode) return undefined
 
     function scheduleReport(episode: PodcastEpisode) {
       clearTimer()

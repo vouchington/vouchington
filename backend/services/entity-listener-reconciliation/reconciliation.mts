@@ -67,7 +67,12 @@ export async function* streamEntityReconciliationCandidateBatches(
 
 function isPostContentChange(changes?: Record<string, unknown>): boolean {
   if (!changes) return false
-  return ['title', 'markdown', 'ai_summary_markdown', 'structured_data', 'post_images'].some(
-    field => field in changes,
-  )
+  return [
+    'title',
+    'markdown',
+    'ai_summary_markdown',
+    'structured_data',
+    'post_images',
+    'url_id',
+  ].some(field => field in changes)
 }

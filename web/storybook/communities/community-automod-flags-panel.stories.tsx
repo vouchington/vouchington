@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunityAutomodFlagsPanel } from '@/components/communities/community-automod-flags-panel'
-import type { CommunityModerationQueueEntry } from '@/types/api-responses'
+import type { CommunityModerationQueueEntry } from '@/types/api-responses/community-moderation-queue'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { posts } from '@/storybook/entities/fixtures/posts'
 import { publicUsers } from '@/storybook/entities/fixtures/users'

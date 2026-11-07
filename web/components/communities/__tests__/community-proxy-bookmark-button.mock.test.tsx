@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { CommunityProxyBookmarkButton } from '../community-proxy-bookmark-button'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 const entityBookmarkButton = vi.hoisted(() =>
   vi.fn<VitestLooseMock>(

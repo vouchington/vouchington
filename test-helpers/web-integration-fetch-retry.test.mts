@@ -190,7 +190,7 @@ describe('web-integration fetch retry', () => {
         { idempotent: true, label: 'owned operation' },
       ),
     )
-    const rejection = result.catch((err: unknown) => err)
+    const rejection = result.catch((err_: unknown) => err_)
     await vi.advanceTimersByTimeAsync(5_750)
     expect(await rejection).toBe(err)
     expect(attempts).toEqual([0, 250, 750, 1_750, 3_750, 5_750])

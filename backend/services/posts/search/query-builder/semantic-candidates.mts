@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { buildTimeRangeFilter } from '@modules/feed-query-builders'
+import { buildPostSearchTimeRangeFilter } from '../hacker-news-hot-options.mts'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions } from '../types.mts'
 import { buildPostSearchAuthorFilter } from './base-filters.mts'
@@ -14,6 +14,7 @@ export function buildSemanticPostCandidates(
   currentUser: BasicUser | undefined,
   options: PostSearchOptions,
   hasTextSearch: boolean,
+  decisionInstant: Date,
 ): SQLStatement {
   const query = sql`semantic_post_candidates AS MATERIALIZED (
     SELECT semantic_eligible_post.id, semantic_eligible_post.post_type
@@ -29,6 +30,7 @@ export function buildSemanticPostCandidates(
     hot_score_lt: undefined,
   }
   const context = {
+    decisionInstant,
     currentUser,
     followingRankExpression: null,
     hasSemanticSearch: true,
@@ -52,9 +54,10 @@ export function buildSemanticPostCandidates(
   }
   // Bound the vector scan itself; the LATERAL's time filter alone leaves old rows to be walked
   // and rejected up to hnsw.max_scan_tuples.
-  const timeRangeFilter = buildTimeRangeFilter(
-    options.time_range ?? 'all',
+  const timeRangeFilter = buildPostSearchTimeRangeFilter(
+    options,
     'semantic_vector_post.id',
+    decisionInstant,
   )
   if (timeRangeFilter) query.append(sql` AND `).append(timeRangeFilter)
   query.append(sql`

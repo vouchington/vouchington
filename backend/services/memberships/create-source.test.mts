@@ -13,63 +13,6 @@ import { createMembership, InvalidMembershipGrantSkuError } from './create.mts'
 import { getMembershipProductIdForCreation } from './create-source.mts'
 
 describe('create source concurrency', () => {
-  it('fills a previously unknown Stripe originating invoice exactly once', async () => {
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'plus' })
-    const subscriptionId = `sub_origin_fill_${user.id}`
-    const originatingInvoiceId = `in_origin_fill_${user.id}`
-
-    await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-    })
-
-    await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      stripeOriginatingInvoiceId: originatingInvoiceId,
-    })
-
-    await expect(
-      createMembership({
-        userId: user.id,
-        plan: 'plus',
-        skuId: sku.id,
-        stripeSubscriptionId: subscriptionId,
-        stripeOriginatingInvoiceId: `in_origin_conflict_${user.id}`,
-      }),
-    ).rejects.toThrow('originating invoice does not match the incoming event')
-  })
-
-  it('persists the first Stripe originating invoice and rejects a conflicting replay', async () => {
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'plus' })
-    const subscriptionId = `sub_origin_${user.id}`
-    const originatingInvoiceId = `in_origin_${user.id}`
-
-    await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      stripeOriginatingInvoiceId: originatingInvoiceId,
-    })
-
-    await expect(
-      createMembership({
-        userId: user.id,
-        plan: 'plus',
-        skuId: sku.id,
-        stripeSubscriptionId: subscriptionId,
-        stripeOriginatingInvoiceId: `in_conflict_${user.id}`,
-      }),
-    ).rejects.toThrow('originating invoice does not match the incoming event')
-  })
-
   it('allows concurrent active-SKU validation for separate creations', async () => {
     const user = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })

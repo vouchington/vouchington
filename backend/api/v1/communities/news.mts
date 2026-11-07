@@ -1,4 +1,5 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
@@ -27,7 +28,6 @@ import { indexById } from '@modules/utils'
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-feed-items'
 import { isAdminUser } from '@services/users'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { resolveHashtagTopicSearch } from '@services/search-params'
 import {
   VALID_COMMUNITY_NEWS_FEED_TYPES,
@@ -41,6 +41,7 @@ import {
 } from './query-contracts-helpers.mts'
 
 app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/communities/:idOrSlug/news', communityNewsParser, communityNewsQuery)
   const currentUser = await getOptionalAuthAndRateLimit(
     ctx,
@@ -145,6 +146,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
       ),
     ),
     users: usersPromise.then(users => indexById(users.filter(Boolean))),
+    rss_feed_item_hacker_news_references: itemsPromise.then(getRssFeedItemHackerNewsSummaries),
     rss_feed_item_elections: getRssFeedItemElectionByIdCachedBatch(allItemIds).then(indexById),
     related_posts_by_url_id: relatedPostsPromise.then(r => r.related_posts_by_url_id),
     posts: relatedPostsPromise.then(r =>
@@ -171,14 +173,12 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
 
     output.election_votes = itemsPromise.then(async items => {
       const itemIds = items.flatMap(item => (item != null ? [item.id] : []))
-      if (itemIds.length === 0) return
+      if (itemIds.length === 0) return undefined
       const votes = await getRssFeedItemElectionVotesByUser(currentUser.id, itemIds)
       const votesMap = new Map(votes.map(vote => [vote.entity_id, vote]))
       const election_votes = electionVotesMapToRecord(votesMap)
       return Object.keys(election_votes).length > 0 ? election_votes : undefined
     })
-  } else {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
   }
 
   ctx.setType('json')

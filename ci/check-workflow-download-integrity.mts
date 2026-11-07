@@ -31,7 +31,7 @@ function isChecksumDownload(value: string): boolean {
 const DOWNLOAD_RE_SOURCE = String.raw`\b(?:curl|wget|ci_download_to)\b[^\n]*https?:\/\/([^/\s'"]+)`
 const DOWNLOAD_RE_G = new RegExp(DOWNLOAD_RE_SOURCE, 'g')
 const DOWNLOAD_RE = new RegExp(DOWNLOAD_RE_SOURCE)
-const SHA256_VERIFY_RE = /\bsha256sum\s+-c\b|\bshasum\s+-a\s+256\s+-c\b/
+const SHA256_VERIFY_RE = /\bsha256sum\s+(?:-c|--check)\b|\bshasum\s+-a\s+256\s+-c\b/
 const SKIP_ANNOTATION_RE = /# integrity-check:\s*skip\s+reason=\S+/
 const SHELL_VAR_ASSIGN_RE = /^([A-Z_][A-Z0-9_]*)="([^"\n]+)"/gm
 
@@ -81,6 +81,9 @@ export function workflowDownloadIntegrityViolations(
             run = run.replaceAll(`\${${varName}}`, varValue).replaceAll(`$${varName}`, varValue)
           }
         }
+        // A continued curl keeps its URL on the next physical line. Join those
+        // lines before matching so workflow shell scripts cannot hide a download.
+        run = run.replace(/\\\n/g, ' ')
 
         const lines = run.split('\n')
         for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
@@ -120,12 +123,17 @@ export function workflowDownloadIntegrityViolations(
   return violations
 }
 
-function trackedPolicyPaths(root: string): string[] {
-  return trackedFiles(root, ['.github/workflows', '.github/actions']).filter(path =>
+/** Workflow YAML, workflow shell scripts, and composite-action sources the download check owns. */
+export function workflowDownloadPolicyPaths(paths: readonly string[]): string[] {
+  return paths.filter(path =>
     path.startsWith('.github/workflows/')
-      ? path.endsWith('.yml') || path.endsWith('.yaml')
-      : /\.github\/actions\/[^/]+\/(?:action\.ya?ml|[^/]+\.sh)$/u.test(path),
+      ? path.endsWith('.yml') || path.endsWith('.yaml') || path.endsWith('.sh')
+      : /^\.github\/actions\/[^/]+\/(?:action\.ya?ml|[^/]+\.sh)$/u.test(path),
   )
+}
+
+function trackedPolicyPaths(root: string): string[] {
+  return workflowDownloadPolicyPaths(trackedFiles(root, ['.github/workflows', '.github/actions']))
 }
 
 export function checkWorkflowDownloadIntegrity(root: string): string[] {

@@ -21,6 +21,19 @@ export const allowedWorkspaceIgnoreDependencies = new Map<
   readonly IgnoredDependencyEvidence[]
 >([
   [
+    '.',
+    [
+      {
+        dependency: 'coverage-check',
+        evidenceFiles: [
+          '.github/workflows/explain-analyze.yml',
+          '.github/workflows/tests-postgres-schema.yml',
+        ],
+        evidencePattern: /\bpnpm exec coverage-check\b/,
+      },
+    ],
+  ],
+  [
     'backend/api',
     [
       {

@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { executeTrustedVersionStep } from '../test-helpers/shepherd.fixtures.mts'
+import {
+  executeTrustedVersionStep,
+  readShepherdStepScript,
+} from '../test-helpers/shepherd.fixtures.mts'
 
 type VersionStep = { id?: string; run?: string; uses?: string }
 type Workflow = {
@@ -22,7 +25,7 @@ describe('shepherd trusted version', () => {
     const versionStep = renderJob?.steps?.find(step => step.id === 'pr-shepherd-version')
 
     expect(setupStep).toBeDefined()
-    expect(versionStep?.run).not.toContain('pr-shepherd/package.json')
+    expect(readShepherdStepScript(versionStep?.run)).not.toContain('pr-shepherd/package.json')
     expect(renderJob?.outputs?.['pr_shepherd_version']).toBe(
       '${{ steps.pr-shepherd-version.outputs.version }}',
     )

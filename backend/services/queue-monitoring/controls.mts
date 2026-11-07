@@ -57,10 +57,10 @@ export async function retryManagedQueueFailedJobs(currentUser: PrivateUser, name
       const results = await Promise.allSettled(failedJobs.map(job => job.retry()))
       return {
         attempted: results.length,
-        retried: results.filter(result => result.status === 'fulfilled').length,
+        retried: results.filter(queueResult => queueResult.status === 'fulfilled').length,
       }
     },
-    result => ({ after: result }),
+    operationResult => ({ after: operationResult }),
   )
   return { success: true as const, retried: result.retried }
 }
@@ -71,7 +71,7 @@ export function listManagedScheduledJobs() {
 
 export async function runManagedScheduledJob(currentUser: PrivateUser, id: string) {
   assertOperator(currentUser)
-  const job = SCHEDULED_JOBS_REGISTRY.find(job => job.id === id)
+  const job = SCHEDULED_JOBS_REGISTRY.find(scheduledJob => scheduledJob.id === id)
   assert(job, 404, 'Scheduled job not found')
   await recordStaffOperation(
     currentUser.id,
@@ -87,7 +87,7 @@ export function listManagedBackfills() {
 
 export async function runManagedBackfill(currentUser: PrivateUser, id: string) {
   assertOperator(currentUser)
-  const backfill = BACKFILL_REGISTRY.find(backfill => backfill.id === id)
+  const backfill = BACKFILL_REGISTRY.find(registeredBackfill => registeredBackfill.id === id)
   assert(backfill, 404, 'Backfill not found')
   await recordStaffOperation(
     currentUser.id,

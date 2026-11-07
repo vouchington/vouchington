@@ -14664,7 +14664,7 @@
           "type": "string"
         }
       },
-      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "source": "backend/api/v1/copyright-notices/copyright-email-intake-read-routes.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/copyright-email-intakes/review-queue": {
@@ -17052,7 +17052,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "source": "backend/api/v1/copyright-notices/copyright-notice-match-routes.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/copyright-notices/:id/territorial-claimants": {
@@ -17684,7 +17684,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "source": "backend/api/v1/copyright-notices/copyright-email-intake-decision-routes.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary": {
@@ -35537,12 +35537,6 @@
                               "value": "hidden"
                             }
                           ]
-                        }
-                      },
-                      "should_import_hacker_news_discussions": {
-                        "required": false,
-                        "schema": {
-                          "type": "boolean"
                         }
                       },
                       "should_receive_third_party_marketing": {
@@ -61038,12 +61032,6 @@
                                 ]
                               }
                             },
-                            "should_import_hacker_news_discussions": {
-                              "required": false,
-                              "schema": {
-                                "type": "boolean"
-                              }
-                            },
                             "should_receive_third_party_marketing": {
                               "required": false,
                               "schema": {
@@ -62649,6 +62637,12 @@
                   "type": "string"
                 }
               },
+              "post_counts_capped": {
+                "required": false,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "private_count": {
                 "required": false,
                 "schema": {
@@ -62805,33 +62799,6 @@
                       }
                     },
                     "users_subscribed_posts": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    }
-                  },
-                  "type": "object"
-                }
-              },
-              "viewer_count": {
-                "required": false,
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "comments": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
-                    "discussions": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
-                    "reviews": {
                       "required": true,
                       "schema": {
                         "type": "number"
@@ -63398,12 +63365,6 @@
                                   "value": "hidden"
                                 }
                               ]
-                            }
-                          },
-                          "should_import_hacker_news_discussions": {
-                            "required": false,
-                            "schema": {
-                              "type": "boolean"
                             }
                           },
                           "should_receive_third_party_marketing": {
@@ -64335,6 +64296,12 @@
                   "type": "string"
                 }
               },
+              "post_counts_capped": {
+                "required": false,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "private_count": {
                 "required": false,
                 "schema": {
@@ -64491,33 +64458,6 @@
                       }
                     },
                     "users_subscribed_posts": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    }
-                  },
-                  "type": "object"
-                }
-              },
-              "viewer_count": {
-                "required": false,
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "comments": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
-                    "discussions": {
-                      "required": true,
-                      "schema": {
-                        "type": "number"
-                      }
-                    },
-                    "reviews": {
                       "required": true,
                       "schema": {
                         "type": "number"
@@ -65081,12 +65021,6 @@
                               "value": "hidden"
                             }
                           ]
-                        }
-                      },
-                      "should_import_hacker_news_discussions": {
-                        "required": false,
-                        "schema": {
-                          "type": "boolean"
                         }
                       },
                       "should_receive_third_party_marketing": {
@@ -86317,7 +86251,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "source": "backend/api/v1/copyright-notices/copyright-email-intake-decision-routes.mts",
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
@@ -86343,7 +86277,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "source": "backend/api/v1/copyright-notices/copyright-intake-review-routes.mts",
       "statusKnowledge": "default"
     },
     "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
@@ -106952,7 +106886,7 @@
         "include_bio": "1"
       },
       "responseSchema": {
-        "hash": "5ff149338895286f35b5d68077777860d6b2fb2bf8a23657ef155ed284d81bd6",
+        "hash": "1cbb19c8a419883c7a72b94fa6e5d189779de1a0c2e30947a9a3c4c514759920",
         "key": "native.users.profile.default"
       },
       "route": {
@@ -107943,7 +107877,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.moderation.copyright.image-similarity-candidates.default",
       "method": "GET",
-      "migratedFrom": ["backend/api/v1/copyright-notices/moderator-routes.mts"],
+      "migratedFrom": ["backend/api/v1/copyright-notices/copyright-notice-match-routes.mts"],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/targets/00000000-0000-7000-8000-000000000805/image-similarity-candidates",
       "responseSchema": {
         "hash": "c815800aaa3c767ed4c7a0bf9c47eb77325b9dda089b8c761bad59ed8f2dcc72",
@@ -108117,7 +108051,7 @@
       "id": "web.copyright.email-notice-association-search",
       "method": "GET",
       "migratedFrom": [
-        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "backend/api/v1/copyright-notices/copyright-email-intake-decision-routes.mts",
         "web/lib/api/client/copyright-notice-association-search.ts"
       ],
       "path": "/api/v1/copyright-notices/association-targets",
@@ -108144,7 +108078,7 @@
       "id": "web.copyright.email-intake-notice-association",
       "method": "POST",
       "migratedFrom": [
-        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "backend/api/v1/copyright-notices/copyright-email-intake-decision-routes.mts",
         "web/lib/api/client/copyright-email-intakes.ts"
       ],
       "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/notice-associations",
@@ -108174,7 +108108,7 @@
       "id": "web.copyright.email-intake-rejection.reply-queued",
       "method": "POST",
       "migratedFrom": [
-        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "backend/api/v1/copyright-notices/copyright-intake-review-routes.mts",
         "web/lib/api/client/copyright-email-intakes.ts"
       ],
       "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/rejections",
@@ -108207,7 +108141,7 @@
       "id": "web.copyright.email-intake-rejection.no-reply",
       "method": "POST",
       "migratedFrom": [
-        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "backend/api/v1/copyright-notices/copyright-intake-review-routes.mts",
         "web/lib/api/client/copyright-email-intakes.ts"
       ],
       "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/rejections",
@@ -108240,7 +108174,7 @@
       "id": "web.copyright.email-intake-information-request.reply-queued",
       "method": "POST",
       "migratedFrom": [
-        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "backend/api/v1/copyright-notices/copyright-intake-review-routes.mts",
         "web/lib/api/client/copyright-email-intakes.ts"
       ],
       "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/rejections",
@@ -108275,7 +108209,7 @@
       "id": "web.copyright.email-intake-information-request.no-reply",
       "method": "POST",
       "migratedFrom": [
-        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "backend/api/v1/copyright-notices/copyright-intake-review-routes.mts",
         "web/lib/api/client/copyright-email-intakes.ts"
       ],
       "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/rejections",

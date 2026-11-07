@@ -22,6 +22,10 @@ export type ModQueueAction =
   | { type: 'start'; id: string }
   | { type: 'stop' }
 
+export type ModQueueSelectionKey = `post:${string}` | `report:${string}`
+
+export type ModQueueTab = 'reports' | 'posts' | 'escalated'
+
 export const initialModQueueState: ModQueueState = {
   activeAction: null,
   error: null,
@@ -31,6 +35,7 @@ export const initialModQueueState: ModQueueState = {
   resolvedReportIds: new Set(),
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 export function modQueueReducer(state: ModQueueState, action: ModQueueAction): ModQueueState {
   switch (action.type) {
     case 'fail': {

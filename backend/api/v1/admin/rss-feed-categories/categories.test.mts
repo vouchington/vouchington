@@ -34,7 +34,7 @@ describe('rss-feed-categories', () => {
     for (;;) {
       const params = new URLSearchParams({ ...query, limit: '100' })
       if (after) params.set('after', after)
-      const res = await request.get(`/api/v1/rss-feed-categories?${params}`).expect(200)
+      const res = await request.get(`/api/v1/rss-feed-categories?${params.toString()}`).expect(200)
       all.push(...(res.body.results as ApiCategory[]))
       if (!res.body.page_info.has_next_page) break
       after = res.body.page_info.end_cursor as string

@@ -89,7 +89,6 @@ export async function createSource(
   options: {
     userId: string
     stripeSubscriptionId?: string | null
-    stripeOriginatingInvoiceId?: string
     stripeCustomerId?: string | null
     grantedById?: string | null
     providerEnvironment?: 'test' | 'production'
@@ -124,7 +123,6 @@ export async function createSource(
         userId: options.userId,
         sourceKind: 'direct',
         sourceIdentity,
-        stripeOriginatingInvoiceId: options.stripeOriginatingInvoiceId,
       },
       query,
     )),

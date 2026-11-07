@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 import { NotificationSettingsForm } from '../notification-settings-form'
 import {
   getMyEmailPreferences,

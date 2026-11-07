@@ -60,7 +60,7 @@ type ReplayStatement = 'lock' | 'write' | 'event'
 type PlanMode = 'force_custom_plan' | 'force_generic_plan'
 
 function captured(statement: ReplayStatement, mode: PlanMode): ExplainResult {
-  const scans =
+  const planScans =
     statement === 'lock'
       ? [
           {
@@ -115,7 +115,7 @@ function captured(statement: ReplayStatement, mode: PlanMode): ExplainResult {
     name: `${prefix}${statement === 'write' ? '' : `:${statement}`}:${mode}`,
     scenario_id: 'media-delivery-replay-first',
     query_text: statement === 'lock' ? lockSql : statement === 'write' ? writeSql : eventSql,
-    plan: { Plan: { 'Node Type': 'Result', Plans: scans } },
+    plan: { Plan: { 'Node Type': 'Result', Plans: planScans } },
     execution_time_ms: 1,
     planning_time_ms: 1,
     timestamp: '2026-10-14T00:00:00.000Z',

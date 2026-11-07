@@ -2,7 +2,7 @@ import { beforeAll, describe, it, expect, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 import { UrlAdminAside } from '../url-admin-aside'
 import type { PublicUrl, UrlDetailResponseBody } from '@/types/api-responses'
 

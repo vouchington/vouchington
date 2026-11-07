@@ -1,3 +1,8 @@
+import {
+  runStoryProjectionSourceWithCapacityOutcome,
+  restartLimitReachedStoryProjection,
+} from './story-post-related-url-projection-terminal.mts'
+import { processStoryPostRelatedUrlProjectionEligibilityPage } from './story-post-related-url-projection-eligibility.mts'
 import { getStoriesWorkLimit } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
@@ -40,12 +45,19 @@ export async function processStoryPostRelatedUrlProjectionPage(
   work: ProjectionWork,
 ): Promise<ProjectionPageResult> {
   try {
+    if (work.limit_reached_capacity !== null) {
+      const restarted = await restartLimitReachedStoryProjection(work)
+      return { processed: 0, continue: restarted }
+    }
     if (!(await drainStoryPostRelatedUrlProjectionInvalidation(work)))
       return { processed: 0, continue: false }
     const recoveredCrawlEffects = await drainPendingStoryPostRelatedUrlProjectionCrawlEffects(work)
     if (recoveredCrawlEffects === null) return { processed: 0, continue: false }
     if (recoveredCrawlEffects > 0) return { processed: recoveredCrawlEffects, continue: true }
-    if (!work.source_completed_at) return await projectSourcePage(work)
+    if (!work.eligibility_completed_at)
+      return await processStoryPostRelatedUrlProjectionEligibilityPage(work)
+    if (!work.source_completed_at)
+      return await runStoryProjectionSourceWithCapacityOutcome(work, projectSourcePage)
     return await prunePage(work)
   } finally {
     await releaseStoryPostRelatedUrlProjectionWork(work)

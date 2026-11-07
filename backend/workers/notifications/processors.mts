@@ -152,14 +152,13 @@ export async function processReferralSignupNotification(data: {
   referrerId: string
   newUserId: string
 }) {
-  // ast-grep-ignore: no-three-sequential-awaits -- worker processor performs dependent side effects in order
   const user = await getPublicUserByAny(data.newUserId)
   const createdNotifications = await createReferralSignupNotification(
     data.referrerId,
     data.newUserId,
     user?.username ?? null,
   )
-  await dispatchCreatedNotificationPushes(createdNotifications)
+  return dispatchCreatedNotificationPushes(createdNotifications)
 }
 
 export async function processReferralClickNotification(data: { referrerId: string }) {

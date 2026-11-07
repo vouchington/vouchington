@@ -772,12 +772,13 @@ Current post response projection; callers enforce publication, deletion and audi
               WHERE (prtr.post_id = posts.id)), '[]'::json)
             ELSE NULL::json
         END AS review_topic_ratings,
-    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg
+    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_sort DESC, top5.created_at DESC, top5.object_id DESC) AS json_agg
            FROM (( SELECT rel.object_id,
-                    rel.votes_score_net
+                    rel.votes_score_sort,
+                    rel.created_at
                    FROM relation__post__category__topic rel
                   WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))
-                  ORDER BY rel.votes_score_net DESC
+                  ORDER BY rel.votes_score_sort DESC, rel.created_at DESC, rel.object_id DESC
                  LIMIT 5) top5
              JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,
     COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg
@@ -977,7 +978,7 @@ RSS item response projection; callers enforce feed and item visibility.
                             ELSE jsonb_build_object('id', mapped_hashtag.id, 'key', mapped_hashtag.alias, 'display_token', mapped_hashtag.category_text, 'topic_id', mapped_hashtag.topic_id)
                         END, 'votes_score_net', rel.votes_score_net) AS cat,
                     0 AS cat_order,
-                    rel.votes_score_net AS cat_score,
+                    rel.votes_score_sort AS cat_score,
                     COALESCE(mapped_hashtag.category_text, vet.name) AS cat_text
                    FROM ((relation__rss_feed_item__category__topic rel
                      JOIN view_embedded_topics vet ON ((vet.id = rel.object_id)))
@@ -1015,7 +1016,7 @@ RSS item response projection; callers enforce feed and item visibility.
              JOIN rss_feeds rf ON ((rf.id = rfis.rss_feed_id)))
              JOIN topics t ON ((t.id = rf.topic_id)))
           WHERE ((rfis.rss_feed_item_id = rss_feed_items.id) AND (rf.deleted_at IS NULL))
-          ORDER BY rf.is_enabled DESC, rf.is_discoverable DESC, t.votes_score_net DESC NULLS LAST, rfis.created_at
+          ORDER BY rf.is_enabled DESC, rf.is_discoverable DESC, t.votes_score_sort DESC, rfis.created_at
          LIMIT 1) best_source ON (true))
      JOIN LATERAL ( SELECT view_rss_feeds.__entity_type,
             view_rss_feeds.id,
@@ -1037,7 +1038,7 @@ RSS item response projection; callers enforce feed and item visibility.
            FROM view_rss_feeds
           WHERE (view_rss_feeds.id = best_source.rss_feed_id)
          LIMIT 1) primary_feed ON (true))
-     LEFT JOIN LATERAL ( SELECT json_agg(row_to_json(vrf.*) ORDER BY rf2.is_enabled DESC, rf2.is_discoverable DESC, t2.votes_score_net DESC NULLS LAST, rfis2.created_at) AS rss_feed_sources
+     LEFT JOIN LATERAL ( SELECT json_agg(row_to_json(vrf.*) ORDER BY rf2.is_enabled DESC, rf2.is_discoverable DESC, t2.votes_score_sort DESC, rfis2.created_at) AS rss_feed_sources
            FROM (((rss_feed_item_sources rfis2
              JOIN rss_feeds rf2 ON ((rf2.id = rfis2.rss_feed_id)))
              JOIN LATERAL ( SELECT view_rss_feeds.__entity_type,
@@ -1116,7 +1117,7 @@ RSS feed response projection with current discoverability and topic references.
            FROM (relation__topic__publisher_type__topic relation
              JOIN topics ON ((topics.id = relation.object_id)))
           WHERE ((relation.subject_id = rss_feeds.topic_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision) AND (topics.deleted_at IS NULL))
-          ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id
+          ORDER BY relation.votes_score_sort DESC, relation.created_at DESC, relation.object_id DESC
          LIMIT 1) publisher_type_topic ON (true))
      LEFT JOIN podcast_shows podcast_show ON ((podcast_show.rss_feed_id = rss_feeds.id)));
 ```
@@ -1291,7 +1292,6 @@ Private account projection for the authenticated owner or explicitly authorized 
     users.default_post_privacy,
     users.processing_restricted_at,
     users.should_receive_third_party_marketing,
-    users.should_import_hacker_news_discussions,
     susp.suspended_at,
     susp.suspended_reason,
     susp.suspended_by_id,

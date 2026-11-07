@@ -78,7 +78,7 @@ describe('unknown MCP arguments fail before dispatch across tool families', () =
       const invoke = vi.spyOn(tool, 'function')
       try {
         const config = ALL_MCP_SERVER_CONFIGS.find(
-          config => config.audience === tool.meta?.audience,
+          candidateConfig => candidateConfig.audience === tool.meta?.audience,
         )!
         await expect(
           callMcpTool(

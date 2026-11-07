@@ -2,7 +2,7 @@ import type { PrivateUser } from '@services/users/types'
 import { enqueueDeliverCopyrightNotice } from '@queues/notifications/enqueues'
 import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
 import { replayFailedCopyrightEmailIntakeReply } from './email-intake-reply-replay.mts'
-import { replayFailedCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { replayFailedCopyrightDeliveryIntent } from './delivery-intent-recovery.mts'
 import { rejectCopyrightEmailIntakeDecision } from './copyright-email-decision-actions.mts'
 import {
   copyrightMcpDecisionProvenance,

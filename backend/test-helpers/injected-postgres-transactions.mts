@@ -65,3 +65,28 @@ export function afterNextPostgresCommitForTest(effect: () => void): () => void {
     true,
   )
 }
+
+/** Run an owned real effect after a matching SQL result was observed, without rewriting its rows. */
+export function afterPostgresTransactionQueryForTest(
+  marker: string,
+  matchesValues: (values: readonly unknown[]) => boolean,
+  effect: () => Promise<void>,
+): () => void {
+  let applied = false
+  return interceptPostgresTransactionsForTest(
+    transaction =>
+      new Proxy(transaction, {
+        async apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
+          const result = await Reflect.apply(target, thisArgument, argumentsList)
+          const [input, parameters] = argumentsList
+          const text = typeof input === 'string' ? input : input.text
+          const values = typeof input === 'string' ? (parameters ?? []) : (input.values ?? [])
+          if (!applied && text.includes(marker) && matchesValues(values)) {
+            applied = true
+            await effect()
+          }
+          return result
+        },
+      }),
+  )
+}

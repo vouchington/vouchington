@@ -44,7 +44,7 @@ export const processUserDeletionPhaseBatch: UserDeletionPhaseProcessor = async i
     case 'finalize':
       return { hasMore: false }
     default:
-      throw new Error(`Unsupported user deletion phase: ${input.phase}`)
+      throw new Error(`Unsupported user deletion phase: ${String(input.phase)}`)
   }
 }
 

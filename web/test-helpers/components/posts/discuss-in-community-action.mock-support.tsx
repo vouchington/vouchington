@@ -1,4 +1,4 @@
-import { createCommunityPost } from '@/lib/api/client/posts'
+import { createCommunityPost } from '@/lib/api/client/post-mutations'
 import { loadMyCommunities, searchMyCommunities } from '@/lib/api/client/communities'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { Community } from '@/types/api-responses'
@@ -24,7 +24,7 @@ vi.mock(import('@/lib/api/client/communities'), () => ({
   searchMyCommunities: mockSearchMyCommunitiesFn,
 }))
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   createCommunityPost: vi.fn<VitestLooseMock>(),
 }))
 

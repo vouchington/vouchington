@@ -17,7 +17,7 @@ function TooltipContent({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof TooltipPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof TooltipPrimitive.Content>>
 }) {
   return (
     <TooltipPrimitive.Portal>

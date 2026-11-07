@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestUser,
   createRandomString,
@@ -6,8 +7,10 @@ import {
   insertTestRssFeed,
   createTestRssFeedItemWithUrl,
   insertTestPost,
+  deleteTestPost,
   insertTestCommunity,
   insertTestCommunityListItem,
+  insertTestCommunityListPostBatch,
   insertTestList,
   listPostItemExists,
   listPostItemCount,
@@ -15,6 +18,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { importCommunityList } from '../import.mts'
+import { listImportConfig } from '../import-config.mts'
 import { getManageableList, type ManageableList } from '../manage.mts'
 
 describe('importCommunityList', () => {
@@ -88,6 +92,53 @@ describe('importCommunityList', () => {
     expect(result.posts).toBe(0)
 
     expect(await listPostItemCount(listId, postId)).toBe(1)
+  })
+
+  it('stops the source page on a deleted newest membership', async () => {
+    const community = await insertTestCommunity({ createdById: user.id })
+    const older = await insertTestPost({
+      title: `Older import ${createRandomString(8)}`,
+      slug: `older-import-${createRandomString(8)}`,
+      createdById: user.id,
+      markdown: 'older',
+    })
+    const newer = await insertTestPost({
+      title: `Newer import ${createRandomString(8)}`,
+      slug: `newer-import-${createRandomString(8)}`,
+      createdById: user.id,
+      markdown: 'newer',
+    })
+    await insertTestCommunityListPostBatch({
+      communityId: community.id,
+      postIds: [older, newer],
+      addedById: user.id,
+    })
+    await deleteTestPost(newer)
+
+    const viewer = viewerFor(user.id)
+    const restoreOne = overrideDynamicConfigFieldsForTest(listImportConfig, { max_items: 1 })
+    try {
+      const newestOnly = await importCommunityList(list, {
+        communityId: community.id,
+        viewer,
+      })
+      expect(newestOnly.posts).toBe(0)
+      expect(await listPostItemExists(list.id, older)).toBe(false)
+    } finally {
+      restoreOne()
+    }
+    const restoreTwo = overrideDynamicConfigFieldsForTest(listImportConfig, { max_items: 2 })
+    try {
+      const withOlder = await importCommunityList(list, {
+        communityId: community.id,
+        viewer,
+      })
+      expect(withOlder.posts).toBe(1)
+      expect(await listPostItemExists(list.id, older)).toBe(true)
+      expect(await listPostItemExists(list.id, newer)).toBe(false)
+    } finally {
+      restoreTwo()
+    }
   })
 })
 

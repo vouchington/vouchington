@@ -10,7 +10,7 @@ vi.mock(
     }) as unknown as typeof import('../instance'),
 )
 
-import { sendPostToFollowers, sharePostWithFollowers } from '../posts'
+import { sendPostToFollowers, sharePostWithFollowers } from '../post-follower-distributions'
 import { clientApi } from '../instance'
 
 const mockPost = vi.mocked(clientApi.post)

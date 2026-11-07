@@ -19,8 +19,6 @@ import {
 } from '@voucha/test-helpers/entities/communities'
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
-
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 
 describe('post', () => {
@@ -53,12 +51,7 @@ describe('post', () => {
         expect(response.body).toHaveProperty('post_metrics')
         expect(response.body).toHaveProperty('post_election')
         expect(response.body).toHaveProperty('html')
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-        )
-        expect(response.headers['vary']).toContain('Cookie')
-        expect(response.headers['vary']).toContain('Authorization')
+        expect(response.headers['cache-control']).toBe('private, no-store')
       })
 
       it('should return a post by slug', async () => {

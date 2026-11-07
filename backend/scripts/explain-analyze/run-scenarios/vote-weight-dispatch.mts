@@ -71,14 +71,16 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
     'dispatchVoteWeightMembershipExpirations',
   )
 
-  for (const branch of familyBranches.filter(branch => branch !== 'rejected_at')) {
-    const scenarioId = `vote-weight-family-source-${branch}`
+  for (const familyBranch of familyBranches.filter(
+    candidateBranch => candidateBranch !== 'rejected_at',
+  )) {
+    const scenarioId = `vote-weight-family-source-${familyBranch}`
     registerScenarioContract(scenarioId, {
       seededRows,
       expectations: [
         {
           kind: 'usesIndexes',
-          indexes: [`idx_membership_source_states__family_${branch}`],
+          indexes: [`idx_membership_source_states__family_${familyBranch}`],
           noSort: true,
         },
         { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 520 },
@@ -90,7 +92,7 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
       () =>
         dispatchVoteWeightFamilySourceChanges({
           window:
-            branch === 'updated_at'
+            familyBranch === 'updated_at'
               ? {
                   ...window,
                   windowStart: new Date(0).toISOString(),
@@ -98,11 +100,11 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
                 }
               : window,
           branches: Object.fromEntries(
-            familyBranches.map(key => [key, key === branch ? undefined : null]),
+            familyBranches.map(key => [key, key === familyBranch ? undefined : null]),
           ),
         }),
       undefined,
-      `dispatchVoteWeightFamilySourceChanges:${branch}`,
+      `dispatchVoteWeightFamilySourceChanges:${familyBranch}`,
     )
   }
 

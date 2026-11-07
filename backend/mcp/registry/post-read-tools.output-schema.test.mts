@@ -47,7 +47,13 @@ describe('post and story read tool output schemas', () => {
   it('takes every post field from the Post contract', () => {
     const properties = propertiesOf(mcpPostSchema())
 
-    expect(Object.keys(properties)).toEqual([...PUBLIC_POST_FIELDS])
+    expect(Object.keys(properties)).toEqual([...PUBLIC_POST_FIELDS, 'hacker_news_references'])
+    expect(properties['hacker_news_references']).toEqual(
+      inlineSchemaReferences(
+        contracts.components['HackerNewsReferenceCounts']!,
+        contracts.components,
+      ),
+    )
     for (const field of PUBLIC_POST_FIELDS) {
       expect(properties[field]).toEqual(documented('Post', field))
     }

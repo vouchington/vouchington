@@ -8,11 +8,15 @@ import RootLayout from './layout'
 import { SpeculationRulesScript } from '@/components/seo/speculation-rules-script'
 import { RootAppShell } from './root-app-shell'
 
+vi.mock(import('@/lib/api/server/hacker-news-config'), () => ({
+  getHackerNewsConfig: vi
+    .fn<typeof import('@/lib/api/server/hacker-news-config').getHackerNewsConfig>()
+    .mockResolvedValue({ references_visible: true, post_time_range_cap: '1y' }),
+}))
 vi.mock(import('@/lib/i18n/load-server-messages'), () => ({
   loadServerMessages: loadJsonMessages,
   ssrLocalizationRevisionHtmlProps: () => ({}),
 }))
-
 // Layout tests retain request locale resolution and use the checked-in catalog fixture.
 vi.mock(import('@/lib/i18n/get-translations'), () => ({
   getTranslations: async () => {
@@ -20,11 +24,9 @@ vi.mock(import('@/lib/i18n/get-translations'), () => ({
     return createTranslator(locale, await loadJsonMessages(locale))
   },
 }))
-
 interface HeaderBag {
   get: (key: string) => string | null
 }
-
 type CookieBag = { get: (key: string) => { value: string } | undefined }
 type ReactModule = typeof import('react')
 type HeadersModule = typeof import('next/headers')
@@ -33,12 +35,10 @@ type SonnerModule = typeof import('sonner')
 type AsideProviderModule = typeof import('@/lib/aside-provider')
 type VoteStoreProviderModule = typeof import('@/lib/votes/vote-store-provider')
 type SpeculationRulesScriptModule = typeof import('@/components/seo/speculation-rules-script')
-
 const getCurrentUserMock = vi.hoisted(() => vi.fn<() => Promise<User | null>>())
 const headersMock = vi.hoisted(() => vi.fn<() => Promise<HeaderBag>>())
 const cookiesMock = vi.hoisted(() => vi.fn<() => Promise<CookieBag>>())
 const redirectMock = vi.hoisted(() => vi.fn<(path: string) => never>())
-
 vi.mock<ReactModule>(import('react'), async importOriginal => {
   const actual = await importOriginal<ReactModule>()
   return {

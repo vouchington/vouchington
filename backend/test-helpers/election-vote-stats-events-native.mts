@@ -95,11 +95,11 @@ export async function acquireNativeElectionEventFixture() {
       observer: observer!,
       workerPid: await ready.promise,
       stopWorker,
-      add(name: string, options?: Parameters<Queue['add']>[2]) {
+      add(jobName: string, jobOptions?: Parameters<Queue['add']>[2]) {
         if (closing) throw new Error('Owned native fixture is closed')
         const write = Promise.resolve().then(() => {
           if (closing) throw new Error('Owned native fixture is closed')
-          return queue!.add(name, {}, options)
+          return queue!.add(jobName, {}, jobOptions)
         })
         writes.push(write)
         void write.catch(() => {})
@@ -133,9 +133,12 @@ export async function acquireNativeElectionEventFixture() {
   }
 
   function send(message: object | string) {
-    return new Promise<void>((resolve, reject) => {
-      if (!child?.connected) return reject(new Error('Owned worker IPC is disconnected'))
-      child.send(message, error => (error ? reject(error) : resolve()))
+    return new Promise<void>((resolve, rejectSend) => {
+      if (!child?.connected) {
+        rejectSend(new Error('Owned worker IPC is disconnected'))
+        return
+      }
+      child.send(message, error => (error ? rejectSend(error) : resolve()))
     })
   }
   function stopWorker() {

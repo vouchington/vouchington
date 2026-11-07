@@ -30,9 +30,13 @@ export const backgroundWorkRegistryEntries7 = {
     label: 'Posts',
     maxValues: postsWorkMaxValues,
     descriptions: {
+      hacker_news_hot_candidate_limit:
+        'Maximum newest eligible Hacker News posts scored for hot search.',
       semantic_post_candidate_limit: 'Maximum post candidates in a semantic search window.',
       review_succession_candidate_page_size:
         'Review succession candidate page size for posts processing.',
+      profile_post_count_cap:
+        'Maximum profile review, discussion, and comment rows counted for one viewer. Past this, the profile shows the cap with a plus.',
     },
   }),
   'remote-actors-work-config': defineBoundedWorkNamespace({

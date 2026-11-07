@@ -37,7 +37,9 @@ export async function insertCommunity(
   query: TransactionQuery,
   { id, slug, defaultLanguage, currentUserId, provenance, input }: CommunityInsert,
 ): Promise<CommunityWithOwner> {
-  const imageIds = [input.profile_image_id, input.banner_image_id].flatMap(id => (id ? [id] : []))
+  const imageIds = [input.profile_image_id, input.banner_image_id].flatMap(imageId =>
+    imageId ? [imageId] : [],
+  )
   await lockImageAssetAdmission(imageIds, query)
   await assertImagesReadyForSurface(imageIds, query)
   const options = { query }

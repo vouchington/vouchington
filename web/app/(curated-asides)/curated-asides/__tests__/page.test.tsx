@@ -25,7 +25,11 @@ describe('CuratedAsidesPage', () => {
   })
 
   it('shows loading state initially and disables inline add controls', () => {
-    mockList.mockReturnValue(new Promise(() => undefined))
+    mockList.mockReturnValue(
+      new Promise(() => {
+        // Keep the request pending to exercise the loading state.
+      }),
+    )
     render(<CuratedAsidesPage activeAsideType='topic' />)
     expect(screen.getByText('Loading…')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Select topic' })).toBeDisabled()

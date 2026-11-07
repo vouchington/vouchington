@@ -1,16 +1,27 @@
 import { clampLimit } from '@services/pagination'
 import { read, write } from '@data-stores/psql'
 import assert from 'http-assert'
-import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
+import {
+  buildPageInfo,
+  decodeUuidCursor,
+  isSimpleCursor,
+  sliceRawKeysetPage,
+} from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import { getListItemStorageConfig } from './catalog.mts'
-import { listPostDiscoveryFilter } from './listable.mts'
 import type { ListItem, ListItemType } from './types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { rowToListItem } from './item-row.mts'
 import { postItemFactsSql } from './item-facts.mts'
+import { listItemEligibleSql } from './list-item-eligible-sql.mts'
 export { addListItem } from './add-item.mts'
+
+type ListItemPageRow = Record<string, unknown> & {
+  eligible: boolean
+  id: string
+  item_type: ListItemType
+}
 
 export async function removeListItem(
   listId: string,
@@ -50,85 +61,115 @@ export async function searchListItems(
   assert(requestedLimit > 0 && requestedLimit <= 100, 422, 'limit must be between 1 and 100')
   const limit = clampLimit(requestedLimit, 20)
 
-  const query = sql`/* searchListItems */
-    WITH list_items AS (
-      SELECT li.id, li.user_list_id AS list_id,
-        'rss_feed_item'::user_list_item_types AS item_type,
-        li.rss_feed_item_id AS entity_id, li.order_index, li.created_at,
-        rfi.media_type::text AS media_type,
-        COALESCE(NULLIF(BTRIM(rfi.data->>'title'), ''), article_url.url) AS entity_label,
-        NULL::text AS label_markdown, NULL::text AS label_summary
-      FROM user_list_rss_feed_items li
-      JOIN rss_feed_items rfi ON rfi.id = li.rss_feed_item_id AND rfi.deleted_at IS NULL
-      JOIN urls article_url ON article_url.id = rfi.url_id
-      WHERE li.user_list_id = ${listId}::uuid AND li.removed_at IS NULL
-        AND EXISTS (
-          SELECT 1 FROM rss_feed_item_sources source
-          JOIN rss_feeds feed ON feed.id = source.rss_feed_id
-            AND feed.deleted_at IS NULL AND feed.is_enabled = true
-          WHERE source.rss_feed_item_id = rfi.id
-        )
-      UNION ALL
-      SELECT li.id, li.user_list_id AS list_id,
-        'post'::user_list_item_types AS item_type,
-        li.post_id AS entity_id, li.order_index, li.created_at,
-        NULL::text AS media_type,
-        `
-  query.append(postItemFactsSql('candidate_post'))
-  query.append(sql`
-      FROM user_list_posts li
-      JOIN posts candidate_post
-        ON candidate_post.id = li.post_id AND candidate_post.deleted_at IS NULL
-      JOIN posts root_post
-        ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-       AND root_post.deleted_at IS NULL
-      WHERE li.user_list_id = ${listId}::uuid AND li.removed_at IS NULL
-        AND `)
-  query.append(listPostDiscoveryFilter(options.currentUserId, options.isAdministrator === true))
-  query.append(sql`
-    )
-    SELECT id, list_id, item_type, entity_id, order_index, created_at, media_type, entity_label, label_markdown, label_summary
-    FROM list_items
-    WHERE true`)
-
-  if (options.mediaType) query.append(sql` AND media_type = ${options.mediaType}`)
-
-  if (options.read !== undefined && options.currentUserId) {
-    const userId = options.currentUserId
-    const readExists = sql`(
-      CASE
-        WHEN item_type = 'rss_feed_item' THEN EXISTS (
-          SELECT 1 FROM rss_feed_item_read_states
-          WHERE user_id = ${userId}::uuid AND rss_feed_item_id = entity_id::uuid)
-        WHEN item_type = 'post' THEN EXISTS (
-          SELECT 1 FROM post_read_states
-          WHERE user_id = ${userId}::uuid AND post_id = entity_id::uuid)
-        ELSE NULL
-      END
-    )`
-    query.append(options.read ? sql` AND ` : sql` AND NOT `).append(readExists)
-  }
-
+  const rawLimit = limit + 1
+  let afterId: string | undefined
   if (options.after) {
-    const cursor = decodeUuidCursor(
+    afterId = decodeUuidCursor(
       options.after,
       isSimpleCursor,
       'Invalid cursor format: expected id cursor',
-    )
-    query.append(sql` AND id < ${cursor.id}::uuid`)
+    ).id
   }
 
-  query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
+  // Each branch's top rawLimit ids contain the global top rawLimit. The merged page is the
+  // membership keyset; target, media, and read filters can leave it short.
+  const query = sql`/* searchListItems */
+    WITH post_page AS MATERIALIZED (
+      SELECT li.id, 'post'::user_list_item_types AS item_type,
+             li.post_id AS entity_id, li.order_index, li.created_at
+      FROM user_list_posts li
+      WHERE li.user_list_id = ${listId}::uuid
+        AND li.removed_at IS NULL`
+  if (afterId) query.append(sql` AND li.id < ${afterId}::uuid`)
+  query.append(sql`
+      ORDER BY li.id DESC
+      LIMIT ${rawLimit}
+    ),
+    rss_page AS MATERIALIZED (
+      SELECT li.id, 'rss_feed_item'::user_list_item_types AS item_type,
+             li.rss_feed_item_id AS entity_id, li.order_index, li.created_at
+      FROM user_list_rss_feed_items li
+      WHERE li.user_list_id = ${listId}::uuid
+        AND li.removed_at IS NULL`)
+  if (afterId) query.append(sql` AND li.id < ${afterId}::uuid`)
+  query.append(sql`
+      ORDER BY li.id DESC
+      LIMIT ${rawLimit}
+    ),
+    driving_page AS MATERIALIZED (
+      SELECT id, item_type, entity_id, order_index, created_at
+      FROM (
+        SELECT id, item_type, entity_id, order_index, created_at FROM post_page
+        UNION ALL
+        SELECT id, item_type, entity_id, order_index, created_at FROM rss_page
+      ) merged
+      ORDER BY id DESC
+      LIMIT ${rawLimit}
+    )
+    SELECT page.id,
+           ${listId}::uuid AS list_id,
+           page.item_type,
+           page.entity_id,
+           page.order_index,
+           page.created_at,
+           CASE
+             WHEN page.item_type = 'rss_feed_item' THEN rfi.media_type::text
+           END AS media_type,
+           CASE
+             WHEN page.item_type = 'post' THEN post_labels.entity_label
+             ELSE COALESCE(NULLIF(BTRIM(rfi.data->>'title'), ''), article_url.url)
+           END AS entity_label,
+           CASE WHEN page.item_type = 'post' THEN post_labels.label_markdown END AS label_markdown,
+           CASE WHEN page.item_type = 'post' THEN post_labels.label_summary END AS label_summary,
+           COALESCE((`)
+  query.append(listItemEligibleSql(options))
+  query.append(sql`), FALSE) AS eligible
+    FROM driving_page page
+    LEFT JOIN LATERAL (
+      SELECT id, root_post_id, post_type, deleted_at, approved_at, created_by_id, community_id,
+             privacy, broadcast, archived_at, title, markdown, ai_summary_markdown
+      FROM posts candidate_post
+      WHERE page.item_type = 'post' AND candidate_post.id = page.entity_id
+      LIMIT 1
+    ) candidate_post ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT id, post_type, deleted_at, approved_at, created_by_id, community_id,
+             privacy, broadcast, archived_at
+      FROM posts root_post
+      WHERE root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
+      LIMIT 1
+    ) root_post ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT id, deleted_at, media_type, data, url_id
+      FROM rss_feed_items rfi
+      WHERE page.item_type = 'rss_feed_item' AND rfi.id = page.entity_id
+      LIMIT 1
+    ) rfi ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT id, url
+      FROM urls article_url
+      WHERE article_url.id = rfi.url_id
+      LIMIT 1
+    ) article_url ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT `)
+  query.append(postItemFactsSql('candidate_post'))
+  query.append(sql`
+    ) post_labels ON TRUE
+    ORDER BY page.id DESC`)
 
-  const { rows } = await read(query)
-  const hasNextPage = rows.length > limit
-  const results = rows.slice(0, limit).map(row => rowToListItem(row, row.item_type as ListItemType))
+  const { rows } = await read<ListItemPageRow>(query)
+  const { window, hasMore } = sliceRawKeysetPage(rows, limit)
+  const results: ListItem[] = []
+  for (const row of window) {
+    if (row.eligible) results.push(rowToListItem(row, row.item_type))
+  }
 
   return {
     results,
-    page_info: buildPageInfo(results, {
-      hasNextPage,
-      getCursor: r => ({ id: r.id }),
+    page_info: buildPageInfo(window, {
+      hasNextPage: hasMore,
+      getCursor: row => ({ id: row.id }),
     }),
   }
 }

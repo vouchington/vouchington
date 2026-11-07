@@ -13,10 +13,8 @@ import { EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB } from '@queues/background/en
 import { backgroundQueue as emailDigests } from '@voucha/test-helpers/shared-background-queue'
 import { updateUserFields } from '@services/users/update-fields'
 import { deleteUser } from '@services/users/delete'
-import {
-  dispatchCommunityModerationSummaryEmails,
-  getCommunityModerationSummaryCommunities,
-} from '../moderation-summary-emails.mts'
+import { dispatchCommunityModerationSummaryEmails } from '../moderation-summary-emails.mts'
+import { getCommunityModerationSummaryCommunities } from '../moderation-summary-communities.mts'
 
 function pinnedNow(): Date {
   return new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')

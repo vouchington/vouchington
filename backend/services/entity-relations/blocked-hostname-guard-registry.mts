@@ -27,11 +27,11 @@ export function getRegisteredBlockedHostnameGuard(): BlockedHostnameGuard {
 export function createBlockedHostnameGuardRegistry() {
   let registeredGuard: BlockedHostnameGuard | null = null
 
-  function registerBlockedHostnameGuard(guard: BlockedHostnameGuard): void {
+  function registerGuard(guard: BlockedHostnameGuard): void {
     registeredGuard = guard
   }
 
-  function getRegisteredBlockedHostnameGuard(): BlockedHostnameGuard {
+  function getRegisteredGuard(): BlockedHostnameGuard {
     if (!registeredGuard) {
       throw createCodedError(
         500,
@@ -42,5 +42,8 @@ export function createBlockedHostnameGuardRegistry() {
     return registeredGuard
   }
 
-  return { registerBlockedHostnameGuard, getRegisteredBlockedHostnameGuard }
+  return {
+    registerBlockedHostnameGuard: registerGuard,
+    getRegisteredBlockedHostnameGuard: getRegisteredGuard,
+  }
 }

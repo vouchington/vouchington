@@ -35,7 +35,7 @@ export function TagAutocomplete({
   async function search(q: string, signal: AbortSignal): Promise<SearchResult[]> {
     if (objectType === 'topic') {
       const res = await fetchTopics({ q, limit: 10, signal })
-      return Object.values(res.topics ?? {}).filter(t => !resolvedExcludeIds.includes(t.id))
+      return Object.values(res.topics ?? {}).filter(topic => !resolvedExcludeIds.includes(topic.id))
     }
 
     if (objectType === 'post') {

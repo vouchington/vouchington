@@ -115,8 +115,8 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   const output: Record<string, unknown> = {
     results,
     page_info: pageInfo,
-    posts: postsPromise.then(posts => {
-      const byId = indexById(posts)
+    posts: postsPromise.then(postBatch => {
+      const byId = indexById(postBatch)
       if (!currentUser) return byId
       const contentEditNow = Date.now()
       return Object.fromEntries(
@@ -139,15 +139,15 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
       )
     }),
     posts_metrics: Promise.all([postsPromise, getPostMetricsByAnyCachedBatch(ancestorIds)]).then(
-      ([posts, metrics]) => indexById(maskPlaceholderMetrics(posts, metrics)),
+      ([postBatch, metrics]) => indexById(maskPlaceholderMetrics(postBatch, metrics)),
     ),
-    markdown_to_html: postsPromise.then(async posts => {
-      const postsMap = indexById(posts)
+    markdown_to_html: postsPromise.then(async postBatch => {
+      const postsMap = indexById(postBatch)
       const entities = ancestorIds.flatMap(id => {
         const markdown = postsMap[id]?.markdown ?? ''
         return markdown ? [{ id, markdown, created_by_id: postsMap[id]?.created_by_id ?? '' }] : []
       })
-      const adminIds = await getAdminUserIdsFromPosts(posts)
+      const adminIds = await getAdminUserIdsFromPosts(postBatch)
       return renderMarkdownBatch(entities, adminIds)
     }),
     communities: getPostCommunitiesRecord([rootPost]),
@@ -158,8 +158,8 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
       Object.keys(b).length > 0 ? b : undefined,
     )
 
-    output.election_votes = postsPromise.then(async posts => {
-      const postIds = posts.flatMap(p => (p != null ? [p.id] : []))
+    output.election_votes = postsPromise.then(async postBatch => {
+      const postIds = postBatch.flatMap(p => (p != null ? [p.id] : []))
       if (postIds.length === 0) return undefined
       const votes = await getPostElectionVotesByUser(currentUser.id, postIds)
       return electionVotesMapToRecord(new Map(votes.map(v => [v.entity_id, v])))

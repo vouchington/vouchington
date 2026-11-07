@@ -17,7 +17,7 @@ function SheetOverlay({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay> & {
-  ref?: React.Ref<React.ElementRef<typeof SheetPrimitive.Overlay>>
+  ref?: React.Ref<React.ComponentRef<typeof SheetPrimitive.Overlay>>
 }) {
   return (
     <SheetPrimitive.Overlay
@@ -64,7 +64,7 @@ function SheetContent({
   ref,
   ...props
 }: SheetContentProps & {
-  ref?: React.Ref<React.ElementRef<typeof SheetPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof SheetPrimitive.Content>>
   hideOverlay?: boolean
 }) {
   const t = useTranslations()
@@ -103,7 +103,7 @@ function SheetTitle({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title> & {
-  ref?: React.Ref<React.ElementRef<typeof SheetPrimitive.Title>>
+  ref?: React.Ref<React.ComponentRef<typeof SheetPrimitive.Title>>
 }) {
   return (
     <SheetPrimitive.Title
@@ -120,7 +120,7 @@ function SheetDescription({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SheetPrimitive.Description> & {
-  ref?: React.Ref<React.ElementRef<typeof SheetPrimitive.Description>>
+  ref?: React.Ref<React.ComponentRef<typeof SheetPrimitive.Description>>
 }) {
   return (
     <SheetPrimitive.Description

@@ -51,7 +51,7 @@ export async function readOwnedPostShareSeedRows(identities: SeedIdentities) {
     FROM post_feed_shares
     WHERE recipient_user_id = ANY(${[...identities.recipientIds, identities.emptyRecipientId]}::uuid[])
     ORDER BY recipient_user_id, id
-    LIMIT 4065
+    LIMIT 4129
   `)
   const { rows: follows } = await write<{
     subject_id: string

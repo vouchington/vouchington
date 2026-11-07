@@ -28,6 +28,14 @@ const LARGE_TABLES = new Set([
 const HIGH_SHARED_BLOCKS_THRESHOLD = 10_000
 const HIGH_WAL_BYTES_THRESHOLD = 10 * 1024 * 1024
 
+function walThresholdForResult(result: ExplainResult): number {
+  if (result.scenario_id !== 'post-url-replacement-maximum') return HIGH_WAL_BYTES_THRESHOLD
+  // Cold WAL measured 15.3–16.9 MB for 9,750 updates at the maximum relation cap
+  // (post_related_url = 10,000). About 20% headroom rounds up to 20 MiB.
+  // Raising that relation cap requires remeasurement.
+  return 20 * 1024 * 1024
+}
+
 function busiestFunctionCall(result: ExplainResult): FunctionCall | null {
   return (result.function_calls ?? []).reduce<FunctionCall | null>(
     (busiest, call) => (busiest === null || call.calls > busiest.calls ? call : busiest),
@@ -89,6 +97,7 @@ interface QueryWarnings {
 
 export function getResourcePressureFingerprints(result: ExplainResult): string[] {
   const nodes = collectNodes(result.plan)
+  const walThreshold = walThresholdForResult(result)
 
   const fingerprints = nodes.flatMap(node => {
     const nodeIdentity = `${node.nodeType}:${node.relationName ?? '-'}`
@@ -97,7 +106,7 @@ export function getResourcePressureFingerprints(result: ExplainResult): string[]
     if (node.tempWrittenBlocks > 0) nodeFingerprints.push(`${nodeIdentity}:temp-written`)
     if (node.diskSpill) nodeFingerprints.push(`${nodeIdentity}:disk-spill`)
     if (node.hashBatches > 1) nodeFingerprints.push(`${nodeIdentity}:hash-batches`)
-    if (node.walBytes >= HIGH_WAL_BYTES_THRESHOLD) nodeFingerprints.push(`${nodeIdentity}:wal`)
+    if (node.walBytes >= walThreshold) nodeFingerprints.push(`${nodeIdentity}:wal`)
     return nodeFingerprints
   })
 
@@ -106,8 +115,8 @@ export function getResourcePressureFingerprints(result: ExplainResult): string[]
   // the threshold at their shared ancestor while no individual node's exclusive share does.
   // Only add this when no node already crossed the threshold, so one real spike still reports
   // as a single fingerprint instead of two.
-  const anyNodeCrossedWalThreshold = nodes.some(n => n.walBytes >= HIGH_WAL_BYTES_THRESHOLD)
-  if (!anyNodeCrossedWalThreshold && getTotalWalBytes(result.plan) >= HIGH_WAL_BYTES_THRESHOLD) {
+  const anyNodeCrossedWalThreshold = nodes.some(n => n.walBytes >= walThreshold)
+  if (!anyNodeCrossedWalThreshold && getTotalWalBytes(result.plan) >= walThreshold) {
     fingerprints.push('query:wal-aggregate')
   }
 
@@ -116,6 +125,7 @@ export function getResourcePressureFingerprints(result: ExplainResult): string[]
 
 export function analyzeResult(result: ExplainResult): QueryWarnings {
   const nodes = collectNodes(result.plan)
+  const walThreshold = walThresholdForResult(result)
 
   const seqScans = nodes.flatMap(n => {
     if (!(n.seqScan && n.relationName && isLargeTable(n.relationName))) return []
@@ -168,7 +178,7 @@ export function analyzeResult(result: ExplainResult): QueryWarnings {
       n.tempWrittenBlocks > 0 ||
       n.diskSpill ||
       n.hashBatches > 1 ||
-      n.walBytes >= HIGH_WAL_BYTES_THRESHOLD,
+      n.walBytes >= walThreshold,
   )
 
   return {

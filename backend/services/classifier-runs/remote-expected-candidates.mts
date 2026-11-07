@@ -41,6 +41,7 @@ export function expectedCandidates<C>(
   )
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed result.candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 export function resultKey(
   result: ClassifierDecisionInputResult | PersistedClassifierDecisionResult,
 ): string {

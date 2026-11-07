@@ -77,6 +77,20 @@ it. `git grep` searches tracked dotfiles as well as ordinary source files.
    for the local pin and
    the standalone Gitleaks workflow for the isolated CI scan.
 
+## MCP Catalog Contracts
+
+When changing a tool description or input/output schema, regenerate the MCP catalog and run its
+catalog contracts before pushing. The generator's `--check` verifies generated files; it does not
+validate description limits, pinned catalog digests, or grant-budget snapshots. Recompute pins from
+the intended catalog and keep the existing semantic and size guards.
+
+```sh
+pnpm exec vitest run --project backend-data-stores \
+  backend/services/mcp-tools/catalog/build-mcp-catalog.generated.test.mts \
+  backend/services/mcp-tools/catalog/build-mcp-catalog.hardening.test.mts \
+  backend/services/mcp-tools/catalog/build-mcp-catalog.bound.test.mts
+```
+
 ## Native API Parity
 
 Use this when an endpoint, response field, or shared API fixture changes. The goal is to reach the

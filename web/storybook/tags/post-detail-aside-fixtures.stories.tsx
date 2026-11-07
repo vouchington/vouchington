@@ -5,17 +5,12 @@ import { PostRelatedTopicsAside } from '@/components/tags/post-related-topics-as
 import { PostRelatedPostsAside } from '@/components/tags/post-related-posts-aside'
 import { PostRelatedUrlsAside } from '@/components/tags/post-related-urls-aside'
 import { PostReviewReferralLinksAside } from '@/components/posts/post-review-referral-links-aside'
-import { HnDiscussionsPostAside } from '@/components/asides/hn-discussions-post-aside'
-import { PostAsideFixturePreferences } from '@/storybook/mocks/post-detail-asides'
+import { HackerNewsReferencesAside } from '@/components/hacker-news/hacker-news-references-aside'
 import { StoryFrame } from '@/storybook/story-frame'
 import { posts } from '@/storybook/entities/fixtures/posts'
 import { topics } from '@/storybook/entities/fixtures/topics'
 import { userHref } from '@/lib/links/entity-href'
 import { publicUsers, storyCurrentUser } from '@/storybook/entities/fixtures/users'
-import {
-  getHnDiscussionsStoryResponse,
-  waitForHnDiscussionTitle,
-} from '@/test-helpers/hn-discussions-story-fixture'
 
 const discussion = posts.find(post => post.post_type === 'discussion')!
 const review = posts.find(post => post.post_type === 'review')!
@@ -28,16 +23,6 @@ const referralReview = {
 }
 const meta = {
   title: 'Tags/Post Detail Aside Fixtures',
-  beforeEach() {
-    const originalFetch = globalThis.fetch
-    globalThis.fetch = (input, init) => {
-      const response = getHnDiscussionsStoryResponse(input)
-      return response ? Promise.resolve(response) : originalFetch.call(globalThis, input, init)
-    }
-    return () => {
-      globalThis.fetch = originalFetch
-    }
-  },
 } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -119,49 +104,47 @@ export const ReviewWithoutProgramHasNoReferral: Story = {
   },
 }
 
-export const HackerNewsEnabled: Story = {
-  parameters: { auth: { currentUser: storyCurrentUser } },
+const hackerNewsReferences = {
+  story_count: 1,
+  comment_count: 1,
+  stories: [
+    {
+      hacker_news_item_id: 424242,
+      points: 128,
+      reply_count: 37,
+      posted_at: '2026-01-15T12:00:00Z',
+    },
+  ],
+  comments: [
+    {
+      hacker_news_item_id: 424300,
+      parent_story_item_id: 424242,
+      posted_at: '2026-01-16T09:30:00Z',
+    },
+  ],
+}
+
+export const HackerNewsReferences: Story = {
   render: () => (
     <StoryFrame>
-      <PostAsideFixturePreferences importHackerNews>
-        <HnDiscussionsPostAside post={discussion} />
-      </PostAsideFixturePreferences>
+      <HackerNewsReferencesAside references={hackerNewsReferences} />
     </StoryFrame>
   ),
   play: async ({ canvasElement }) => {
-    const title = await waitForHnDiscussionTitle(canvasElement)
-    await expect(title).toHaveTextContent('Show HN: Community discussion')
-    await expect(title).toHaveAttribute('href', 'https://news.ycombinator.com/item?id=424242')
+    const links = canvasElement.querySelectorAll('[data-pw="hacker-news-item-link"]')
+    await expect(links).toHaveLength(2)
+    await expect(links[0]).toHaveAttribute('href', 'https://news.ycombinator.com/item?id=424242')
+    await expect(links[0]).toHaveAttribute('rel', 'nofollow noopener noreferrer')
   },
 }
 
-export const HackerNewsDisabled: Story = {
-  parameters: { auth: { currentUser: storyCurrentUser } },
+export const HackerNewsWithoutReferences: Story = {
   render: () => (
     <StoryFrame>
-      <PostAsideFixturePreferences importHackerNews={false}>
-        <HnDiscussionsPostAside post={discussion} />
-      </PostAsideFixturePreferences>
+      <HackerNewsReferencesAside references={undefined} />
     </StoryFrame>
   ),
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector('[data-pw="hn-discussions-aside"]')).toBeNull()
-  },
-}
-
-export const HackerNewsWithoutOwnedUrls: Story = {
-  parameters: { auth: { currentUser: storyCurrentUser } },
-  render: () => (
-    <StoryFrame>
-      <PostAsideFixturePreferences importHackerNews>
-        <HnDiscussionsPostAside
-          post={{ ...discussion, id: 'post-story-without-related-urls' }}
-          extraUrls={['not-a-url', null]}
-        />
-      </PostAsideFixturePreferences>
-    </StoryFrame>
-  ),
-  play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector('[data-pw="hn-discussions-aside"]')).toBeNull()
+    await expect(canvasElement.querySelector('[data-pw="hacker-news-references-aside"]')).toBeNull()
   },
 }

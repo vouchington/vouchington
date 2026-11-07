@@ -12,6 +12,7 @@ import { insertCommunityPromptResults } from './write-community-prompt-results.m
 import { buildColumnArrays, type PersistedInputRow } from './write-decision-result-columns.mts'
 import type { ClassifierDecisionInputResult, PersistedClassifierDecisionCall } from './types.mts'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed candidateKind switch is exhaustive; Oxlint misses its terminal flow.
 export async function insertClassifierDecisionResults(
   query: OwnedTransaction,
   input: NormalizedClassifierDecisionInput,

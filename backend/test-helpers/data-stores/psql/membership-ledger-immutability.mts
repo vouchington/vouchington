@@ -29,6 +29,7 @@ export async function createTestImmutableMembershipGrant(): Promise<string> {
     SELECT id, user_id, ${products[0]!.id}, 30, 'Test issuer' FROM source RETURNING id`)
   return rows[0]!.id
 }
+// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestMembershipGrantMutation(
   grantId: string,
   transition: 'changeCalendarDays' | 'delete' | 'revoke' | 'rewriteReason' | 'rewriteRevoker',
@@ -99,7 +100,7 @@ export function claimTestMembershipOperation(
     sql`/* claimImmutableTestOperation */ UPDATE membership_operation_execution_work_items SET lease_token = ${claimToken}, leased_at = clock_timestamp(), lease_expires_at = clock_timestamp() + INTERVAL '5 minutes', attempt_count = attempt_count + 1 WHERE membership_operation_id = ${operationId}`,
   )
 }
-
+// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestMembershipOperationTransition(
   operationId: string,
   transition: MembershipOperationTransition,
@@ -135,7 +136,7 @@ export function attemptTestMembershipOperationTransition(
       )
   }
 }
-
+// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestRefundMembershipOperationTransition(
   operationId: string,
   transition: MembershipRefundOperationTransition,
@@ -159,24 +160,6 @@ export function attemptTestRefundMembershipOperationTransition(
         sql`/* setTestRemainingRefundable */ UPDATE membership_operations SET remaining_refundable_minor_units = 50 WHERE id = ${operationId}`,
       )
   }
-}
-
-export async function createTestImmutableLineageBinding(): Promise<string> {
-  const user = await createLocalTestUser()
-  const applicationId = `binding-immutable-${randomUUID()}`
-  const { rows } = await write<{ id: string }>(sql`/* createImmutableTestBinding */
-    WITH lineage AS (INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id) VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`}) RETURNING id)
-    INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id) SELECT id, ${user.id} FROM lineage RETURNING id`)
-  return rows[0]!.id
-}
-
-export function setTestLineageBindingOriginatingInvoice(
-  bindingId: string,
-  invoiceId: string,
-): Promise<QueryResult> {
-  return write(
-    sql`/* setTestLineageBindingOriginatingInvoice */ UPDATE membership_lineage_bindings SET originating_invoice_id = ${invoiceId} WHERE id = ${bindingId}`,
-  )
 }
 
 export async function createTestImmutableMembershipChange(): Promise<string> {

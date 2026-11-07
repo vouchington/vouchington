@@ -172,6 +172,7 @@ export function copyrightNoticeTargetKey(target: CopyrightNoticeTargetInput): st
   return `${target.surface}:${ownerId}:${target.image_id}`
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed target.surface switch is exhaustive; Oxlint misses its terminal flow.
 export function copyrightNoticeTargetInput(
   target: CopyrightNoticeResolvedTarget,
 ): CopyrightNoticeTargetInput {

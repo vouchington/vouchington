@@ -135,15 +135,11 @@ export async function probeClassifierChildPagesForRetentionTest(
   identities: number
 }> {
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- each page depends on the previous raw-key checkpoint, and all observations must precede rollback on this owned transaction
   const first = await sweepClassifierChildPageWithQuery(query, sweep, cutoffId, lowerBoundId, 1)
   const { rows: afterFirst } = await query<{ cursor_id: string | null }>(sql`
     /* probeClassifierChildCursorAfterFirst */
     SELECT cursor_id FROM classifier_retention_cursors WHERE sweep = ${sweep}`)
   const second = await sweepClassifierChildPageWithQuery(query, sweep, cutoffId, lowerBoundId, 1)
-  const { rows: afterSecond } = await query<{ cursor_id: string | null }>(sql`
-    /* probeClassifierChildCursorAfterSecond */
-    SELECT cursor_id FROM classifier_retention_cursors WHERE sweep = ${sweep}`)
   const safeTable = assertWhitelistedSqlIdentifier(
     {
       run_candidates: 'classifier_run_candidates',
@@ -157,30 +153,34 @@ export async function probeClassifierChildPagesForRetentionTest(
     ]),
     'Classifier child retention probe table',
   )
-  const { rows: children } = await query<{ terminal_children: number; pending_children: number }>(
-    sql`/* probeClassifierChildDeletion */ SELECT
+  const { rows: observations } = await query<{
+    cursor_id: string | null
+    terminal_children: number
+    pending_children: number
+    runs: number
+    identities: number
+  }>(
+    sql`/* probeClassifierChildObservations */ SELECT
+      (SELECT cursor_id FROM classifier_retention_cursors WHERE sweep = ${sweep}) AS cursor_id,
       (SELECT count(*)::int FROM `
       .append(safeTable)
       .append(sql` WHERE run_id = ${terminalId}) AS terminal_children,
       (SELECT count(*)::int FROM `)
-      .append(safeTable)
-      .append(sql` WHERE run_id = ${pendingId}) AS pending_children`),
-  )
-  const { rows: parents } = await query<{ runs: number; identities: number }>(sql`
-    /* probeClassifierChildParents */ SELECT
+      .append(safeTable).append(sql` WHERE run_id = ${pendingId}) AS pending_children,
       (SELECT count(*)::int FROM classifier_runs WHERE id = ANY(${[terminalId, pendingId]}::uuid[]))
         AS runs,
       (SELECT count(*)::int FROM classifier_run_identities
-        WHERE id = ANY(${[terminalId, pendingId]}::uuid[])) AS identities`)
+        WHERE id = ANY(${[terminalId, pendingId]}::uuid[])) AS identities`),
+  )
   // Deliberately no commit: async disposal rolls back both child DELETEs and cursor updates.
   return {
     pages: [first, second],
     cursorAfterFirst: afterFirst[0]?.cursor_id ?? null,
-    cursorAfterSecond: afterSecond[0]?.cursor_id ?? null,
-    terminalChildren: children[0]!.terminal_children,
-    pendingChildren: children[0]!.pending_children,
-    runs: parents[0]!.runs,
-    identities: parents[0]!.identities,
+    cursorAfterSecond: observations[0]?.cursor_id ?? null,
+    terminalChildren: observations[0]!.terminal_children,
+    pendingChildren: observations[0]!.pending_children,
+    runs: observations[0]!.runs,
+    identities: observations[0]!.identities,
   }
 }
 

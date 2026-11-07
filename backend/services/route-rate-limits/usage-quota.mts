@@ -99,6 +99,7 @@ function toApiUsage(settlement: UsageSettlement, units: number): ApiUsage {
   }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed identity.credential switch is exhaustive; Oxlint misses its terminal flow.
 function identityDimensions(
   identity: UsageIdentity,
 ): Pick<ApiUsage, 'credential' | 'user_id' | 'api_key_id' | 'oauth_client_id' | 'oauth_grant_id'> {

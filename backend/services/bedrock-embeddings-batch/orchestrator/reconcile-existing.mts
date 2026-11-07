@@ -23,7 +23,7 @@ export async function copyExistingEmbeddings(
   options: EmbeddingReconciliationOptions = {},
 ): Promise<EmbeddingReconciliationPage> {
   if (tableName !== 'posts' && tableName !== 'topics' && tableName !== 'rss_feed_items') {
-    throw new Error(`Invalid table name: ${tableName}`)
+    throw new Error(`Invalid table name: ${String(tableName)}`)
   }
   const configuredPageSize = getEmbeddingReconciliationPageSize()
   const requestedLimit = options.limit ?? configuredPageSize
@@ -125,12 +125,5 @@ export async function copyExistingEmbeddings(
 }
 
 function copyExistingLockClause(tableName: ReconciliationTable): string {
-  switch (tableName) {
-    case 'topics':
-      return `AND NOT ${lockExistsClause('topics', 'topics.id')}`
-    case 'posts':
-      return `AND NOT ${lockExistsClause('posts', 'posts.id')}`
-    case 'rss_feed_items':
-      return `AND NOT ${lockExistsClause('rss_feed_items', 'rss_feed_items.id')}`
-  }
+  return `AND NOT ${lockExistsClause(tableName, `${tableName}.id`)}`
 }

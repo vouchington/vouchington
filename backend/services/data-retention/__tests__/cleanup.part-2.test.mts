@@ -49,7 +49,7 @@ describe('orphaned OAuth account cleanup', () => {
     await setOAuthAccountRetentionTime('facebook', firstId, window.firstEligibleDate)
     await setOAuthAccountRetentionTime('facebook', secondId, window.secondEligibleDate)
 
-    const result = await runDataRetentionCleanup(
+    const orphanedOAuthAccountsCleanup = await runDataRetentionCleanup(
       { batchSize: 500, maxBatches: 1 },
       {
         families: ['orphanedOAuthAccounts'],
@@ -61,7 +61,7 @@ describe('orphaned OAuth account cleanup', () => {
         },
       },
     ).then(result => result.orphanedOAuthAccounts)
-    expect(result).toEqual({ deleted: 1, hasMore: true })
+    expect(orphanedOAuthAccountsCleanup).toEqual({ deleted: 1, hasMore: true })
     expect(
       [
         await oauthAccountExistsByProviderUserId('facebook', firstId),

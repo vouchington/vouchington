@@ -5,6 +5,10 @@ import {
   getResourcePressureFingerprints,
 } from './plan-warnings.mts'
 import {
+  confirmsRepeatedWalFingerprint,
+  isCheckpointSensitiveWalFingerprint,
+} from './repeated-wal.mts'
+import {
   RESOURCE_PRESSURE_BASELINE,
   type ResourcePressureBaseline,
 } from './resource-pressure-baseline.mts'
@@ -30,15 +34,32 @@ function assertResultsPresent(results: readonly ExplainResult[]): void {
   }
 }
 
+// WAL bytes include checkpoint full-page images, so one capture can cross the threshold while the
+// repeated capture of the same plan does not. Fail when both captures show that fingerprint, or
+// when a node fingerprint and `query:wal-aggregate` trade places. A missing repeat stays
+// fail-closed. Temp, spill, and hash-batch fingerprints still use the first capture.
 function assertNoDisallowedRegressions(
   results: readonly ExplainResult[],
+  repeatedResults: readonly ExplainResult[],
   baseline: ResourcePressureBaseline = RESOURCE_PRESSURE_BASELINE,
 ): void {
+  const repeatedWalByIdentity = new Map(
+    repeatedResults.map(result => [
+      getExplainResultIdentity(result),
+      new Set(getResourcePressureFingerprints(result).filter(isCheckpointSensitiveWalFingerprint)),
+    ]),
+  )
   const regressions = results.flatMap(result => {
     const identity = getExplainResultIdentity(result)
     const allowed = new Set(baseline[identity] ?? [])
+    const repeatedWal = repeatedWalByIdentity.get(identity)
     return getResourcePressureFingerprints(result)
       .filter(fingerprint => !allowed.has(fingerprint))
+      .filter(
+        fingerprint =>
+          !isCheckpointSensitiveWalFingerprint(fingerprint) ||
+          confirmsRepeatedWalFingerprint(fingerprint, repeatedWal),
+      )
       .map(fingerprint => `${identity}=${fingerprint}`)
   })
   if (regressions.length > 0) {
@@ -62,8 +83,10 @@ export function analyzePairedResults(
     console.error(`Unstable sequential scans (advisory): ${JSON.stringify(unstable)}`)
   const nearTies = getSeqScanNearTies(results, repeatedResults)
   if (nearTies.length > 0)
-    console.error(`Sequential scans within a near-tie of an index plan (advisory): ${nearTies}`)
-  assertNoDisallowedRegressions(results, baseline)
+    console.error(
+      `Sequential scans within a near-tie of an index plan (advisory): ${nearTies.join(',')}`,
+    )
+  assertNoDisallowedRegressions(results, repeatedResults, baseline)
   console.error(`Loaded ${results.length} query results`)
 
   const sorted = results.toSorted((a, b) => b.execution_time_ms - a.execution_time_ms)

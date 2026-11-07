@@ -57,7 +57,6 @@ describe('published Storybook post aside resolution', () => {
         '@/components/tags/post-related-topics-aside',
         '@/components/tags/post-related-posts-aside',
         '@/components/tags/post-related-urls-aside',
-        '@/components/asides/hn-discussions-post-aside',
       ]) {
         const resolved = await server.pluginContainer.resolveId(specifier, importer)
         expect(resolved?.id).toBe(fixture)

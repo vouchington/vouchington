@@ -47,7 +47,7 @@ describe('schema snapshot output roots', () => {
       const root = join(base, 'runtime')
       const markdownRoot = join(base, 'docs/markdown')
       await Promise.all([mkdir(root), mkdir(markdownRoot, { recursive: true })])
-      const snapshot: SchemaSnapshot = {
+      const fixtureSnapshot: SchemaSnapshot = {
         formatVersion: 2,
         tables: {},
         views: {},
@@ -56,17 +56,28 @@ describe('schema snapshot output roots', () => {
         functions: {},
         policies: {},
       }
-      const markdown = renderSchemaMarkdown(snapshot)
-      await publishSchemaSnapshot({ snapshot, markdown, root, markdownRoot })
+      const fixtureMarkdown = renderSchemaMarkdown(fixtureSnapshot)
+      await publishSchemaSnapshot({
+        snapshot: fixtureSnapshot,
+        markdown: fixtureMarkdown,
+        root,
+        markdownRoot,
+      })
       await expect(readFile(join(root, 'schema.json'), 'utf8')).resolves.toBe(
-        stableStringify(snapshot),
+        stableStringify(fixtureSnapshot),
       )
       await expect(readFile(join(markdownRoot, 'README.md'), 'utf8')).resolves.toContain(
         '[Views](views.md)',
       )
       await expect(readFile(join(root, 'markdown/README.md'), 'utf8')).rejects.toThrow(/ENOENT/)
       await expect(
-        publishSchemaSnapshot({ snapshot, markdown, root, markdownRoot, check: true }),
+        publishSchemaSnapshot({
+          snapshot: fixtureSnapshot,
+          markdown: fixtureMarkdown,
+          root,
+          markdownRoot,
+          check: true,
+        }),
       ).resolves.toBeUndefined()
     } finally {
       await rm(base, { recursive: true, force: true })

@@ -95,6 +95,7 @@ describe('request query profile baseline', () => {
     }[]
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
+    vi.stubEnv('REQUEST_QUERY_PROFILE_DIAGNOSTICS', undefined)
     try {
       const scopedBaseline = committed.find(entry => entry.annotation === 'addListItem')
       expect(scopedBaseline).toBeDefined()

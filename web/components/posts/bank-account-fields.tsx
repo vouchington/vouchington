@@ -99,12 +99,12 @@ export function BankAccountFields({ data, onUpdate, disabled }: FieldsProps) {
             <SelectItem value='__none__'>
               {t('extracted.posts.bankAccountFields.notSpecified_dc12bec5')}
             </SelectItem>
-            {BANK_ACCOUNT_TYPES.map(t => (
+            {BANK_ACCOUNT_TYPES.map(accountType => (
               <SelectItem
-                key={t.value}
-                value={t.value}
+                key={accountType.value}
+                value={accountType.value}
               >
-                {t.label}
+                {accountType.label}
               </SelectItem>
             ))}
           </SelectContent>

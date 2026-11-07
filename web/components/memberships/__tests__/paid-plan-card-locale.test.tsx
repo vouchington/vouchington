@@ -4,7 +4,7 @@ import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { mergeMessages } from '@/lib/i18n/use-translations'
 import type { MembershipPlanSku } from '@/types/api-responses'
 import { PaidPlanCard } from '../paid-plan-card'
-import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 const yearlySku: MembershipPlanSku = {
   id: 'plus-yearly',

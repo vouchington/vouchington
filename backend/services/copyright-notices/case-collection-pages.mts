@@ -11,7 +11,7 @@ import {
   selectEuParticipantSettlements,
   selectEuStaffSettlements,
 } from './read-models-eu-settlements.mts'
-import { getCopyrightNoticeViewerRole } from './read-models.mts'
+import { getCopyrightNoticeViewerRole } from './read-models-participant.mts'
 import {
   selectTerritorialStaffComplaints,
   territorialComplaintCursorScope,

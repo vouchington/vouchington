@@ -75,21 +75,21 @@ describe('initialize stale database checks', () => {
   })
 
   it('detects a mismatched TypeScript migration checksum', async () => {
-    const migrationId = '0000-00-00-0-finite-values.mts'
-    const sql = await readMigrationFile(migrationsDirectory, migrationId)
+    const typescriptMigrationId = '0000-00-00-0-finite-values.mts'
+    const sql = await readMigrationFile(migrationsDirectory, typescriptMigrationId)
     const matchingChecksum = createHash('sha256').update(sql, 'utf8').digest('hex')
 
     await expect(
       findMigrationLedgerDrift(migrationsDirectory, [
-        { id: migrationId, checksum: matchingChecksum },
+        { id: typescriptMigrationId, checksum: matchingChecksum },
       ]),
     ).resolves.toBeUndefined()
     await expect(
       findMigrationLedgerDrift(migrationsDirectory, [
-        { id: migrationId, checksum: 'a'.repeat(64) },
+        { id: typescriptMigrationId, checksum: 'a'.repeat(64) },
       ]),
     ).resolves.toBe(
-      `applied migration ${migrationId} has a checksum that differs from its local file`,
+      `applied migration ${typescriptMigrationId} has a checksum that differs from its local file`,
     )
   })
 

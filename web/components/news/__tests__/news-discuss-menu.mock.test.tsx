@@ -43,7 +43,7 @@ vi.mock(
     }) as unknown as typeof import('sonner'),
 )
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   createLinkPost: vi.fn<VitestLooseMock>(),
 }))
 

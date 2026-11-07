@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 import {
   EMPTY_RESULTS,
   getMatchingShortcuts,

@@ -98,7 +98,9 @@ describe('startSSE', () => {
       const afterBody = ctx.signal.aborted
       const { stream, pipelinePromise } = startSSE(ctx)
       stream.write('event: ready\ndata: {}\n\n')
-      await new Promise<void>(resolve => ctx.signal.addEventListener('abort', () => resolve()))
+      await new Promise<void>(resolve => {
+        ctx.signal.addEventListener('abort', () => resolve())
+      })
       observed.resolve({ afterBody, afterDisconnect: ctx.signal.aborted })
       stream.end()
       await pipelinePromise

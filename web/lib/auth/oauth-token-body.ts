@@ -1,5 +1,6 @@
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed token.provider switch is exhaustive; Oxlint misses its terminal flow.
 export function tokenToBody(token: OAuthLoginToken): Record<string, unknown> {
   switch (token.provider) {
     case 'facebook': {

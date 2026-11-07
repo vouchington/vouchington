@@ -80,7 +80,7 @@ describe('registered AI rerun writes', () => {
     expect(await readAllQueueJobs(ai_agents)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: `report_judgement_${runId}`,
+          id: `report_judgement_${String(runId)}`,
           name: 'report-judgement',
           data: expect.objectContaining({
             triggering_report_id: id,

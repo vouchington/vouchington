@@ -81,7 +81,7 @@ function RssFeedItemModalShellContent({
   useScrollCurrentRssItemIntoView(currentItemId)
   useEffect(() => {
     const dir = pendingFocusDirectionRef.current
-    if (!dir) return
+    if (!dir) return undefined
     pendingFocusDirectionRef.current = null
     const id = requestAnimationFrame(() => {
       if (dir === 'previous') previousButtonRef.current?.focus()

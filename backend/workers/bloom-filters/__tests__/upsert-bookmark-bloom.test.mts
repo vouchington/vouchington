@@ -1,4 +1,4 @@
-import { it, expect, beforeEach, afterEach, describe } from 'vitest'
+import { it, expect, beforeEach, afterEach, describe, onTestFinished } from 'vitest'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertUserMuteRelations } from '@services/entity-relations/upsert-user-mutes'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
@@ -8,6 +8,7 @@ import {
 } from '@services/bookmarks/bloom-filter'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import { bloomFilters as bloomFiltersWorker } from '../workers.mts'
+import { bloomFilters as bloomQueue } from '@queues/bloom-filters/queues'
 import { overrideDynamicConfigFieldsForTest, createTestUser } from '@voucha/test-helpers'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
@@ -32,6 +33,17 @@ describe('upsert-bookmark-bloom', () => {
         'Bookmark bloom worker drain',
       )
     }
+  })
+
+  it('fails an unknown queue job', async () => {
+    const jobId = `bloom-unknown-${crypto.randomUUID()}`
+    onTestFinished(async () => {
+      await (await bloomQueue.getJob(jobId))?.remove()
+    })
+    await bloomFiltersWorker.waitUntilReady()
+    await expect(bloomQueue.add('unknownBloomJob', {}, { jobId, attempts: 1 })).rejects.toThrow(
+      'Bloom filter job unknownBloomJob not found',
+    )
   })
 
   it('upsertEntityRelation (follow rss_feed) adds entry to ready bloom so bloom-gated read returns it', async () => {

@@ -40,7 +40,7 @@ const { default: defaultLimit, max } = HOSTNAME_PAGE_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or net trust votes (highest first).',
+      'Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or confidence in trust votes (highest first).',
     parameters: {
       type: 'object',
       properties: {
@@ -55,7 +55,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           type: 'string',
           enum: ['trust'],
           description:
-            'trust sorts by net trust votes, highest first. Omit it to sort by hostname.',
+            'trust sorts by confidence in trust votes, highest first. Omit it to sort by hostname.',
         },
         ...pageInputProperties('Hostnames', HOSTNAME_PAGE_LIMIT),
         include_descendants: { type: 'boolean' },

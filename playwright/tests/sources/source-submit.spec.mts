@@ -81,11 +81,11 @@ test.describe('Submit a Source — single-URL redirect', () => {
   })
 
   test('terminal feed timeout shows localized error without navigating', async ({ page }) => {
-    const feedUrl = `https://timeout-source-${randomSuffix()}.example.com/feed.xml`
+    const timeoutFeedUrl = `https://timeout-source-${randomSuffix()}.example.com/feed.xml`
     await withCleanUser(page)
     await navigateTo(page, '/sources')
     await page.getByTestId('sources-submit-source-button').click()
-    await page.getByTestId('create-source-form-urls').pressSequentially(feedUrl)
+    await page.getByTestId('create-source-form-urls').pressSequentially(timeoutFeedUrl)
     const accepted = page.waitForResponse(
       response =>
         response.request().method() === 'POST' &&

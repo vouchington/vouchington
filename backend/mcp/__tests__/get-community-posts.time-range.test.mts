@@ -7,6 +7,7 @@ import {
   insertTestCommunityMember,
   insertTestCommunityPostReview,
   insertTestPost,
+  setMarkdownPostVotesForTest,
 } from '@voucha/test-helpers'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -32,6 +33,7 @@ describe('read_community posts time range', () => {
         postId,
         submittedById: owner.id,
       })
+      await setMarkdownPostVotesForTest({ postId, countUp: 1 })
       postIds.push(postId)
     }
     const read = async (args: Record<string, unknown>) => {

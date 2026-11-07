@@ -24,7 +24,7 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 interface Props {
   state: RaidModeState
   isBusy: boolean
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
+  onSubmit: (event: React.SubmitEvent<HTMLFormElement>) => void
   onToggle: (type: CommunityRestrictionType, checked: boolean) => void
   onDurationChange: (duration: DurationValue) => void
   onReasonChange: (reason: string) => void

@@ -28,7 +28,7 @@ vi.mock(
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-follower-distributions'), () => ({
   sharePostWithFollowers: vi.fn<VitestLooseMock>(),
   sendPostToFollowers: vi.fn<VitestLooseMock>(),
 }))

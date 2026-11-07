@@ -62,7 +62,7 @@ vi.mock(
     }) as unknown as typeof import('@/hooks/use-turnstile-token'),
 )
 
-vi.mock(import('@/lib/api/client/posts'), () => ({}))
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({}))
 
 vi.mock(import('@/lib/on-error'), () => ({
   default: vi.fn<VitestLooseMock>(),

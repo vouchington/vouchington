@@ -3,10 +3,8 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { ApplicationReview } from '../application-review'
 import { getCommunityApplication } from '@/lib/api/client'
-import type {
-  CommunityApplicationSummary,
-  CommunityApplicationsResponseBody,
-} from '@/types/api-responses'
+import type { CommunityApplicationSummary } from '@/types/api-responses'
+import type { CommunityApplicationsResponseBody } from '@/types/api-responses/community-applications'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { mergeMessages } from '@/lib/i18n/use-translations'

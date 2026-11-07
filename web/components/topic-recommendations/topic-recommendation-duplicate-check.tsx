@@ -101,10 +101,10 @@ export function TopicRecommendationDuplicateCheck({ data, isLoading, isBelowMinL
             'extracted.topicRecommendations.topicRecommendationDuplicateCheck.similarExistingTopics_bb3d47ac',
           )}
           isLoading={false}
-          items={data.similar_topics.map(t => ({
-            id: t.id,
-            href: topicHref({ topic_type: t.topic_type, id: t.id, slug: t.slug }),
-            label: { kind: 'ui-text', text: t.name },
+          items={data.similar_topics.map(topic => ({
+            id: topic.id,
+            href: topicHref({ topic_type: topic.topic_type, id: topic.id, slug: topic.slug }),
+            label: { kind: 'ui-text', text: topic.name },
           }))}
           emptyHint=''
         />

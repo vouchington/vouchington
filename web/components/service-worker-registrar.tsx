@@ -76,8 +76,8 @@ export function ServiceWorkerRegistrar({ currentUserId }: { currentUserId?: stri
       return attemptInFlight
     }
 
-    if (!('serviceWorker' in navigator)) return
-    if (navigator.webdriver) return
+    if (!('serviceWorker' in navigator)) return undefined
+    if (navigator.webdriver) return undefined
     void startAttempt()
     const retryOnline = () => {
       if (retryTimer !== undefined) {

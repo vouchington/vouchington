@@ -6,14 +6,12 @@ import {
   attemptTestMembershipOperationTransition,
   attemptTestRefundMembershipOperationTransition,
   claimTestMembershipOperation,
-  createTestImmutableLineageBinding,
   createTestImmutableMembershipChange,
   createTestImmutableMembershipGrant,
   createTestImmutableMembershipOperation,
   createTestRefundMembershipOperation,
   deleteTestMembershipChange,
   mutateTestMembershipChange,
-  setTestLineageBindingOriginatingInvoice,
 } from '../../../test-helpers/data-stores/psql/membership-ledger-immutability.mts'
 
 describe('membership ledger immutability', () => {
@@ -113,16 +111,6 @@ describe('membership ledger immutability', () => {
         ),
       ),
     ).resolves.toHaveLength(2)
-  })
-
-  it('allows a lineage binding originating invoice to be filled once', async () => {
-    const bindingId = await createTestImmutableLineageBinding()
-    await expect(
-      setTestLineageBindingOriginatingInvoice(bindingId, 'in_original'),
-    ).resolves.toMatchObject({ rowCount: 1 })
-    await expect(
-      setTestLineageBindingOriginatingInvoice(bindingId, 'in_rewritten'),
-    ).rejects.toThrow('membership lineage bindings only allow release and final-purge transitions')
   })
 
   it('rejects membership change history mutation and deletion', async () => {

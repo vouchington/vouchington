@@ -94,7 +94,7 @@ describe('metrics', () => {
       )
     })
 
-    it('returns public, viewer, and private profile counts when authorized', async () => {
+    it('returns the posts this viewer can see and private profile counts when authorized', async () => {
       const fixture = await createUserProfileFixture({ suffix: `metrics-${Date.now()}` })
 
       const metrics = await getUserProfileMetricsByAny(fixture.owner.id, {
@@ -110,11 +110,6 @@ describe('metrics', () => {
           users_followers: 1,
           topics_following: 1,
           rss_feeds_following: 1,
-        },
-        viewer_count: {
-          reviews: 1,
-          discussions: 1,
-          comments: 1,
         },
         private_count: {
           topics_blocked: 1,
@@ -275,11 +270,11 @@ describe('metrics', () => {
     })
 
     it('includes rss_feeds_viewed in private counts', async () => {
-      const user = await createTestUser()
+      const feedViewer = await createTestUser()
       const feed = await insertTestRssFeedDirect({})
-      await upsertRecentlyViewed('rss_feed', feed.id, null, user.id)
+      await upsertRecentlyViewed('rss_feed', feed.id, null, feedViewer.id)
 
-      const metrics = await getUserProfileMetricsByAny(user.id, { currentUser: user })
+      const metrics = await getUserProfileMetricsByAny(feedViewer.id, { currentUser: feedViewer })
 
       expect(metrics?.private_count?.rss_feeds_viewed).toBe(1)
     })

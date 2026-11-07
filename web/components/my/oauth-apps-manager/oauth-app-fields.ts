@@ -16,6 +16,7 @@ export function parseRedirectUris(text: string): string[] {
     .filter(line => line !== '')
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed code switch is exhaustive; Oxlint misses its terminal flow.
 export function redirectUriValidationMessage(
   t: Translator,
   code: OAuthRedirectUriValidationCode,

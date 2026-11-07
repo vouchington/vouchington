@@ -8,7 +8,7 @@ import { backendResponseContracts } from './response-contracts.mts'
 import { responseBody } from './static-response-bodies.mts'
 
 function body(id: string): Record<string, unknown> {
-  const fixture = nativeModerationApiFixtureCases.find(fixture => fixture.id === id)
+  const fixture = nativeModerationApiFixtureCases.find(candidate => candidate.id === id)
   expect(fixture).toBeDefined()
   expect(fixture!.auth).toBe('fixture-user')
   return fixture!.body as Record<string, unknown>
@@ -80,7 +80,7 @@ describe('native member appeal fixtures', () => {
       scope: 'appeals:pending:user-1:id-desc',
     })
     const fixture = nativeModerationApiFixtureCases.find(
-      fixture => fixture.id === 'native.moderation.appeals.member.page-2',
+      candidate => candidate.id === 'native.moderation.appeals.member.page-2',
     )!
     expect(fixture.query?.after).toBe(page.end_cursor)
     expect(second.page_info).toMatchObject({ has_next_page: false, end_cursor: null })

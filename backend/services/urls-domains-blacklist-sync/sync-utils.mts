@@ -68,7 +68,7 @@ export function createSourceNotFoundError(
 }
 
 export function createSyncFailedError(url: string, cause: unknown): Error {
-  return new Error(`Failed to sync blacklist from ${url}: ${cause}`)
+  return new Error(`Failed to sync blacklist from ${url}: ${String(cause)}`)
 }
 
 export function createEmptyFeedError(): Error {

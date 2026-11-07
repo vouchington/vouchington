@@ -5,7 +5,7 @@ import { IMAGE_DELETION_RECOVER_JOB } from '@queues/background/enqueues/image-de
 import { readAllQueueJobs } from './queue-jobs.mts'
 import { approveTestPost } from './entities/post-clearance.mts'
 import { createTestUserDirect } from './entities/users-direct.mts'
-import { getPostModerationResetState } from './entities/post-moderation.mts'
+import { getPostModerationResetState } from './entities/post-moderation-reads.mts'
 import { insertTestImage } from './entities/images-insert.mts'
 import { insertTestPost } from './entities/posts.mts'
 import { insertTestPostImage } from './entities/images-post-placements.mts'
@@ -29,7 +29,7 @@ export async function createImageDeletionFixture(postCount = 3) {
   const user = await createTestUserDirect()
   const imageId = await insertTestImage(user!.id)
   const postIds: string[] = []
-  for (const ordinal of Array.from({ length: postCount }, (_, ordinal) => ordinal)) {
+  for (const ordinal of Array.from({ length: postCount }, (_, index) => index)) {
     const postId = await insertTestPost({
       title: `Image deletion ${ordinal}`,
       slug: `image-deletion-${randomUUID()}`,
@@ -94,7 +94,9 @@ export function captureImageDeletionTransactions() {
           const [input, parameters] = argumentsList
           captured.push(typeof input === 'string' ? input : input.text)
           const values = typeof input === 'string' ? (parameters ?? []) : input.values
-          for (const value of values.flatMap(value => (Array.isArray(value) ? value : [value]))) {
+          for (const value of values.flatMap(parameter =>
+            Array.isArray(parameter) ? parameter : [parameter],
+          )) {
             if (typeof value === 'string' && value.startsWith('media-delivery:post:'))
               scopes.push(value)
           }

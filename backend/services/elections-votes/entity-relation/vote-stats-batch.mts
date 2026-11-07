@@ -1,3 +1,4 @@
+import { isEntityRelationPublicationChange } from './vote-stats-publication-change.mts'
 import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import {
   assertWhitelistedSqlIdentifier,
@@ -19,13 +20,11 @@ const topHashtagRelationTables = new Set([
   'relation__post__category__topic_alias',
   'relation__rss_feed_item__category__topic_alias',
 ])
-
 export type EntityRelationVoteStatsBatchOptions = {
   query?: TransactionQuery
   invalidateCache?: boolean
   enqueueTopHashtagRefresh?: boolean
 }
-
 export async function updateEntityRelationElectionVoteStatsFromPrimaryBatch(
   targets: readonly EntityRelationElectionTarget[],
   options: EntityRelationVoteStatsBatchOptions = {},
@@ -51,7 +50,6 @@ export async function updateEntityRelationElectionVoteStatsFromPrimaryBatch(
     await publishEntityRelationElectionVoteStats(changedTargets, options)
   return changedTargets
 }
-
 /** Publishes already-persisted primary stats after their transaction commits. */
 export async function publishEntityRelationElectionVoteStats(
   targets: readonly EntityRelationElectionTarget[],
@@ -69,15 +67,15 @@ export async function publishEntityRelationElectionVoteStats(
       void enqueueRefreshTopHashtags()
   }
 }
-
 type UpdatedEntityRelationVoteStats = {
   id: string
   subject_id: string
   object_id: string
   prior_votes_score_net: number
   next_votes_score_net: number
+  prior_votes_score_sort: number
+  next_votes_score_sort: number
 }
-
 async function refreshChunkAndCapture(
   relationTable: EntityRelationElectionTarget['relationTable'],
   relationIds: string[],
@@ -97,22 +95,23 @@ async function refreshChunkAndCaptureInTransaction(
   relationTable: EntityRelationElectionTarget['relationTable'],
   relationIds: string[],
 ): Promise<UpdatedEntityRelationVoteStats[]> {
-  // ast-grep-ignore: no-three-sequential-awaits -- lock scopes before row updates, then capture the resulting transitions
+  // ast-grep-ignore: no-three-sequential-awaits -- Publication-scope locks must precede relation score writes; the returned prior/next scores select the eligibility transitions captured afterward.
   await lockEntityRelationVoteStatsPostPublicationScopes(query, relationTable, relationIds)
   const changes = await refreshChunk(relationTable, relationIds, query)
   await recordPostTopicRelationPublicationChanges(
     query,
     relationTable,
-    changes.filter(hasPublicEligibilityTransition),
+    changes.filter(change =>
+      isEntityRelationPublicationChange(
+        relationTable,
+        change.prior_votes_score_net,
+        change.next_votes_score_net,
+        change.prior_votes_score_sort,
+        change.next_votes_score_sort,
+      ),
+    ),
   )
   return changes
-}
-
-function hasPublicEligibilityTransition({
-  prior_votes_score_net,
-  next_votes_score_net,
-}: UpdatedEntityRelationVoteStats): boolean {
-  return prior_votes_score_net > 0 !== next_votes_score_net > 0
 }
 
 async function refreshChunk(
@@ -158,7 +157,8 @@ async function refreshChunk(
         COALESCE(aggregated.votes_count_down, 0)::integer AS votes_count_down
       FROM target_ids target LEFT JOIN aggregated ON aggregated.entity_relation_id = target.id
     ), current AS MATERIALIZED (
-      SELECT relation.id, relation.votes_score_net AS prior_votes_score_net
+      SELECT relation.id, relation.votes_score_net AS prior_votes_score_net,
+        relation.votes_score_sort AS prior_votes_score_sort
       FROM `)
   query.append(table)
   query.append(sql` relation JOIN stats ON stats.id = relation.id
@@ -180,7 +180,8 @@ async function refreshChunk(
         relation.subject_id,
         relation.object_id,
         current.prior_votes_score_net,
-        relation.votes_score_net AS next_votes_score_net
+        relation.votes_score_net AS next_votes_score_net,
+        current.prior_votes_score_sort, relation.votes_score_sort AS next_votes_score_sort
     ) SELECT * FROM updated`)
   return (await executor<UpdatedEntityRelationVoteStats>(query)).rows
 }

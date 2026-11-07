@@ -125,8 +125,7 @@
           "default_post_broadcast": "followers",
           "default_post_privacy": "private",
           "country": "US",
-          "ui_locale": null,
-          "should_import_hacker_news_discussions": false
+          "ui_locale": null
         }
       }
     },
@@ -248,6 +247,193 @@
       },
       "structuredContent": {
         "success": true
+      }
+    },
+    {
+      "id": "native.mcp.read-posts.hacker-news-search",
+      "tool": "read_posts",
+      "arguments": {
+        "option": "search",
+        "arguments": {}
+      },
+      "structuredContent": {
+        "success": true,
+        "results": [
+          {
+            "id": "0198ffff-0000-7000-8000-000000000002",
+            "title": "Example post",
+            "markdown": "Example post text",
+            "post_type": "link",
+            "hacker_news_references": {
+              "story_count": 2,
+              "comment_count": 3
+            }
+          }
+        ],
+        "page_info": {
+          "has_next_page": false,
+          "start_cursor": null,
+          "end_cursor": null
+        }
+      }
+    },
+    {
+      "id": "native.mcp.read-posts.hacker-news-details",
+      "tool": "read_posts",
+      "arguments": {
+        "option": "details",
+        "arguments": {
+          "post_id": "0198ffff-0000-7000-8000-000000000002"
+        }
+      },
+      "structuredContent": {
+        "success": true,
+        "post": {
+          "id": "0198ffff-0000-7000-8000-000000000002",
+          "slug": "example-post",
+          "post_type": "link",
+          "title": "Example post",
+          "markdown": "Example post text",
+          "parent_post_id": null,
+          "root_post_id": null,
+          "created_by_id": "0198ffff-0000-7000-8000-000000000002",
+          "is_anonymous": false,
+          "created_at": "2026-10-09T00:00:00.000Z",
+          "updated_at": "2026-10-09T00:00:00.000Z",
+          "hacker_news_references": {
+            "story_count": 2,
+            "comment_count": 3,
+            "stories": [
+              {
+                "hacker_news_item_id": 1,
+                "points": 4,
+                "reply_count": 2,
+                "posted_at": "2026-10-09T00:00:00.000Z"
+              }
+            ],
+            "comments": [
+              {
+                "hacker_news_item_id": 2,
+                "parent_story_item_id": 3,
+                "posted_at": "2026-10-09T00:00:00.000Z"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "native.mcp.read-rss-item.hacker-news-list",
+      "tool": "read_rss_feed_item",
+      "arguments": {
+        "option": "list",
+        "arguments": {}
+      },
+      "structuredContent": {
+        "success": true,
+        "results": [
+          {
+            "id": "0198ffff-0000-7000-8000-000000000002",
+            "title": "Example article",
+            "markdown": "Example article text",
+            "url": "https://example.test/article",
+            "guid": "article-guid",
+            "published_at": "2026-10-09T00:00:00.000Z",
+            "rss_feed_id": "0198ffff-0000-7000-8000-000000000002",
+            "rss_feed_title": "Example feed",
+            "hacker_news_references": {
+              "story_count": 2,
+              "comment_count": 3
+            }
+          }
+        ],
+        "page_info": {
+          "has_next_page": false,
+          "start_cursor": null,
+          "end_cursor": null
+        }
+      }
+    },
+    {
+      "id": "native.mcp.read-rss-item.hacker-news-details",
+      "tool": "read_rss_feed_item",
+      "arguments": {
+        "option": "details",
+        "arguments": {
+          "rss_feed_item_id": "0198ffff-0000-7000-8000-000000000002"
+        }
+      },
+      "structuredContent": {
+        "success": true,
+        "rss_feed_item": {
+          "id": "0198ffff-0000-7000-8000-000000000002",
+          "title": "Example article",
+          "markdown": "Example article text",
+          "url": "https://example.test/article",
+          "guid": "article-guid",
+          "published_at": "2026-10-09T00:00:00.000Z",
+          "rss_feed_id": "0198ffff-0000-7000-8000-000000000002",
+          "rss_feed_title": "Example feed",
+          "hacker_news_references": {
+            "story_count": 2,
+            "comment_count": 3,
+            "stories": [
+              {
+                "hacker_news_item_id": 1,
+                "points": 4,
+                "reply_count": 2,
+                "posted_at": "2026-10-09T00:00:00.000Z"
+              }
+            ],
+            "comments": [
+              {
+                "hacker_news_item_id": 2,
+                "parent_story_item_id": 3,
+                "posted_at": "2026-10-09T00:00:00.000Z"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "native.mcp.get-story.hacker-news-members",
+      "tool": "get_story",
+      "arguments": {
+        "story_id": "0198ffff-0000-7000-8000-000000000002"
+      },
+      "structuredContent": {
+        "success": true,
+        "story": {
+          "id": "0198ffff-0000-7000-8000-000000000002",
+          "title": null,
+          "cluster_reason": null,
+          "published_at": "2026-10-09T00:00:00.000Z",
+          "official_rss_feed_item_id": null,
+          "created_at": "2026-10-09T00:00:00.000Z",
+          "updated_at": "2026-10-09T00:00:00.000Z"
+        },
+        "items": [
+          {
+            "id": "0198ffff-0000-7000-8000-000000000002",
+            "title": "Example article",
+            "markdown": "Example article text",
+            "url": "https://example.test/article",
+            "guid": "article-guid",
+            "published_at": "2026-10-09T00:00:00.000Z",
+            "rss_feed_id": "0198ffff-0000-7000-8000-000000000002",
+            "rss_feed_title": "Example feed",
+            "hacker_news_references": {
+              "story_count": 2,
+              "comment_count": 3
+            }
+          }
+        ],
+        "page_info": {
+          "has_next_page": false,
+          "start_cursor": null,
+          "end_cursor": null
+        }
       }
     }
   ]

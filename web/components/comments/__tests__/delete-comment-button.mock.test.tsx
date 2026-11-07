@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { deletePost } from '@/lib/api/client/posts'
+import { deletePost } from '@/lib/api/client/post-mutations'
 import { DeleteCommentButton } from '../delete-comment-button'
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   deletePost: vi.fn<VitestLooseMock>(),
 }))
 

@@ -6,6 +6,12 @@ Rules live in code and config ([`.no-mistakes/`](../../../../.no-mistakes/), `.o
 
 Environment usage must survive refactoring between orchestration and executable workflow code; otherwise inventory cleanup can remove live configuration.
 
+Repository workflow contracts run against the tracked checkout in the required static gate through
+the [repository policy aggregate](../../../../ci/check-repository-policy-scans.mts). Their Vitest
+suites exercise the same policy logic with bounded fixture snapshots. Keeping repository discovery
+in the static runner prevents unrelated file changes from becoming unit-test inputs while preserving
+enforcement of the committed workflow contract.
+
 ## Where To Put A New Rule (Priority Order)
 
 Pick the highest tier that can express the rule. Keep rules small and focused (#4988).
@@ -92,6 +98,8 @@ an exception removed from the base cannot later be reintroduced. The ratchet rea
 SQL paths at that base: existing wording and stale-entry checks make those paths equivalent to
 the base allowlist without executing or parsing historical TypeScript. It does not establish that
 any migration was never staged; existing legacy markers stay until their provenance is resolved.
+
+Schema test allowlists are checked against the current snapshot from their evaluated exports. This catches removed tables and columns even when an exception is composed through a spread; newly tracked allowlist modules must join the freshness check before they can pass policy.
 
 ## PostgreSQL Conflict Ordering
 

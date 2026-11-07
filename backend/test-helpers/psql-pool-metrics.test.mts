@@ -32,7 +32,9 @@ describe('PostgreSQL pool metrics', () => {
     server.on('connection', socket => acceptedSockets.add(socket))
 
     try {
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+      await new Promise<void>(resolve => {
+        server.listen(0, '127.0.0.1', resolve)
+      })
       const poolHandle = Reflect.get(Reflect.get(client, 'connection').stream, '_handle') as object
       const serializationHandle = Reflect.get(
         Reflect.get(serializationClient, 'connection').stream,
@@ -65,7 +67,9 @@ describe('PostgreSQL pool metrics', () => {
       client.release()
       serializationClient.release()
       for (const socket of acceptedSockets) socket.destroy()
-      await new Promise<void>(resolve => server.close(() => resolve()))
+      await new Promise<void>(resolve => {
+        server.close(() => resolve())
+      })
     }
   })
 

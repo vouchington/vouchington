@@ -11,7 +11,7 @@ import {
   insertTestPostReview,
   insertTestDataPoint,
   insertTestTopic,
-  setPostVotesScoreUp,
+  setTestPostVoteScores,
   setTopicReferralProgramId,
   updateTestMembershipExpiresAt,
   WEB_PROVENANCE,
@@ -207,7 +207,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     expect(noReviewerLink!.review_avg_rating).toBeNull()
   })
 
-  it('picks the review with highest votes_score_net when user has multiple reviews', async () => {
+  it('picks the review with highest Wilson score when user has multiple reviews', async () => {
     const [{ user: multiReviewer }] = await Promise.all([createUserWithLink('multi-review')])
 
     const suffix = createRandomString(8)
@@ -231,7 +231,10 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
       insertTestPostReview(lowPostId, referralProgramId, 2),
       insertTestPostReview(highPostId, referralProgramId, 5),
     ])
-    await setPostVotesScoreUp(highPostId, 20)
+    await Promise.all([
+      setTestPostVoteScores(lowPostId, 100, 90),
+      setTestPostVoteScores(highPostId, 5, 0),
+    ])
 
     const result = await rankedLinks()
 
@@ -258,7 +261,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
       createUserWithLink(`linked-score-low-${suffix}`),
     ])
 
-    const [highPostId] = await Promise.all([
+    const [highPostId, lowPostId] = await Promise.all([
       insertTestDataPoint({
         title: `Linked High Score ${suffix}`,
         slug: `linked-high-score-${suffix}`,
@@ -273,7 +276,10 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
       }),
     ])
 
-    await setPostVotesScoreUp(highPostId, 10)
+    await Promise.all([
+      setTestPostVoteScores(highPostId, 5, 0),
+      setTestPostVoteScores(lowPostId, 100, 90),
+    ])
 
     const result = await rankedLinks()
 

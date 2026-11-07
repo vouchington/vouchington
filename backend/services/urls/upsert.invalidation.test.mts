@@ -29,8 +29,8 @@ describe('URL hostname invalidation', () => {
     )
     const coldId = urls.find(url => url.hostname.hostname === cold)?.hostname.id
     if (!coldId) throw new Error('Cold URL hostname was not created')
-    const enqueues = beforeCommit.filter(query =>
-      query.text.includes('/* enqueueHostnameCacheInvalidation */'),
+    const enqueues = beforeCommit.filter(capturedQuery =>
+      capturedQuery.text.includes('/* enqueueHostnameCacheInvalidation */'),
     )
     expect(enqueues).toHaveLength(1)
     expect((enqueues[0]!.values[0] as string[]).toSorted()).toEqual([coldId, privateId].toSorted())
@@ -48,8 +48,8 @@ describe('URL hostname invalidation', () => {
         'drainHostnameCacheInvalidationWork:claimAvailable',
       ),
     ).toBe(1)
-    const completions = afterCommit.filter(query =>
-      query.text.includes('/* drainHostnameCacheInvalidationWork:complete */'),
+    const completions = afterCommit.filter(capturedQuery =>
+      capturedQuery.text.includes('/* drainHostnameCacheInvalidationWork:complete */'),
     )
     expect(completions).toHaveLength(1)
     const completed = JSON.parse(completions[0]!.values[0] as string) as Array<{

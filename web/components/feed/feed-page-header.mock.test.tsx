@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 // FeedPageHeader calls getTranslations(), which resolves the request's UI locale via
 // getResolvedUiLocale() (headers()/getCurrentUser() — no request context in this test). Mocking

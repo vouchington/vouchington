@@ -1,6 +1,6 @@
 'use client'
 
-import { useReducer, useTransition, useEffect, type FormEvent } from 'react'
+import { useReducer, useTransition, useEffect, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -61,7 +61,7 @@ export function UserModNotesPanel({ targetUserId, communityId }: UserModNotesPan
     }
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     const trimmed = body.trim()
     if (!trimmed) return

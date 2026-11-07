@@ -74,8 +74,11 @@ describe('participate_in_community(open_modmail) — REST twin and real PostgreS
     const read = createRequest()
     await read.authenticateAs(member)
     expect(
-      (await read.get(`/api/v1/communities/${community.slug}/modmail/${thread.id}`).expect(200))
-        .body.thread,
+      (
+        await read
+          .get(`/api/v1/communities/${community.slug}/modmail/${String(thread.id)}`)
+          .expect(200)
+      ).body.thread,
     ).toMatchObject({ id: thread.id, subject_user_id: member.id })
   })
 

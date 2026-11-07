@@ -150,13 +150,13 @@ describe('OpenAI flex capacity fallback', () => {
 
   it('records an unknown model when the flex request names none', async () => {
     vi.resetModules()
-    const { createOpenAIResponse } = await import('./create-response.mts')
+    const { createOpenAIResponse: createResponseAfterReset } = await import('./create-response.mts')
     const { model: _model, ...withoutModel } = flexParams
     mocks.create
       .mockResolvedValueOnce(makeFlexCapacityFailedStream())
       .mockResolvedValueOnce(completedStream())
 
-    await createOpenAIResponse(withoutModel as Params)
+    await createResponseAfterReset(withoutModel as Params)
 
     expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith(
       'openai_flex_fallback',

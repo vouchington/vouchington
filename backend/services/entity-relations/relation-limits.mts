@@ -1,23 +1,24 @@
-import { getRelationTypeLimit } from './relation-limits-config.mts'
 export { relationLimitsConfig, relationLimitsMaxValues } from './relation-limits-config.mts'
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import type { QueryOptions } from '@data-stores/psql'
 import { createCodedError } from '@vouchington/sentry'
 import { RELATION_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import type { EntityRelationMetadata } from './metadata.mts'
 
-type LimitState = { remaining: number; existingObjectIds: string[] }
-type LimitGroup = {
-  relation: EntityRelationMetadata
-  objectIds: readonly string[]
-  skipIfDeleted?: boolean
-}
-const admittedRelations = new AsyncLocalStorage<
-  Map<string, { ids: Set<string>; state: LimitState | null }>
->()
+import {
+  readRelationLimitStates,
+  type LimitState,
+  type LimitGroup,
+  type SubjectLimitGroup,
+  type RelationAdmission,
+} from './relation-limit-states.mts'
+const relationLimitErrorCapacity = Symbol('relationLimitErrorCapacity')
+const admittedRelations = new AsyncLocalStorage<Map<string, RelationAdmission>>()
 
-/** Admit all tables before writing; accepted races may overshoot, never partially refuse a batch. */
+/**
+ * Admit all tables before writing; never partially refuse a batch. Post-related URLs recheck
+ * capacity under the post scope lock; other relation types may overshoot during accepted races.
+ */
 export async function withRelationLimitAdmission<T>(
   subjectId: string,
   groups: readonly LimitGroup[],
@@ -30,18 +31,15 @@ export async function withRelationLimitAdmission<T>(
   return runWithAdmission(subjectId, groups, states, run)
 }
 
-/** Thin single-table reader; all independent counts and existing-row reads share one primary statement. */
 export async function getRelationLimitState(
   relation: EntityRelationMetadata,
   subjectId: string,
   objectIds: readonly string[],
-  options?: { skipIfDeleted?: boolean },
+  options?: QueryOptions & { skipIfDeleted?: boolean },
 ): Promise<LimitState | null> {
-  return (
-    (await getRelationLimitStates(subjectId, [{ relation, objectIds, ...options }])).get(
-      relation.table_name,
-    ) ?? null
-  )
+  const group = { relation, objectIds, skipIfDeleted: options?.skipIfDeleted }
+  const states = await getRelationLimitStates(subjectId, [group], options)
+  return states.get(relation.table_name) ?? null
 }
 
 /** Refuse the whole batch, counting only distinct rows that would become newly active. */
@@ -49,13 +47,31 @@ export async function assertRelationLimit(
   relation: EntityRelationMetadata,
   subjectId: string,
   objectIds: readonly string[],
-  options?: { skipIfDeleted?: boolean },
+  options?: QueryOptions & { skipIfDeleted?: boolean },
 ): Promise<void> {
-  if (objectIds.length === 0 || isAdmitted(subjectId, { relation, objectIds })) return
-  assertWithinCapacity(
-    objectIds,
-    await getRelationLimitState(relation, subjectId, objectIds, options),
+  await assertRelationLimits(
+    [{ relation, subjectId, objectIds, skipIfDeleted: options?.skipIfDeleted }],
+    options,
   )
+}
+
+/** One primary statement admits all subject/table groups before any batch row is written. */
+export async function assertRelationLimits(
+  groups: readonly SubjectLimitGroup[],
+  options?: QueryOptions,
+): Promise<void> {
+  const pending = groups.filter(
+    group =>
+      group.objectIds.length > 0 &&
+      (group.relation.table_name === 'relation__post__related__url' ||
+        !isAdmitted(group.subjectId, group)),
+  )
+  const states = await readRelationLimitStates(pending, admittedRelations.getStore(), options)
+  for (const group of pending)
+    assertWithinCapacity(
+      group.objectIds,
+      states.get(`${group.relation.table_name}:${group.subjectId.toLowerCase()}`),
+    )
 }
 
 export function isRelationLimitError(err: unknown): boolean {
@@ -64,61 +80,27 @@ export function isRelationLimitError(err: unknown): boolean {
   )
 }
 
+/** Internal admission evidence; the symbol is non-enumerable and never part of API errors. */
+export function getRelationLimitErrorCapacity(error: unknown): number | undefined {
+  if (!(error instanceof Error)) return undefined
+  const capacity: unknown = Reflect.get(error, relationLimitErrorCapacity)
+  return typeof capacity === 'number' ? capacity : undefined
+}
+
 async function getRelationLimitStates(
   subjectId: string,
   groups: readonly LimitGroup[],
+  options?: QueryOptions,
 ): Promise<Map<string, LimitState>> {
-  const limited = groups.flatMap(group => {
-    const limit = getRelationTypeLimit(group.relation.table_name)
-    return limit === null ? [] : [{ ...group, limit }]
-  })
-  if (limited.length === 0) return new Map()
-  const query = sql`/* getRelationLimitState */ `
-  for (const [index, group] of limited.entries()) {
-    if (index > 0) query.append(' UNION ALL ')
-    const table = group.relation.table_name
-    const previous = admittedRelations.getStore()?.get(`${table}:${subjectId.toLowerCase()}`)
-    const ids = [
-      ...new Set([...group.objectIds.map(id => id.toLowerCase()), ...(previous?.ids ?? [])]),
-    ]
-    query.append(sql`SELECT ${table}::text AS table_name, ${group.limit}::int AS relation_limit,
-      (SELECT count(*)::int FROM (SELECT 1 FROM `)
-    // Identifiers are accepted only by the fixed config table allowlist.
-    query.append(table)
-    query.append(sql` WHERE subject_id = ${subjectId} AND deleted_at IS NULL LIMIT ${group.limit}) capped) AS active_count,
-      ARRAY(SELECT existing.object_id FROM `)
-    query.append(table)
-    query.append(sql` existing WHERE existing.subject_id = ${subjectId}
-      AND existing.object_id = ANY(${ids}::uuid[])
-      AND (existing.deleted_at IS NULL OR ${group.skipIfDeleted === true})) AS existing_object_ids`)
-  }
-  const { rows } = await write<{
-    table_name: string
-    relation_limit: number
-    active_count: number
-    existing_object_ids: string[]
-  }>(query)
+  const states = await readRelationLimitStates(
+    groups.map(group => ({ ...group, subjectId })),
+    admittedRelations.getStore(),
+    options,
+  )
   return new Map(
-    rows.map(row => {
-      const requested = new Set(
-        limited
-          .find(group => group.relation.table_name === row.table_name)!
-          .objectIds.map(id => id.toLowerCase()),
-      )
-      const active = new Set(row.existing_object_ids)
-      const previous = admittedRelations
-        .getStore()
-        ?.get(`${row.table_name}:${subjectId.toLowerCase()}`)
-      const reservedOthers = [...(previous?.ids ?? [])].filter(
-        id => !requested.has(id) && !active.has(id),
-      ).length
-      return [
-        row.table_name,
-        {
-          remaining: Math.max(0, row.relation_limit - row.active_count - reservedOthers),
-          existingObjectIds: row.existing_object_ids,
-        },
-      ]
+    groups.flatMap(group => {
+      const state = states.get(`${group.relation.table_name}:${subjectId.toLowerCase()}`)
+      return state ? [[group.relation.table_name, state]] : []
     }),
   )
 }
@@ -139,8 +121,11 @@ function assertWithinCapacity(
   const newCount = [...new Set(objectIds.map(id => id.toLowerCase()))].filter(
     id => !existing.has(id),
   ).length
-  if (newCount > state.remaining)
-    throw createCodedError(409, 'Relation limit reached', RELATION_LIMIT_REACHED)
+  if (newCount > state.remaining) {
+    const error = createCodedError(409, 'Relation limit reached', RELATION_LIMIT_REACHED)
+    Object.defineProperty(error, relationLimitErrorCapacity, { value: state.capacity })
+    throw error
+  }
 }
 
 /** Read capacity once, admit the fitting prefix, and preserve that decision through its writes. */
@@ -157,16 +142,16 @@ export async function withAvailableRelationCapacity<T>(
   const allowed = new Set(state?.existingObjectIds ?? [])
   let remaining = state?.remaining ?? group.objectIds.length
   const previous = admittedRelations.getStore()?.get(key)
-  for (const id of group.objectIds.map(id => id.toLowerCase())) {
-    if (previous?.ids.has(id) && !allowed.has(id)) {
-      allowed.add(id)
+  for (const objectId of group.objectIds.map(id => id.toLowerCase())) {
+    if (previous?.ids.has(objectId) && !allowed.has(objectId)) {
+      allowed.add(objectId)
       remaining -= 1
     }
   }
-  for (const id of new Set(group.objectIds.map(id => id.toLowerCase()))) {
-    if (allowed.has(id)) continue
+  for (const objectId of new Set(group.objectIds.map(id => id.toLowerCase()))) {
+    if (allowed.has(objectId)) continue
     if (covered || remaining > 0) {
-      allowed.add(id)
+      allowed.add(objectId)
       remaining -= 1
     }
   }

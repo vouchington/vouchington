@@ -74,7 +74,10 @@ describe('logout', () => {
   it('waits for admissions to drain before logging out', async () => {
     let releaseDrain!: () => void
     mockAdmissionDrain.mockImplementationOnce(
-      () => new Promise<true>(resolve => (releaseDrain = () => resolve(true))),
+      () =>
+        new Promise<true>(resolve => {
+          releaseDrain = () => resolve(true)
+        }),
     )
     const reloadPage = vi.fn<VitestLooseMock>()
 
@@ -193,7 +196,9 @@ describe('logout', () => {
     const activationStarted = Promise.withResolvers<void>()
     vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(() => {
       activationStarted.resolve()
-      return new Promise(resolve => (releaseActivation = resolve))
+      return new Promise(resolve => {
+        releaseActivation = resolve
+      })
     })
     const loggingOut = logout(vi.fn<VitestLooseMock>())
     await activationStarted.promise

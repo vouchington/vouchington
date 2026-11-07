@@ -9,6 +9,16 @@ import { repairReconciledBloomKeys } from './bloom-repair.mts'
 import type { EntityReconciliationCandidate } from './types.mts'
 
 describe('current-state Bloom reconciliation repair', () => {
+  it('leaves event-only reconciliation candidates to their owning repairs', async () => {
+    await expect(
+      repairReconciledBloomKeys({
+        entityType: 'user',
+        entityId: crypto.randomUUID(),
+        changedAtEpochUs: '0',
+      }),
+    ).resolves.toBeUndefined()
+  })
+
   it('restores source-owned lookup keys through every current-state repair route', async () => {
     const user = await createTestUser()
     const post = await createTestPost({ user })

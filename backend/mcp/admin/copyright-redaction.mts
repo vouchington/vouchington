@@ -1,4 +1,4 @@
-import type { CopyrightStaffEmailIntake } from '@services/copyright-notices/read-models'
+import type { CopyrightStaffEmailIntake } from '@services/copyright-notices/read-models-staff-email-intake'
 import type { CopyrightEuParticipantCase } from '@services/copyright-notices/read-models-notice-types'
 import type { CopyrightStaffQueueCase } from '@services/copyright-notices/read-models-staff-types'
 import { stripPersonalDetails } from '@services/copyright-notices/contact-redaction'
@@ -125,21 +125,20 @@ export function redactCopyrightEmailIntake(intake: CopyrightStaffEmailIntake) {
           if (key === 'source_evidence' && Array.isArray(value)) {
             return [
               key,
-              value
-                .filter(item => {
-                  if (!item || typeof item !== 'object') return false
-                  return !CONTACT_FIELDS.has(String((item as Record<string, unknown>)['field']))
-                })
-                .map(item => {
-                  const evidence = item as Record<string, unknown>
-                  return {
+              value.flatMap(item => {
+                if (!item || typeof item !== 'object') return []
+                const evidence = item as Record<string, unknown>
+                if (CONTACT_FIELDS.has(String(evidence['field']))) return []
+                return [
+                  {
                     ...evidence,
                     excerpt:
                       typeof evidence['excerpt'] === 'string'
                         ? stripPersonalDetails(evidence['excerpt'])
                         : evidence['excerpt'],
-                  }
-                }),
+                  },
+                ]
+              }),
             ]
           }
           return [key, value]

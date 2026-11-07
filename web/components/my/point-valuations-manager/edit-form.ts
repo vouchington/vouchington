@@ -14,6 +14,12 @@ export type PointValuationEditForm = {
   note: string
 }
 
+export const emptyPointValuationEditForm: PointValuationEditForm = {
+  value_per_point: '',
+  currency: 'usd',
+  note: '',
+}
+
 export function pointValuationEditForm(valuation: PointValuation): PointValuationEditForm {
   return {
     value_per_point: majorUnitsInputValue(valuation.value_per_point),

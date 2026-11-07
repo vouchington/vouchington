@@ -7,7 +7,6 @@ files:
 ignores:
   - 'web/components/ui/**'
   - '**/*.test.tsx'
-  - '**/*.spec.tsx'
   - '**/*.stories.tsx'
 rule:
   any:

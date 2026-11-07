@@ -28,9 +28,8 @@ function businessPageSql(
   batchSize: number,
 ): SQLStatement {
   const after = childId ?? '00000000-0000-0000-0000-000000000000'
-  switch (phase) {
-    case 'deadlines':
-      return sql`/* scanCopyrightThreadDeadlineBlockers */
+  if (phase === 'deadlines')
+    return sql`/* scanCopyrightThreadDeadlineBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, resolved_at, cancelled_at, escalation_at
@@ -39,8 +38,8 @@ function businessPageSql(
           ORDER BY id LIMIT ${batchSize}
         )
         SELECT id, (resolved_at IS NULL AND cancelled_at IS NULL) AS blocked FROM page`
-    case 'email_links':
-      return sql`/* scanCopyrightThreadEmailLinkBlockers */
+  if (phase === 'email_links')
+    return sql`/* scanCopyrightThreadEmailLinkBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, copyright_notice_email_intake_id, link_kind
@@ -58,31 +57,29 @@ function businessPageSql(
           WHERE reviewed.copyright_notice_email_intake_id = page.copyright_notice_email_intake_id
             AND reviewed.correspondence_action IN ('admitted', 'rejected') LIMIT 1
         )) AS blocked FROM page`
-    case 'incidents':
-      return sql`/* scanCopyrightThreadIncidentBlockers */
+  if (phase === 'incidents')
+    return sql`/* scanCopyrightThreadIncidentBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, is_operative FROM copyright_repeat_infringer_incidents
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         ) SELECT id, is_operative AS blocked FROM page`
-    case 'delivery_work_items':
-      return sql`/* scanCopyrightThreadDeliveryBlockers */
+  if (phase === 'delivery_work_items')
+    return sql`/* scanCopyrightThreadDeliveryBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, state FROM copyright_notice_delivery_work_items
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         ) SELECT id, state IN ('pending', 'claimed') AS blocked FROM page`
-    case 'guest_capabilities':
-      return sql`/* scanCopyrightThreadGuestCapabilityBlockers */
+  if (phase === 'guest_capabilities')
+    return sql`/* scanCopyrightThreadGuestCapabilityBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, revoked_at, expires_at FROM copyright_notice_guest_capabilities
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         ) SELECT id, (revoked_at IS NULL AND expires_at > ${now}) AS blocked FROM page`
-    default:
-      throw new Error(`Unexpected copyright business blocker phase: ${phase}`)
-  }
+  throw new Error(`Unexpected copyright business blocker phase: ${phase}`)
 }

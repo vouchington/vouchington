@@ -79,7 +79,7 @@ describe('Users API Routes', () => {
       expect(response.body.user.email_address).toBeUndefined()
     })
 
-    it('should include public, viewer, and private metrics for self requests', async () => {
+    it('should include viewer-visible and private metrics for self requests', async () => {
       const fixture = await createUserProfileFixture()
       const request = createRequest()
       await request.authenticateAs(fixture.owner)
@@ -96,11 +96,6 @@ describe('Users API Routes', () => {
           users_followers: 1,
           topics_following: 1,
           rss_feeds_following: 1,
-        },
-        viewer_count: {
-          reviews: 1,
-          discussions: 1,
-          comments: 1,
         },
         private_count: {
           topics_blocked: 1,

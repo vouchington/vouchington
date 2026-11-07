@@ -68,10 +68,7 @@ describe('AWS client configuration', () => {
             path: '/',
             headers: {},
             query: {},
-            clone() {
-              return this
-            },
-          },
+          } as Parameters<typeof requestHandler.handle>[0],
           { abortSignal: AbortSignal.abort() },
         ),
       ])

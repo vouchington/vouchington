@@ -70,7 +70,7 @@ export function addCopyrightEmailApprovalTarget(
 }
 
 export function copyrightEmailApprovalTargetKey(target: CopyrightEmailApprovalTarget): string {
-  const ownerId =
+  const targetOwnerId =
     target.surface === 'post-image'
       ? target.post_id
       : target.surface === 'user-profile-image'
@@ -80,7 +80,7 @@ export function copyrightEmailApprovalTargetKey(target: CopyrightEmailApprovalTa
           : target.surface === 'topic-logo-image' || target.surface === 'topic-hero-image'
             ? target.topic_id
             : target.community_id
-  return `${target.surface}:${ownerId ?? ''}:${target.image_id}`
+  return `${target.surface}:${targetOwnerId ?? ''}:${target.image_id}`
 }
 
 export function approvalTargetFields(
@@ -178,6 +178,7 @@ function ownerId(target: CopyrightEmailApprovalTarget): string | undefined {
     case 'community-banner-image':
       return target.community_id
   }
+  return undefined
 }
 
 function stringValue(value: unknown): string {

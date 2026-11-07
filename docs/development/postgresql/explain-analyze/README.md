@@ -37,9 +37,9 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
 - The seed and the run are separate processes that re-derive seeded ids from a shared UTC anchor
   day (`EXPLAIN_SEED_ANCHOR_DATE`). CI exports it once per job so a boundary between steps
   cannot split ids; a red anchor check near a boundary is a real defect, not a reason to rerun.
-- Seeded rows are never dated after the run. The anchor day is the latest day whose noon, plus the
-  largest forward offset any seed helper adds, has already passed. Rows the database stamps itself
-  (`uuidv7()` ids, `now()`) therefore sort after every seeded row; relation tables check
+- Ordinary seeded rows are never dated after the run. The anchor day is the latest day whose noon,
+  plus the largest forward offset any seed helper adds, has already passed. Rows the database stamps
+  itself (`uuidv7()` ids, `now()`) therefore sort after ordinary seeded rows; relation tables check
   `id > subject_id`, and a noon anchor on the run's own day failed that check every morning.
 - While each scenario builds its query, `Date` is pinned to the anchor noon so time-range
   cutoffs sit at a fixed offset from seeded rows. Under the wall clock a one-week window held a
@@ -53,12 +53,23 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
   statistics, equality uses default selectivity and the trending ranking index is planned as a
   small bitmap that reads the whole window.
 - Seeding is idempotent (`ON CONFLICT DO NOTHING`); CI uses a fresh database per job.
+- The partitioned comment-page fixture uses future ranges outside the ordinary seed and runs after
+  ordinary captures so its large corpus cannot change their plans. Its owned partitions stay until
+  the isolated database is discarded; deleting the corpus row by row would spend the profiling
+  budget on foreign-key cleanup. Seed and run
+  preflights reject a database that already contains these partitions. Recreate that disposable
+  database through the [dev workflow](../../../../dev/AGENTS.md) before another full run.
 - A fixture restored after a captured write needs fresh statistics for its participating relations
   before replay: bulk-seed statistics may no longer describe those rows. The hostname invalidation
   fixture owns this refresh so initial seeding and restoration use the same preparation.
 - Bounded-claim fixtures need a ready backlog large enough to distinguish an ordered index page
   from scanning all eligible work. A small eligible queue can legitimately favor a bitmap scan
   and sort even with accurate statistics; that choice does not establish unbounded backlog work.
+- Approval-page plans cover both recently written and vacuumed import requests. Visibility-map
+  changes affect the cost of the covering recommendation index; the selector must keep its
+  recommendation-scoped access path even when heap visits are required. A global pending-request
+  scan can preserve ID order while reading unrelated recommendations, so ordering alone does not
+  establish bounded work.
 
 ## Loader decisions
 
@@ -105,7 +116,11 @@ stopped at a setup step.
   so both still fail.
 - **Resource-pressure baseline** (temp I/O, spills, multi-batch hashes, excess WAL) is keyed by exact
   query/node/relation fingerprint, so a new fingerprint fails even if the warning total is
-  unchanged. Add an entry only after inspecting the plan and deciding the pressure is intentional.
+  unchanged. Excess WAL fails only when both captures show it: a checkpoint can add full page
+  images to one capture without a plan change. A per-node WAL fingerprint and the query-wide
+  aggregate are that same threshold, so pressure that moves between those two reports still fails.
+  Temp spills and hash batches still fail from the first capture. Add an entry only after inspecting
+  the plan and deciding the pressure is intentional.
 - **CI identity gotcha.** CI always runs compare mode, so identities carry the plan mode suffix and
   a baseline key ending in `auto` is silently inert in CI. A real entry needs both the custom and
   generic keys; copy the identity from a CI artifact rather than local output.
@@ -147,7 +162,9 @@ Add service calls through `runAndCapture()` and register the new stable scenario
 The `EXPLAIN ANALYZE` workflow is called by `test-explain-analyze` in `backend.yml`, gated by the
 `explain-analyze:` path filter. Each run has its own PostgreSQL instance. The seed records
 per-batch timing and resource samples to the results artifact so a seed that hits the CI step limit
-shows which operation was interrupted.
+shows which operation was interrupted. The capture step leaves bounded headroom for fixture setup
+and both plan modes; the enclosing job budget also reserves time for plan gates, pruning and
+artifact publication. Diagnose scenario timings before changing a deadline.
 
 The `backend-data-stores` Vitest owner verifies prepared-target custom and generic plans,
 transaction-local settings, and rollback of an explained write against an owned user fixture.

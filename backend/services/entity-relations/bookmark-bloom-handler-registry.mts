@@ -26,11 +26,11 @@ export function getRegisteredBookmarkBloomHandler(): BookmarkBloomHandler {
 export function createBookmarkBloomHandlerRegistry() {
   let registeredHandler: BookmarkBloomHandler | null = null
 
-  function registerBookmarkBloomHandler(handler: BookmarkBloomHandler): void {
+  function registerHandler(handler: BookmarkBloomHandler): void {
     registeredHandler = handler
   }
 
-  function getRegisteredBookmarkBloomHandler(): BookmarkBloomHandler {
+  function getRegisteredHandler(): BookmarkBloomHandler {
     if (!registeredHandler) {
       throw createCodedError(
         500,
@@ -41,5 +41,8 @@ export function createBookmarkBloomHandlerRegistry() {
     return registeredHandler
   }
 
-  return { registerBookmarkBloomHandler, getRegisteredBookmarkBloomHandler }
+  return {
+    registerBookmarkBloomHandler: registerHandler,
+    getRegisteredBookmarkBloomHandler: getRegisteredHandler,
+  }
 }

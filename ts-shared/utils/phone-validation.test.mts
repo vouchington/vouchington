@@ -7,7 +7,7 @@ describe('verifyPhoneNumber', () => {
   })
 
   it('throws 422 for invalid phone number', () => {
-    expect(() => verifyPhoneNumber('not-a-phone')).toThrowError(
+    expect(() => verifyPhoneNumber('not-a-phone')).toThrow(
       expect.objectContaining({ message: 'Invalid phone number', status: 422 }),
     )
   })

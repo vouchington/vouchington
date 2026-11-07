@@ -162,12 +162,12 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
         hostname_id: url.hostname.id,
       },
       async current => {
-        const result = await processCrawlDispatchJob(current)
+        const dispatchResult = await processCrawlDispatchJob(current)
         expect(current.data).toMatchObject({
           hostname_id: url.hostname.id,
           cursor: expect.any(Object),
         })
-        return result
+        return dispatchResult
       },
     )
     expect(result).toMatchObject({ count: expect.any(Number) })

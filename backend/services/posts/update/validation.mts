@@ -67,6 +67,8 @@ export function assertPostUpdatePreflight(
     changes.title !== undefined ||
     changes.markdown !== undefined ||
     changes.structured_data !== undefined ||
+    changes.url !== undefined ||
+    changes.url_id !== undefined ||
     changes.categories !== undefined ||
     hashtagIntent
   ) {

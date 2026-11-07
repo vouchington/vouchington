@@ -7,7 +7,7 @@ import {
 } from '@/test-helpers/components/comment-tree-fixtures'
 import { CommentTree } from '../comment-tree'
 import { previewMarkdown } from '@/lib/api/client/markdown'
-import { createPost } from '@/lib/api/client/posts'
+import { createPost } from '@/lib/api/client/post-mutations'
 import type { User } from '@/types/user'
 
 describe('comment-tree', () => {

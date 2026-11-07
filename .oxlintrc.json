@@ -356,8 +356,7 @@
     "no-object-constructor": "error",
     "no-param-reassign": "error",
     "no-plusplus": "off",
-    // 171 findings / 115 files on 2026-08-19. Stage off until a dedicated remediation lands.
-    "no-promise-executor-return": "off",
+    "no-promise-executor-return": "error",
     "no-proto": "error",
     "no-prototype-builtins": "error",
     "no-redeclare": "error",
@@ -407,7 +406,7 @@
     "no-script-url": "off",
     "no-self-compare": "error",
     "no-sequences": "error",
-    "no-shadow": "off",
+    "no-shadow": "error",
     "no-template-curly-in-string": "off",
     "no-ternary": "off",
     "no-throw-literal": "error",
@@ -489,7 +488,7 @@
     "typescript/explicit-function-return-type": "off",
     "typescript/explicit-module-boundary-types": "off",
     "typescript/no-confusing-void-expression": "off",
-    "typescript/no-deprecated": "off",
+    "typescript/no-deprecated": "error",
     "typescript/no-duplicate-enum-values": "error",
     "typescript/no-dynamic-delete": "error",
     "typescript/no-empty-interface": "off",
@@ -561,18 +560,18 @@
     "typescript/restrict-plus-operands": "error",
     "typescript/return-await": "error",
     "typescript/strict-boolean-expressions": "off",
-    "typescript/switch-exhaustiveness-check": "off",
+    "typescript/switch-exhaustiveness-check": "error",
     "typescript/unified-signatures": "error",
     "typescript/use-unknown-in-catch-callback-variable": "error",
     "typescript/no-unnecessary-type-arguments": "error",
     "typescript/no-redundant-type-constituents": "error",
     "typescript/unbound-method": "off",
-    "typescript/consistent-return": "off",
+    "typescript/consistent-return": "error",
     "typescript/no-base-to-string": "error",
     "typescript/no-unnecessary-type-parameters": "error",
     "typescript/no-misused-spread": "error",
     "typescript/no-unnecessary-type-conversion": "error",
-    "typescript/restrict-template-expressions": "off",
+    "typescript/restrict-template-expressions": "error",
     "unicorn/no-new-array": "off", // Policy: Array(length) is allowed for explicit preallocation.
     "no-useless-escape": "error",
     "no-ex-assign": "error",
@@ -1329,14 +1328,6 @@
             "requireReason": true
           }
         ]
-      }
-    },
-    {
-      "files": ["**/backend/mcp/**/*.mts"],
-      "rules": {
-        // React Doctor skipped this style rule under /tools/. Preserve that treatment after
-        // the MCP package rename rather than refactoring tool implementations in a path change.
-        "react-doctor/js-combine-iterations": "off"
       }
     },
     {

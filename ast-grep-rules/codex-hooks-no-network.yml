@@ -5,7 +5,6 @@ message: 'Hook subprocesses must use the typed local-process boundary; HTTP and 
 files:
   - 'dev/codex-hooks/**/*.mts'
 ignores:
-  - 'dev/codex-hooks/**/*.test.mts'
   - 'dev/codex-hooks/local-process.mts'
 utils:
   forbidden-module:

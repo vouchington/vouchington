@@ -145,7 +145,9 @@ export function ActiveSessionsManager({ initialData, initialSessions }: Props) {
               }}
               t={t}
               uiLocale={uiLocale}
-              onSignOut={session => setConfirmation({ type: 'session', session })}
+              onSignOut={activeSession =>
+                setConfirmation({ type: 'session', session: activeSession })
+              }
               onRevokeMcp={grantId => setConfirmation({ type: 'mcp', grantId })}
               revokingGrantId={revokingGrantId}
             />

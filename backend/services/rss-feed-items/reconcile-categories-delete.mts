@@ -22,7 +22,7 @@ export async function deleteStaleCategoriesAndRetractVotes(
     snapshot.categories.map(() => snapshot.rss_feed_item_id),
   )
   const categoryTexts = snapshots.flatMap(snapshot => snapshot.categories)
-  // ast-grep-ignore: no-three-sequential-awaits -- discover alias scopes, lock them, then lock their RSS items before deletion
+  // ast-grep-ignore: no-three-sequential-awaits -- Discovered alias ids select publication-scope locks, which must precede RSS-item row locks before stale category deletion.
   const staleTopicAliasIds = await getStaleCategoryTopicAliasIds(
     query,
     itemIds,
@@ -49,7 +49,7 @@ export async function deleteStaleCategoriesAndRetractVotes(
       ) SELECT * FROM stale_categories`,
     [itemIds, categoryItemIds, categoryTexts],
   )
-  // ast-grep-ignore: no-three-sequential-awaits -- retract stale votes before recording the resulting story and alias publication work.
+  // ast-grep-ignore: no-three-sequential-awaits -- retract unsupported category votes before capturing resulting story eligibility; finish story publication work before scheduling affected alias publication
   await retractUnsupportedCategorizerVotes(staleCategories, query)
   await recordStoryPublicationChangesForCategoryTopics(
     query,

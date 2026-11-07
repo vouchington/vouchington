@@ -48,7 +48,7 @@ function OAuthBrokerCallbackContent() {
   const missingFlowId = !flowId
 
   useEffect(() => {
-    if (!flowId) return
+    if (!flowId) return undefined
     const activeFlowId = flowId
     const lifetime = new AbortController()
     const pending: { cancelPoll?: () => void; cancelReceipt?: () => void } = {}

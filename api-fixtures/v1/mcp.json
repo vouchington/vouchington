@@ -2404,6 +2404,19 @@
                       "placeholder_state": {
                         "enum": ["deleted", "unmoderated"],
                         "type": "string"
+                      },
+                      "hacker_news_references": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "comment_count": {
+                            "type": "number"
+                          },
+                          "story_count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["comment_count", "story_count"],
+                        "type": "object"
                       }
                     },
                     "required": [
@@ -5437,6 +5450,10 @@
                         "has_related_posts": {
                           "type": "boolean"
                         },
+                        "has_hacker_news_references": {
+                          "type": "boolean",
+                          "description": "Only items whose URL is seen or mentioned on Hacker News (true) or not (false)."
+                        },
                         "media_types": {
                           "type": "array",
                           "items": {
@@ -5575,18 +5592,68 @@
                         "results": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/$defs/S1"
+                            "type": "object",
+                            "properties": {
+                              "hacker_news_references": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "comment_count": {
+                                    "type": "number"
+                                  },
+                                  "story_count": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": ["comment_count", "story_count"],
+                                "type": "object"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "markdown": {
+                                "type": "string"
+                              },
+                              "url": {
+                                "type": "string"
+                              },
+                              "guid": {
+                                "type": "string"
+                              },
+                              "published_at": {
+                                "type": "string"
+                              },
+                              "rss_feed_id": {
+                                "type": "string"
+                              },
+                              "rss_feed_title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "markdown",
+                              "url",
+                              "guid",
+                              "published_at",
+                              "rss_feed_id",
+                              "rss_feed_title"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S2"
                         }
                       },
                       "required": ["success", "results", "page_info"],
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 },
@@ -5600,14 +5667,114 @@
                           "const": true
                         },
                         "rss_feed_item": {
-                          "$ref": "#/$defs/S1"
+                          "type": "object",
+                          "properties": {
+                            "hacker_news_references": {
+                              "type": "object",
+                              "properties": {
+                                "comment_count": {
+                                  "type": "number"
+                                },
+                                "story_count": {
+                                  "type": "number"
+                                },
+                                "stories": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "hacker_news_item_id": {
+                                        "type": "number"
+                                      },
+                                      "points": {
+                                        "type": "number"
+                                      },
+                                      "reply_count": {
+                                        "type": "number"
+                                      },
+                                      "posted_at": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "hacker_news_item_id",
+                                      "points",
+                                      "reply_count",
+                                      "posted_at"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "comments": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "hacker_news_item_id": {
+                                        "type": "number"
+                                      },
+                                      "parent_story_item_id": {
+                                        "type": "number"
+                                      },
+                                      "posted_at": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "hacker_news_item_id",
+                                      "parent_story_item_id",
+                                      "posted_at"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": ["comment_count", "story_count", "stories", "comments"],
+                              "additionalProperties": false
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "markdown": {
+                              "type": "string"
+                            },
+                            "url": {
+                              "type": "string"
+                            },
+                            "guid": {
+                              "type": "string"
+                            },
+                            "published_at": {
+                              "type": "string"
+                            },
+                            "rss_feed_id": {
+                              "type": "string"
+                            },
+                            "rss_feed_title": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "markdown",
+                            "url",
+                            "guid",
+                            "published_at",
+                            "rss_feed_id",
+                            "rss_feed_title"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": ["success", "rss_feed_item"],
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 },
@@ -5621,17 +5788,17 @@
                           "const": true
                         },
                         "positive_by_following": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S3"
                         },
                         "negative_by_following": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S3"
                         }
                       },
                       "required": ["success", "positive_by_following", "negative_by_following"],
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 },
@@ -5668,60 +5835,20 @@
                           }
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S2"
                         }
                       },
                       "required": ["success", "results", "page_info"],
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 }
               ],
               "$defs": {
                 "S1": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "markdown": {
-                      "type": "string"
-                    },
-                    "url": {
-                      "type": "string"
-                    },
-                    "guid": {
-                      "type": "string"
-                    },
-                    "published_at": {
-                      "type": "string"
-                    },
-                    "rss_feed_id": {
-                      "type": "string"
-                    },
-                    "rss_feed_title": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "title",
-                    "markdown",
-                    "url",
-                    "guid",
-                    "published_at",
-                    "rss_feed_id",
-                    "rss_feed_title"
-                  ],
-                  "additionalProperties": false
-                },
-                "S2": {
                   "type": "object",
                   "properties": {
                     "success": {
@@ -5734,7 +5861,7 @@
                   "required": ["success", "error"],
                   "additionalProperties": false
                 },
-                "S3": {
+                "S2": {
                   "type": "object",
                   "properties": {
                     "has_next_page": {
@@ -5764,7 +5891,7 @@
                   "required": ["has_next_page", "start_cursor", "end_cursor"],
                   "additionalProperties": false
                 },
-                "S4": {
+                "S3": {
                   "type": "object",
                   "properties": {
                     "total": {
@@ -5927,6 +6054,10 @@
                         "min_score_follow_topics": {
                           "type": "number"
                         },
+                        "has_hacker_news_references": {
+                          "type": "boolean",
+                          "description": "Filter by neutral Hacker News references, ignored while references are hidden."
+                        },
                         "feed_type": {
                           "type": "string",
                           "enum": [
@@ -6029,6 +6160,19 @@
                           "items": {
                             "type": "object",
                             "properties": {
+                              "hacker_news_references": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "comment_count": {
+                                    "type": "number"
+                                  },
+                                  "story_count": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": ["comment_count", "story_count"],
+                                "type": "object"
+                              },
                               "id": {
                                 "type": "string"
                               },
@@ -6217,7 +6361,7 @@
           "tool": {
             "name": "read_posts",
             "title": "Read Posts",
-            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.\ndescendants: Get a depth-bounded window of replies in id order; page_info paginates that window. Use a returned reply as post_id to reach deeper replies. Deleted or unmoderated replies are content-free placeholders with placeholder_state when needed to preserve a possible valid branch. A missing or not fully public post returns Post not found.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\ntrending: Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.\nsearch: Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.",
+            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.\ndescendants: Page direct-child heads with bounded previews. IDs sort per page. Follow opaque end_cursor on empty pages; it may skip unseen heads. has_next_page means more heads, not all replies. Expand returned comments via post_id. Deleted or unmoderated replies are placeholders.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\ntrending: Get posts with positive net support, ranked by age-decayed vote confidence. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.\nsearch: Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -6265,8 +6409,7 @@
                         "limit": {
                           "type": "integer",
                           "minimum": 1,
-                          "maximum": 200,
-                          "description": "Replies per page, from 1 to 200 (default: 100)"
+                          "description": "Maximum replies returned per page, clamped to the runtime limit up to 200 (static default: 100). A preview may return fewer."
                         },
                         "after": {
                           "type": "string"
@@ -6330,7 +6473,8 @@
                         },
                         "min_score": {
                           "type": "number",
-                          "minimum": 0
+                          "minimum": 0,
+                          "description": "Minimum age-decayed confidence score."
                         }
                       },
                       "required": [],
@@ -6425,6 +6569,10 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "has_hacker_news_references": {
+                          "type": "boolean",
+                          "description": "Only items whose URL is seen or mentioned on Hacker News (true) or not (false)."
+                        },
                         "time_range": {
                           "type": "string",
                           "enum": ["1d", "1w", "1m", "1y", "all"],
@@ -6497,10 +6645,7 @@
                           "const": true
                         },
                         "ancestors": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/$defs/S1"
-                          }
+                          "$ref": "#/$defs/S1"
                         },
                         "page_info": {
                           "$ref": "#/$defs/S3"
@@ -6524,10 +6669,7 @@
                           "const": true
                         },
                         "descendants": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/$defs/S1"
-                          }
+                          "$ref": "#/$defs/S1"
                         },
                         "page_info": {
                           "$ref": "#/$defs/S3"
@@ -6551,7 +6693,194 @@
                           "const": true
                         },
                         "post": {
-                          "$ref": "#/$defs/S1"
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "slug": {
+                              "$ref": "#/$defs/S6"
+                            },
+                            "post_type": {
+                              "enum": [
+                                "article",
+                                "blog_post",
+                                "comment",
+                                "data_point",
+                                "discussion",
+                                "link",
+                                "review",
+                                "story",
+                                "topic_recommendation"
+                              ],
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "markdown": {
+                              "type": "string"
+                            },
+                            "parent_post_id": {
+                              "$ref": "#/$defs/S6"
+                            },
+                            "root_post_id": {
+                              "$ref": "#/$defs/S6"
+                            },
+                            "created_by_id": {
+                              "$ref": "#/$defs/S6"
+                            },
+                            "is_anonymous": {
+                              "type": "boolean"
+                            },
+                            "created_at": {
+                              "type": "string"
+                            },
+                            "updated_at": {
+                              "type": "string"
+                            },
+                            "provenance": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "app": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "client_id": {
+                                          "type": "string"
+                                        },
+                                        "client_name": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "const": "verified"
+                                        }
+                                      },
+                                      "required": ["client_id", "client_name", "kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "hostname": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "const": "hostname"
+                                        }
+                                      },
+                                      "required": ["hostname", "kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "key": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "const": "known"
+                                        }
+                                      },
+                                      "required": ["key", "kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "via": {
+                                  "enum": ["api", "mcp"],
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["app", "via"],
+                              "type": "object"
+                            },
+                            "placeholder_state": {
+                              "enum": ["deleted", "unmoderated"],
+                              "type": "string"
+                            },
+                            "hacker_news_references": {
+                              "type": "object",
+                              "properties": {
+                                "comment_count": {
+                                  "type": "number"
+                                },
+                                "story_count": {
+                                  "type": "number"
+                                },
+                                "stories": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "hacker_news_item_id": {
+                                        "type": "number"
+                                      },
+                                      "points": {
+                                        "type": "number"
+                                      },
+                                      "reply_count": {
+                                        "type": "number"
+                                      },
+                                      "posted_at": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "hacker_news_item_id",
+                                      "points",
+                                      "reply_count",
+                                      "posted_at"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "comments": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "hacker_news_item_id": {
+                                        "type": "number"
+                                      },
+                                      "parent_story_item_id": {
+                                        "type": "number"
+                                      },
+                                      "posted_at": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "hacker_news_item_id",
+                                      "parent_story_item_id",
+                                      "posted_at"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": ["comment_count", "story_count", "stories", "comments"],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "slug",
+                            "post_type",
+                            "title",
+                            "markdown",
+                            "parent_post_id",
+                            "root_post_id",
+                            "created_by_id",
+                            "is_anonymous",
+                            "created_at",
+                            "updated_at"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": ["success", "post"],
@@ -6585,6 +6914,9 @@
                               },
                               "trending_score": {
                                 "type": "number"
+                              },
+                              "hacker_news_references": {
+                                "$ref": "#/$defs/S5"
                               }
                             },
                             "required": ["id", "trending_score"],
@@ -6617,6 +6949,9 @@
                           "items": {
                             "type": "object",
                             "properties": {
+                              "hacker_news_references": {
+                                "$ref": "#/$defs/S5"
+                              },
                               "id": {
                                 "type": "string"
                               },
@@ -6649,159 +6984,175 @@
               ],
               "$defs": {
                 "S1": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "slug": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "post_type": {
-                      "enum": [
-                        "article",
-                        "blog_post",
-                        "comment",
-                        "data_point",
-                        "discussion",
-                        "link",
-                        "review",
-                        "story",
-                        "topic_recommendation"
-                      ],
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "markdown": {
-                      "type": "string"
-                    },
-                    "parent_post_id": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "root_post_id": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "created_by_id": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "is_anonymous": {
-                      "type": "boolean"
-                    },
-                    "created_at": {
-                      "type": "string"
-                    },
-                    "updated_at": {
-                      "type": "string"
-                    },
-                    "provenance": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "app": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "client_id": {
-                                  "type": "string"
-                                },
-                                "client_name": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "verified"
-                                }
-                              },
-                              "required": ["client_id", "client_name", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "hostname": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "hostname"
-                                }
-                              },
-                              "required": ["hostname", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "key": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "known"
-                                }
-                              },
-                              "required": ["key", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "via": {
-                          "enum": ["api", "mcp"],
-                          "type": "string"
-                        }
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
                       },
-                      "required": ["app", "via"],
-                      "type": "object"
+                      "slug": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "post_type": {
+                        "enum": [
+                          "article",
+                          "blog_post",
+                          "comment",
+                          "data_point",
+                          "discussion",
+                          "link",
+                          "review",
+                          "story",
+                          "topic_recommendation"
+                        ],
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "markdown": {
+                        "type": "string"
+                      },
+                      "parent_post_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "root_post_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "created_by_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "is_anonymous": {
+                        "type": "boolean"
+                      },
+                      "created_at": {
+                        "type": "string"
+                      },
+                      "updated_at": {
+                        "type": "string"
+                      },
+                      "provenance": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "app": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "client_id": {
+                                    "type": "string"
+                                  },
+                                  "client_name": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "const": "verified"
+                                  }
+                                },
+                                "required": ["client_id", "client_name", "kind"],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "hostname": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "const": "hostname"
+                                  }
+                                },
+                                "required": ["hostname", "kind"],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "const": "known"
+                                  }
+                                },
+                                "required": ["key", "kind"],
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "via": {
+                            "enum": ["api", "mcp"],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["app", "via"],
+                        "type": "object"
+                      },
+                      "placeholder_state": {
+                        "enum": ["deleted", "unmoderated"],
+                        "type": "string"
+                      },
+                      "hacker_news_references": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "comment_count": {
+                            "type": "number"
+                          },
+                          "story_count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["comment_count", "story_count"],
+                        "type": "object"
+                      }
                     },
-                    "placeholder_state": {
-                      "enum": ["deleted", "unmoderated"],
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "slug",
-                    "post_type",
-                    "title",
-                    "markdown",
-                    "parent_post_id",
-                    "root_post_id",
-                    "created_by_id",
-                    "is_anonymous",
-                    "created_at",
-                    "updated_at"
-                  ],
-                  "additionalProperties": false
+                    "required": [
+                      "id",
+                      "slug",
+                      "post_type",
+                      "title",
+                      "markdown",
+                      "parent_post_id",
+                      "root_post_id",
+                      "created_by_id",
+                      "is_anonymous",
+                      "created_at",
+                      "updated_at"
+                    ],
+                    "additionalProperties": false
+                  }
                 },
                 "S2": {
                   "type": "object",
@@ -6875,6 +7226,29 @@
                   },
                   "required": ["end_cursor", "has_next_page", "start_cursor"],
                   "type": "object"
+                },
+                "S5": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "comment_count": {
+                      "type": "number"
+                    },
+                    "story_count": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["comment_count", "story_count"],
+                  "type": "object"
+                },
+                "S6": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               }
             },
@@ -6922,7 +7296,7 @@
           "tool": {
             "name": "read_hostnames",
             "title": "Read Hostnames",
-            "description": "top: List hostnames with at least one positive trust vote, highest net trust first, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic id, slug, or exact name; an unknown topic gives no results.\nsearch: Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or net trust votes (highest first).",
+            "description": "top: List hostnames with at least one positive trust vote, ranked by confidence in trust votes, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic id, slug, or exact name; an unknown topic gives no results.\nsearch: Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or confidence in trust votes (highest first).",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -6973,7 +7347,7 @@
                         "sort": {
                           "type": "string",
                           "enum": ["trust"],
-                          "description": "trust sorts by net trust votes, highest first. Omit it to sort by hostname."
+                          "description": "trust sorts by confidence in trust votes, highest first. Omit it to sort by hostname."
                         },
                         "limit": {
                           "$ref": "#/$defs/S1"
@@ -9186,7 +9560,7 @@
           "tool": {
             "name": "read_my_preferences",
             "title": "Read My Preferences",
-            "description": "email: Get the current user's email choices and delivery schedule for recommendations, news, digests and moderation summaries. Email addresses and sign-in settings are excluded. Change these with edit_my_preferences (option email).\ngeneral: Get the current user's privacy and posting settings, including audience, messaging, locale and Hacker News discussions. Edit them with edit_my_preferences (option general). Financial visibility, consents, federation, email addresses, sign-in settings and username are excluded.",
+            "description": "email: Get the current user's email choices and delivery schedule for recommendations, news, digests and moderation summaries. Email addresses and sign-in settings are excluded. Change these with edit_my_preferences (option email).\ngeneral: Get the current user's privacy and posting settings, including audience, messaging and locale. Edit them with edit_my_preferences (option general). Financial visibility, consents, federation, email addresses, sign-in settings and username are excluded.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -9325,9 +9699,6 @@
                         },
                         "ui_locale": {
                           "$ref": "#/$defs/S2"
-                        },
-                        "should_import_hacker_news_discussions": {
-                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -9341,8 +9712,7 @@
                         "default_post_broadcast",
                         "default_post_privacy",
                         "country",
-                        "ui_locale",
-                        "should_import_hacker_news_discussions"
+                        "ui_locale"
                       ],
                       "additionalProperties": false
                     }
@@ -10828,7 +11198,7 @@
           "tool": {
             "name": "edit_my_preferences",
             "title": "Edit My Preferences",
-            "description": "email: Change which emails the current user receives and when: setup recommendations, the news and community digests, and community moderation summaries. Only the fields sent change. Email addresses and sign-in settings cannot be changed here.\ngeneral: Change the current user's privacy and posting settings, including audience, messaging, locale and Hacker News discussions. Only supplied fields change. Financial visibility, consents, federation and username cannot be changed here.",
+            "description": "email: Change which emails the current user receives and when: setup recommendations, the news and community digests, and community moderation summaries. Only the fields sent change. Email addresses and sign-in settings cannot be changed here.\ngeneral: Change the current user's privacy and posting settings, including audience, messaging and locale. Only supplied fields change. Financial visibility, consents, federation and username cannot be changed here.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -10950,10 +11320,6 @@
                             }
                           ],
                           "description": "A supported interface locale, or null to use the default."
-                        },
-                        "should_import_hacker_news_discussions": {
-                          "type": "boolean",
-                          "description": "Whether post and article pages show related Hacker News discussions."
                         }
                       },
                       "minProperties": 1,
@@ -11075,9 +11441,6 @@
                         },
                         "ui_locale": {
                           "$ref": "#/$defs/S2"
-                        },
-                        "should_import_hacker_news_discussions": {
-                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -11091,8 +11454,7 @@
                         "default_post_broadcast",
                         "default_post_privacy",
                         "country",
-                        "ui_locale",
-                        "should_import_hacker_news_discussions"
+                        "ui_locale"
                       ],
                       "additionalProperties": false
                     }
@@ -11414,6 +11776,19 @@
                     "placeholder_state": {
                       "enum": ["deleted", "unmoderated"],
                       "type": "string"
+                    },
+                    "hacker_news_references": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "comment_count": {
+                          "type": "number"
+                        },
+                        "story_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["comment_count", "story_count"],
+                      "type": "object"
                     }
                   },
                   "required": [
@@ -11888,6 +12263,19 @@
                         "placeholder_state": {
                           "enum": ["deleted", "unmoderated"],
                           "type": "string"
+                        },
+                        "hacker_news_references": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "comment_count": {
+                              "type": "number"
+                            },
+                            "story_count": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["comment_count", "story_count"],
+                          "type": "object"
                         }
                       },
                       "required": [
@@ -12310,6 +12698,19 @@
                     },
                     "updated_at": {
                       "type": "string"
+                    },
+                    "hacker_news_references": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "comment_count": {
+                          "type": "number"
+                        },
+                        "story_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["comment_count", "story_count"],
+                      "type": "object"
                     }
                   },
                   "required": [
@@ -14351,6 +14752,19 @@
                     "placeholder_state": {
                       "enum": ["deleted", "unmoderated"],
                       "type": "string"
+                    },
+                    "hacker_news_references": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "comment_count": {
+                          "type": "number"
+                        },
+                        "story_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["comment_count", "story_count"],
+                      "type": "object"
                     }
                   },
                   "required": [
@@ -14899,6 +15313,19 @@
                           },
                           "updated_at": {
                             "type": "string"
+                          },
+                          "hacker_news_references": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "comment_count": {
+                                "type": "number"
+                              },
+                              "story_count": {
+                                "type": "number"
+                              }
+                            },
+                            "required": ["comment_count", "story_count"],
+                            "type": "object"
                           }
                         },
                         "required": [
@@ -17495,6 +17922,19 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "hacker_news_references": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "comment_count": {
+                                "type": "number"
+                              },
+                              "story_count": {
+                                "type": "number"
+                              }
+                            },
+                            "required": ["comment_count", "story_count"],
+                            "type": "object"
+                          },
                           "id": {
                             "type": "string"
                           },
@@ -19461,6 +19901,19 @@
                     },
                     "updated_at": {
                       "type": "string"
+                    },
+                    "hacker_news_references": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "comment_count": {
+                          "type": "number"
+                        },
+                        "story_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["comment_count", "story_count"],
+                      "type": "object"
                     }
                   },
                   "required": [
@@ -26463,6 +26916,19 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "hacker_news_references": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "comment_count": {
+                                "type": "number"
+                              },
+                              "story_count": {
+                                "type": "number"
+                              }
+                            },
+                            "required": ["comment_count", "story_count"],
+                            "type": "object"
+                          },
                           "id": {
                             "type": "string"
                           },
@@ -35063,9 +35529,6 @@
                     },
                     "rss_feed_follows_visibility": {
                       "$ref": "#/$defs/S3"
-                    },
-                    "should_import_hacker_news_discussions": {
-                      "type": "boolean"
                     },
                     "should_receive_third_party_marketing": {
                       "$ref": "#/$defs/S5"

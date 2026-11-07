@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { HackerNewsReferenceLabel } from '@/components/hacker-news/hacker-news-reference-label'
 import { CommunityFeed } from './community-feed'
 import type { CommunityPostsResponseBody } from '@/types/api-responses'
 
@@ -30,6 +31,7 @@ vi.mock(
           data-community-slug={community?.slug ?? ''}
         >
           {post.id}
+          <HackerNewsReferenceLabel entityId={post.id} />
         </article>
       ),
     }) as unknown as typeof import('@/components/posts/post-card'),
@@ -84,6 +86,34 @@ describe('CommunityFeed', () => {
     expect(cards).toHaveLength(2)
     expect(cards[0]?.getAttribute('data-community-slug')).toBe('rewards')
     expect(cards[1]?.parentElement?.className).toBe('space-y-3')
+  })
+
+  it('provides references for pinned posts and continuation posts', () => {
+    const firstPage = {
+      ...data,
+      post_hacker_news_references: { 'post-1': { story_count: 1, comment_count: 0 } },
+    }
+    const nextPage = {
+      ...data,
+      results: [{ id: 'post-3', entity_id: 'post-3' }],
+      posts: { 'post-3': { ...data.posts['post-2']!, id: 'post-3' } },
+      post_hacker_news_references: { 'post-3': { story_count: 0, comment_count: 2 } },
+    }
+    mockUsePaginatedList.mockReturnValue({
+      pages: [firstPage, nextPage],
+      hasNextPage: false,
+      loadingMore: false,
+      loadMore: vi.fn<() => void>(),
+      clearError: vi.fn<() => void>(),
+    })
+    render(
+      <CommunityFeed
+        data={firstPage}
+        communitySlug='rewards'
+      />,
+    )
+    expect(screen.getByText('Seen on Hacker News · 1')).toBeInTheDocument()
+    expect(screen.getByText('Mentioned on Hacker News · 2')).toBeInTheDocument()
   })
 
   it('links active members to enabled global create flows for the community', () => {

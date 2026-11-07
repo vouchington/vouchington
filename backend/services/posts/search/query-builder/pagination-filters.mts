@@ -1,12 +1,14 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import createHttpError from 'http-errors'
-import { buildTimeRangeFilter } from '@modules/feed-query-builders'
+import { buildPostSearchTimeRangeFilter } from '../hacker-news-hot-options.mts'
 import { buildHotScoreExpression } from '../query-builder-utils.mts'
 import type { PostSearchOptions } from '../types.mts'
 
 export function appendPartitionAndPaginationFilters(
   filters: SQLStatement[],
   {
+    decisionInstant,
+    paginationOnly,
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
@@ -14,6 +16,8 @@ export function appendPartitionAndPaginationFilters(
     rankingScoreExpression,
     sort,
   }: {
+    decisionInstant: Date
+    paginationOnly: boolean
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
     hasTextSearch: boolean
@@ -22,7 +26,9 @@ export function appendPartitionAndPaginationFilters(
     sort: string
   },
 ): void {
-  const timeRangeFilter = buildTimeRangeFilter(options.time_range ?? 'all', 'posts.id')
+  const timeRangeFilter = paginationOnly
+    ? null
+    : buildPostSearchTimeRangeFilter(options, 'posts.id', decisionInstant)
   if (timeRangeFilter) filters.push(timeRangeFilter)
   appendPaginationFilters(filters, {
     followingRankExpression,

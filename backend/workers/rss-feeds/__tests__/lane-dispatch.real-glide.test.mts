@@ -8,7 +8,7 @@ import {
 import { background } from '@queues/background/queues'
 import { RSS_FEEDS_ORDERING } from '@queues/rss-feeds/config'
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
-import { getRssFeedCrawlTiers } from '@voucha/test-helpers/data-stores/psql/rss-feed-crawl-tiers'
+import { getRssFeedCrawlTierAssignments } from '@voucha/test-helpers/data-stores/psql/rss-feed-crawl-tiers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   deleteRssFeedsByIds,
@@ -52,13 +52,11 @@ describe('rss feed tier lane dispatch', () => {
       )
       if (!dispatcher) throw new Error('RSS dispatcher handler must be registered')
 
-      // ast-grep-ignore: no-three-sequential-awaits -- write the score before refreshing the MV and reading its tier
       await setRssFeedOwningTopicVoteScore(newerId, 1_000_000_000, 0)
       await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
-      const [[olderTier], [newerTier]] = await Promise.all([
-        getRssFeedCrawlTiers([olderId]),
-        getRssFeedCrawlTiers([newerId]),
-      ])
+      const tiers = await getRssFeedCrawlTierAssignments([olderId, newerId])
+      const olderTier = tiers.get(olderId)
+      const newerTier = tiers.get(newerId)
       expect(olderTier).toBe(5)
       expect(newerTier).toBeLessThan(5)
       if (typeof newerTier !== 'number') {

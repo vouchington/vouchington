@@ -57,15 +57,8 @@ export async function processImportRow(
   }
 
   try {
-    let createdEntityId: string
-
-    switch (batch.import_type) {
-      case 'topic':
-        createdEntityId = await processTopicRow(admin, row)
-        break
-      default:
-        throw new Error(`Unknown import_type: ${batch.import_type}`)
-    }
+    if (batch.import_type !== 'topic') throw new Error(`Unknown import_type: ${batch.import_type}`)
+    const createdEntityId = await processTopicRow(admin, row)
 
     const progress = await updateRowCompleted(rowId, createdEntityId)
     void publishImportProgress(progress.batchId, progress).catch(onError)

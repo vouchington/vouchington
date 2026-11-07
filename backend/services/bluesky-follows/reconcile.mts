@@ -95,8 +95,8 @@ export async function reconcileBlueskyFollow(
       // just-created record so Bluesky and the (still-receiptless) local state agree, then rethrow
       // the original failure. A failure to undo is logged, not swallowed, but must not mask
       // saveError — the caller needs to know the receipt write failed.
-      await performBlueskyUnfollow(followerUserId, followerAccount, uri).catch((err: unknown) => {
-        onError(err instanceof Error ? err : new Error(String(err)))
+      await performBlueskyUnfollow(followerUserId, followerAccount, uri).catch((err_: unknown) => {
+        onError(err_ instanceof Error ? err_ : new Error(String(err_)))
       })
       throw err
     }

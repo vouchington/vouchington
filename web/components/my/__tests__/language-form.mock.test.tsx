@@ -4,7 +4,7 @@ import type { User } from '@/types/user'
 import { updateMyUser } from '@/lib/api/client/users'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { LanguageForm } from '../language-form'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 const defaultUser = { id: 'user-1', country: 'US', ui_locale: 'en' } as User
 

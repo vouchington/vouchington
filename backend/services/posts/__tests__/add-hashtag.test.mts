@@ -80,12 +80,12 @@ describe('addPostHashtag', () => {
     const { first, second } = await withEntityListenerCompletion(
       [{ jobName: 'processPostUpdated', entityId: post.id }],
       async () => {
-        const first = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
+        const firstResult = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
         expect((await getPostByAny(post.id, { readOnly: false }))?.post_hashtags).toEqual(
           expect.arrayContaining([expect.objectContaining({ id: alias.id, key: tag })]),
         )
-        const second = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
-        return { first, second }
+        const secondResult = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
+        return { first: firstResult, second: secondResult }
       },
     )
 

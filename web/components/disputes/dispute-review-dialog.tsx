@@ -30,6 +30,7 @@ type Action =
   | { type: 'set_submitted' }
   | { type: 'reset' }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'set_reason': {
@@ -77,7 +78,7 @@ export function DisputeReviewDialog({
   const turnstile = useTurnstileToken('disputes.create')
 
   useEffect(() => {
-    if (open) return
+    if (open) return undefined
 
     const resetTimeout = setTimeout(() => dispatch({ type: 'reset' }), 300)
     return () => clearTimeout(resetTimeout)

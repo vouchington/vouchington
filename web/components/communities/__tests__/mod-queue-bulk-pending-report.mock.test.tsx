@@ -38,7 +38,7 @@ vi.mock(import('@/lib/api/client'), () => ({
   unpublishCommunityPost: mockUnpublishCommunityPost,
 }))
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   deletePost: mockDeletePost,
 }))
 

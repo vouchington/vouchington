@@ -39,7 +39,7 @@ app.route('/.well-known/oauth-protected-resource/api/v1/legal/mcp').get((ctx: Co
 })
 
 app.route('/api/v1/oauth/native-clients/:app').get((ctx: Context) => {
-  const nativeApp = NATIVE_OAUTH_CLIENT_APPS.find(app => app === ctx.params.app)
+  const nativeApp = NATIVE_OAUTH_CLIENT_APPS.find(registeredApp => registeredApp === ctx.params.app)
   ctx.assert(nativeApp, 404, 'Not Found')
   validateRequestContract(ctx, 'GET:/api/v1/oauth/native-clients/:app', { path: ctx.params })
   sendDiscoveryDocument(ctx, getNativeOAuthClientDocument(nativeApp))

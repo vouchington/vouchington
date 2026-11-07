@@ -28,10 +28,10 @@ if (failures.length > 0) {
 }
 process.exit(0)
 
-function topicMergeForeignKeyFailures(schema: SchemaSnapshot): string[] {
-  const failures: string[] = []
+function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] {
+  const topicFailures: string[] = []
   const targets = new Set<string>(['topics', ...TOPIC_MERGE_SUBTYPE_TABLES])
-  const foreignKeys = Object.entries(schema.tables).flatMap(([table, definition]) =>
+  const foreignKeys = Object.entries(schemaSnapshot.tables).flatMap(([table, definition]) =>
     Object.values(definition.foreignKeys).flatMap(foreignKey =>
       targets.has(foreignKey.referencedTable)
         ? foreignKey.columns.map(column => `${table}.${column}`)
@@ -41,7 +41,7 @@ function topicMergeForeignKeyFailures(schema: SchemaSnapshot): string[] {
   const grouped = Object.keys(TOPIC_MERGE_REFERENCE_GROUPS).toSorted()
   const actual = foreignKeys.toSorted()
   if (!sameList(grouped, actual)) {
-    failures.push(
+    topicFailures.push(
       [
         'topic merge groups do not match topic foreign keys',
         `only in groups: ${absentFrom(grouped, actual).join(', ') || '(none)'}`,
@@ -73,13 +73,15 @@ function topicMergeForeignKeyFailures(schema: SchemaSnapshot): string[] {
     if (group === 'history' || group === 'alias') continue
     activeGroups.push(reference)
     if (executed.get(reference) !== group) {
-      failures.push(`${reference}: group ${group} is not executed as ${executed.get(reference)}`)
+      topicFailures.push(
+        `${reference}: group ${group} is not executed as ${executed.get(reference)}`,
+      )
     }
   }
   const executedKeys = [...executed.keys()].toSorted()
   activeGroups.sort()
   if (!sameList(executedKeys, activeGroups)) {
-    failures.push(
+    topicFailures.push(
       [
         'executed topic merge paths do not match active groups',
         `only executed: ${absentFrom(executedKeys, activeGroups).join(', ') || '(none)'}`,
@@ -87,7 +89,7 @@ function topicMergeForeignKeyFailures(schema: SchemaSnapshot): string[] {
       ].join('\n'),
     )
   }
-  return failures
+  return topicFailures
 }
 
 function sameList(left: readonly string[], right: readonly string[]): boolean {

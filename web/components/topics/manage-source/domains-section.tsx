@@ -25,8 +25,8 @@ export function DomainsSection({
 }: {
   additionalHostnames: TopicAdditionalHostname[]
   addingHostname: boolean
-  onAddHostname: (e: React.FormEvent<HTMLFormElement>) => void
-  onPrimaryHostnameSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  onAddHostname: (e: React.SubmitEvent<HTMLFormElement>) => void
+  onPrimaryHostnameSubmit: (e: React.SubmitEvent<HTMLFormElement>) => void
   onRemoveHostname: (hostnameId: string, hostname: string) => void
   primaryHostname: TopicHostname | null
   primaryHostnameSaving: boolean
@@ -74,7 +74,7 @@ function PrimaryDomainForm({
   primaryHostname,
   primaryHostnameSaving,
 }: {
-  onPrimaryHostnameSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  onPrimaryHostnameSubmit: (e: React.SubmitEvent<HTMLFormElement>) => void
   primaryHostname: TopicHostname | null
   primaryHostnameSaving: boolean
 }) {

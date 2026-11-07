@@ -1,13 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { createTranslator, type MessageKey } from './index.mts'
 import { catalogTreeForLocale } from './load-catalog-json.mts'
-import { enMessages } from './locale-catalogs.mts'
+import { enMessages } from '../test-helpers/locale-catalogs.mts'
 
 describe('createTranslator', () => {
   const t = createTranslator('en', enMessages)
 
   it('retains Voucha number formatting for catalog number parameters', () => {
     expect(t('shared.countLabel.format', { count: 1_000, unit: 'member' })).toBe('1,000 members')
+    expect(
+      t('shared.countLabel.formatted', {
+        count: 1_000,
+        formattedCount: '1,000+',
+        unit: 'review',
+      }),
+    ).toBe('1,000+ reviews')
+    expect(
+      t('shared.countLabel.formatted', { count: 1, formattedCount: '1', unit: 'review' }),
+    ).toBe('1 review')
   })
 
   it('degrades missing and non-leaf keys when onUnresolved is set', () => {

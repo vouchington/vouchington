@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
 import type { Post } from './types.mts'
 import { createPostModerationContent } from './content.mts'
@@ -33,7 +32,7 @@ export async function setPostImages(
   let deliveryPrepared = false
   async function savePostImagesInTransaction() {
     await using query = await beginTransaction()
-    async function saveImageRows(query: TransactionQuery) {
+    async function saveImageRows() {
       await lockPostImageAdmission(
         query,
         images.map(image => image.image_id),
@@ -157,7 +156,7 @@ export async function setPostImages(
         },
       }
     }
-    const result = await saveImageRows(query)
+    const result = await saveImageRows()
     await query.commit()
     return result
   }

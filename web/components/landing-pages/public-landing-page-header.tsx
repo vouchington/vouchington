@@ -33,7 +33,7 @@ export function PublicLandingPageHeader({
             width={112}
             height={112}
             className='rounded-full object-cover'
-            priority
+            preload
             unoptimized
           />
         ) : null}

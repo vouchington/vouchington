@@ -53,14 +53,14 @@ describe('projectScheduledJobs applyHourlyFloor', () => {
     expect(projected[0]?.schedule).toBe('every 1m')
   })
 
-  it('never rewrites a thunk repeat, since it cannot be statically clamped here', () => {
+  it('resolves and aligns a dynamic repeat when projecting staging schedules', () => {
     const manifest = manifestOf([
       { ...job('thunk', { every: 60_000 }, 'every 1m'), repeat: () => ({ every: 60_000 }) },
     ])
 
     const projected = projectScheduledJobs([manifest], undefined, { applyHourlyFloor: true })
 
-    expect(projected[0]?.schedule).toBe('every 1m')
+    expect(projected[0]?.schedule).toBe('every 1h')
   })
 })
 

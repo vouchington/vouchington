@@ -89,6 +89,7 @@ export function assertMatchingPurchaseIntent(row: PurchaseIntentRow, fingerprint
     throw createCodedError(409, 'Membership purchase is not eligible.', CONFLICT)
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed row.provider switch is exhaustive; Oxlint misses its terminal flow.
 function getNativeMembershipLaunch(
   row: Pick<
     PurchaseIntentRow,

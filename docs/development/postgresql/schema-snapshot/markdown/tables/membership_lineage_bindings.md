@@ -6,17 +6,16 @@ Durable lineage-to-user binding history, retained through account deletion.
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                             | Identity | Generated | Collation | Comment                                                                                          |
-| -------------------------------- | -------------------------- | -------- | ----------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------ |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                          |          |           |           |                                                                                                  |
-| `membership_provider_lineage_id` | `uuid`                     | no       |                                     |          |           |           | Provider lineage claimed by this binding.                                                        |
-| `originating_invoice_id`         | `text`                     | yes      |                                     |          |           |           | Stripe invoice that established the bound provider lineage for deterministic reversal targeting. |
-| `user_id`                        | `uuid`                     | yes      |                                     |          |           |           | Bound Voucha user; cleared only after final account purge.                                       |
-| `source_kind`                    | `membership_source_kinds`  | no       | `'direct'::membership_source_kinds` |          |           |           | Direct owner or family-recipient binding class for the lineage.                                  |
-| `bound_at`                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                 |          |           |           | When the lineage became bound to this user.                                                      |
-| `released_at`                    | `timestamp with time zone` | yes      |                                     |          |           |           | When final account deletion released this binding.                                               |
-| `release_reason`                 | `text`                     | yes      |                                     |          |           |           | Auditable reason the lineage binding was released.                                               |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`        |          | virtual   |           |                                                                                                  |
+| Column                           | Type                       | Nullable | Default                             | Identity | Generated | Collation | Comment                                                         |
+| -------------------------------- | -------------------------- | -------- | ----------------------------------- | -------- | --------- | --------- | --------------------------------------------------------------- |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                          |          |           |           |                                                                 |
+| `membership_provider_lineage_id` | `uuid`                     | no       |                                     |          |           |           | Provider lineage claimed by this binding.                       |
+| `user_id`                        | `uuid`                     | yes      |                                     |          |           |           | Bound Voucha user; cleared only after final account purge.      |
+| `source_kind`                    | `membership_source_kinds`  | no       | `'direct'::membership_source_kinds` |          |           |           | Direct owner or family-recipient binding class for the lineage. |
+| `bound_at`                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                 |          |           |           | When the lineage became bound to this user.                     |
+| `released_at`                    | `timestamp with time zone` | yes      |                                     |          |           |           | When final account deletion released this binding.              |
+| `release_reason`                 | `text`                     | yes      |                                     |          |           |           | Auditable reason the lineage binding was released.              |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`        |          | virtual   |           |                                                                 |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -28,7 +27,6 @@ _none_
 - `membership_lineage_bindings_check`: `CHECK (((released_at IS NULL) = (release_reason IS NULL)))`
 - `membership_lineage_bindings_check1`: `CHECK (((released_at IS NULL) OR (released_at >= bound_at)))`
 - `membership_lineage_bindings_check2`: `CHECK (((released_at IS NOT NULL) OR (user_id IS NOT NULL)))`
-- `membership_lineage_bindings_originating_invoice_id_valid`: `CHECK (((originating_invoice_id IS NULL) OR (((char_length(originating_invoice_id) >= 1) AND (char_length(originating_invoice_id) <= 255)) AND (originating_invoice_id = TRIM(BOTH FROM originating_invoice_id)))))`
 - `membership_lineage_bindings_release_reason_check`: `CHECK (((release_reason IS NULL) OR (((char_length(release_reason) >= 1) AND (char_length(release_reason) <= 255)) AND (release_reason = TRIM(BOTH FROM release_reason)))))`
 - `membership_lineage_bindings_source_kind_check`: `CHECK ((source_kind <> 'admin_grant'::membership_source_kinds))`
 
@@ -43,7 +41,6 @@ _none_
 - `idx_membership_lineage_bindings__current_family_lineage_user`: `CREATE UNIQUE INDEX idx_membership_lineage_bindings__current_family_lineage_user ON public.membership_lineage_bindings USING btree (membership_provider_lineage_id, user_id) WHERE ((released_at IS NULL) AND (source_kind = 'family'::membership_source_kinds))`
 - `idx_membership_lineage_bindings__id_lineage_id`: `CREATE UNIQUE INDEX idx_membership_lineage_bindings__id_lineage_id ON public.membership_lineage_bindings USING btree (id, membership_provider_lineage_id)`
 - `idx_membership_lineage_bindings__lineage_id`: `CREATE INDEX idx_membership_lineage_bindings__lineage_id ON public.membership_lineage_bindings USING btree (membership_provider_lineage_id, id DESC)`
-- `idx_membership_lineage_bindings__lineage_origin`: `CREATE INDEX idx_membership_lineage_bindings__lineage_origin ON public.membership_lineage_bindings USING btree (membership_provider_lineage_id, originating_invoice_id, id) WHERE (originating_invoice_id IS NOT NULL)`
 - `idx_membership_lineage_bindings__user_id`: `CREATE INDEX idx_membership_lineage_bindings__user_id ON public.membership_lineage_bindings USING btree (user_id, id DESC)`
 - `membership_lineage_bindings_pkey`: `CREATE UNIQUE INDEX membership_lineage_bindings_pkey ON public.membership_lineage_bindings USING btree (id)`
 

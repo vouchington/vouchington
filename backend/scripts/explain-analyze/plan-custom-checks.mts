@@ -7,7 +7,6 @@ import { assertAdminEmailIndexPlan } from './plan-custom/admin-email.mts'
 import { assertClassifierHumanVoteComparisonPlanIfApplicable } from './plan-custom/classifier-human-vote-comparison.mts'
 import { assertCopyrightStatementFactsIsTargetBounded } from './plan-custom/copyright-statement-facts.mts'
 import { assertClaimantMisuseCursorSeek } from './plan-custom/claimant-misuse-cursor.mts'
-import { assertCommentDescendantDepthBound } from './plan-custom/comment-descendant-depth.mts'
 import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-custom/embedding-reconciliation.mts'
 import { assertPaginationPlanShape } from './plan-custom/pagination-gates.mts'
 import { assertPostCreationBypassPointRead } from './plan-custom/post-creation-bypass.mts'
@@ -22,6 +21,7 @@ import {
 } from './plan-custom/search-communities.mts'
 import { assertSemanticPostCandidatePlan } from './plan-custom/semantic-post.mts'
 import { assertStoryMemberPagePlan } from './plan-custom/story-member-pages.mts'
+import { assertStoryProjectionClaimCandidates } from './plan-custom/story-projection-claim.mts'
 import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-custom/topic-viewer-counts.mts'
 import { assertTrendingCommunitiesIsCandidateBounded } from './plan-custom/trending-communities.mts'
 import { assertCorePlanCheck } from './plan-custom/core-special.mts'
@@ -37,7 +37,6 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   classifierBatch: assertClassifierHumanVoteComparisonPlanIfApplicable,
   copyrightFacts: assertCopyrightStatementFactsIsTargetBounded,
   claimantMisuseCursorSeek: assertClaimantMisuseCursorSeek,
-  commentDescendantDepthBound: assertCommentDescendantDepthBound,
   embeddingFirstPost: assertEmbeddingReconciliationPlanIfApplicable,
   paginationSpecial: assertPaginationPlanShape,
   postCreationBypassPointRead: assertPostCreationBypassPointRead,
@@ -51,6 +50,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   searchCommunityMemberCandidates: assertSearchCommunityMemberCandidates,
   semanticPost: assertSemanticPostCandidatePlan,
   storyMemberPages: assertStoryMemberPagePlan,
+  storyProjectionClaimCandidates: assertStoryProjectionClaimCandidates,
   topicViewerCandidateBind: assertTopicViewerCountsDiscussionsUsesCandidateBind,
   trendingCommunities: assertTrendingCommunitiesIsCandidateBounded,
   universalTopicCandidates: result => assertCorePlanCheck('universalTopicCandidates', result),

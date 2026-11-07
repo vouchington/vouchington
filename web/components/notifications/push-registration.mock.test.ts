@@ -42,7 +42,9 @@ const registration = { active: {}, pushManager: { getSubscription } }
 describe('push registration ownership handoff', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(waitForActiveServiceWorker).mockImplementation(async registration => registration)
+    vi.mocked(waitForActiveServiceWorker).mockImplementation(
+      async activeRegistration => activeRegistration,
+    )
     bootstrapBindingMock.mockResolvedValue(null)
     getSubscription.mockResolvedValue(physicalSubscription)
     vi.mocked(clearPushBinding).mockResolvedValue({ status: 'disabled', revision })
@@ -124,7 +126,9 @@ describe('push registration ownership handoff', () => {
     const activationStarted = Promise.withResolvers<void>()
     vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(() => {
       activationStarted.resolve()
-      return new Promise(resolve => (releaseActivation = resolve))
+      return new Promise(resolve => {
+        releaseActivation = resolve
+      })
     })
 
     const enabling = registerAndSavePush('unused-for-existing-subscription')
@@ -143,7 +147,9 @@ describe('push registration ownership handoff', () => {
     const activationStarted = Promise.withResolvers<void>()
     vi.mocked(waitForActiveServiceWorker).mockImplementationOnce(() => {
       activationStarted.resolve()
-      return new Promise(resolve => (releaseActivation = resolve))
+      return new Promise(resolve => {
+        releaseActivation = resolve
+      })
     })
     Object.defineProperty(navigator, 'serviceWorker', {
       configurable: true,

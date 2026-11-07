@@ -27,6 +27,7 @@ type PostSearchFilterOptions = {
   post_types?: PostType[] // Filter by post type
   data_point_vertical?: string // Filter data_point posts by vertical (e.g. 'credit_card', 'bank_account')
   story_id?: string // Filter posts linked to a specific story
+  has_hacker_news_references?: boolean // Posts whose URL is seen or mentioned on Hacker News (true) or not (false)
   include_topic_recommendations?: boolean // Internal opt-in for dedicated recommendation flows
   drafts?: boolean // Show unpublished posts
   time_range?: TimeRange // Time range filter (post search defaults to '1m'; 'all' is explicit)

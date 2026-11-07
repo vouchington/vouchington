@@ -33,7 +33,7 @@ const NO_PROVIDER_GATE: ProviderGate = { cleanCached: false, coolingDown: false 
  * provider call. Pass `policies` to skip the policy read for hostnames already resolved.
  */
 export function createWebRiskChecker(state: WebRiskState) {
-  return async function assertUrlAllowedByWebRisk(
+  return async function checkUrlAllowedByWebRisk(
     url: string,
     options: WebRiskCheckOptions = {},
   ): Promise<void> {

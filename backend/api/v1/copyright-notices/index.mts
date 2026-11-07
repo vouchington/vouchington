@@ -22,8 +22,9 @@ import {
   decodeScopedPreciseTimestampCursor,
   encodeScopedPreciseTimestampCursor,
 } from '@modules/pagination'
-// Registers `/api/v1/copyright-email-intakes/review-queue` before moderator-routes registers the
-// `/api/v1/copyright-email-intakes/:id` route that would otherwise capture it.
+// Registers `/api/v1/copyright-email-intakes/review-queue` before
+// copyright-email-intake-read-routes registers `/api/v1/copyright-email-intakes/:id`,
+// which would otherwise capture `review-queue`.
 import './email-intake-queue-route.mts'
 import './email-intake-legal-process-route.mts'
 import './email-intake-preservation-routes.mts'
@@ -37,7 +38,13 @@ import './eu-copyright-staff-routes.mts'
 import './eu-copyright-report-route.mts'
 import './guest-capability-list-route.mts'
 import './guest-capability-routes.mts'
-import './moderator-routes.mts'
+import './copyright-email-intake-read-routes.mts'
+import './copyright-notice-match-routes.mts'
+import './copyright-restriction-action-routes.mts'
+import './copyright-email-intake-decision-routes.mts'
+import './copyright-intake-review-routes.mts'
+import './copyright-submission-review-routes.mts'
+import './copyright-correspondence-decision-routes.mts'
 import './repeat-infringer-routes.mts'
 import './staff-queue-route.mts'
 import './submission-routes.mts'

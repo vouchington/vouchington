@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getImagePlacementForCopyright } from '@services/images/placements'
-import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
+import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import {
   completeTestMediaDeliveryRecord,

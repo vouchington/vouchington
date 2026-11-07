@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState, useTransition, type FormEvent } from 'react'
+import { useEffect, useId, useState, useTransition, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { LockKeyhole, LockKeyholeOpen } from 'lucide-react'
 import { toast } from 'sonner'
@@ -70,7 +70,7 @@ export function UserPreservationHoldCard({
     isAccountDeleted || (loadedAccount?.userId === userId && loadedAccount.deletedAt !== null)
   const openHold = holds.find(hold => hold.released_at === null)
   const history = holds.filter(hold => hold.released_at !== null)
-  async function handlePlace(event: FormEvent<HTMLFormElement>) {
+  async function handlePlace(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const trimmed = reference.trim()
     if (!trimmed) return

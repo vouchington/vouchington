@@ -56,7 +56,7 @@ export async function processStoryPost(job: Job<StoryPostJobData>): Promise<unkn
   const story = await getStoryById(postStory!.story_id)
   if (!story) unrecoverable(new Error(`Story ${postStory!.story_id} not found`))
 
-  // ast-grep-ignore: no-three-sequential-awaits -- inherently sequential: fetch items → run agent → write result
+  // ast-grep-ignore: no-three-sequential-awaits -- the fetched item summaries supply the story agent; its summary output supplies the persisted post result
   const itemSummaries = await getStoryItemSummaries(story!.id)
 
   const agentResult = await callStoryPostAgent(

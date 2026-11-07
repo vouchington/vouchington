@@ -36,7 +36,8 @@ _none_
 
 - `community_list_rss_feeds_pkey`: `CREATE UNIQUE INDEX community_list_rss_feeds_pkey ON public.community_list_rss_feeds USING btree (id)`
 - `idx_community_list_rss_feeds__added_by_id`: `CREATE INDEX idx_community_list_rss_feeds__added_by_id ON public.community_list_rss_feeds USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)`
-- `idx_community_list_rss_feeds__community`: `CREATE INDEX idx_community_list_rss_feeds__community ON public.community_list_rss_feeds USING btree (community_id)`
+- `idx_community_list_rss_feeds__community_id__foreign_key`: `CREATE INDEX idx_community_list_rss_feeds__community_id__foreign_key ON public.community_list_rss_feeds USING btree (community_id) WHERE (community_id IS NOT NULL)`
+- `idx_community_list_rss_feeds__community_id__order_index__id`: `CREATE INDEX idx_community_list_rss_feeds__community_id__order_index__id ON public.community_list_rss_feeds USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)`
 - `idx_community_list_rss_feeds__removed_by_id`: `CREATE INDEX idx_community_list_rss_feeds__removed_by_id ON public.community_list_rss_feeds USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)`
 - `idx_community_list_rss_feeds__rss_feed`: `CREATE INDEX idx_community_list_rss_feeds__rss_feed ON public.community_list_rss_feeds USING btree (rss_feed_id, id)`
 - `idx_community_list_rss_feeds__unique`: `CREATE UNIQUE INDEX idx_community_list_rss_feeds__unique ON public.community_list_rss_feeds USING btree (community_id, rss_feed_id) WHERE (removed_at IS NULL)`

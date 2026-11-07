@@ -10,7 +10,7 @@ export function useSourceActions(
   state: ManageSourceState,
   dispatch: (action: Action) => void,
 ) {
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!state.rssFeed) return
     dispatch({ saving: true })

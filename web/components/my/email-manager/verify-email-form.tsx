@@ -16,7 +16,7 @@ interface VerifyEmailFormProps {
   submitting: React.RefObject<boolean>
   token: string
   onCancel: () => void
-  onSubmit: (event: React.FormEvent) => void
+  onSubmit: (event: React.SubmitEvent<HTMLFormElement>) => void
   setToken: (token: string) => void
   submitVerify: (token: string) => void
 }

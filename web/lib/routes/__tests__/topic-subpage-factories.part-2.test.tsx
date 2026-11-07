@@ -12,6 +12,7 @@ import { createTopicLatestPage, createTopicNewsPage } from '../topic-navigation-
 import { getTopic } from '@/lib/api/server'
 
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
+import { createTopicSectionMetadata, createTopicSectionStructuredData } from '@/lib/seo/topic-pages'
 
 const baseTopic = {
   __entity_type: 'topic' as const,
@@ -109,7 +110,7 @@ describe('topic factory functions', () => {
   })
 
   describe('createTopicLatestPage', () => {
-    const { default: LatestPage } = createTopicLatestPage('topic')
+    const { default: LatestPage, generateMetadata } = createTopicLatestPage('topic')
 
     it('renders TopicLatestPage when topic exists', async () => {
       const result = await LatestPage({
@@ -117,12 +118,31 @@ describe('topic factory functions', () => {
         searchParams: Promise.resolve({}),
       })
       render(result)
-      expect(screen.getByTestId('topic-latest-page')).toBeDefined()
+      expect(screen.getByTestId('topic-latest-page').getAttribute('data-pathname')).toBe(
+        '/topic/topic-1/latest',
+      )
+      expect(createTopicSectionStructuredData).toHaveBeenCalledWith(
+        expect.any(Function),
+        baseTopic,
+        'topic',
+        { label: 'Latest', path: 'latest' },
+        [],
+        null,
+      )
+    })
+
+    it('builds latest section metadata with the topic source feed', async () => {
+      await generateMetadata({ params: Promise.resolve({ id: 'topic-1' }) })
+      expect(createTopicSectionMetadata).toHaveBeenCalledWith(baseTopic, 'topic', {
+        label: 'Latest',
+        path: 'latest',
+        rssUrl: '/rss/news?sources=test-topic',
+      })
     })
   })
 
   describe('createTopicNewsPage', () => {
-    const { default: NewsPage } = createTopicNewsPage('topic')
+    const { default: NewsPage, generateMetadata } = createTopicNewsPage('topic')
 
     it('renders TopicNewsPage when topic exists', async () => {
       const result = await NewsPage({
@@ -130,7 +150,26 @@ describe('topic factory functions', () => {
         searchParams: Promise.resolve({}),
       })
       render(result)
-      expect(screen.getByTestId('topic-news-page')).toBeDefined()
+      expect(screen.getByTestId('topic-news-page').getAttribute('data-pathname')).toBe(
+        '/topic/topic-1/news',
+      )
+      expect(createTopicSectionStructuredData).toHaveBeenCalledWith(
+        expect.any(Function),
+        baseTopic,
+        'topic',
+        { label: 'News', path: 'news' },
+        [],
+        null,
+      )
+    })
+
+    it('builds news section metadata with the category feed', async () => {
+      await generateMetadata({ params: Promise.resolve({ id: 'topic-1' }) })
+      expect(createTopicSectionMetadata).toHaveBeenCalledWith(baseTopic, 'topic', {
+        label: 'News',
+        path: 'news',
+        rssUrl: '/rss/news?category_topic=test-topic',
+      })
     })
   })
 })

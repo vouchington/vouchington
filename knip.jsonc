@@ -28,6 +28,9 @@
         "gitleaks", // GitHub Actions runs the real scanner in gitleaks-scanner.test.mts
         "lychee", // Real Lychee matcher exercised by the CI tooling test suite
       ],
+      // Extracted workflow scripts run `pnpm exec coverage-check`; Knip does not read sourced
+      // shell bodies, so the policy check follows each workflow's script for the evidence.
+      "ignoreDependencies": ["coverage-check"],
       // Hook modules are loaded by the harness outside the import graph.
       "includeEntryExports": false,
     },
@@ -150,6 +153,9 @@
         // Called by Actions or shell entrypoints rather than imported by another module.
         "validate-vitest-cli-timeouts.mts!",
         "write-coverage-scope.mts!",
+        // Invoked by shepherd-prepare-checkpoint.sh and shepherd-update-checkpoint.sh in
+        // .github/workflows/; Knip skips sourced shell commands rather than following their bodies.
+        "shepherd-checkpoint-cli.mts!",
       ],
       "project": ["**/*.mts", "**/*.mjs"],
       "includeEntryExports": true,

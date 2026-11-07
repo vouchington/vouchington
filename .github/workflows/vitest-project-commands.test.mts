@@ -1,111 +1,136 @@
-import { readdirSync, readFileSync } from 'node:fs'
-
-import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { toolingWorkflowProjectNames } from '../../test-helpers/vitest-config/tooling-project-registry.mts'
+import { createVitestProjectCommandFixture } from '../../ci/test-helpers/vitest-project-command-fixtures.mts'
+import { vitestProjectCommandPolicyViolations } from '../../ci/vitest-project-command-policy.mts'
 
-interface Workflow {
-  jobs?: Record<string, { steps?: Array<{ name?: string; run?: string }> }>
-}
+const registeredWorkflowProjects = ['static-analysis-ast-grep'] as const
 
-function workflowFiles(): Array<{ contents: string; path: string }> {
-  return readdirSync('.github/workflows')
-    .filter(path => path.endsWith('.yml') || path.endsWith('.yaml'))
-    .map(path => ({ contents: readFileSync(`.github/workflows/${path}`, 'utf8'), path }))
-}
-
-function workflowCommands(): Array<{ command: string; location: string }> {
-  return workflowFiles().flatMap(({ contents, path }) => {
-    const workflow = load(contents) as Workflow
-    return Object.entries(workflow.jobs ?? {}).flatMap(([jobName, job]) =>
-      (job.steps ?? []).flatMap(step =>
-        step.run === undefined
-          ? []
-          : [{ command: step.run, location: `${path}#${jobName}:${step.name ?? 'unnamed'}` }],
-      ),
-    )
-  })
-}
-
-describe('durable Vitest workflow commands', () => {
-  it('keeps workflow touch-set validation in the canonical checklist', () => {
-    const command = 'pnpm exec vitest run --project github-actions'
-    const checklist = readFileSync('docs/checklists/github-actions.md', 'utf8')
-    const scopedRules = readFileSync('.github/workflows/AGENTS.md', 'utf8')
-
-    expect(checklist).toContain(`\`${command}\``)
-    expect(scopedRules).toContain('../../docs/checklists/github-actions.md#checklist')
-    expect(scopedRules).not.toContain(command)
-  })
-
-  it('selects reusable suites by project instead of individual test files', () => {
-    const fileFilter = /(?:^|\s)[^\s]+\.(?:mock\.)?test\.[cm]?[jt]sx?(?:\s|$)/
-    const violations = workflowCommands()
-      .filter(({ command }) => command.includes('vitest run') && fileFilter.test(command))
-      .map(({ location }) => location)
-
-    expect(violations).toEqual([])
-  })
-
-  it('only enables coverage instrumentation for publishing workflows', () => {
-    const conditionalCoverageWorkflows = [
-      'tests-backend-modules.yml',
-      'tests-tooling.yml',
-      'tests-ts-shared.yml',
-      'tests-portability.yml',
-      'tests-lambdas.yml',
-      'tests-cloudflare-worker.yml',
-      'tests-web.yml',
-      'tests-web-api.yml',
-      'tests-web-integration.yml',
-    ]
-    const coverageGate =
-      "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}"
-
-    for (const file of conditionalCoverageWorkflows) {
-      const workflow = readFileSync(`.github/workflows/${file}`, 'utf8')
-      expect(workflow).toContain(coverageGate)
-      expect(workflow).not.toMatch(/(?:vitest run|test:portability).*--coverage/)
-    }
-  })
-
-  it('keeps split project ownership in the intended workflows', () => {
-    const tooling = readFileSync('.github/workflows/tests-tooling.yml', 'utf8')
-    expect(tooling).toContain('tooling-test-runner.mts --workflow-projects')
-    expect(toolingWorkflowProjectNames).toContain('static-analysis-ast-grep')
-
-    const portability = readFileSync('.github/workflows/tests-portability.yml', 'utf8')
-    expect(portability.match(/pnpm run test:portability -- --bail=3/g)).toHaveLength(1)
-    expect(portability).toContain(
-      "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
-    )
-
-    const projectGroups = readFileSync('ci/run-vitest-project-group.mts', 'utf8')
-    for (const project of ['lambdas-portability', 'cloudflare-worker-portability']) {
-      expect(projectGroups).toContain(`'${project}'`)
-    }
-
-    const storybook = readFileSync('.github/workflows/storybook.yml', 'utf8')
-    expect(storybook).toContain(
-      "STORYBOOK_BROWSER_COVERAGE: ${{ inputs.publish_coverage && '1' || '0' }}",
-    )
-  })
-
-  it('installs the full workspace for the Linux portability job', () => {
-    const portability = readFileSync('.github/workflows/tests-portability.yml', 'utf8')
+describe('durable Vitest workflow command policy fixtures', () => {
+  it('accepts the finite source-only control', () => {
     expect(
-      portability.match(
-        /uses: vouchington\/vouchington-tooling\/\.github\/actions\/setup-node-pnpm@/g,
+      vitestProjectCommandPolicyViolations(
+        createVitestProjectCommandFixture(),
+        registeredWorkflowProjects,
       ),
-    ).toHaveLength(1)
-    expect(portability).not.toContain('pnpm install ')
+    ).toEqual([])
   })
 
-  it('routes web project-config changes to both owning workflow families', () => {
-    const configPath = 'test-helpers/vitest-config/web-projects.mts'
-    expect(readFileSync('.github/ci-path-filters.yml', 'utf8')).toContain(configPath)
-    for (const workflowPath of ['main-web.yml', 'main-storybook.yml']) {
-      expect(readFileSync(`.github/workflows/${workflowPath}`, 'utf8')).toContain(configPath)
-    }
+  it('rejects an individual test-file selector', () => {
+    const sources = createVitestProjectCommandFixture()
+    sources['.github/workflows/tests-web.yml'] = sources[
+      '.github/workflows/tests-web.yml'
+    ]!.replace(
+      '--project synthetic-suite',
+      '--project synthetic-suite backend/example.mock.test.mts',
+    )
+
+    expect(vitestProjectCommandPolicyViolations(sources, registeredWorkflowProjects)).toContain(
+      '.github/workflows/tests-web.yml has a Vitest command selecting an individual test file',
+    )
+  })
+
+  it('rejects missing coverage gates and CLI coverage flags', () => {
+    const sources = createVitestProjectCommandFixture()
+    sources['.github/workflows/tests-web.yml'] = sources[
+      '.github/workflows/tests-web.yml'
+    ]!.replace(
+      "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
+      'VITEST_COVERAGE_ENABLED: true',
+    )
+    sources['.github/workflows/tests-lambdas.yml'] = sources[
+      '.github/workflows/tests-lambdas.yml'
+    ]!.replace('--project synthetic-suite', '--project synthetic-suite --coverage')
+
+    const violations = vitestProjectCommandPolicyViolations(sources, registeredWorkflowProjects)
+    expect(violations).toContain(
+      '.github/workflows/tests-web.yml must gate coverage on publish_coverage',
+    )
+    expect(violations).toContain(
+      '.github/workflows/tests-lambdas.yml must gate Vitest coverage through its environment, not CLI flags',
+    )
+  })
+
+  it('retains the original literal coverage gate requirement', () => {
+    const sources = createVitestProjectCommandFixture()
+    const path = '.github/workflows/tests-web.yml'
+    sources[path] = sources[path]!.replace(
+      "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
+      "VITEST_COVERAGE_ENABLED: \"${{ inputs.publish_coverage && 'true' || 'false' }}\"",
+    )
+    expect(vitestProjectCommandPolicyViolations(sources, registeredWorkflowProjects)).toEqual([
+      '.github/workflows/tests-web.yml must gate coverage on publish_coverage',
+    ])
+  })
+
+  it('retains the original raw-source CLI coverage prohibition', () => {
+    const sources = createVitestProjectCommandFixture()
+    sources['.github/workflows/tests-web.yml'] += '# vitest run --coverage\n'
+    expect(vitestProjectCommandPolicyViolations(sources, registeredWorkflowProjects)).toEqual([
+      '.github/workflows/tests-web.yml must gate Vitest coverage through its environment, not CLI flags',
+    ])
+  })
+
+  it('retains the original command substring matching', () => {
+    const sources = createVitestProjectCommandFixture()
+    const path = '.github/workflows/tests-web.yml'
+    sources[path] = sources[path]!.replace(
+      'pnpm exec vitest run --project synthetic-suite',
+      'xvitest run bad.test.ts',
+    )
+    expect(vitestProjectCommandPolicyViolations(sources, registeredWorkflowProjects)).toEqual([
+      '.github/workflows/tests-web.yml has a Vitest command selecting an individual test file',
+    ])
+  })
+
+  it('rejects lost project ownership, portability setup, or web config routing', () => {
+    const sources = createVitestProjectCommandFixture()
+    sources['ci/run-vitest-project-group.mts'] = sources[
+      'ci/run-vitest-project-group.mts'
+    ]!.replaceAll("'lambdas-portability'", "'wrong-project'").replaceAll(
+      "'cloudflare-worker-portability'",
+      "'wrong-worker-project'",
+    )
+    sources['.github/workflows/tests-portability.yml'] = sources[
+      '.github/workflows/tests-portability.yml'
+    ]!.replace(
+      'vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@',
+      'vouchington/vouchington-tooling/.github/actions/other@',
+    )
+    sources['.github/workflows/main-storybook.yml'] = 'paths: []\n'
+
+    const violations = vitestProjectCommandPolicyViolations(sources, registeredWorkflowProjects)
+    expect(violations).toContain('the Vitest project groups must include lambdas-portability')
+    expect(violations).toContain(
+      'the Vitest project groups must include cloudflare-worker-portability',
+    )
+    expect(violations).toContain(
+      'tests-portability must use the full-workspace setup action exactly once',
+    )
+    expect(violations).toContain(
+      '.github/workflows/main-storybook.yml must route web Vitest project config changes',
+    )
+  })
+
+  it('rejects lost checklist, tooling-registry, portability, or Storybook contracts', () => {
+    const sources = createVitestProjectCommandFixture()
+    sources['docs/checklists/github-actions.md'] = 'Run the test suite.\n'
+    sources['.github/workflows/AGENTS.md'] +=
+      'Run pnpm exec vitest run --project github-actions here.\n'
+    sources['.github/workflows/tests-portability.yml'] += '      - run: pnpm install\n'
+    sources['.github/workflows/storybook.yml'] = 'jobs: {}\n'
+
+    const violations = vitestProjectCommandPolicyViolations(sources, [])
+    expect(violations).toContain(
+      'GitHub Actions checklist must document the github-actions Vitest command',
+    )
+    expect(violations).toContain(
+      'workflow instructions must defer the github-actions command to the checklist',
+    )
+    expect(violations).toContain(
+      'the tooling workflow project registry must contain static-analysis-ast-grep',
+    )
+    expect(violations).toContain(
+      'tests-portability must not install inline outside the shared setup action',
+    )
+    expect(violations).toContain('Storybook browser coverage must be gated by publish_coverage')
   })
 })

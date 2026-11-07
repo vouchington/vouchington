@@ -3,7 +3,7 @@ import { onTestFinished, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import { psql } from '@queues/psql/queues'
-import type { DataRetentionCleanupOptions } from '../services/data-retention/cleanup.mts'
+import type { DataRetentionCleanupOptions } from '../services/data-retention/cleanup-run-options.mts'
 import { reserveTestVoteRetention } from './vote-retention-reservation.mts'
 import {
   createTestUserDirect,

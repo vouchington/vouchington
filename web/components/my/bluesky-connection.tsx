@@ -73,7 +73,7 @@ function BlueskyConnectionContent({ initialAccount }: Props) {
 
   if (!fediverseEnabled) return null
 
-  async function handleLink(e: React.FormEvent) {
+  async function handleLink(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     const reAuthToken = await authentication.requestAuthentication()
     if (!reAuthToken) return

@@ -34,7 +34,6 @@ export async function runConfigDriven(rootDir: string, options: RunConfigDrivenO
     const file = configDriven[index]
     if (!file) return
 
-    // ast-grep-ignore: no-three-sequential-awaits -- config-driven files must read and execute in sorted order
     const string =
       isCanonicalFolder && file.endsWith('.mts')
         ? await readCanonicalConfigDrivenGenerator(file)
@@ -92,7 +91,7 @@ function isRetryableConfigDrivenPostgresError(err: unknown): err is { code: stri
 }
 
 async function waitForConfigDrivenRetry(attempt: number) {
-  await new Promise(resolve =>
-    setTimeout(resolve, Math.min(configDrivenRetryDelayMs * (attempt + Math.random()), 5_000)),
-  )
+  await new Promise(resolve => {
+    setTimeout(resolve, Math.min(configDrivenRetryDelayMs * (attempt + Math.random()), 5_000))
+  })
 }

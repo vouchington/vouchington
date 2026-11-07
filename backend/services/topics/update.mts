@@ -51,7 +51,7 @@ export const updateTopic = async (
       let resolvedHostnameId: string | null | undefined
       if (changes.hostname !== undefined) {
         const query = options.query!
-        // ast-grep-ignore: no-three-sequential-awaits -- topic ownership stabilizes discovery; resolving the new id must finish before locking the old and new hostname ids.
+        // ast-grep-ignore: no-three-sequential-awaits -- Take topic ownership before resolving the prospective hostname id, then lock both old/new hostname identities before updating the topic.
         await lockTopicHostnameMutations(query, [topic.id])
         resolvedHostnameId = await prepareHostnameForOwnedMutation(
           updater.id,

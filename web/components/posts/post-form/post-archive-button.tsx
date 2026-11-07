@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { archivePost, unarchivePost } from '@/lib/api/client/posts'
+import { archivePost, unarchivePost } from '@/lib/api/client/post-mutations'
 
 interface PostArchiveButtonProps {
   postIdOrSlug: string

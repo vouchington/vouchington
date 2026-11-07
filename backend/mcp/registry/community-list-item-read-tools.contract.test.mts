@@ -66,6 +66,33 @@ describe('read_community.list_items and read_community.list_item_counts — real
   const restItems = (itemType: ItemType, query = '') =>
     createRequest().get(`/api/v1/communities/${slug}/list-items/${SEGMENTS[itemType]}${query}`)
   const entities = (page: Page) => page.results.map(item => item.entity_id)
+  /** Walks every raw membership page. Ineligible rows can leave a page short. */
+  async function readPages(itemType: ItemType, limit: number) {
+    const mcpIds: string[] = []
+    let mcpAfter: string | undefined
+    let restAfter: string | undefined
+    let first: Page | undefined
+    for (let step = 0; step < 8; step++) {
+      const page = await items(slug, itemType, mcpAfter ? { limit, after: mcpAfter } : { limit })
+      const rest = await restItems(
+        itemType,
+        restAfter ? `?limit=${limit}&after=${restAfter}` : `?limit=${limit}`,
+      ).expect(200)
+      expect(page.page_info).toEqual(rest.body.page_info)
+      expect(page.results.map(item => item.id)).toEqual(
+        rest.body.results.map((item: { id: string }) => item.id),
+      )
+      first ??= page
+      mcpIds.push(...entities(page))
+      if (!page.page_info.has_next_page) {
+        if (!first) throw new Error(`${itemType} pages did not end`)
+        return { mcpIds, first }
+      }
+      mcpAfter = page.page_info.end_cursor!
+      restAfter = rest.body.page_info.end_cursor
+    }
+    throw new Error(`${itemType} pages did not end`)
+  }
 
   async function communityWith(visibility: 'public' | 'private', userId: string) {
     const community = await insertTestCommunity({ createdById: userId, visibility })
@@ -81,10 +108,15 @@ describe('read_community.list_items and read_community.list_item_counts — real
       privacy,
       broadcast: privacy === 'private' ? 'users' : 'everyone',
     })
-  const add = (communityId: string, itemType: ItemType, ids: string[]) =>
+  const add = (targetCommunityId: string, itemType: ItemType, ids: string[]) =>
     Promise.all(
       ids.map((entityId, orderIndex) =>
-        insertTestCommunityListItem({ communityId, itemType, entityId, orderIndex }),
+        insertTestCommunityListItem({
+          communityId: targetCommunityId,
+          itemType,
+          entityId,
+          orderIndex,
+        }),
       ),
     )
 
@@ -144,20 +176,9 @@ describe('read_community.list_items and read_community.list_item_counts — real
   it.each(Object.keys(SEGMENTS) as ItemType[])(
     'pages the %s entries in list order, with the cursors signed-out REST gives',
     async itemType => {
-      const first = await items(slug, itemType, { limit: 1 })
-      const second = await items(slug, itemType, { limit: 1, after: first.page_info.end_cursor })
-      const rest = await restItems(itemType, '?limit=1').expect(200)
-      const restSecond = await restItems(
-        itemType,
-        `?limit=1&after=${rest.body.page_info.end_cursor}`,
-      ).expect(200)
+      const { mcpIds, first } = await readPages(itemType, 1)
 
-      expect([...entities(first), ...entities(second)]).toEqual(expected[itemType])
-      expect(first.page_info).toEqual(rest.body.page_info)
-      expect(second.page_info).toEqual(restSecond.body.page_info)
-      expect(first.results.map(item => item.id)).toEqual(
-        rest.body.results.map((item: { id: string }) => item.id),
-      )
+      expect(mcpIds).toEqual(expected[itemType])
       expect(first.results[0]).toEqual({
         id: expect.any(String),
         item_type: itemType,
@@ -191,13 +212,14 @@ describe('read_community.list_items and read_community.list_item_counts — real
     }
   })
 
-  it('leaves a private post and a deleted post out of a full page', async () => {
-    const all = await items(slug, 'post', { limit: 2 })
+  it('keeps a private or deleted post out of the page and continues past it', async () => {
+    const page = await items(slug, 'post', { limit: 2 })
     const first = await items(slug, 'post', { limit: 1 })
 
-    expect(entities(all)).toEqual(expected.post)
-    expect(all.page_info.has_next_page).toBe(false)
+    expect(entities(page)).toEqual([expected.post[0]])
+    expect(page.page_info.has_next_page).toBe(true)
     expect(first.page_info.has_next_page).toBe(true)
+    expect((await readPages('post', 2)).mcpIds).toEqual(expected.post)
   })
 
   it('counts what the entries add up to for a signed-out reader, like REST', async () => {

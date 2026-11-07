@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic'
-import type { User, UserMetrics, ProfileLink } from '@/types/user'
+import type { User, ProfileLink } from '@/types/user'
+import type { UserMetrics } from '@/types/user-metrics'
 import type { BreadcrumbNavItem } from '@/lib/seo/structured-data-breadcrumbs'
 import { getUserLabel } from '@/lib/users/user-helpers'
 import { userPathSegment } from '@/lib/links/entity-href'

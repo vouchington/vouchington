@@ -172,7 +172,6 @@ CREATE OR REPLACE VIEW view_users_private AS
     users.default_post_privacy,
     users.processing_restricted_at,
     users.should_receive_third_party_marketing,
-    users.should_import_hacker_news_discussions,
     susp.suspended_at,
     susp.suspended_reason,
     susp.suspended_by_id,

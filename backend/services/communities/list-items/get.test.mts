@@ -128,7 +128,7 @@ describe('get', () => {
       }
     })
 
-    it('filters ineligible posts before applying the page limit', async () => {
+    it('keeps the cursor on an ineligible membership when the page comes back short', async () => {
       const listCommunity = await insertTestCommunity({ createdById: owner.id })
       const archivedPost = await createTestPost({ user: owner })
       const visiblePost = await createTestPost({ user: owner })
@@ -137,17 +137,26 @@ describe('get', () => {
         communityId: listCommunity.id,
         itemType: 'post',
         entityId: archivedPost.id,
+        orderIndex: 0,
       })
       await insertTestCommunityListItem({
         communityId: listCommunity.id,
         itemType: 'post',
         entityId: visiblePost.id,
+        orderIndex: 1,
       })
 
-      const result = await searchCommunityListItems(listCommunity.id, 'post', { limit: 1 })
+      const first = await searchCommunityListItems(listCommunity.id, 'post', { limit: 1 })
+      expect(first.results).toEqual([])
+      expect(first.page_info.has_next_page).toBe(true)
+      expect(first.page_info.end_cursor).toEqual(expect.any(String))
 
-      expect(result.results.map(item => item.entity_id)).toEqual([visiblePost.id])
-      expect(result.page_info.has_next_page).toBe(false)
+      const second = await searchCommunityListItems(listCommunity.id, 'post', {
+        limit: 1,
+        after: first.page_info.end_cursor!,
+      })
+      expect(second.results.map(item => item.entity_id)).toEqual([visiblePost.id])
+      expect(second.page_info.has_next_page).toBe(false)
     })
   })
 

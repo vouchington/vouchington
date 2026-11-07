@@ -176,7 +176,7 @@ describe('bounded per-key history retention', () => {
       kinds: ['rss_feed_setting_changes'],
       ...options,
       now: new Date(base.getTime() + 90 * 24 * 60 * 60 * 1000 + 4),
-    }).then(result => result.rss_feed_setting_changes)
+    }).then(cleanupResult => cleanupResult.rss_feed_setting_changes)
     expect(result).toEqual({ scanned: 4, changed: 2, hasMore: false })
     expect(await readRemainingHistoryIds('rss_feed_setting_changes', ids)).toEqual(ids.slice(2))
   })
@@ -217,7 +217,7 @@ describe('bounded per-key history retention', () => {
       kinds: ['fediverse_instance_integration_changes'],
       ...options,
       now: afterUtcMonths(base, 12, 3),
-    }).then(result => result.fediverse_instance_integration_changes)
+    }).then(cleanupResult => cleanupResult.fediverse_instance_integration_changes)
     expect(result).toEqual({ scanned: 3, changed: 2, hasMore: false })
     expect(await readRemainingHistoryIds('fediverse_instance_integration_changes', ids)).toEqual([
       ids[2],
@@ -241,7 +241,7 @@ describe('bounded per-key history retention', () => {
       kinds: ['community_agent_prompt_revisions'],
       ...options,
       now: new Date(base.getTime() + 201),
-    }).then(result => result.community_agent_prompt_revisions)
+    }).then(cleanupResult => cleanupResult.community_agent_prompt_revisions)
     expect(result).toEqual({ scanned: 201, changed: 1, hasMore: false })
     expect(await readRemainingHistoryIds('community_agent_prompt_revisions', ids)).toEqual(
       ids.slice(1),

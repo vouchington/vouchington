@@ -12,11 +12,14 @@ import { appendPostSearchOrderAndLimit } from './query-builder/order-and-limit.m
 import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins.mts'
 import { appendPostSearchWhereClause } from './query-builder/where-clause.mts'
 import { buildSemanticPostCandidates } from './query-builder/semantic-candidates.mts'
+import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
+import { buildHackerNewsHotCandidates } from './query-builder/hacker-news-hot-candidates.mts'
 
 export function buildPostSearchQuery(
   currentUser?: BasicUser,
   options: PostSearchOptions = {},
 ): SQLStatement {
+  const decisionInstant = new Date()
   const { limit, omitLimit = false, omitOrderBy = false, semanticSearchEmbedding } = options
   const hasTextSearch = hasTextSearchFn(options)
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
@@ -38,19 +41,39 @@ export function buildPostSearchQuery(
     hasSemanticSearch,
     hasTextSearch,
   })
-  if (hasSemanticSearch) ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch))
+  if (hasSemanticSearch)
+    ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch, decisionInstant))
+  const useHackerNewsHotCandidates = usesHackerNewsHotCandidates(options)
+  if (useHackerNewsHotCandidates) {
+    ctes.push(
+      buildHackerNewsHotCandidates(
+        currentUser,
+        options,
+        hasTextSearch,
+        hasSemanticSearch,
+        rankingScoreExpression,
+        decisionInstant,
+      ),
+    )
+  }
   appendCtes(query, ctes)
   appendPostSearchSelectAndJoins(query, {
     useSemanticCandidates: hasSemanticSearch,
+    useHackerNewsHotCandidates,
     currentUser,
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
     options,
-    rankingScoreExpression,
+    rankingScoreExpression:
+      useHackerNewsHotCandidates && rankingScoreExpression
+        ? sql`posts.ranking_score`
+        : rankingScoreExpression,
     sort,
   })
   appendPostSearchWhereClause(query, {
+    paginationOnly: useHackerNewsHotCandidates,
+    decisionInstant,
     currentUser,
     followingRankExpression,
     hasSemanticSearch,

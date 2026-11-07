@@ -53,6 +53,7 @@ describe('NewsItemClusterList', () => {
       page_info: { has_next_page: false, start_cursor: 'later', end_cursor: null },
       rss_feed_items: { [later.id]: later },
       rss_feed_item_elections: { [later.id]: makeClusterElection(later.id) },
+      rss_feed_item_hacker_news_references: { [later.id]: { story_count: 1, comment_count: 0 } },
       rss_feed_item_embeds: {},
       rss_feed_item_thumbnail_url: { [later.id]: '/sideload/later.jpg' },
       rss_feed_item_content_html: { [later.id]: '<p>Later article</p>' },
@@ -93,6 +94,7 @@ describe('NewsItemClusterList', () => {
     expect(screen.getByTestId('nav-ids')).toHaveTextContent('item-1,item-2,item-3')
     expect(screen.getByText('Prefetched Article')).toBeVisible()
     expect(screen.getByText('Later Article')).toBeVisible()
+    expect(screen.getByText('Seen on Hacker News · 1')).toBeVisible()
     expect(screen.getByTestId('existing-vote-choice-item-3')).toHaveTextContent('like')
     expect(screen.getByRole('button', { name: /2 related articles/i })).toBeVisible()
     expect(screen.getByRole('button', { name: /2 related articles/i })).toHaveAttribute(

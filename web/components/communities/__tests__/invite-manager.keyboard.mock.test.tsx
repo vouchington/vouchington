@@ -38,7 +38,8 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
 
 import { InviteManager } from '../invite-manager'
 import { revokeInvite, sendInvite } from '@/lib/api/client'
-import type { CommunityInvite, CommunityInvitesResponseBody } from '@/types/api-responses'
+import type { CommunityInvite } from '@/types/api-responses'
+import type { CommunityInvitesResponseBody } from '@/types/api-responses/community-applications'
 
 const mockSendInvite = vi.mocked(sendInvite)
 const mockRevokeInvite = vi.mocked(revokeInvite)

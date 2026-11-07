@@ -5,11 +5,8 @@ import { createPostPathname, domainHref, topicHref, urlHref } from '@/lib/links/
 import { getPostSlugFromType } from '@/lib/route-configs'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { PostContentText } from '@/components/posts/post-content-text'
-import type {
-  CommunityListItem,
-  CommunityListItemType,
-  CommunityListPageData,
-} from '@/types/api-responses'
+import type { CommunityListItem, CommunityListItemType } from '@/types/api-responses'
+import type { CommunityListPageData } from '@/types/api-responses/community-list-pages'
 
 type CommunityListItemContentProps = {
   item: CommunityListItem
@@ -17,6 +14,7 @@ type CommunityListItemContentProps = {
   data: CommunityListPageData
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed itemType switch is exhaustive; Oxlint misses its terminal flow.
 export function CommunityListItemContent({ item, itemType, data }: CommunityListItemContentProps) {
   const t = useTranslations()
   switch (itemType) {

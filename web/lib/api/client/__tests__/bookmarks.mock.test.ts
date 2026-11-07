@@ -55,8 +55,8 @@ describe('getEntityBookmarks', () => {
   })
 
   it('error propagates to all concurrent waiters and clears cache so a new call retries', async () => {
-    const err = new Error('network error')
-    mockClientApiGet.mockRejectedValueOnce(err)
+    const expectedError = new Error('network error')
+    mockClientApiGet.mockRejectedValueOnce(expectedError)
 
     const p1 = getEntityBookmarks('topic', '2')
     const p1Rejection = p1.catch((err: unknown) => err)
@@ -64,8 +64,8 @@ describe('getEntityBookmarks', () => {
     const p2Rejection = p2.catch((err: unknown) => err)
 
     // Both callers see the same rejection
-    await expect(p1Rejection).resolves.toBe(err)
-    await expect(p2Rejection).resolves.toBe(err)
+    await expect(p1Rejection).resolves.toBe(expectedError)
+    await expect(p2Rejection).resolves.toBe(expectedError)
     expect(p1).toBe(p2)
     expect(mockClientApiGet).toHaveBeenCalledTimes(1)
 

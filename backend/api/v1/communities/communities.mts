@@ -19,7 +19,7 @@ import {
 } from '@services/communities'
 import { assertCanCreateCommunity } from '@services/communities/authorization'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
-import { assertNotSuspended } from '@services/users'
+import { assertNotSuspended, type PrivateUser } from '@services/users'
 import {
   attachCommunityProvenance,
   attachWrittenCommunityProvenance,
@@ -155,16 +155,8 @@ app
     assertNotSuspended(currentUser)
     assertCanCreateCommunity(currentUser)
 
-    const raw = (await parseJsonBody(ctx, '1mb')) as Record<string, unknown>
-    validateRequestContract(ctx, 'POST:/api/v1/communities', { body: raw })
-    const body = raw as CreateCommunityInput
-    body.member_invites_allowed_at = raw.member_invites_allowed_at ? new Date() : null
-    body.post_approval_required_at = raw.post_approval_required_at ? new Date() : null
-    validateCreateCommunityInput(body)
-    const membershipPlan = currentUser.membership_plan ?? null
-    // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
-    await verifyCaptchaOrAttestation(ctx, raw, { actionTag: 'communities.create' })
-    await assertWithinContributionActionLimit(currentUser, membershipPlan, 'community')
+    // Finish request validation and admission checks before creating community rows.
+    const body = await prepareCommunityCreateInput(ctx, currentUser)
 
     const community = await createCommunity(currentUser.id, provenance, body)
     const { owner: _owner, ...communityData } = community
@@ -172,3 +164,19 @@ app
     ctx.setStatus(201)
     ctx.json({ community: await attachWrittenCommunityProvenance(communityData, currentUser) })
   })
+
+async function prepareCommunityCreateInput(
+  ctx: Context,
+  currentUser: PrivateUser,
+): Promise<CreateCommunityInput> {
+  const raw = (await parseJsonBody(ctx, '1mb')) as Record<string, unknown>
+  validateRequestContract(ctx, 'POST:/api/v1/communities', { body: raw })
+  const body = raw as CreateCommunityInput
+  body.member_invites_allowed_at = raw.member_invites_allowed_at ? new Date() : null
+  body.post_approval_required_at = raw.post_approval_required_at ? new Date() : null
+  validateCreateCommunityInput(body)
+  const membershipPlan = currentUser.membership_plan ?? null
+  await verifyCaptchaOrAttestation(ctx, raw, { actionTag: 'communities.create' })
+  await assertWithinContributionActionLimit(currentUser, membershipPlan, 'community')
+  return body
+}

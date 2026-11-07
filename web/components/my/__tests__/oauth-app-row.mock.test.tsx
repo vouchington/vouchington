@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'

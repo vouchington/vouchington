@@ -71,7 +71,7 @@ export async function detectRssFeedItemLanguageBatch(ids: string[]): Promise<{ u
              ORDER BY
                rf.is_enabled DESC,
                rf.is_discoverable DESC,
-               t.votes_score_net DESC NULLS LAST,
+               t.votes_score_sort DESC,
                rfis.created_at ASC
              LIMIT 1
            ) AS declared_language

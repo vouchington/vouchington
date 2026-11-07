@@ -103,7 +103,12 @@ vi.mock(
   import('@/components/topics/topic-latest-page'),
   () =>
     ({
-      TopicLatestPage: () => <div data-pw='topic-latest-page' />,
+      TopicLatestPage: ({ pathname }: { pathname: string }) => (
+        <div
+          data-pw='topic-latest-page'
+          data-pathname={pathname}
+        />
+      ),
     }) as unknown as typeof import('@/components/topics/topic-latest-page'),
 )
 
@@ -111,7 +116,12 @@ vi.mock(
   import('@/components/topics/topic-news-page'),
   () =>
     ({
-      TopicNewsPage: () => <div data-pw='topic-news-page' />,
+      TopicNewsPage: ({ pathname }: { pathname: string }) => (
+        <div
+          data-pw='topic-news-page'
+          data-pathname={pathname}
+        />
+      ),
     }) as unknown as typeof import('@/components/topics/topic-news-page'),
 )
 

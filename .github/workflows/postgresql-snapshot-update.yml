@@ -98,6 +98,7 @@ jobs:
         timeout-minutes: 1
         env:
           POSTGRES_PORT: ${{ job.services.postgres.ports['5432'] }}
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: Runs in a trusted issue_comment job without a trusted-script checkout; set the fresh PostgreSQL connection with workflow-owned code.
         run: |
           postgres_url="postgres://postgres@localhost:$POSTGRES_PORT/postgres"
           {
@@ -112,6 +113,7 @@ jobs:
         working-directory: backend
         env:
           SNAPSHOT_HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+        # no-mistakes-disable-next-line github-actions-max-inline-script-lines: Runs in a trusted issue_comment job without a trusted-script checkout; generate the snapshot from the bound candidate with workflow-owned code.
         run: |
           test "$(git rev-parse HEAD)" = "$SNAPSHOT_HEAD_SHA"
           node --input-type=module -e '

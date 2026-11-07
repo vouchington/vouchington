@@ -14,6 +14,7 @@ function getStringField(item: Record<string, unknown>, field: string): string | 
 }
 import type { CrawlOutcome } from '@/components/topics/manage-source/crawl-outcome'
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed outcome.kind switch is exhaustive; Oxlint misses its terminal flow.
 export function getCrawlOutcomeMessage(outcome: CrawlOutcome) {
   switch (outcome.kind) {
     case 'not_modified':

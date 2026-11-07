@@ -3,11 +3,25 @@
 
 import type { MessageKey } from '@ts-shared/ui-messages'
 import type { useTranslations } from '@/lib/i18n/use-translations'
-import type { UserMetrics } from '@/types/user'
+import type { UserMetrics } from '@/types/user-metrics'
 import type { UserDetailTab } from './user-detail-tab-types'
 import { formatNumber, type NumberFormatLocale } from '@ts-shared/utils/format'
 
 type PublicContentKey = 'reviews' | 'discussions' | 'comments'
+
+export function formatProfilePostCount(
+  count: number,
+  {
+    capped,
+    uiLocale,
+  }: {
+    capped: boolean
+    uiLocale?: NumberFormatLocale
+  },
+): string {
+  const showPlus = capped && count > 0
+  return `${formatNumber(count, uiLocale)}${showPlus ? '+' : ''}`
+}
 
 export function appendContentTab(
   tabs: UserDetailTab[],
@@ -19,13 +33,15 @@ export function appendContentTab(
   activeRouteSuffix: string,
   uiLocale?: NumberFormatLocale,
 ) {
-  const publicCount = metrics?.count[key] ?? 0
-  const viewerCount = metrics?.viewer_count?.[key] ?? 0
+  const count = metrics?.count[key] ?? 0
 
   const routeSuffix = `/${key}`
-  if (publicCount === 0 && viewerCount === 0 && activeRouteSuffix !== routeSuffix) return
+  if (count === 0 && activeRouteSuffix !== routeSuffix) return
 
-  const countDisplay = `${formatNumber(publicCount, uiLocale)}${viewerCount > publicCount ? '+' : ''}`
+  const countDisplay = formatProfilePostCount(count, {
+    capped: metrics?.post_counts_capped === true,
+    uiLocale,
+  })
   tabs.push({
     value: key,
     label: t(labelKey, { count: countDisplay }),

@@ -9,7 +9,6 @@
       # Each capped retention page locks, deletes, and checkpoints in one transaction.
       # A per-page PostgreSQL effect is required; the loop is bounded by maxBatches.
       - { file: backend/services/data-retention/cleanup-auth-sessions.mts, callee: 'cleanupPage' }
-      - { file: backend/api/mcp-route-rate-limit-helpers.mts, callee: 'checkRouteRateLimit' }
       # A user-tag create refreshes the primary stats of the few relations it just created
       # (bounded by the tag-add limit); each keeps the singular refresh's discoverability,
       # notification, and queue-fallback side effects, which the batch refresh does not run.
@@ -140,10 +139,6 @@
           callee: 'runAndCapture',
         }
       - {
-          file: backend/scripts/explain-analyze/run-scenarios/notification-block-set.mts,
-          callee: 'getUserIdsBlockedOrMutedEitherWay',
-        }
-      - {
           file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
           callee: 'runAndCapture',
         }
@@ -175,7 +170,6 @@
           file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
           callee: 'capturePage',
         }
-      - { file: backend/scripts/explain-analyze/run-support.mts, callee: 'explainAnalyze' }
       - { file: backend/scripts/explain-analyze/seed-data/admin-emails.mts, callee: 'transaction' }
       - {
           file: backend/scripts/explain-analyze/seed-data/comments-and-recently-viewed.mts,
@@ -219,7 +213,6 @@
           file: backend/scripts/explain-analyze/seed-data/rewards-program-statuses.mts,
           callee: 'query',
         }
-      - { file: backend/scripts/explain-analyze/seed-data/semantic-posts.mts, callee: 'write' }
       - { file: backend/scripts/explain-analyze/seed-data/spending-categories.mts, callee: 'query' }
       - {
           file: backend/scripts/explain-analyze/seed-data/trending-communities.mts,
@@ -228,11 +221,6 @@
       - {
           file: backend/scripts/explain-analyze/seed-data/user-removed-platform-posts.mts,
           callee: 'query',
-        }
-      - { file: backend/scripts/explain-analyze/seed-data/vote-aggregation.mts, callee: 'query' }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/vote-aggregation.mts,
-          callee: 'updateEntityRelationElectionVoteStatsFromPrimary',
         }
       - { file: backend/scripts/explain-analyze/seed-data/votes-and-aliases.mts, callee: 'query' }
       - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }
@@ -282,10 +270,6 @@
           callee: 'write',
         }
       - {
-          file: backend/services/bedrock-embeddings-batch/result-processing.mts,
-          callee: 'applyUpdates',
-        }
-      - {
           file: backend/services/bluesky-follows/disconnect.mts,
           callee: 'deleteBlueskyFollowReceipt',
         }
@@ -298,10 +282,6 @@
       - {
           file: backend/services/posts/ban-evasion-embedding-enqueues.mts,
           callee: 'enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk',
-        }
-      - {
-          file: backend/services/communities/publications/pinned.mts,
-          callee: 'recordModeratorAction',
         }
       - {
           file: backend/services/communities/update-transaction.mts,
@@ -333,35 +313,7 @@
         }
       - {
           file: backend/services/copyright-notices/form-reviews-reversal.mts,
-          callee: 'createCopyrightReviewOutcomeNoticesInTransaction',
-        }
-      - {
-          file: backend/services/copyright-notices/form-reviews-reversal.mts,
           callee: 'transaction',
-        }
-      - {
-          file: backend/services/copyright-notices/holds-late-restrictions.mts,
-          callee: 'insertCopyrightActionIntent',
-        }
-      - {
-          file: backend/services/copyright-notices/holds-late-restrictions.mts,
-          callee: 'withholdImagePlacementForCopyright',
-        }
-      - {
-          file: backend/services/copyright-notices/read-models-staff-territorial-complaints.mts,
-          callee: 'getTerritorialInformedWindow',
-        }
-      - {
-          file: backend/services/copyright-notices/read-models-staff-territorial-complaints.mts,
-          callee: 'toComplaintPage',
-        }
-      - {
-          file: backend/services/copyright-notices/repeat-infringer-locks.mts,
-          callee: 'lockAuthorPublicationLifecycle',
-        }
-      - {
-          file: backend/services/copyright-notices/restriction-poster-notices.mts,
-          callee: 'createCopyrightStatementDeliveryInTransaction',
         }
       - {
           file: backend/services/copyright-notices/retention-erasure-preservation.mts,
@@ -372,18 +324,17 @@
           callee: 'createEligibleCopyrightRestoreIntent',
         }
       - {
-          file: backend/services/copyright-notices/submission-reviews.mts,
+          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
       - {
-          file: backend/services/copyright-notices/submission-reviews.mts,
-          callee: 'createCopyrightReviewOutcomeNoticesInTransaction',
-        }
-      - {
-          file: backend/services/copyright-notices/submission-reviews.mts,
+          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
           callee: 'recordClaimantMisuseEvent',
         }
-      - { file: backend/services/copyright-notices/submission-reviews.mts, callee: 'transaction' }
+      - {
+          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
+          callee: 'transaction',
+        }
       - {
           file: backend/services/copyright-notices/territorial-redress.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
@@ -392,10 +343,6 @@
       - {
           file: backend/services/crawls/dispatch-crawl-hostnames.mts,
           callee: 'dispatchHostnamePage',
-        }
-      - {
-          file: backend/services/crawls/dispatch-url-batches.mts,
-          callee: 'computeHostnameRateLimitMs',
         }
       - {
           file: backend/services/data-retention/cleanup-batches.mts,
@@ -409,10 +356,13 @@
           file: backend/services/data-retention/cleanup-retained-relation-identities.mts,
           callee: 'cleanupRelationFamily',
         }
-      - { file: backend/services/data-retention/cleanup.mts, callee: 'cleanupSoftDeletedUserBatch' }
       - {
-          file: backend/services/data-retention/cleanup.mts,
+          file: backend/services/data-retention/cleanup-orphaned-oauth-accounts.mts,
           callee: 'deleteOrphanedOAuthAccountBatch',
+        }
+      - {
+          file: backend/services/data-retention/cleanup-soft-deleted-users.mts,
+          callee: 'cleanupSoftDeletedUserBatch',
         }
       - {
           file: backend/services/elections-votes/agent-moderation/votes-upsert.mts,
@@ -440,10 +390,6 @@
           file: backend/services/images/cleanup-abandoned-uploads.mts,
           callee: 'cleanupStagedUploadSource',
         }
-      - {
-          file: backend/services/images/cleanup-abandoned-uploads.mts,
-          callee: 'markImageUploadSourceDeleted',
-        }
       - { file: backend/services/images/delete-rollback.mts, callee: 'compensatePostRevision' }
       - {
           file: backend/services/images/delete-rollback.mts,
@@ -460,28 +406,9 @@
           callee: 'updatePostModerationContentHash',
         }
       - {
-          file: backend/services/images/delete-while-storage-locked.mts,
-          callee: 'createImageDeletionPostRevision',
-        }
-      - {
-          file: backend/services/images/delete-while-storage-locked.mts,
-          callee: 'getPostModerationInput',
-        }
-      - { file: backend/services/images/delete-while-storage-locked.mts, callee: 'query' }
-      - {
-          file: backend/services/images/delete-while-storage-locked.mts,
-          callee: 'recordPostPublicationChange',
-        }
-      - {
-          file: backend/services/images/delete-while-storage-locked.mts,
-          callee: 'resetPostClearance',
-        }
-      - { file: backend/services/images/placements.mts, callee: 'query' }
-      - {
           file: backend/services/media-delivery-safety/delivery-denials.mts,
           callee: 'prepublishImagePlacementDenial',
         }
-      - { file: backend/services/media-delivery-safety/delivery-lock.mts, callee: 'query' }
       - {
           file: backend/services/media-delivery-safety/delivery-registry-recovery.mts,
           callee: 'processMediaDeliveryRegistryRecord',
@@ -550,10 +477,6 @@
           callee: 'publishStripeCatalogMapping',
         }
       - { file: backend/services/moderation-claims/release.mts, callee: 'recordModeratorAction' }
-      - {
-          file: backend/services/moderation-reports/judgement-context.mts,
-          callee: 'selectReportContextRows',
-        }
       - { file: backend/services/moderation-reports/resolve.mts, callee: 'maybeResolveCase' }
       - {
           file: backend/services/notifications/reconcile-batches.mts,
@@ -634,10 +557,6 @@
         }
       - { file: backend/services/post-publication/capture-posts.mts, callee: 'query' }
       - {
-          file: backend/services/post-publication/capture-posts.mts,
-          callee: 'recordPostPublicationChangeBatch',
-        }
-      - {
           file: backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts,
           callee: 'query',
         }
@@ -657,58 +576,16 @@
           file: backend/services/post-publication/capture-rss-feeds.mts,
           callee: 'lockPostPublicationRssFeedScopes',
         }
-      - {
-          file: backend/services/post-publication/capture-rss-feeds.mts,
-          callee: 'lockTopicRssFeedAttachmentLifecycle',
-        }
       - { file: backend/services/post-publication/capture-rss-feeds.mts, callee: 'query' }
-      - {
-          file: backend/services/post-publication/capture-rss-feeds.mts,
-          callee: 'retainCurrentRssFeedPublicationKeys',
-        }
-      - {
-          file: backend/services/post-publication/capture-rss-feeds.mts,
-          callee: 'retainPostPublicationImpacts',
-        }
-      - {
-          file: backend/services/post-publication/capture-rss-feeds.mts,
-          callee: 'upsertPostPublicationDirtyWork',
-        }
-      - {
-          file: backend/services/post-publication/capture-story-topics.mts,
-          callee: 'recordStoryTopicPublicationChangeBatch',
-        }
       - {
           file: backend/services/post-publication/capture-topic-alias.mts,
           callee: 'lockTopicAliasPublicationScopes',
         }
       - { file: backend/services/post-publication/capture-topic-alias.mts, callee: 'query' }
       - {
-          file: backend/services/post-publication/capture-topic-alias.mts,
-          callee: 'retainPostPublicationImpactKeys',
-        }
-      - {
-          file: backend/services/post-publication/capture-topic-alias.mts,
-          callee: 'upsertPostPublicationDirtyWork',
-        }
-      - {
-          file: backend/services/post-publication/capture-topic-merge.mts,
-          callee: 'lockPostPublicationRssFeedScopes',
-        }
-      - { file: backend/services/post-publication/capture-topic-merge.mts, callee: 'query' }
-      - {
-          file: backend/services/post-publication/capture-topic-merge.mts,
-          callee: 'recordRssFeedDiscoverabilityChanges',
-        }
-      - {
-          file: backend/services/post-publication/capture-topic-merge.mts,
-          callee: 'recordTopicAliasPublicationWork',
-        }
-      - {
           file: backend/services/post-publication/identity-source-paging.mts,
           callee: 'listSourceRows',
         }
-      - { file: backend/services/post-publication/lock.mts, callee: 'client.query' }
       - {
           file: backend/services/post-publication/orphan-identities.mts,
           callee: 'getOrCreateSnapshot',
@@ -745,10 +622,6 @@
           callee: 'assertCommunityNoLinksAllowed',
         }
       - {
-          file: backend/services/referral-link-unfurl/unfurl.mts,
-          callee: 'createChildReferralLink',
-        }
-      - {
           file: backend/services/rss-feed-items/categories-chunks.mts,
           callee: 'insertMissingCategoriesChunk',
         }
@@ -783,12 +656,6 @@
         }
       - { file: backend/services/rss-feed-items/upsert.mts, callee: 'upsertRssFeedItemContent' }
       - { file: backend/services/rss-feeds/categories.mts, callee: 'upsertRssFeedCategoriesChunk' }
-      - { file: backend/services/rss-feeds/categories.mts, callee: 'write' }
-      - { file: backend/services/stories/assign.mts, callee: 'recordPostPublicationChange' }
-      - {
-          file: backend/services/stories/publication-change.mts,
-          callee: 'recordPostPublicationChange',
-        }
       - {
           file: backend/services/stripe/event-charge-handlers.mts,
           callee: 'leaseDueRefundReconciliation',
@@ -797,33 +664,8 @@
           file: backend/services/stripe/event-charge-handlers.mts,
           callee: 'recordMembershipRefundEvent',
         }
-      - {
-          file: backend/services/topic-recommendations/approve-topic-recommendation.mts,
-          callee: 'createTopicRecommendationLinkRelation',
-        }
-      - {
-          file: backend/services/topic-recommendations/approve-topic-recommendation.mts,
-          callee: 'createTopicRecommendationUrlRelation',
-        }
-      - {
-          file: backend/services/topic-recommendations/find-topic-recommendation-duplicates.mts,
-          callee: 'dependencies.getTopicByAny',
-        }
-      - {
-          file: backend/services/topics/publication-change.mts,
-          callee: 'recordPostPublicationChange',
-        }
-      - {
-          file: backend/services/topics/publication-change.mts,
-          callee: 'retainPostPublicationTopicAliasIdentity',
-        }
-      - {
-          file: backend/services/topics/publication-change.mts,
-          callee: 'retainTopicAliasPublicationPostImpacts',
-        }
       - { file: backend/services/topics/update.mts, callee: 'syncImageSurfacePlacement' }
       - { file: backend/services/urls/media-types.mts, callee: 'upsertMediaTypes' }
-      - { file: backend/services/urls/upsert.mts, callee: 'getOrCreateCrawlerForHostname' }
       - {
           file: backend/services/user-import-export/auto-follow-on-approval.mts,
           callee: 'followRequest',
@@ -840,14 +682,11 @@
       - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query' }
       - { file: backend/services/users/delete-phases.mts, callee: 'deleteOwnedRows' }
       - { file: backend/services/users/delete-phases.mts, callee: 'deleteUserSubjectRelationRows' }
-      - { file: backend/services/users/delete.mts, callee: 'addUserDeletionExternalWork' }
-      - { file: backend/services/users/delete.mts, callee: 'completeUserDeletionExternalWork' }
       - { file: backend/services/users/record-deleted-relation-impacts.mts, callee: 'query' }
       - {
           file: backend/services/users/record-deleted-relation-impacts.mts,
           callee: 'recordRelationTableImpacts',
         }
-      - { file: backend/services/web-risk/check.mts, callee: 'assertUrlAllowedByWebRisk' }
       - {
           file: backend/workers/ai-agents/processors/process-reconcile-classifier-runs.mts,
           callee: 'giveUpSweepRun',
@@ -861,24 +700,6 @@
           callee: 'recoverUrlEffect',
         }
       - {
-          file: backend/workers/content-analysis/processors.mts,
-          callee: 'detectCommunityLanguageBatch',
-        }
-      - {
-          file: backend/workers/content-analysis/processors.mts,
-          callee: 'detectCrawlLanguageBatch',
-        }
-      - { file: backend/workers/content-analysis/processors.mts, callee: 'detectPostLanguageBatch' }
-      - {
-          file: backend/workers/content-analysis/processors.mts,
-          callee: 'detectRssFeedItemLanguageBatch',
-        }
-      - {
-          file: backend/workers/content-analysis/processors.mts,
-          callee: 'detectTopicLanguageBatch',
-        }
-      - { file: backend/workers/content-analysis/processors.mts, callee: 'detectUserLanguageBatch' }
-      - {
           file: backend/workers/memberships/processors/renewal-notification-check.mts,
           callee: 'getUsersApproachingRenewalWithPriceIncrease',
         }
@@ -890,7 +711,6 @@
           file: backend/workers/openai-moderation/processors/openai-moderation-omni-single.mts,
           callee: 'checkPostClearance',
         }
-      - { file: integration-tests/web/helpers/fetch-retry.mts, callee: 'attempt' }
       - { file: playwright/tests/tags/tag-voting-helpers.mts, callee: 'deleteTestPost' }
       - {
           file: playwright/tests/tags/tag-voting-helpers.mts,
@@ -1549,7 +1369,6 @@
   scope: repository
   options:
     allowed:
-      - pnpm-lock.yaml
       - integration-tests/*/pnpm-lock.yaml
     bannedBasenames:
       - package-lock.json
@@ -2049,7 +1868,6 @@
       - backend/dependency-cruiser-rules/workspace-package-relative-import-boundaries.cjs
       - lambdas/.dependency-cruiser.cjs
       - web/.dependency-cruiser.cjs
-      - web/next.config.ts
       - web/postcss.config.mjs
       - web/public/service-worker.js
       - web/public/service-worker-push.js
@@ -3239,7 +3057,6 @@
       - '^bedrock_nova_multimodal_v1_'
       - '^lingua_rs_'
       - '^llm_moderation_'
-      - '^openai_omni_moderation_'
       - '^(search_vector$|votes_(count|score)_)'
     allow:
       - object: table:migrations
@@ -3556,10 +3373,10 @@
       # Healthy max was 381 seconds (the test step 337) across 1,552 GitHub-hosted successes in #2260.
       - job: '.github/workflows/tests-web.yml#web-tests'
         maxMinutes: 30
-      # Steps sum to 49m; cap 20m is below it. A healthy run finished in about 8m; run
-      # 39276118528 was cancelled at the 10m job ceiling while the plan step is allowed 10m.
+      # Ordinary plans previously finished in about 8m. The full partitioned comment corpus
+      # adds about 10m of local loading after those captures; the 30m cap includes setup and reports.
       - job: '.github/workflows/explain-analyze.yml#explain-analyze'
-        maxMinutes: 20
+        maxMinutes: 30
       # Dispatch-only evals; steps sum to 27m, cap 20m is below it. The two eval steps are
       # allowed 4m each after the shared backend setup.
       - job: '.github/workflows/evals-backend.yml#backend-evals'
@@ -3633,6 +3450,8 @@
   rule: workflow-topology-policy
   scope: repository
   options:
+    forbiddenActivityTypes:
+      - types: [ready_for_review, converted_to_draft]
     jobInventory:
       .github/workflows/actionlint.yml: [actionlint]
       .github/workflows/backend.yml:
@@ -3740,7 +3559,8 @@
           prepare-postgres,
         ]
       .github/workflows/tests-backend-modules.yml: [backend-modules]
-      .github/workflows/tests-backend-unit.yml: [backend-tests, prep, prepare-postgres]
+      .github/workflows/tests-backend-unit.yml:
+        [backend-tests, check-query-profile-baseline, prep, prepare-postgres]
       .github/workflows/tests-cloudflare-worker.yml: [cloudflare-worker-tests]
       .github/workflows/tests-lambdas.yml: [lambdas-tests]
       .github/workflows/tests-playwright-credentialed.yml: [playwright-credentialed-tests]
@@ -4028,6 +3848,10 @@
       .github/workflows/web.yml:
         { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
     forbidConcurrencyGroupCollisions: true
+
+- name: Local GitHub Actions require a preceding checkout
+  rule: github-actions-local-action-checkout
+  scope: repository
 
 - name: btree indexes are not a strict prefix of another live index
   rule: postgres-redundant-index
@@ -4446,6 +4270,13 @@
       - pattern: _(history|change_logs|audit_logs)$
         message: 'use the R4 shapes: _revisions, _changes, _work_items or _cursors'
     allow:
+      - object: table:membership_stripe_purchase_collision_work_items
+        reason: >-
+          Immutable Stripe collision facts must commit before entitlement projection retires the
+          losing source. GlideMQ owns discovery retries and execution locks; existing financial
+          operations fence provider effects. Unique invoice cases make duplicate discovery safe.
+          Completion deletes facts only after reconciliation succeeds. The dedicated rule below
+          enforces this payment outbox shape without duplicating queue lease state.
       - object: table:post_moderation_retention_post_work_items
         reason: >-
           This per-post idempotent database-only recheck is serialized by the post row and its
@@ -4471,6 +4302,41 @@
       - object: table:media_delivery_registry_changes
         reason: This change ledger permits only a guarded, aged, superseded transition delete;
           its exact shape and trigger are checked by the dedicated rule below.
+- name: Stripe collision facts use immutable payment outbox shape
+  rule: postgres-table-shape
+  scope: repository
+  options:
+    schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+    shapes:
+      - name: stripe-collision-payment-outbox
+        tablePattern: ^membership_stripe_purchase_collision_work_items$
+        requiredColumns:
+          - name: id
+            type: uuid
+            nullable: false
+          - name: membership_source_id
+            type: uuid
+            nullable: false
+          - name: membership_provider_lineage_id
+            type: uuid
+            nullable: false
+          - name: membership_lineage_binding_id
+            type: uuid
+            nullable: false
+          - name: winning_source_kind
+            type: membership_source_kinds
+            nullable: false
+          - name: winning_plan
+            type: membership_plan_slugs
+            nullable: false
+          - name: collision_at
+            type: timestamp with time zone
+            nullable: false
+        forbiddenColumns: [updated_at, lease_token, lease_expires_at, attempt_count, available_at]
+        requiredTriggers:
+          - function: fn_reject_mutation
+            timing: before
+            events: [update]
 - name: stripe event ledger uses its scoped fiscal retention guard
   rule: postgres-table-shape
   scope: repository
@@ -4735,8 +4601,9 @@
 - name: production exports are not kept only for tests
   rule: production-exports-only-used-by-tests
   scope: repository
-  severity: advisory
+  severity: error
   options:
+    ignoreExportsUsedInFile: true
     productionRoots:
       [backend, web, lambdas, cloudflare-worker, ts-shared, email-templates, localization]
     testGlobs:

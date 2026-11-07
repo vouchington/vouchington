@@ -14,7 +14,7 @@ function DialogOverlayBase({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> & {
-  ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Overlay>>
+  ref?: React.Ref<React.ComponentRef<typeof DialogPrimitive.Overlay>>
 }) {
   const overlayProps = {
     ref,
@@ -36,7 +36,7 @@ function DialogContentBase({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof DialogPrimitive.Content>>
   hideOverlay?: boolean
 }) {
   return React.createElement(
@@ -78,7 +78,7 @@ function DialogTitleBase({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> & {
-  ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Title>>
+  ref?: React.Ref<React.ComponentRef<typeof DialogPrimitive.Title>>
 }) {
   return React.createElement(DialogPrimitive.Title, {
     ref,
@@ -93,7 +93,7 @@ function DialogDescriptionBase({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description> & {
-  ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Description>>
+  ref?: React.Ref<React.ComponentRef<typeof DialogPrimitive.Description>>
 }) {
   return React.createElement(DialogPrimitive.Description, {
     ref,

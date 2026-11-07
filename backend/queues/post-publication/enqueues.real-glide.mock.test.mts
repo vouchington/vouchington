@@ -116,7 +116,8 @@ describe('direct publication jobs through real GlideMQ', () => {
       })
       ids = [first, second].map(data => {
         const job = jobs.find(
-          job => (job.data as PostPublicationEffectsJobData).changeId === data.changeId,
+          candidateJob =>
+            (candidateJob.data as PostPublicationEffectsJobData).changeId === data.changeId,
         )
         if (!job) throw new Error('Expected bulk publication admission')
         return job.id

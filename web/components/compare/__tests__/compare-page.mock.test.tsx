@@ -5,7 +5,7 @@ import { CompareDataInsights } from '../compare-data-insights'
 import { ComparePage } from '../compare-page'
 import type { Topic, TopicMetrics } from '@/types/topics'
 import type { TopicDataPointInsights } from '@/types/topic-data-point-insights'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 vi.mock(
   import('next/link'),

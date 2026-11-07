@@ -1,9 +1,11 @@
 import { relationLimitsRegistryEntry } from './registry-relation-limits-entry.mts'
 import { sessionLimitsRegistryEntry } from './registry-session-limits-entry.mts'
 import { landingPageLimitsRegistryEntry } from './registry-landing-page-limits.mts'
+import { hackerNewsRegistryEntries } from './registry-hacker-news-entry.mts'
 import {
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
+  membershipPurchaseCollisionQueueRegistryEntry,
 } from './registry-paged-dispatch-entry.mts'
 import { REGISTRY_ORDER } from '@voucha/config/dynamic-config-registry-order'
 import { paginationRegistryEntries } from './registry-pagination-entries.mts'
@@ -33,8 +35,10 @@ const unorderedRegistryEntries = [
   sessionLimitsRegistryEntry,
   relationLimitsRegistryEntry,
   landingPageLimitsRegistryEntry,
+  ...hackerNewsRegistryEntries,
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
+  membershipPurchaseCollisionQueueRegistryEntry,
   ...paginationRegistryEntries,
   ...backgroundWorkEntries1,
   ...backgroundWorkEntries2,

@@ -15,11 +15,11 @@ export function mergeEndpointRegistries(
 ): Readonly<Record<string, ManifestEndpoint>> {
   const merged: Record<string, ManifestEndpoint> = Object.create(null)
   for (const registry of registries) {
-    for (const [id, endpoint] of Object.entries(registry)) {
+    for (const [id, registeredEndpoint] of Object.entries(registry)) {
       if (Object.hasOwn(merged, id)) {
         throw new Error(`Duplicate manifest endpoint fixture: ${id}`)
       }
-      merged[id] = endpoint
+      merged[id] = registeredEndpoint
     }
   }
   return Object.freeze(merged)

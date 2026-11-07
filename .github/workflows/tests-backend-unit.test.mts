@@ -1,3 +1,4 @@
+import { workflowStepScript } from '../../ci/workflow-step-script.mts'
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -19,9 +20,10 @@ const stepsWorkflow = load(workflow) as {
     }
   >
 }
-const runBackendTestsScript = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
-  step => step.name === 'Run backend tests',
-)?.run
+const runBackendTestsScript = workflowStepScript(
+  stepsWorkflow.jobs?.['backend-tests']?.steps?.find(step => step.name === 'Run backend tests')
+    ?.run,
+)
 const vitestConfig = [
   'vitest.config.mts',
   'test-helpers/vitest-config/backend-core-projects.mts',
@@ -85,7 +87,7 @@ describe('backend uncredentialed Docker test workflow', () => {
   it('combines service-backed backend Vitest projects in one sharded command', () => {
     const backendCommand =
       'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD"'
-    expect(workflow).toContain(backendCommand)
+    expect(runBackendTestsScript).toContain(backendCommand)
     expect(
       runBackendTestsScript?.match(/--project backend-migration-initializers\b/g),
     ).toHaveLength(1)
@@ -105,6 +107,15 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('analytics-data-store-test-report.junit.xml')
     expect(workflow).not.toContain('analytics-service-test-report.junit.xml')
     expect(workflow).not.toContain('analytics-db-service-test-report.junit.xml')
+  })
+
+  it('preserves Vitest failures through the tee pipeline before collecting shard hits', () => {
+    const script = runBackendTestsScript ?? ''
+    const vitestPipeline = '2>&1 | tee backend-unit-output.log'
+
+    expect(script.startsWith('#!/usr/bin/env bash\nset -o pipefail\n')).toBe(true)
+    expect(script).toContain(vitestPipeline)
+    expect(script.indexOf(' --collect \\')).toBeGreaterThan(script.indexOf(vitestPipeline))
   })
 
   it('builds email templates without owning backend smoke', () => {
@@ -175,13 +186,15 @@ describe('backend uncredentialed Docker test workflow', () => {
     const preserveStep = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(step =>
       step.name?.startsWith('Preserve full backend-shard-'),
     )
-    expect(preserveStep?.run).toContain('if [ ! -s coverage/lcov.info ]; then')
-    expect(preserveStep?.run).toContain(
+    expect(workflowStepScript(preserveStep?.run)).toContain('if [ ! -s coverage/lcov.info ]; then')
+    expect(workflowStepScript(preserveStep?.run)).toContain(
       'cp coverage/lcov.info coverage-merge-input/parent/lcov.info',
     )
-    expect(preserveStep?.run).toContain('./ci/node_modules/.bin/coverage-check merge')
-    expect(preserveStep?.run).toContain('--output coverage-full/lcov.info')
-    expect(backendJob.indexOf('coverage-check merge')).toBeLessThan(
+    expect(workflowStepScript(preserveStep?.run)).toContain(
+      './ci/node_modules/.bin/coverage-check merge',
+    )
+    expect(workflowStepScript(preserveStep?.run)).toContain('--output coverage-full/lcov.info')
+    expect(backendJob.indexOf('name: Preserve full backend-shard-')).toBeLessThan(
       backendJob.indexOf('Upload full backend-shard-'),
     )
   })

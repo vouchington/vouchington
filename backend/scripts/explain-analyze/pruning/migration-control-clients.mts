@@ -123,7 +123,11 @@ export async function assertMigrationServerClientsClosed(input: {
       input.controlDeadline - migrationCommandReserveMs - migrationCommandLaunchHeadroomMs,
     ),
     sleep:
-      input.sleep ?? (milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))),
+      input.sleep ??
+      (milliseconds =>
+        new Promise(resolve => {
+          setTimeout(resolve, milliseconds)
+        })),
     read: async () => {
       const activity = await input.run('psql', [
         '-X',

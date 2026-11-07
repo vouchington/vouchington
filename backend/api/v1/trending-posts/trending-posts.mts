@@ -101,8 +101,8 @@ app.route('/api/v1/trending-posts').get(async ctx => {
     ? await getTrendingPosts(searchOptions)
     : await getTrendingPostsCached(searchOptions)
   if (!currentUser) {
-    const publicPostIds = await getPublicPostIds(result.results.map(result => result.id))
-    result.results = result.results.filter(result => publicPostIds.has(result.id))
+    const publicPostIds = await getPublicPostIds(result.results.map(postResult => postResult.id))
+    result.results = result.results.filter(postResult => publicPostIds.has(postResult.id))
   }
   const postIds = result.results.map((r: { id: string }) => r.id)
 

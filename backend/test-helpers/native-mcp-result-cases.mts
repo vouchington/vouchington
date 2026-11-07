@@ -1,3 +1,4 @@
+import { hackerNewsMcpResultCases } from './native-mcp-hacker-news-result-cases.mts'
 import {
   optionMcpResultCases,
   type McpResultFixtureCase,
@@ -37,4 +38,8 @@ export const financialMcpResultCases: readonly McpResultFixtureCase[] = [
   },
 ]
 
-export const nativeMcpResultCases = [...financialMcpResultCases, ...optionMcpResultCases]
+export const nativeMcpResultCases = [
+  ...financialMcpResultCases,
+  ...optionMcpResultCases,
+  ...hackerNewsMcpResultCases,
+]

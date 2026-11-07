@@ -80,7 +80,7 @@ async function publishCommittedDeliveryRecord(
     throw new Error(
       `Missing staged image placement delivery record ${mediaDeliveryRegistryRecordId}`,
     )
-  // ast-grep-ignore: no-three-sequential-awaits -- placement authority precedes notice locks and registry reread
+  // ast-grep-ignore: no-three-sequential-awaits -- Placement ownership must be locked before legal-notice authority locks; the registry reread must use a fresh snapshot after those blocking fences.
   await lockImageDeliveryMutation(query, {
     placementIds: [record.placement_id],
     placementOnly: true,

@@ -157,11 +157,7 @@ jobs:
         timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
-        run: |
-          if [ -f coverage/lcov.info ]; then
-            mkdir -p coverage-full
-            cp coverage/lcov.info coverage-full/lcov.info
-          fi
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-web-integration-preserve-full-web-integration-shard-lcov.sh"
       - name: Upload full web-integration-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)
         id: full-lcov-1
         if: ${{ inputs.publish_coverage }}

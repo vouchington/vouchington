@@ -25,7 +25,11 @@ export async function runImageLambdaSmoke(firstError?: string) {
     socket.end(`${request === 'probe' && state === 'ready' && firstError ? '200' : '000'}\n`)
   }
   const server = createServer(socket => {
-    closures.push(new Promise<void>(resolveClosed => socket.once('close', resolveClosed)))
+    closures.push(
+      new Promise<void>(resolveClosed => {
+        socket.once('close', resolveClosed)
+      }),
+    )
     socket.on('error', () => {})
     let input = ''
     socket.on('data', chunk => {
@@ -64,9 +68,9 @@ export async function runImageLambdaSmoke(firstError?: string) {
       for (const socket of waiting) socket.end('000\n')
       await completion
       if (server.listening) {
-        await new Promise<void>((resolveClosed, reject) =>
-          server.close(err => (err ? reject(err) : resolveClosed())),
-        )
+        await new Promise<void>((resolveClosed, reject) => {
+          server.close(err => (err ? reject(err) : resolveClosed()))
+        })
       }
       await Promise.all(closures)
     } finally {

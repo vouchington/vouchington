@@ -10,7 +10,7 @@ import {
   getStripeDisputeSettlementForPayment,
   getWonStripeDisputeInvoice,
 } from '@modules/stripe/disputes'
-import { listAllStripeSubscriptionInvoices } from '@modules/stripe/invoices'
+import { getStripeInvoice, listAllStripeSubscriptionInvoices } from '@modules/stripe/invoices'
 import { createStripeRefund, listStripeRefundsForPaymentPage } from '@modules/stripe/refunds'
 import { createMembership } from '@services/memberships'
 import {
@@ -28,12 +28,14 @@ const {
   mockGetWonStripeDisputeInvoice,
   mockListStripeRefundsForPaymentPage,
   mockListAllStripeSubscriptionInvoices,
+  mockGetStripeInvoice,
 } = vi.hoisted(() => ({
   mockCreateStripeRefund: vi.fn<typeof createStripeRefund>(),
   mockGetStripeDisputeSettlementForPayment: vi.fn<typeof getStripeDisputeSettlementForPayment>(),
   mockGetWonStripeDisputeInvoice: vi.fn<typeof getWonStripeDisputeInvoice>(),
   mockListStripeRefundsForPaymentPage: vi.fn<typeof listStripeRefundsForPaymentPage>(),
   mockListAllStripeSubscriptionInvoices: vi.fn<typeof listAllStripeSubscriptionInvoices>(),
+  mockGetStripeInvoice: vi.fn<typeof getStripeInvoice>(),
 }))
 
 vi.mock<typeof import('@modules/stripe/disputes')>(
@@ -48,6 +50,7 @@ vi.mock<typeof import('@modules/stripe/invoices')>(
   import('@modules/stripe/invoices'),
   async importActual => ({
     ...(await importActual()),
+    getStripeInvoice: mockGetStripeInvoice,
     listAllStripeSubscriptionInvoices: mockListAllStripeSubscriptionInvoices,
   }),
 )
@@ -67,6 +70,7 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     mockGetWonStripeDisputeInvoice.mockReset()
     mockListStripeRefundsForPaymentPage.mockReset()
     mockListAllStripeSubscriptionInvoices.mockReset()
+    mockGetStripeInvoice.mockReset()
   })
 
   it('reconciles a matching durable case exactly once and ignores another invoice', async () => {
@@ -147,9 +151,14 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
       status: 'processed',
     })
 
+    const unrelatedInvoiceId = `in_unrelated_${randomUUID()}`
+    mockGetStripeInvoice.mockResolvedValue({
+      id: unrelatedInvoiceId,
+      parent: null,
+    } as never)
     const unrelatedEvent = createStripeEvent('invoice_payment.paid', {
       id: `ip_unrelated_${randomUUID()}`,
-      invoice: `in_unrelated_${randomUUID()}`,
+      invoice: unrelatedInvoiceId,
       object: 'invoice_payment',
     })
     unrelatedEvent.livemode = true
@@ -157,6 +166,8 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     await processStripeEvent(toJobData(unrelated))
 
     expect(mockCreateStripeRefund).toHaveBeenCalledOnce()
+    expect(mockGetStripeInvoice).toHaveBeenCalledOnce()
+    expect(mockGetStripeInvoice).toHaveBeenCalledWith(unrelatedInvoiceId)
     await expect(getTestStripeEventByStripeEventId(unrelatedEvent.id)).resolves.toMatchObject({
       status: 'processed',
     })

@@ -50,7 +50,7 @@ describe('trending-posts', () => {
         const request = createRequest()
         await request.authenticateAs(admin)
         const response = await request
-          .get(`/api/v1/trending-posts?limit=100&min_score=1&topic_id=${topicId}`)
+          .get(`/api/v1/trending-posts?limit=100&min_score=0.1&topic_id=${topicId}`)
           .expect(200)
 
         // Streaming pattern: posts and posts_metrics are objects, not arrays
@@ -195,12 +195,12 @@ describe('trending-posts', () => {
         await insertScoredPostTopicCategoryRelation(belowThresholdId, topicId, admin.id)
 
         const request = createRequest()
-        const response = await request.get('/api/v1/trending-posts?min_score=10').expect(200)
+        const response = await request.get('/api/v1/trending-posts?min_score=0.5').expect(200)
 
         expect(response.body.results).toBeDefined()
         const owned = await request
           .get('/api/v1/trending-posts')
-          .query({ min_score: 10, topic_id: topicId })
+          .query({ min_score: 0.5, topic_id: topicId })
           .expect(200)
         expect(owned.body.results.map((row: { id: string }) => row.id)).toEqual([postId])
       })

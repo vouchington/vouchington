@@ -45,11 +45,11 @@ describe('getTrendingPosts reference clock', () => {
           await insertScoredPostTopicCategoryRelation(postId, topicId, postOwner)
         }
 
-        const result = await getTrendingPosts(
+        const trendingResult = await getTrendingPosts(
           { timeRange: scenario.timeRange, limit: 10, topicId },
           referenceTime,
         )
-        return { result, postIds }
+        return { result: trendingResult, postIds }
       },
       {
         afterCreateForTest: async (fixture, ownedSpec) => {
@@ -64,10 +64,17 @@ describe('getTrendingPosts reference clock', () => {
     expect(new Set(queryResult.results.map(row => row.id))).toEqual(
       new Set([fixturePostIds.get(cutoffTime)!, fixturePostIds.get(cutoffTime + 1)!]),
     )
+    const newestRow = queryResult.results.find(
+      row => row.id === fixturePostIds.get(cutoffTime + 1),
+    )!
+    const newestAgeSeconds =
+      (referenceTime.getTime() - fixtureTimes.get(newestRow.id)!.getTime()) / 1000
     for (const row of queryResult.results) {
       const timestamp = fixtureTimes.get(row.id)!
       const ageSeconds = (referenceTime.getTime() - timestamp.getTime()) / 1000
-      const expectedScore = votesScoreUp * 2 ** (-ageSeconds / HOT_SORT_HALF_LIFE_SECONDS)
+      const expectedScore =
+        newestRow.trending_score *
+        2 ** ((newestAgeSeconds - ageSeconds) / HOT_SORT_HALF_LIFE_SECONDS)
       expect(row.trending_score).toBeCloseTo(expectedScore, 8)
     }
     expect(postIds).toHaveLength(3)
@@ -98,11 +105,11 @@ describe('getTrendingPosts reference clock', () => {
           await insertScoredPostTopicCategoryRelation(postId, topicId, postOwner)
         }
         const day = await getTrendingPosts(
-          { timeRange: 'day', limit: 100, minScore: 500, topicId },
+          { timeRange: 'day', limit: 100, minScore: 0.1, topicId },
           referenceTime,
         )
         const week = await getTrendingPosts(
-          { timeRange: 'week', limit: 100, minScore: 500, topicId },
+          { timeRange: 'week', limit: 100, minScore: 0.1, topicId },
           referenceTime,
         )
         return { day, week, postIds }

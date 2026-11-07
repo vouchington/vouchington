@@ -2,6 +2,7 @@ import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
+  post_related_url: 1000,
   follow_user: 10000,
   follow_topic: 10000,
   follow_rss_feed: 10000,
@@ -14,7 +15,7 @@ const defaultFields = {
 }
 type LimitField = keyof typeof defaultFields
 export const relationLimitsMaxValues = Object.fromEntries(
-  Object.keys(defaultFields).map(field => [field, 50000]),
+  Object.keys(defaultFields).map(field => [field, field === 'post_related_url' ? 10000 : 50000]),
 ) as Record<LimitField, number>
 export const relationLimitsConfig = new DynamicConfig({
   key: 'relation-limits-config',
@@ -24,6 +25,7 @@ export const relationLimitsConfig = new DynamicConfig({
   defaultFields,
 })
 const tableFields: Record<string, LimitField> = {
+  relation__post__related__url: 'post_related_url',
   relation__user__follow__user: 'follow_user',
   relation__user__follow__topic: 'follow_topic',
   relation__user__follow__rss_feed: 'follow_rss_feed',

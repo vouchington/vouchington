@@ -42,7 +42,9 @@ describe('glidemq dashboard SSE cycle mount', () => {
       await expect(body.promise).resolves.not.toMatch(/event:\s*error/)
     } finally {
       vi.useRealTimers()
-      await new Promise<void>(resolve => server.close(() => resolve()))
+      await new Promise<void>(resolve => {
+        server.close(() => resolve())
+      })
     }
   })
 })

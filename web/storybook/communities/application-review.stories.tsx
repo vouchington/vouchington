@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { fn } from 'storybook/test'
 import { ApplicationReview } from '@/components/communities/application-review'
-import type {
-  CommunityApplicationSummary,
-  CommunityApplicationsResponseBody,
-} from '@/types/api-responses'
+import { ApplicationReviewCard } from '@/components/communities/application-review-card'
+import type { CommunityApplicationSummary } from '@/types/api-responses'
+import type { CommunityApplicationsResponseBody } from '@/types/api-responses/community-applications'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { page_info } from '@/storybook/entities/fixtures/shared'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
@@ -51,4 +51,28 @@ export const Empty: Story = {
     communitySlug: communities[0]!.slug,
     data: { results: [], page_info, community_application_summaries: {}, users: {} },
   },
+}
+
+export const ReviewCard: Story = {
+  args: {
+    communitySlug: communities[0]!.slug,
+    data: pending,
+  },
+  render: () => (
+    <StoryFrame width='max-w-xl'>
+      <ApplicationReviewCard
+        application={application}
+        isLoading={false}
+        isRejecting={false}
+        onApprove={fn()}
+        onCancelReject={fn()}
+        onConfirmReject={fn()}
+        onRejectionReasonChange={fn()}
+        onShowDetails={fn()}
+        onStartReject={fn()}
+        rejectionReason=''
+        user={publicUsers[0]}
+      />
+    </StoryFrame>
+  ),
 }

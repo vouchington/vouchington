@@ -19,6 +19,7 @@ import { PostCardBadges } from './post-card/post-card-badges'
 import { PostCardContent } from './post-card/post-card-content'
 import { PostCardImages } from './post-card/post-card-images'
 import { PostCardFooter } from './post-card/post-card-footer'
+import { HackerNewsReferenceLabel } from '@/components/hacker-news/hacker-news-reference-label'
 import { PostCardTitle } from './post-card/post-card-title'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
@@ -160,6 +161,7 @@ export function PostCard({
               view='card'
             />
           ) : null}
+          <HackerNewsReferenceLabel entityId={post.id} />
           <PostCardFooter
             post={post}
             routePath={routePath}

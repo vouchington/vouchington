@@ -142,8 +142,10 @@ describe('detect-changes path filters', () => {
           return [
             path,
             ...Object.values(workflow.jobs ?? {}).flatMap(job => {
-              const path = job.uses?.replace(/^\.\//u, '')
-              return path?.startsWith('.github/workflows/ci-') ? [path] : []
+              const reusableWorkflowPath = job.uses?.replace(/^\.\//u, '')
+              return reusableWorkflowPath?.startsWith('.github/workflows/ci-')
+                ? [reusableWorkflowPath]
+                : []
             }),
           ]
         }),

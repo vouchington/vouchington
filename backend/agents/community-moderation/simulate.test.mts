@@ -102,9 +102,13 @@ describe('simulateCommunityPromptOnPosts', () => {
       let inFlight = 0
       let peak = 0
       let saturate = () => {}
-      const saturated = new Promise<void>(resolve => (saturate = resolve))
+      const saturated = new Promise<void>(resolve => {
+        saturate = resolve
+      })
       let release = () => {}
-      const released = new Promise<void>(resolve => (release = resolve))
+      const released = new Promise<void>(resolve => {
+        release = resolve
+      })
       const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) => {
         peak = Math.max(peak, ++inFlight)
         if (inFlight === 8) saturate()
@@ -189,7 +193,9 @@ describe('simulateCommunityPromptOnPosts', () => {
       const signals: AbortSignal[] = []
       const hangs = stalls(signals)
       let stalled = () => {}
-      const oneStalled = new Promise<void>(resolve => (stalled = resolve))
+      const oneStalled = new Promise<void>(resolve => {
+        stalled = resolve
+      })
       const fetch = vi.fn<StructuredDecisionFetch>(async (url, init) => {
         if (fetch.mock.calls.length === 1) {
           // The calls reach the provider in no fixed order, and a call that has not reached it when

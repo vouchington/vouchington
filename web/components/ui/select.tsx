@@ -19,7 +19,7 @@ function SelectTrigger({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & {
-  ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Trigger>>
+  ref?: React.Ref<React.ComponentRef<typeof SelectPrimitive.Trigger>>
 }) {
   return (
     <SelectPrimitive.Trigger
@@ -47,7 +47,7 @@ function SelectScrollUpButton({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton> & {
-  ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollUpButton>>
+  ref?: React.Ref<React.ComponentRef<typeof SelectPrimitive.ScrollUpButton>>
 }) {
   return (
     <SelectPrimitive.ScrollUpButton
@@ -66,7 +66,7 @@ function SelectScrollDownButton({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton> & {
-  ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollDownButton>>
+  ref?: React.Ref<React.ComponentRef<typeof SelectPrimitive.ScrollDownButton>>
 }) {
   return (
     <SelectPrimitive.ScrollDownButton
@@ -87,7 +87,7 @@ function SelectContent({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof SelectPrimitive.Content>>
 }) {
   return (
     <SelectPrimitive.Portal>
@@ -125,7 +125,7 @@ function SelectItem({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & {
-  ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Item>>
+  ref?: React.Ref<React.ComponentRef<typeof SelectPrimitive.Item>>
 }) {
   return (
     <SelectPrimitive.Item

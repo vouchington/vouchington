@@ -29,7 +29,7 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
 
   searchQuery.append(sql`
     candidate_hostnames AS MATERIALIZED (
-    SELECT h.id, h.hostname, h.votes_score_net
+    SELECT h.id, h.hostname, h.votes_score_sort
   `)
   if (typeof textQuery === 'string' && textQuery) {
     searchQuery.append(sql`FROM text_match_ids text_match
@@ -43,12 +43,12 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
   appendWhereClause(searchQuery, filters)
   searchQuery.append(sql` ORDER BY `)
   searchQuery.append(
-    sort === 'trust' ? sql`h.votes_score_net DESC, h.id DESC` : sql`h.hostname ASC, h.id ASC`,
+    sort === 'trust' ? sql`h.votes_score_sort DESC, h.id DESC` : sql`h.hostname ASC, h.id ASC`,
   )
   searchQuery.append(sql` LIMIT ${effectiveLimit + 1}`)
   searchQuery.append(sql`
     )
-    SELECT hydrated.*
+    SELECT hydrated.*, candidate.votes_score_sort AS cursor_score
     FROM candidate_hostnames candidate
     JOIN LATERAL (
       SELECT * FROM view_url_hostnames WHERE id = candidate.id LIMIT 1
@@ -56,7 +56,7 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
     ORDER BY `)
   searchQuery.append(
     sort === 'trust'
-      ? sql`candidate.votes_score_net DESC, candidate.id DESC`
+      ? sql`candidate.votes_score_sort DESC, candidate.id DESC`
       : sql`candidate.hostname ASC, candidate.id ASC`,
   )
 
@@ -138,9 +138,7 @@ function appendCursorFilter(
       isScoreCursor,
       'Invalid cursor format: expected score cursor',
     )
-    filters.push(
-      sql`(h.votes_score_net < ${cursor.score} OR (h.votes_score_net = ${cursor.score} AND h.id < ${cursor.id}))`,
-    )
+    filters.push(sql`(h.votes_score_sort, h.id) < (${cursor.score}, ${cursor.id})`)
     return
   }
   const cursor = decodeUuidCursor(

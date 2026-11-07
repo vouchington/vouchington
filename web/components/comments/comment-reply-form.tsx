@@ -1,16 +1,16 @@
-/* oxlint-disable max-lines -- comment compose form with preview + required Turnstile and reCAPTCHA bot-protection wiring legitimately exceeds 200 */
 'use client'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { CommentSignInPrompt } from './comment-sign-in-prompt'
 import { CommentReplyPreview } from './comment-reply-preview'
+import { useCommentReplyPreview } from './use-comment-reply-preview'
 import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import { useRecaptchaToken } from '@/hooks/use-recaptcha-token'
-import { createPost } from '@/lib/api/client/posts'
+import { createPost } from '@/lib/api/client/post-mutations'
 import { previewMarkdown } from '@/lib/api/client/markdown'
 import onError, { onSuccess as notifySuccess } from '@/lib/on-error'
 import { useAuth } from '@/lib/auth/context'
@@ -50,32 +50,9 @@ export function CommentReplyForm({
   const [showTurnstile, setShowTurnstile] = useState(initialMarkdown.trim().length > 0)
   const turnstile = useTurnstileToken('posts.create')
   const recaptcha = useRecaptchaToken()
-  const [previewHtml, setPreviewHtml] = useState('')
-  const [previewLoading, setPreviewLoading] = useState(false)
+  const { previewHtml, previewLoading } = useCommentReplyPreview(showPreview, markdown, t)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const textareaId = useId()
-  useEffect(() => {
-    if (!showPreview) return
-    const controller = new AbortController()
-    const timer = setTimeout(() => {
-      setPreviewLoading(true)
-      previewMarkdown(markdown, { signal: controller.signal })
-        .then(({ html }) => setPreviewHtml(html))
-        .catch((err: unknown) => {
-          if (!(err instanceof DOMException && err.name === 'AbortError')) {
-            setPreviewHtml(
-              `<p class="text-sm text-muted-foreground">${t('extracted.comments.commentReplyForm.previewUnavailableTryAgain_7ece44e2')}</p>`,
-            )
-          }
-        })
-        .finally(() => setPreviewLoading(false))
-    }, 200)
-    return () => {
-      clearTimeout(timer)
-      controller.abort()
-      queueMicrotask(() => setPreviewLoading(false))
-    }
-  }, [showPreview, markdown, t])
   if (!isAuthenticated) {
     return <CommentSignInPrompt />
   }
@@ -85,7 +62,7 @@ export function CommentReplyForm({
     el.style.height = 'auto'
     el.style.height = `${el.scrollHeight}px`
   }
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!markdown.trim() || isSubmitting) return
     setIsSubmitting(true)

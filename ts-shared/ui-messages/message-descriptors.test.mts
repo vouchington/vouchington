@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Catalog } from './index.mts'
 import { isMessageDescriptor } from './message-descriptors.mts'
-import { enMessages, esMessages, frMessages, ptMessages } from './locale-catalogs.mts'
+import { enMessages, esMessages, frMessages, ptMessages } from '../test-helpers/locale-catalogs.mts'
 
 const CATALOGS_BY_LOCALE = { en: enMessages, es: esMessages, fr: frMessages, pt: ptMessages }
 

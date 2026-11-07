@@ -52,7 +52,6 @@ export async function updateUserFields(
     moderation_email_timezone,
     processing_restricted_at,
     should_receive_third_party_marketing,
-    should_import_hacker_news_discussions,
     country,
     ui_locale,
     direct_messages_audience,
@@ -60,7 +59,7 @@ export async function updateUserFields(
   } = options
   let validatedUsername: string | undefined
 
-  if (!hasUserFieldUpdates(options)) return
+  if (!hasUserFieldUpdates(options)) return undefined
 
   if (typeof username === 'string' && username !== '') {
     const existingUser = loadedUser ?? (await getPrivateUserByAny(userId))
@@ -117,7 +116,6 @@ export async function updateUserFields(
     moderation_email_timezone,
     processing_restricted_at,
     should_receive_third_party_marketing,
-    should_import_hacker_news_discussions,
     is_fediverse_federation_enabled,
   })
 
@@ -125,7 +123,7 @@ export async function updateUserFields(
 
   hasSet = appendUiLocaleField(query, hasSet, ui_locale)
 
-  if (!hasSet) return
+  if (!hasSet) return undefined
 
   // view_users_private scans users, so it cannot see this UPDATE in the same statement.
   // RETURNING supplies the replaced username; the private row is the next statement.

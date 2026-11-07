@@ -1,3 +1,4 @@
+import { recomputeRssFeedItemHackerNewsFlags } from './hacker-news-flags.mts'
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { randomUUID } from 'node:crypto'
 import type { RssFeedItemToUpsert } from './types.mts'
@@ -120,6 +121,10 @@ export async function upsertRssFeedItems(
     // eslint-disable-next-line no-await-in-loop -- sequential content chunks retain the transaction's canonical key order.
     rows.push(...(await upsertRssFeedItemContent(txQuery, identityRows, chunk)))
   }
+  await recomputeRssFeedItemHackerNewsFlags(
+    rows.map(row => row.id),
+    { query: txQuery },
+  )
   // The durable request is what the classifier sweep recovers from, so tagging and story clustering
   // never depend on a dispatcher enqueue or on a classifier's configuration resolving here.
   await requestRssFeedItemClassifierRuns(txQuery, rssFeedItemIdsOf(rows), [
@@ -127,7 +132,7 @@ export async function upsertRssFeedItems(
     STORY_CLUSTERING_CLASSIFIER_SLUG,
   ])
   const changedSourceRows = buildRssFeedItemSourceInputs(rows, feedItemsByGuid)
-  // ast-grep-ignore: no-three-sequential-awaits -- source rows, projection restart, and category snapshots share one transaction.
+  // ast-grep-ignore: no-three-sequential-awaits -- persist source rows before projection restart; finish restart before category snapshot writes, and admit publication follow-ups only after commit
   const insertedSourceRows = await upsertRssFeedItemSources(txQuery, rssFeedId, [
     ...unchangedUnlinkedSourceRows,
     ...changedSourceRows,

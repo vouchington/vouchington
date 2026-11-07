@@ -4,7 +4,7 @@ import type { RefundableCharge } from '@/types/api-responses'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { mergeMessages } from '@/lib/i18n/use-translations'
 import { MembershipRefundForm } from '../membership-refund-form'
-import { enMessages, esMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages, esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 vi.mock(
   import('next/navigation'),

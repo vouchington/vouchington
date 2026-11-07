@@ -45,8 +45,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const data = await getTopicsCompare(slugA, slugB)
   if (!data) return {}
 
-  const topicA = Object.values(data.topics).find(t => t.slug === slugA)
-  const topicB = Object.values(data.topics).find(t => t.slug === slugB)
+  const topicA = Object.values(data.topics).find(candidateTopic => candidateTopic.slug === slugA)
+  const topicB = Object.values(data.topics).find(candidateTopic => candidateTopic.slug === slugB)
   if (!topicA || !topicB) return {}
 
   return createPageMetadata({
@@ -76,8 +76,8 @@ export default async function CompareSlugPairPage({ params }: PageProps) {
   ])
   if (!data) notFound()
 
-  const topicA = Object.values(data.topics).find(t => t.slug === slugA)
-  const topicB = Object.values(data.topics).find(t => t.slug === slugB)
+  const topicA = Object.values(data.topics).find(candidateTopic => candidateTopic.slug === slugA)
+  const topicB = Object.values(data.topics).find(candidateTopic => candidateTopic.slug === slugB)
   if (!topicA || !topicB) notFound()
 
   const categoriesA = data.topic_categories[topicA.id] ?? []

@@ -120,7 +120,9 @@ export async function crawlWithBrowser(url: string): Promise<BrowserCrawlResult>
       throw new CrawlerNetworkError(url, 0, error)
     }
 
-    await new Promise(resolve => setTimeout(resolve, CSR_HYDRATION_WAIT_MS))
+    await new Promise(resolve => {
+      setTimeout(resolve, CSR_HYDRATION_WAIT_MS)
+    })
 
     const finalUrl = page.url() // post-redirect landed URL, incl. any redirect-minted tokens
     const pageContent = (await page.evaluate(measureAndSerializePage, {

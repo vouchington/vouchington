@@ -119,8 +119,12 @@ describe('completeImageUpload - success path', () => {
     } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
     let releasePromotion!: () => void
     let promotionStarted!: () => void
-    const started = new Promise<void>(resolve => (promotionStarted = resolve))
-    const release = new Promise<void>(resolve => (releasePromotion = resolve))
+    const started = new Promise<void>(resolve => {
+      promotionStarted = resolve
+    })
+    const release = new Promise<void>(resolve => {
+      releasePromotion = resolve
+    })
     vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockImplementation(async ({ sha256 }) => {
       promotionStarted()
       await release

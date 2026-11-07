@@ -2,7 +2,7 @@ import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { PostForm } from '../post-form'
-import { createPost, createCommunityPost, updatePost } from '@/lib/api/client/posts'
+import { createPost, createCommunityPost, updatePost } from '@/lib/api/client/post-mutations'
 import { communityPendingPostsHref } from '@/lib/links/entity-href'
 import type { Post } from '@/types/posts'
 
@@ -33,7 +33,7 @@ vi.mock(
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   archivePost: vi.fn<VitestLooseMock>(),
   createPost: vi.fn<VitestLooseMock>(),
   createCommunityPost: vi.fn<VitestLooseMock>(),

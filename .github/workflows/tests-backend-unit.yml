@@ -154,106 +154,14 @@ jobs:
           CI_PROJECT: backend-unit
           VITEST_CI_REPORTERS: run
           VITEST_DIAGNOSTICS: ${{ (inputs.diagnostics || vars.VITEST_DIAGNOSTICS == '1') && '1' || '0' }}
+          REQUEST_QUERY_PROFILE_DIAGNOSTICS: '1'
+          REQUEST_QUERY_PROFILE_HITS_FILE: backend-query-profile-hits-shard-${{ matrix.shard }}.json
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: test-report.junit.xml
           VITEST_FILE_PROGRESS_FILE: ${{ github.workspace }}/backend-unit-file-progress.log
           # The step timeout minus 60 seconds; the workflow test pins the relationship.
           DEADLINE_DUMP_AFTER_SECONDS: '540'
-        run: |
-          resource_prefix='[backend-unit-resources]'
-          postgres_wait_prefix='[backend-unit-pg-waits]'
-          pressure_prefix='[backend-unit-pressure]'
-          prefix_lines() {
-            while IFS= read -r line || [ -n "$line" ]; do
-              printf '%s %s\n' "$1" "$line"
-            done
-          }
-          sample_runner_resources() {
-            {
-              date -u +%Y-%m-%dT%H:%M:%SZ
-              free -m
-              df -h "$GITHUB_WORKSPACE"
-              df -h -t tmpfs
-              # head closes the pipe, so ps exits on SIGPIPE. That is not a sample failure.
-              ps -eo pid,rss,pmem,comm --sort=-rss | head -n 15 || true
-            } 2>&1 | prefix_lines "$resource_prefix"
-          }
-          # Prints a row only for a blocked or blocking backend, or one statement running 1.5s or longer.
-          sample_postgres_waits() {
-            command -v psql >/dev/null 2>&1 || return 0
-            PGAPPNAME=ci-pg-wait-sampler PGCONNECT_TIMEOUT=3 PGOPTIONS='-c statement_timeout=3000' \
-              psql "$DATABASE_URL" -X -At -F '|' -f ci/backend-unit-pg-waits.sql 2>/dev/null |
-              prefix_lines "$postgres_wait_prefix"
-          }
-          # vmstat columns end in us sy id wa st (user, system, idle, iowait, hypervisor steal).
-          sample_runner_pressure() {
-            {
-              date -u +%H:%M:%S
-              vmstat 1 2 | tail -n 1
-              for resource in cpu io memory; do
-                if [ -r "/proc/pressure/$resource" ]; then
-                  printf '%s %s\n' "$resource" "$(head -n 1 "/proc/pressure/$resource")"
-                fi
-              done
-            } 2>&1 | tr '\n' ' ' | prefix_lines "$pressure_prefix"
-          }
-          # Runs once, shortly before the step timeout kills this shell. The run is then
-          # stuck or only slow; the log names unfinished files with their running time, the
-          # slowest finished files, and the largest processes.
-          dump_deadline_state() {
-            printf '[backend-unit-deadline] step deadline in 60s\n'
-            node ci/backend-unit-unfinished-files.mts "$VITEST_FILE_PROGRESS_FILE" || true
-            { ps -eo pid,rss,pmem,etime,args --sort=-rss | head -n 15 || true; } 2>&1 |
-              prefix_lines '[backend-unit-deadline] ps'
-          }
-          sampler_pids=
-          start_deadline_dump() {
-            (
-              set +e
-              set +o pipefail
-              sleep_pid=
-              # TERM can arrive after sleep starts but before sleep_pid=$! records it.
-              trap 'for child_pid in $(jobs -pr); do kill "$child_pid" 2>/dev/null || true; wait "$child_pid" 2>/dev/null || true; done; exit 0' TERM INT
-              sleep "$DEADLINE_DUMP_AFTER_SECONDS" &
-              sleep_pid=$!
-              wait "${sleep_pid}" && dump_deadline_state
-            ) &
-            sampler_pids="${sampler_pids} $!"
-          }
-          start_sampler() {
-            (
-              set +e
-              set +o pipefail
-              sleep_pid=
-              trap 'for child_pid in $(jobs -pr); do kill "$child_pid" 2>/dev/null || true; wait "$child_pid" 2>/dev/null || true; done; exit 0' TERM INT
-              while true; do
-                "$1"
-                sleep "$2" &
-                sleep_pid=$!
-                wait "${sleep_pid}"
-                sleep_pid=
-              done
-            ) &
-            sampler_pids="${sampler_pids} $!"
-          }
-          stop_samplers() {
-            # TERM hits each sampler shell, which stops its sleep child before exiting.
-            for sampler_pid in ${sampler_pids}; do
-              kill -TERM "${sampler_pid}" 2>/dev/null || true
-            done
-            for sampler_pid in ${sampler_pids}; do
-              wait "${sampler_pid}" 2>/dev/null || true
-            done
-            return 0
-          }
-          trap stop_samplers EXIT
-          start_deadline_dump
-          if [ "$VITEST_DIAGNOSTICS" = 1 ]; then
-            start_sampler sample_runner_resources 15
-            start_sampler sample_postgres_waits 0.5
-            start_sampler sample_runner_pressure 2
-          fi
-          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD"
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-backend-unit-run-backend-tests.sh"
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
@@ -283,21 +191,20 @@ jobs:
           path: backend-unit-file-progress.log
           retention-days: 1
           if-no-files-found: ignore
+      - name: Upload backend-shard-${{ matrix.shard }} query-profile hits
+        timeout-minutes: 1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: backend-query-profile-hits-shard-${{ matrix.shard }}
+          path: backend-query-profile-hits-shard-${{ matrix.shard }}.json
+          retention-days: 1
+          if-no-files-found: error
       - name: Preserve full backend-shard-${{ matrix.shard }} LCOV
         timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
-        run: |
-          if [ ! -s coverage/lcov.info ]; then
-            echo "::error::Backend shard did not write coverage/lcov.info" >&2
-            exit 1
-          fi
-          rm -rf coverage-merge-input
-          mkdir -p coverage-full coverage-merge-input/parent
-          cp coverage/lcov.info coverage-merge-input/parent/lcov.info
-          ./ci/node_modules/.bin/coverage-check merge \
-            --artifacts coverage-merge-input \
-            --output coverage-full/lcov.info
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-backend-unit-preserve-full-backend-shard-lcov.sh"
       - name: Upload full backend-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)
         id: full-lcov-1
         if: ${{ inputs.publish_coverage }}
@@ -328,3 +235,52 @@ jobs:
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
+
+  check-query-profile-baseline:
+    needs: [prep, backend-tests]
+    if: ${{ !cancelled() && needs.backend-tests.result == 'success' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 6
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
+      - uses: actions/setup-node@363be39a57dfa5801e05c6e0c549d622a376cf15 # v7
+        timeout-minutes: 1
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+      - name: Download complete backend-unit query-profile hits
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        timeout-minutes: 3
+        with:
+          pattern: backend-query-profile-hits-shard-*
+          path: backend-query-profile-hits
+          merge-multiple: true
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+      - name: Check query-profile baseline freshness
+        timeout-minutes: 1
+        env:
+          EXPECTED_SHARDS: ${{ needs.prep.outputs.shard-total }}
+        shell: bash
+        run: |
+          expected_shards="$EXPECTED_SHARDS"
+          if ! [[ "$expected_shards" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Invalid backend-unit shard count: $expected_shards" >&2
+            exit 2
+          fi
+          shopt -s nullglob
+          files=(backend-query-profile-hits/backend-query-profile-hits-shard-*.json)
+          if [ "${#files[@]}" -ne "$expected_shards" ]; then
+            echo "::error::Expected $expected_shards query-profile hit manifests, found ${#files[@]}" >&2
+            exit 2
+          fi
+          manifests=()
+          for ((shard = 1; shard <= expected_shards; shard++)); do
+            manifests+=("backend-query-profile-hits/backend-query-profile-hits-shard-${shard}.json")
+          done
+          node backend/test-helpers/request-query-profile-manifest-check.mts "${manifests[@]}"

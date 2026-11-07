@@ -8,9 +8,10 @@ import {
   importCommunityListFeedItemsSourceSql,
   importCommunityListPostsSourceSql,
 } from '@services/lists/import'
-import { getModerationSummaryRecipients } from '@services/communities/moderation-summary-emails'
+import { getModerationSummaryRecipients } from '@services/communities/moderation-summary-recipients'
 import { detectRssFeedItemLanguage } from '@services/language-detection/entities/rss-feed-items'
 import { detectRssFeedItemLanguageBatch } from '@services/language-detection/batch-detect'
+import { runIneligibleCollectionPageScenarios } from './ineligible-collection-pages.mts'
 import { runAndCapture, seedPostId, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -138,4 +139,6 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
     undefined,
     ['getRecoverableOAuthAuthorizationIds:lock', 'getRecoverableOAuthAuthorizationIds'],
   )
+  // Same order as the previous top-level step: after view-driven reads, before topic import.
+  await runIneligibleCollectionPageScenarios()
 }

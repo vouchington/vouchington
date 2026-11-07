@@ -84,6 +84,7 @@ async function probeBaselinedScans(
 }
 
 async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> {
+  const contract = getScenarioContract(input.scenarioId)
   if (seedPlanDiagnosticScenarios.has(input.scenarioId)) {
     const sha256 = (value: string) => createHash('sha256').update(value).digest('hex')
     console.log(
@@ -103,15 +104,16 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
       }),
     )
   }
+  if (contract.walCaptureCondition === 'cold') {
+    // Include full-page images from the first changes to pages after a checkpoint in the measured
+    // capture. Repeat for every mode/pass so the WAL gate sees the cold condition each time.
+    await write('/* explainWalCaptureCheckpoint */ CHECKPOINT')
+  }
   const result = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: input.localSettings,
     planCacheMode: input.planCacheMode,
   })
-  if (
-    getScenarioContract(input.scenarioId).expectations.some(
-      expectation => expectation.kind === 'maxFunctionCalls',
-    )
-  ) {
+  if (contract.expectations.some(expectation => expectation.kind === 'maxFunctionCalls')) {
     // Keep the plan capture and its shape gates on the caller's settings. PostgreSQL's
     // transaction-local function counters omit calls in parallel worker backends.
     const serial = await explainAnalyze(input.name, input.text, input.values, {

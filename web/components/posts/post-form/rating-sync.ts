@@ -1,4 +1,4 @@
-import { addPostRating, deletePostRating, updatePostRating } from '@/lib/api/client/posts'
+import { addPostRating, deletePostRating, updatePostRating } from '@/lib/api/client/post-mutations'
 import type { Post } from '@/types/posts'
 import type { ReviewTopicEntry } from '../post-form-sections'
 
@@ -28,7 +28,7 @@ export async function syncReviewRatings(
   const [preservedDeleteFn, ...initialDeleteFns] = allOriginalRatingsRemoved ? deleteFns : []
   const [firstAddFn, ...remainingAddFns] = addFns
   if (allOriginalRatingsRemoved && preservedDeleteFn && firstAddFn) {
-    // ast-grep-ignore: no-three-sequential-awaits -- UI helper intentionally serializes dependent client mutations
+    // ast-grep-ignore: no-three-sequential-awaits -- initial deletions free rows counted by the add limit; the replacement row satisfies the last-rating delete guard; later mutations validate the resulting rating set
     await initialDeleteFns.reduce((chain, fn) => chain.then(fn), noop)
     await firstAddFn()
     await preservedDeleteFn()

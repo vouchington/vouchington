@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises'
 import { imageStatePubSub } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
 
@@ -26,8 +27,4 @@ export async function publishTerminalImageState(imageId: string, flagged: boolea
     }
   }
   onError(lastError instanceof Error ? lastError : new Error(String(lastError)))
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
 }

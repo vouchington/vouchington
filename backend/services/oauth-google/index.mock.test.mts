@@ -79,12 +79,12 @@ describe('google oauth', () => {
   })
 
   it('redeems the broker code with server secret and PKCE, then completes by stable sub', async () => {
-    const googleUserId = `google-broker-${createRandomString(12)}`
+    const brokerGoogleUserId = `google-broker-${createRandomString(12)}`
     const authorizationId = await insertTestOAuthAuthorization({ provider: 'google' })
     onTestFinished(() =>
       deleteTestOAuthAuthorizationFixtures({
         authorizationIds: [authorizationId],
-        googleUserIds: [googleUserId],
+        googleUserIds: [brokerGoogleUserId],
       }),
     )
     const authorizationClaimId = randomUUID()
@@ -100,7 +100,7 @@ describe('google oauth', () => {
         status: 200,
         json: () =>
           Promise.resolve({
-            sub: googleUserId,
+            sub: brokerGoogleUserId,
             email: 'unverified@example.test',
             email_verified: false,
             name: 'Google Broker User',
@@ -116,7 +116,7 @@ describe('google oauth', () => {
       'server-pkce-verifier',
       { authorizationId, authorizationClaimId },
     )
-    expect(account.provider_user_id).toBe(googleUserId)
+    expect(account.provider_user_id).toBe(brokerGoogleUserId)
     expect(account.provider_user_email_address).toBeNull()
     expect(account.provider_user_data).toMatchObject({
       name: 'Google Broker User',
@@ -151,13 +151,13 @@ describe('google oauth', () => {
   })
 
   it('propagates cancellation through token and UserInfo fetches before account persistence', async () => {
-    const googleUserId = `google-aborted-${createRandomString(12)}`
+    const abortedGoogleUserId = `google-aborted-${createRandomString(12)}`
     const authorizationId = await insertTestOAuthAuthorization({ provider: 'google' })
     const authorizationClaimId = randomUUID()
     onTestFinished(() =>
       deleteTestOAuthAuthorizationFixtures({
         authorizationIds: [authorizationId],
-        googleUserIds: [googleUserId],
+        googleUserIds: [abortedGoogleUserId],
       }),
     )
     await markTestOAuthAuthorizationExchanging(authorizationId, authorizationClaimId)
@@ -178,7 +178,7 @@ describe('google oauth', () => {
         return {
           ok: true,
           status: 200,
-          json: () => Promise.resolve({ sub: googleUserId, email_verified: false }),
+          json: () => Promise.resolve({ sub: abortedGoogleUserId, email_verified: false }),
         } as Awaited<ReturnType<typeof undiciFetch>>
       })
 
@@ -192,7 +192,7 @@ describe('google oauth', () => {
     ).rejects.toBe(aborted)
 
     expect(fetchSpy).toHaveBeenCalledTimes(2)
-    expect(await getOAuthAccountByProviderUserId('google', googleUserId)).toBeNull()
+    expect(await getOAuthAccountByProviderUserId('google', abortedGoogleUserId)).toBeNull()
     expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
       status: 'exchanging',
       google_account_id: null,

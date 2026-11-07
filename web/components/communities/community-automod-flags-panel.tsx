@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { dismissCommunityAutomodFlag } from '@/lib/api/client/community-automod'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import onError, { onSuccess } from '@/lib/on-error'
-import type { CommunityModerationQueueEntry } from '@/types/api-responses'
+import type { CommunityModerationQueueEntry } from '@/types/api-responses/community-moderation-queue'
 
 interface CommunityAutomodFlagsPanelProps {
   entries: CommunityModerationQueueEntry[]

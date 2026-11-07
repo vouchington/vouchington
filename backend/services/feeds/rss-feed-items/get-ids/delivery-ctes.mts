@@ -11,6 +11,7 @@ export function appendDeliveryCTEs(
     currentUserIsAdministrator,
     feedType,
     hasRelatedPosts,
+    hasHackerNewsReferences,
     includeDirectItems,
     includeSharedItems,
     itemCutoffId,
@@ -28,6 +29,7 @@ export function appendDeliveryCTEs(
     currentUserIsAdministrator: boolean
     feedType: RssFeedItemFeedOptions['feed_type']
     hasRelatedPosts: boolean | undefined
+    hasHackerNewsReferences?: boolean
     includeDirectItems: boolean
     includeSharedItems: boolean
     itemCutoffId: string | null
@@ -46,6 +48,7 @@ export function appendDeliveryCTEs(
     currentUserIsAdministrator,
     feedType,
     hasRelatedPosts,
+    hasHackerNewsReferences,
     includeDirectItems,
     itemCutoffId: cutoffDate ? itemCutoffId : null,
     mediaTypes,

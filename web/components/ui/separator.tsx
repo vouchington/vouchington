@@ -12,7 +12,7 @@ function Separator({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root> & {
-  ref?: React.Ref<React.ElementRef<typeof SeparatorPrimitive.Root>>
+  ref?: React.Ref<React.ComponentRef<typeof SeparatorPrimitive.Root>>
 }) {
   return (
     <SeparatorPrimitive.Root

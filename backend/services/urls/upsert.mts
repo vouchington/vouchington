@@ -6,7 +6,7 @@ export const { addUrls, addUrl, assessUrls } = createUrlUpsert()
 
 /** One unlocked provider assessment followed by one batch persistence implementation. */
 function createUrlUpsert() {
-  const assessUrls = async (
+  const assessUrlsImpl = async (
     hrefs: readonly string[],
     { preserveHttp = false }: Pick<AddUrlOptions, 'preserveHttp'> = {},
   ): Promise<AssessedUrls> => {
@@ -33,11 +33,19 @@ function createUrlUpsert() {
     await assertUrlsAllowedByWebRisk(uniqueUrls.map(url => url.toString()))
     return uniqueUrls
   }
-  const addUrls = async (userId: string | null, hrefs: string[], options: AddUrlOptions = {}) => {
-    const assessed = await assessUrls(hrefs, options)
+  const addUrlsImpl = async (
+    userId: string | null,
+    hrefs: string[],
+    options: AddUrlOptions = {},
+  ) => {
+    const assessed = await assessUrlsImpl(hrefs, options)
     return persistAssessedUrls(userId, assessed, options)
   }
-  const addUrl = (userId: string | null, href: string, options?: AddUrlOptions) =>
-    addUrls(userId, [href], options).then(urls => urls[0] ?? null)
-  return { assessUrls, addUrls, addUrl }
+  const addUrlImpl = (userId: string | null, href: string, options?: AddUrlOptions) =>
+    addUrlsImpl(userId, [href], options).then(urls => urls[0] ?? null)
+  return {
+    assessUrls: assessUrlsImpl,
+    addUrls: addUrlsImpl,
+    addUrl: addUrlImpl,
+  }
 }

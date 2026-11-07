@@ -24,6 +24,7 @@ type Props = OAuthButtonProps & {
   }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed provider switch is exhaustive; Oxlint misses its terminal flow.
 export function OAuthLoginButton({
   provider,
   onToken,

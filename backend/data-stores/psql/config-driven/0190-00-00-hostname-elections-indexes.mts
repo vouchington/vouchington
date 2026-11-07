@@ -1,5 +1,5 @@
 /**
- * Indexes on url_hostnames that depend on vote columns (votes_score_net,
+ * Indexes on url_hostnames that depend on vote columns (votes_score_sort,
  * votes_count_up) added by 0000-00-00-entity-elections.mts. Must run in the
  * config-driven phase after elections columns exist, not in migrations/.
  */
@@ -13,17 +13,17 @@ export default function generateHostnameElectionsIndexes(): string {
 
   return `
 -- Partial index supporting searchTopHostnames without topic_id filter:
--- ORDER BY votes_score_net DESC, id DESC
+-- ORDER BY votes_score_sort DESC, id DESC
 -- WHERE NOT is_blocked AND votes_count_up > 0
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__top_sort
-ON url_hostnames (votes_score_net DESC, id DESC)
+ON url_hostnames (votes_score_sort DESC, id DESC)
 WHERE NOT is_blocked AND votes_count_up > 0;
 
 -- Partial index supporting searchTopHostnames with topic_id filter:
--- ORDER BY votes_score_net DESC, id DESC
+-- ORDER BY votes_score_sort DESC, id DESC
 -- WHERE NOT is_blocked AND votes_count_up > 0 AND topic_id = $1
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__top_sort_by_topic
-ON url_hostnames (topic_id, votes_score_net DESC, id DESC)
+ON url_hostnames (topic_id, votes_score_sort DESC, id DESC)
 WHERE NOT is_blocked AND votes_count_up > 0 AND topic_id IS NOT NULL;
 `.trim()
 }

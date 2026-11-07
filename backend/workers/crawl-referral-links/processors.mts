@@ -30,7 +30,7 @@ export async function processCrawlReferralLinksJob(job: Job): Promise<unknown> {
 
       if (crawler.crawler_type === 'automation') {
         await enqueueCrawlBrowser({ linkId, urlId: url.id, crawlerId: crawler.id })
-        return
+        return undefined
       }
 
       // Fetch path
@@ -44,7 +44,7 @@ export async function processCrawlReferralLinksJob(job: Job): Promise<unknown> {
       } catch (err) {
         await handleCrawlReferralLinkError(linkId, err)
       }
-      return
+      return undefined
     }
     default:
       throw new Error(`Crawl referral link job ${job.name} not found`)

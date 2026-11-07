@@ -36,6 +36,7 @@ export type SourcePlan = {
   cutoffAt: Date
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed source switch is exhaustive; Oxlint misses its terminal flow.
 export function sourcePlan(source: Source, now: Date): SourcePlan {
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000)
   switch (source) {

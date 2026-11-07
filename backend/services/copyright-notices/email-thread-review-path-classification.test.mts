@@ -9,7 +9,7 @@ import {
 import { describe, expect, it } from 'vitest'
 import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
-import { getCopyrightStaffEmailIntake } from './read-models.mts'
+import { getCopyrightStaffEmailIntake } from './read-models-staff-email-intake.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 
 describe('copyright email review path after separate-case approval', () => {

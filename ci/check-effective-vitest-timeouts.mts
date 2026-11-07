@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { relative, sep } from 'node:path'
-import { createVitest } from 'vitest/node'
+import { createVitest, type Vitest } from 'vitest/node'
 import {
   assertCanonicalRootVitestConfig,
   checkCanonicalRootVitestConfigControls,
@@ -11,7 +11,7 @@ import {
 
 const root = process.cwd()
 const configFileControls = checkCanonicalRootVitestConfigControls()
-let context: Awaited<ReturnType<typeof createVitest>> | undefined
+let context: Vitest | undefined
 let failed = false
 let primary: unknown
 const cleanup: unknown[] = []
@@ -74,7 +74,7 @@ if (failed || cleanup.length) {
 
 // Config-only probes must never import application globalSetup modules or start tests.
 for (const project of projects) {
-  let selected: Awaited<ReturnType<typeof createVitest>> | undefined
+  let selected: Vitest | undefined
   let rejected = false
   let rejection: unknown
   const closeErrors: unknown[] = []

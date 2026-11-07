@@ -88,7 +88,7 @@ async function processHostnameBlockPenaltyPage(
       forceRecalculate: true,
     })),
   )
-  // ast-grep-ignore: no-three-sequential-awaits -- durable progress advances only after the bounded read and stable enqueue admission succeed.
+  // ast-grep-ignore: no-three-sequential-awaits -- stable force-recalculation jobs must finish enqueue admission before CAS advances the penalty cursor, so recovery never checkpoints unqueued user ids
   const updated = await advanceHostnameBlockPenaltyPage(
     operation.blockId,
     operation.progress,

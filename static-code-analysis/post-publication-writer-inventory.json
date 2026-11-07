@@ -38,13 +38,15 @@
     "backend/services/stories/story-post-create.mts",
     "backend/services/stories/story-post-related-url-projection-reconcile.mts",
     "backend/services/stories/story-post-related-url-projection-relations.mts",
+    "backend/services/stories/story-post-related-url-projection-replacements.mts",
     "backend/services/users/suspension.mts",
     "backend/services/users/delete-entity-relation-votes.mts",
     "backend/services/users/delete-entity-relation-votes-batches.mts",
     "backend/services/data-retention/cleanup-soft-deleted-user.mts",
     "backend/services/moderation-appeals/lift-sanctions.mts",
     "backend/services/moderation-appeals/resolve.mts",
-    "backend/services/moderation-training/automod-feedback.mts",
+    "backend/services/moderation-training/automod-feedback-keep-removed.mts",
+    "backend/services/moderation-training/automod-feedback-reinstate.mts",
     "backend/services/entity-relations/upsert.mts",
     "backend/services/entity-relations/write-relations.mts",
     "backend/services/entity-relations/delete.mts",
@@ -152,6 +154,10 @@
       "reason": "called inside captured post creation"
     },
     {
+      "path": "backend/services/posts/hacker-news-flags.mts",
+      "reason": "updates only the derived Hacker News reference filter flag; public publication eligibility and its updated_at fingerprint remain unchanged"
+    },
+    {
       "path": "backend/services/posts/images.mts",
       "reason": "image attachment lifecycle does not alter public eligibility"
     },
@@ -162,6 +168,10 @@
     {
       "path": "backend/services/post-clearance/update-status.mts",
       "reason": "delegates clearance and publication writes to captured set-status"
+    },
+    {
+      "path": "backend/services/rss-feed-items/hacker-news-flags.mts",
+      "reason": "updates only the derived Hacker News reference filter flag, which is not a public publication eligibility predicate"
     },
     {
       "path": "backend/services/rss-feed-items/upsert-queries.mts",

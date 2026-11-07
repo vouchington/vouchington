@@ -6,7 +6,9 @@ import { isRetryableTransportError } from '../../transport-errors.mts'
 
 // Resolve the normal global timer at each real backoff, including under an owned injected clock.
 function delay(milliseconds: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, milliseconds))
+  return new Promise(resolve => {
+    setTimeout(resolve, milliseconds)
+  })
 }
 
 const RETRY_BACKOFFS_MS = [250, 500, 1_000, 2_000, 2_000]

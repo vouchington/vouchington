@@ -1,3 +1,4 @@
+import '@backend/service-registrations'
 import {
   enableQueryCapture,
   disableQueryCapture,
@@ -132,7 +133,7 @@ async function captureScenario(
     ? allCaptured.filter(query => selectedNames.includes(extractQueryName(query.text) ?? ''))
     : allCaptured
   console.log(
-    `  Captured ${captured.length}${captureQueryName ? `/${allCaptured.length} ${captureQueryName} queries` : ' queries'}`,
+    `  Captured ${captured.length}${captureQueryName ? `/${allCaptured.length} ${selectedNames?.join(',') ?? ''} queries` : ' queries'}`,
   )
   assertCapturedQueries(label, captured)
 

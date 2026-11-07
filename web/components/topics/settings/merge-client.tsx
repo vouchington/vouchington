@@ -43,7 +43,7 @@ export function MergeClient({ topic }: { topic: Topic }) {
     setConfirmation(event.target.value)
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!destinationTopicId || !canSubmit) return
     setSubmitting(true)

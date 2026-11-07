@@ -62,6 +62,6 @@ app.route('/api/v1/copyright-eu-reports').get(async (ctx: Context) => {
   const csvFormat = format === 'csv_notices' || format === 'csv_complaints' ? format : null
   ctx.assert(csvFormat, 422, 'format is invalid')
   ctx.set('Content-Type', 'text/csv; charset=utf-8')
-  ctx.set('Content-Disposition', `attachment; filename="copyright-${format}.csv"`)
+  ctx.set('Content-Disposition', `attachment; filename="copyright-${csvFormat}.csv"`)
   await ctx.pipeline(Readable.from([renderEuCopyrightReportCsv(report, csvFormat)]))
 })

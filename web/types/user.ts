@@ -1,6 +1,4 @@
 import type { AccountType } from '@ts-shared/utils/account-type'
-/* oxlint-disable max-lines -- User entity shape intentionally mirrors the backend private-user projection. */
-import type { UserPrivateMetricsCount } from './user-metrics'
 export type { MfaStatus, TotpAuthenticator } from './mfa'
 
 export type UserPrivacyAudience = 'everyone' | 'users' | 'followers' | 'mutual_followers' | 'nobody'
@@ -90,7 +88,6 @@ export interface User {
   moderation_email_timezone?: string | null
   processing_restricted_at?: string | null
   should_receive_third_party_marketing?: boolean | null
-  should_import_hacker_news_discussions?: boolean
   suspended_at?: string | null
   suspended_reason?: string | null
   suspended_by_id?: string | null
@@ -128,7 +125,6 @@ export type UpdateUserBody = Pick<
 > & {
   processing_restricted_at?: boolean
   should_receive_third_party_marketing?: boolean
-  should_import_hacker_news_discussions?: boolean
 }
 export interface PublicUser {
   id: string
@@ -157,37 +153,6 @@ export type UserSearchResult = PublicUser & {
   suspended_at?: string | null
   suspended_reason?: string | null
   suspended_by_id?: string | null
-}
-export interface UserMetrics {
-  __entity_type: 'user_metrics'
-  id: string
-  count: {
-    reviews: number
-    discussions: number
-    comments: number
-    users_following: number
-    users_followers: number
-    topics_following: number
-    rss_feeds_following: number
-    communities_member: number
-  }
-  viewer_count?: {
-    reviews: number
-    discussions: number
-    comments: number
-  }
-  private_count?: UserPrivateMetricsCount
-  bookmarks: {
-    follow: {
-      topics: number
-      posts: number
-      users: number
-    }
-  }
-  bookmarkers: {
-    follow: number
-  }
-  bookmarks__updated_at: string
 }
 export interface EmailAddress {
   email_address: string

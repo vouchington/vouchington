@@ -4,6 +4,7 @@ import {
   createTestUserDirect,
   deleteTestPost,
   insertTestPost,
+  setPostVotesScoreUp,
 } from '@voucha/test-helpers'
 import { getPostIds } from '../get-ids.mts'
 import type { PostSearchOptions } from '../types.mts'
@@ -26,6 +27,7 @@ describe('getPostIds default time range', () => {
       })
     const [recentId, oldId] = await Promise.all([insert('recent', 2), insert('old', 40)])
     try {
+      await Promise.all([setPostVotesScoreUp(recentId, 1), setPostVotesScoreUp(oldId, 1)])
       const base = {
         user_id: user.id,
         include_topic_recommendations: true,

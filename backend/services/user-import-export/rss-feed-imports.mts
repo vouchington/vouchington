@@ -137,7 +137,6 @@ async function processLockedRssFeedImportRow(
   }
 
   try {
-    // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and should_follow_imported_feeds-up side effects
     const membershipPlan = await getUserActivePlan(user.id)
     // The queue job is not the submitting request, so the feeds carry the channel and OAuth client
     // that the batch stored when the request submitted the import.

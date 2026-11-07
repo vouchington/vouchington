@@ -95,7 +95,7 @@ export async function processPendingImageQuarantinePage(
 
 async function markImageQuarantinePending(imageId: string): Promise<boolean> {
   await using transaction = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- retain the image fence before edge denial, then admit quarantine only after denial succeeds
+  // ast-grep-ignore: no-three-sequential-awaits -- The image mutation lock must precede publishing edge denials; quarantine is admitted only after those denials succeed under the same fence.
   await lockImageAssetMutation(transaction, { imageIds: [imageId], imageOnly: true })
   await prepublishImageDeliveryDenials(imageId, { query: transaction, imageOnly: true })
   const { rows } = await transaction(sql`/* markImageQuarantinePending */

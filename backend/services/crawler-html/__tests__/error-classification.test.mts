@@ -79,7 +79,7 @@ describe('CrawlerHtml timeout classification', () => {
       fetched(new undici.Response(null, { status: 429, headers: { 'retry-after': '3' } })),
     )
 
-    const err = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err: unknown) => err)
+    const err = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err_: unknown) => err_)
 
     expect(err).toBeInstanceOf(CrawlerRateLimitError)
     expect(err).toMatchObject({ status: 429, retryAfterMs: 3000, url: 'https://example.com' })
@@ -91,7 +91,7 @@ describe('CrawlerHtml timeout classification', () => {
       fetched(new undici.Response(null, { status: 503 })),
     )
 
-    const err = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err: unknown) => err)
+    const err = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err_: unknown) => err_)
 
     expect(err).toBeInstanceOf(CrawlerServerError)
     expect(err).toMatchObject({ status: 503, url: 'https://example.com' })
@@ -106,7 +106,7 @@ describe('CrawlerHtml timeout classification', () => {
     const err = await CrawlerHtml(
       { url: 'https://example.com', maxResponseSizeBytes: 4 },
       {},
-    ).catch((err: unknown) => err)
+    ).catch((err_: unknown) => err_)
 
     expect(err).toBeInstanceOf(CrawlerResponseSizeExceededError)
     expect(err).toMatchObject({ status: 413, size: 5, maxSize: 4, url: 'https://example.com' })
@@ -118,7 +118,7 @@ describe('CrawlerHtml timeout classification', () => {
       fetched(new undici.Response(null, { headers: { 'content-type': 'text/html' } })),
     )
 
-    const err = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err: unknown) => err)
+    const err = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err_: unknown) => err_)
 
     expect(err).toBeInstanceOf(HttpNoBodyError)
     expect(err).toMatchObject({ code: 'HTTP_NO_BODY', status: 502 })

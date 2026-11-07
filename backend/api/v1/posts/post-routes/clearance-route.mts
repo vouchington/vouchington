@@ -1,7 +1,6 @@
-import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
-import { COMMENT_DESCENDANTS_LIMIT, getCommentDescendantsPage } from '@services/comments'
+import { getCommentDescendantsPage } from '@services/comments'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
 import { getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
@@ -33,12 +32,10 @@ import {
   getPostElectionVotesWithModerations,
 } from '../admin-moderation-data.mts'
 import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
-import { createPaginationParser } from '@modules/pagination'
-
-const descendantsParser = createPaginationParser({
-  cursor: { type: 'simple' },
-  limit: COMMENT_DESCENDANTS_LIMIT,
-})
+import {
+  commentDescendantPaginationParser as descendantsParser,
+  parseCommentDescendantPagination,
+} from '@services/search-params/comment-descendant-pagination'
 
 app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/posts/:idOrSlug/descendants', descendantsParser)
@@ -61,7 +58,7 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
   )
   ctx.assert(readState, 404, 'Post not found')
 
-  const pagination = parseRuntimePagination(descendantsParser, ctx.query)
+  const pagination = parseCommentDescendantPagination(ctx.query)
   const { after: _rawAfter, ...queryWithoutAfter } = ctx.query
   const validationQuery = prepareQueryForValidation(
     pagination.after === undefined
@@ -152,10 +149,10 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     )
 
     output.election_votes = Promise.all([postsPromise, moderationsPromise]).then(
-      ([posts, moderations]) =>
+      ([resolvedPosts, moderations]) =>
         getPostElectionVotesWithModerations(
           currentUser.id,
-          posts.flatMap(post => (post ? [post.id] : [])),
+          resolvedPosts.flatMap(resolvedPost => (resolvedPost ? [resolvedPost.id] : [])),
           moderations,
           'undefined',
         ),

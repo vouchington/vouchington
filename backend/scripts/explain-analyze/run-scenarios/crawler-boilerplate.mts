@@ -36,12 +36,13 @@ export async function runCrawlerBoilerplateScenario(): Promise<void> {
     await write(`/* seedExplainBoilerplate:analyze */ ANALYZE urls`)
     await write(`/* seedExplainBoilerplate:analyze */ ANALYZE crawls`)
     registerScenarioContract('crawler-boilerplate-candidates', {
-      // Custom plans scan this 2k same-host corpus; generic plans use hostname/crawl indexes.
+      // Custom plans scan the shared URL corpus, including referral benchmark URLs;
+      // generic plans use hostname/crawl indexes. The 2k same-host candidates are unchanged.
       expectations: [
-        { kind: 'maxProcessedRows', relation: 'urls', max: 7_300 },
+        { kind: 'maxProcessedRows', relation: 'urls', max: 14_200 },
         { kind: 'maxProcessedRows', relation: 'crawls', max: 2_600 },
       ],
-      seededRows: { urls: 5100, crawls: 2500 },
+      seededRows: { urls: 14_100, crawls: 2500 },
       crossPartition: {
         crawls: 'Recent HTML snapshots can exist in any crawl ID range for a URL.',
       },

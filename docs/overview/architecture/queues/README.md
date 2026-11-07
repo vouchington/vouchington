@@ -74,6 +74,19 @@ flowchart LR
 
 ## Why queues are shaped this way
 
+Hacker News flag maintenance runs independently of external lookups so provider throttling and
+visibility controls do not delay convergence of stored filter state. URL changes admit bounded
+pages of affected posts and feed items; a scheduled keyset repair revisits older entities when
+queue delivery or a transition admission is lost. Workers apply the configured global concurrency
+when they start, so a limit change takes effect after they restart. Entity-listener reconciliation only covers a
+recent change window and cannot recover an old entity whose referenced URL changed independently.
+
+Hacker News lookups have a dedicated external-service rate limit, isolating a flood of new URLs
+from other background work. Detail reads re-admit missing or stale results after a lost or terminal
+job. A separate bounded refresh readmission lane revisits known lookup state within its automatic
+refresh window, recovering dropped refresh chains from persisted timestamps. It does not backfill
+URLs whose initial lookup was missed; those may remain without references until normal admission.
+
 Moderation reconciliation and Bedrock batch polling carry a fixed sweep boundary through bounded
 continuations, so unchanged active rows cannot monopolize every page. Moderation reconciliation
 indexes unfinished work so completed history cannot dominate page reads. Invalid-crawl cleanup
@@ -110,7 +123,8 @@ Source storage and quarantined-image renders are removed only after the final pa
 its listener work is admitted. Quarantine deletion still requires a confirmed permanent copy.
 
 The data-retention schedule runs in deployed environments so staging exposes retention failures
-before production. Staging assigns the job lower queue priority to keep interactive and recovery
+before production. Its Hacker News sweep removes a bounded number of expired URL snapshots;
+committed deletions advance the next scheduled pass through any remaining backlog. Staging assigns the job lower queue priority to keep interactive and recovery
 work ahead of housekeeping. Each AI retention family owns one fixed continuation identity in the
 PostgreSQL maintenance queue. Daily seeds recover finished records but coalesce with live work.
 Each bounded pass yields that same native job while backlog remains, so a large cleanup drains
@@ -344,3 +358,39 @@ their slots. The sweep also removes retained terminal inbound envelopes, so miss
 cannot retain sensitive bodies or consume capacity indefinitely. Sensitive envelopes are removed
 after terminal failure as well as completion, so retry exhaustion can
 discard a delivery that was already acknowledged.
+
+## Stripe purchase collisions
+
+Membership projection commits immutable collision work before queue admission. That work captures
+the displaced source, its binding, and the winning entitlement facts that projection would erase.
+A bounded recovery sweep re-admits pending identities after a crash or queue loss. Stripe reads
+run before the short case-write transaction; cancellation and refunds use the existing financial
+operation ledger after commit. Work is removed only after reconciliation succeeds. Queue locks
+own execution; repeated reads and unique invoice cases make overlapping deliveries safe.
+Ambiguous invoices become durable staff-review records while valid sibling cases commit and
+reconcile independently. Discovery then completes; staff review does not poll Stripe. Transient
+provider failures retain retryable work. Reviews preserve the retained source, binding, invoice
+identity and observed ambiguity until explicit staff disposition; they do not authorize a refund.
+
+| Failure mode                     | Detectable state                                                 | Recovery and idempotency                                                   | Evidence                                                                                  |
+| -------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Dispatch failure                 | Pending collision without a live task                            | Recovery re-admits the stable work id                                      | `case-producer.test.mts`: lost admission recovery                                         |
+| Provider non-consumption         | Work retained; invoice read fails                                | Queue retry or next recovery repeats read                                  | `provider-observation-projection.hardening.test.mts`: Stripe outage                       |
+| Provider consumption, DB failure | Work retained; financial operation has a stable request identity | Existing cancellation/refund reconciliation reuses the operation           | [Financial operation contract](../../../checklists/reference-financial-stripe-variant.md) |
+| Durable commit, reply loss       | Invoice case already exists and work remains                     | Unique lineage/invoice insertion is a no-op; existing operation reconciles | `case-creation.test.mts`: immutable case replay                                           |
+| Retry/reconciliation             | Pending work with existing case or operation                     | Cases and provider operations retain their logical identities              | `case-producer.test.mts`: processing and recovery                                         |
+| TTL expiry                       | No collision-work TTL                                            | Financial intent survives queue retention                                  | Work row persists until successful reconciliation                                         |
+| Orphan cleanup                   | Task id no longer resolves to pending work                       | Processor exits without provider I/O                                       | `provider-observation-projection.hardening.test.mts`: completed work replay               |
+| Normal terminal removal          | Reconciliation succeeds                                          | Delete pending work; terminal task removes its queue identity              | `case-producer.test.mts`: completed work not redispatched                                 |
+
+Collision discovery uses Stripe GETs and introduces no provider mutation key. Refunds remain owned
+by their persisted financial operation and use its existing provider idempotency key; cancellation
+uses the existing terminal-state convergence check. Distinct collisions may inspect the same
+subscription, but unique lineage/invoice cases preserve the first immutable cap and all later
+attempts reconcile that case. Current producers, workers, and canonical schema share one contract.
+
+The first committed invoice case remains authoritative. Earliest-collision lookup covers facts
+visible to its statement, but an earlier provider event can commit after a later event has
+already frozen that invoice's cap. This rare commit-order inversion is accepted: replay must
+not rewrite a financial snapshot or increase an already allocated refund. Staff can inspect
+the retained evidence rather than treating provider timestamps as a global commit order.

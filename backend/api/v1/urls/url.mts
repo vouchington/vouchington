@@ -70,7 +70,9 @@ app.route('/api/v1/urls/:id').get(async ctx => {
     url_type: urlType,
     rss_feed_id: rssFeed?.id ?? null,
   }
-  ctx.json(canTriggerCrawl ? apiResponse('GET:/api/v1/urls/:id#privileged', response) : response)
+  return ctx.json(
+    canTriggerCrawl ? apiResponse('GET:/api/v1/urls/:id#privileged', response) : response,
+  )
 })
 
 app.route('/api/v1/urls/:id/crawl').post(async (ctx: Context) => {
@@ -80,5 +82,5 @@ app.route('/api/v1/urls/:id/crawl').post(async (ctx: Context) => {
 
   const result = await enqueueManualUrlCrawlAsCurrentUser(currentUser, ctx.params.id!)
 
-  ctx.json({ success: true, message: 'Crawl enqueued', ...result })
+  return ctx.json({ success: true, message: 'Crawl enqueued', ...result })
 })

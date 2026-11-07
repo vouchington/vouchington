@@ -65,7 +65,7 @@ export async function readOwnedCopyrightEmailQueue(
     const query = new URLSearchParams({ limit: '1', after })
     if (options.includeUnknownQueryKey) query.set('injected', '1')
     observed = request
-      .get(`/api/v1/copyright-email-intakes/review-queue?${query}`)
+      .get(`/api/v1/copyright-email-intakes/review-queue?${query.toString()}`)
       .expect(200)
       .then(
         response => ({ response }),

@@ -4,7 +4,7 @@ import { createTranslator } from '@ts-shared/ui-messages'
 import { YoutubeRssMetadataRow } from './youtube-rss-metadata-row'
 import type { useTranslations } from '@/lib/i18n/use-translations'
 import type { RssFeedItem } from '@/types/rss-feed-items'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 describe('YoutubeRssMetadataRow', () => {
   let t: ReturnType<typeof useTranslations>

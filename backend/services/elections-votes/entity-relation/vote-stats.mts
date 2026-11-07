@@ -31,6 +31,8 @@ type UpdatedEntityRelationVoteStats = {
   subject_id: string
   object_id: string
   prior_votes_score_net: number
+  prior_votes_score_sort: number
+  next_votes_score_sort: number
 }
 
 type EntityRelationVoteStats = {
@@ -54,7 +56,7 @@ async function updateEntityRelationVoteStatsIfChanged(
   )
   const query = sql`/* updateEntityRelationVoteStatsIfChanged */
     WITH current AS (
-      SELECT id, votes_score_net AS prior_votes_score_net
+      SELECT id, votes_score_net AS prior_votes_score_net, votes_score_sort AS prior_votes_score_sort
       FROM `
     .append(table)
     .append(sql`
@@ -80,7 +82,8 @@ async function updateEntityRelationVoteStatsIfChanged(
           votes_count_none IS DISTINCT FROM ${stats.votes_count_none} OR
           votes_count_down IS DISTINCT FROM ${stats.votes_count_down}
         )
-      RETURNING subject_id, object_id, current.prior_votes_score_net
+      RETURNING subject_id, object_id, current.prior_votes_score_net,
+        current.prior_votes_score_sort, relation.votes_score_sort AS next_votes_score_sort
     ) SELECT * FROM updated`)
   const { rows } = await queryExecutor<UpdatedEntityRelationVoteStats>(query)
   return rows[0]
@@ -96,7 +99,12 @@ async function persistEntityRelationVoteStats(
   ])
   const updated = await updateEntityRelationVoteStatsIfChanged(target, stats, query)
   const nextVotesScoreNet = stats.votes_score_up - stats.votes_score_down
-  if (updated && updated.prior_votes_score_net > 0 !== nextVotesScoreNet > 0) {
+  if (
+    updated &&
+    (updated.prior_votes_score_net > 0 !== nextVotesScoreNet > 0 ||
+      (target.relationTable === 'relation__post__related__url' &&
+        updated.prior_votes_score_sort !== updated.next_votes_score_sort))
+  ) {
     await recordPostTopicRelationPublicationChanges(query, target.relationTable, [updated])
   }
   const result = updated
@@ -134,8 +142,8 @@ export function enqueueTopHashtagRefreshIfUpdated(
 export function enqueuePostNotificationReconciliationIfUpdated(
   target: EntityRelationElectionTarget,
   postId: string | undefined,
-  enqueue: (postId: string) => unknown = postId =>
-    enqueueReconcilePostNotifications(postId, randomUUID()),
+  enqueue: (postId: string) => unknown = notifiedPostId =>
+    enqueueReconcilePostNotifications(notifiedPostId, randomUUID()),
 ): void {
   if (
     postId &&
@@ -148,7 +156,7 @@ export function enqueuePostNotificationReconciliationIfUpdated(
 export async function updateEntityRelationElectionVoteStats(
   target: EntityRelationElectionTarget,
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- replica aggregation, mutation, and follow-up side effects are ordered
+  // ast-grep-ignore: no-three-sequential-awaits -- replica aggregate output feeds persistence; await persistence before cache invalidation, then settle invalidation before publisher and notification follow-ups
   const stats = await aggregateElectionVoteStatsFromReplica(
     getEntityRelationElectionConfig(target.relationTable),
     target.entityRelationId,
@@ -163,7 +171,7 @@ export async function updateEntityRelationElectionVoteStats(
 export async function updateEntityRelationElectionVoteStatsFromPrimary(
   target: EntityRelationElectionTarget,
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- read-after-write aggregation, stats persistence, then cache invalidation are ordered
+  // ast-grep-ignore: no-three-sequential-awaits -- primary aggregate output feeds persistence; await persistence before cache invalidation, then settle invalidation before publisher and notification follow-ups
   const stats = await aggregateElectionVoteStatsFromPrimary(
     getEntityRelationElectionConfig(target.relationTable),
     target.entityRelationId,

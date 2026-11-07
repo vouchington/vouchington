@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { deserializeCatalog, serializeCatalog } from './catalog-bootstrap.mts'
 import { createTranslator } from './index.mts'
 import { catalogMessagesFromTables } from './load-catalog-json.mts'
-import { enMessages, esMessages } from './locale-catalogs.mts'
+import { enMessages, esMessages } from '../test-helpers/locale-catalogs.mts'
 
 describe('catalog bootstrap', () => {
   it('projects normalized copies, aliases, and locale rows back to consumer aliases', () => {

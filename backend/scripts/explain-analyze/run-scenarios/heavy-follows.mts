@@ -81,7 +81,15 @@ export async function runHeavyFollowScenarios() {
   })
   await runAndCapture(
     'post-feed-heavy-hot',
-    () => getPostFeedIds(heavyFollowUser, { sort: 'hot', limit: 25, time_range: '1w' }),
+    async () => {
+      const page = await getPostFeedIds(heavyFollowUser, {
+        sort: 'hot',
+        limit: 25,
+        time_range: '1w',
+      })
+      if (page.results.length !== 25 || !page.page_info.has_next_page)
+        throw new Error('Heavy hot feed fixture must return a full positive-support page')
+    },
     'heavy-hot',
   )
 

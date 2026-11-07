@@ -74,7 +74,7 @@ describe('Codex PR shepherd checkpoints', () => {
       ...trustedBot(),
       body: renderCheckpoint(checkpoint({ triggerCommentId: 100, status: 'queued' })),
     }
-    const context = {
+    const checkpointContext = {
       actor: 'github-actions[bot]',
       commentId: 42,
       headRef: 'codex/fix',
@@ -86,7 +86,7 @@ describe('Codex PR shepherd checkpoints', () => {
     }
     expect(
       parseCheckpoint(
-        updateExactCheckpoint(comment, context, 'running', {
+        updateExactCheckpoint(comment, checkpointContext, 'running', {
           id: sessionId,
           url: `https://harness.example.com/sessions/${sessionId}`,
         }),

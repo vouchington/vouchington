@@ -29,6 +29,7 @@ import { completeCopyrightMandatoryHumanReview, processCopyrightActionIntent } f
 
 type SurfaceFixture = Awaited<ReturnType<typeof createTestCopyrightImageFixture>>
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed fixture.ownerKind switch is exhaustive; Oxlint misses its terminal flow.
 function ownerCache(fixture: SurfaceFixture) {
   switch (fixture.ownerKind) {
     case 'post':
@@ -133,6 +134,7 @@ async function seedOwnerCache(fixture: SurfaceFixture): Promise<void> {
   }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed fixture.selector.surfaceKind switch is exhaustive; Oxlint misses its terminal flow.
 async function publicImageIsProjected(fixture: SurfaceFixture): Promise<boolean> {
   switch (fixture.selector.surfaceKind) {
     case 'post-image':

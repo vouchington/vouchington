@@ -109,16 +109,16 @@ export async function selectTerritorialStaffComplaintPages(
         : null,
     fetched: (item.decisionId && rowsByDecision.get(item.decisionId)) || [],
   }))
-  const windowRequests = listed.flatMap(({ decided, fetched }) =>
-    decided
-      ? fetched.slice(0, options.limit).flatMap(row => complaintWindowRequests(decided, row))
+  const windowRequests = listed.flatMap(({ decided: decidedCase, fetched }) =>
+    decidedCase
+      ? fetched.slice(0, options.limit).flatMap(row => complaintWindowRequests(decidedCase, row))
       : [],
   )
   const windows = (await getTerritorialInformedWindows(windowRequests, query)).values()
   return new Map(
-    listed.map(({ item, decided, fetched }): [string, ComplaintPage] => {
+    listed.map(({ item, decided: decidedCase, fetched }): [string, ComplaintPage] => {
       // A decisionless case has no complaints. This is an actual empty collection, not truncation.
-      if (!decided)
+      if (!decidedCase)
         return [
           item.noticeId,
           {
@@ -135,7 +135,7 @@ export async function selectTerritorialStaffComplaintPages(
         )
       return [
         item.noticeId,
-        toComplaintPage(decided, { fetched, limit: options.limit, windows: caseWindows }),
+        toComplaintPage(decidedCase, { fetched, limit: options.limit, windows: caseWindows }),
       ]
     }),
   )

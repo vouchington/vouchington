@@ -100,14 +100,15 @@ describe('OpenRouter flex capacity fallback', () => {
 
   it('does not resend again when the default-tier attempt also fails', async () => {
     vi.resetModules()
-    const { createOpenRouterResponse } = await import('./create-response.mts')
+    const { createOpenRouterResponse: createResponseAfterReset } =
+      await import('./create-response.mts')
     const createResponse = vi
       .fn<CreateResponse>()
       .mockResolvedValueOnce(makeFlexCapacityFailedStream() as never)
       .mockResolvedValueOnce(makeFlexCapacityFailedStream({ service_tier: 'default' }) as never)
 
     await expect(
-      createOpenRouterResponse(flexParams, undefined, { createResponse }),
+      createResponseAfterReset(flexParams, undefined, { createResponse }),
     ).rejects.toMatchObject({ status: 'failed', code: 'server_error' })
 
     expect(createResponse).toHaveBeenCalledTimes(2)

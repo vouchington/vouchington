@@ -1,4 +1,6 @@
 export type MembershipsJobs =
+  | 'processStripePurchaseCollisionWork'
+  | 'recoverStripePurchaseCollisions'
   | 'processStripeEvent'
   | 'processAppleNotification'
   | 'recoverAppleNotifications'
@@ -30,6 +32,8 @@ export type ProcessStripeEventData = {
   stripeSubscriptionId: string | null
   isLiveMode: boolean
 }
+
+export type RecoverStripePurchaseCollisionsData = { after?: string; through?: string }
 
 export type RecoverMembershipVerificationsData = { after?: string; through?: string }
 

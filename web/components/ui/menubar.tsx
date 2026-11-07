@@ -14,7 +14,7 @@ function Menubar({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root> & {
-  ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Root>>
+  ref?: React.Ref<React.ComponentRef<typeof MenubarPrimitive.Root>>
 }) {
   return (
     <MenubarPrimitive.Root
@@ -35,7 +35,7 @@ function MenubarTrigger({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger> & {
-  ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Trigger>>
+  ref?: React.Ref<React.ComponentRef<typeof MenubarPrimitive.Trigger>>
 }) {
   return (
     <MenubarPrimitive.Trigger
@@ -59,7 +59,7 @@ function MenubarContent({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof MenubarPrimitive.Content>>
 }) {
   return (
     <MenubarPrimitive.Portal>
@@ -86,7 +86,7 @@ function MenubarItem({
   ...props
 }: React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Item> & {
   inset?: boolean
-  ref?: React.Ref<React.ElementRef<typeof MenubarPrimitive.Item>>
+  ref?: React.Ref<React.ComponentRef<typeof MenubarPrimitive.Item>>
 }) {
   return (
     <MenubarPrimitive.Item

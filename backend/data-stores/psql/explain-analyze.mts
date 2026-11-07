@@ -92,7 +92,6 @@ export async function explainAnalyze(
   let functionCalls: FunctionCall[] = []
   let prepared = false
   try {
-    // ast-grep-ignore: no-three-sequential-awaits -- database transaction/setup statements must remain ordered
     await client.query(sql`/* explainAnalyze */ BEGIN`)
     try {
       await client.query("/* explainAnalyze */ SET LOCAL track_functions = 'all'")

@@ -1,3 +1,5 @@
+import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
+import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { firstVisibleRssTextField } from '@modules/utils'
@@ -26,6 +28,7 @@ type ToolResult = {
     guid: string
     published_at: string
     rss_feed_title: string
+    hacker_news_references?: HackerNewsReferenceCounts
   }>
 }
 
@@ -71,11 +74,13 @@ const tool: Tool<ToolArgs, ToolResult> = {
       const items = await getRssFeedItemByIdCachedBatch(itemIds)
 
       const filteredItems = items.filter((item): item is NonNullable<typeof item> => item !== null)
+      const references = await getRssFeedItemHackerNewsSummaries(filteredItems)
       return {
         success: true,
         results: await Promise.all(
           filteredItems.map(async item => ({
             id: item.id,
+            ...(references[item.id] && { hacker_news_references: references[item.id] }),
             title: await sanitizePromptInjection(item.data.title || item.guid, { isTitle: true }),
             markdown: wrapExternalContent(
               await sanitizeRssContent(getRssFeedItemContent(item.data)),

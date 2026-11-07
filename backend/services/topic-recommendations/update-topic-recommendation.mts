@@ -66,7 +66,7 @@ export async function updateTopicRecommendation(
     const lockedRecommendation = lockedRecommendationQuery.rows[0]
     assert(lockedRecommendation?.reviewed_at === null, 422, 'Recommendation is no longer editable')
 
-    // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
+    // ast-grep-ignore: no-three-sequential-awaits -- Materialized recommendation values feed the extension write only after lockPostPublication fences the recommendation.
     const materialized = await materializeTopicRecommendationInput(
       currentUser.id,
       {
@@ -113,7 +113,7 @@ export async function updateTopicRecommendation(
     )
     assert(extensionResult === 1, 422, 'Recommendation is no longer editable')
 
-    // ast-grep-ignore: no-three-sequential-awaits -- hostname replacement, publication capture, and the transaction-consistent reload are ordered
+    // ast-grep-ignore: no-three-sequential-awaits -- finish landing-page URL and hostname replacement before publication capture; reload after capture so the returned recommendation includes all transaction changes
     await replaceTopicRecommendationLandingPageUrls(
       recommendation.id,
       materialized.landing_page_url_ids,

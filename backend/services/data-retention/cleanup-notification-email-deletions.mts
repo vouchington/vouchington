@@ -15,7 +15,7 @@ export async function deleteNotificationEmailPage(
   const ids = page.map(row => row.id)
   if (name === 'ses_bounce_events') {
     // This transaction-local exact-id capability is checked again by the append-only trigger.
-    // ast-grep-ignore: no-three-sequential-awaits -- authorize exact IDs, delete under the trigger guard, then revoke in this transaction
+    // ast-grep-ignore: no-three-sequential-awaits -- The BEFORE DELETE append-only guard consumes the exact id/cutoff capability and rejects unretained recipients; revoke that capability only after guarded deletion succeeds.
     await query(
       `/* authorizeSesBounceRetention */
        SELECT set_config('app.ses_bounce_retention_ids', $1, true),

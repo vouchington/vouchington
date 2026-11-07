@@ -7,10 +7,8 @@ import { parseCopyrightNoticeForm } from './http-input.mts'
 import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
-import {
-  admitCopyrightEmailCorrespondence,
-  rejectCopyrightEmailCorrespondence,
-} from './email-correspondence-admission.mts'
+import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
+import { rejectCopyrightEmailCorrespondence } from './email-correspondence-rejection.mts'
 
 /** The common REST/MCP decision after each surface has validated and parsed its input. */
 export async function approveCopyrightEmailIntakeDecision(

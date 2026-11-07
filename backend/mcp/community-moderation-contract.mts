@@ -128,10 +128,10 @@ export function communityModerationInput(endpoint: ToolApiEndpoint): Record<stri
   const uuidField = option ? communityModerationUuidPaths[option] : undefined
   const uuidFields = uuidField ? [uuidField] : []
   if (option === 'delete_mod_note') uuidFields.push('noteId')
-  for (const uuidField of uuidFields) {
+  for (const uuidPath of uuidFields) {
     // REST accepts the 36-character path form; AJV's UUID format also permits URNs.
-    properties[uuidField] = {
-      ...(properties[uuidField] as Record<string, unknown>),
+    properties[uuidPath] = {
+      ...(properties[uuidPath] as Record<string, unknown>),
       format: 'uuid',
       minLength: 36,
       maxLength: 36,

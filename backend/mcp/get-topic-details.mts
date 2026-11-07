@@ -133,14 +133,14 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         let brandName: string | null = null
 
         if (idsToResolve.length > 0) {
-          const resolved = await getTopicsByAnyBatch(idsToResolve)
+          const resolvedTopics = await getTopicsByAnyBatch(idsToResolve)
           let idx = 0
           if (cardAttrs?.bank_topic_id) {
-            bankName = resolved[idx]?.name ?? null
+            bankName = resolvedTopics[idx]?.name ?? null
             idx++
           }
           if (cardAttrs?.brand_topic_id) {
-            brandName = resolved[idx]?.name ?? null
+            brandName = resolvedTopics[idx]?.name ?? null
           }
         }
 
@@ -157,8 +157,8 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
 
         let companyName: string | null = null
         if (rewardsAttrs?.company_topic_id) {
-          const [resolved] = await getTopicsByAnyBatch([rewardsAttrs.company_topic_id])
-          companyName = resolved?.name ?? null
+          const [companyTopic] = await getTopicsByAnyBatch([rewardsAttrs.company_topic_id])
+          companyName = companyTopic?.name ?? null
         }
 
         return {

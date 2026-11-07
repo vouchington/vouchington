@@ -31,7 +31,7 @@ export function useSearchEffect(
         setResults(EMPTY_RESULTS)
         setLoading(false)
       })
-      return
+      return undefined
     }
 
     queueMicrotask(() => setLoading(true))

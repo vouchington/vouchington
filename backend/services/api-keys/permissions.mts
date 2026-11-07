@@ -50,6 +50,7 @@ export function validateApiKeyCreationScopeSet(
   return { valid: true, permissions: result.permissions }
 }
 
+// oxlint-disable-next-line typescript/consistent-return -- Typed result.code switch is exhaustive; Oxlint misses its terminal flow.
 function apiKeyScopeValidationError(
   type: ApiKeyType,
   result: Exclude<ApiKeyScopeSetValidationResult, { valid: true }>,

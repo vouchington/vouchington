@@ -24,12 +24,6 @@ export async function createProviderMembershipSource<
   bindingId: string
   lineageId: string
 }> {
-  if (
-    options.stripeOriginatingInvoiceId !== undefined &&
-    (options.sourceKind !== 'direct' || options.sourceIdentity.provider !== 'stripe')
-  )
-    throw new Error('Only direct Stripe sources may bind an originating invoice')
-
   const lineage = await createOrLockProviderLineage(options, query)
   assertProviderAccountMatches(lineage.provider_account_id, options)
   const { binding, source } = await createProviderSourceRecords(options, lineage.id, query)
@@ -94,39 +88,24 @@ async function createOrLockProviderLineageBinding(
   options: CreateProviderMembershipSourceOptions,
   lineageId: string,
   query: QueryExecutor,
-): Promise<{ id: string; originating_invoice_id: string | null }> {
+): Promise<{ id: string }> {
   await query(sql`/* createMembership: bind provider lineage */
     INSERT INTO membership_lineage_bindings (
-      membership_provider_lineage_id, user_id, source_kind, originating_invoice_id
+      membership_provider_lineage_id, user_id, source_kind
     ) VALUES (
-      ${lineageId}, ${options.userId}, ${options.sourceKind},
-      ${options.stripeOriginatingInvoiceId ?? null}
+      ${lineageId}, ${options.userId}, ${options.sourceKind}
     )
     ON CONFLICT DO NOTHING`)
   const { rows } = await query(sql`/* createMembership: lock provider binding */
-    SELECT id, user_id, originating_invoice_id FROM membership_lineage_bindings
+    SELECT id, user_id FROM membership_lineage_bindings
     WHERE membership_provider_lineage_id = ${lineageId}
       AND source_kind = ${options.sourceKind}
       AND released_at IS NULL
       AND (${options.sourceKind} = 'direct' OR user_id = ${options.userId})
     FOR UPDATE`)
-  let binding = rows[0] as
-    | { id: string; user_id: string; originating_invoice_id: string | null }
-    | undefined
+  const binding = rows[0] as { id: string; user_id: string } | undefined
   if (binding?.user_id !== options.userId)
     throw new ProviderMembershipSourceConflictError('Provider lineage is bound to another account')
-  if (options.stripeOriginatingInvoiceId && binding.originating_invoice_id === null) {
-    await query(sql`/* createMembership: fill Stripe originating invoice */
-      UPDATE membership_lineage_bindings
-      SET originating_invoice_id = ${options.stripeOriginatingInvoiceId}
-      WHERE id = ${binding.id} AND originating_invoice_id IS NULL`)
-    binding = { ...binding, originating_invoice_id: options.stripeOriginatingInvoiceId }
-  }
-  if (
-    options.stripeOriginatingInvoiceId &&
-    binding.originating_invoice_id !== options.stripeOriginatingInvoiceId
-  )
-    throw new Error('Stripe lineage binding originating invoice does not match the incoming event')
   return binding
 }
 

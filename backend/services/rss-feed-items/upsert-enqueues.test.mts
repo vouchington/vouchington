@@ -31,7 +31,9 @@ function observeAddedJobs(queue: typeof backgroundCpu) {
     close: () => queue.off('added', onAdded),
     waitFor: (matches: (job: AddedJob) => boolean) => {
       if (added.some(matches)) return Promise.resolve()
-      return new Promise<void>(resolve => waiters.push({ matches, resolve }))
+      return new Promise<void>(resolve => {
+        waiters.push({ matches, resolve })
+      })
     },
   }
 }

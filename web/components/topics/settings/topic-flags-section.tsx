@@ -21,7 +21,7 @@ export function TopicFlagsSection({
 }: {
   is_noindexed: boolean
   allowReviews: boolean
-  onFlagsSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  onFlagsSubmit: (e: React.SubmitEvent<HTMLFormElement>) => void
   setNoindex: (is_noindexed: boolean) => void
   setAllowReviews: (allowReviews: boolean) => void
   flagsSaving: boolean

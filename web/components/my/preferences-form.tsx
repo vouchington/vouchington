@@ -14,15 +14,8 @@ import { useListStyle } from '@/lib/preferences/use-list-style'
 import { useFeedStyle } from '@/lib/preferences/use-feed-style'
 import { isValidTheme, isValidListStyle, isValidFeedStyle } from '@/lib/preferences/shared'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { HnDiscussionsPreference } from './hn-discussions-preference'
 
-export function PreferencesForm({
-  hnDiscussionsEnabled,
-  userId,
-}: {
-  hnDiscussionsEnabled: boolean
-  userId: string
-}) {
+export function PreferencesForm() {
   const t = useTranslations()
   const { theme, setTheme } = useTheme()
   const { listStyle, setListStyle } = useListStyle()
@@ -139,11 +132,6 @@ export function PreferencesForm({
           {t('extracted.my.preferencesForm.summaryIncludesAShortExcerptFrom_495436fb')}
         </p>
       </div>
-
-      <HnDiscussionsPreference
-        initialEnabled={hnDiscussionsEnabled}
-        userId={userId}
-      />
     </div>
   )
 }

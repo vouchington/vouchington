@@ -53,18 +53,21 @@ export async function processExtractImageMetadata(imageId: string): Promise<void
 
   let shouldEnqueueImageCreated = false
   try {
-    // ast-grep-ignore: no-three-sequential-awaits -- ordered source, spool, and DB transition
+    // ast-grep-ignore: no-three-sequential-awaits -- the S3 body supplies the temporary file; its extracted metadata supplies the finalized image transition
     const body = await readS3Body(canonicalS3Key)
     const metadata = await withTemporaryMediaFile(
       body,
       async filename => {
         const sharpMetadata = await sharp(filename).metadata()
-        const metadata: ExtractedMetadata = { ...sharpMetadata }
+        const extractedMetadata: ExtractedMetadata = { ...sharpMetadata }
 
-        if (!metadata.format || !SUPPORTED_IMAGE_FORMATS.includes(metadata.format)) {
-          throw createHttpError(415, `Unsupported format: ${metadata.format}`)
+        if (
+          !extractedMetadata.format ||
+          !SUPPORTED_IMAGE_FORMATS.includes(extractedMetadata.format)
+        ) {
+          throw createHttpError(415, `Unsupported format: ${extractedMetadata.format}`)
         }
-        return metadata
+        return extractedMetadata
       },
       { prefix: 'image-extract-' },
     )

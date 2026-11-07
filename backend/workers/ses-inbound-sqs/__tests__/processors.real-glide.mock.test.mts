@@ -98,7 +98,9 @@ describe('processSesInboundSqsMessage', () => {
       handleMessage: processSesInboundSqsMessage,
       port,
     })
-    const deleted = new Promise<SqsMessage>(resolve => consumer.once('message-deleted', resolve))
+    const deleted = new Promise<SqsMessage>(resolve => {
+      consumer.once('message-deleted', resolve)
+    })
     const deletedMessage = await deleted
     await consumer.close()
 
@@ -157,7 +159,9 @@ describe('processSesInboundSqsMessage', () => {
         handleMessage: processSesInboundSqsMessage,
         port,
       })
-      const deleted = new Promise<SqsMessage>(resolve => consumer.once('message-deleted', resolve))
+      const deleted = new Promise<SqsMessage>(resolve => {
+        consumer.once('message-deleted', resolve)
+      })
       expect(await deleted).toEqual(message)
       await consumer.close()
 
@@ -189,9 +193,9 @@ describe('processSesInboundSqsMessage', () => {
       handleMessage: processSesInboundSqsMessage,
       port,
     })
-    const failed = new Promise<[SqsMessage, unknown]>(resolve =>
-      consumer.once('message-failed', (msg: SqsMessage, error: unknown) => resolve([msg, error])),
-    )
+    const failed = new Promise<[SqsMessage, unknown]>(resolve => {
+      consumer.once('message-failed', (msg: SqsMessage, error: unknown) => resolve([msg, error]))
+    })
     const [failedMessage, error] = await failed
     await consumer.close()
 
@@ -272,7 +276,9 @@ describe('processSesInboundSqsMessage', () => {
       handleMessage: processSesInboundSqsMessage,
       port,
     })
-    const deleted = new Promise<SqsMessage>(resolve => consumer.once('message-deleted', resolve))
+    const deleted = new Promise<SqsMessage>(resolve => {
+      consumer.once('message-deleted', resolve)
+    })
     const deletedMessage = await deleted
     await consumer.close()
 

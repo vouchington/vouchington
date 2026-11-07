@@ -90,7 +90,7 @@ export function NotificationsPage({
       setReadAtById(() => {
         const now = new Date().toISOString()
         return Object.fromEntries(
-          notifications.results.map(result => [result.id, result.read_at ?? now]),
+          notifications.results.map(notification => [notification.id, notification.read_at ?? now]),
         )
       })
     } catch {

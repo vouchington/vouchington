@@ -13,7 +13,7 @@ const labelVariants = cva(
 type LabelProps = React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
   VariantProps<typeof labelVariants> &
   React.LabelHTMLAttributes<HTMLLabelElement> & {
-    ref?: React.Ref<React.ElementRef<typeof LabelPrimitive.Root>>
+    ref?: React.Ref<React.ComponentRef<typeof LabelPrimitive.Root>>
   }
 
 function Label({ className, htmlFor, id, ref, ...props }: LabelProps) {

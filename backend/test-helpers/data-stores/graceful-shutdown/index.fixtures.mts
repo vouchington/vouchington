@@ -49,12 +49,12 @@ export function restoreSignalListeners(before: ReturnType<typeof snapshotSignalL
   ;(globalThis as Record<symbol, boolean>)[SIGNAL_LISTENERS_REGISTERED] = false
   for (const listener of process.listeners('SIGTERM')) {
     if (!before.sigterm.includes(listener)) {
-      process.removeListener('SIGTERM', listener as NodeJS.SignalsListener)
+      process.removeListener('SIGTERM', listener)
     }
   }
   for (const listener of process.listeners('SIGINT')) {
     if (!before.sigint.includes(listener)) {
-      process.removeListener('SIGINT', listener as NodeJS.SignalsListener)
+      process.removeListener('SIGINT', listener)
     }
   }
 }

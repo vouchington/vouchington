@@ -35,7 +35,7 @@ export function ExposureCooldownModal({
   const [nowMs, setNowMs] = useState(Date.now)
 
   useEffect(() => {
-    if (!open || !cooldownEndsAt) return
+    if (!open || !cooldownEndsAt) return undefined
     const id = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(id)
   }, [open, cooldownEndsAt])

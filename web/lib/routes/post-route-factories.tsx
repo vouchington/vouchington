@@ -1,6 +1,3 @@
-/* oxlint-disable max-lines -- shared factory for all post-type detail pages; community pin data fetching pushes it over the limit */
-import * as Sentry from '@sentry/nextjs'
-import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 
@@ -13,19 +10,12 @@ import { ReviewReferralPrograms } from '@/components/posts/review-referral-progr
 import { ReviewDisputeEntry } from '@/components/disputes/review-dispute-entry'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
-import {
-  getCommunity,
-  getCommunityPinnedPosts,
-  getPost,
-  getPostDescendants,
-} from '@/lib/api/server'
-import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
-import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { getPost, getPostDescendants } from '@/lib/api/server'
+import { loadPostCommunityPinState } from '@/lib/routes/post-community-pin-state'
+import { buildPostDetailMetadata } from '@/lib/routes/post-detail-metadata'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { canCurrentUserSeeDownvotes } from '@/lib/permissions/can-see-downvotes'
-import { isIndexableForSeo } from '@/lib/seo/indexability'
 import { createExcerpt } from '@vouchington/utils/seo-metadata'
-import { createNoIndexMetadata, createPageMetadata } from '@/lib/seo/metadata'
 import { buildCommentsForSchema, buildInteractionStats } from '@/lib/seo/post-schema-helpers'
 import { createPostSchema } from '@/lib/seo/post-schema'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
@@ -33,53 +23,21 @@ import { createBreadcrumbSchema } from '@/lib/seo/structured-data-breadcrumbs'
 import { buildPlacementImagePath } from '@/lib/utils/image-url'
 import { getSchemaOrgType } from '@/lib/seo/schema-org-types'
 import { communityHref, topicHref, userHref } from '@/lib/links/entity-href'
-import { getEffectiveContentLanguage } from '@ts-shared/languages/content-languages'
 import {
   getPostCollectionLabel,
   getPostCollectionPath,
   getPostPath,
   getPostSchemaKind,
   getPostTitle,
-  getVoteScoreNet,
 } from '@/lib/post-helpers'
 import type { PostType } from '@/types/posts'
 
 type DetailPageProps = { params: Promise<{ id: string }> }
 
 export function createPostDetailPage(postType: PostType, slug: string) {
-  async function generateMetadata({ params }: DetailPageProps): Promise<Metadata> {
+  async function generateMetadata({ params }: DetailPageProps) {
     const { id } = await params
-    try {
-      const postResponse = await getPost(id)
-      if (!postResponse) return createNoIndexMetadata()
-      const post = postResponse.post
-      if (post.post_type !== postType) return createNoIndexMetadata()
-      const voteScoreNet = getVoteScoreNet(postResponse)
-      const isRestrictedAudience = post.privacy !== 'public' || post.broadcast !== 'everyone'
-      const noIndex =
-        isRestrictedAudience ||
-        voteScoreNet === null ||
-        !isIndexableForSeo(voteScoreNet) ||
-        !!post.archived_at
-      const canonicalPath = getPostPath(slug, post)
-      return createPageMetadata({
-        title: getPostTitle(post),
-        description: createExcerpt(postResponse.html ?? post.markdown),
-        path: canonicalPath,
-        noIndex,
-        imagePath: buildPlacementImagePath(post.images?.[0]),
-        type: 'article',
-        publishedTime: post.created_at,
-        modifiedTime: post.updated_at,
-        authors: post.created_by?.username ? [post.created_by.username] : undefined,
-        contentLanguage: getEffectiveContentLanguage({
-          declaredLanguage: post.declared_language,
-          detectedLanguage: post.lingua_rs_detected_language,
-        }),
-      })
-    } catch {
-      return createNoIndexMetadata()
-    }
+    return buildPostDetailMetadata({ id, postType, slug })
   }
 
   async function PostDetailRoutePage({ params }: DetailPageProps) {
@@ -94,36 +52,12 @@ export function createPostDetailPage(postType: PostType, slug: string) {
     const postCommunity = post.community_id
       ? (postResponse.communities?.[post.community_id] ?? post.community)
       : null
-    const currentUserPromise = getCurrentUser()
-    const descendantsPromise = getPostDescendants(id)
-    const communityDataPromise = currentUserPromise.then(user => {
-      if (!postCommunity || !user) return null
-      return returnNullForMissingEntity(getCommunity(postCommunity.slug), {
-        nullStatusCodes: [403, 404],
-      }).catch((err: unknown) => {
-        // Community data is auxiliary for pin eligibility — log 5xx but don't fail the page
-        Sentry.captureException(err, { tags: { context: 'community-data-for-pin' } })
-        return null
-      })
-    })
-    const pinnedPostsPromise = currentUserPromise.then(user => {
-      if (!postCommunity || !user) return null
-      return returnNullForMissingEntity(getCommunityPinnedPosts(postCommunity.slug), {
-        nullStatusCodes: [403, 404],
-      }).catch((err: unknown) => {
-        // Pin state is auxiliary — log unexpected errors (5xx, network) but don't fail the page
-        Sentry.captureException(err, { tags: { context: 'community-pinned-posts' } })
-        return null
-      })
-    })
-
-    const [descendants, currentUser, communityData, pinnedPostsData, t] = await Promise.all([
-      descendantsPromise,
-      currentUserPromise,
-      communityDataPromise,
-      pinnedPostsPromise,
+    const [descendants, pinState, t] = await Promise.all([
+      getPostDescendants(id),
+      loadPostCommunityPinState(postCommunity ?? null),
       getTranslations(),
     ])
+    const { currentUser, communityData, pinnedPostsData } = pinState
     const communityViewerRole =
       communityData?.membership?.removed_at == null ? communityData?.membership?.role : null
     const isCommunityMod =
@@ -174,7 +108,7 @@ export function createPostDetailPage(postType: PostType, slug: string) {
             t={t}
             post={post}
             authorAside={authorAside}
-            sourceUrls={[postResponse.link_embed?.source_url]}
+            hackerNewsReferences={postResponse.post_hacker_news_references?.[post.id]}
           />
         }
         showFooter={false}

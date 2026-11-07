@@ -48,13 +48,17 @@ const batch = createAdminTool<{ batch_id: string }>({
   outputSchema: adminRouteOutputSchema(importApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
   run: async (user, args) => {
-    const batch = await getImportBatch(args.batch_id)
-    assert(batch && currentUserCanViewImportBatch(user, batch), 404, 'Import batch not found')
+    const importBatch = await getImportBatch(args.batch_id)
+    assert(
+      importBatch && currentUserCanViewImportBatch(user, importBatch),
+      404,
+      'Import batch not found',
+    )
     const [rows, progress] = await Promise.all([
-      getImportRowsByBatchId(batch.id),
-      getImportBatchProgress(batch.id),
+      getImportRowsByBatchId(importBatch.id),
+      getImportBatchProgress(importBatch.id),
     ])
-    return { batch, rows, progress }
+    return { batch: importBatch, rows, progress }
   },
 })
 const syncApi = { method: 'GET', path: '/api/v1/article-syncs/{jobId}' } as const
@@ -125,19 +129,19 @@ const analytics = createAdminTool<{ username: string; slug: string }>({
   annotations: { readOnlyHint: true, openWorldHint: false },
   run: async (_, args) => {
     const page = await getLandingPageByUsernameAndSlug(args.username, args.slug)
-    const [analytics, totalSignups] = await Promise.all([
+    const [pageAnalytics, totalSignups] = await Promise.all([
       getLandingPageAnalyticsByPageId(page.id),
       getSignupCountByReferrerId(page.user_id),
     ])
     return {
       landing_page: page,
       analytics: {
-        ...analytics,
+        ...pageAnalytics,
         conversion_funnel: {
-          total_visits: analytics.total_visits,
-          total_clicks: analytics.total_clicks,
+          total_visits: pageAnalytics.total_visits,
+          total_clicks: pageAnalytics.total_clicks,
           total_signups: totalSignups,
-          visit_to_click_rate: analytics.ctr,
+          visit_to_click_rate: pageAnalytics.ctr,
         },
       },
     }

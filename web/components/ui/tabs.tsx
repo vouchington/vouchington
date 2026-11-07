@@ -12,7 +12,7 @@ function TabsList({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & {
-  ref?: React.Ref<React.ElementRef<typeof TabsPrimitive.List>>
+  ref?: React.Ref<React.ComponentRef<typeof TabsPrimitive.List>>
 }) {
   return (
     <TabsPrimitive.List
@@ -33,7 +33,7 @@ function TabsTrigger({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> & {
-  ref?: React.Ref<React.ElementRef<typeof TabsPrimitive.Trigger>>
+  ref?: React.Ref<React.ComponentRef<typeof TabsPrimitive.Trigger>>
 }) {
   return (
     <TabsPrimitive.Trigger
@@ -54,7 +54,7 @@ function TabsContent({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof TabsPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof TabsPrimitive.Content>>
 }) {
   return (
     <TabsPrimitive.Content

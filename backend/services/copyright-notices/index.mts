@@ -17,12 +17,12 @@ export { loadCopyrightEmailRawEvidence } from './email-raw-evidence.mts'
 export { recordCopyrightEmailParse } from './email-intake-parses.mts'
 export { recordCopyrightEmailIntakeLegalProcess } from './email-legal-process.mts'
 export {
-  getCopyrightStaffEmailIntake,
-  getCopyrightParticipantNoticeDetail,
   getCopyrightPublicNoticeDetail,
   listAcceptedCopyrightNotices,
   copyrightAcceptedNoticeCursorScope,
 } from './read-models.mts'
+export { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
+export { getCopyrightStaffEmailIntake } from './read-models-staff-email-intake.mts'
 export { completeCopyrightMandatoryHumanReview } from './human-review.mts'
 export { reviewCopyrightStaydownMatch } from './staydown-review.mts'
 export {
@@ -59,7 +59,8 @@ export {
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from './form-reviews-recovery.mts'
 export type { CopyrightSweepIdPage } from './sweep-id-pages.mts'
-export { reviewCopyrightAppeal, reviewCopyrightCounterNotice } from './submission-reviews.mts'
+export { reviewCopyrightAppeal } from './submission-reviews.mts'
+export { reviewCopyrightCounterNotice } from './counter-notice-reviews.mts'
 export {
   getPendingCopyrightAgentDispatches,
   type CopyrightAgentDispatch,
@@ -69,8 +70,8 @@ export {
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentEmailSent,
   markCopyrightDeliveryIntentBouncedBySesMessageId,
-  searchRecoverableCopyrightDeliveryIntentIds,
 } from './delivery-intents.mts'
+export { searchRecoverableCopyrightDeliveryIntentIds } from './delivery-intent-recovery.mts'
 export {
   deliverCopyrightInAppNotification,
   prepareCopyrightEmailDelivery,

@@ -5,7 +5,7 @@ import { mergeMessages } from '@/lib/i18n/use-translations'
 import type { IndividualCard, SpendingCategory } from '@/types/my'
 import { CardDisplayRow } from '../cards-manager/card-row'
 import { CategorySummary } from '../spending-categories-manager/category-summary'
-import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 const noOp = vi.fn<() => void>()
 

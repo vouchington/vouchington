@@ -17,7 +17,7 @@ vi.mock(import('@/lib/api/client/community-ban-evasion'), () => ({
   confirmCommunityBanEvasion: mockConfirmBanEvasion,
   dismissCommunityBanEvasion: vi.fn<VitestLooseMock>(),
 }))
-vi.mock(import('@/lib/api/client/posts'), () => ({ deletePost: vi.fn<VitestLooseMock>() }))
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({ deletePost: vi.fn<VitestLooseMock>() }))
 vi.mock(import('@/lib/api/client/reports'), () => ({
   resolveModerationReport: mockResolveReport,
   rerunReportJudgement: mockRerunJudgement,

@@ -8,7 +8,7 @@ import {
   setTestPendingPushIntentRetentionState,
   withTestScopedPendingPushRetention,
 } from '@voucha/test-helpers'
-import { cleanupOldPendingNotificationPushIntents } from '../cleanup.mts'
+import { cleanupOldPendingNotificationPushIntents } from '../cleanup-notification-push-intents.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 

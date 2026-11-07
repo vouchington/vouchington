@@ -69,7 +69,7 @@ describe('community activity digest native worker', () => {
         connection,
         workerOptions: { blockTimeout: 100 },
         processor: async (job): Promise<unknown> => {
-          if (job.name !== NOTIFICATIONS_DIGEST_DISPATCH_JOB.name) return
+          if (job.name !== NOTIFICATIONS_DIGEST_DISPATCH_JOB.name) return undefined
           activations += 1
           if (activations === 2) {
             secondEntered.resolve()
@@ -182,7 +182,7 @@ describe('community activity digest native worker', () => {
         connection,
         workerOptions: { blockTimeout: 100 },
         processor: async (job): Promise<unknown> => {
-          if (job.name !== NOTIFICATIONS_DIGEST_DISPATCH_JOB.name) return
+          if (job.name !== NOTIFICATIONS_DIGEST_DISPATCH_JOB.name) return undefined
           entered.resolve()
           await release.promise
           return processCommunityActivityDigestDispatch(

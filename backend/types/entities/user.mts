@@ -108,7 +108,6 @@ export type PrivateUser = BasicUser & {
   phone_number?: string | null
   processing_restricted_at?: Date | null
   should_receive_third_party_marketing?: boolean | null
-  should_import_hacker_news_discussions?: boolean
   suspended_at?: Date | null
   suspended_reason?: string | null
   suspended_by_id?: string | null
@@ -131,6 +130,9 @@ export type PrivateUser = BasicUser & {
 export type UserMetrics = {
   __entity_type: 'user_metrics'
   id: string
+  /**
+   * Profile totals. `reviews`, `discussions`, and `comments` are the posts this viewer can see.
+   */
   count: {
     reviews: number
     discussions: number
@@ -141,11 +143,8 @@ export type UserMetrics = {
     rss_feeds_following: number
     communities_member: number
   }
-  viewer_count?: {
-    reviews: number
-    discussions: number
-    comments: number
-  }
+  /** True when profile post counts stopped at the configured cap. */
+  post_counts_capped?: boolean
   private_count?: {
     posts_saved: number
     posts_hidden: number

@@ -1,3 +1,4 @@
+import { recomputePostHackerNewsFlag } from './hacker-news-flags.mts'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from './types.mts'
@@ -67,8 +68,8 @@ export const preparePostWithCommunityReviews = async (
     await preparePostImageDeliveryMutation(query, {
       imageIds: input.images?.map(image => image.image_id) ?? [],
     })
-    const options = { query }
-    if (delegated) await assertDelegatedPostActorActive(creator.id, options)
+    const queryOptions = { query }
+    if (delegated) await assertDelegatedPostActorActive(creator.id, queryOptions)
     const delegatedParent = delegated
       ? await prepareDelegatedCreateScope(query, creator, input, defaults.postType)
       : undefined
@@ -77,7 +78,7 @@ export const preparePostWithCommunityReviews = async (
       const [viewUrl] = await persistAssessedUrls(
         creator.id,
         assessment && 'value' in assessment ? assessment.value : [],
-        { ...options, skipCreatedEvents: true },
+        { ...queryOptions, skipCreatedEvents: true },
       )
       if (!viewUrl) throw createHttpError(422, 'URL is blocked or not allowed')
       updates = { ...updates, url_id: viewUrl.canonical_url_id ?? viewUrl.id }
@@ -124,10 +125,10 @@ export const preparePostWithCommunityReviews = async (
       updates = { ...updates, title: updates.title.slice(0, 255).trim() }
     }
     if (shouldValidateResolvedLinkCategories) {
-      await validatePostCategories(creator, membershipPlan, updates, { queryOptions: options })
+      await validatePostCategories(creator, membershipPlan, updates, { queryOptions })
     }
-    const scopeInput = { creator, defaults, options, updates }
-    // ast-grep-ignore: no-three-sequential-awaits -- scope validation, insert and source URL relation depend on each other inside the same transaction
+    const scopeInput = { creator, defaults, options: queryOptions, updates }
+    // ast-grep-ignore: no-three-sequential-awaits -- resolvePostScope returns scope consumed by insertPost; persistPostSourceUrlRelation consumes the insertedPost.id before side effects read that source relation
     const scope = await resolvePostScope({
       ...scopeInput,
       communityLockHeld: delegated,
@@ -138,7 +139,7 @@ export const preparePostWithCommunityReviews = async (
       provenance,
       defaults,
       isAdminCreator,
-      options,
+      options: queryOptions,
       scope,
       sourceUrlId,
       updates,
@@ -146,7 +147,7 @@ export const preparePostWithCommunityReviews = async (
     await persistPostSourceUrlRelation(query, creator, insertedPost.id, sourceUrlId)
     const sideEffects = await applyPostTransactionSideEffects({
       creator,
-      options,
+      options: queryOptions,
       post: insertedPost,
       postType: defaults.postType,
       updates,
@@ -159,7 +160,8 @@ export const preparePostWithCommunityReviews = async (
       scope.communityId,
       insertedPost.root_post_id,
     )
-    return getPostByAny(insertedPost.id, options)
+    await recomputePostHackerNewsFlag(insertedPost.id, queryOptions)
+    return getPostByAny(insertedPost.id, queryOptions)
   }
   async function createInOwnedTransaction() {
     await using query = await beginTransaction()

@@ -102,7 +102,7 @@
     "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt intents and the restriction-notice intents commit separately",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:356",
+    "code": "backend/services/copyright-notices/email-promotion-record.mts:121",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -110,7 +110,7 @@
     "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt message and the restriction-notice messages commit separately",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:345",
+    "code": "backend/services/copyright-notices/email-promotion-record.mts:110",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -181,14 +181,6 @@
     "routes": ["DELETE /api/v1/hostnames/:id/vote"]
   },
   {
-    "annotation": "findAutomaticWithholdingSwitchOnTime",
-    "maxCount": null,
-    "reason": "The form review reads the switch-on time before its transaction and enforcement rereads it after that transaction commits, so a switch-off or flip in between stops automation instead of enforcing on the earlier answer",
-    "permanent": true,
-    "code": "backend/services/copyright-notices/form-reviews.mts:20",
-    "routes": ["POST /api/v1/copyright-form-intakes/:id/reviews"]
-  },
-  {
     "annotation": "getAutomodFeedbackContext:agent",
     "maxCount": null,
     "reason": "The feedback transaction re-reads the automod action after taking its locks to reject a concurrent change (backend/services/moderation-training/automod-feedback.mts:48-70)",
@@ -228,6 +220,17 @@
       "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
       "POST /api/v1/mcp",
       "PUT /api/v1/bookmarks/:entityType/:entityId/:predicate"
+    ]
+  },
+  {
+    "annotation": "getRelationLimitState",
+    "maxCount": 2,
+    "reason": "Post-related URL admission checks capacity before mutation, then recounts in the insertion transaction after the publication lock so a concurrent writer cannot consume the last slot between check and insert.",
+    "permanent": true,
+    "code": "backend/services/entity-relations/assert-upsert-allowed.mts:45",
+    "routes": [
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/mcp"
     ]
   },
   {
@@ -355,13 +358,10 @@
   {
     "annotation": "getPublicUserByAny",
     "maxCount": null,
-    "reason": "Follow commits before its best-effort trust vote loads the target (backend/services/bookmarks/upsert.mts:134). Ban-evasion confirm loads the source user only after the flag-claim transaction commits, then the ban loads the target in its own transaction (backend/services/communities/ban-evasion/confirm.mts:44)",
+    "reason": "Ban-evasion confirm loads the source user only after the flag-claim transaction commits, then the ban loads the target in its own transaction (backend/services/communities/ban-evasion/confirm.mts:44)",
     "permanent": true,
     "code": "backend/services/communities/ban-evasion/confirm.mts:44",
-    "routes": [
-      "POST /api/v1/communities/:idOrSlug/ban-evasion/:userId",
-      "PUT /api/v1/bookmarks/:entityType/:entityId/:predicate"
-    ]
+    "routes": ["POST /api/v1/communities/:idOrSlug/ban-evasion/:userId"]
   },
   {
     "annotation": "getTopicByAny",
@@ -393,6 +393,14 @@
     "routes": ["POST /api/v1/posts"]
   },
   {
+    "annotation": "getVisibleCommentDescendantIdsPage:frontier",
+    "maxCount": 19,
+    "reason": "Each breadth-first frontier level depends on the child rows from the preceding level, so the service submits at most one grouped child query per level. The hard descendant depth cap is 20, allowing at most 19 frontier queries per request; each query allocates no more than the remaining descendant row budget across its parents.",
+    "permanent": true,
+    "code": "backend/services/comments/descendant-probe.mts:69",
+    "routes": ["GET /api/v1/posts/:idOrSlug/descendants"]
+  },
+  {
     "annotation": "grantConsent",
     "maxCount": null,
     "reason": "Revoke the active consent before inserting its replacement to satisfy the unique active user/type constraint",
@@ -405,7 +413,7 @@
     "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt recipient and the claimant decision recipient commit separately",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:356",
+    "code": "backend/services/copyright-notices/email-promotion-record.mts:121",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -430,14 +438,6 @@
     "reason": "SDK session persistence and final account attachment commit separately, so each transaction rechecks the initiating authorization and current actor session.",
     "permanent": true,
     "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
-    "routes": ["GET /api/v1/auth/bluesky/callback"]
-  },
-  {
-    "annotation": "lockBlueskyLinkAuthorization",
-    "maxCount": null,
-    "reason": "A failed web attachment releases its transaction before rejected-generation cleanup starts a new transaction and reacquires the authorization row lock",
-    "permanent": true,
-    "code": "backend/services/bluesky-accounts/callback-completion.mts:62",
     "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
@@ -511,16 +511,11 @@
     "permanent": true,
     "code": "backend/services/post-publication/lock.mts:29",
     "routes": [
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/rss-feeds/:id",
       "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/copyright-repeat-infringer-incidents/:id/dispositions",
       "POST /api/v1/mcp",
       "POST /api/v1/posts",
       "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "PUT /api/v1/posts/:idOrSlug/images"
+      "POST /api/v1/stories/:storyId/discussions"
     ]
   },
   {
@@ -632,7 +627,7 @@
     "maxCount": null,
     "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:74",
+    "code": "backend/services/copyright-notices/email-promotion-admission.mts:70",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -640,7 +635,7 @@
     "maxCount": null,
     "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:74",
+    "code": "backend/services/copyright-notices/email-promotion-admission.mts:70",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -648,7 +643,7 @@
     "maxCount": null,
     "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:65",
+    "code": "backend/services/copyright-notices/email-promotion-admission.mts:68",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -656,7 +651,7 @@
     "maxCount": null,
     "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:65",
+    "code": "backend/services/copyright-notices/email-promotion-admission.mts:68",
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
@@ -857,14 +852,6 @@
     "routes": ["DELETE /api/v1/my/api-keys/:id"]
   },
   {
-    "annotation": "revokeAuthenticatedSession",
-    "maxCount": null,
-    "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
-    "permanent": true,
-    "code": "backend/services/jwt-session/user-session-revocation.mts:16",
-    "routes": ["DELETE /api/v1/auth/sessions/:id"]
-  },
-  {
     "annotation": "rotateApiKey",
     "maxCount": null,
     "reason": "Lock and validate the old key FOR UPDATE before inserting its replacement and linking the old key to it",
@@ -946,7 +933,6 @@
     "permanent": true,
     "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
     "routes": [
-      "GET /api/v1/auth/sessions",
       "POST /api/v1/app-attestation/attest",
       "POST /api/v1/auth/email-address/login",
       "POST /api/v1/auth/mfa/totp/verification",
@@ -962,17 +948,6 @@
     "permanent": true,
     "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
     "routes": ["POST /api/v1/auth/email-address/login"]
-  },
-  {
-    "annotation": "upsertUserAgentString",
-    "maxCount": 3,
-    "reason": "Cold device-bound and native credential registration each resolve one immutable user agent through a read, conflict-tolerant insert, and reread.",
-    "permanent": true,
-    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
-    "routes": [
-      "POST /api/v1/auth/device-bound-sessions",
-      "POST /api/v1/auth/native/email-address/login"
-    ]
   },
   {
     "annotation": "upsertUrlHostnames",
@@ -1012,22 +987,6 @@
     "permanent": true,
     "code": "backend/services/totp/verify-setup.mts:14",
     "routes": ["POST /api/v1/auth/totp/setup/verification"]
-  },
-  {
-    "annotation": "withMfaLock",
-    "maxCount": null,
-    "reason": "Lock the active user, then passkey rows, then TOTP rows before counting methods and consuming reauthentication to prevent concurrent last-factor deletions",
-    "permanent": true,
-    "code": "backend/services/mfa/protected-mfa-delete.mts:14",
-    "routes": ["DELETE /api/v1/auth/passkeys/:id", "DELETE /api/v1/auth/totp/:id"]
-  },
-  {
-    "annotation": "expireElapsedMemberships",
-    "routes": ["DELETE /api/v1/membership-grants/:grantId"],
-    "maxCount": null,
-    "reason": "Expiring one projection can activate an already elapsed queued grant, so revocation must normalize through a variable number of rechecks before locking and checking the grant.",
-    "permanent": true,
-    "code": "backend/services/memberships/grants/expire-elapsed.mts:39-75"
   },
   {
     "annotation": "lockTopicAliasPublicationCaptures",

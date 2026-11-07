@@ -55,7 +55,7 @@ vi.mock(import('input-otp'), async () => {
   const mock = (await inputOtpMockFactory()) as unknown as typeof import('input-otp')
   const SharedOtpInput = mock.OTPInput
   const OTPInput = React.forwardRef<
-    React.ElementRef<typeof SharedOtpInput>,
+    React.ComponentRef<typeof SharedOtpInput>,
     React.ComponentPropsWithoutRef<typeof SharedOtpInput>
   >(function ProductOtpInputMock(props, ref) {
     const emptySlot = { char: '', placeholderChar: null, hasFakeCaret: false, isActive: false }

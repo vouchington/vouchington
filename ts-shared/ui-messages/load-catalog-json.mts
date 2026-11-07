@@ -29,7 +29,7 @@ const CATALOG = {
 }
 
 export function catalogMessagesFromTables(catalog: CatalogTables): CatalogMessage[] {
-  const copies = new Map(catalog.copies.map(copy => [copy.id, copy]))
+  const copiesById = new Map(catalog.copies.map(copy => [copy.id, copy]))
   const translations = new Map<string, Record<string, TranslationValue>>()
   for (const [locale, rows] of Object.entries(catalog.translations)) {
     for (const row of rows) {
@@ -38,11 +38,11 @@ export function catalogMessagesFromTables(catalog: CatalogTables): CatalogMessag
       translations.set(row.id, values)
     }
   }
-  const aliases = new Map<string, { consumers: LocalizationConsumer[]; copyId: string }>()
+  const aliasesByName = new Map<string, { consumers: LocalizationConsumer[]; copyId: string }>()
   for (const alias of catalog.aliases) {
-    const existing = aliases.get(alias.alias)
+    const existing = aliasesByName.get(alias.alias)
     if (existing === undefined) {
-      aliases.set(alias.alias, { consumers: [alias.consumer], copyId: alias.copyId })
+      aliasesByName.set(alias.alias, { consumers: [alias.consumer], copyId: alias.copyId })
       continue
     }
     if (existing.copyId !== alias.copyId) {
@@ -50,10 +50,10 @@ export function catalogMessagesFromTables(catalog: CatalogTables): CatalogMessag
     }
     existing.consumers.push(alias.consumer)
   }
-  return [...aliases]
+  return [...aliasesByName]
     .toSorted(([left], [right]) => left.localeCompare(right, 'en'))
     .map(([id, alias]) => {
-      const copy = copies.get(alias.copyId)
+      const copy = copiesById.get(alias.copyId)
       if (copy === undefined) throw new TypeError(`Alias "${id}" references missing copy`)
       const values = translations.get(copy.id)
       if (values === undefined) throw new TypeError(`Copy "${copy.id}" has no translations`)

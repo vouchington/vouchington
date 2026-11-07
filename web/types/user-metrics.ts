@@ -26,3 +26,35 @@ export interface UserPrivateMetricsCount {
   communities_proxy_following: number
   communities_proxy_muted: number
 }
+
+export interface UserMetrics {
+  __entity_type: 'user_metrics'
+  id: string
+  /**
+   * Profile totals. `reviews`, `discussions`, and `comments` are the posts this viewer can see.
+   */
+  count: {
+    reviews: number
+    discussions: number
+    comments: number
+    users_following: number
+    users_followers: number
+    topics_following: number
+    rss_feeds_following: number
+    communities_member: number
+  }
+  /** True when profile post counts stopped at the configured cap. */
+  post_counts_capped?: boolean
+  private_count?: UserPrivateMetricsCount
+  bookmarks: {
+    follow: {
+      topics: number
+      posts: number
+      users: number
+    }
+  }
+  bookmarkers: {
+    follow: number
+  }
+  bookmarks__updated_at: string
+}

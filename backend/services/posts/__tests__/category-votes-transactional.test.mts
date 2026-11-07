@@ -13,6 +13,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
+import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import { notifications } from '@queues/notifications/queues'
 import { createPost } from '../create.mts'
 import { updatePost } from '../update.mts'
@@ -138,6 +139,49 @@ describe('transactional post category votes', () => {
         userId: editor.id,
       }),
     ).resolves.toBeUndefined()
+  })
+
+  it('restores a missing alias relation while retaining the explicit topic vote inputs', async () => {
+    const owner = await createTestUser()
+    const topicId = await insertTestCard({ createdById: owner.id })
+    const tag = `restored-${crypto.randomUUID().replaceAll('-', '')}`
+    const post = await createPost(owner, WEB_PROVENANCE, {
+      title: `Restore #${tag}`,
+      categories: [{ type: 'topic', topic_id: topicId }],
+    })
+    const aliasId = await getTopicAliasIdForTest(tag)
+    expect(aliasId).toBeTruthy()
+    const aliasRelation = getEntityRelationMetadataOrThrow({
+      subjectType: 'post',
+      objectType: 'topic_alias',
+      predicate: 'category',
+    })
+    const topicRelation = getEntityRelationMetadataOrThrow({
+      subjectType: 'post',
+      objectType: 'topic',
+      predicate: 'category',
+    })
+    await softDeleteEntityRelation(owner, aliasRelation, { id: post!.id }, [{ id: aliasId! }])
+    await using query = await beginTransaction()
+    await castPostCategoryVotesInTransaction(query, owner, post!.id, owner.id)
+    await query.commit()
+    const [restoredAlias] = await getEntityRelation(aliasRelation.table_name, post!.id, aliasId!)
+    expect(restoredAlias).toMatchObject({ deleted_at: null })
+    const [retainedTopic] = await getEntityRelation(topicRelation.table_name, post!.id, topicId)
+    await expect(
+      getLatestTestEntityRelationVoteScore({
+        relationTable: aliasRelation.table_name,
+        relationId: (restoredAlias as { id: string }).id,
+        userId: owner.id,
+      }),
+    ).resolves.toBe(1)
+    await expect(
+      getLatestTestEntityRelationVoteScore({
+        relationTable: topicRelation.table_name,
+        relationId: (retainedTopic as { id: string }).id,
+        userId: owner.id,
+      }),
+    ).resolves.toBe(1)
   })
 
   it('rolls back category relations and votes with the enclosing post transaction', async () => {

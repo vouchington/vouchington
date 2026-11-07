@@ -102,7 +102,9 @@ describe('dev-tools Vitest config', () => {
 
   it('uses synthetic buckets for Lambda dev-server fixtures', () => {
     for (const projectName of ['lambdas-portability', 'lambdas-mocks']) {
-      const project = vitestProjects.find(project => project.test?.name === projectName)
+      const project = vitestProjects.find(
+        candidateProject => candidateProject.test?.name === projectName,
+      )
 
       expect(project?.test?.env).toEqual({
         S3_BUCKET_IMAGES: 'test-images',

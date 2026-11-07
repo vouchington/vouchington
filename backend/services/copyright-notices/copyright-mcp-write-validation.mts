@@ -1,7 +1,7 @@
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
-import { getCopyrightStaffEmailIntake } from './read-models.mts'
+import { getCopyrightStaffEmailIntake } from './read-models-staff-email-intake.mts'
 
 export function validateCopyrightMcpConstructedRequest(
   path: string,

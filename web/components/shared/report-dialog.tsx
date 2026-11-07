@@ -70,7 +70,7 @@ export function ReportDialog({ entityType, entityId, open, onOpenChange }: Props
     onOpenChange(v)
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (submitting || !reason) return
     setInlineError(null)

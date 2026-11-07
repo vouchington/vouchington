@@ -5,7 +5,7 @@ import {
 } from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it } from 'vitest'
 import { createTestPost, createTestUser } from '@voucha/test-helpers'
-import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
+import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 describe('read_posts.descendants database failure', () => {
@@ -19,8 +19,8 @@ describe('read_posts.descendants database failure', () => {
     })
     const args = { post_id: post.id }
 
-    const { result, error } = await withPostgresPoolQueryFailureForTest(
-      '/* getVisibleCommentDescendantIdsPage */',
+    const { result, error } = await withPostgresQueryFailureForTest(
+      '/* getVisibleCommentDescendantIdsPage:heads */',
       () =>
         callRejectedMcpTool(caller, 'read_posts', optionArgs('descendants', args), ['posts:read']),
     )

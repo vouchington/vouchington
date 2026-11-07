@@ -18,15 +18,17 @@ export async function addRssFeedTopicPublisherTypeWithScore(
   topicId: string,
   publisherTypeTopicId: string,
   score: number,
+  scoreDown = 0,
 ): Promise<void> {
   await write(sql`/* addRssFeedTopicPublisherType */
     INSERT INTO relation__topic__publisher_type__topic (
       subject_id,
       object_id,
       votes_count_up,
-      votes_score_up
+      votes_score_up,
+      votes_score_down
     )
-    VALUES (${topicId}, ${publisherTypeTopicId}, ${score}, ${score})
+    VALUES (${topicId}, ${publisherTypeTopicId}, ${score}, ${score}, ${scoreDown})
   `)
 }
 

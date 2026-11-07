@@ -41,7 +41,7 @@ export function TopicRecommendationDialog(props: TopicRecommendationDialogProps)
     selected,
   })
 
-  function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleFormSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!selected || !isAdmin || isSaving || selected.topic_recommendation?.status !== 'pending')
       return

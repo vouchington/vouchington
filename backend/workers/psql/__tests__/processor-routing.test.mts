@@ -42,4 +42,10 @@ describe('PostgreSQL processor routing', () => {
   it('throws on an unknown job name', async () => {
     await expect(processPsql('unknownJob' as never)).rejects.toThrow('Unknown job: unknownJob')
   })
+
+  it('rejects a registered job owned by a different processor', async () => {
+    await expect(processPsql('aiRetentionContinuation')).rejects.toThrow(
+      'Unknown job: aiRetentionContinuation',
+    )
+  })
 })

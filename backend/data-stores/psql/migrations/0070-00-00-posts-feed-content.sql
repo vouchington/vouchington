@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS posts (
   clearance_is_platform_override BOOLEAN NOT NULL DEFAULT FALSE,
   has_creation_moderation_bypass BOOLEAN NOT NULL DEFAULT FALSE,
   CHECK (NOT clearance_is_platform_override OR (clearance_changed_by_id IS NOT NULL AND clearance_public_reason_code IS NOT NULL)),
+  has_hacker_news_references BOOLEAN NOT NULL DEFAULT FALSE,
   approved_at TIMESTAMPTZ,
   rejected_at TIMESTAMPTZ,
   in_review_at TIMESTAMPTZ,
@@ -455,7 +456,7 @@ CREATE INDEX IF NOT EXISTS idx_posts__url_id
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__url_id__link
   ON posts (url_id, id DESC)
-  WHERE post_type = 'link' AND deleted_at IS NULL;
+  WHERE post_type = 'link';
 
 COMMENT ON TABLE posts IS 'User-generated posts: discussions, reviews, data points, recommendations, stories, and comments. RANGE-partitioned by id.';
 COMMENT ON COLUMN posts.post_type IS 'Discriminator: discussion, review, data_point, topic_recommendation, comment, story, link, article, or blog_post.';
@@ -481,6 +482,7 @@ COMMENT ON COLUMN posts.clearance_changed_by_id IS 'Retained identity of the act
 COMMENT ON COLUMN posts.clearance_public_reason_code IS 'Current provider-neutral reason safe to show the author.';
 COMMENT ON COLUMN posts.clearance_is_platform_override IS 'Whether the current result is a platform staff override.';
 COMMENT ON COLUMN posts.has_creation_moderation_bypass IS 'Whether an administrator explicitly bypassed creation moderation; remains true after later resets.';
+COMMENT ON COLUMN posts.has_hacker_news_references IS 'Whether the post has a qualifying Hacker News reference, maintained asynchronously or with post changes.';
 COMMENT ON COLUMN posts.approved_at IS 'Set when the current derived clearance status is approved.';
 COMMENT ON COLUMN posts.rejected_at IS 'Set when the current derived clearance status is rejected.';
 COMMENT ON COLUMN posts.in_review_at IS 'Set when the current derived clearance status is in_review.';

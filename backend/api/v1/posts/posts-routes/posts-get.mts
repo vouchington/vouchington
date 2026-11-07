@@ -18,8 +18,8 @@ import {
 } from '@services/search-params'
 import { isAdminUser } from '@services/users'
 import { getPostCommunitiesRecord } from '@services/communities/post-communities-record'
+import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { getUrlEmbedsByUrlIds, type UrlEmbed } from '@services/rss-feed-items/get-url-embed'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
 import { apiQuery } from '../../../api-query-contract.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
@@ -31,6 +31,7 @@ import {
 import type { PostsResponseInput } from './posts-response-types.mts'
 
 app.route('/api/v1/posts').get(async (ctx: Context) => {
+  ctx.set('Cache-Control', 'private, no-store')
   apiQuery('GET:/api/v1/posts', parsePostsSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts')
   const preparedSearchParams = preparePostsSearchParams(ctx.query, getPaginationLimits(25))
@@ -44,10 +45,6 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   }
 
   if (shouldReturnEmpty) {
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
-
     const output: PostsResponseInput = {
       results: [],
       page_info: {
@@ -60,6 +57,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
       post_elections: {},
       markdown_to_html: {},
       post_link_embeds: {},
+      post_hacker_news_references: {},
     }
 
     if (isAdminUser(currentUser)) {
@@ -76,12 +74,12 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
     ? await getPostIds(currentUser, searchOptions)
     : await getPostIdsCached(searchOptions)
   if (!currentUser) {
-    const publicPostIds = await getPublicPostIds(result.results.map(result => result.id))
-    result.results = result.results.filter(result => publicPostIds.has(result.id))
+    const publicPostIds = await getPublicPostIds(result.results.map(postResult => postResult.id))
+    result.results = result.results.filter(postResult => publicPostIds.has(postResult.id))
   }
   const postIds = result.results.map((r: { id: string }) => r.id)
   const postsAndRootsPromise = getPostsWithRootsByAnyCached(postIds)
-  const rawPostsPromise = postsAndRootsPromise.then(result => result.posts)
+  const rawPostsPromise = postsAndRootsPromise.then(postsAndRoots => postsAndRoots.posts)
   // Page posts and their roots are labelled together in one read of the provenance facts.
   const labelledPostsPromise = postsAndRootsPromise.then(async ({ posts, roots }) => {
     const labelled = await labelAndMaskPosts([...posts, ...roots], currentUser)
@@ -92,9 +90,6 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
     ...posts,
     ...rootPosts,
   ])
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
 
   const { moderations: moderationsPromise, elections: electionsPromise } = getPostElectionSidecars(
     currentUser,
@@ -120,6 +115,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
       return renderMarkdownBatch(entities, adminIds)
     }),
     communities: rawPostsPromise.then(posts => getPostCommunitiesRecord(posts)),
+    post_hacker_news_references: getPostHackerNewsSummaries(postIds),
     post_link_embeds: rawPostsPromise.then(async posts => {
       const urlIds = [
         ...new Set(posts.flatMap(p => (p?.post_type === 'link' && p.url_id ? [p.url_id] : []))),

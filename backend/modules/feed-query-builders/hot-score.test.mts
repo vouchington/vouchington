@@ -5,7 +5,7 @@ describe('buildHotScoreExpression', () => {
   it('builds the hot score for the default posts alias', () => {
     const expression = buildHotScoreExpression()
 
-    expect(expression.text).toContain('posts.votes_score_net')
+    expect(expression.text).toContain('posts.votes_score_sort')
     expect(expression.text).toContain('uuid_extract_timestamp(posts.id)')
     expect(expression.values).toEqual([HOT_SORT_HALF_LIFE_SECONDS])
   })
@@ -13,7 +13,7 @@ describe('buildHotScoreExpression', () => {
   it('builds the hot score for an explicit alias', () => {
     const expression = buildHotScoreExpression('p')
 
-    expect(expression.text).toContain('p.votes_score_net')
+    expect(expression.text).toContain('p.votes_score_sort')
     expect(expression.text).toContain('uuid_extract_timestamp(p.id)')
     expect(expression.text).not.toContain('posts.')
   })

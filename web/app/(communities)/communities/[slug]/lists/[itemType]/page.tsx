@@ -14,7 +14,7 @@ import { CommunityListItemsList } from '@/components/communities/community-list-
 import { AddCommunityListItemForm } from '@/components/communities/add-community-list-item-form'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { communityListItemTypeCatalog } from '@voucha/types/entities/community-list-item-type'
-import type { CommunityListPageData } from '@/types/api-responses'
+import type { CommunityListPageData } from '@/types/api-responses/community-list-pages'
 import type { CommunityListItemType } from '@voucha/types/entities/community'
 import type { Metadata } from 'next'
 
@@ -62,7 +62,7 @@ async function fetchListData(slug: string, itemType: string): Promise<CommunityL
       return getCommunityListUrls(slug)
     }
     default: {
-      notFound()
+      return notFound()
     }
   }
 }

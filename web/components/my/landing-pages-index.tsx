@@ -29,7 +29,7 @@ export function LandingPagesIndex({ username, initialPages }: Props) {
 
   if (!username) return <LandingPagesUsernameRequired />
 
-  async function handleCreatePage(event: React.FormEvent) {
+  async function handleCreatePage(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (loading) return
     setLoading(true)

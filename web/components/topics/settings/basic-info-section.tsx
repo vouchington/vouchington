@@ -14,7 +14,7 @@ export function BasicInfoSection({
   topic,
 }: {
   basicSaving: boolean
-  onBasicSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  onBasicSubmit: (e: React.SubmitEvent<HTMLFormElement>) => void
   topic: Topic
 }) {
   const t = useTranslations()

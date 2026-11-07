@@ -94,7 +94,7 @@ async function insertJoinedCommunityMember(
     'This community is temporarily limited to approved members',
   )
 
-  // ast-grep-ignore: no-three-sequential-awaits -- capacity must be checked before admission; only a successful membership insertion consumes pending invitations
+  // ast-grep-ignore: no-three-sequential-awaits -- The membership admission lock and capacity check must reject an exceeded quota before inserting a member; pending invitations are consumed only after admission succeeds.
   await assertCommunityMembershipCapacity(currentUserId, communityId, options)
   const { rows } = await writeCommunityMembershipMutation(
     sql`/* joinCommunity */

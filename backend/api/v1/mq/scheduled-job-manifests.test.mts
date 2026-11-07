@@ -71,6 +71,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'memberships/googlePlayOidcTrustRefresh',
   'memberships/microsoftStoreSourceRecovery',
   'memberships/membershipVerificationRecovery',
+  'memberships/recoverStripePurchaseCollisions',
   'memberships/renewalNotificationCheck',
   'memberships/stripeCatalogReconciliation',
   'memberships/stripeEventRecovery',
@@ -114,13 +115,15 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/voteWeightMembershipExpirations',
   'background/voteWeightFamilySourceChanges',
   'background/voteWeightDirtyMarkers',
+  'hacker-news-flags/repairHackerNewsFlags',
+  'hacker-news-flags/readmitHackerNewsLookups',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('imports the registered manifests and exact scheduled jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(13)
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(15)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),
@@ -146,13 +149,13 @@ describe('scheduled job manifest catalog', () => {
 
   it('references only live operator inputs', () => {
     const backfills = new Set(BACKFILL_REGISTRY.map(backfill => backfill.id))
-    const psql = new Set<string>(PSQL_SCHEDULED_ADMIN_JOB_TYPES)
+    const scheduledPsqlTypes = new Set<string>(PSQL_SCHEDULED_ADMIN_JOB_TYPES)
     const blooms = new Set<string>(bloomFilterRebuildInputs())
     const valid = SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
       manifest.jobs.flatMap(job => job.operatorSurfaces),
     ).map(surface => {
       if (surface.kind === 'backfill') return backfills.has(surface.backfillId)
-      if (surface.kind === 'psql') return psql.has(surface.jobType)
+      if (surface.kind === 'psql') return scheduledPsqlTypes.has(surface.jobType)
       if (surface.kind === 'valkey-bloom-filter') return blooms.has(surface.rebuildInput)
       return true
     })

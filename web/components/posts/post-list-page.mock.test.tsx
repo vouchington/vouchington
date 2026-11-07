@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { render } from '@testing-library/react'
 import { PostListPage } from './post-list-page'
 
+vi.mock(import('@/lib/api/server/hacker-news-config'), () => ({
+  getHackerNewsConfig: vi
+    .fn<typeof import('@/lib/api/server/hacker-news-config').getHackerNewsConfig>()
+    .mockResolvedValue({ references_visible: true, post_time_range_cap: '1y' }),
+}))
+
 vi.mock(
   import('next/link'),
   () =>

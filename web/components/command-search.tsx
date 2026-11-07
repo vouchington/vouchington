@@ -91,7 +91,7 @@ export function CommandSearch({
   // Arrow key tab cycling — capture-phase listener so it runs before cmdk's keydown handlers
   // which otherwise swallow ArrowLeft/ArrowRight on focused [cmdk-item] elements.
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
 
     function onKeyDown(event: KeyboardEvent) {
       // Re-focus the search input when Cmd+K / Ctrl+K is pressed while dialog is already open
@@ -121,7 +121,7 @@ export function CommandSearch({
       event.preventDefault()
       event.stopPropagation()
       setActiveTab(prev => {
-        const currentIndex = searchTabs.findIndex(t => t.value === prev)
+        const currentIndex = searchTabs.findIndex(tab => tab.value === prev)
         const nextIndex =
           event.key === 'ArrowRight'
             ? (currentIndex + 1) % searchTabs.length

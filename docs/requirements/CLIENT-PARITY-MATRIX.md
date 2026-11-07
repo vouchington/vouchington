@@ -24,6 +24,17 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Profile post counts
+
+`GET /api/v1/users/:idOrSlug` returns `user_metrics.count.reviews`,
+`user_metrics.count.discussions`, and `user_metrics.count.comments` as the posts this viewer
+can see. `user_metrics.viewer_count` is removed. The same response returns
+`user_metrics.post_counts_capped` when that scan stops at the posts work cap in
+[`posts` work limits](../../backend/services/posts/work-limits.mts). Web profile tabs and
+the profile header put the plus on the number, before the unit, including for the author, a
+stranger, and an anonymous viewer. Swift and .NET should render that plus from the same flag.
+This adds no new route or native parity claim beyond that display.
+
 ## Membership verification outcomes
 
 The billing feature's verification-outcomes row in `client-feature-parity.json` tracks native adoption.
@@ -489,7 +500,20 @@ code from a time dropdown, reusing the web options, and must page with the retur
 the same range. Client work is dependent (vouchington-clients#537) and does not gate this
 repository.
 
-## Follow and subscription admission
+## Comment descendant head pagination
+
+REST and MCP page immediate-child heads and attach bounded reply previews. A continuation cursor
+advances past inspected heads, so a page may be short or empty while `has_next_page` remains true.
+Clients follow `page_info` rather than inferring completion from result count. Individual responses
+order their ids; concatenated pages need not preserve global descendant-id order. Replies beyond a
+preview are expanded through the same descendants call rooted at a returned comment, including a
+placeholder. Web preserves that route through comment permalinks and its existing pagination.
+
+Swift and .NET adoption is tracked in
+[vouchington-clients#543](https://github.com/vouchington/vouchington-clients/issues/543) and does not
+block the producer. No native parity completion is claimed here.
+
+## Relation admission
 
 REST and MCP share the same refusal when an account cannot add another follow or subscription of
 that type. The API returns HTTP 409 with `RELATION_LIMIT_REACHED`; clients compose localized
@@ -497,5 +521,28 @@ recovery guidance from the code and requested action. Web retains the previous
 button state and explains that removing another relation of the same type frees room. Imports
 report skipped additions rather than presenting them as successful follows.
 
+Related URL additions use the same refusal code and status when a post has no remaining
+capacity. REST and MCP share that decision, including source URL creation and story projection
+writes. Existing active relations remain valid when capacity is lowered; adding another URL
+requires removing enough active relations to make room. This preserves the existing response
+shape and makes no new native UI parity claim.
+
 Swift and .NET adoption is tracked in [vouchington-clients#538](https://github.com/vouchington/vouchington-clients/issues/538). Native implementation
 does not gate the producer, and this change makes no new native UI parity claim.
+
+## Hacker News reference facts
+
+REST and MCP expose the same stored Hacker News facts for posts, feed items, and story members:
+list reads carry batched counts, and individual detail reads carry bounded reference links.
+Hiding references suppresses these facts and leaves a requested reference filter inactive in both
+transports. Pausing external lookups changes freshness independently of presentation.
+
+Personalized feeds apply the reference filter before deduplication and pagination. The web time-range
+cap controls the checkbox interaction without changing the API's accepted time ranges. HN-filtered hot
+searches retain hot ranking for every range, but the server restricts their eligible cohort to at most
+30 elapsed days; narrower requested windows remain narrower.
+
+Swift and .NET must remove the personal discussions preference and client-side lookup, consume stored
+reference facts, and honor the producer's visibility behavior. Their adoption remains dependent work
+in [vouchington-clients#532](https://github.com/vouchington/vouchington-clients/issues/532); this producer
+change makes no new native UI parity claim.

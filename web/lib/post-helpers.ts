@@ -37,23 +37,11 @@ export function getPostPath(slug: string, post: Post): string {
 export function getPostTitle(post: Post): string {
   if (post.title) return post.title
 
-  switch (post.post_type) {
-    case 'review': {
-      return 'Untitled Review'
-    }
-    case 'data_point': {
-      return 'Untitled Data Point'
-    }
-    case 'comment': {
-      return 'Untitled Comment'
-    }
-    case 'link': {
-      return 'Untitled Link'
-    }
-    default: {
-      return 'Untitled Discussion'
-    }
-  }
+  if (post.post_type === 'review') return 'Untitled Review'
+  if (post.post_type === 'data_point') return 'Untitled Data Point'
+  if (post.post_type === 'comment') return 'Untitled Comment'
+  if (post.post_type === 'link') return 'Untitled Link'
+  return 'Untitled Discussion'
 }
 
 export function getPostCollectionLabel(slug: string): string {

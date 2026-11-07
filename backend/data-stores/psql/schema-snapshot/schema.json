@@ -1904,7 +1904,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_grant_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership grants cannot be deleted';\n  END IF;\n\n  IF OLD.revoked_at IS NULL\n    AND OLD.revoked_by_id IS NULL\n    AND OLD.revocation_reason IS NULL\n    AND NEW.revoked_at IS NOT NULL\n    AND NEW.revoked_by_id IS NOT NULL\n    AND NEW.revocation_reason IS NOT NULL\n    AND ROW(\n      NEW.id, NEW.membership_source_id, NEW.source_kind, NEW.user_id,\n      NEW.membership_product_id, NEW.calendar_days, NEW.granted_by_id,\n      NEW.issuer_snapshot, NEW.note\n    ) IS NOT DISTINCT FROM ROW(\n      OLD.id, OLD.membership_source_id, OLD.source_kind, OLD.user_id,\n      OLD.membership_product_id, OLD.calendar_days, OLD.granted_by_id,\n      OLD.issuer_snapshot, OLD.note\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'membership grants only allow a pending-to-revoked lifecycle transition';\nEND $function$\n"
     },
     "fn_reject_membership_lineage_binding_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_lineage_binding_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership lineage bindings cannot be deleted';\n  END IF;\n\n  IF OLD.released_at IS NULL\n    AND OLD.originating_invoice_id IS NULL\n    AND NEW.released_at IS NULL\n    AND NEW.release_reason IS NULL\n    AND NEW.originating_invoice_id IS NOT NULL\n    AND ROW(\n      NEW.id, NEW.membership_provider_lineage_id, NEW.user_id, NEW.source_kind, NEW.bound_at\n    ) IS NOT DISTINCT FROM ROW(\n      OLD.id, OLD.membership_provider_lineage_id, OLD.user_id, OLD.source_kind, OLD.bound_at\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  IF OLD.released_at IS NULL\n    AND OLD.release_reason IS NULL\n    AND NEW.released_at IS NOT NULL\n    AND NEW.release_reason IS NOT NULL\n    AND ROW(\n      NEW.id, NEW.membership_provider_lineage_id, NEW.user_id, NEW.source_kind, NEW.bound_at,\n      NEW.originating_invoice_id\n    ) IS NOT DISTINCT FROM ROW(\n      OLD.id, OLD.membership_provider_lineage_id, OLD.user_id, OLD.source_kind, OLD.bound_at,\n      OLD.originating_invoice_id\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  IF OLD.released_at IS NOT NULL\n    AND OLD.user_id IS NOT NULL\n    AND NEW.user_id IS NULL\n    AND NOT EXISTS (SELECT 1 FROM users WHERE id = OLD.user_id)\n    AND ROW(\n      NEW.id, NEW.membership_provider_lineage_id, NEW.source_kind, NEW.bound_at,\n      NEW.released_at, NEW.release_reason, NEW.originating_invoice_id\n    ) IS NOT DISTINCT FROM ROW(\n      OLD.id, OLD.membership_provider_lineage_id, OLD.source_kind, OLD.bound_at,\n      OLD.released_at, OLD.release_reason, OLD.originating_invoice_id\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'membership lineage bindings only allow release and final-purge transitions';\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_lineage_binding_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership lineage bindings cannot be deleted';\n  END IF;\n\n  IF OLD.released_at IS NULL\n    AND OLD.release_reason IS NULL\n    AND NEW.released_at IS NOT NULL\n    AND NEW.release_reason IS NOT NULL\n    AND ROW(\n      NEW.id, NEW.membership_provider_lineage_id, NEW.user_id, NEW.source_kind, NEW.bound_at\n    ) IS NOT DISTINCT FROM ROW(\n      OLD.id, OLD.membership_provider_lineage_id, OLD.user_id, OLD.source_kind, OLD.bound_at\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  IF OLD.released_at IS NOT NULL\n    AND OLD.user_id IS NOT NULL\n    AND NEW.user_id IS NULL\n    AND NOT EXISTS (SELECT 1 FROM users WHERE id = OLD.user_id)\n    AND ROW(\n      NEW.id, NEW.membership_provider_lineage_id, NEW.source_kind, NEW.bound_at,\n      NEW.released_at, NEW.release_reason\n    ) IS NOT DISTINCT FROM ROW(\n      OLD.id, OLD.membership_provider_lineage_id, OLD.source_kind, OLD.bound_at,\n      OLD.released_at, OLD.release_reason\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'membership lineage bindings only allow release and final-purge transitions';\nEND $function$\n"
     },
     "fn_reject_membership_operation_child_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_operation_child_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' AND fn_membership_operation_fiscal_retention_due(OLD.membership_operation_id)\n    THEN RETURN OLD; END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND $function$\n"
@@ -19391,10 +19391,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_posts__community": {
+        "idx_community_list_posts__community_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_posts__community ON public.community_list_posts USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_posts__community_id__id ON public.community_list_posts USING btree (community_id, id DESC) WHERE (removed_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -19403,9 +19403,77 @@
               "expression": "community_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_posts__community_id__id__all_rows": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_posts__community_id__id__all_rows ON public.community_list_posts USING btree (community_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_posts__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_posts__community_id__order_index__id ON public.community_list_posts USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -19664,10 +19732,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_rss_feeds__community": {
+        "idx_community_list_rss_feeds__community_id__foreign_key": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_rss_feeds__community ON public.community_list_rss_feeds USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_rss_feeds__community_id__foreign_key ON public.community_list_rss_feeds USING btree (community_id) WHERE (community_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -19678,7 +19746,41 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_rss_feeds__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_rss_feeds__community_id__order_index__id ON public.community_list_rss_feeds USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -19945,10 +20047,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_topics__community": {
+        "idx_community_list_topics__community_id__foreign_key": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_topics__community ON public.community_list_topics USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_topics__community_id__foreign_key ON public.community_list_topics USING btree (community_id) WHERE (community_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -19959,7 +20061,41 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_topics__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_topics__community_id__order_index__id ON public.community_list_topics USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -20219,10 +20355,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_url_hostnames__community": {
+        "idx_community_list_url_hostnames__community_id__foreign_key": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_url_hostnames__community ON public.community_list_url_hostnames USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_url_hostnames__community_id__foreign_key ON public.community_list_url_hostnames USING btree (community_id) WHERE (community_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -20233,7 +20369,41 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_url_hostnames__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_url_hostnames__community_id__order_index__id ON public.community_list_url_hostnames USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -20492,10 +20662,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_list_urls__community": {
+        "idx_community_list_urls__community_id__foreign_key": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_list_urls__community ON public.community_list_urls USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_list_urls__community_id__foreign_key ON public.community_list_urls USING btree (community_id) WHERE (community_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -20506,7 +20676,41 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_list_urls__community_id__order_index__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_list_urls__community_id__order_index__id ON public.community_list_urls USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -62846,9 +63050,9 @@
         "chk_memb_ineli_purch_rever_cases__qualifying_amount_minor_units": "CHECK (((qualifying_amount_minor_units >= 0) AND (qualifying_amount_minor_units <= '9007199254740991'::bigint)))",
         "chk_member_inelig_purchas_reversa_cases__refund_cap_minor_units": "CHECK (((refund_cap_minor_units >= 0) AND (refund_cap_minor_units <= '9007199254740991'::bigint)))",
         "chk_membersh_ineligibl_purchase_reversal_cases__stripe_price_id": "CHECK ((((char_length(stripe_price_id) >= 1) AND (char_length(stripe_price_id) <= 255)) AND (stripe_price_id = TRIM(BOTH FROM stripe_price_id))))",
+        "chk_mipr_cases__originating_invoice_id": "CHECK ((((char_length(originating_invoice_id) >= 1) AND (char_length(originating_invoice_id) <= 255)) AND (originating_invoice_id = TRIM(BOTH FROM originating_invoice_id))))",
         "membership_ineligible_purchase_reversal_cases_check": "CHECK ((refund_cap_minor_units <= qualifying_amount_minor_units))",
-        "membership_ineligible_purchase_reversal_cases_check1": "CHECK ((period_ends_at >= period_started_at))",
-        "membership_ineligible_purchase_reversal_cases_check2": "CHECK (((winning_source_kind <> 'family'::membership_source_kinds) OR (period_ends_at > period_started_at)))"
+        "membership_ineligible_purchase_reversal_cases_check1": "CHECK ((period_ends_at >= period_started_at))"
       },
       "columns": {
         "collision_at": {
@@ -62859,7 +63063,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -62870,7 +63074,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "currency_code": {
@@ -62881,7 +63085,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "currency_codes"
         },
         "id": {
@@ -62928,6 +63132,17 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
+        "originating_invoice_id": {
+          "collation": null,
+          "comment": "Stripe invoice identifying the qualifying purchase within its provider lineage.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
         "period_ends_at": {
           "collation": null,
           "comment": "End of the original qualifying purchase period.",
@@ -62936,7 +63151,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "period_started_at": {
@@ -62947,7 +63162,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "qualifying_amount_minor_units": {
@@ -62958,7 +63173,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "bigint"
         },
         "refund_cap_minor_units": {
@@ -62969,7 +63184,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "bigint"
         },
         "stripe_price_id": {
@@ -62980,7 +63195,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "winning_source_kind": {
@@ -62991,7 +63206,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "membership_source_kinds"
         }
       },
@@ -63084,7 +63299,7 @@
         "idx_membership_ineligible_purchase_reversal_cases__binding": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_membership_ineligible_purchase_reversal_cases__binding ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_lineage_binding_id)",
+          "definition": "CREATE INDEX idx_membership_ineligible_purchase_reversal_cases__binding ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_lineage_binding_id, membership_provider_lineage_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -63093,12 +63308,19 @@
               "expression": "membership_lineage_binding_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "membership_provider_lineage_id",
+              "descending": false,
+              "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         },
         "idx_membership_ineligible_purchase_reversal_cases__currency": {
@@ -63113,6 +63335,53 @@
               "expression": "currency_code",
               "nullsFirst": false,
               "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_ineligible_purchase_reversal_cases__invoice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_membership_ineligible_purchase_reversal_cases__invoice ON public.membership_ineligible_purchase_reversal_cases USING btree (membership_provider_lineage_id, originating_invoice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_provider_lineage_id",
+              "descending": false,
+              "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "originating_invoice_id",
+              "descending": false,
+              "expression": "originating_invoice_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_membership_ineligible_purchase_reversal_cases__invoice_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_ineligible_purchase_reversal_cases__invoice_id ON public.membership_ineligible_purchase_reversal_cases USING btree (originating_invoice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "originating_invoice_id",
+              "descending": false,
+              "expression": "originating_invoice_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
             }
           ],
           "predicate": null,
@@ -63790,7 +64059,6 @@
         "membership_lineage_bindings_check": "CHECK (((released_at IS NULL) = (release_reason IS NULL)))",
         "membership_lineage_bindings_check1": "CHECK (((released_at IS NULL) OR (released_at >= bound_at)))",
         "membership_lineage_bindings_check2": "CHECK (((released_at IS NOT NULL) OR (user_id IS NOT NULL)))",
-        "membership_lineage_bindings_originating_invoice_id_valid": "CHECK (((originating_invoice_id IS NULL) OR (((char_length(originating_invoice_id) >= 1) AND (char_length(originating_invoice_id) <= 255)) AND (originating_invoice_id = TRIM(BOTH FROM originating_invoice_id)))))",
         "membership_lineage_bindings_release_reason_check": "CHECK (((release_reason IS NULL) OR (((char_length(release_reason) >= 1) AND (char_length(release_reason) <= 255)) AND (release_reason = TRIM(BOTH FROM release_reason)))))",
         "membership_lineage_bindings_source_kind_check": "CHECK ((source_kind <> 'admin_grant'::membership_source_kinds))"
       },
@@ -63803,7 +64071,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -63814,7 +64082,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -63839,17 +64107,6 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "originating_invoice_id": {
-          "collation": null,
-          "comment": "Stripe invoice that established the bound provider lineage for deterministic reversal targeting.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "text"
-        },
         "release_reason": {
           "collation": null,
           "comment": "Auditable reason the lineage binding was released.",
@@ -63858,7 +64115,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "released_at": {
@@ -63869,7 +64126,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "source_kind": {
@@ -63880,7 +64137,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
           "type": "membership_source_kinds"
         },
         "user_id": {
@@ -63891,7 +64148,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 3,
           "type": "uuid"
         }
       },
@@ -64014,40 +64271,6 @@
             }
           ],
           "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_membership_lineage_bindings__lineage_origin": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_lineage_bindings__lineage_origin ON public.membership_lineage_bindings USING btree (membership_provider_lineage_id, originating_invoice_id, id) WHERE (originating_invoice_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "membership_provider_lineage_id",
-              "descending": false,
-              "expression": "membership_provider_lineage_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "originating_invoice_id",
-              "descending": false,
-              "expression": "originating_invoice_id",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(originating_invoice_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -69780,6 +70003,507 @@
       },
       "relationKind": "table",
       "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "membership_stripe_purchase_collision_reviews": {
+      "checkConstraints": {
+        "membership_stripe_purchase_collisi_originating_invoice_id_check": "CHECK ((((char_length(originating_invoice_id) >= 1) AND (char_length(originating_invoice_id) <= 255)) AND (originating_invoice_id = TRIM(BOTH FROM originating_invoice_id))))",
+        "membership_stripe_purchase_collision_r_invoice_line_count_check": "CHECK ((invoice_line_count > 1))",
+        "membership_stripe_purchase_collision_reviews_check": "CHECK (((mapped_membership_line_count > 0) AND (mapped_membership_line_count <= invoice_line_count)))",
+        "membership_stripe_purchase_collision_reviews_winning_plan_check": "CHECK ((winning_plan = ANY (ARRAY['plus'::membership_plan_slugs, 'pro'::membership_plan_slugs])))",
+        "membership_stripe_purchase_collision_winning_source_kind_check1": "CHECK ((winning_source_kind = ANY (ARRAY['direct'::membership_source_kinds, 'family'::membership_source_kinds])))"
+      },
+      "columns": {
+        "collision_at": {
+          "collation": null,
+          "comment": "Captured collision time retained for staff after discovery work completes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Review insertion timestamp derived from its UUIDv7 identity.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 staff-review identity; bounded staff inspection orders by this key.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "invoice_line_count": {
+          "collation": null,
+          "comment": "Observed total invoice line count that made automatic allocation ambiguous.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "integer"
+        },
+        "mapped_membership_line_count": {
+          "collation": null,
+          "comment": "Observed number of invoice lines mapped to membership plans.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "integer"
+        },
+        "membership_lineage_binding_id": {
+          "collation": null,
+          "comment": "Retained binding authorized when the collision was captured.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "membership_provider_lineage_id": {
+          "collation": null,
+          "comment": "Canonical Stripe lineage identifying the subscription and provider context for staff investigation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "membership_source_id": {
+          "collation": null,
+          "comment": "Retained losing Stripe source; this evidence does not authorize a deleted owner.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "originating_invoice_id": {
+          "collation": null,
+          "comment": "Exact external Stripe invoice identity requiring staff allocation review.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "winning_plan": {
+          "collation": null,
+          "comment": "Immutable supported winning plan captured with the deferred collision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "membership_plan_slugs"
+        },
+        "winning_source_kind": {
+          "collation": null,
+          "comment": "Immutable winning source kind captured with the deferred collision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "membership_source_kinds"
+        }
+      },
+      "comment": "Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation or audit history.",
+      "foreignKeys": {
+        "fk_membership_stripe_purchase_collision_reviews__binding": {
+          "columns": ["membership_lineage_binding_id", "membership_provider_lineage_id"],
+          "definition": "FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id) REFERENCES membership_lineage_bindings(id, membership_provider_lineage_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "membership_provider_lineage_id"],
+          "referencedTable": "membership_lineage_bindings",
+          "validated": true
+        },
+        "fk_membership_stripe_purchase_collision_reviews__source": {
+          "columns": ["membership_source_id", "membership_provider_lineage_id"],
+          "definition": "FOREIGN KEY (membership_source_id, membership_provider_lineage_id) REFERENCES membership_sources(id, membership_provider_lineage_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "membership_provider_lineage_id"],
+          "referencedTable": "membership_sources",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_membership_stripe_purchase_collision_reviews__binding": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_stripe_purchase_collision_reviews__binding ON public.membership_stripe_purchase_collision_reviews USING btree (membership_lineage_binding_id, membership_provider_lineage_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_lineage_binding_id",
+              "descending": false,
+              "expression": "membership_lineage_binding_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "membership_provider_lineage_id",
+              "descending": false,
+              "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_stripe_purchase_collision_reviews__invoice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_membership_stripe_purchase_collision_reviews__invoice ON public.membership_stripe_purchase_collision_reviews USING btree (membership_provider_lineage_id, originating_invoice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_provider_lineage_id",
+              "descending": false,
+              "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "originating_invoice_id",
+              "descending": false,
+              "expression": "originating_invoice_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_membership_stripe_purchase_collision_reviews__source": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_stripe_purchase_collision_reviews__source ON public.membership_stripe_purchase_collision_reviews USING btree (membership_source_id, membership_provider_lineage_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_source_id",
+              "descending": false,
+              "expression": "membership_source_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "membership_provider_lineage_id",
+              "descending": false,
+              "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "membership_stripe_purchase_collision_reviews_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX membership_stripe_purchase_collision_reviews_pkey ON public.membership_stripe_purchase_collision_reviews USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_membership_stripe_purchase_collision_reviews_guard": "CREATE TRIGGER trigger_membership_stripe_purchase_collision_reviews_guard BEFORE UPDATE ON public.membership_stripe_purchase_collision_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+      },
+      "uniqueConstraints": {}
+    },
+    "membership_stripe_purchase_collision_work_items": {
+      "checkConstraints": {
+        "membership_stripe_purchase_collision__winning_source_kind_check": "CHECK ((winning_source_kind = ANY (ARRAY['direct'::membership_source_kinds, 'family'::membership_source_kinds])))",
+        "membership_stripe_purchase_collision_work_it_winning_plan_check": "CHECK ((winning_plan = ANY (ARRAY['plus'::membership_plan_slugs, 'pro'::membership_plan_slugs])))"
+      },
+      "columns": {
+        "collision_at": {
+          "collation": null,
+          "comment": "Winning membership effective time used for immutable overlap refund caps.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Work insertion time derived from its UUIDv7 identity; recovery orders by id.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 work identity used by bounded recovery and stable GlideMQ admission.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "membership_lineage_binding_id": {
+          "collation": null,
+          "comment": "Retained binding authorized at collision capture; it does not authorize access by a deleted user.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "membership_provider_lineage_id": {
+          "collation": null,
+          "comment": "Canonical provider lineage shared by the retained source and binding.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "membership_source_id": {
+          "collation": null,
+          "comment": "Retained losing Stripe source whose invoices must be inspected outside membership transactions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "winning_plan": {
+          "collation": null,
+          "comment": "Winning plan snapshot used to preserve family tier precedence during deferred discovery.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "membership_plan_slugs"
+        },
+        "winning_source_kind": {
+          "collation": null,
+          "comment": "Winning direct native or family source at the captured collision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "membership_source_kinds"
+        }
+      },
+      "comment": "Immutable financial collision facts captured with membership projection. Pending rows recover lost queue admissions and terminal failures; completion deletes them after cases and reconciliation succeed.",
+      "foreignKeys": {
+        "fk_membership_stripe_purchase_collision_work_items__binding": {
+          "columns": ["membership_lineage_binding_id", "membership_provider_lineage_id"],
+          "definition": "FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id) REFERENCES membership_lineage_bindings(id, membership_provider_lineage_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "membership_provider_lineage_id"],
+          "referencedTable": "membership_lineage_bindings",
+          "validated": true
+        },
+        "fk_membership_stripe_purchase_collision_work_items__source": {
+          "columns": ["membership_source_id", "membership_provider_lineage_id"],
+          "definition": "FOREIGN KEY (membership_source_id, membership_provider_lineage_id) REFERENCES membership_sources(id, membership_provider_lineage_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "membership_provider_lineage_id"],
+          "referencedTable": "membership_sources",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_membership_stripe_purchase_collision_work_items__binding": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_stripe_purchase_collision_work_items__binding ON public.membership_stripe_purchase_collision_work_items USING btree (membership_lineage_binding_id, membership_provider_lineage_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_lineage_binding_id",
+              "descending": false,
+              "expression": "membership_lineage_binding_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "membership_provider_lineage_id",
+              "descending": false,
+              "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_stripe_purchase_collision_work_items__collision": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_membership_stripe_purchase_collision_work_items__collision ON public.membership_stripe_purchase_collision_work_items USING btree (membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id, winning_source_kind, winning_plan, collision_at)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_source_id",
+              "descending": false,
+              "expression": "membership_source_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "membership_provider_lineage_id",
+              "descending": false,
+              "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "membership_lineage_binding_id",
+              "descending": false,
+              "expression": "membership_lineage_binding_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "winning_source_kind",
+              "descending": false,
+              "expression": "winning_source_kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "winning_plan",
+              "descending": false,
+              "expression": "winning_plan",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "collision_at",
+              "descending": false,
+              "expression": "collision_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "membership_stripe_purchase_collision_work_items_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX membership_stripe_purchase_collision_work_items_pkey ON public.membership_stripe_purchase_collision_work_items USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_membership_stripe_purchase_collision_work_items_guard": "CREATE TRIGGER trigger_membership_stripe_purchase_collision_work_items_guard BEFORE UPDATE ON public.membership_stripe_purchase_collision_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+      },
       "uniqueConstraints": {}
     },
     "membership_verifications": {
@@ -90447,7 +91171,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "archived_at": {
@@ -90458,7 +91182,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 40,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -90469,7 +91193,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 41,
           "type": "uuid"
         },
         "ban_evasion_post_embedding_input_sha256": {
@@ -90480,7 +91204,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 56,
+          "ordinalPosition": 57,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -90491,7 +91215,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 51,
+          "ordinalPosition": 52,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -90502,7 +91226,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 54,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -90513,7 +91237,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 54,
+          "ordinalPosition": 55,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -90524,7 +91248,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52,
+          "ordinalPosition": 53,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -90535,7 +91259,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 55,
+          "ordinalPosition": 56,
           "type": "integer"
         },
         "broadcast": {
@@ -90623,7 +91347,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 35,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -90634,7 +91358,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 34,
           "type": "uuid"
         },
         "created_via": {
@@ -90667,7 +91391,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 45,
           "type": "uuid"
         },
         "data_point_vertical": {
@@ -90678,7 +91402,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 42,
           "type": "text"
         },
         "declared_language": {
@@ -90689,7 +91413,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 46,
           "type": "text"
         },
         "deleted_at": {
@@ -90700,7 +91424,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 38,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -90711,7 +91435,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 39,
           "type": "uuid"
         },
         "has_creation_moderation_bypass": {
@@ -90723,6 +91447,17 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 29,
+          "type": "boolean"
+        },
+        "has_hacker_news_references": {
+          "collation": null,
+          "comment": "Whether the post has a qualifying Hacker News reference, maintained asynchronously or with post changes.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 30,
           "type": "boolean"
         },
         "id": {
@@ -90744,7 +91479,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 33,
           "type": "timestamp with time zone"
         },
         "is_anonymous": {
@@ -90766,7 +91501,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 48,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -90777,7 +91512,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 51,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -90788,7 +91523,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 47,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -90799,7 +91534,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 49,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -90810,7 +91545,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49,
+          "ordinalPosition": 50,
           "type": "jsonb"
         },
         "llm_moderation_content_sha256": {
@@ -90821,7 +91556,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 57,
+          "ordinalPosition": 58,
           "type": "bytea"
         },
         "markdown": {
@@ -90876,7 +91611,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "timestamp with time zone"
         },
         "root_post_id": {
@@ -90898,7 +91633,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58,
+          "ordinalPosition": 59,
           "type": "tsvector"
         },
         "structured_data": {
@@ -90909,7 +91644,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 43,
           "type": "jsonb"
         },
         "title": {
@@ -90931,7 +91666,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -90942,7 +91677,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 37,
           "type": "uuid"
         },
         "url_id": {
@@ -90953,7 +91688,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 44,
           "type": "uuid"
         },
         "votes_count_down": {
@@ -91623,6 +92358,53 @@
           "unique": false,
           "valid": true
         },
+        "idx_posts__hacker_news_references__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__id ON ONLY public.posts USING btree (id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(has_hacker_news_references AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__hacker_news_references__votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "float8_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(has_hacker_news_references AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_posts__id__post_type": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -91928,7 +92710,7 @@
         "idx_posts__url_id__link": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__url_id__link ON ONLY public.posts USING btree (url_id, id DESC) WHERE ((post_type = 'link'::post_types) AND (deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_posts__url_id__link ON ONLY public.posts USING btree (url_id, id DESC) WHERE (post_type = 'link'::post_types)",
           "includedColumns": [],
           "keys": [
             {
@@ -91946,7 +92728,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((post_type = 'link'::post_types) AND (deleted_at IS NULL))",
+          "predicate": "(post_type = 'link'::post_types)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -96916,6 +97698,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__related__url__positive_reverse": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__positive_reverse ON ONLY public.relation__post__related__url USING btree (object_id, subject_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__url__positive_score__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -97006,6 +97815,47 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__related__url__subject__best_positive": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__subject__best_positive ON ONLY public.relation__post__related__url USING btree (subject_id, votes_score_sort DESC, created_at DESC, object_id DESC) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "float8_ops"
+            },
+            {
+              "column": "created_at",
+              "descending": true,
+              "expression": "created_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "object_id",
+              "descending": true,
+              "expression": "object_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -123265,7 +124115,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -123276,7 +124126,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -123287,7 +124137,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -123298,7 +124148,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -123309,7 +124159,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "integer"
         },
         "created_at": {
@@ -123320,7 +124170,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "data": {
@@ -123331,7 +124181,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "jsonb"
         },
         "deleted_at": {
@@ -123342,7 +124192,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "duration_seconds": {
@@ -123353,7 +124203,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "integer"
         },
         "enclosure_length": {
@@ -123364,7 +124214,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "bigint"
         },
         "enclosure_media_type_id": {
@@ -123375,7 +124225,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "bigint"
         },
         "enclosure_url": {
@@ -123386,8 +124236,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "text"
+        },
+        "has_hacker_news_references": {
+          "collation": null,
+          "comment": "Whether the item has a qualifying Hacker News reference, maintained asynchronously.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "boolean"
         },
         "id": {
           "collation": null,
@@ -123408,7 +124269,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -123419,7 +124280,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 34,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -123430,7 +124291,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -123441,7 +124302,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -123452,7 +124313,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 33,
           "type": "jsonb"
         },
         "media_type": {
@@ -123463,7 +124324,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "rss_feed_item_media_types"
         },
         "published_at": {
@@ -123474,7 +124335,7 @@
           "generatedExpression": "LEAST(COALESCE(fn_text_to_timestamptz((data ->> 'isoDate'::text)), 'infinity'::timestamp with time zone), COALESCE(fn_text_to_timestamptz((data ->> 'pubDate'::text)), 'infinity'::timestamp with time zone), uuid_extract_timestamp(id))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 39,
           "type": "timestamp with time zone"
         },
         "search_vector": {
@@ -123485,7 +124346,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "tsvector"
         },
         "story_id": {
@@ -123496,7 +124357,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 35,
           "type": "uuid"
         },
         "story_locked_at": {
@@ -123507,7 +124368,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "thumbnail_url": {
@@ -123518,7 +124379,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "updated_at": {
@@ -123529,7 +124390,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "url_id": {
@@ -123540,7 +124401,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "video_id": {
@@ -123551,7 +124412,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "text"
         },
         "video_platform": {
@@ -123562,7 +124423,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "text"
         },
         "votes_count_down": {
@@ -123661,7 +124522,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 38,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -123672,7 +124533,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 37,
           "type": "xid8"
         }
       },
@@ -123828,6 +124689,33 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_items__hacker_news_references__published_at__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__hacker_news_references__published_at__id ON ONLY public.rss_feed_items USING btree (published_at DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "published_at",
+              "descending": true,
+              "expression": "published_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(has_hacker_news_references AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -124022,16 +124910,23 @@
           "unique": false,
           "valid": true
         },
-        "idx_rss_feed_items__url_id": {
+        "idx_rss_feed_items__url_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_items__url_id ON ONLY public.rss_feed_items USING btree (url_id)",
+          "definition": "CREATE INDEX idx_rss_feed_items__url_id__id ON ONLY public.rss_feed_items USING btree (url_id, id)",
           "includedColumns": [],
           "keys": [
             {
               "column": "url_id",
               "descending": false,
               "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -126495,6 +127390,7 @@
     },
     "story_post_related_url_projection_jobs": {
       "checkConstraints": {
+        "story_post_related_url_projection__limit_reached_capacity_check": "CHECK ((limit_reached_capacity > 0))",
         "story_post_related_url_projection_jobs_check": "CHECK (((lease_token IS NULL) = (leased_at IS NULL)))",
         "story_post_related_url_projection_jobs_check1": "CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))",
         "story_post_related_url_projection_jobs_check2": "CHECK (((invalidation_completed_at IS NULL) OR (invalidation_required_at IS NOT NULL)))",
@@ -126509,7 +127405,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "cursor_prune_id": {
@@ -126520,7 +127416,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "cursor_source_id": {
@@ -126533,6 +127429,17 @@
           "nullable": true,
           "ordinalPosition": 7,
           "type": "uuid"
+        },
+        "eligibility_completed_at": {
+          "collation": null,
+          "comment": "Time the complete bounded eligibility scan finished before relation replacements; resets the source cursor for the write pass.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
         },
         "generation": {
           "collation": null,
@@ -126553,7 +127460,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "invalidation_required_at": {
@@ -126564,7 +127471,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "last_claimed_at": {
@@ -126575,7 +127482,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "lease_expires_at": {
@@ -126586,7 +127493,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -126597,7 +127504,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "leased_at": {
@@ -126608,8 +127515,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
+        },
+        "limit_reached_capacity": {
+          "collation": null,
+          "comment": "Capacity at which this generation could not admit its source; a changed capacity restarts it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "integer"
         },
         "post_id": {
           "collation": null,
@@ -126641,7 +127559,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "story_id": {
@@ -126685,7 +127603,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         }
       },
@@ -126742,7 +127660,7 @@
         "idx_story_post_relate_url_project_jobs__last_claimed_at_post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_story_post_relate_url_project_jobs__last_claimed_at_post_id ON public.story_post_related_url_projection_jobs USING btree (last_claimed_at NULLS FIRST, post_id)",
+          "definition": "CREATE INDEX idx_story_post_relate_url_project_jobs__last_claimed_at_post_id ON public.story_post_related_url_projection_jobs USING btree (last_claimed_at NULLS FIRST, post_id) WHERE (limit_reached_capacity IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -126760,7 +127678,41 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(limit_reached_capacity IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_story_post_related_url_projection_jobs__limit_capacity": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_story_post_related_url_projection_jobs__limit_capacity ON public.story_post_related_url_projection_jobs USING btree (limit_reached_capacity, last_claimed_at, post_id) WHERE (limit_reached_capacity IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "limit_reached_capacity",
+              "descending": false,
+              "expression": "limit_reached_capacity",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            },
+            {
+              "column": "last_claimed_at",
+              "descending": false,
+              "expression": "last_claimed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(limit_reached_capacity IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -137783,6 +138735,347 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "url_hacker_news_comments": {
+      "checkConstraints": {
+        "url_hacker_news_comments_hacker_news_item_id_check": "CHECK ((hacker_news_item_id > 0))",
+        "url_hacker_news_comments_parent_story_item_id_check": "CHECK ((parent_story_item_id > 0))"
+      },
+      "columns": {
+        "hacker_news_item_id": {
+          "collation": null,
+          "comment": "Hacker News item id of the comment; an outside identifier with no row here.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "bigint"
+        },
+        "parent_story_item_id": {
+          "collation": null,
+          "comment": "Hacker News item id of the story whose thread holds the comment; an outside identifier that may not link the URL itself.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "bigint"
+        },
+        "posted_at": {
+          "collation": null,
+          "comment": "When the comment was posted on Hacker News.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "url_id": {
+          "collation": null,
+          "comment": "The URL the comment links. Removed with the URL.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Capped Hacker News comments that link a URL: item id, parent story id and posted time. No comment text, and no points because Hacker News publishes none.",
+      "foreignKeys": {
+        "url_hacker_news_comments_url_id_fkey": {
+          "columns": ["url_id"],
+          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "url_hacker_news_comments_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hacker_news_comments_pkey ON public.url_hacker_news_comments USING btree (url_id, hacker_news_item_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "hacker_news_item_id",
+              "descending": false,
+              "expression": "hacker_news_item_id",
+              "nullsFirst": false,
+              "opclass": "int8_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id", "hacker_news_item_id"],
+        "definition": "PRIMARY KEY (url_id, hacker_news_item_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "url_hacker_news_stories": {
+      "checkConstraints": {
+        "url_hacker_news_stories_hacker_news_item_id_check": "CHECK ((hacker_news_item_id > 0))",
+        "url_hacker_news_stories_points_check": "CHECK ((points >= 0))",
+        "url_hacker_news_stories_reply_count_check": "CHECK ((reply_count >= 0))"
+      },
+      "columns": {
+        "hacker_news_item_id": {
+          "collation": null,
+          "comment": "Hacker News item id of the story; an outside identifier with no row here.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "bigint"
+        },
+        "points": {
+          "collation": null,
+          "comment": "Story points when last looked up.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "posted_at": {
+          "collation": null,
+          "comment": "When the story was posted on Hacker News.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "reply_count": {
+          "collation": null,
+          "comment": "Number of replies on the story thread when last looked up; not the number of comments that mention the URL.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "integer"
+        },
+        "url_id": {
+          "collation": null,
+          "comment": "The URL the story links. Removed with the URL.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Capped Hacker News stories that link a URL: item id, points, reply count and posted time. No titles or text.",
+      "foreignKeys": {
+        "url_hacker_news_stories_url_id_fkey": {
+          "columns": ["url_id"],
+          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "url_hacker_news_stories_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hacker_news_stories_pkey ON public.url_hacker_news_stories USING btree (url_id, hacker_news_item_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "hacker_news_item_id",
+              "descending": false,
+              "expression": "hacker_news_item_id",
+              "nullsFirst": false,
+              "opclass": "int8_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id", "hacker_news_item_id"],
+        "definition": "PRIMARY KEY (url_id, hacker_news_item_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "url_hacker_news_totals": {
+      "checkConstraints": {
+        "url_hacker_news_totals_comment_count_check": "CHECK ((comment_count >= 0))",
+        "url_hacker_news_totals_story_count_check": "CHECK ((story_count >= 0))"
+      },
+      "columns": {
+        "comment_count": {
+          "collation": null,
+          "comment": "Total Hacker News comments linking the URL, including comments beyond the capped stored rows.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "looked_up_at": {
+          "collation": null,
+          "comment": "When the totals and stored rows were last refreshed from Hacker News search, including lookups with zero hits.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "story_count": {
+          "collation": null,
+          "comment": "Total Hacker News stories linking the URL, including stories beyond the capped stored rows.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "integer"
+        },
+        "url_id": {
+          "collation": null,
+          "comment": "The URL these totals describe. Removed with the URL.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Per-URL totals of Hacker News stories and comments that link the URL, with the time of the last lookup. Facts only; never a ranking or trust input.",
+      "foreignKeys": {
+        "url_hacker_news_totals_url_id_fkey": {
+          "columns": ["url_id"],
+          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_url_hacker_news_totals__looked_up_at__url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hacker_news_totals__looked_up_at__url_id ON public.url_hacker_news_totals USING btree (looked_up_at, url_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "looked_up_at",
+              "descending": false,
+              "expression": "looked_up_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "url_hacker_news_totals_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hacker_news_totals_pkey ON public.url_hacker_news_totals USING btree (url_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id"],
+        "definition": "PRIMARY KEY (url_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "url_hostname_blocks": {
       "checkConstraints": {
         "chk_url_hostname_blocks__domain_source": "CHECK (((blocked_source = ANY (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])) = (domain_blocklist_source_id IS NOT NULL)))",
@@ -139313,13 +140606,13 @@
         "idx_url_hostnames__top_sort": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__top_sort ON public.url_hostnames USING btree (votes_score_net DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0))",
+          "definition": "CREATE INDEX idx_url_hostnames__top_sort ON public.url_hostnames USING btree (votes_score_sort DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0))",
           "includedColumns": [],
           "keys": [
             {
-              "column": "votes_score_net",
+              "column": "votes_score_sort",
               "descending": true,
-              "expression": "votes_score_net",
+              "expression": "votes_score_sort",
               "nullsFirst": true,
               "opclass": "float8_ops"
             },
@@ -139340,7 +140633,7 @@
         "idx_url_hostnames__top_sort_by_topic": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__top_sort_by_topic ON public.url_hostnames USING btree (topic_id, votes_score_net DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
+          "definition": "CREATE INDEX idx_url_hostnames__top_sort_by_topic ON public.url_hostnames USING btree (topic_id, votes_score_sort DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -139351,9 +140644,9 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "votes_score_net",
+              "column": "votes_score_sort",
               "descending": true,
-              "expression": "votes_score_net",
+              "expression": "votes_score_sort",
               "nullsFirst": true,
               "opclass": "float8_ops"
             },
@@ -139448,7 +140741,7 @@
         "idx_url_hostnames__votes_score_sort__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__votes_score_sort__id ON public.url_hostnames USING btree (votes_score_sort DESC, id)",
+          "definition": "CREATE INDEX idx_url_hostnames__votes_score_sort__id ON public.url_hostnames USING btree (votes_score_sort DESC, id DESC)",
           "includedColumns": [],
           "keys": [
             {
@@ -139460,9 +140753,9 @@
             },
             {
               "column": "id",
-              "descending": false,
+              "descending": true,
               "expression": "id",
-              "nullsFirst": false,
+              "nullsFirst": true,
               "opclass": "uuid_ops"
             }
           ],
@@ -139475,7 +140768,7 @@
         "idx_url_hostnames__votes_score_sort__positive__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__votes_score_sort__positive__id ON public.url_hostnames USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)",
+          "definition": "CREATE INDEX idx_url_hostnames__votes_score_sort__positive__id ON public.url_hostnames USING btree (votes_score_sort DESC, id DESC) WHERE (votes_score_net > (0)::double precision)",
           "includedColumns": [],
           "keys": [
             {
@@ -139487,9 +140780,9 @@
             },
             {
               "column": "id",
-              "descending": false,
+              "descending": true,
               "expression": "id",
-              "nullsFirst": false,
+              "nullsFirst": true,
               "opclass": "uuid_ops"
             }
           ],
@@ -139721,16 +141014,23 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_urls__canonical_url_id": {
+        "idx_urls__canonical_url_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__canonical_url_id ON public.urls USING btree (canonical_url_id) WHERE (canonical_url_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_urls__canonical_url_id__id ON public.urls USING btree (canonical_url_id, id) WHERE (canonical_url_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
               "column": "canonical_url_id",
               "descending": false,
               "expression": "canonical_url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -150910,7 +152210,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 51,
+          "ordinalPosition": 50,
           "type": "timestamp with time zone"
         },
         "cards_visibility": {
@@ -150921,7 +152221,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24,
+          "ordinalPosition": 23,
           "type": "user_privacy_audiences"
         },
         "community_digest_frequency": {
@@ -150932,7 +152232,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "digest_frequencies"
         },
         "community_memberships_visibility": {
@@ -150943,7 +152243,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 29,
           "type": "user_privacy_audiences"
         },
         "country": {
@@ -150954,7 +152254,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "created_at": {
@@ -150965,7 +152265,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 64,
+          "ordinalPosition": 63,
           "type": "timestamp with time zone"
         },
         "default_post_broadcast": {
@@ -150976,7 +152276,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33,
+          "ordinalPosition": 32,
           "type": "broadcast_types"
         },
         "default_post_privacy": {
@@ -150987,7 +152287,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34,
+          "ordinalPosition": 33,
           "type": "privacy_types"
         },
         "deleted_at": {
@@ -150998,7 +152298,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 66,
+          "ordinalPosition": 65,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -151009,7 +152309,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 67,
+          "ordinalPosition": 66,
           "type": "uuid"
         },
         "direct_messages_audience": {
@@ -151020,7 +152320,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35,
+          "ordinalPosition": 34,
           "type": "user_privacy_audiences"
         },
         "followers_visibility": {
@@ -151031,7 +152331,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31,
+          "ordinalPosition": 30,
           "type": "user_privacy_audiences"
         },
         "follows_visibility": {
@@ -151042,7 +152342,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27,
+          "ordinalPosition": 26,
           "type": "user_privacy_audiences"
         },
         "id": {
@@ -151064,7 +152364,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 63,
+          "ordinalPosition": 62,
           "type": "uuid"
         },
         "is_engagement_emails_enabled": {
@@ -151075,7 +152375,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "boolean"
         },
         "is_fediverse_federation_enabled": {
@@ -151086,7 +152386,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "boolean"
         },
         "is_moderation_emails_enabled": {
@@ -151097,7 +152397,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "boolean"
         },
         "is_verified_badge_visible": {
@@ -151108,7 +152408,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 55,
+          "ordinalPosition": 54,
           "type": "boolean"
         },
         "likes_visibility": {
@@ -151119,7 +152419,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 32,
+          "ordinalPosition": 31,
           "type": "user_privacy_audiences"
         },
         "lingua_rs_content_sha256": {
@@ -151130,7 +152430,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 19,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -151141,7 +152441,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -151152,7 +152452,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 18,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -151163,7 +152463,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 20,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -151174,7 +152474,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 21,
           "type": "jsonb"
         },
         "markdown": {
@@ -151196,7 +152496,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "moderation_email_cadences"
         },
         "moderation_email_days_of_week": {
@@ -151207,7 +152507,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "smallint[]"
         },
         "moderation_email_time_of_day": {
@@ -151218,7 +152518,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "moderation_email_timezone": {
@@ -151229,7 +152529,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "news_digest_frequency": {
@@ -151240,7 +152540,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "digest_frequencies"
         },
         "pending_checkout_session_id": {
@@ -151251,7 +152551,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 61,
+          "ordinalPosition": 60,
           "type": "text"
         },
         "pending_verification_session_id": {
@@ -151262,7 +152562,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 60,
+          "ordinalPosition": 59,
           "type": "text"
         },
         "platform_account_kind": {
@@ -151284,7 +152584,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 49,
           "type": "timestamp with time zone"
         },
         "profile_image_id": {
@@ -151295,7 +152595,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 62,
+          "ordinalPosition": 61,
           "type": "uuid"
         },
         "public_verified_name_display": {
@@ -151306,7 +152606,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 56,
+          "ordinalPosition": 55,
           "type": "public_verified_name_displays"
         },
         "referrer_user_id": {
@@ -151317,7 +152617,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49,
+          "ordinalPosition": 48,
           "type": "uuid"
         },
         "rewards_program_statuses_visibility": {
@@ -151328,7 +152628,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25,
+          "ordinalPosition": 24,
           "type": "user_privacy_audiences"
         },
         "rss_feed_follows_visibility": {
@@ -151339,19 +152639,8 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29,
+          "ordinalPosition": 28,
           "type": "user_privacy_audiences"
-        },
-        "should_import_hacker_news_discussions": {
-          "collation": null,
-          "comment": "Whether this user opts in to Hacker News discussion imports.",
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "boolean"
         },
         "should_receive_third_party_marketing": {
           "collation": null,
@@ -151361,7 +152650,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "boolean"
         },
         "spending_categories_visibility": {
@@ -151372,7 +152661,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26,
+          "ordinalPosition": 25,
           "type": "user_privacy_audiences"
         },
         "topic_follows_visibility": {
@@ -151383,7 +152672,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 27,
           "type": "user_privacy_audiences"
         },
         "ui_locale": {
@@ -151394,7 +152683,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "updated_at": {
@@ -151405,7 +152694,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 65,
+          "ordinalPosition": 64,
           "type": "timestamp with time zone"
         },
         "use_display_name_from": {
@@ -151438,7 +152727,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 54,
+          "ordinalPosition": 53,
           "type": "timestamp with time zone"
         },
         "verification_provider": {
@@ -151449,7 +152738,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 52,
           "type": "identity_verification_providers"
         },
         "verification_status": {
@@ -151460,7 +152749,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 52,
+          "ordinalPosition": 51,
           "type": "identity_verification_statuses"
         },
         "verified_first_name": {
@@ -151471,7 +152760,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 57,
+          "ordinalPosition": 56,
           "type": "text"
         },
         "verified_full_name": {
@@ -151482,7 +152771,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 59,
+          "ordinalPosition": 58,
           "type": "text"
         },
         "verified_last_name_initial": {
@@ -151493,7 +152782,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58,
+          "ordinalPosition": 57,
           "type": "text"
         },
         "vote_weight": {
@@ -151504,7 +152793,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 35,
           "type": "double precision"
         },
         "vote_weight_admin_set_at": {
@@ -151515,7 +152804,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "vote_weight_recalculated_at": {
@@ -151526,7 +152815,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 37,
           "type": "timestamp with time zone"
         },
         "votes_count_down": {
@@ -151537,7 +152826,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 46,
+          "ordinalPosition": 45,
           "type": "integer"
         },
         "votes_count_none": {
@@ -151548,7 +152837,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 45,
+          "ordinalPosition": 44,
           "type": "integer"
         },
         "votes_count_up": {
@@ -151559,7 +152848,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 44,
+          "ordinalPosition": 43,
           "type": "integer"
         },
         "votes_score_down": {
@@ -151570,7 +152859,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 43,
+          "ordinalPosition": 42,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -151581,7 +152870,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 47,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -151592,7 +152881,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 42,
+          "ordinalPosition": 41,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -151603,7 +152892,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 46,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -151614,7 +152903,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 41,
+          "ordinalPosition": 40,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -151625,7 +152914,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 39,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -151636,7 +152925,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 38,
           "type": "xid8"
         }
       },
@@ -156575,7 +157864,7 @@
     },
     "view_posts": {
       "comment": "Current post response projection; callers enforce publication, deletion and audience access.",
-      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.id DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::post_topic_alias_source_types))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( WITH selected_post_images AS MATERIALIZED (\n                 SELECT post_images_1.post_id,\n                    post_images_1.image_id,\n                    post_images_1.order_index,\n                    post_images_1.caption\n                   FROM post_images post_images_1\n                  WHERE (post_images_1.post_id = posts.id)\n                  ORDER BY post_images_1.order_index\n                )\n         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM (((selected_post_images post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL))))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE (urls.id = ptr.example_referral_url_id)), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM (post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON ((urls.id = submitted.url_id)))\n                      WHERE (submitted.post_id = ptr.post_id)), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
+      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.id DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_sort DESC, top5.created_at DESC, top5.object_id DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_sort,\n                    rel.created_at\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_sort DESC, rel.created_at DESC, rel.object_id DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::post_topic_alias_source_types))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( WITH selected_post_images AS MATERIALIZED (\n                 SELECT post_images_1.post_id,\n                    post_images_1.image_id,\n                    post_images_1.order_index,\n                    post_images_1.caption\n                   FROM post_images post_images_1\n                  WHERE (post_images_1.post_id = posts.id)\n                  ORDER BY post_images_1.order_index\n                )\n         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM (((selected_post_images post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL))))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE (urls.id = ptr.example_referral_url_id)), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM (post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON ((urls.id = submitted.url_id)))\n                      WHERE (submitted.post_id = ptr.post_id)), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
       "materialized": false
     },
     "view_public_post_eligibility": {
@@ -156595,12 +157884,12 @@
     },
     "view_rss_feed_items": {
       "comment": "RSS item response projection; callers enforce feed and item visibility.",
-      "definition": " SELECT 'rss_feed_item'::text AS __entity_type,\n    rss_feed_items.id,\n    rss_feed_item_guids.guid,\n    rss_feed_item_guids.url_hostname_id,\n    rss_feed_items.published_at,\n    rss_feed_items.media_type,\n    rss_feed_items.enclosure_url,\n    enclosure_media_type.mime_type AS enclosure_type,\n    rss_feed_items.enclosure_length,\n    rss_feed_items.duration_seconds,\n    rss_feed_items.thumbnail_url,\n    rss_feed_items.video_id,\n    rss_feed_items.video_platform,\n    rss_feed_items.data,\n    row_to_json(view_urls.*) AS url,\n    row_to_json(primary_feed.*) AS rss_feed,\n    COALESCE(all_sources.rss_feed_sources, '[]'::json) AS rss_feed_sources,\n    COALESCE(( SELECT json_agg(sub.cat ORDER BY sub.cat_order, sub.cat_score DESC NULLS LAST, sub.cat_text) AS json_agg\n           FROM ( SELECT jsonb_build_object('id', rel.id, 'category_text', vet.name, 'topic', to_jsonb(vet.*), 'hashtag',\n                        CASE\n                            WHEN (mapped_hashtag.id IS NULL) THEN NULL::jsonb\n                            ELSE jsonb_build_object('id', mapped_hashtag.id, 'key', mapped_hashtag.alias, 'display_token', mapped_hashtag.category_text, 'topic_id', mapped_hashtag.topic_id)\n                        END, 'votes_score_net', rel.votes_score_net) AS cat,\n                    0 AS cat_order,\n                    rel.votes_score_net AS cat_score,\n                    COALESCE(mapped_hashtag.category_text, vet.name) AS cat_text\n                   FROM ((relation__rss_feed_item__category__topic rel\n                     JOIN view_embedded_topics vet ON ((vet.id = rel.object_id)))\n                     LEFT JOIN LATERAL ( SELECT alias.id,\n                            alias.alias,\n                            alias.topic_id,\n                            rfc.category_text\n                           FROM ((rss_feed_item_categories rfc\n                             JOIN topic_aliases alias ON ((alias.id = rfc.topic_alias_id)))\n                             JOIN relation__rss_feed_item__category__topic_alias alias_relation ON (((alias_relation.subject_id = rfc.rss_feed_item_id) AND (alias_relation.object_id = rfc.topic_alias_id) AND (alias_relation.deleted_at IS NULL) AND (alias_relation.votes_score_net > (0)::double precision))))\n                          WHERE ((rfc.rss_feed_item_id = rel.subject_id) AND (rfc.topic_id = rel.object_id))) mapped_hashtag ON (true))\n                  WHERE ((rel.subject_id = rss_feed_items.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                UNION ALL\n                 SELECT jsonb_build_object('id', NULL::unknown, 'category_text', rfc.category_text, 'topic', NULL::unknown, 'hashtag',\n                        CASE\n                            WHEN (alias.id IS NULL) THEN NULL::jsonb\n                            ELSE jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', rfc.category_text, 'topic_id', alias.topic_id)\n                        END, 'votes_score_net', NULL::unknown) AS cat,\n                    1 AS cat_order,\n                    NULL::double precision AS cat_score,\n                    rfc.category_text AS cat_text\n                   FROM ((rss_feed_item_categories rfc\n                     LEFT JOIN topic_aliases alias ON ((alias.id = rfc.topic_alias_id)))\n                     LEFT JOIN relation__rss_feed_item__category__topic_alias relation ON (((relation.subject_id = rfc.rss_feed_item_id) AND (relation.object_id = rfc.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision))))\n                  WHERE ((rfc.rss_feed_item_id = rss_feed_items.id) AND ((rfc.topic_id IS NULL) OR (NOT (EXISTS ( SELECT 1\n                           FROM relation__rss_feed_item__category__topic topic_relation\n                          WHERE ((topic_relation.subject_id = rfc.rss_feed_item_id) AND (topic_relation.object_id = rfc.topic_id) AND (topic_relation.deleted_at IS NULL) AND (topic_relation.votes_score_net > (0)::double precision)))))) AND ((rfc.topic_alias_id IS NULL) OR (relation.id IS NOT NULL)))) sub), '[]'::json) AS categories,\n    rss_feed_items.lingua_rs_detected_language\n   FROM ((((((rss_feed_items\n     LEFT JOIN media_types enclosure_media_type ON ((enclosure_media_type.id = rss_feed_items.enclosure_media_type_id)))\n     JOIN rss_feed_item_guids ON ((rss_feed_item_guids.id = rss_feed_items.id)))\n     LEFT JOIN view_urls ON ((view_urls.id = rss_feed_items.url_id)))\n     JOIN LATERAL ( SELECT rfis.rss_feed_id\n           FROM ((rss_feed_item_sources rfis\n             JOIN rss_feeds rf ON ((rf.id = rfis.rss_feed_id)))\n             JOIN topics t ON ((t.id = rf.topic_id)))\n          WHERE ((rfis.rss_feed_item_id = rss_feed_items.id) AND (rf.deleted_at IS NULL))\n          ORDER BY rf.is_enabled DESC, rf.is_discoverable DESC, t.votes_score_net DESC NULLS LAST, rfis.created_at\n         LIMIT 1) best_source ON (true))\n     JOIN LATERAL ( SELECT view_rss_feeds.__entity_type,\n            view_rss_feeds.id,\n            view_rss_feeds.title,\n            view_rss_feeds.is_enabled,\n            view_rss_feeds.is_discoverable,\n            view_rss_feeds.etag,\n            view_rss_feeds.last_modified_at,\n            view_rss_feeds.last_fetched_at,\n            view_rss_feeds.feed_type,\n            view_rss_feeds.canonical_rss_feed_id,\n            view_rss_feeds.rss_feed_url,\n            view_rss_feeds.home_page_url,\n            view_rss_feeds.topic,\n            view_rss_feeds.publisher_type,\n            view_rss_feeds.hostname,\n            view_rss_feeds.podcast_show,\n            view_rss_feeds.categories\n           FROM view_rss_feeds\n          WHERE (view_rss_feeds.id = best_source.rss_feed_id)\n         LIMIT 1) primary_feed ON (true))\n     LEFT JOIN LATERAL ( SELECT json_agg(row_to_json(vrf.*) ORDER BY rf2.is_enabled DESC, rf2.is_discoverable DESC, t2.votes_score_net DESC NULLS LAST, rfis2.created_at) AS rss_feed_sources\n           FROM (((rss_feed_item_sources rfis2\n             JOIN rss_feeds rf2 ON ((rf2.id = rfis2.rss_feed_id)))\n             JOIN LATERAL ( SELECT view_rss_feeds.__entity_type,\n                    view_rss_feeds.id,\n                    view_rss_feeds.title,\n                    view_rss_feeds.is_enabled,\n                    view_rss_feeds.is_discoverable,\n                    view_rss_feeds.etag,\n                    view_rss_feeds.last_modified_at,\n                    view_rss_feeds.last_fetched_at,\n                    view_rss_feeds.feed_type,\n                    view_rss_feeds.canonical_rss_feed_id,\n                    view_rss_feeds.rss_feed_url,\n                    view_rss_feeds.home_page_url,\n                    view_rss_feeds.topic,\n                    view_rss_feeds.publisher_type,\n                    view_rss_feeds.hostname,\n                    view_rss_feeds.podcast_show,\n                    view_rss_feeds.categories\n                   FROM view_rss_feeds\n                  WHERE (view_rss_feeds.id = rfis2.rss_feed_id)\n                 LIMIT 1) vrf ON (true))\n             JOIN topics t2 ON ((t2.id = rf2.topic_id)))\n          WHERE (rfis2.rss_feed_item_id = rss_feed_items.id)) all_sources ON (true))\n  WHERE (rss_feed_items.deleted_at IS NULL);",
+      "definition": " SELECT 'rss_feed_item'::text AS __entity_type,\n    rss_feed_items.id,\n    rss_feed_item_guids.guid,\n    rss_feed_item_guids.url_hostname_id,\n    rss_feed_items.published_at,\n    rss_feed_items.media_type,\n    rss_feed_items.enclosure_url,\n    enclosure_media_type.mime_type AS enclosure_type,\n    rss_feed_items.enclosure_length,\n    rss_feed_items.duration_seconds,\n    rss_feed_items.thumbnail_url,\n    rss_feed_items.video_id,\n    rss_feed_items.video_platform,\n    rss_feed_items.data,\n    row_to_json(view_urls.*) AS url,\n    row_to_json(primary_feed.*) AS rss_feed,\n    COALESCE(all_sources.rss_feed_sources, '[]'::json) AS rss_feed_sources,\n    COALESCE(( SELECT json_agg(sub.cat ORDER BY sub.cat_order, sub.cat_score DESC NULLS LAST, sub.cat_text) AS json_agg\n           FROM ( SELECT jsonb_build_object('id', rel.id, 'category_text', vet.name, 'topic', to_jsonb(vet.*), 'hashtag',\n                        CASE\n                            WHEN (mapped_hashtag.id IS NULL) THEN NULL::jsonb\n                            ELSE jsonb_build_object('id', mapped_hashtag.id, 'key', mapped_hashtag.alias, 'display_token', mapped_hashtag.category_text, 'topic_id', mapped_hashtag.topic_id)\n                        END, 'votes_score_net', rel.votes_score_net) AS cat,\n                    0 AS cat_order,\n                    rel.votes_score_sort AS cat_score,\n                    COALESCE(mapped_hashtag.category_text, vet.name) AS cat_text\n                   FROM ((relation__rss_feed_item__category__topic rel\n                     JOIN view_embedded_topics vet ON ((vet.id = rel.object_id)))\n                     LEFT JOIN LATERAL ( SELECT alias.id,\n                            alias.alias,\n                            alias.topic_id,\n                            rfc.category_text\n                           FROM ((rss_feed_item_categories rfc\n                             JOIN topic_aliases alias ON ((alias.id = rfc.topic_alias_id)))\n                             JOIN relation__rss_feed_item__category__topic_alias alias_relation ON (((alias_relation.subject_id = rfc.rss_feed_item_id) AND (alias_relation.object_id = rfc.topic_alias_id) AND (alias_relation.deleted_at IS NULL) AND (alias_relation.votes_score_net > (0)::double precision))))\n                          WHERE ((rfc.rss_feed_item_id = rel.subject_id) AND (rfc.topic_id = rel.object_id))) mapped_hashtag ON (true))\n                  WHERE ((rel.subject_id = rss_feed_items.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                UNION ALL\n                 SELECT jsonb_build_object('id', NULL::unknown, 'category_text', rfc.category_text, 'topic', NULL::unknown, 'hashtag',\n                        CASE\n                            WHEN (alias.id IS NULL) THEN NULL::jsonb\n                            ELSE jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', rfc.category_text, 'topic_id', alias.topic_id)\n                        END, 'votes_score_net', NULL::unknown) AS cat,\n                    1 AS cat_order,\n                    NULL::double precision AS cat_score,\n                    rfc.category_text AS cat_text\n                   FROM ((rss_feed_item_categories rfc\n                     LEFT JOIN topic_aliases alias ON ((alias.id = rfc.topic_alias_id)))\n                     LEFT JOIN relation__rss_feed_item__category__topic_alias relation ON (((relation.subject_id = rfc.rss_feed_item_id) AND (relation.object_id = rfc.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision))))\n                  WHERE ((rfc.rss_feed_item_id = rss_feed_items.id) AND ((rfc.topic_id IS NULL) OR (NOT (EXISTS ( SELECT 1\n                           FROM relation__rss_feed_item__category__topic topic_relation\n                          WHERE ((topic_relation.subject_id = rfc.rss_feed_item_id) AND (topic_relation.object_id = rfc.topic_id) AND (topic_relation.deleted_at IS NULL) AND (topic_relation.votes_score_net > (0)::double precision)))))) AND ((rfc.topic_alias_id IS NULL) OR (relation.id IS NOT NULL)))) sub), '[]'::json) AS categories,\n    rss_feed_items.lingua_rs_detected_language\n   FROM ((((((rss_feed_items\n     LEFT JOIN media_types enclosure_media_type ON ((enclosure_media_type.id = rss_feed_items.enclosure_media_type_id)))\n     JOIN rss_feed_item_guids ON ((rss_feed_item_guids.id = rss_feed_items.id)))\n     LEFT JOIN view_urls ON ((view_urls.id = rss_feed_items.url_id)))\n     JOIN LATERAL ( SELECT rfis.rss_feed_id\n           FROM ((rss_feed_item_sources rfis\n             JOIN rss_feeds rf ON ((rf.id = rfis.rss_feed_id)))\n             JOIN topics t ON ((t.id = rf.topic_id)))\n          WHERE ((rfis.rss_feed_item_id = rss_feed_items.id) AND (rf.deleted_at IS NULL))\n          ORDER BY rf.is_enabled DESC, rf.is_discoverable DESC, t.votes_score_sort DESC, rfis.created_at\n         LIMIT 1) best_source ON (true))\n     JOIN LATERAL ( SELECT view_rss_feeds.__entity_type,\n            view_rss_feeds.id,\n            view_rss_feeds.title,\n            view_rss_feeds.is_enabled,\n            view_rss_feeds.is_discoverable,\n            view_rss_feeds.etag,\n            view_rss_feeds.last_modified_at,\n            view_rss_feeds.last_fetched_at,\n            view_rss_feeds.feed_type,\n            view_rss_feeds.canonical_rss_feed_id,\n            view_rss_feeds.rss_feed_url,\n            view_rss_feeds.home_page_url,\n            view_rss_feeds.topic,\n            view_rss_feeds.publisher_type,\n            view_rss_feeds.hostname,\n            view_rss_feeds.podcast_show,\n            view_rss_feeds.categories\n           FROM view_rss_feeds\n          WHERE (view_rss_feeds.id = best_source.rss_feed_id)\n         LIMIT 1) primary_feed ON (true))\n     LEFT JOIN LATERAL ( SELECT json_agg(row_to_json(vrf.*) ORDER BY rf2.is_enabled DESC, rf2.is_discoverable DESC, t2.votes_score_sort DESC, rfis2.created_at) AS rss_feed_sources\n           FROM (((rss_feed_item_sources rfis2\n             JOIN rss_feeds rf2 ON ((rf2.id = rfis2.rss_feed_id)))\n             JOIN LATERAL ( SELECT view_rss_feeds.__entity_type,\n                    view_rss_feeds.id,\n                    view_rss_feeds.title,\n                    view_rss_feeds.is_enabled,\n                    view_rss_feeds.is_discoverable,\n                    view_rss_feeds.etag,\n                    view_rss_feeds.last_modified_at,\n                    view_rss_feeds.last_fetched_at,\n                    view_rss_feeds.feed_type,\n                    view_rss_feeds.canonical_rss_feed_id,\n                    view_rss_feeds.rss_feed_url,\n                    view_rss_feeds.home_page_url,\n                    view_rss_feeds.topic,\n                    view_rss_feeds.publisher_type,\n                    view_rss_feeds.hostname,\n                    view_rss_feeds.podcast_show,\n                    view_rss_feeds.categories\n                   FROM view_rss_feeds\n                  WHERE (view_rss_feeds.id = rfis2.rss_feed_id)\n                 LIMIT 1) vrf ON (true))\n             JOIN topics t2 ON ((t2.id = rf2.topic_id)))\n          WHERE (rfis2.rss_feed_item_id = rss_feed_items.id)) all_sources ON (true))\n  WHERE (rss_feed_items.deleted_at IS NULL);",
       "materialized": false
     },
     "view_rss_feeds": {
       "comment": "RSS feed response projection with current discoverability and topic references.",
-      "definition": " SELECT 'rss_feed'::text AS __entity_type,\n    rss_feeds.id,\n    rss_feeds.title,\n    current_state.is_enabled,\n    current_state.is_discoverable,\n    rss_feeds.etag,\n    rss_feeds.last_modified_at,\n    rss_feeds.last_fetched_at,\n    rss_feeds.feed_type,\n    rss_feeds.canonical_rss_feed_id,\n    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,\n        CASE\n            WHEN (topic_hostname.hostname IS NULL) THEN NULL::json\n            ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))\n        END AS home_page_url,\n    row_to_json(view_embedded_topics.*) AS topic,\n        CASE\n            WHEN (publisher_type_topic.id IS NULL) THEN NULL::json\n            ELSE json_build_object('id', publisher_type_topic.id, 'slug', publisher_type_topic.slug, 'topic_type', publisher_type_topic.topic_type, 'name', publisher_type_topic.name)\n        END AS publisher_type,\n        CASE\n            WHEN (topic_hostname.id IS NULL) THEN NULL::json\n            ELSE json_build_object('__entity_type', topic_hostname.__entity_type, 'id', topic_hostname.id, 'hostname', topic_hostname.hostname, 'topic_id', topic_hostname.topic_id)\n        END AS hostname,\n        CASE\n            WHEN (podcast_show.rss_feed_id IS NULL) THEN NULL::json\n            ELSE json_build_object('itunes_author', podcast_show.itunes_author, 'itunes_owner_name', podcast_show.itunes_owner_name, 'cover_art_url', podcast_show.cover_art_url, 'is_explicit', podcast_show.is_explicit, 'itunes_type', podcast_show.itunes_type, 'description', podcast_show.description)\n        END AS podcast_show,\n    COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg\n           FROM ((rss_feed_categories c\n             JOIN rss_category_identities category_identity ON ((category_identity.id = c.category_identity_id)))\n             LEFT JOIN topics t ON (((t.id = c.topic_id) AND (t.deleted_at IS NULL))))\n          WHERE (c.rss_feed_id = rss_feeds.id)), '[]'::json) AS categories\n   FROM (((((((rss_feeds\n     JOIN urls feed_url ON ((feed_url.id = rss_feeds.rss_feed_url_id)))\n     JOIN url_hostnames feed_hostname ON ((feed_hostname.id = feed_url.hostname_id)))\n     JOIN view_embedded_topics ON ((view_embedded_topics.id = rss_feeds.topic_id)))\n     LEFT JOIN view_url_hostnames topic_hostname ON ((topic_hostname.id = view_embedded_topics.hostname_id)))\n     JOIN view_rss_feed_current_states current_state ON ((current_state.rss_feed_id = rss_feeds.id)))\n     LEFT JOIN LATERAL ( SELECT topics.id,\n            topics.slug,\n            topics.name,\n            topics.topic_type\n           FROM (relation__topic__publisher_type__topic relation\n             JOIN topics ON ((topics.id = relation.object_id)))\n          WHERE ((relation.subject_id = rss_feeds.topic_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision) AND (topics.deleted_at IS NULL))\n          ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id\n         LIMIT 1) publisher_type_topic ON (true))\n     LEFT JOIN podcast_shows podcast_show ON ((podcast_show.rss_feed_id = rss_feeds.id)));",
+      "definition": " SELECT 'rss_feed'::text AS __entity_type,\n    rss_feeds.id,\n    rss_feeds.title,\n    current_state.is_enabled,\n    current_state.is_discoverable,\n    rss_feeds.etag,\n    rss_feeds.last_modified_at,\n    rss_feeds.last_fetched_at,\n    rss_feeds.feed_type,\n    rss_feeds.canonical_rss_feed_id,\n    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,\n        CASE\n            WHEN (topic_hostname.hostname IS NULL) THEN NULL::json\n            ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))\n        END AS home_page_url,\n    row_to_json(view_embedded_topics.*) AS topic,\n        CASE\n            WHEN (publisher_type_topic.id IS NULL) THEN NULL::json\n            ELSE json_build_object('id', publisher_type_topic.id, 'slug', publisher_type_topic.slug, 'topic_type', publisher_type_topic.topic_type, 'name', publisher_type_topic.name)\n        END AS publisher_type,\n        CASE\n            WHEN (topic_hostname.id IS NULL) THEN NULL::json\n            ELSE json_build_object('__entity_type', topic_hostname.__entity_type, 'id', topic_hostname.id, 'hostname', topic_hostname.hostname, 'topic_id', topic_hostname.topic_id)\n        END AS hostname,\n        CASE\n            WHEN (podcast_show.rss_feed_id IS NULL) THEN NULL::json\n            ELSE json_build_object('itunes_author', podcast_show.itunes_author, 'itunes_owner_name', podcast_show.itunes_owner_name, 'cover_art_url', podcast_show.cover_art_url, 'is_explicit', podcast_show.is_explicit, 'itunes_type', podcast_show.itunes_type, 'description', podcast_show.description)\n        END AS podcast_show,\n    COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg\n           FROM ((rss_feed_categories c\n             JOIN rss_category_identities category_identity ON ((category_identity.id = c.category_identity_id)))\n             LEFT JOIN topics t ON (((t.id = c.topic_id) AND (t.deleted_at IS NULL))))\n          WHERE (c.rss_feed_id = rss_feeds.id)), '[]'::json) AS categories\n   FROM (((((((rss_feeds\n     JOIN urls feed_url ON ((feed_url.id = rss_feeds.rss_feed_url_id)))\n     JOIN url_hostnames feed_hostname ON ((feed_hostname.id = feed_url.hostname_id)))\n     JOIN view_embedded_topics ON ((view_embedded_topics.id = rss_feeds.topic_id)))\n     LEFT JOIN view_url_hostnames topic_hostname ON ((topic_hostname.id = view_embedded_topics.hostname_id)))\n     JOIN view_rss_feed_current_states current_state ON ((current_state.rss_feed_id = rss_feeds.id)))\n     LEFT JOIN LATERAL ( SELECT topics.id,\n            topics.slug,\n            topics.name,\n            topics.topic_type\n           FROM (relation__topic__publisher_type__topic relation\n             JOIN topics ON ((topics.id = relation.object_id)))\n          WHERE ((relation.subject_id = rss_feeds.topic_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision) AND (topics.deleted_at IS NULL))\n          ORDER BY relation.votes_score_sort DESC, relation.created_at DESC, relation.object_id DESC\n         LIMIT 1) publisher_type_topic ON (true))\n     LEFT JOIN podcast_shows podcast_show ON ((podcast_show.rss_feed_id = rss_feeds.id)));",
       "materialized": false
     },
     "view_topics": {
@@ -156630,7 +157919,7 @@
     },
     "view_users_private": {
       "comment": "Private account projection for the authenticated owner or explicitly authorized staff; never a public user response.",
-      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', (fa.facebook_user_data ->> 'name'::text), 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE (fa.user_id = users.id)) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_role_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM (user_roles\n             LEFT JOIN user_role_types ON ((user_role_types.id = user_roles.role_type_id)))\n          WHERE (user_roles.user_id = users.id)) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM ((image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))\n          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.should_receive_third_party_marketing,\n    users.should_import_hacker_news_discussions,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', (aa.apple_user_data ->> 'name'::text), 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE (aa.user_id = users.id)) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', (ga.google_user_data ->> 'name'::text), 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE (ga.user_id = users.id)) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', (xa.x_user_data ->> 'name'::text), 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE (xa.user_id = users.id)) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', (la.linkedin_user_data ->> 'name'::text), 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE (la.user_id = users.id)) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', (ma.microsoft_user_data ->> 'name'::text), 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE (ma.user_id = users.id)) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', (gha.github_user_data ->> 'name'::text), 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE (gha.user_id = users.id)) AS github_account,\n    ( SELECT e.account_type\n           FROM view_embedded_users e\n          WHERE (e.id = users.id)) AS account_type,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.is_verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.is_verified_badge_visible = true)) THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((users.verified_first_name IS NOT NULL) AND (users.verified_last_name_initial IS NOT NULL)) THEN (((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text)\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.is_engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.is_moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.is_fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE ((bla.user_id = users.id) AND (bla.disconnect_requested_at IS NULL))) AS bluesky_account\n   FROM ((((users\n     LEFT JOIN user_email_addresses ON (((user_email_addresses.user_id = users.id) AND (user_email_addresses.is_primary = true))))\n     LEFT JOIN user_phone_numbers ON (((user_phone_numbers.user_id = users.id) AND (user_phone_numbers.is_primary = true))))\n     LEFT JOIN view_current_paid_memberships paid_membership ON ((paid_membership.user_id = users.id)))\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE ((user_suspensions.user_id = users.id) AND (user_suspensions.lifted_at IS NULL))\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON (true))\n  WHERE (users.deleted_at IS NULL);",
+      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', (fa.facebook_user_data ->> 'name'::text), 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE (fa.user_id = users.id)) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_role_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM (user_roles\n             LEFT JOIN user_role_types ON ((user_role_types.id = user_roles.role_type_id)))\n          WHERE (user_roles.user_id = users.id)) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM ((image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))\n          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.should_receive_third_party_marketing,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', (aa.apple_user_data ->> 'name'::text), 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE (aa.user_id = users.id)) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', (ga.google_user_data ->> 'name'::text), 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE (ga.user_id = users.id)) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', (xa.x_user_data ->> 'name'::text), 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE (xa.user_id = users.id)) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', (la.linkedin_user_data ->> 'name'::text), 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE (la.user_id = users.id)) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', (ma.microsoft_user_data ->> 'name'::text), 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE (ma.user_id = users.id)) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', (gha.github_user_data ->> 'name'::text), 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE (gha.user_id = users.id)) AS github_account,\n    ( SELECT e.account_type\n           FROM view_embedded_users e\n          WHERE (e.id = users.id)) AS account_type,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.is_verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.is_verified_badge_visible = true)) THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((users.verified_first_name IS NOT NULL) AND (users.verified_last_name_initial IS NOT NULL)) THEN (((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text)\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.is_engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.is_moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.is_fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE ((bla.user_id = users.id) AND (bla.disconnect_requested_at IS NULL))) AS bluesky_account\n   FROM ((((users\n     LEFT JOIN user_email_addresses ON (((user_email_addresses.user_id = users.id) AND (user_email_addresses.is_primary = true))))\n     LEFT JOIN user_phone_numbers ON (((user_phone_numbers.user_id = users.id) AND (user_phone_numbers.is_primary = true))))\n     LEFT JOIN view_current_paid_memberships paid_membership ON ((paid_membership.user_id = users.id)))\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE ((user_suspensions.user_id = users.id) AND (user_suspensions.lifted_at IS NULL))\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON (true))\n  WHERE (users.deleted_at IS NULL);",
       "materialized": false
     },
     "view_users_public": {

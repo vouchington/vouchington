@@ -49,7 +49,7 @@ describe('AI spend-cap coordinated rechecks', () => {
         spendCapDelayedRegistryKey(day),
         '__generation',
       )
-      expect(typeof generation).toBe('string')
+      if (typeof generation !== 'string') throw new Error('Expected a spend-cap generation')
       expect(add).toHaveBeenCalledExactlyOnceWith(
         'ai-spend-cap.recheck',
         { day, generation },

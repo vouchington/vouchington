@@ -1,10 +1,12 @@
-import { seedUploadCleanup } from './upload-cleanup.mts'
+import { seedIneligibleCollectionPages } from './ineligible-collection-pages.mts'
 import { seedLandingPageCandidates } from './landing-page-candidates.mts'
 import { seedSessionLimits } from './session-limits.mts'
+import { seedUploadCleanup } from './upload-cleanup.mts'
 
 /** Finish the standalone workload cohorts before the seed runner analyzes every relation. */
 export async function seedFinalExplainFixtures(): Promise<void> {
   await seedUploadCleanup()
   await seedLandingPageCandidates()
   await seedSessionLimits()
+  await seedIneligibleCollectionPages()
 }

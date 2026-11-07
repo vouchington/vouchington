@@ -30,7 +30,7 @@ function DialogContent({
   hideCloseButton,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
-  ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof DialogPrimitive.Content>>
   hideCloseButton?: boolean
   hideOverlay?: boolean
 }) {

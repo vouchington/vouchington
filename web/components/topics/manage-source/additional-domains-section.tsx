@@ -21,7 +21,7 @@ export function AdditionalDomains({
 }: {
   additionalHostnames: TopicAdditionalHostname[]
   addingHostname: boolean
-  onAddHostname: (e: React.FormEvent<HTMLFormElement>) => void
+  onAddHostname: (e: React.SubmitEvent<HTMLFormElement>) => void
   onRemoveHostname: (hostnameId: string, hostname: string) => void
   removingHostnameId: string | null
   hasNextPage: boolean

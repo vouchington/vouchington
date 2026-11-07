@@ -1,0 +1,32 @@
+{
+  "name": "@workers/hacker-news-flags",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@queues/hacker-news-flags": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/urls": "workspace:^",
+    "glide-mq": "^0.20.0",
+    "uuid": "^14.0.3"
+  },
+  "devDependencies": {
+    "@queues/hacker-news": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

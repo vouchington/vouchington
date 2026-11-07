@@ -177,11 +177,11 @@ describe('ImportExportManager', () => {
   })
 
   it('shows an error toast when no URLs are entered and does not call importRssFeeds', async () => {
-    const { toast } = await import('sonner')
+    const { toast: mockedToast } = await import('sonner')
     render(<ImportExportManager feedType='article' />)
     fireEvent.click(screen.getByRole('button', { name: /import urls/i }))
     expect(mockImportRssFeeds).not.toHaveBeenCalled()
-    expect(toast.error).toHaveBeenCalled()
+    expect(mockedToast.error).toHaveBeenCalled()
   })
 
   it('calls importRssFeeds with opml when an OPML file is uploaded', async () => {

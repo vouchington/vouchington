@@ -12,7 +12,7 @@ function Command({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive> & {
-  ref?: React.Ref<React.ElementRef<typeof CommandPrimitive>>
+  ref?: React.Ref<React.ComponentRef<typeof CommandPrimitive>>
 }) {
   return (
     <CommandPrimitive
@@ -49,7 +49,7 @@ function CommandList({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.List> & {
-  ref?: React.Ref<React.ElementRef<typeof CommandPrimitive.List>>
+  ref?: React.Ref<React.ComponentRef<typeof CommandPrimitive.List>>
 }) {
   return (
     <CommandPrimitive.List
@@ -65,7 +65,7 @@ function CommandEmpty({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & {
-  ref?: React.Ref<React.ElementRef<typeof CommandPrimitive.Empty>>
+  ref?: React.Ref<React.ComponentRef<typeof CommandPrimitive.Empty>>
 }) {
   return (
     <CommandPrimitive.Empty
@@ -82,7 +82,7 @@ function CommandGroup({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group> & {
-  ref?: React.Ref<React.ElementRef<typeof CommandPrimitive.Group>>
+  ref?: React.Ref<React.ComponentRef<typeof CommandPrimitive.Group>>
 }) {
   return (
     <CommandPrimitive.Group
@@ -102,7 +102,7 @@ function CommandItem({
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item> & {
-  ref?: React.Ref<React.ElementRef<typeof CommandPrimitive.Item>>
+  ref?: React.Ref<React.ComponentRef<typeof CommandPrimitive.Item>>
 }) {
   return (
     <CommandPrimitive.Item
@@ -120,14 +120,14 @@ CommandItem.displayName = CommandPrimitive.Item.displayName
 // CommandInput uses a callback ref to merge forwardedRef with a local inputRef — this is an intentional
 // React Compiler exception per web/AGENTS.md (callback refs need useCallback when they capture state).
 const CommandInput = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.Input>,
+  React.ComponentRef<typeof CommandPrimitive.Input>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, forwardedRef) => {
   const inputRef = React.useRef<HTMLInputElement | null>(null)
 
   React.useEffect(() => {
     const input = inputRef.current
-    if (!input) return
+    if (!input) return undefined
 
     const removeStaleAriaReferences = () => {
       const activeDescendant = input.getAttribute('aria-activedescendant')

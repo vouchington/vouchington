@@ -54,8 +54,11 @@ async function directoryCommand(missing: boolean) {
     ['routes', rows],
   ] as const)
     await writeFile(join(root, `${name}.json`), serializeCatalogTable(values))
-  for (const [locale, rows] of Object.entries(fixture.catalog.translations))
-    await writeFile(join(root, 'translations', `${locale}.json`), serializeCatalogTable(rows))
+  for (const [locale, translationRows] of Object.entries(fixture.catalog.translations))
+    await writeFile(
+      join(root, 'translations', `${locale}.json`),
+      serializeCatalogTable(translationRows),
+    )
   // Missing membership changes its generated selector hash. Retain the original selected ID,
   // so this proves the command rejects an incomplete compiled route instead of accepting chrome.
   const selectors = join(root, 'selectors.input')

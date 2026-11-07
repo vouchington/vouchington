@@ -33,6 +33,14 @@ export async function repairReconciledBloomKeys(
       return repairEmbedding(candidate.entityId)
     case 'url_hostname':
       return repairHostname(candidate.entityId)
+    case 'image':
+    case 'post_created':
+    case 'post_deleted':
+    case 'post_updated':
+    case 'topic':
+    case 'url':
+    case 'user':
+      break
   }
 }
 

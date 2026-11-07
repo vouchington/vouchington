@@ -33,7 +33,7 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
   useEffect(() => {
     idGenerationRef.current += 1
     if (id !== initialIdRef.current) hasLeftInitialIdRef.current = true
-    if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return
+    if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return undefined
     const lifetime = new AbortController()
     // A topic switch invalidates any additional-hostnames load-more in flight for the
     // previous topic: reset that state immediately rather than leaving it to the
@@ -47,7 +47,7 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
     }
   }, [id])
 
-  const handlePrimaryHostnameSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePrimaryHostnameSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     dispatch({ primaryHostnameSaving: true })
     try {
@@ -71,7 +71,7 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
     }
   }
 
-  const handleAddHostname = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddHostname = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = e.currentTarget
     dispatch({ addingHostname: true })

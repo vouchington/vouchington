@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
-import { getCopyrightStaffEmailIntake } from './read-models.mts'
+import { getCopyrightStaffEmailIntake } from './read-models-staff-email-intake.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 
 describe('copyright email review path', () => {

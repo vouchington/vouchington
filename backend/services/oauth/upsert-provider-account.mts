@@ -96,7 +96,7 @@ export async function prepareProviderAccount(
       return account
     }
     default:
-      throw createHttpError(400, `Unsupported provider: ${provider}`)
+      throw createHttpError(400, `Unsupported provider: ${String(provider)}`)
   }
 }
 

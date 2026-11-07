@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { getApiErrorMessage, ApiError } from '@vouchington/api-client'
-import { createLinkPost } from '@/lib/api/client/posts'
+import { createLinkPost } from '@/lib/api/client/post-mutations'
 import { getPostSlugFromType } from '@/lib/route-configs'
 import { getPostPath } from '@/lib/post-helpers'
 import {

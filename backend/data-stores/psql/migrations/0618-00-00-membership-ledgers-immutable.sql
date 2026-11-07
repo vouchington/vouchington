@@ -130,29 +130,13 @@ BEGIN
   END IF;
 
   IF OLD.released_at IS NULL
-    AND OLD.originating_invoice_id IS NULL
-    AND NEW.released_at IS NULL
-    AND NEW.release_reason IS NULL
-    AND NEW.originating_invoice_id IS NOT NULL
-    AND ROW(
-      NEW.id, NEW.membership_provider_lineage_id, NEW.user_id, NEW.source_kind, NEW.bound_at
-    ) IS NOT DISTINCT FROM ROW(
-      OLD.id, OLD.membership_provider_lineage_id, OLD.user_id, OLD.source_kind, OLD.bound_at
-    )
-  THEN
-    RETURN NEW;
-  END IF;
-
-  IF OLD.released_at IS NULL
     AND OLD.release_reason IS NULL
     AND NEW.released_at IS NOT NULL
     AND NEW.release_reason IS NOT NULL
     AND ROW(
-      NEW.id, NEW.membership_provider_lineage_id, NEW.user_id, NEW.source_kind, NEW.bound_at,
-      NEW.originating_invoice_id
+      NEW.id, NEW.membership_provider_lineage_id, NEW.user_id, NEW.source_kind, NEW.bound_at
     ) IS NOT DISTINCT FROM ROW(
-      OLD.id, OLD.membership_provider_lineage_id, OLD.user_id, OLD.source_kind, OLD.bound_at,
-      OLD.originating_invoice_id
+      OLD.id, OLD.membership_provider_lineage_id, OLD.user_id, OLD.source_kind, OLD.bound_at
     )
   THEN
     RETURN NEW;
@@ -164,10 +148,10 @@ BEGIN
     AND NOT EXISTS (SELECT 1 FROM users WHERE id = OLD.user_id)
     AND ROW(
       NEW.id, NEW.membership_provider_lineage_id, NEW.source_kind, NEW.bound_at,
-      NEW.released_at, NEW.release_reason, NEW.originating_invoice_id
+      NEW.released_at, NEW.release_reason
     ) IS NOT DISTINCT FROM ROW(
       OLD.id, OLD.membership_provider_lineage_id, OLD.source_kind, OLD.bound_at,
-      OLD.released_at, OLD.release_reason, OLD.originating_invoice_id
+      OLD.released_at, OLD.release_reason
     )
   THEN
     RETURN NEW;

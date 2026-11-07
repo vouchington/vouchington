@@ -20,9 +20,7 @@ ignores:
   - backend/worker-runtime/enqueue-heartbeat.mts
   - '**/*.test.mts'
   - '**/*.test.ts'
-  - '**/*.test.cts'
   - '**/__tests__/**'
-  - '**/node_modules/**'
 rule:
   any:
     - kind: await_expression

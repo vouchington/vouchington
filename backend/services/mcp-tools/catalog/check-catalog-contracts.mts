@@ -79,7 +79,7 @@ export function findCatalogContractViolations(
   for (const { tool, conflict } of findApiHintConflicts(tools)) errors.push(`${tool}: ${conflict}`)
   const exposed = tools.filter(tool => tool.meta?.audience !== undefined)
   if (exposed.length === 0) errors.push('No MCP tools are exposed')
-  for (const tool of exposed.filter(tool => !tool.meta?.outputSchema))
+  for (const tool of exposed.filter(candidateTool => !candidateTool.meta?.outputSchema))
     errors.push(`${tool.schema.name}: missing registry output schema`)
   for (const { tool } of catalog.servers.flatMap(server => server.tools)) {
     if (!tool.outputSchema) errors.push(`${tool.name}: missing catalog output schema`)

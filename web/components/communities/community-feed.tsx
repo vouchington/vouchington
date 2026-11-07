@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { HackerNewsReferencesProvider } from '@/components/hacker-news/hacker-news-references-context'
 import { Pin } from 'lucide-react'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -11,6 +12,7 @@ import { usePaginatedList, type PaginatedListParams } from '@/hooks/use-paginate
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
 import type { CommunityPostsResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useHackerNewsReferenceRefresh } from '@/components/hacker-news/use-hacker-news-reference-refresh'
 
 interface CommunityFeedProps {
   data: CommunityPostsResponseBody
@@ -33,17 +35,24 @@ export function CommunityFeed({
 }: CommunityFeedProps) {
   const t = useTranslations()
   const endpoint = `/api/v1/communities/${encodeURIComponent(communitySlug)}/posts`
+  const pagination = usePaginatedList(data, endpoint, nextPageParams)
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
-    usePaginatedList(data, endpoint, nextPageParams)
+    pagination
+  const retryReferenceRefresh = useHackerNewsReferenceRefresh(
+    pagination.refreshLoadedPages,
+    endpoint,
+    nextPageParams,
+    pagination.fetchError,
+    pagination.resetKey,
+  )
   const pinnedPostIds = data.pinned_post_ids ?? []
   const results = mergePageResultsById(pages).filter(r => !pinnedPostIds.includes(r.id))
   const posts = mergeRecords(pages, page => page.posts)
   const metrics = mergeRecords(pages, page => page.posts_metrics)
   const communities = mergeRecords(pages, page => page.communities ?? {})
+  const hackerNewsReferences = mergeRecords(pages, page => page.post_hacker_news_references ?? {})
   const linkEmbeds = mergeRecords(pages, page => page.post_link_embeds ?? {})
-
   const pinnedPosts = pinnedPostIds.flatMap(id => (data.posts[id] ? [data.posts[id]] : []))
-
   const contributeActions = canCreatePost ? (
     <CommunityContributeActions
       communitySlug={communitySlug}
@@ -52,7 +61,6 @@ export function CommunityFeed({
       t={t}
     />
   ) : null
-
   if (pinnedPosts.length === 0 && results.length === 0) {
     return (
       <EmptyState
@@ -66,7 +74,7 @@ export function CommunityFeed({
   }
 
   return (
-    <>
+    <HackerNewsReferencesProvider references={hackerNewsReferences}>
       {contributeActions}
       {pinnedPosts.length > 0 && (
         <div className='space-y-3'>
@@ -95,7 +103,7 @@ export function CommunityFeed({
       <InfiniteScroll
         hasNextPage={hasNextPage}
         endCursor={endCursor}
-        onLoadMore={loadMore}
+        onLoadMore={retryReferenceRefresh.handleLoadMore(loadMore)}
         loadingMore={loadingMore}
         fetchError={fetchError}
         clearError={clearError}
@@ -118,7 +126,7 @@ export function CommunityFeed({
           })}
         </div>
       </InfiniteScroll>
-    </>
+    </HackerNewsReferencesProvider>
   )
 }
 

@@ -36,6 +36,7 @@ export async function confirmTestRepeatInfringerNoticesConcurrently(
     }
     if (failures.length)
       throw new AggregateError(failures, 'Copyright confirmations failed', { cause: failures[0] })
+    return undefined
   })
 }
 

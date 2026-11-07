@@ -149,15 +149,18 @@ describe('POST /api/v1/mcp', () => {
   })
 
   it('keeps insufficient API-key scopes in-band and rejects closed extra keys before writes', async () => {
-    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    await createTestMembership({ user_id: user.id, plan: 'plus' })
-    const post = await createTestPost({ user })
+    const contributingUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    await createTestMembership({ user_id: contributingUser.id, plan: 'plus' })
+    const post = await createTestPost({ user: contributingUser })
     const urlId = await createTestUrlWithHostname()
     const tag = `mcp-closed-${post.id.slice(-8)}`
-    const { rawKey: underScoped } = await createApiKey(user.id, 'mcp', 'Under-scoped MCP Key', [
-      'topics:read',
-    ])
-    const { rawKey: scoped } = await createApiKey(user.id, 'mcp', 'Scoped MCP Key', [
+    const { rawKey: underScoped } = await createApiKey(
+      contributingUser.id,
+      'mcp',
+      'Under-scoped MCP Key',
+      ['topics:read'],
+    )
+    const { rawKey: scoped } = await createApiKey(contributingUser.id, 'mcp', 'Scoped MCP Key', [
       'entity-relations:read',
       'entity-relations:write',
     ])
@@ -192,15 +195,17 @@ describe('POST /api/v1/mcp', () => {
   })
 
   it('rejects a revoked relation credential before it can write', async () => {
-    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    await createTestMembership({ user_id: user.id, plan: 'plus' })
-    const post = await createTestPost({ user })
+    const contributingUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    await createTestMembership({ user_id: contributingUser.id, plan: 'plus' })
+    const post = await createTestPost({ user: contributingUser })
     const urlId = await createTestUrlWithHostname()
-    const { rawKey, apiKey } = await createApiKey(user.id, 'mcp', 'Revoked relation key', [
-      'entity-relations:read',
-      'entity-relations:write',
-    ])
-    await revokeApiKey(user.id, apiKey.id)
+    const { rawKey, apiKey } = await createApiKey(
+      contributingUser.id,
+      'mcp',
+      'Revoked relation key',
+      ['entity-relations:read', 'entity-relations:write'],
+    )
+    await revokeApiKey(contributingUser.id, apiKey.id)
 
     await createRequest()
       .post('/api/v1/mcp')

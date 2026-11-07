@@ -60,7 +60,8 @@ describe('incremental notification push receipts', () => {
           return
         const outcome = result.rows[0]?.outcome
         if (outcome === 'persisted') promptPersisted.resolve()
-        else promptPersisted.reject(new Error(`notification push persist returned ${outcome}`))
+        else
+          promptPersisted.reject(new Error(`notification push persist returned ${String(outcome)}`))
       }),
     )
     const delivery = deliverClaimedNotificationPushIntent(intent)

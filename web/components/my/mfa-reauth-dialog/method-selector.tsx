@@ -149,7 +149,7 @@ export function MethodSelector({
               </Button>
             )
           default:
-            throw new Error(`Unsupported reauthentication method: ${option}`)
+            throw new Error(`Unsupported reauthentication method: ${String(option)}`)
         }
       })}
     </div>

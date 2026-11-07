@@ -36,7 +36,8 @@ _none_
 
 - `community_list_urls_pkey`: `CREATE UNIQUE INDEX community_list_urls_pkey ON public.community_list_urls USING btree (id)`
 - `idx_community_list_urls__added_by_id`: `CREATE INDEX idx_community_list_urls__added_by_id ON public.community_list_urls USING btree (added_by_id) WHERE (added_by_id IS NOT NULL)`
-- `idx_community_list_urls__community`: `CREATE INDEX idx_community_list_urls__community ON public.community_list_urls USING btree (community_id)`
+- `idx_community_list_urls__community_id__foreign_key`: `CREATE INDEX idx_community_list_urls__community_id__foreign_key ON public.community_list_urls USING btree (community_id) WHERE (community_id IS NOT NULL)`
+- `idx_community_list_urls__community_id__order_index__id`: `CREATE INDEX idx_community_list_urls__community_id__order_index__id ON public.community_list_urls USING btree (community_id, order_index, id) WHERE (removed_at IS NULL)`
 - `idx_community_list_urls__removed_by_id`: `CREATE INDEX idx_community_list_urls__removed_by_id ON public.community_list_urls USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)`
 - `idx_community_list_urls__unique`: `CREATE UNIQUE INDEX idx_community_list_urls__unique ON public.community_list_urls USING btree (community_id, url_id) WHERE (removed_at IS NULL)`
 - `idx_community_list_urls__url`: `CREATE INDEX idx_community_list_urls__url ON public.community_list_urls USING btree (url_id)`

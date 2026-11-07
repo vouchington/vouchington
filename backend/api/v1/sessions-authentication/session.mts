@@ -105,7 +105,7 @@ app
       clearAuthenticationCookies(ctx)
 
       ctx.json({ session: body })
-    } catch (err) {
+    } catch (err_) {
       clearAuthenticationCookies(ctx)
       await revokeSessionForLogout({ deviceToken: cookieDt, sessionToken: cookieSt }).catch(
         (err: unknown) => onError(err instanceof Error ? err : new Error(String(err))),
@@ -114,7 +114,7 @@ app
         await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch((err: unknown) =>
           onError(err instanceof Error ? err : new Error(String(err))),
         )
-      throw err
+      throw err_
     }
   })
 

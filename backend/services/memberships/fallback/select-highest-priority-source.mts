@@ -37,15 +37,14 @@ function isHigherPriorityMembershipSource(
   return candidate.membership_source_id > preferred.membership_source_id
 }
 
+const membershipSourceKindPriorities: Record<MembershipSourcePriority['source_kind'], number> = {
+  direct: 3,
+  admin_grant: 2,
+  family: 1,
+}
+
 function getMembershipSourceKindPriority(
   sourceKind: MembershipSourcePriority['source_kind'],
 ): number {
-  switch (sourceKind) {
-    case 'direct':
-      return 3
-    case 'admin_grant':
-      return 2
-    case 'family':
-      return 1
-  }
+  return membershipSourceKindPriorities[sourceKind]
 }

@@ -7,6 +7,7 @@ import {
 } from '@services/posts/search/execute-query'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { withPositiveSemanticNeighbours } from './semantic-hot-votes.mts'
 import { inspectSemanticPostSeed, recordSemanticPostFailure } from './semantic-post-diagnostics.mts'
 
 const embedding = [1, ...Array<number>(1023).fill(0)]
@@ -18,6 +19,9 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
     ),
     // A narrow window may use an exact sort, so this one only checks the bounded candidate window.
     { sort: 'new' as const, hybrid: false, range: '1m' as const, suffix: '-1m' },
+    // About 3% of the seeded neighbours have positive net votes; the net filter must apply to
+    // the bounded candidate window, not inside the vector walk.
+    { sort: 'hot' as const, hybrid: false, range: 'all' as const, suffix: '' },
   ]
   for (const { sort, hybrid, range, suffix } of variants) {
     const scenario = `post-search-${hybrid ? 'hybrid' : 'semantic'}-${sort}${suffix}`
@@ -53,18 +57,21 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
         expectations: [{ kind: 'custom', name: 'semanticPost' }],
         crossPartition: { posts: 'Semantic post search ranks matching posts across id ranges.' },
       })
-      await runAndCapture(
-        scenario,
-        () => executePostSearchQuery(buildPostSearchQuery(seedUser, options), true),
-        undefined,
-        'buildPostSearchQuery',
-        { localSettings: SEMANTIC_POST_SEARCH_SETTINGS },
-      )
+      const capture = () =>
+        runAndCapture(
+          scenario,
+          () => executePostSearchQuery(buildPostSearchQuery(seedUser, options), true),
+          undefined,
+          'buildPostSearchQuery',
+          { localSettings: SEMANTIC_POST_SEARCH_SETTINGS },
+        )
+      // no-mistakes-disable-next-line query-reached-per-item: the fixed five-variant matrix needs independent plans; the hot variant's two bounded vote writes restore the seed.
+      await (sort === 'hot' ? withPositiveSemanticNeighbours(capture) : capture())
     } catch (err) {
       try {
         await recordSemanticPostFailure(scenario, options, seed)
-      } catch (err) {
-        console.error(`${scenario}: secondary diagnostic failure`, err)
+      } catch (err_) {
+        console.error(`${scenario}: secondary diagnostic failure`, err_)
       }
       throw err
     }

@@ -101,18 +101,6 @@ describe('main-backend workflow', () => {
     expect(pushPaths.some(glob => picomatch.isMatch(shippedCsv, glob, { dot: true }))).toBe(true)
   })
 
-  it('contains only image publication selection, intent, and publication jobs', () => {
-    const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
-    const parsed = load(workflow) as { jobs?: Record<string, unknown> }
-
-    expect(Object.keys(parsed.jobs ?? {}).toSorted()).toEqual([
-      'backend-deploy-intent',
-      'detect-image-publication',
-      'publish-backend-images',
-    ])
-    expect(workflow).not.toContain('source_workflow:')
-  })
-
   it('publishes only when the shared publication-intent detector selects backend images', () => {
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
     const publish = jobSection(workflow, 'publish-backend-images')

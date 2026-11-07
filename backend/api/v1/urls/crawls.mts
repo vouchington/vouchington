@@ -50,10 +50,9 @@ app.route('/api/v1/urls/:id/crawls').get(async ctx => {
   }
   if (!canViewHeaders) {
     const result = await searchPublicUrlCrawlsForUrl(url.id, searchOptions)
-    ctx.json(apiResponse('GET:/api/v1/urls/:id/crawls#paid', result))
-    return
+    return ctx.json(apiResponse('GET:/api/v1/urls/:id/crawls#paid', result))
   }
 
   const result = await searchCrawlsForUrl(url.id, searchOptions)
-  ctx.json(apiResponse('GET:/api/v1/urls/:id/crawls#privileged', result))
+  return ctx.json(apiResponse('GET:/api/v1/urls/:id/crawls#privileged', result))
 })

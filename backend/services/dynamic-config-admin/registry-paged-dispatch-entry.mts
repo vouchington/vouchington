@@ -3,6 +3,10 @@ import {
   membershipVerificationQueueMaxValues,
 } from '@queues/memberships/config'
 import {
+  membershipPurchaseCollisionQueueConfig,
+  membershipPurchaseCollisionQueueMaxValues,
+} from '@queues/memberships/enqueues/stripe-purchase-collision-config'
+import {
   pagedDispatchConfig,
   pagedDispatchMaxValues,
 } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
@@ -33,5 +37,16 @@ export const membershipVerificationQueueRegistryEntry = defineBoundedWorkNamespa
     verification_concurrency: 'Global provider-execution concurrency for membership verifications.',
     dispatch_concurrency: 'Global concurrency for pending verification recovery pages.',
     verification_retry_minutes: 'Delay before checking a pending provider purchase again.',
+  },
+})
+
+export const membershipPurchaseCollisionQueueRegistryEntry = defineBoundedWorkNamespace({
+  namespace: 'membership-stripe-purchase-collision-queue-config',
+  config: membershipPurchaseCollisionQueueConfig,
+  label: 'Stripe purchase collision queue',
+  maxValues: membershipPurchaseCollisionQueueMaxValues,
+  descriptions: {
+    concurrency: 'Global concurrency for deferred Stripe invoice discovery and reconciliation.',
+    dispatch_concurrency: 'Global concurrency for pending collision recovery pages.',
   },
 })

@@ -23,7 +23,7 @@ function makeSetupFlowProps(
     setupVerificationProof: null,
     setupData: null,
     setupName: '',
-    onStartSetup: vi.fn<(e: React.FormEvent) => void>(),
+    onStartSetup: vi.fn<(e: React.SubmitEvent<HTMLFormElement>) => void>(),
     onConfirmSetup: vi.fn<() => void>(),
     onVerifySetup: vi.fn<(code: string) => void>(),
     onCancelSetup: vi.fn<() => void>(),

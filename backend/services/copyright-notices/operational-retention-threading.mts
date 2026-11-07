@@ -104,7 +104,7 @@ async function sweepPage(
         LEFT JOIN copyright_notice_email_thread_tokens token ON token.id = page.token_id`)
       : { rows: [] }
   // Token, case replay, then legal party locks match the ingestion order.
-  // ast-grep-ignore: no-three-sequential-awaits -- digest, case, and preservation locks have a required global order before eligibility can be read.
+  // ast-grep-ignore: no-three-sequential-awaits -- Acquire token, case-replay, then preservation locks in ingress order before locking activity and advancing the legal/blocker proof cursors.
   await lockCopyrightEmailThreadTokens(transaction, [
     ...references.flatMap(row => (row.lookup_digest ? [row.lookup_digest] : [])),
     ...(link.matched_lookup_digest ? [link.matched_lookup_digest] : []),
@@ -141,7 +141,7 @@ async function sweepPage(
   }
   // The marker and first irreversible delete commit together. Old-source replay cannot
   // recreate a removed reference between pages; a fresh source remains admissible.
-  // ast-grep-ignore: no-three-sequential-awaits -- the replay fence must precede bounded child deletion, then its cursor must record committed progress.
+  // ast-grep-ignore: no-three-sequential-awaits -- persist the retirement cutoff before deleting thread evidence so replay is fenced; save the cursor from the completed delete page progress
   await transaction(sql`/* retireCopyrightCaseThread */
     INSERT INTO copyright_notice_email_thread_retirements
       (copyright_notice_id, retired_before_intake_bound)

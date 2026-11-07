@@ -82,8 +82,8 @@ export const createBatch = async (
       try {
         await stopBedrockBatch(submittedJobArn)
         canReleaseLocks = true
-      } catch (err) {
-        onError(err instanceof Error ? err : new Error(String(err)))
+      } catch (err_) {
+        onError(err_ instanceof Error ? err_ : new Error(String(err_)))
         await markBatchSubmittedForPolling(
           batchId,
           submittedJobArn,

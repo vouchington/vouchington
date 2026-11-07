@@ -66,13 +66,25 @@ async function runSharePages(
   if (!first?.page_info.has_next_page || !after)
     throw new Error(`${scenarioId} must have a continuation page`)
   const previousIds = new Set(first.results.map(row => row.id))
+  const previousLastEntityId = first.results.at(-1)?.entity_id
   registerScenarioContract(`${scenarioId}-after`, {
     expectations: [{ kind: 'custom', name: 'postShareTargets' }],
     crossPartition: { posts: 'The feed ranks direct and shared posts across id ranges.' },
   })
   await runAndCapture(`${scenarioId}-after`, async () => {
     const next = await getPostFeedIds(user, { ...options, after })
-    if (!next.results.length || next.results.some(row => previousIds.has(row.id)))
+    const repeatedRows = next.results.filter(row => previousIds.has(row.id))
+    const newDeliveryCount = next.results.filter(row => !previousIds.has(row.id)).length
+    if (newDeliveryCount === 0)
       throw new Error(`${scenarioId} continuation must contain new delivery IDs`)
+    if (!next.results.some(row => row.delivery_type === 'share'))
+      throw new Error(`${scenarioId} continuation must include real shared deliveries`)
+    // Hot scores are recomputed from NOW(); the prior boundary post's deliveries may drift across it.
+    if (options.sort === 'hot' && repeatedRows.some(row => row.entity_id !== previousLastEntityId))
+      throw new Error(
+        `${scenarioId} may repeat only deliveries for the prior boundary post at the hot cursor`,
+      )
+    if (options.sort !== 'hot' && repeatedRows.length > 0)
+      throw new Error(`${scenarioId} continuation must contain only new delivery IDs`)
   })
 }

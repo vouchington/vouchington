@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { ApiKeysManager } from '../api-keys-manager'
 import type { ApiKey } from '@/types/api-keys'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 
 // ApiKeysManager (and its child components) call useTranslations(), which suspends via `use()`
 // on the real dynamic import. Mocking the hook (rather than wrapping every render in <Suspense>)

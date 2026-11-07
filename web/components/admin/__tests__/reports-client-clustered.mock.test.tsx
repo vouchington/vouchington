@@ -15,7 +15,7 @@ const {
   mockOnError: vi.fn<VitestLooseMock>(),
   mockOnSuccess: vi.fn<VitestLooseMock>(),
 }))
-vi.mock(import('@/lib/api/client/posts'), () => ({
+vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   deletePost: mockDeletePost,
 }))
 

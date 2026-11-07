@@ -4,7 +4,10 @@ import type {
   TopicRecommendationPost,
   TopicRecommendationStatus,
 } from '@services/topic-recommendations'
-import { listedRecommendations, toMcpRecommendation } from './topic-recommendation-read-output.mts'
+import {
+  listedRecommendations,
+  projectMcpRecommendation,
+} from './topic-recommendation-read-output.mts'
 
 const recommendation = (id: string, status: TopicRecommendationStatus) =>
   ({ id, post_type: 'topic_recommendation', topic_recommendation: { status } }) as Post
@@ -53,7 +56,7 @@ const extension = {
   topic_slug: 'a-slug',
 }
 
-describe('toMcpRecommendation', () => {
+describe('projectMcpRecommendation', () => {
   const staff = {
     __entity_type: 'user',
     id: 'staff',
@@ -81,7 +84,7 @@ describe('toMcpRecommendation', () => {
   } as unknown as TopicRecommendationPost
 
   it('sanitizes every free-text field and fences the Markdown, whoever wrote it', async () => {
-    const post = await toMcpRecommendation(hostilePost)
+    const post = await projectMcpRecommendation(hostilePost)
 
     expect(JSON.stringify(post)).not.toContain(INJECTION)
     expect(JSON.stringify(post)).not.toContain('<system>')
@@ -98,7 +101,7 @@ describe('toMcpRecommendation', () => {
 
   it('keeps empty text empty and absent users absent', async () => {
     const { updated_by: _staff, ...withoutUsers } = hostilePost
-    const post = await toMcpRecommendation({
+    const post = await projectMcpRecommendation({
       ...withoutUsers,
       title: '',
       markdown: '  ',

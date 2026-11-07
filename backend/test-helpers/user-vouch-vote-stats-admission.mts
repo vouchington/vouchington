@@ -38,7 +38,7 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
     if (!owns(job) || !job?.id) return
     attemptDiagnostics.push({ jobId: job.id, reason: error })
     ownedJobs.set(job.id, job)
-    // failed describes attempts too. One event-caused real state read distinguishes retries.
+    // Failed events include attempts; a real state read distinguishes retries from terminal state.
     const reading = job
       .getState()
       .then(state => {
@@ -91,7 +91,11 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
     const key = `elections:${id}`
     const known = ends.get(key)
     if (known) return Promise.resolve(known)
-    return bounded(new Promise<End>(resolve => waiters.set(key, resolve)))
+    return bounded(
+      new Promise<End>(resolve => {
+        waiters.set(key, resolve)
+      }),
+    )
   }
   const retryReal = retry.retryTransientEnqueue
   const bulkReal = queue.addBulk
@@ -133,8 +137,7 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
     failures.push(err)
   }
   {
-    // First settle actual producer/admission promises. Retry has three saturation-only attempts;
-    // it does not impose a worst-case timeout on the underlying native operation.
+    // Settle admissions first; retry bounds saturation only, not native-operation wall time.
     try {
       for (const item of admissions) {
         try {
@@ -151,7 +154,6 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
           failures.push(err)
         }
       }
-      // Bound terminal OBSERVATION after admissions settle, without closing the shared worker.
       deadline = AbortSignal.timeout(25_000)
       const observed = await Promise.allSettled(
         [...ownedJobs.values()].map(async job => {
@@ -172,8 +174,7 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
           ),
         )
     } finally {
-      // Admissions have settled. Always remove this case's observers/spies, including expiry.
-      // An expired observation is FAILURE, not evidence that remaining native jobs drained.
+      // Remove case observers even on expiry; expiry is failure, not proof native jobs drained.
       for (const cleanup of [
         () => worker.off('active', active),
         () => worker.off('completed', completed),

@@ -1,34 +1,17 @@
-/* oxlint-disable max-lines -- clustered moderation queue coordinates several independent action states. */
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog'
 import { useModerationQueueHotkeys } from '@/components/moderation/use-moderation-queue-hotkeys'
-import { deletePost } from '@/lib/api/client/posts'
-import { resolveModerationReport, rerunReportJudgement } from '@/lib/api/client/reports'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { MODERATION_QUEUE_SHORTCUTS } from '@/lib/keyboard-shortcuts'
-import onError, { onSuccess } from '@/lib/on-error'
-import {
-  ordinaryResolutionRemovesWholeCluster,
-  selectOrdinaryPendingReports,
-} from './reports-clustered-actions'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import { buildReportsPageHref } from './reports-clustered-format'
 import { DuplicateClusterList, ReportClusterList } from './reports-clustered-list'
-import {
-  addClusterVisibilityKeys,
-  clusterVisibilityKey,
-  filterVisibleDuplicateClusters,
-} from './reports-clustered-state'
-import type {
-  AdminClusteredModerationReportsResponse,
-  AdminModerationReport,
-  AdminModerationReportCluster,
-  AdminModerationReportDuplicateCluster,
-} from './reports-client-types'
-import { useTranslations } from '@/lib/i18n/use-translations'
+import { clusterVisibilityKey, filterVisibleDuplicateClusters } from './reports-clustered-state'
+import type { AdminClusteredModerationReportsResponse } from './reports-client-types'
+import { useClusteredReportActions } from './use-clustered-report-actions'
 import { useReportsAiPolling } from './use-reports-ai-polling'
 
 interface ClusteredReportsClientProps {
@@ -39,20 +22,9 @@ interface ClusteredReportsClientProps {
   currentAfter?: string
 }
 
-type ResolveStatus = 'reviewed' | 'dismissed'
-type ClusterAction = 'dismiss' | 'remove' | 'review'
 const CLUSTERED_QUEUE_SHORTCUTS = MODERATION_QUEUE_SHORTCUTS.filter(
   shortcut => shortcut.id !== 'moderation-select-active',
 )
-
-function formatSettledFailure(message: string, results: PromiseSettledResult<unknown>[]): Error {
-  const failures = results.filter(result => result.status === 'rejected')
-  const firstReason = failures[0]?.reason
-  const detail = firstReason instanceof Error ? firstReason.message : String(firstReason)
-  return new Error(
-    `${message}: ${failures.length} failed${detail ? `; first error: ${detail}` : ''}`,
-  )
-}
 
 export function ClusteredReportsClient({
   data,
@@ -62,16 +34,9 @@ export function ClusteredReportsClient({
   currentAfter,
 }: ClusteredReportsClientProps) {
   const t = useTranslations()
-  const router = useRouter()
   const uiLocale = useUiLocale()
   const [removedClusterKeys, setRemovedClusterKeys] = useState<ReadonlySet<string>>(() => new Set())
-  const [loadingClusterId, setLoadingClusterId] = useState<string | null>(null)
-  const [loadingClusterAction, setLoadingClusterAction] = useState<ClusterAction | null>(null)
-  const [loadingDuplicateId, setLoadingDuplicateId] = useState<string | null>(null)
-  const [rerunningReportId, setRerunningReportId] = useState<string | null>(null)
-  const [isRefreshing, startRefreshTransition] = useTransition()
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-
   const clusters = useMemo(
     () => data.results.filter(cluster => !removedClusterKeys.has(clusterVisibilityKey(cluster))),
     [data.results, removedClusterKeys],
@@ -83,153 +48,28 @@ export function ClusteredReportsClient({
   const visibleReports = clusters.flatMap(cluster => cluster.reports)
   const { pendingRerunEntities, pollingTimedOut, rerunTimedOut, clearRerunTimeout, markRerun } =
     useReportsAiPolling(visibleReports, true)
-  const disabled =
-    Boolean(loadingClusterId || loadingDuplicateId || rerunningReportId) || isRefreshing
   const isPendingFilter = !statusFilter || statusFilter === 'pending'
-
+  const actions = useClusteredReportActions({
+    canBulkRemove,
+    clearRerunTimeout,
+    isPendingFilter,
+    markRerun,
+    pendingRerunEntities,
+    setRemovedClusterKeys,
+    visibleReports,
+  })
+  const disabled =
+    Boolean(actions.loadingClusterId || actions.loadingDuplicateId || actions.rerunningReportId) ||
+    actions.isRefreshing
   const { activeKey, setActiveKey, helpOpen, setHelpOpen } = useModerationQueueHotkeys({
     disabled,
     items: clusters.map(cluster => ({
       key: cluster.id,
-      onDismiss: () => handleResolveCluster(cluster, 'dismissed'),
-      onReview: () => handleResolveCluster(cluster, 'reviewed'),
+      onDismiss: () => actions.handleResolveCluster(cluster, 'dismissed'),
+      onReview: () => actions.handleResolveCluster(cluster, 'reviewed'),
     })),
     onSelectionToggle: () => {},
   })
-
-  function handleResolveCluster(cluster: AdminModerationReportCluster, status: ResolveStatus) {
-    if (pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`)) return
-    const pendingReports = selectOrdinaryPendingReports(cluster)
-    if (pendingReports.length === 0) return
-    setLoadingClusterId(cluster.id)
-    setLoadingClusterAction(status === 'reviewed' ? 'review' : 'dismiss')
-    startRefreshTransition(async () => {
-      try {
-        const results = await Promise.allSettled(
-          pendingReports.map(report => resolveModerationReport(report.id, status)),
-        )
-        const failed = results.some(result => result.status === 'rejected')
-        if (failed) {
-          router.refresh()
-          throw formatSettledFailure('Some loaded reports could not be updated', results)
-        }
-        const resolvedWholeCluster = ordinaryResolutionRemovesWholeCluster(cluster, results)
-        if (resolvedWholeCluster) {
-          setRemovedClusterKeys(current => new Set(current).add(clusterVisibilityKey(cluster)))
-        }
-        const statusLabel =
-          status === 'reviewed'
-            ? t('extracted.admin.reportsClusteredClient.reviewed_e4f934f3')
-            : t('extracted.admin.reportsClusteredClient.dismissed_71116847')
-        onSuccess(
-          `${t('shared.countLabel.format', { count: pendingReports.length, unit: 'loadedReport' })} ${statusLabel}`,
-        )
-        router.refresh()
-      } catch (err) {
-        onError(err, {
-          fallback: t(
-            'extracted.admin.reportsClusteredClient.failedToUpdateReportCluster_aee0929f',
-          ),
-        })
-      } finally {
-        setLoadingClusterId(null)
-        setLoadingClusterAction(null)
-      }
-    })
-  }
-
-  function handleRemoveClusterTarget(cluster: AdminModerationReportCluster) {
-    if (pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`)) return
-    if (!canBulkRemove || (cluster.entity_type !== 'post' && cluster.entity_type !== 'comment')) {
-      return
-    }
-    setLoadingClusterId(cluster.id)
-    setLoadingClusterAction('remove')
-    startRefreshTransition(async () => {
-      try {
-        await deletePost(cluster.entity_id)
-        setRemovedClusterKeys(current => new Set(current).add(clusterVisibilityKey(cluster)))
-        onSuccess(t('extracted.admin.reportsClusteredClient.targetRemoved_cbaa90e7'))
-        router.refresh()
-      } catch (err) {
-        onError(err, {
-          fallback: t('extracted.admin.reportsClusteredClient.failedToRemoveTarget_2a3280c7'),
-        })
-      } finally {
-        setLoadingClusterId(null)
-        setLoadingClusterAction(null)
-      }
-    })
-  }
-
-  function handleRemoveDuplicateCluster(duplicate: AdminModerationReportDuplicateCluster) {
-    if (!canBulkRemove || !isPendingFilter) return
-    if (
-      duplicate.clusters.some(cluster =>
-        pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`),
-      )
-    )
-      return
-    const postIds = [...new Set(duplicate.clusters.map(cluster => cluster.entity_id))]
-    if (postIds.length === 0) return
-    setLoadingDuplicateId(duplicate.id)
-    startRefreshTransition(async () => {
-      try {
-        const results = await Promise.allSettled(postIds.map(postId => deletePost(postId)))
-        const failed = results.some(result => result.status === 'rejected')
-        if (failed) {
-          router.refresh()
-          throw formatSettledFailure('Some duplicate posts could not be removed', results)
-        }
-        setRemovedClusterKeys(current => addClusterVisibilityKeys(current, duplicate.clusters))
-        onSuccess(
-          `${t('shared.countLabel.format', { count: postIds.length, unit: 'post' })} ${t('extracted.admin.reportsClusteredClient.removed_e1f79758')}`,
-        )
-        router.refresh()
-      } catch (err) {
-        onError(err, {
-          fallback: t(
-            'extracted.admin.reportsClusteredClient.failedToRemoveDuplicateCluster_7e623a38',
-          ),
-        })
-      } finally {
-        setLoadingDuplicateId(null)
-      }
-    })
-  }
-
-  function handleRerun(report: AdminModerationReport) {
-    if (pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
-    clearRerunTimeout()
-    setRerunningReportId(report.id)
-    startRefreshTransition(async () => {
-      try {
-        const { run_id: runId } = await rerunReportJudgement(report.id)
-        markRerun(report.id, runId)
-        onSuccess(t('extracted.admin.reportsClusteredClient.judgementReRunQueued_ac6c0160'))
-        router.refresh()
-      } catch (err) {
-        onError(err, {
-          fallback: t('extracted.admin.reportsClusteredClient.failedToReRunJudgement_5650de2a'),
-        })
-      } finally {
-        setRerunningReportId(null)
-      }
-    })
-  }
-
-  function handleWarn(report: AdminModerationReport) {
-    if (pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
-    router.refresh()
-  }
-
-  function handleBanEvasionAction(reportId: string) {
-    const report = visibleReports.find(candidate => candidate.id === reportId)
-    if (report && pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
-    startRefreshTransition(() => {
-      router.refresh()
-    })
-  }
 
   return (
     <div
@@ -248,9 +88,9 @@ export function ClusteredReportsClient({
         duplicateClusters={duplicateClusters}
         canBulkRemove={canBulkRemove && isPendingFilter}
         disabled={disabled}
-        loadingDuplicateId={loadingDuplicateId}
+        loadingDuplicateId={actions.loadingDuplicateId}
         pendingRerunEntities={pendingRerunEntities}
-        onRemove={duplicate => handleRemoveDuplicateCluster(duplicate)}
+        onRemove={duplicate => actions.handleRemoveDuplicateCluster(duplicate)}
         uiLocale={uiLocale}
       />
       <ReportClusterList
@@ -258,16 +98,16 @@ export function ClusteredReportsClient({
         activeKey={activeKey}
         canBulkRemove={canBulkRemove}
         disabled={disabled}
-        loadingClusterAction={loadingClusterAction}
-        loadingClusterId={loadingClusterId}
+        loadingClusterAction={actions.loadingClusterAction}
+        loadingClusterId={actions.loadingClusterId}
         onActiveChange={setActiveKey}
-        onDismiss={cluster => handleResolveCluster(cluster, 'dismissed')}
-        onRemoveTarget={cluster => handleRemoveClusterTarget(cluster)}
-        onReview={cluster => handleResolveCluster(cluster, 'reviewed')}
-        onRerun={handleRerun}
-        onWarn={handleWarn}
-        onBanEvasionAction={handleBanEvasionAction}
-        rerunningReportId={rerunningReportId}
+        onDismiss={cluster => actions.handleResolveCluster(cluster, 'dismissed')}
+        onRemoveTarget={cluster => actions.handleRemoveClusterTarget(cluster)}
+        onReview={cluster => actions.handleResolveCluster(cluster, 'reviewed')}
+        onRerun={actions.handleRerun}
+        onWarn={actions.handleWarn}
+        onBanEvasionAction={actions.handleBanEvasionAction}
+        rerunningReportId={actions.rerunningReportId}
         pendingRerunEntities={pendingRerunEntities}
         uiLocale={uiLocale}
       />

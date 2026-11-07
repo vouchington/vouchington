@@ -1,4 +1,4 @@
-import assert from 'http-assert'
+import createHttpError from 'http-errors'
 
 const individualCardConstraintErrors: Readonly<Record<string, string>> = {
   '23503:individual_cards_authorized_user_of_id_fkey': 'Invalid authorized_user_of_card_id',
@@ -15,6 +15,6 @@ export async function mapIndividualCardConstraintError<T>(operation: () => Promi
       pgError.code && pgError.constraint ? `${pgError.code}:${pgError.constraint}` : undefined
     const message = key ? individualCardConstraintErrors[key] : undefined
     if (!message) throw err
-    assert(false, 422, message)
+    throw createHttpError(422, message)
   }
 }

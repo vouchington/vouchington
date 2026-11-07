@@ -37,7 +37,7 @@ export function CrawlerEditForm({ crawler, crawlerId }: CrawlerEditFormProps) {
   const [saving, setSaving] = useState(false)
   const handleCrawlerTypeChange = setCrawlerType
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setSaving(true)
 

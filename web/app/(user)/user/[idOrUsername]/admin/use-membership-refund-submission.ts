@@ -5,7 +5,7 @@ import {
   useEffect,
   useState,
   useTransition,
-  type FormEvent,
+  type SubmitEvent,
   type RefObject,
 } from 'react'
 import { useRouter } from 'next/navigation'
@@ -105,7 +105,7 @@ export function useMembershipRefundSubmission(options: {
             return
           default: {
             const unsupportedStatus: never = response.cancellation_status
-            throw new Error(`Unsupported refund cancellation status: ${unsupportedStatus}`)
+            throw new Error(`Unsupported refund cancellation status: ${String(unsupportedStatus)}`)
           }
         }
       } catch (err) {
@@ -140,7 +140,7 @@ export function useMembershipRefundSubmission(options: {
 
   useEffect(() => {
     const attempt = attemptRef.current
-    if (reconciliationRetryAt === null || !attempt) return
+    if (reconciliationRetryAt === null || !attempt) return undefined
     const timer = window.setTimeout(
       () => {
         setReconciliationRetryAt(null)
@@ -151,7 +151,7 @@ export function useMembershipRefundSubmission(options: {
     return () => window.clearTimeout(timer)
   }, [attemptRef, reconciliationRetryAt, setReconciliationRetryAt, submitAttempt])
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (reconciliationRetryAt !== null) return
     const request = createRefundRequest(userId, selectedCharge, formState, uiLocale)

@@ -14,6 +14,11 @@ import {
   mutateTestReversalCaseOperation,
 } from '../../../test-helpers/data-stores/psql/membership-reversal-cases.mts'
 
+import {
+  insertTestStripeCollisionWork,
+  mutateTestStripeCollisionWork,
+} from '../../../test-helpers/stripe-collision-schema.mts'
+
 describe('membership ineligible purchase reversal case schema', () => {
   afterAll(async () => {
     await onGracefulShutdown()
@@ -36,7 +41,15 @@ describe('membership ineligible purchase reversal case schema', () => {
     )
   })
 
-  it('keeps each binding and operation associated with at most one reversal case', async () => {
+  it('rejects updates to captured collision work', async () => {
+    const fixture = await createReversalCaseFixture()
+    const workId = await insertTestStripeCollisionWork(fixture)
+    await expect(mutateTestStripeCollisionWork(workId)).rejects.toThrow(
+      'membership_stripe_purchase_collision_work_items rows are append-only',
+    )
+  })
+
+  it('keeps each lineage invoice and operation associated with at most one reversal case', async () => {
     const [first, second] = await Promise.all([
       createReversalCaseFixture(),
       createReversalCaseFixture(),
@@ -48,6 +61,15 @@ describe('membership ineligible purchase reversal case schema', () => {
         refundCapMinorUnits: 50,
       }),
     ).rejects.toMatchObject({ code: '23505' })
+    await expect(
+      insertTestReversalCase({
+        ...first,
+        originatingInvoiceId: `${first.originatingInvoiceId}-renewal`,
+        winningSourceKind: 'family',
+        periodStartedAt: new Date('2026-01-01T00:00:00Z'),
+        periodEndsAt: new Date('2026-01-01T00:00:00Z'),
+      }),
+    ).resolves.not.toBe(first.caseId)
     await expect(
       associateDuplicateTestReversalCaseOperation(second.caseId, first.operationId),
     ).rejects.toMatchObject({ code: '23514' })

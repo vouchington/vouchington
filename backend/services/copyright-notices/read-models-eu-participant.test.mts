@@ -11,7 +11,7 @@ import {
   markCopyrightDeliveryIntentSent,
 } from './delivery-intents.mts'
 import { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
-import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
+import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
 
 describe('EU participant read model', () => {
   useCopyrightIntakeEnvironment()

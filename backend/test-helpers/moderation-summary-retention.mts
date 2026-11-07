@@ -12,7 +12,7 @@ import { insertTestCommunityVacation } from './entities/community-member-vacatio
 import {
   formatLocalDate,
   getIsoWeekKey,
-} from '../services/communities/moderation-summary-emails.mts'
+} from '../services/communities/moderation-summary-schedule.mts'
 
 /** Inserts a moderation email claim row; false when the claim already exists. */
 export async function claimTestModerationEmailSend(

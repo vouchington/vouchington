@@ -33,7 +33,7 @@ export async function getPostRelatedUrlIds(
   const { rows } = await runQuery<{ object_id: string }>(
     sql`/* getPostRelatedUrlIds */
       SELECT object_id
-      -- no-mistakes-disable-next-line postgres-bounded-statements: post-created recovery needs every current positive related URL to replay all recovery effects; related URLs can change after creation and have no per-post cap, so truncation would skip effects
+      -- no-mistakes-disable-next-line postgres-bounded-statements: post-created recovery needs every current positive related URL to replay all recovery effects, including URL changes after creation; new active rows are bounded by the post_related_url write cap (hard maximum 10000), while retained preexisting over-cap rows must also receive every effect, so truncation would skip effects
       FROM relation__post__related__url
       WHERE subject_id = ${postId}
         AND deleted_at IS NULL

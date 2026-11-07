@@ -3,12 +3,11 @@ import { render, screen } from '@testing-library/react'
 import { ApplicationReview } from '../application-review'
 import { CommunityMembersManager } from '../community-members-manager'
 import { InviteManager } from '../invite-manager'
+import type { Community, CommunityMembersResponseBody } from '@/types/api-responses'
 import type {
-  Community,
   CommunityApplicationsResponseBody,
   CommunityInvitesResponseBody,
-  CommunityMembersResponseBody,
-} from '@/types/api-responses'
+} from '@/types/api-responses/community-applications'
 
 vi.mock(
   import('next/navigation'),

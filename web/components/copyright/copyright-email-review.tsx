@@ -1,155 +1,12 @@
 'use client'
-/* oxlint-disable max-lines -- review queue coordinates pagination and approval state. */
 
-import { useEffect, useRef, useState } from 'react'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { InfiniteScroll } from '@/components/shared/infinite-scroll'
-import { usePaginatedList } from '@/hooks/use-paginated-list'
-import { usePendingAiRefresh } from '@/hooks/use-pending-ai-refresh'
-import type {
-  CopyrightEmailIntakeQueueItem,
-  CopyrightEmailIntakeQueuePage,
-} from '@/types/copyright-notices'
-import {
-  createCopyrightEmailApprovalDraft,
-  type CopyrightEmailApprovalDraft,
-} from './copyright-email-approval-model'
-import {
-  createCopyrightEmailCorrespondenceDraft,
-  type CopyrightEmailCorrespondenceDraft,
-} from './copyright-email-correspondence-model'
-import { CopyrightEmailLegalProcessAction } from './copyright-email-legal-process-action'
-import { CopyrightEmailQueueItem } from './copyright-email-queue-item'
-import { CopyrightEmailReviewDetail } from './copyright-email-review-detail'
-import {
-  listCopyrightEmailIntakes,
-  getCopyrightEmailIntake,
-  type CopyrightEmailIntake,
-} from '@/lib/api/client/copyright-email-intakes'
-import { useCopyrightEmailReviewActions } from './copyright-email-review-actions'
+import type { CopyrightEmailIntakeQueuePage } from '@/types/copyright-notices'
+import { CopyrightEmailReviewDetailPane } from './copyright-email-review-detail-pane'
+import { CopyrightEmailReviewQueueList } from './copyright-email-review-queue'
+import { useCopyrightEmailReviewQueue } from './copyright-email-review-queue-state'
+
 export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueuePage }) {
-  const {
-    pages,
-    hasNextPage,
-    endCursor,
-    loadMore,
-    loadingMore,
-    fetchError,
-    clearError,
-    resetToFirstPage,
-    refreshLoadedPages,
-    resetKey,
-  } = usePaginatedList(
-    data,
-    '/api/v1/copyright-email-intakes/review-queue',
-    {},
-    { loadPage: after => listCopyrightEmailIntakes({ after }) },
-  )
-  const itemById = new Map<string, CopyrightEmailIntakeQueueItem>()
-  for (const page of pages) {
-    for (const item of page.copyright_email_intakes) itemById.set(item.id, item)
-  }
-  const items = [...itemById.values()]
-  const pendingItems = items.filter(
-    item =>
-      item.waiting_reason === 'awaiting_review' &&
-      item.parse_status === 'succeeded' &&
-      item.recommendation_id === null,
-  )
-  const refreshTimedOut = usePendingAiRefresh(
-    pendingItems.length > 0,
-    () => refreshLoadedPages?.(() => listCopyrightEmailIntakes()),
-    pendingItems.map(item => item.id).join('|'),
-  )
-  const [detail, setDetail] = useState<CopyrightEmailIntake | null>(null)
-  const [draft, setDraft] = useState<CopyrightEmailApprovalDraft | null>(null)
-  const draftEdited = useRef(false)
-  const seededRecommendation = useRef<string | null>(null)
-  function seedRecommendation(next: CopyrightEmailIntake) {
-    const recommendation = next.recommendation
-    if (!recommendation || seededRecommendation.current === recommendation.id) return
-    seededRecommendation.current = recommendation.id
-    if (!draftEdited.current)
-      setDraft(createCopyrightEmailApprovalDraft(recommendation.structured_output))
-  }
-  const detailId = detail?.id
-  const selectedRecommendationId = items.find(item => item.id === detailId)?.recommendation_id
-  const detailKey = `${detailId ?? ''}:${selectedRecommendationId ?? ''}`
-  const latestDetailKey = useRef(detailKey)
-  useEffect(() => {
-    latestDetailKey.current = detailKey
-  }, [detailKey])
-  const detailNeedsRecommendation = Boolean(
-    detail && selectedRecommendationId && detail.recommendation?.id !== selectedRecommendationId,
-  )
-  const detailRefreshTimedOut = usePendingAiRefresh(
-    detailNeedsRecommendation,
-    async () => {
-      if (!detail) return
-      const response = await getCopyrightEmailIntake(detail.id)
-      if (latestDetailKey.current === detailKey) {
-        seedRecommendation(response.copyright_email_intake)
-        setDetail(current =>
-          current?.id === detail.id ? response.copyright_email_intake : current,
-        )
-      }
-    },
-    `detail:${detailKey}`,
-  )
-  const [rationale, setRationale] = useState('')
-  const [correspondenceDraft, setCorrespondenceDraft] = useState<CopyrightEmailCorrespondenceDraft>(
-    createCopyrightEmailCorrespondenceDraft,
-  )
-  const [manualFallbackReason, setManualFallbackReason] = useState('')
-  const [replyEmail, setReplyEmail] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  useEffect(() => {
-    if (!detailId || !detailNeedsRecommendation) return
-    let current = true
-    void getCopyrightEmailIntake(detailId)
-      .then(response => {
-        if (current) {
-          seedRecommendation(response.copyright_email_intake)
-          setDetail(previous =>
-            previous?.id === detailId ? response.copyright_email_intake : previous,
-          )
-        }
-      })
-      .catch(() => {
-        if (current) setError('Could not refresh the email recommendation.')
-      })
-    return () => {
-      current = false
-    }
-  }, [detailId, detailNeedsRecommendation, selectedRecommendationId])
-  const {
-    admitCorrespondence,
-    associateWithNotice,
-    approve,
-    reject,
-    rejectCorrespondence,
-    requestInformation,
-    selectIntake,
-  } = useCopyrightEmailReviewActions({
-    correspondenceDraft,
-    detail,
-    draft,
-    manualFallbackReason,
-    rationale,
-    replyEmail,
-    setCorrespondenceDraft,
-    setDetail,
-    setDraft,
-    setError,
-    resetQueue: page => resetToFirstPage?.(page),
-    setLoading,
-    setManualFallbackReason,
-    setRationale,
-    setReplyEmail,
-    setSuccess,
-  })
+  const queue = useCopyrightEmailReviewQueue(data)
   return (
     <main className='mx-auto max-w-4xl space-y-4 py-8'>
       <h1 className='text-3xl font-bold'>Copyright email review</h1>
@@ -157,96 +14,27 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
         Staff must verify each parsed email and approve, reject, or ask the sender for more
         information before any case action.
       </p>
-      {(error || refreshTimedOut || detailRefreshTimedOut) && (
-        <Alert variant={error ? 'destructive' : undefined}>
-          <AlertTitle>{error ? 'Review action failed' : 'AI review is still pending'}</AlertTitle>
-          <AlertDescription>
-            {error ??
-              'The AI recommendation is taking longer than expected. Refresh to check again.'}
-          </AlertDescription>
-        </Alert>
-      )}
-      {success && (
-        <Alert>
-          <AlertDescription>{success}</AlertDescription>
-        </Alert>
-      )}
-      <div className='grid gap-4 md:grid-cols-2'>
-        <div>
-          {items.length === 0 && !hasNextPage ? (
-            <p className='text-muted-foreground'>No copyright emails need review.</p>
-          ) : (
-            <InfiniteScroll
-              hasNextPage={hasNextPage}
-              endCursor={endCursor}
-              onLoadMore={loadMore}
-              loadingMore={loadingMore}
-              fetchError={fetchError}
-              clearError={clearError}
-              resetKey={resetKey}
-            >
-              <ul className='space-y-1'>
-                {items.map(item => (
-                  <CopyrightEmailQueueItem
-                    key={item.id}
-                    item={item}
-                    disabled={loading}
-                    onSelect={id => {
-                      draftEdited.current = false
-                      seededRecommendation.current = null
-                      return selectIntake(id)
-                    }}
-                    resetQueue={page => resetToFirstPage?.(page)}
-                    setError={setError}
-                    setSuccess={setSuccess}
-                  />
-                ))}
-              </ul>
-            </InfiniteScroll>
-          )}
-        </div>
-        {detail && (
-          <div className='space-y-4'>
-            <CopyrightEmailReviewDetail
-              key={detail.id}
-              detail={detail}
-              draft={draft}
-              loading={loading}
-              rationale={rationale}
-              manualFallbackReason={manualFallbackReason}
-              replyEmail={replyEmail}
-              correspondenceDraft={correspondenceDraft}
-              onChangeDraft={value => {
-                draftEdited.current = true
-                setDraft(current =>
-                  current === null ? null : typeof value === 'function' ? value(current) : value,
-                )
+      <CopyrightEmailReviewDetailPane
+        items={queue.items}
+        refreshTimedOut={queue.refreshTimedOut}
+        resetToFirstPage={queue.resetToFirstPage}
+      >
+        {review => {
+          const handleSelectQueueItem = review.selectQueueItem
+          return (
+            <CopyrightEmailReviewQueueList
+              queue={queue}
+              loading={review.loading}
+              onSelect={handleSelectQueueItem}
+              resetQueue={page => {
+                queue.resetToFirstPage?.(page)
               }}
-              onChangeRationale={setRationale}
-              onChangeManualFallbackReason={setManualFallbackReason}
-              onChangeReplyEmail={setReplyEmail}
-              onChangeCorrespondenceDraft={setCorrespondenceDraft}
-              onApproveInitial={() => approve()}
-              onRejectInitial={() => reject()}
-              onRequestInformation={message => requestInformation(message)}
-              onAdmitCorrespondence={() => admitCorrespondence()}
-              onRejectCorrespondence={() => rejectCorrespondence()}
-              onAssociateWithNotice={noticeId => associateWithNotice(noticeId)}
+              setError={review.setError}
+              setSuccess={review.setSuccess}
             />
-            <CopyrightEmailLegalProcessAction
-              key={`legal-process-${detail.id}`}
-              detail={detail}
-              disabled={loading}
-              onRecorded={queue => {
-                setDetail(current => (current?.id === detail.id ? null : current))
-                setSuccess('The email intake was recorded as legal process. No reply was sent.')
-                if (queue) resetToFirstPage?.(queue)
-                else setError('The decision was recorded, but the queue could not be reloaded.')
-              }}
-            />
-          </div>
-        )}
-      </div>
+          )
+        }}
+      </CopyrightEmailReviewDetailPane>
     </main>
   )
 }

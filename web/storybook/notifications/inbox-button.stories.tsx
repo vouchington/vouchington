@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { expect, within } from 'storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
 import { InboxButton } from '../../components/notifications/inbox-button'
 import { clearInboxFixture, setInboxFixture } from '@/storybook/mocks/client-api-instance'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -22,6 +22,15 @@ export const Closed: Story = {
     </StoryFrame>
   ),
   play: async ({ canvasElement }) => {
-    await expect(await within(canvasElement).findByText('1')).toBeVisible()
+    const canvas = within(canvasElement)
+    const button = await canvas.findByRole('button', { name: 'Open inbox, 1 unread' })
+
+    await expect(button).toHaveAttribute('data-pw', 'inbox-open-button')
+    await expect(canvas.getByText('1')).toBeVisible()
+
+    await userEvent.hover(button)
+    await expect(
+      await within(canvasElement.ownerDocument.body).findByRole('tooltip', { name: 'Inbox' }),
+    ).toBeVisible()
   },
 }

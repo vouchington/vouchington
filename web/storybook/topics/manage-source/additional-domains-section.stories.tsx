@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { AdditionalDomains } from '@/components/topics/manage-source/additional-domains-section'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -6,7 +6,7 @@ import { now } from '@/storybook/entities/fixtures/shared'
 import { topics } from '@/storybook/entities/fixtures/topics'
 
 const topic = topics.find(item => item.topic_type === 'rss_feed')!
-const prevent = (event: FormEvent) => event.preventDefault()
+const prevent = (event: SubmitEvent<HTMLFormElement>) => event.preventDefault()
 
 const meta = {
   title: 'Topics/Additional Domains',

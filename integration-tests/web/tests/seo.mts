@@ -117,26 +117,27 @@ describe('web SEO tests', () => {
       ).toEqual(expect.objectContaining({ name: 'Home' }))
     })
 
-    it('renders visible breadcrumbs and BreadcrumbList JSON-LD on representative pages', async () => {
-      await Promise.all(
-        [
-          '/cards',
-          '/reviews',
-          '/domains',
-          '/sources',
-          '/communities',
-          '/posts',
-          '/topics',
-          `/communities/playwright-popular-community`,
-        ].map(async path => {
-          const result = await client.loadPage(path, `seo-breadcrumbs-${path.replaceAll('/', '-')}`)
-          const document = parseHtml(result.html, result.response.url)
+    const breadcrumbPages = [
+      '/cards',
+      '/reviews',
+      '/domains',
+      '/sources',
+      '/communities',
+      '/posts',
+      '/topics',
+      '/communities/playwright-popular-community',
+    ] as const
 
-          expectBreadcrumbHtml(document)
-          expect(findSchema(getJsonLd(document), 'BreadcrumbList')).toBeTruthy()
-        }),
-      )
-    })
+    it.each(breadcrumbPages)(
+      'renders visible breadcrumbs and BreadcrumbList JSON-LD on %s',
+      async path => {
+        const result = await client.loadPage(path, `seo-breadcrumbs-${path.replaceAll('/', '-')}`)
+        const document = parseHtml(result.html, result.response.url)
+
+        expectBreadcrumbHtml(document)
+        expect(findSchema(getJsonLd(document), 'BreadcrumbList')).toBeTruthy()
+      },
+    )
 
     it('user landing pages expose the expected public metadata', async () => {
       const result = await client.loadPage(`/@${TEST_USER_USERNAME}`, 'seo-user-landing-default')

@@ -1,3 +1,5 @@
+import { VOTE_SCORE_SCENARIO_IDS } from './vote-score-scenario-ids.mts'
+import { COMMENT_SCENARIO_IDS } from './comment-scenario-ids.mts'
 import { INGESTION_PAGE_SCENARIO_IDS } from './ingestion-page-scenario-ids.mts'
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
@@ -10,6 +12,7 @@ import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
 import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
 import { SESSION_LIMIT_SCENARIO_IDS } from './session-limit-scenario-ids.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
+  ...VOTE_SCORE_SCENARIO_IDS,
   ...VIEW_DRIVEN_SCENARIO_IDS,
   ...BOUNDED_WORK_SCENARIOS,
   'url-blocklist-hostnames',
@@ -24,14 +27,13 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'post-search-similar-rss-relevance',
   ...(['post-search-semantic-new', 'post-search-semantic-relevance'] as const),
   ...(['post-search-semantic-new-1m', 'post-search-hybrid-new'] as const),
+  'post-search-semantic-hot',
   'post-search-hybrid-relevance',
   'classifier-human-vote-comparison-classifier',
   'classifier-human-vote-comparison-community',
   'classifier-human-vote-comparison-post',
   'classifier-human-vote-comparison-rss-feed-item',
-  ...(['comment-ancestors', 'comment-descendants-depth-bound'] as const),
-  'comment-tree-best',
-  'comment-tree-new',
+  ...COMMENT_SCENARIO_IDS,
   'conversation-messages',
   'direct-message-inbox-page',
   'community-activity-digest-aggregation',
@@ -172,11 +174,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-viewer-counts-dense',
   'topic-votes-by-user',
   'top-urls-by-hostname-ids',
-  'trending-communities',
-  'trending-posts',
-  'trending-posts-by-topic',
-  'trending-rss-feeds',
-  'trending-topics',
+  ...(['trending-communities', 'trending-posts', 'trending-posts-by-topic'] as const),
+  ...(['trending-rss-feeds', 'trending-topics'] as const),
   'url-hostname-search-by-topic',
   ...(['url-search', 'url-search-hostname', 'url-search-text'] as const),
   'user-bookmark-counts',
@@ -184,8 +183,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   ...(['user-by-username', 'user-metrics-batch'] as const),
   'user-profile-metrics',
   'user-removed-posts-page',
-  'vote-aggregation-post',
-  'vote-aggregation-topic',
+  ...(['vote-aggregation-post', 'vote-aggregation-topic'] as const),
   ...(['vote-weight-factors', ...VOTE_WEIGHT_DISPATCH_SCENARIO_IDS] as const),
   'follower-distribution-rate-limit-post_share',
   'follower-distribution-rate-limit-post_send',

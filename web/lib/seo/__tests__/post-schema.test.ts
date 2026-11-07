@@ -10,15 +10,18 @@ const baseArgs = {
 }
 
 describe('createPostSchema', () => {
-  it('falls back to Organization author when authorName is absent', () => {
-    const schema = createPostSchema({ ...baseArgs, kind: 'discussion' })
+  it.each(['discussion', 'article', 'blog-post', 'review', 'comment', 'data-point'] as const)(
+    'omits author for %s schema when the post has no author name',
+    kind => {
+      const schema = createPostSchema({
+        ...baseArgs,
+        kind,
+        authorUrl: '/user/hidden-author',
+      })
 
-    expect(schema['author']).toMatchObject({
-      '@type': 'Organization',
-      name: 'Voucha',
-      url: 'https://voucha.ai/',
-    })
-  })
+      expect(schema).not.toHaveProperty('author')
+    },
+  )
 
   it('emits discussionUrl equal to the post url for discussion posts', () => {
     const schema = createPostSchema({ ...baseArgs, kind: 'discussion' })

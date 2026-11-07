@@ -183,7 +183,11 @@ describe('ServiceWorkerRegistrar', () => {
   it('does not clear after authentication changes during the anonymous probe', async () => {
     let rejectProbe!: (error: Error) => void
     const registration = { active: {} } as ServiceWorkerRegistration
-    probeMock.mockReturnValueOnce(new Promise((_, reject) => (rejectProbe = reject)))
+    probeMock.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectProbe = reject
+      }),
+    )
     vi.mocked(navigator.serviceWorker.register).mockResolvedValue(registration)
     const { rerender } = render(<ServiceWorkerRegistrar />)
 

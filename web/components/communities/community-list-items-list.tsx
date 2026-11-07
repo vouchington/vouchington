@@ -5,7 +5,8 @@ import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { EmptyState } from '@/components/shared/empty-state'
 import { CommunityListItemCard } from './community-list-item-card'
 import { mergePageResultsById } from '@ts-shared/utils/collections'
-import type { CommunityListItemType, CommunityListPageData } from '@/types/api-responses'
+import type { CommunityListItemType } from '@/types/api-responses'
+import type { CommunityListPageData } from '@/types/api-responses/community-list-pages'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface CommunityListItemsListProps {

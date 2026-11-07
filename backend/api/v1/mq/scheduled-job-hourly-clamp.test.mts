@@ -1,12 +1,35 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { projectScheduledJobs, upsertScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import type { DeployEnvironmentSource } from '@ts-shared/deploy-environment'
+import { hackerNewsFlagsConfig } from '@queues/hacker-news-flags/config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-job-manifests'
 
 type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 describe('staging hourly wake alignment', () => {
   afterEach(() => vi.restoreAllMocks())
+
+  it.each([
+    [86_400, '0 0 * * *'],
+    [7_200, 'every 2h'],
+  ])('projects the configured repair interval %i in staging', async (seconds, expected) => {
+    await hackerNewsFlagsConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(hackerNewsFlagsConfig, {
+      repair_interval_seconds: seconds,
+    })
+    try {
+      const staging = projectScheduledJobs(SCHEDULED_JOB_MANIFESTS, undefined, {
+        applyHourlyFloor: true,
+      })
+      expect(staging.find(job => job.id === 'repairHackerNewsFlags')?.schedule).toBe(expected)
+      const repeats = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
+      const repeat = repeats.get('hacker-news-flags/repairHackerNewsFlags') as { pattern: string }
+      expect(expectedOperatorText(repeat.pattern)).toBe(expected)
+    } finally {
+      restore()
+    }
+  })
 
   // ECS sets NODE_ENV to production in every deployed environment, including staging. The explicit
   // deployment-environment source exercises the real staging alignment without mutating process.env.

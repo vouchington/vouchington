@@ -50,7 +50,7 @@ describe('getTopicIds semantic_search_query', () => {
         after,
       })
 
-      result.results.forEach(result => found.add(result.id))
+      result.results.forEach(topicResult => found.add(topicResult.id))
       if (!result.page_info.has_next_page) break
       after = result.page_info.end_cursor ?? undefined
     }

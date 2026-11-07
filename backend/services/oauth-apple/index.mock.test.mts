@@ -187,13 +187,13 @@ describe('apple oauth', () => {
     })
 
     it('allows authenticated apple connect without a repeated email claim', async () => {
-      const appleUserId = `apple-connect-${createRandomString(8)}`
+      const connectedAppleUserId = `apple-connect-${createRandomString(8)}`
       const credential = createSignedJwt(
         { kid: 'apple-kid', alg: 'RS256' },
         {
           iss: 'https://appleid.apple.com',
           aud: appleClientId,
-          sub: appleUserId,
+          sub: connectedAppleUserId,
           iat: Math.floor(Date.now() / 1000) - 60,
           exp: Math.floor(Date.now() / 1000) + 300,
         },
@@ -205,21 +205,21 @@ describe('apple oauth', () => {
       const account = await upsertAppleAccount(credential, undefined, undefined, {
         requireVerifiedEmail: false,
       })
-      expect(account.provider_user_id).toBe(appleUserId)
+      expect(account.provider_user_id).toBe(connectedAppleUserId)
       expect(account.provider_user_email_address).toBeNull()
     })
 
     it('allows existing apple accounts to sign in without a repeated email claim', async () => {
-      const appleUserId = `apple-existing-${createRandomString(8)}`
+      const existingAppleUserId = `apple-existing-${createRandomString(8)}`
       fetchSpy.mockResolvedValueOnce(makeFetchResponse(makeAppleJwk('apple-kid')))
-      await upsertAppleAccount(createCredentialForSubject(appleUserId))
+      await upsertAppleAccount(createCredentialForSubject(existingAppleUserId))
 
       const credential = createSignedJwt(
         { kid: 'apple-kid', alg: 'RS256' },
         {
           iss: 'https://appleid.apple.com',
           aud: appleClientId,
-          sub: appleUserId,
+          sub: existingAppleUserId,
           iat: Math.floor(Date.now() / 1000) - 60,
           exp: Math.floor(Date.now() / 1000) + 300,
         },
@@ -227,7 +227,7 @@ describe('apple oauth', () => {
 
       const account = await upsertAppleAccount(credential)
 
-      expect(account.provider_user_id).toBe(appleUserId)
+      expect(account.provider_user_id).toBe(existingAppleUserId)
       expect(account.provider_user_email_address).toContain('@voucha.ai')
     })
 

@@ -1,4 +1,4 @@
-/* oxlint-disable max-lines, react-doctor/prefer-useReducer -- established component API; locale-aware exact parsing adds a small amount of state wiring */
+/* oxlint-disable react-doctor/prefer-useReducer -- adding a valuation writes the saved row and clears four draft fields in one success path */
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
@@ -14,10 +14,10 @@ import { onSuccess } from '@/lib/on-error/on-success'
 import { AddValuationForm } from './point-valuations-manager/add-valuation-form'
 import { deletePointValuationWithMutationGuard } from './point-valuations-manager/delete-point-valuation'
 import {
+  emptyPointValuationEditForm,
   pointValuationEditForm,
   pointValuationUpdatePayload,
   parsePointValuationInput,
-  type PointValuationEditForm,
 } from './point-valuations-manager/edit-form'
 import { ValuationList } from './point-valuations-manager/valuation-list'
 import {
@@ -55,11 +55,7 @@ export function PointValuationsManager({ initialData }: { initialData: PointValu
   const [newValuePerPoint, setNewValuePerPoint] = useState('')
   const [newCurrency, setNewCurrency] = useState<CurrencyCode>('usd')
   const [newNote, setNewNote] = useState('')
-  const [editForm, setEditForm] = useState<PointValuationEditForm>({
-    value_per_point: '',
-    currency: 'usd' as CurrencyCode,
-    note: '',
-  })
+  const [editForm, setEditForm] = useState(emptyPointValuationEditForm)
   async function handleAdd() {
     if (activeMutationsRef.current.has('add')) return
     if (!newProgramId) {

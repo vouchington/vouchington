@@ -4,6 +4,7 @@ import { posix } from 'node:path'
 
 import picomatch from 'picomatch'
 import { parse as load } from 'yaml'
+import { workflowStepScript } from '../../ci/workflow-step-script.mts'
 
 // Rule: a tracked file that a path-gated job's steps reference must trigger that job.
 // Limits: only the first level is followed (files named by a step, action, or reusable workflow);
@@ -109,7 +110,8 @@ const chain = (head: string, via: string) => [head, via].filter(Boolean).join(' 
 export function stepFiles(steps: Step[] | undefined, seen: Set<string>, directory = ''): Found {
   const found: Found = new Map()
   for (const step of steps ?? []) {
-    for (const file of trackedFiles(step['working-directory'] ?? directory, step.run, step.env))
+    const runScripts = step.run ? [step.run, workflowStepScript(step.run)] : []
+    for (const file of trackedFiles(step['working-directory'] ?? directory, runScripts, step.env))
       found.set(file, '')
     for (const file of trackedFiles('', step.with)) found.set(file, '')
     const action = step.uses?.startsWith('./.github/actions/')

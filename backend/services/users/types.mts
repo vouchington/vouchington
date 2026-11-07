@@ -82,7 +82,6 @@ export type UpdateUserOptions = {
   moderation_email_timezone?: string
   processing_restricted_at?: boolean
   should_receive_third_party_marketing?: boolean
-  should_import_hacker_news_discussions?: boolean
   country?: string | null
   ui_locale?: string | null
   is_fediverse_federation_enabled?: boolean

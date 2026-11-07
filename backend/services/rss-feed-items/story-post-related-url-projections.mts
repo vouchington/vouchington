@@ -60,8 +60,10 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
             sweep_upper_bound_relation_id = EXCLUDED.sweep_upper_bound_relation_id,
             relation_snapshot_at = EXCLUDED.relation_snapshot_at,
             cursor_source_id = NULL,
+            eligibility_completed_at = NULL,
             source_completed_at = NULL,
             cursor_prune_id = NULL,
+            limit_reached_capacity = NULL,
             lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
         RETURNING post_id
       )

@@ -585,18 +585,18 @@
       "input": {
         "preconditions": { "visibleCount": 101, "newerFilteredCount": 1, "limit": 100 },
         "action": { "type": "fetch-first-page" },
-        "serverOutcome": { "visibleItemCount": 100, "hasNextPage": true }
+        "serverOutcome": { "visibleItemCount": 99, "hasNextPage": true }
       },
       "expected": {
-        "visibleState": { "visibleItemCount": 100, "hasNextPage": true },
+        "visibleState": { "visibleItemCount": 99, "hasNextPage": true },
         "availableActions": ["load-more"],
-        "reconciliation": { "strategy": "filter-before-limit" },
+        "reconciliation": { "strategy": "short-page" },
         "cancellation": { "behavior": "not-applicable" }
       },
       "backendExpected": {
-        "visibleState": { "visibleItemCount": 100, "hasNextPage": true },
+        "visibleState": { "visibleItemCount": 99, "hasNextPage": true },
         "availableActions": [],
-        "reconciliation": { "strategy": "filter-before-limit" },
+        "reconciliation": { "strategy": "short-page" },
         "cancellation": { "behavior": "not-applicable" }
       }
     },

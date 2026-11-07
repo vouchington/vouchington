@@ -1,9 +1,10 @@
+import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
 import createHttpError from 'http-errors'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { postReferenceSchema } from './entity-reference-schema.mts'
 import { asTopicRecommendationPost } from '@services/topic-recommendations'
 import { componentSchema } from './route-response-schema.mts'
-import { successSchema } from '@vouchington/mcp-server/schema'
+import { successSchema, type JsonSchema } from '@vouchington/mcp-server/schema'
 
 export type TopicRecommendationIdArgs = { id: string }
 
@@ -20,10 +21,17 @@ export async function loadTopicRecommendation(id: string) {
 }
 
 /**
- * The explicit REST mutation response post: read_posts' public base plus the required workflow
- * extension. A contract test pins its base properties to read_posts.
+ * The REST public mutation base plus its workflow extension and optional MCP HN facts.
+ * A contract test pins its base properties to read_posts.
  */
-export const TOPIC_RECOMMENDATION_POST_SCHEMA = componentSchema('PublicTopicRecommendationPost')
+const postSchema = componentSchema('PublicTopicRecommendationPost')
+export const TOPIC_RECOMMENDATION_POST_SCHEMA: JsonSchema = {
+  ...postSchema,
+  properties: {
+    ...(postSchema.properties as Record<string, unknown>),
+    hacker_news_references: mcpHackerNewsReferenceSchema(),
+  },
+}
 
 export const TOPIC_RECOMMENDATION_RESULT_SCHEMA = successSchema({
   post: TOPIC_RECOMMENDATION_POST_SCHEMA,

@@ -45,6 +45,7 @@
     "@services/jwt-session": "workspace:^",
     "@services/post-classifier": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
+    "@services/urls": "workspace:^",
     "@services/users": "workspace:^",
     "@services/valkey-admin": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",

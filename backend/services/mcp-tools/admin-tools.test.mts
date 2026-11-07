@@ -57,8 +57,10 @@ describe('admin tool authorization contract', () => {
     ).toBe(true)
   })
   it('advertises only the successful topic import contract', () => {
-    const tool = ALL_TOOLS.find(tool => tool.schema.name === 'import_topics')!
-    expect(tool.meta?.outputSchema).toMatchObject({
+    const importTopicsTool = ALL_TOOLS.find(
+      candidateTool => candidateTool.schema.name === 'import_topics',
+    )!
+    expect(importTopicsTool.meta?.outputSchema).toMatchObject({
       type: 'object',
       required: ['valid', 'batch'],
       properties: {

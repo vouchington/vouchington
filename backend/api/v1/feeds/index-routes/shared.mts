@@ -50,6 +50,7 @@ export const rssFeedItemFeedQuery = defineQueryContract({
   ...rssFeedItemFeedParser.queryContract,
   community: queryString(),
   has_related_posts: queryBoolean(),
+  has_hacker_news_references: queryBoolean(),
   media_type: queryCsvArray(queryEnum(VALID_MEDIA_TYPES)),
   min_score_follow_rss_feeds: queryNumber(),
   min_score_follow_topics: queryNumber(),

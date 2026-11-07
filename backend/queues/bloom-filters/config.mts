@@ -109,27 +109,23 @@ export function blocklistBloomRebuildFollowUpJobId(
 }
 
 function blocklistReplicaLagDelay(filter: RebuildBloomFilterData['filter']): number | undefined {
-  switch (filter) {
-    case 'url-blocklist':
-    case 'email-blocklist':
-      return BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs
-    case 'embedding':
-    case 'api-keys':
-      return undefined
-  }
+  if (filter === 'url-blocklist' || filter === 'email-blocklist')
+    return BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs
+  return undefined
+}
+
+const rebuildBloomFilterOrderings: Record<
+  RebuildBloomFilterData['filter'],
+  JobOptions['ordering']
+> = {
+  'url-blocklist': BLOOM_FILTER_ORDERING.rebuild_url_blocklist,
+  'email-blocklist': BLOOM_FILTER_ORDERING.rebuild_email_blocklist,
+  embedding: BLOOM_FILTER_ORDERING.rebuild_embedding,
+  'api-keys': BLOOM_FILTER_ORDERING.rebuild_api_keys,
 }
 
 function rebuildBloomFilterOrdering(data: RebuildBloomFilterData): JobOptions['ordering'] {
-  switch (data.filter) {
-    case 'url-blocklist':
-      return BLOOM_FILTER_ORDERING.rebuild_url_blocklist
-    case 'email-blocklist':
-      return BLOOM_FILTER_ORDERING.rebuild_email_blocklist
-    case 'embedding':
-      return BLOOM_FILTER_ORDERING.rebuild_embedding
-    case 'api-keys':
-      return BLOOM_FILTER_ORDERING.rebuild_api_keys
-  }
+  return rebuildBloomFilterOrderings[data.filter]
 }
 
 export function rebuildEmbeddingBloomFilterJobOptions(priority?: number): Partial<JobOptions> {

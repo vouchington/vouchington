@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { enMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 import { ScopePicker } from '../api-keys-manager/scope-picker'
 import { scopeResourceGroups } from '../api-keys-manager/scope-selection'
 import type { ScopeCatalogEntry, ScopeCatalogResponse } from '@/types/scopes'

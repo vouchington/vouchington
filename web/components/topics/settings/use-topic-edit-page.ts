@@ -44,8 +44,8 @@ export function useTopicEditPage(
 
   useEffect(() => {
     if (id !== initialIdRef.current) hasLeftInitialIdRef.current = true
-    if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return
-    if (!isValidTopicType) return
+    if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return undefined
+    if (!isValidTopicType) return undefined
     const lifetime = new AbortController()
     void loadTopicEditState(id).then(nextState => {
       if (!lifetime.signal.aborted) dispatch(nextState)
@@ -55,7 +55,7 @@ export function useTopicEditPage(
     }
   }, [id, isValidTopicType])
 
-  const handleBasicSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleBasicSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     dispatch({ basicSaving: true })
     try {
@@ -76,7 +76,7 @@ export function useTopicEditPage(
     }
   }
 
-  const handleTypeSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleTypeSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     dispatch({ typeSaving: true })
     let keepSavingThroughNavigation = false
@@ -124,7 +124,7 @@ export function useTopicEditPage(
     }
   }
 
-  const handleSpendingSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSpendingSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     dispatch({ spendingSaving: true })
     try {
@@ -142,7 +142,7 @@ export function useTopicEditPage(
     }
   }
 
-  const handleFlagsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFlagsSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!state.topic) return
     dispatch({ flagsSaving: true })
