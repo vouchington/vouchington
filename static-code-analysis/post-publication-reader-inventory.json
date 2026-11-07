@@ -35,10 +35,6 @@
       "classification": "public-boundary"
     },
     {
-      "path": "backend/services/comments/descendant-ids.mts",
-      "classification": "direct-sql"
-    },
-    {
       "path": "backend/services/comments/descendant-page.mts",
       "classification": "descendants-boundary"
     },
@@ -191,11 +187,18 @@
       "owner_classification": "direct-boundary"
     },
     {
+      "path": "backend/services/comments/descendant-probe.mts",
+      "classification": "raw-hydrator",
+      "reason": "Returns only comment ids, parent ids, and placeholder-validity flags. The page service always starts with canonical root eligibility on its head probe before nested previews reuse that root-scoped transaction. REST and MCP authorize the requested thread and hydrate and mask returned content at their public boundaries.",
+      "owner_path": "backend/services/comments/descendant-page.mts",
+      "owner_classification": "descendants-boundary"
+    },
+    {
       "path": "backend/services/comments/placeholder-sql.mts",
       "classification": "raw-hydrator",
       "reason": "SQL fragment builders for comment validity and the placeholder look-down; they select no post columns for output and only decide, for a comment under an already authorized root, whether a placeholder row is kept. The descendants walk composes them behind its root check.",
-      "owner_path": "backend/services/comments/descendant-ids.mts",
-      "owner_classification": "direct-sql"
+      "owner_path": "backend/services/comments/descendant-probe.mts",
+      "owner_classification": "raw-hydrator"
     },
     {
       "path": "backend/services/comments/placeholder-state.mts",

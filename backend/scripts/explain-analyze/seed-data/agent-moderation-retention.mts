@@ -60,6 +60,14 @@ export async function seedAgentModerationRetention(): Promise<void> {
   await seedReleasedCommunityNoise(releasedDay, new Date(oldMs))
 }
 
+/** Defer the large retention corpus until its own plans, then refresh only its statistics. */
+export async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
+  await seedAgentModerationRetention()
+  await write(`/* analyzeAgentModerationRetention */
+    ANALYZE posts, agent_moderations, agent_moderation_votes,
+      moderation_training_feedbacks, vote_integrity_flags, moderator_actions, moderation_transparency_released_daily_rollups`)
+}
+
 /** Force a live predecessor lookup past a large deleted tail on one seeded post. */
 async function seedDeletedLiveLookupTail(): Promise<void> {
   const postId = seedUuid(1, '05')

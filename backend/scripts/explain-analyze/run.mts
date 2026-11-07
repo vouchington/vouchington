@@ -18,7 +18,6 @@ import { seedMediaDeliveryReplay } from './seed-data/media-delivery-replay.mts'
 import { runBloomReconciliationScenarios } from './run-scenarios/bloom-reconciliation.mts'
 import { runFollowerDistributionScenarios } from './run-scenarios/follower-distributions.mts'
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
-import { write } from '@data-stores/psql'
 import {
   assertScenarioManifest,
   getCompletedScenarioIds,
@@ -74,28 +73,22 @@ import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mt
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
 import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
-import { seedAgentModerationRetention } from './seed-data/agent-moderation-retention.mts'
+import { seedAndAnalyzeAgentModerationRetention } from './seed-data/agent-moderation-retention.mts'
 import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runPrioritizedReferralCacheMeasurement } from './run-scenarios/prioritized-referral-cache-measurement.mts'
 import { runModerationReportContextScenarios } from './run-scenarios/moderation-report-contexts.mts'
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
+import { runCommentDescendantPartitionedPages } from './run-scenarios/comment-descendant-partitioned-pages.mts'
+import { assertNoLeftoverCommentPartitions } from './seed-data/comment-descendant-partition-storage.mts'
 import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
-/** Defer the large retention corpus until its own plans, then refresh only its statistics. */
-async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
-  await seedAgentModerationRetention()
-  await write(`/* analyzeAgentModerationRetention */
-    ANALYZE posts, agent_moderations, agent_moderation_votes,
-      moderation_training_feedbacks, vote_integrity_flags, moderator_actions,
-      moderation_transparency_released_daily_rollups`)
-}
-
 async function main() {
   prepareOutputDir()
   try {
     assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
     await assertSeedAnchorMatches()
+    await assertNoLeftoverCommentPartitions()
     await runStep(runSitemapPageScenarios.name, runSitemapPageScenarios)
     await runStep(runStoryProjectionWorkScenarios.name, runStoryProjectionWorkScenarios)
     await runStep(runImageQuarantineScenarios.name, runImageQuarantineScenarios)
@@ -171,6 +164,7 @@ async function main() {
     await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios)
     await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
     await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
+    await runStep(runCommentDescendantPartitionedPages.name, runCommentDescendantPartitionedPages)
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)

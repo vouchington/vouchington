@@ -393,6 +393,14 @@
     "routes": ["POST /api/v1/posts"]
   },
   {
+    "annotation": "getVisibleCommentDescendantIdsPage:frontier",
+    "maxCount": 19,
+    "reason": "Each breadth-first frontier level depends on the child rows from the preceding level, so the service submits at most one grouped child query per level. The hard descendant depth cap is 20, allowing at most 19 frontier queries per request; each query allocates no more than the remaining descendant row budget across its parents.",
+    "permanent": true,
+    "code": "backend/services/comments/descendant-probe.mts:69",
+    "routes": ["GET /api/v1/posts/:idOrSlug/descendants"]
+  },
+  {
     "annotation": "grantConsent",
     "maxCount": null,
     "reason": "Revoke the active consent before inserting its replacement to satisfy the unique active user/type constraint",

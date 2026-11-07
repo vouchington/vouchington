@@ -52,7 +52,7 @@ describe('post.descendants', () => {
       expect(resultIds).toContain(childId)
     })
 
-    it('paginates visible descendants when an invisible raw page comes first', async () => {
+    it('continues past an empty inspected-head page to a later visible head', async () => {
       const rootPostId = await insertTestPost({
         title: 'Public root with a pending comment',
         slug: `descendants-visibility-root-${Date.now()}`,
@@ -94,14 +94,20 @@ describe('post.descendants', () => {
         .get(`/api/v1/posts/${rootPostId}/descendants?limit=2`)
         .expect(200)
 
-      expect(response.body.results.map((result: { id: string }) => result.id)).toEqual([
+      expect(response.body.results).toEqual([])
+      expect(response.body.page_info).toEqual({
+        has_next_page: true,
+        start_cursor: expect.any(String),
+        end_cursor: expect.any(String),
+      })
+      const next = await createRequest()
+        .get(`/api/v1/posts/${rootPostId}/descendants`)
+        .query({ limit: 2, after: response.body.page_info.end_cursor })
+        .expect(200)
+      expect(next.body.results.map((result: { id: string }) => result.id)).toEqual([
         visibleCommentId,
       ])
-      expect(response.body.page_info).toEqual({
-        has_next_page: false,
-        start_cursor: expect.any(String),
-        end_cursor: null,
-      })
+      expect(next.body.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
     })
 
     it('returns edit and delete capabilities per comment for authenticated users', async () => {

@@ -37,9 +37,9 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
 - The seed and the run are separate processes that re-derive seeded ids from a shared UTC anchor
   day (`EXPLAIN_SEED_ANCHOR_DATE`). CI exports it once per job so a boundary between steps
   cannot split ids; a red anchor check near a boundary is a real defect, not a reason to rerun.
-- Seeded rows are never dated after the run. The anchor day is the latest day whose noon, plus the
-  largest forward offset any seed helper adds, has already passed. Rows the database stamps itself
-  (`uuidv7()` ids, `now()`) therefore sort after every seeded row; relation tables check
+- Ordinary seeded rows are never dated after the run. The anchor day is the latest day whose noon,
+  plus the largest forward offset any seed helper adds, has already passed. Rows the database stamps
+  itself (`uuidv7()` ids, `now()`) therefore sort after ordinary seeded rows; relation tables check
   `id > subject_id`, and a noon anchor on the run's own day failed that check every morning.
 - While each scenario builds its query, `Date` is pinned to the anchor noon so time-range
   cutoffs sit at a fixed offset from seeded rows. Under the wall clock a one-week window held a
@@ -53,6 +53,12 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
   statistics, equality uses default selectivity and the trending ranking index is planned as a
   small bitmap that reads the whole window.
 - Seeding is idempotent (`ON CONFLICT DO NOTHING`); CI uses a fresh database per job.
+- The partitioned comment-page fixture uses future ranges outside the ordinary seed and runs after
+  ordinary captures so its large corpus cannot change their plans. Its owned partitions stay until
+  the isolated database is discarded; deleting the corpus row by row would spend the profiling
+  budget on foreign-key cleanup. Seed and run
+  preflights reject a database that already contains these partitions. Recreate that disposable
+  database through the [dev workflow](../../../../dev/AGENTS.md) before another full run.
 - A fixture restored after a captured write needs fresh statistics for its participating relations
   before replay: bulk-seed statistics may no longer describe those rows. The hostname invalidation
   fixture owns this refresh so initial seeding and restoration use the same preparation.

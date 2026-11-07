@@ -45,6 +45,14 @@ indirect helper callers, and validate representative plans through the repositor
 update deterministic seed scenarios and plan gates under `backend/scripts/explain-analyze/`; do not
 treat one worked query as proof for all consumers.
 
+For Vouchington's bounded-page scenarios, include empty parent probes and continuation pages in
+both forced plan modes, and check the summed page-wide post and bitmap-index work. If a local role
+cannot run the harness's function counters, generated-SQL replays must cover every changed
+scenario; report the missing counters explicitly rather than substituting only nonempty examples.
+
+Run `pnpm run ast-grep` before publishing changed query orchestration. Typechecking and Oxlint do
+not validate its dependent-await sequencing rules.
+
 ## Extended statistics (`CREATE STATISTICS`)
 
 Only add or retain a statistics object when representative EXPLAIN evidence shows a correlated

@@ -500,6 +500,19 @@ code from a time dropdown, reusing the web options, and must page with the retur
 the same range. Client work is dependent (vouchington-clients#537) and does not gate this
 repository.
 
+## Comment descendant head pagination
+
+REST and MCP page immediate-child heads and attach bounded reply previews. A continuation cursor
+advances past inspected heads, so a page may be short or empty while `has_next_page` remains true.
+Clients follow `page_info` rather than inferring completion from result count. Individual responses
+order their ids; concatenated pages need not preserve global descendant-id order. Replies beyond a
+preview are expanded through the same descendants call rooted at a returned comment, including a
+placeholder. Web preserves that route through comment permalinks and its existing pagination.
+
+Swift and .NET adoption is tracked in
+[vouchington-clients#543](https://github.com/vouchington/vouchington-clients/issues/543) and does not
+block the producer. No native parity completion is claimed here.
+
 ## Relation admission
 
 REST and MCP share the same refusal when an account cannot add another follow or subscription of
