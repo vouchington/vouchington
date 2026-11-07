@@ -8,6 +8,8 @@ export const POST_URL_CAPACITY_SCENARIOS = [
   'story-post-related-url-admission-prefix-maximum',
   'story-post-related-url-prefix-host-locks-default',
   'story-post-related-url-prefix-host-locks-maximum',
+  'story-post-related-url-prefix-hostname-blocks-default',
+  'story-post-related-url-prefix-hostname-blocks-maximum',
   'story-post-related-url-prune-default',
   'story-post-related-url-prune-maximum',
 ] as const

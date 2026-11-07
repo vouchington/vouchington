@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
+import { blockedUrlIdsForHostnameBlocks } from '@services/hostname-blocking'
 import { getStoryPostRelatedUrlProjectionPrefix } from '@services/stories/story-post-related-url-projection'
 import { pruneStoryPostRelatedUrlsOutsidePrefix } from '@services/stories/story-post-related-url-projection-prune'
 import { lockStoryPostRelatedUrlProjectionHostnameBlocks } from '@services/stories/story-post-related-url-projection-relation-safety'
@@ -38,6 +39,8 @@ export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
     await captureAdmission('story-post-related-url-admission-prefix-maximum', 10_000, itemIndexes)
     await captureHostLocks('story-post-related-url-prefix-host-locks-default', 1000)
     await captureHostLocks('story-post-related-url-prefix-host-locks-maximum', 10_000)
+    await captureBlockedHostnames('story-post-related-url-prefix-hostname-blocks-default', 1000)
+    await captureBlockedHostnames('story-post-related-url-prefix-hostname-blocks-maximum', 10_000)
     await capturePrune(
       'story-post-related-url-prune-default',
       1000,
@@ -114,6 +117,25 @@ async function captureHostLocks(id: string, cap: number): Promise<void> {
     // The plan capture takes these transaction advisory locks on another connection.
     // Release them first so that capture does not wait out the idle-in-transaction timeout.
     { afterCapture: () => query.rollback() },
+  )
+}
+
+async function captureBlockedHostnames(id: string, cap: number): Promise<void> {
+  const urlIds = await prefixUrlIds(cap)
+  registerScenarioContract(id, {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'urls', max: cap },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: cap * 5 },
+    ],
+    forbidSequentialScans: ['urls', 'url_hostnames'],
+    // An unblocked prefix returns no ids. The scans still have to stay within the cap.
+    allowEmptyResult: true,
+  })
+  await runAndCapture(
+    id,
+    () => blockedUrlIdsForHostnameBlocks(urlIds),
+    undefined,
+    'blockedUrlIdsForHostnameBlocks',
   )
 }
 
