@@ -33,7 +33,6 @@ describe('assembled EXPLAIN reads', () => {
         ['getTrendingPosts', 'unresolved-sql-fragment'],
         ['getTrendingTopics', 'unresolved-sql-fragment'],
         ['canViewPostsBatch', 'unresolved-sql-fragment'],
-        ['(annotation unavailable)', 'unresolved-sql-fragment'],
       ])
       expect(report.uncoveredReads.map(read => read.name)).toEqual([])
     } finally {
