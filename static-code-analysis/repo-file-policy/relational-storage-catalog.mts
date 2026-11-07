@@ -96,9 +96,6 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'retained_image_placement_bindings.placement_id',
   'retained_relation_identity_cleanup_cursors.cursor_relation_id',
   'retained_relation_identity_cleanup_cursors.cursor_subject_id',
-  'story_post_related_url_projection_jobs.cursor_prune_id',
-  'story_post_related_url_projection_jobs.sweep_upper_bound_relation_id',
-  'story_post_related_url_projection_jobs.cursor_source_id',
   'story_post_related_url_projection_jobs.sweep_upper_bound_source_id',
   'user_data_request_attempts.processing_attempt_id',
   // Deletion-tolerant bounded merge positions; these coordinates never join target rows.

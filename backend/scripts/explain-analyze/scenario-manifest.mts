@@ -120,7 +120,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-feed-item-feed-heavy-follow-topics',
   'rss-feed-item-feed-heavy-follows',
   'rss-feed-item-feed-related-posts',
-  'story-post-related-url-projection-source-page',
   'story-members-preview-1-first',
   'story-hydration-preview-1-first',
   'story-members-preview-1-after',

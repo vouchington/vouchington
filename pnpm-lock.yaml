@@ -11171,6 +11171,9 @@ importers:
       '@services/feeds':
         specifier: workspace:^
         version: link:../feeds
+      '@services/hostname-blocking':
+        specifier: workspace:^
+        version: link:../hostname-blocking
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -11195,6 +11198,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@services/web-risk':
+        specifier: workspace:^
+        version: link:../web-risk
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -11210,9 +11216,6 @@ importers:
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
-      p-map:
-        specifier: ^7.1.1
-        version: 7.1.1
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2

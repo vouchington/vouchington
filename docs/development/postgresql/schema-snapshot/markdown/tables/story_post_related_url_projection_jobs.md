@@ -6,27 +6,21 @@ Durable, generation-fenced jobs that project one story snapshot onto each story 
 
 Not partitioned — growth: bounded.
 
-| Column                          | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                        |
-| ------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `post_id`                       | `uuid`                     | no       |                     |          |           |           | Story post receiving the projected related URL relations.                                                                      |
-| `story_id`                      | `uuid`                     | no       |                     |          |           |           | Current story whose active RSS item URLs are projected.                                                                        |
-| `generation`                    | `bigint`                   | no       | `1`                 |          |           |           | Monotonic source snapshot generation; stale workers cannot mutate a newer generation.                                          |
-| `sweep_upper_bound_source_id`   | `uuid`                     | yes      |                     |          |           |           | RSS item ID high-water mark that bounds this generation source snapshot.                                                       |
-| `sweep_upper_bound_relation_id` | `uuid`                     | yes      |                     |          |           |           | Relation ID high-water mark that excludes post-capture related links from this generation prune.                               |
-| `relation_snapshot_at`          | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Wall-clock boundary that excludes relations reactivated after this generation was captured.                                    |
-| `cursor_source_id`              | `uuid`                     | yes      |                     |          |           |           | RSS item ID keyset cursor for the bounded source projection phase.                                                             |
-| `eligibility_completed_at`      | `timestamp with time zone` | yes      |                     |          |           |           | Time the complete bounded eligibility scan finished before relation replacements; resets the source cursor for the write pass. |
-| `source_completed_at`           | `timestamp with time zone` | yes      |                     |          |           |           | Time the bounded source projection phase reached its high-water mark.                                                          |
-| `cursor_prune_id`               | `uuid`                     | yes      |                     |          |           |           | Relation ID keyset cursor for the stale-relation pruning phase.                                                                |
-| `limit_reached_capacity`        | `integer`                  | yes      |                     |          |           |           | Capacity at which this generation could not admit its source; a changed capacity restarts it.                                  |
-| `invalidation_required_at`      | `timestamp with time zone` | yes      |                     |          |           |           | Time a committed relation mutation made the story cache invalidation due.                                                      |
-| `invalidation_completed_at`     | `timestamp with time zone` | yes      |                     |          |           |           | Time the required story cache invalidation completed for this generation.                                                      |
-| `lease_token`                   | `uuid`                     | yes      |                     |          |           |           | Opaque fencing token rotated for each worker lease claim.                                                                      |
-| `leased_at`                     | `timestamp with time zone` | yes      |                     |          |           |           | Time the current worker lease was claimed.                                                                                     |
-| `lease_expires_at`              | `timestamp with time zone` | yes      |                     |          |           |           | Deadline after which a different worker may claim the job.                                                                     |
-| `last_claimed_at`               | `timestamp with time zone` | yes      |                     |          |           |           | Time the durable fairness marker was last updated, including retries after lease expiry.                                       |
-| `created_at`                    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                |
-| `updated_at`                    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                |
+| Column                        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                  |
+| ----------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------- |
+| `post_id`                     | `uuid`                     | no       |                     |          |           |           | Story post receiving the projected related URL relations.                                |
+| `story_id`                    | `uuid`                     | no       |                     |          |           |           | Current story whose active RSS item URLs are projected.                                  |
+| `generation`                  | `bigint`                   | no       | `1`                 |          |           |           | Monotonic source snapshot generation; stale workers cannot mutate a newer generation.    |
+| `sweep_upper_bound_source_id` | `uuid`                     | yes      |                     |          |           |           | RSS item ID high-water mark that bounds this generation prefix.                          |
+| `source_completed_at`         | `timestamp with time zone` | yes      |                     |          |           |           | Time this generation committed its prefix admission and projected-row prune.             |
+| `invalidation_required_at`    | `timestamp with time zone` | yes      |                     |          |           |           | Time a committed relation mutation made the story cache invalidation due.                |
+| `invalidation_completed_at`   | `timestamp with time zone` | yes      |                     |          |           |           | Time the required story cache invalidation completed for this generation.                |
+| `lease_token`                 | `uuid`                     | yes      |                     |          |           |           | Opaque fencing token rotated for each worker lease claim.                                |
+| `leased_at`                   | `timestamp with time zone` | yes      |                     |          |           |           | Time the current worker lease was claimed.                                               |
+| `lease_expires_at`            | `timestamp with time zone` | yes      |                     |          |           |           | Deadline after which a different worker may claim the job.                               |
+| `last_claimed_at`             | `timestamp with time zone` | yes      |                     |          |           |           | Time the durable fairness marker was last updated, including retries after lease expiry. |
+| `created_at`                  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                          |
+| `updated_at`                  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                          |
 
 **Primary key:** `PRIMARY KEY (post_id)`
 
@@ -35,7 +29,6 @@ _none_
 
 **Check constraints:**
 
-- `story_post_related_url_projection__limit_reached_capacity_check`: `CHECK ((limit_reached_capacity > 0))`
 - `story_post_related_url_projection_jobs_check`: `CHECK (((lease_token IS NULL) = (leased_at IS NULL)))`
 - `story_post_related_url_projection_jobs_check1`: `CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))`
 - `story_post_related_url_projection_jobs_check2`: `CHECK (((invalidation_completed_at IS NULL) OR (invalidation_required_at IS NOT NULL)))`
@@ -49,8 +42,7 @@ _none_
 **Indexes:**
 
 - `idx_story_post_relate_url_projec_jobs__lease_expires_at_post_id`: `CREATE INDEX idx_story_post_relate_url_projec_jobs__lease_expires_at_post_id ON public.story_post_related_url_projection_jobs USING btree (lease_expires_at, post_id)`
-- `idx_story_post_relate_url_project_jobs__last_claimed_at_post_id`: `CREATE INDEX idx_story_post_relate_url_project_jobs__last_claimed_at_post_id ON public.story_post_related_url_projection_jobs USING btree (last_claimed_at NULLS FIRST, post_id) WHERE (limit_reached_capacity IS NULL)`
-- `idx_story_post_related_url_projection_jobs__limit_capacity`: `CREATE INDEX idx_story_post_related_url_projection_jobs__limit_capacity ON public.story_post_related_url_projection_jobs USING btree (limit_reached_capacity, last_claimed_at, post_id) WHERE (limit_reached_capacity IS NOT NULL)`
+- `idx_story_post_relate_url_project_jobs__last_claimed_at_post_id`: `CREATE INDEX idx_story_post_relate_url_project_jobs__last_claimed_at_post_id ON public.story_post_related_url_projection_jobs USING btree (last_claimed_at NULLS FIRST, post_id)`
 - `idx_story_post_related_url_projection_jobs__story_id`: `CREATE INDEX idx_story_post_related_url_projection_jobs__story_id ON public.story_post_related_url_projection_jobs USING btree (story_id)`
 - `story_post_related_url_projection_jobs_pkey`: `CREATE UNIQUE INDEX story_post_related_url_projection_jobs_pkey ON public.story_post_related_url_projection_jobs USING btree (post_id)`
 

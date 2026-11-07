@@ -83,7 +83,6 @@ export { getHouseholdSpendingCategoriesByUserId } from '@services/individuals-ho
 export { getIndividualRewardsProgramStatuses } from '@services/individuals-households'
 export { getUserPostsCollection } from '@services/entity-fetch/profile-collections'
 export { listRemoteFollowerInboxPage } from '@services/remote-actors'
-export { getStoryPostRelatedUrlProjectionSourcePage } from '@services/stories/story-post-related-url-projection'
 export { getStoryPreviews } from '@services/stories/story-previews'
 export { getStoryMemberPagesBatch } from '@services/feeds/rss-feed-items/story-member-pages'
 export { hydrateStoryMemberPage } from '@services/stories/story-page-hydration'

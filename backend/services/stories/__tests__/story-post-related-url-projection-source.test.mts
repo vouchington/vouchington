@@ -49,7 +49,7 @@ describe('story projection source eligibility database failure', () => {
       const rows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)
       expect(rows).toHaveLength(1)
       const { result, error } = await withPostgresPoolQueryFailureForTest(
-        '/* assertUrlsHaveNoBlockedHostnames */',
+        '/* blockedUrlIdsForHostnameBlocks */',
         () => decideStoryPostRelatedUrlProjectionRows(work, rows).catch((err: unknown) => err),
       )
 

@@ -45,21 +45,24 @@ relations such as follow, mute, and block remain bookmark API concerns.
 
 ## Story source replacement
 
-Story projection first records eligibility across its bounded source snapshot so that a source
-on a later page cannot be mistaken for an obsolete relation. Replacement writes remove obsolete
-projection-owned rows and admit the new sources in one transaction under the post publication
-lock. Hostname checks lock the current source page and recheck already-active URLs without locking
-every active hostname. A block arriving on another active URL during the run is handled by the next
-generation. Manual claims remain protected by the projection's ownership and mutation fences.
+Story projection admits one prefix of the story's active RSS items, ordered by item id up to the
+post related-URL cap and the generation's high-water mark, then soft-deletes projected rows whose
+URL is outside that eligible prefix. The row stays because votes and history reference it. Both
+happen in the same transaction as the prefix hostname locks.
+Rows inside the prefix that are blocked or are referral links are not admitted, and projected
+copies of those URLs come off. Eligible items past the prefix stay off the post until a later
+generation; the statement does not walk further to refill the cap. A lowered cap takes effect on
+the next refresh: projected URLs outside the new prefix come off. Changing the cap does not by
+itself start a generation.
 
-A capacity refusal rolls back that replacement page and records the refusing capacity as a
-terminal result for its generation, so the same capacity does not retry indefinitely. A capacity
-change or new source generation restarts from a fresh snapshot and carries forward manual relation
-mutation fences. Discovery stays bounded independently of admission capacity, so obsolete sources
-cannot hold replacement capacity indefinitely. Lowering capacity alone does not remove active rows.
+Relations a person added by hand are left in place. A projected row that a person later touches is
+kept by the generation's mutation fence. A block that lands on an already-written URL after this
+statement commits is handled by the next generation, which prunes projected URLs missing from the
+new eligible prefix.
 
-This serialized capacity guarantee applies to post-related URLs; other relation types retain their
-check-before-write behavior and may overshoot during concurrent admission.
+Post-related URL writes recheck the relation cap under the post scope lock, so they cannot exceed
+it. Other relation types keep check-before-write behavior and may overshoot during concurrent
+admission.
 
 ## Table Structure
 

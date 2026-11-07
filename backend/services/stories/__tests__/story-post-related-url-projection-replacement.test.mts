@@ -68,7 +68,7 @@ describe('story projection replacement at capacity', () => {
     )
   })
 
-  it('retains a manual claim and rolls back the obsolete removal if the replacement still exceeds capacity', async () => {
+  it('keeps a manual URL and admits only the older source that still fits', async () => {
     await relationLimitsConfig.waitForInitialization()
     onTestFinished(
       overrideDynamicConfigFieldsForTest(relationLimitsConfig, { post_related_url: 2 }),
@@ -101,9 +101,9 @@ describe('story projection replacement at capacity', () => {
     await refreshStoryPostForStory(story.id)
     await upsertEntityRelation(user, relation, { id: post.id }, [{ id: manual }])
     await expect(drainStoryPostRelatedUrlProjection(post.id)).resolves.toBeUndefined()
-    expect((await getPostRelatedUrlIds(post.id)).toSorted()).toEqual([first, manual].toSorted())
-    expect(await readStoryProjectionWorkForTest([post.id])).toMatchObject([
-      { post_id: post.id, limit_reached_capacity: 2, lease_token: null },
-    ])
+    expect((await getPostRelatedUrlIds(post.id)).toSorted()).toEqual(
+      [manual, replacement].toSorted(),
+    )
+    expect(await readStoryProjectionWorkForTest([post.id])).toEqual([])
   })
 })

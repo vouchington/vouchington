@@ -120,10 +120,10 @@ describe('explain analyze paired results', () => {
   })
 
   it('enforces the scoped WAL budget without allowing other pressure', () => {
-    const limit = 20 * 1024 * 1024
+    const limit = 10 * 1024 * 1024
     const result = {
-      name: 'replacement-query',
-      scenario_id: 'post-url-replacement-maximum',
+      name: 'capacity-query',
+      scenario_id: 'post-url-capacity-maximum-overcap',
       query_text: 'UPDATE users SET markdown = markdown',
       plan: { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': limit - 1 } },
       execution_time_ms: 1,

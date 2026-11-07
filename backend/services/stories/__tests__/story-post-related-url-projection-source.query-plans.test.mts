@@ -13,18 +13,19 @@ import {
   collectPlanNodes,
   definePlanStatisticsRefresh,
 } from '../../../test-helpers/query-plans.mts'
-import { assertCustomPlanCheck } from '../../../scripts/explain-analyze/plan-custom-checks.mts'
-import { getStoryPostRelatedUrlProjectionSourcePage } from '../story-post-related-url-projection-source.mts'
+import { getStoryPostRelatedUrlProjectionPrefix } from '../story-post-related-url-projection-source.mts'
+
+const ADMISSION_INDEX = 'idx_rss_feed_items__story_id__deleted_at__id'
+const ADMISSION_LEAF_SUFFIX = '_story_id_deleted_at_id_idx'
 
 let captured: CapturedTestQuery
 const analyzeStorySourcePage = definePlanStatisticsRefresh(analyzeTestStoryUrlSourceRelations)
 
 function physicalRowsWithinBudget(plan: unknown, relation: string, budget: number): number {
-  const nodes = collectPlanNodes(plan).filter(
-    node =>
-      node['Relation Name'] === relation ||
-      String(node['Relation Name']).startsWith(`${relation}_`),
-  )
+  const nodes = collectPlanNodes(plan).filter(node => {
+    const name = node['Relation Name']
+    return name === relation || (typeof name === 'string' && name.startsWith(`${relation}_`))
+  })
   const rows = nodes.reduce(
     (total, node) =>
       total +
@@ -38,6 +39,7 @@ function physicalRowsWithinBudget(plan: unknown, relation: string, budget: numbe
     throw new Error(`${relation} scanned ${rows} physical rows: ${JSON.stringify(nodes)}`)
   return rows
 }
+
 describe('story URL source ordered index consolidation', () => {
   beforeAll(async () => {
     const story = await insertTestStory()
@@ -47,16 +49,15 @@ describe('story URL source ordered index consolidation', () => {
     enableQueryCapture()
     let queries: CapturedTestQuery[] = []
     try {
-      const rows = await getStoryPostRelatedUrlProjectionSourcePage({
+      const rows = await getStoryPostRelatedUrlProjectionPrefix({
         storyId: story.id,
-        sourceCursorId: null,
         sourceHighWaterId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
         limit: 100,
       })
-      if (rows.length !== 100) throw new Error('Expected one bounded story source page')
+      if (rows.length !== 100) throw new Error('Expected one bounded story source prefix')
     } finally {
       queries = stopTestQueryCapture().filter(query =>
-        query.text.startsWith('/* storyPostRelatedUrlProjectionSourcePage */'),
+        query.text.startsWith('/* getStoryPostRelatedUrlProjectionPrefix */'),
       )
     }
     if (queries.length !== 1) throw new Error('Expected one actual story source query')
@@ -72,15 +73,22 @@ describe('story URL source ordered index consolidation', () => {
         analyzeStorySourcePage,
       )
       expect(physicalRowsWithinBudget(plan, 'rss_feed_items', 100)).toBe(100)
-      assertCustomPlanCheck('paginationSpecial', {
-        name: 'story-source-index-consolidation',
-        scenario_id: 'story-post-related-url-projection-source-page',
-        query_text: captured.text,
-        plan,
-        execution_time_ms: 0,
-        planning_time_ms: 0,
-        timestamp: new Date().toISOString(),
-      })
+      const nodes = collectPlanNodes(plan)
+      expect(
+        nodes.some(node => {
+          const indexName = node['Index Name']
+          return (
+            typeof indexName === 'string' &&
+            (indexName === ADMISSION_INDEX || indexName.endsWith(ADMISSION_LEAF_SUFFIX))
+          )
+        }),
+      ).toBe(true)
+      expect(
+        nodes.some(node => {
+          const nodeType = node['Node Type']
+          return typeof nodeType === 'string' && nodeType.includes('Sort')
+        }),
+      ).toBe(false)
     },
   )
 })

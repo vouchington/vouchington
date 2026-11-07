@@ -28,14 +28,6 @@ const LARGE_TABLES = new Set([
 const HIGH_SHARED_BLOCKS_THRESHOLD = 10_000
 const HIGH_WAL_BYTES_THRESHOLD = 10 * 1024 * 1024
 
-function walThresholdForResult(result: ExplainResult): number {
-  if (result.scenario_id !== 'post-url-replacement-maximum') return HIGH_WAL_BYTES_THRESHOLD
-  // Cold WAL measured 15.3–16.9 MB for 9,750 updates at the maximum relation cap
-  // (post_related_url = 10,000). About 20% headroom rounds up to 20 MiB.
-  // Raising that relation cap requires remeasurement.
-  return 20 * 1024 * 1024
-}
-
 function busiestFunctionCall(result: ExplainResult): FunctionCall | null {
   return (result.function_calls ?? []).reduce<FunctionCall | null>(
     (busiest, call) => (busiest === null || call.calls > busiest.calls ? call : busiest),
@@ -97,7 +89,7 @@ interface QueryWarnings {
 
 export function getResourcePressureFingerprints(result: ExplainResult): string[] {
   const nodes = collectNodes(result.plan)
-  const walThreshold = walThresholdForResult(result)
+  const walThreshold = HIGH_WAL_BYTES_THRESHOLD
 
   const fingerprints = nodes.flatMap(node => {
     const nodeIdentity = `${node.nodeType}:${node.relationName ?? '-'}`
@@ -125,7 +117,7 @@ export function getResourcePressureFingerprints(result: ExplainResult): string[]
 
 export function analyzeResult(result: ExplainResult): QueryWarnings {
   const nodes = collectNodes(result.plan)
-  const walThreshold = walThresholdForResult(result)
+  const walThreshold = HIGH_WAL_BYTES_THRESHOLD
 
   const seqScans = nodes.flatMap(n => {
     if (!(n.seqScan && n.relationName && isLargeTable(n.relationName))) return []

@@ -1,6 +1,5 @@
-import { captureStoryProjectionTerminalCapacity } from './story-projection-terminal-capacity.mts'
-import { captureStoryPostUrlReplacementScenarios } from './story-post-url-replacements.mts'
 import { POST_URL_CAPACITY_SCENARIOS } from '../post-related-url-capacity-scenario-ids.mts'
+import { captureStoryPostUrlPrefixScenarios } from './story-post-url-prefix.mts'
 import assert from 'node:assert/strict'
 import { beginTransaction, write } from '@data-stores/psql'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -39,8 +38,7 @@ export async function runPostUrlCapacityScenarios(): Promise<void> {
     }
     relationLimitsConfig.fields.set('post_related_url', 1000)
     await captureCapacity(POST_URL_CAPACITY_SCENARIOS[4], 1000, seed.posts[0]!, seed.posts[2]!)
-    await captureStoryPostUrlReplacementScenarios()
-    await captureStoryProjectionTerminalCapacity()
+    await captureStoryPostUrlPrefixScenarios()
   } finally {
     if (previous === undefined) relationLimitsConfig.fields.delete('post_related_url')
     else relationLimitsConfig.fields.set('post_related_url', previous)

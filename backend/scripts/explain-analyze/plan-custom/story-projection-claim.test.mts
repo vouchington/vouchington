@@ -22,19 +22,20 @@ function capturedSort(type: 'Sort' | 'Incremental Sort', rows: number, loops = 1
 }
 
 describe('story projection claim candidate sorts', () => {
-  it('accepts sorting the three measured lane winners', () => {
+  it('accepts sorting the one measured claim candidate', () => {
     for (const type of ['Sort', 'Incremental Sort'] as const)
-      expect(() => assertStoryProjectionClaimCandidates(capturedSort(type, 3))).not.toThrow()
+      expect(() => assertStoryProjectionClaimCandidates(capturedSort(type, 1))).not.toThrow()
   })
 
   it('rejects larger input even when a top-N sort emits only one winner', () => {
     for (const [rows, loops] of [
+      [2, 1],
       [4, 1],
       [100000, 1],
-      [1, 4],
+      [1, 2],
     ] as const)
       expect(() => assertStoryProjectionClaimCandidates(capturedSort('Sort', rows, loops))).toThrow(
-        'must sort at most three claim candidates from its input',
+        'must sort at most one claim candidate from its input',
       )
   })
 })

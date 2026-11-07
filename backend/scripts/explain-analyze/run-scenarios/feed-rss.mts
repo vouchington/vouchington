@@ -6,16 +6,10 @@ import {
   RSS_FEED_SEED_COUNT,
   seedUuid,
 } from '../seed-data/common.mts'
-import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
 import { runRssFeedFirstAndContinuationScenarios } from './rss-feed-pages.mts'
 import * as services from '../run-services.mts'
 
-const {
-  getPostIds,
-  getRssFeedItemFeedIds,
-  getStoryPostRelatedUrlProjectionSourcePage,
-  searchRssFeedItems,
-} = services
+const { getPostIds, getRssFeedItemFeedIds, searchRssFeedItems } = services
 
 export async function runFeedRssScenarios(): Promise<void> {
   await runRssFeedFirstAndContinuationScenarios('rss-feed-item-feed', seedUser, {
@@ -130,20 +124,6 @@ export async function runFeedRssScenarios(): Promise<void> {
       limit: 25,
       time_range: '1w',
       has_related_posts: true,
-    }),
-  )
-  registerScenarioContract('story-post-related-url-projection-source-page', {
-    expectations: [{ kind: 'custom', name: 'paginationSpecial' }],
-    crossPartition: {
-      rss_feed_items: 'The story source page gathers matching items across id ranges.',
-    },
-  })
-  await runAndCapture('story-post-related-url-projection-source-page', () =>
-    getStoryPostRelatedUrlProjectionSourcePage({
-      storyId: STORY_POST_RELATED_URL_PROJECTION_SEED.storyId,
-      sourceCursorId: null,
-      sourceHighWaterId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
-      limit: 100,
     }),
   )
 }
