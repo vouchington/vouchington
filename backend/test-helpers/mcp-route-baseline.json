@@ -1513,7 +1513,9 @@
     "I202": [["operation_id", "source_id_or_slug"]],
     "I203": [["page_id"]],
     "I204": [["after", "q"]],
-    "I205": [["after", "claimant_user_id"]]
+    "I205": [["after", "claimant_user_id"]],
+    "I206": [["banId", "community"]],
+    "I207": [["after", "community", "limit", "userId"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4923,6 +4925,38 @@
         }
       ]
     },
+    "GET:/api/v1/communities/:idOrSlug/bans/users/:userId": {
+      "pullRequest": 5324,
+      "contracts": [
+        {
+          "audience": "community_moderation",
+          "facts": "F93",
+          "inputFields": "I207",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "list_active_bans"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/bans/:banId": {
+      "pullRequest": 5324,
+      "contracts": [
+        {
+          "audience": "community_moderation",
+          "facts": "F93",
+          "inputFields": "I206",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "read_ban"
+          },
+          "decision": false
+        }
+      ]
+    },
     "GET:/api/v1/communities/:idOrSlug/invites": {
       "pullRequest": 2972,
       "contracts": [
@@ -5512,8 +5546,24 @@
         }
       ]
     },
-    "DELETE:/api/v1/communities/:idOrSlug/bans/:userId": {
-      "pullRequest": 2972,
+    "DELETE:/api/v1/communities/:idOrSlug/bans/:banId": {
+      "pullRequest": 5324,
+      "contracts": [
+        {
+          "audience": "community_moderation",
+          "facts": "F95",
+          "inputFields": "I206",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "lift_ban"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/bans/users/:userId": {
+      "pullRequest": 5324,
       "contracts": [
         {
           "audience": "community_moderation",
@@ -5522,7 +5572,7 @@
           "requestBodyFields": null,
           "operation": {
             "tool": "remove_community_moderation",
-            "option": "lift_ban"
+            "option": "lift_all_bans"
           },
           "decision": false
         }
