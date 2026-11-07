@@ -66,7 +66,7 @@ export const webCommunityMemberModerationApiFixtureCases: ApiFixtureCase[] = [
         created_at: timestamp,
       },
     },
-    consumers: ['web'],
+    consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/api/v1/communities/applications.mts'],
   },
   {

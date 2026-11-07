@@ -100390,7 +100390,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/communities/:communitySlug/applications/:id",
       "bodyFile": "responses/web.communities.application.default.json",
-      "consumers": ["web"],
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "web.communities.application.default",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/communities/applications.mts"],
