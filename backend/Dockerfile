@@ -11,8 +11,8 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends && \
            /usr/share/man /usr/share/doc /usr/share/locale /usr/share/info
 
 # Distroless can lag Debian security uploads even after the fixed packages are available.
-# Materialize the upgraded OpenSSL runtime files and package metadata from base-node so Trivy
-# evaluates the code that the final image actually loads instead of a stale distroless package.
+# Materialize the upgraded OpenSSL and zlib runtime files and package metadata from base-node
+# so Trivy evaluates the code that the final image actually loads instead of a stale distroless package.
 FROM base-node AS openssl-overlay
 RUN set -- /usr/lib/*-linux-gnu/libssl.so.3 && \
     [ "$#" -eq 1 ] && \
@@ -25,8 +25,14 @@ RUN set -- /usr/lib/*-linux-gnu/libssl.so.3 && \
       "$multiarch_dir/engines-3" \
       "$multiarch_dir/ossl-modules/legacy.so" \
       "$overlay" && \
+    libz="$(readlink -f "$multiarch_dir/libz.so.1")" && \
+    cp -a --parents "$libz" "$overlay" && \
+    if [ "$libz" != "$multiarch_dir/libz.so.1" ]; then \
+      cp -a "$multiarch_dir/libz.so.1" "$overlay$multiarch_dir/libz.so.1"; \
+    fi && \
     dpkg-query -s libssl3t64 > "$overlay/var/lib/dpkg/status.d/libssl3t64" && \
-    dpkg-query -s openssl-provider-legacy > "$overlay/var/lib/dpkg/status.d/openssl-provider-legacy"
+    dpkg-query -s openssl-provider-legacy > "$overlay/var/lib/dpkg/status.d/openssl-provider-legacy" && \
+    dpkg-query -s zlib1g > "$overlay/var/lib/dpkg/status.d/zlib1g"
 
 # Distroless runtime base: glibc and libstdc++ for the compiled Bun executables and their native
 # addons, with no shell, apt, or package managers; nonroot user (65532) is built in.
