@@ -104,6 +104,12 @@ export async function syncGithubFriends(
     if (!exhausted) return { phase: 'pages', syncStartTime, cursor: String(page) }
   }
 
-  const hasMore = await finalizeGithubFriendSync(account.id, account.user_id, syncStartTime)
-  return hasMore ? { phase: 'finalize', syncStartTime } : null
+  const lastFinalizedKey = await finalizeGithubFriendSync(
+    account.id,
+    account.user_id,
+    syncStartTime,
+  )
+  return lastFinalizedKey === null
+    ? null
+    : { phase: 'finalize', syncStartTime, cursor: lastFinalizedKey }
 }

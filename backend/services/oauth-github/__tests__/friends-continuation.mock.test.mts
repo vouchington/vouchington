@@ -85,10 +85,12 @@ describe('syncGithubFriends continuation', () => {
     expect(resume).toMatchObject({ phase: 'finalize' })
     expect(await countTestFriends('github', githubUserId)).toBe(1)
 
-    await expect(syncGithubFriends(githubUserId, resume!)).resolves.toMatchObject({
-      phase: 'finalize',
-    })
-    await expect(syncGithubFriends(githubUserId, resume!)).resolves.toBeNull()
+    // Each finalize continuation carries the last deleted key, so successive jobs get distinct identities.
+    const second = await syncGithubFriends(githubUserId, resume!)
+    expect(second).toMatchObject({ phase: 'finalize' })
+    expect(second!.cursor).toBeTruthy()
+    expect(second!.cursor).not.toBe(resume!.cursor)
+    await expect(syncGithubFriends(githubUserId, second!)).resolves.toBeNull()
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(await countTestFriends('github', githubUserId)).toBe(0)
     expect(await getTestOAuthAccountFriendsSyncedAt('github', githubUserId)).toBeTruthy()

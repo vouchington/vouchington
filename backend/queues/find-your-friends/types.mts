@@ -13,6 +13,6 @@ export type FriendsDispatchData = {
 export type FriendSyncResume = {
   phase: 'pages' | 'finalize'
   syncStartTime: string
-  /** Provider pagination position: Facebook after cursor, GitHub page number, X pagination token. */
+  /** Pages phase: Facebook after cursor, GitHub page number, X pagination token. Finalize phase: last deleted stale friend id. */
   cursor?: string
 }

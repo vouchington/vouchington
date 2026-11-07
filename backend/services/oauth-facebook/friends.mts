@@ -109,6 +109,12 @@ export async function syncFacebookFriends(
     if (!exhausted) return { phase: 'pages', syncStartTime, cursor: after }
   }
 
-  const hasMore = await finalizeFacebookFriendSync(account.id, account.user_id, syncStartTime)
-  return hasMore ? { phase: 'finalize', syncStartTime } : null
+  const lastFinalizedKey = await finalizeFacebookFriendSync(
+    account.id,
+    account.user_id,
+    syncStartTime,
+  )
+  return lastFinalizedKey === null
+    ? null
+    : { phase: 'finalize', syncStartTime, cursor: lastFinalizedKey }
 }

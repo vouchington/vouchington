@@ -160,6 +160,8 @@ export async function syncXFriends(
     if (!exhausted) return { phase: 'pages', syncStartTime, cursor: nextToken }
   }
 
-  const hasMore = await finalizeXFriendSync(account.id, account.userId, syncStartTime)
-  return hasMore ? { phase: 'finalize', syncStartTime } : null
+  const lastFinalizedKey = await finalizeXFriendSync(account.id, account.userId, syncStartTime)
+  return lastFinalizedKey === null
+    ? null
+    : { phase: 'finalize', syncStartTime, cursor: lastFinalizedKey }
 }

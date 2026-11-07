@@ -118,7 +118,7 @@ describe('syncGithubFriends batching', () => {
     } finally {
       await rowLock.release()
     }
-    await expect(sync).resolves.toBe(false)
+    await expect(sync).resolves.toBeNull()
     await expect(countTestFriends('github', providerUserId)).resolves.toBe(0)
   })
 })
