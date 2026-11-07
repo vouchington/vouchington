@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { write } from '@data-stores/psql'
 import {
   createTestRssFeedItemWithUrl,
   createTestTopic,
@@ -7,6 +6,7 @@ import {
   followRssFeed,
   insertTestRssFeedDirect,
   insertUserSavedRssFeedItem,
+  setEntityRelationCreatedAt,
   softDeleteRssFeedItemsForTest,
   updateRssFeedFollowCreatedAt,
 } from '@voucha/test-helpers'
@@ -126,16 +126,23 @@ describe('profile collections past deleted parents', () => {
       await insertUserSavedRssFeedItem(user.id, item.id)
       items.push(item.id)
     }
-    await write(
-      `/* orderSavedItemsForDeletedPrimarySourceTest */
-       UPDATE relation__user__save__rss_feed_item
-       SET created_at = CASE object_id
-         WHEN $2::uuid THEN CURRENT_TIMESTAMP - INTERVAL '1 second'
-         WHEN $3::uuid THEN CURRENT_TIMESTAMP - INTERVAL '2 seconds'
-         WHEN $4::uuid THEN CURRENT_TIMESTAMP - INTERVAL '3 seconds'
-       END
-       WHERE subject_id = $1::uuid AND object_id = ANY($5::uuid[])`,
-      [user.id, items[0], items[1], items[2], items],
+    await setEntityRelationCreatedAt(
+      'relation__user__save__rss_feed_item',
+      user.id,
+      items[0]!,
+      new Date('2026-03-04T00:00:03Z'),
+    )
+    await setEntityRelationCreatedAt(
+      'relation__user__save__rss_feed_item',
+      user.id,
+      items[1]!,
+      new Date('2026-03-04T00:00:02Z'),
+    )
+    await setEntityRelationCreatedAt(
+      'relation__user__save__rss_feed_item',
+      user.id,
+      items[2]!,
+      new Date('2026-03-04T00:00:01Z'),
     )
     await softDeleteTopic(topics[0]!.id, user.id)
 
