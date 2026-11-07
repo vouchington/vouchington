@@ -34,7 +34,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   url_hostname_blocks: 6,
   urls: 10_000,
   rss_feeds: 2_500,
-  rss_feed_items: 25_000,
+  rss_feed_items: 35_001, // 25k base + 10k weekly items + one eight-day witness.
   rss_feed_item_guids: 25_000,
   rss_feed_item_sources: 65_000,
   rss_feed_item_categories: 5_000,
