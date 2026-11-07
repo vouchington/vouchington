@@ -26,6 +26,9 @@ function AsideProbe({ response }: { response?: EntityRelationsResponse }) {
 vi.mock(import('@/lib/api/server'), () => ({
   getEntityRelations: mockGetEntityRelations,
 }))
+vi.mock(import('@/lib/i18n/get-translations'), () => ({
+  getTranslations: async () => (key: string) => key,
+}))
 vi.mock(
   import('../topic-faq-posts-aside-content'),
   () =>
