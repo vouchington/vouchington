@@ -247,6 +247,12 @@ a `lang` attribute. Publisher names, source links, and player chrome stay unmark
 `web-embed-preview-card-requires-lang` rejects a call that omits `lang`. It is not a
 post-content boundary.
 
+Crawled page titles and markdown on crawl detail use `CrawlAuthoredText`. Both pass the crawl's
+declared page language. A missing or unsupported language sets `dir="auto"` and omits `lang`.
+Status codes, timestamps, and the language fact stay unmarked.
+`web-crawl-authored-text-requires-lang` rejects a call that omits `lang`. It is not a
+post-content boundary.
+
 Moderation report labels retain `target_label` for system-owned fallbacks. Post/comment authored
 fragments travel separately as `target_content`; comment prefixes and deleted/private fallbacks
 stay outside the authored boundary. Inputs, ARIA interpolation, metadata/routes, image alt text,
