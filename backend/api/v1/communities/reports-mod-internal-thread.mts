@@ -3,7 +3,7 @@ import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import { loadCommunityForModerator, getCommunityOrThrow } from '@services/communities'
 import { assertNotSuspended, isModerationStaff } from '@services/users'
-import { openModInternalThread } from '@services/moderation-threads'
+import { assertLiveModInternalReader, openModInternalThread } from '@services/moderation-threads'
 
 app
   .route('/api/v1/communities/:idOrSlug/reports/:reportId/mod-internal-thread')
@@ -19,6 +19,7 @@ app
     const community = isStaff
       ? await getCommunityOrThrow(idOrSlug)
       : (await loadCommunityForModerator(currentUser, idOrSlug)).community
+    if (!isStaff) await assertLiveModInternalReader(currentUser.id, community.id)
     validateRequestContract(
       ctx,
       'POST:/api/v1/communities/:idOrSlug/reports/:reportId/mod-internal-thread',

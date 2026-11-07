@@ -13,6 +13,7 @@ export const REGISTRY_ORDER = [
   'bot-challenge-config',
   'post-content-limits-config',
   'community-membership-limits-config',
+  'conversation-participant-limits',
   'landing-page-limits-config',
   'community-agent-prompts-config',
   'post-related-url-display-config',

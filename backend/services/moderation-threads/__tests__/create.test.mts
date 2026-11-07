@@ -64,7 +64,32 @@ describe('openModInternalThread', () => {
       return acc
     }, [])
     expect(adminIds).toContain(owner.id)
-    expect(adminIds).toContain(mod1.id)
+    expect(adminIds).not.toContain(mod1.id)
+  })
+
+  it('does not add a later moderator who opens the existing thread', async () => {
+    const community = await createTestCommunity(owner.id)
+    await addModToCommunity(community.id, mod1.id)
+    const postId = await insertTestPost({
+      createdById: postAuthor.id,
+      slug: `mod-thread-second-open-${crypto.randomUUID().slice(0, 8)}`,
+      title: 'Mod Thread Second Open',
+      markdown: 'body',
+      communityId: community.id,
+    })
+    const reportId = await insertTestModerationReport({
+      reporterUserId: reporter.id,
+      entityType: 'post',
+      entityId: postId,
+    })
+
+    const thread = await openModInternalThread(owner.id, { communityId: community.id, reportId })
+    const again = await openModInternalThread(mod1.id, { communityId: community.id, reportId })
+
+    expect(again.id).toBe(thread.id)
+    const participantIds = (await getTestConversationParticipants(thread.id)).map(p => p.user_id)
+    expect(participantIds).toContain(owner.id)
+    expect(participantIds).not.toContain(mod1.id)
   })
 
   it('returns existing open thread when called a second time (open-or-fetch)', async () => {

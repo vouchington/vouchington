@@ -12,6 +12,7 @@ import {
   runInviteRedeem,
   runParticipantRead,
 } from './community-write-round-trips.mts'
+import { runConversationParticipantAdmission } from './conversation-participant-admission.mts'
 import { runAndCapture, seedUser, heavyFollowUser, seedPostId } from '../run-support.mts'
 
 async function seededCommunityId(): Promise<string> {
@@ -127,6 +128,7 @@ export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runLifecycleNotifications(communityId)
   await runCommunityCreate()
   await runParticipantRead()
+  await runConversationParticipantAdmission(communityId)
   await runInviteRedeem(communityId)
   await runApplicationQuestions(communityId)
 }

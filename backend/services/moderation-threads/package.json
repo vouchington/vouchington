@@ -21,7 +21,8 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
-    "@services/entity-cache": "workspace:^",
+    "@services/community-member-vacations": "workspace:^",
+    "@services/messaging": "workspace:^",
     "@services/moderation-reports": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/users": "workspace:^",

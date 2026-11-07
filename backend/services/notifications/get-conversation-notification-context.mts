@@ -3,11 +3,14 @@ import sql from 'sql-template-strings'
 import { getCachedCommunityModerators } from '@services/entity-cache/community-memberships'
 
 export type ConversationNotificationContext = {
-  channel_type: 'direct_message' | 'modmail'
+  channel_type: 'direct_message' | 'modmail' | 'mod_internal'
   community_slug: string | null
   subject_user_id: string | null
   participant_user_ids: string[]
 }
+
+/** Hard cap on participant rows. Inlined so notifications does not depend on messaging. */
+const MOD_INTERNAL_PARTICIPANT_READ_LIMIT = 50
 
 export async function getConversationNotificationContext(
   conversationId: string,
@@ -92,6 +95,12 @@ export async function getConversationNotificationContext(
     }
     const { rows } = await write(modQuery)
     participantRows = rows as Array<{ user_id: string }>
+  } else if (conv.channel_type === 'mod_internal' && conv.community_id) {
+    participantRows = await readModInternalRecipients(
+      conversationId,
+      conv.community_id,
+      excludeSenderId,
+    )
   } else {
     const participantQuery = sql`/* getConversationNotificationContext:participants */
       SELECT cp.user_id
@@ -108,9 +117,51 @@ export async function getConversationNotificationContext(
   }
 
   return {
-    channel_type: conv.channel_type as 'direct_message' | 'modmail',
+    channel_type: conv.channel_type as ConversationNotificationContext['channel_type'],
     community_slug: conv.community_slug,
     subject_user_id: conv.subject_user_id,
     participant_user_ids: participantRows.map(r => r.user_id),
   }
+}
+
+async function readModInternalRecipients(
+  conversationId: string,
+  communityId: string,
+  excludeSenderId: string | null,
+): Promise<Array<{ user_id: string }>> {
+  const moderators = await getCachedCommunityModerators(communityId)
+  const modQuery = sql`/* getConversationNotificationContext:mod-internal-recipients */
+    SELECT user_id FROM (
+      SELECT cm.user_id
+      FROM community_members cm
+      JOIN users u ON u.id = cm.user_id AND u.deleted_at IS NULL
+      WHERE cm.community_id = ${communityId}
+        AND cm.role IN ('owner', 'moderator')
+        AND cm.removed_at IS NULL
+        AND cm.user_id = ANY(${moderators}::uuid[])
+        AND NOT EXISTS (
+          SELECT 1 FROM community_member_vacations v
+          WHERE v.community_id = cm.community_id
+            AND v.user_id = cm.user_id
+            AND v.starts_at <= now()
+            AND (v.ends_at IS NULL OR v.ends_at > now())
+        )`
+  if (excludeSenderId) modQuery.append(sql` AND cm.user_id != ${excludeSenderId}`)
+  modQuery.append(sql`
+      LIMIT ${moderators.length}
+    ) live_mods
+    UNION
+    SELECT user_id FROM (
+      SELECT cp.user_id
+      FROM conversation_participants cp
+      JOIN users u3 ON u3.id = cp.user_id AND u3.deleted_at IS NULL
+      WHERE cp.conversation_id = ${conversationId}
+        AND cp.removed_at IS NULL
+        AND cp.user_id IS NOT NULL`)
+  if (excludeSenderId) modQuery.append(sql` AND cp.user_id != ${excludeSenderId}`)
+  modQuery.append(sql`
+      LIMIT ${MOD_INTERNAL_PARTICIPANT_READ_LIMIT}
+    ) participants`)
+  const { rows } = await read(modQuery)
+  return rows as Array<{ user_id: string }>
 }

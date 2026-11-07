@@ -1,8 +1,9 @@
 import createError from 'http-errors'
-import { write, beginTransaction } from '@data-stores/psql'
+import { write, beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ModmailThread } from './types.mts'
-import { COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES } from '@services/entity-cache/community-memberships'
+import { admitConversationParticipants } from '@services/messaging/participant-admission'
+import { CONVERSATION_PARTICIPANT_HARD_MAX } from '@services/messaging/participant-limits'
 
 export async function openModmailThread(
   currentUserId: string,
@@ -45,65 +46,58 @@ export async function openModmailThread(
     if (!existingRows[0])
       throw createError(409, 'Modmail thread was resolved concurrently — please try again')
     thread = existingRows[0]
+    if (currentUserId !== subjectUserId) {
+      await admitConversationParticipants(query, thread.id, [
+        { userId: currentUserId, role: 'admin' },
+      ])
+    }
   } else {
     thread = convRows[0]
-
-    // Add subject user as member participant
-    await query(sql`/* openModmailThread:subjectParticipant */
-        INSERT INTO conversation_participants (conversation_id, user_id, role)
-        VALUES (${thread.id}, ${subjectUserId}, 'member')
-      `)
-
-    // Add all active moderators and owners as admin participants
-    const { rows: modRows } = await query(sql`/* openModmailThread:mods */
-        SELECT user_id
-        FROM community_members
-        WHERE community_id = ${communityId}
-          AND role IN ('owner', 'moderator')
-          AND removed_at IS NULL
-        LIMIT ${COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES.moderators_per_community + 1}
-      `)
-
-    if (modRows.length > COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES.moderators_per_community) {
-      throw new Error('Community moderator recipients exceed the enforced hard limit.')
-    }
-
-    if (modRows.length > 0) {
-      const typedModRows = modRows as Array<{ user_id: string }>
-      await query(sql`/* openModmailThread:modParticipants */
-        INSERT INTO conversation_participants (conversation_id, user_id, role)
-        SELECT ${thread.id}::uuid AS conversation_id, user_id, 'admin'
-        FROM unnest(${typedModRows.map(row => row.user_id)}::uuid[]) AS input(user_id)
-        ORDER BY conversation_id ASC NULLS LAST, user_id ASC NULLS LAST
-        ON CONFLICT (conversation_id, user_id) WHERE user_id IS NOT NULL AND removed_at IS NULL
-        DO NOTHING
-      `)
-    }
-  }
-
-  // Upsert the caller as an admin participant so staff who open or view modmail can also reply.
-  // This is a no-op if currentUserId is already a participant (e.g. a community mod).
-  if (currentUserId !== subjectUserId) {
-    await query(sql`/* openModmailThread:callerParticipant */
-        INSERT INTO conversation_participants (conversation_id, user_id, role)
-        VALUES (${thread.id}, ${currentUserId}, 'admin')
-        ON CONFLICT DO NOTHING
-      `)
+    await admitModmailParties(query, thread.id, communityId, subjectUserId, currentUserId)
   }
 
   await query.commit()
   return thread
 }
 
+async function admitModmailParties(
+  query: TransactionQuery,
+  conversationId: string,
+  communityId: string,
+  subjectUserId: string,
+  currentUserId: string,
+): Promise<void> {
+  const { rows: modRows } = await query<{ user_id: string }>(sql`/* openModmailThread:mods */
+    SELECT user_id
+    FROM community_members
+    WHERE community_id = ${communityId}
+      AND role IN ('owner', 'moderator')
+      AND removed_at IS NULL
+    ORDER BY user_id
+    LIMIT ${CONVERSATION_PARTICIPANT_HARD_MAX + 1}
+  `)
+  const participants: { userId: string; role: 'member' | 'admin' }[] = [
+    { userId: subjectUserId, role: 'member' },
+  ]
+  for (const row of modRows) {
+    if (row.user_id !== subjectUserId) participants.push({ userId: row.user_id, role: 'admin' })
+  }
+  if (
+    currentUserId !== subjectUserId &&
+    !participants.some(participant => participant.userId === currentUserId)
+  ) {
+    participants.push({ userId: currentUserId, role: 'admin' })
+  }
+  await admitConversationParticipants(query, conversationId, participants)
+}
+
 export async function upsertModmailStaffParticipant(
   conversationId: string,
   userId: string,
 ): Promise<void> {
-  await write(sql`/* upsertModmailStaffParticipant */
-    INSERT INTO conversation_participants (conversation_id, user_id, role)
-    VALUES (${conversationId}, ${userId}, 'admin')
-    ON CONFLICT DO NOTHING
-  `)
+  await using query = await beginTransaction()
+  await admitConversationParticipants(query, conversationId, [{ userId, role: 'admin' }])
+  await query.commit()
 }
 
 /** Each of the three updates below returns the thread as the write left it, or null if it is gone. */
