@@ -44,14 +44,14 @@ export async function prepareBookmarkActions(
         type === 'topic' ? (await getTopicByAnyWithRedirectCached(entityId))?.topic.id : entityId
       assert(targetId, 404, 'Entity not found')
       assert(
-        // no-mistakes-disable-next-line query-reached-per-item: preserve individual target visibility errors before grouped mutation
+        // no-mistakes-disable-next-line query-reached-per-item: per-target 404 reporting; bounded by SET_BOOKMARK_LIMIT 500 (backend/mcp/set-bookmark-batch.mts:26) and MAX_IMPORT_ITEMS 500 (user-import-export/import-topics.mts:21); lookups are entity-cache reads; batch visibility readers do not exist for url or community, so a batch is deferred
         await currentUserCanBookmarkTarget(currentUser, type, targetId, predicate),
         404,
         'Entity not found',
       )
       let guard: Awaited<ReturnType<typeof assertPostTargetAccess>> | undefined
       if (type === 'post' && authority.kind === 'delegated') {
-        // no-mistakes-disable-next-line query-reached-per-item: delegated post guards preserve per-target consent refusals
+        // no-mistakes-disable-next-line query-reached-per-item: per-target 403/404 consent refusals; bounded by SET_BOOKMARK_LIMIT 500 (backend/mcp/set-bookmark-batch.mts:26); delegated MCP only; batch deferred with the visibility batch
         guard = await assertPostTargetAccess(currentUser, authority, entityId)
       }
       return {

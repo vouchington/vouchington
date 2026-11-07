@@ -1,6 +1,6 @@
 import createError from 'http-errors'
 import { runWithTransaction, write, type TransactionQuery } from '@data-stores/psql'
-import { recordModeratorAction } from '@services/moderator-actions'
+import { recordModeratorActions } from '@services/moderator-actions'
 import sql from 'sql-template-strings'
 import { assertItemInCommunity } from './scope.mts'
 
@@ -34,14 +34,14 @@ export async function releaseModerationQueueItem(
     query.append(sql` RETURNING community_id`)
     await runWithTransaction(undefined, async (transaction: TransactionQuery) => {
       const { rows } = await transaction<{ community_id: string }>(query)
-      await Promise.all(
-        rows.map(row =>
-          recordModeratorAction(
-            currentUserId,
-            { actionType: 'report_unclaim', communityId: row.community_id, reportId },
-            { query: transaction },
-          ),
-        ),
+      await recordModeratorActions(
+        currentUserId,
+        rows.map(row => ({
+          actionType: 'report_unclaim' as const,
+          communityId: row.community_id,
+          reportId,
+        })),
+        { query: transaction },
       )
     })
     return

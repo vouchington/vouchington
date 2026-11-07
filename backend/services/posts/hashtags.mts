@@ -4,7 +4,8 @@ import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import { upsertPostCategoryRelationRows } from './category-relation-insert.mts'
-import { createUnlinkedTopicAlias } from '@services/topics/aliases'
+import { normalizeHashtag } from '@ts-shared/utils'
+import { createUnlinkedTopicAliases } from '@services/topics/aliases'
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostUpdates } from './types.mts'
 import {
@@ -119,12 +120,14 @@ async function createHashtagAliases(
   occurrences: HashtagOccurrence[],
   options: QueryOptions,
 ): Promise<Map<string, Alias>> {
-  const aliases = new Map<string, Alias>()
-  for (const claim of getOrderedHashtagAliasClaims(occurrences)) {
-    // oxlint-disable-next-line no-await-in-loop -- sorted claims acquire conflict locks in deterministic order
-    aliases.set(claim.key, await createUnlinkedTopicAlias(claim.authored, options))
-  }
-  return aliases
+  const claims = getOrderedHashtagAliasClaims(occurrences)
+  const created = await createUnlinkedTopicAliases(
+    claims.map(claim => claim.authored),
+    options,
+  )
+  return new Map(
+    claims.map(claim => [claim.key, created.get(normalizeHashtag(claim.authored)!.key)!]),
+  )
 }
 
 function compareHashtagKeys(left: string, right: string): number {

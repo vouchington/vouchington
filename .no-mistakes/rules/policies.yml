@@ -288,10 +288,6 @@
           callee: 'syncImageSurfacePlacement',
         }
       - {
-          file: backend/services/community-agent-prompts/deactivate-for-user.mts,
-          callee: 'recordCommunityAgentPromptChange',
-        }
-      - {
           file: backend/services/copyright-notices/automatic-withholding-caps.mts,
           callee: 'transaction',
         }
@@ -363,10 +359,6 @@
       - {
           file: backend/services/data-retention/cleanup-soft-deleted-users.mts,
           callee: 'cleanupSoftDeletedUserBatch',
-        }
-      - {
-          file: backend/services/elections-votes/agent-moderation/votes-upsert.mts,
-          callee: 'recordModeratorAction',
         }
       - {
           file: backend/services/elections-votes/entity-relation/vote-stats-batch.mts,
@@ -476,7 +468,6 @@
           file: backend/services/memberships/stripe-catalog.mts,
           callee: 'publishStripeCatalogMapping',
         }
-      - { file: backend/services/moderation-claims/release.mts, callee: 'recordModeratorAction' }
       - { file: backend/services/moderation-reports/resolve.mts, callee: 'maybeResolveCase' }
       - {
           file: backend/services/notifications/reconcile-batches.mts,
@@ -533,10 +524,6 @@
       - {
           file: backend/services/openai-moderation/delete-flagged.mts,
           callee: 'deleteFlaggedImage',
-        }
-      - {
-          file: backend/services/openai-moderation/image-auto-removal-audit.mts,
-          callee: 'recordModeratorAction',
         }
       - { file: backend/services/post-publication/capture-deletions.mts, callee: 'query' }
       - {
@@ -616,11 +603,6 @@
           callee: 'retainPublicationIdentityBridges',
         }
       - { file: backend/services/post-publication/story-lifecycle-lock.mts, callee: 'query' }
-      - { file: backend/services/posts/hashtags.mts, callee: 'createUnlinkedTopicAlias' }
-      - {
-          file: backend/services/posts/register-post-related-urls-guard.mts,
-          callee: 'assertCommunityNoLinksAllowed',
-        }
       - {
           file: backend/services/rss-feed-items/categories-chunks.mts,
           callee: 'insertMissingCategoriesChunk',
@@ -630,6 +612,9 @@
           callee: 'updateMatchedCategoriesChunk',
         }
       - { file: backend/services/rss-feed-items/categories.mts, callee: 'readCategoryDataChunk' }
+      # Poison-snapshot isolation: each row upserts, enqueues with its own change_id, and acknowledges its
+      # exact generation independently. The page is capped by category_snapshot_reconciliation_batch_size
+      # (backend/services/rss-feed-items/work-limits.mts).
       - {
           file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
           callee: 'acknowledgeRssFeedItemCategorySnapshot',
@@ -637,10 +622,6 @@
       - {
           file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
           callee: 'upsertRssFeedItemCategories',
-        }
-      - {
-          file: backend/services/rss-feed-items/enclosure-media-types.mts,
-          callee: 'upsertMediaTypes',
         }
       - {
           file: backend/services/rss-feed-items/reconcile-category-votes.mts,
@@ -665,7 +646,6 @@
           callee: 'recordMembershipRefundEvent',
         }
       - { file: backend/services/topics/update.mts, callee: 'syncImageSurfacePlacement' }
-      - { file: backend/services/urls/media-types.mts, callee: 'upsertMediaTypes' }
       - {
           file: backend/services/user-import-export/auto-follow-on-approval.mts,
           callee: 'followRequest',

@@ -25,7 +25,7 @@ export async function expireElapsedMemberships(
   let expired = 0
   for (let batch = 0; batch < maxBatches; batch++) {
     // A queued grant can become live after each expiry, so normalize one projection at a time.
-    // eslint-disable-next-line no-await-in-loop
+    // oxlint-disable-next-line no-await-in-loop -- page loop capped by maxBatches (getMembershipWorkLimits); no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed
     const { rows } = await query(sql`/* expireElapsedMemberships */
       WITH candidates AS (
         SELECT membership.id FROM memberships membership
@@ -56,21 +56,28 @@ export async function expireElapsedMemberships(
     }>
     if (elapsed.length === 0) return { expired, hasMore: false }
     expired += elapsed.length
+    // Two statements close every elapsed source and its open activations for the whole page.
+    const sourceIds = elapsed.map(membership => membership.membership_source_id)
+    const expiries = elapsed.map(membership => membership.expires_at)
+    // oxlint-disable-next-line no-await-in-loop -- same capped page loop as above
+    await query(sql`/* expireElapsedMemberships: close sources */
+      UPDATE membership_source_states state
+      SET cancelled_at = NULL, expired_at = closed.expires_at,
+        past_due_at = NULL, paused_at = NULL, should_auto_renew = false
+      FROM UNNEST(${sourceIds}::uuid[], ${expiries}::timestamptz[]) AS closed(source_id, expires_at)
+      WHERE state.membership_source_id = closed.source_id`)
+    // oxlint-disable-next-line no-await-in-loop -- same capped page loop as above
+    await query(sql`/* expireElapsedMemberships: close activations */
+      UPDATE membership_grant_activation_periods activation
+      SET ended_at = closed.expires_at
+      FROM UNNEST(${sourceIds}::uuid[], ${expiries}::timestamptz[]) AS closed(source_id, expires_at),
+        membership_grants grant_row
+      WHERE grant_row.membership_source_id = closed.source_id
+        AND activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL`)
     for (const membership of elapsed) {
-      // eslint-disable-next-line no-await-in-loop
-      await query(sql`/* expireElapsedMemberships: close source */
-        UPDATE membership_source_states
-        SET cancelled_at = NULL, expired_at = ${membership.expires_at},
-          past_due_at = NULL, paused_at = NULL, should_auto_renew = false
-        WHERE membership_source_id = ${membership.membership_source_id}`)
-      // eslint-disable-next-line no-await-in-loop
-      await query(sql`/* expireElapsedMemberships: close activation */
-        UPDATE membership_grant_activation_periods activation
-        SET ended_at = ${membership.expires_at}
-        FROM membership_grants grant_row
-        WHERE grant_row.membership_source_id = ${membership.membership_source_id}
-          AND activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL`)
-      // eslint-disable-next-line no-await-in-loop
+      // Each change, queued-grant activation and fallback restore reads the state the previous
+      // membership left, so they stay ordered inside this user's FOR UPDATE transaction.
+      // oxlint-disable-next-line no-await-in-loop -- sequential by design; at most batchSize memberships per page (getMembershipWorkLimits)
       await recordMembershipChange({
         membershipId: membership.id,
         userId,
@@ -80,11 +87,11 @@ export async function expireElapsedMemberships(
         query,
       })
       if (options.activateQueuedGrants !== false) {
-        // eslint-disable-next-line no-await-in-loop
+        // oxlint-disable-next-line no-await-in-loop -- activation picks the oldest queued grant after the previous activation
         const activated = await activateOldestQueuedGrant(userId, membership, query)
         if (!activated) {
           // The grant may have been the temporary fallback after a direct source suspended.
-          // eslint-disable-next-line no-await-in-loop
+          // oxlint-disable-next-line no-await-in-loop -- fallback restore reads the projection the previous activation wrote
           await restoreFallbackAfterCurrentAccessEndsInTransaction(userId, membership.id, query)
         }
       }

@@ -1,5 +1,5 @@
 import {
-  addListItem,
+  addListItems,
   filterListablePostIds,
   filterListableRssFeedItemIds,
   type ListItem,
@@ -43,7 +43,7 @@ async function idsFor(
   return ids
 }
 
-/** Adds each visible item. One lookup per entity type, then the existing single-item insert. */
+/** Adds each visible item. One lookup and one insert per entity type. */
 export async function addVisibleListItems(
   currentUser: PrivateUser,
   authority: EntityRelationActionAuthority | null,
@@ -66,49 +66,63 @@ export async function addVisibleListItems(
     filterListablePostIds(entityRelationViewerFor(currentUser), authority, postCandidates),
     filterListableRssFeedItemIds(feedCandidates),
   ])
-  const results: AddedListItem[] = []
-  // oxlint-disable no-await-in-loop -- each insert returns that item's row
-  for (const [index, item] of items.entries()) {
+  const outcomes: Array<AddedListItem | null> = items.map((item, index) => {
     const id = item.item_type === 'post' ? postIds[index] : feedIds[index]
     if (item.item_type === 'post' && id && forbiddenIds.has(id)) {
-      results.push({ ...item, status: 'forbidden', error: 'Forbidden' })
-      continue
+      return { ...item, status: 'forbidden', error: 'Forbidden' }
     }
     if (item.item_type === 'post' && id && ineligibleIds.has(id)) {
-      results.push({ ...item, status: 'ineligible', error: "Post can't be added to a list" })
-      continue
+      return { ...item, status: 'ineligible', error: "Post can't be added to a list" }
     }
     const allowed =
       id !== null && (item.item_type === 'post' ? allowedIds.has(id) : allowedFeeds.has(id))
-    if (!id || !allowed) {
-      results.push({ ...item, status: 'not_found', error: 'Not found' })
-      continue
-    }
-    try {
-      // no-mistakes-disable-next-line query-reached-per-item: visibility is one batch; each insert is the existing single-item write
-      const list_item = await addListItem(listId, item.item_type, id)
-      results.push({
+    return !id || !allowed ? { ...item, status: 'not_found', error: 'Not found' } : null
+  })
+  const [addedPosts, addedFeeds] = await Promise.all([
+    addAllowed(listId, 'post', postIds, outcomes),
+    addAllowed(listId, 'rss_feed_item', feedIds, outcomes),
+  ])
+  return Promise.all(
+    items.map(async (item, index) => {
+      const outcome = outcomes[index]
+      if (outcome) return outcome
+      const id = (item.item_type === 'post' ? postIds[index] : feedIds[index])!
+      const added = item.item_type === 'post' ? addedPosts : addedFeeds
+      if ('error' in added) return { ...item, status: added.status, error: added.error }
+      const list_item = added.get(id.toLowerCase())
+      if (!list_item) return { ...item, status: 'not_found' as const, error: 'Not found' }
+      return {
         ...item,
-        status: 'added',
+        status: 'added' as const,
         list_item: {
           ...list_item,
           entity_label:
             list_item.entity_label === null ? null : await sanitizedTitle(list_item.entity_label),
         },
-      })
-    } catch (err) {
-      const status =
-        typeof err === 'object' && err !== null && 'status' in err
-          ? (err as { status?: unknown }).status
-          : undefined
-      if (status !== 404 && status !== 403) throw err
-      results.push({
-        ...item,
-        status: status === 404 ? 'not_found' : 'forbidden',
-        error: err instanceof Error ? err.message : status === 404 ? 'Not found' : 'Forbidden',
-      })
+      }
+    }),
+  )
+}
+
+/** One batch insert per item type for the entries no earlier check settled. */
+async function addAllowed(
+  listId: string,
+  itemType: ListItemType,
+  ids: ReadonlyArray<string | null>,
+  outcomes: ReadonlyArray<AddedListItem | null>,
+) {
+  const pending = ids.flatMap((id, index) => (id && !outcomes[index] ? [id] : []))
+  try {
+    return await addListItems(listId, itemType, pending)
+  } catch (err) {
+    const status =
+      typeof err === 'object' && err !== null && 'status' in err
+        ? (err as { status?: unknown }).status
+        : undefined
+    if (status !== 404 && status !== 403) throw err
+    return {
+      error: err instanceof Error ? err.message : status === 404 ? 'Not found' : 'Forbidden',
+      status: status === 404 ? ('not_found' as const) : ('forbidden' as const),
     }
   }
-  // oxlint-enable no-await-in-loop
-  return results
 }

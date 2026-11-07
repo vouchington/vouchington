@@ -1,6 +1,6 @@
 import type { ListItemType } from './types.mts'
 
-/** Closed SQL projections shared by insert and duplicate-read paths. $2 is the entity ID. */
+/** Closed SQL projections shared by insert and duplicate-read paths. $2 is the uuid[] of entity IDs. */
 export function itemFactsSql(itemType: ListItemType): string {
   if (itemType === 'rss_feed_item') {
     return `
@@ -9,14 +9,14 @@ export function itemFactsSql(itemType: ListItemType): string {
         NULL::text AS label_markdown, NULL::text AS label_summary
       FROM rss_feed_items rfi
       JOIN urls article_url ON article_url.id = rfi.url_id
-      WHERE rfi.id = $2::uuid
+      WHERE rfi.id = ANY($2::uuid[])
     `
   }
   return `
     SELECT post.id AS entity_id, NULL::text AS media_type,
       ${postItemFactsSql('post')}
     FROM posts post
-    WHERE post.id = $2::uuid
+    WHERE post.id = ANY($2::uuid[])
   `
 }
 
