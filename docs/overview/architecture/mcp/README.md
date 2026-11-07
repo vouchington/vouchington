@@ -162,10 +162,8 @@ private docs site at `/mcp/`, alongside the PostgreSQL reference.
 
 ### Paged results
 
-`after` takes the previous page's `page_info.end_cursor`. The cursor is opaque and can skip past
-rows the caller cannot see. That is a known, accepted gap: continuation is best effort, and a short
-page can still have a next page. Decoding the cursor could show that a hidden, deleted, blocked, or
-otherwise ineligible row exists and its sort key, but not its content. See
+`after` takes the previous page's `page_info.end_cursor`. The cursor is opaque. Membership-ordered
+lists put eligibility in the same walk, so a page is short only at the end. See
 [cursor pagination](../pagination.md).
 
 ### Shared building blocks

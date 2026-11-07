@@ -249,16 +249,9 @@ describe('private post collection pagination', () => {
 async function expectSavedPageAfterHidden(
   owner: NonNullable<Awaited<ReturnType<typeof createTestUser>>>,
 ): Promise<string[]> {
-  const first = await getUserPostsCollection(owner, owner.id, 'saved', { limit: 1 })
-  expect(first.results).toEqual([])
-  expect(first.page_info.has_next_page).toBe(true)
-  expect(first.page_info.end_cursor).toEqual(expect.any(String))
-  const second = await getUserPostsCollection(owner, owner.id, 'saved', {
-    limit: 1,
-    after: first.page_info.end_cursor!,
-  })
-  expect(second.page_info.has_next_page).toBe(false)
-  return second.results.map(post => post.id)
+  const page = await getUserPostsCollection(owner, owner.id, 'saved', { limit: 1 })
+  expect(page.page_info.has_next_page).toBe(false)
+  return page.results.map(post => post.id)
 }
 
 async function insertVisibleSavedPost(

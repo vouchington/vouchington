@@ -104,11 +104,7 @@ app
       typeof ctx.query.after === 'string'
         ? parseEntityRelationCursor(ctx, ctx.query.after, cursorScope, parsed)
         : undefined
-    const {
-      results: relations,
-      hasNextPage,
-      continuation,
-    } = await getEntityRelationsPage(
+    const { results: relations, hasNextPage } = await getEntityRelationsPage(
       parsed.entityType,
       resolvedSubjectId,
       parsed.predicate,
@@ -129,13 +125,7 @@ app
         __entity_type: 'entity_relation' as const,
         id: r.id,
       })),
-      page_info: entityRelationPageInfo(
-        relationsWithId,
-        hasNextPage,
-        continuation,
-        cursorScope,
-        parsed,
-      ),
+      page_info: entityRelationPageInfo(relationsWithId, hasNextPage, cursorScope, parsed),
       entity_relations: indexById(publicRelationsWithId),
       entity_relation_elections: getElectionRecordsForRelations(parsed.metadata, entityIds),
     }

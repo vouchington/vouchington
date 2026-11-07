@@ -81,18 +81,14 @@ export function parseEntityRelationCursor(
 export function entityRelationPageInfo(
   relations: readonly (EntityRelationResult & { id: string })[],
   hasNextPage: boolean,
-  continuation: EntityRelationResult | null,
   scope: string,
   parsed: ReturnType<typeof parseEntityRelationSearchInput>,
 ): { has_next_page: boolean; start_cursor: string | null; end_cursor: string | null } {
-  const endId = continuation?.object_id
+  const end = hasNextPage ? relations.at(-1) : undefined
   return {
     has_next_page: hasNextPage,
     start_cursor: relations[0] ? encodeEntityRelationCursor(relations[0], scope, parsed) : null,
-    end_cursor:
-      hasNextPage && continuation && endId
-        ? encodeEntityRelationCursor({ ...continuation, id: endId }, scope, parsed)
-        : null,
+    end_cursor: end ? encodeEntityRelationCursor(end, scope, parsed) : null,
   }
 }
 

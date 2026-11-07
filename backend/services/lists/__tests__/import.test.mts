@@ -94,7 +94,7 @@ describe('importCommunityList', () => {
     expect(await listPostItemCount(listId, postId)).toBe(1)
   })
 
-  it('stops the source page on a deleted newest membership', async () => {
+  it('copies the next eligible post when the newest membership is deleted', async () => {
     const community = await insertTestCommunity({ createdById: user.id })
     const older = await insertTestPost({
       title: `Older import ${createRandomString(8)}`,
@@ -118,26 +118,15 @@ describe('importCommunityList', () => {
     const viewer = viewerFor(user.id)
     const restoreOne = overrideDynamicConfigFieldsForTest(listImportConfig, { max_items: 1 })
     try {
-      const newestOnly = await importCommunityList(list, {
+      const copied = await importCommunityList(list, {
         communityId: community.id,
         viewer,
       })
-      expect(newestOnly.posts).toBe(0)
-      expect(await listPostItemExists(list.id, older)).toBe(false)
-    } finally {
-      restoreOne()
-    }
-    const restoreTwo = overrideDynamicConfigFieldsForTest(listImportConfig, { max_items: 2 })
-    try {
-      const withOlder = await importCommunityList(list, {
-        communityId: community.id,
-        viewer,
-      })
-      expect(withOlder.posts).toBe(1)
+      expect(copied.posts).toBe(1)
       expect(await listPostItemExists(list.id, older)).toBe(true)
       expect(await listPostItemExists(list.id, newer)).toBe(false)
     } finally {
-      restoreTwo()
+      restoreOne()
     }
   })
 })
