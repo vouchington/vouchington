@@ -62,8 +62,9 @@ type NormalizeUrlOptions = {
  * - Upgrades `http:` to `https:` automatically (unless `preserveHttp` is true).
  * - Strips trailing dots from hostnames before storage and hostname policy checks.
  * - Strips fragments because urls.url stores fetchable resources, not document anchors.
- * - Removes tracking params (`utm_*` and the shared tracker list), credentials, default ports, and
- *   trailing slashes, and sorts the remaining params (`canonicalizeUrl(...).url`).
+ * - Removes tracking params (`utm_*` and the shared tracker list), credentials, and default
+ *   ports, keeps the trailing slash (`/feed` and `/feed/` are different resources), and sorts the
+ *   remaining params (`canonicalizeUrl(...).url`).
  * - Throws a TypeError for malformed URLs (non-parseable by WHATWG URL).
  * - Throws an Error for non-http(s) schemes (javascript:, ftp:, data:, mailto:, …).
  * - Throws an Error for values that violate urls table length checks.
@@ -104,7 +105,7 @@ export const normalizeUrlForUrlTable = (href: string, options?: NormalizeUrlOpti
       cause: new Error('URL must include an http(s) authority'),
     })
   }
-  // The stored form drops tracking params, credentials, default ports, and trailing slashes, and
+  // The stored form drops tracking params, credentials, and default ports and
   // sorts the remaining params, so tracking variants never get their own urls row.
   const canonical = canonicalizeUrl(url)
   if (!canonical) {

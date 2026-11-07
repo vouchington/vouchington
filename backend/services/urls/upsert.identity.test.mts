@@ -9,17 +9,17 @@ describe('addUrls page identity', () => {
   it('stores tracking variants on one row and finds it by the tracked URL', async () => {
     const host = runHost()
     const clean = await addUrl(null, `https://${host}/page?id=1`)
-    const tracked = await addUrl(null, `https://${host}/page/?utm_source=x&id=1&fbclid=y`)
+    const tracked = await addUrl(null, `https://${host}/page?utm_source=x&id=1&fbclid=y`)
 
     expect(tracked?.id).toBe(clean?.id)
     expect(tracked?.url).toBe(`https://${host}/page?id=1`)
-    expect((await getUrlByAny(`https://${host}/page/?id=1&utm_medium=z`))?.id).toBe(clean?.id)
+    expect((await getUrlByAny(`https://${host}/page?id=1&utm_medium=z`))?.id).toBe(clean?.id)
   })
 
   it('points a scheme and www variant at the first row when it is inserted', async () => {
     const host = runHost()
     const first = await addUrl(null, `https://${host}/page`)
-    const variant = await addUrl(null, `http://www.${host}/page/`)
+    const variant = await addUrl(null, `http://www.${host}/page`)
 
     expect(variant?.id).not.toBe(first?.id)
     expect(variant?.canonical_url_id).toBe(first?.id)
@@ -59,13 +59,22 @@ describe('addUrls page identity', () => {
     const host = runHost()
     const [first, second] = await Promise.all([
       addUrl(null, `https://${host}/page`),
-      addUrl(null, `https://www.${host}/page/`),
+      addUrl(null, `https://www.${host}/page`),
     ])
 
     const rows = [first!, second!]
     const owner = rows.find(row => row.canonical_url_id === null)
     expect(owner).toBeDefined()
     expect(rows.filter(row => row.canonical_url_id === owner!.id)).toHaveLength(1)
+  })
+
+  it('keeps a trailing slash significant, so /page and /page/ are two unlinked rows', async () => {
+    const host = runHost()
+    const [plain, slashed] = await addUrls(null, [`https://${host}/page`, `https://${host}/page/`])
+
+    expect(plain?.id).not.toBe(slashed?.id)
+    expect(plain?.canonical_url_id).toBeNull()
+    expect(slashed?.canonical_url_id).toBeNull()
   })
 
   it('keeps distinct pages apart', async () => {

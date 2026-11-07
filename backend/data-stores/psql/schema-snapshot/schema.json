@@ -140954,7 +140954,7 @@
       "columns": {
         "identity": {
           "collation": null,
-          "comment": "canonicalizeUrl(url).identity: scheme-less, without www. or m., tracking params, trailing slash, and YouTube aliases.",
+          "comment": "canonicalizeUrl(url).identity: scheme-less, without www. or m., tracking params, and YouTube aliases.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
