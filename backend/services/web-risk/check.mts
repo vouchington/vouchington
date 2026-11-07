@@ -5,6 +5,7 @@ import { isWebRiskEnabled } from './config.mts'
 import { hasWebRiskApiKey } from './provider.mts'
 import {
   assertUrlsAllowedByWebRiskWithState,
+  blockedUrlsFromWebRiskScreenWithState,
   decideWebRiskUrl,
   parseWebRiskUrl,
 } from './check-batch.mts'
@@ -68,4 +69,9 @@ export async function assertUrlsAllowedByWebRisk(
   options: WebRiskCheckOptions = {},
 ): Promise<void> {
   await assertUrlsAllowedByWebRiskWithState(productionState, urls, options)
+}
+
+/** One Web Risk and blocklist screen for a whole URL set. Blocked URLs stay in the set. */
+export async function blockedUrlsFromWebRiskScreen(urls: readonly string[]): Promise<Set<string>> {
+  return blockedUrlsFromWebRiskScreenWithState(productionState, urls)
 }

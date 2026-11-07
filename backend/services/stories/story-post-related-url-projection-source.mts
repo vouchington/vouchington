@@ -58,6 +58,7 @@ export async function decideStoryPostRelatedUrlProjectionRows(
   work: ProjectionWork,
   rows: readonly SourceRow[],
   options: QueryOptions = {},
+  webRiskBlockedUrls: ReadonlySet<string> = new Set(),
 ): Promise<SourceDecision[]> {
   const uniqueByUrlId = new Map<string, SourceRow>()
   for (const row of rows) {
@@ -95,7 +96,12 @@ export async function decideStoryPostRelatedUrlProjectionRows(
   const blockedUrlIds = await blockedUrlIdsForHostnameBlocks(pendingUrlIds, options)
   const pendingDecisions = new Map<string, boolean>()
   for (const row of pendingRows) {
-    pendingDecisions.set(row.url_id, !referralUrls.has(row.url) && !blockedUrlIds.has(row.url_id))
+    pendingDecisions.set(
+      row.url_id,
+      !referralUrls.has(row.url) &&
+        !blockedUrlIds.has(row.url_id) &&
+        !webRiskBlockedUrls.has(row.url),
+    )
   }
   const sourceDecisions: SourceDecision[] = []
   for (const row of uniqueRows) {

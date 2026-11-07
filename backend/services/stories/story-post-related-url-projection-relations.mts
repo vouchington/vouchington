@@ -10,6 +10,7 @@ import { handleElectionVotes, type EntityRelation } from '@services/entity-relat
 import { insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction } from '@services/entity-relations/write-relations'
 import '@services/elections-votes/entity-relation/register-election-vote-handler'
 import '@services/posts/register-post-related-urls-guard'
+import { blockedUrlsFromWebRiskScreen } from '@services/web-risk/check'
 import {
   admittedUrlIds,
   dispatchPendingCrawls,
@@ -18,6 +19,7 @@ import {
   publishAdmissionEffects,
   requireStoryTeller,
   uniqueUrlIds,
+  uniqueUrls,
 } from './story-post-related-url-projection-admission-effects.mts'
 import { markStoryPostRelatedUrlProjectionInvalidationRequired } from './story-post-related-url-projection-invalidation.mts'
 import { pruneStoryPostRelatedUrlsOutsidePrefix } from './story-post-related-url-projection-prune.mts'
@@ -85,10 +87,16 @@ async function admitPreparedRows(
   storyTeller: StoryTeller,
 ): Promise<PreparedAdmission | { ok: false }> {
   const urlIds = uniqueUrlIds(rows)
+  // The provider writes hostname blocks on its own connection. Screening here keeps that
+  // write from waiting on the locks taken just below.
+  const webRiskBlockedUrls = await blockedUrlsFromWebRiskScreen(uniqueUrls(rows))
   await lockPrefixHostnames(transaction, urlIds)
-  const decisions = await decideStoryPostRelatedUrlProjectionRows(work, rows, {
-    query: transaction,
-  })
+  const decisions = await decideStoryPostRelatedUrlProjectionRows(
+    work,
+    rows,
+    { query: transaction },
+    webRiskBlockedUrls,
+  )
   if (!(await lockPostScopeAndCheckProjectionWork(transaction, work))) return { ok: false }
   if (!(await stageStoryPostRelatedUrlProjectionReceipts(work, decisions, transaction)))
     return { ok: false }

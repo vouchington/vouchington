@@ -1,11 +1,12 @@
 import { Request as UndiciRequest, Response as UndiciResponse } from 'undici'
 import { describe, expect, it } from 'vitest'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { getWebRiskHostnameAuditForTest, updateUrlHostnameBlocked } from '@voucha/test-helpers'
 import { withGoogleWebRiskTest } from '@voucha/test-helpers/web-risk-state'
-import { getExternalRequestDispatcher } from '@modules/utils/http'
+import { blockedUrlsFromWebRiskScreenWithState } from './check-batch.mts'
 
 const PROBE_URL = new URL('https://web-risk-gate.test/')
 
@@ -45,6 +46,43 @@ describe('Google Web Risk checks', () => {
         status: 400,
       })
       expect(context.fetchSpy).not.toHaveBeenCalled()
+    }))
+
+  it('records a blocked URL and still screens the next one', () =>
+    withGoogleWebRiskTest(async context => {
+      const blocked = `local-batch-${crypto.randomUUID()}.test`
+      const clean = `clean-batch-${crypto.randomUUID()}.test`
+      const hostnameMap = await upsertUrlHostnames(null, [blocked])
+      await updateUrlHostnameBlocked(hostnameMap.get(blocked)!, true)
+      context.fetchSpy.mockResolvedValueOnce(UndiciResponse.json({}))
+
+      const blockedUrl = `https://${blocked}/a`
+      const cleanUrl = `https://${clean}/b`
+      await expect(
+        blockedUrlsFromWebRiskScreenWithState(context.fixture.state, [blockedUrl, cleanUrl]),
+      ).resolves.toEqual(new Set([blockedUrl]))
+      expect(context.fetchSpy).toHaveBeenCalledTimes(1)
+    }))
+
+  it('records a provider block without skipping the remaining URLs', () =>
+    withGoogleWebRiskTest(async context => {
+      const risky = `batch-risk-${crypto.randomUUID()}.test`
+      const clean = `batch-clean-${crypto.randomUUID()}.test`
+      context.fetchSpy
+        .mockResolvedValueOnce(
+          UndiciResponse.json({
+            threat: { threatTypes: ['MALWARE'], expireTime: '2030-01-01T00:00:00Z' },
+          }),
+        )
+        .mockResolvedValueOnce(UndiciResponse.json({}))
+
+      const riskyUrl = `https://www.${risky}/bad`
+      const cleanUrl = `https://${clean}/ok`
+      await expect(
+        blockedUrlsFromWebRiskScreenWithState(context.fixture.state, [riskyUrl, cleanUrl]),
+      ).resolves.toEqual(new Set([riskyUrl]))
+      expect(context.fetchSpy).toHaveBeenCalledTimes(2)
+      await expect(getUrlHostnameByAny(risky)).resolves.toMatchObject({ is_blocked: true })
     }))
 
   it('skips Google calls when a parent hostname has should_skip_web_risk enabled', () =>
