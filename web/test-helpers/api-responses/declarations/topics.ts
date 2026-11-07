@@ -1,4 +1,6 @@
+import topicsLinkCountDefault from '../../../../api-fixtures/v1/responses/web.topics.link-count.default.json'
 import topicsShowDefault from '../../../../api-fixtures/v1/responses/web.topics.show.default.json'
+import type { TopicsSearchResponseBody } from '@/lib/api/client/topics'
 import type { TopicResponseBody } from '@/types/api-responses'
 import type { ImagePlacementTuple } from '@/types/user'
 import type { Topic } from '@/types/topics'
@@ -19,6 +21,14 @@ function assertTopicImagePlacements(topic: Topic): asserts topic is TopicWithIma
 }
 
 export const TOPIC_DECLARATIONS = [
+  defineWebApiFixture<TopicsSearchResponseBody>()(
+    'web.topics.link-count.default',
+    topicsLinkCountDefault,
+    context =>
+      context.server.topics.getTopics({
+        searchParams: { sort: 'link_count', limit: 5 },
+      }),
+  ),
   defineWebApiFixture<TopicDetailFixture>()(
     'web.topics.show.default',
     topicsShowDefault,

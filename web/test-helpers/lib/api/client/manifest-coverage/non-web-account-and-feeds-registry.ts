@@ -11,11 +11,6 @@ export const accountAndFeedsEndpointRegistry = {
     path: '/api/v1/my/referral-clicks',
     query: { limit: '25' },
   },
-  'web.topics.link-count.default': {
-    method: 'GET',
-    path: '/api/v1/topics',
-    query: { sort: 'link_count', limit: '5' },
-  },
   'swift.posts.feed.default': {
     method: 'GET',
     path: '/api/v1/feeds/posts/any',
