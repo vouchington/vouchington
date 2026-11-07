@@ -12,7 +12,7 @@ import {
 import {
   getBlueskyFollowReceipt,
   listBlueskyFollowReceiptsForFollower,
-  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers,
+  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
   saveBlueskyFollowReceipt as saveScopedBlueskyFollowReceipt,
 } from './receipts.mts'
 import { getBlueskyLinkedAccountForUser } from '@services/bluesky-accounts'
@@ -70,7 +70,22 @@ describe('bluesky follow receipt ownership', () => {
       [target.id, other.id].toSorted(),
     )
 
-    await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers(target.id)
+    const firstPage = await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
+      target.id,
+      null,
+    )
+    expect(firstPage.hasMore).toBe(true)
+    const secondPage = await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
+      target.id,
+      firstPage.lastFollowerUserId,
+    )
+    expect(secondPage.lastFollowerUserId).not.toBe(firstPage.lastFollowerUserId)
+    expect(
+      await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
+        target.id,
+        secondPage.lastFollowerUserId,
+      ),
+    ).toEqual({ lastFollowerUserId: null, hasMore: false })
     expect(
       await getBlueskyFollowReceipt(
         follower.id,

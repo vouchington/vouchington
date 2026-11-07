@@ -15,11 +15,11 @@ import { restoreBlueskySession, type OAuthSession } from '@modules/bluesky-oauth
 import onError from '@modules/on-error'
 import {
   deleteBlueskyFollowReceipt,
-  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers,
   listBlueskyFollowReceiptsForFollower,
   type BlueskyFollowReceipt,
 } from './receipts.mts'
 import { deleteFollowOnBluesky } from './agent.mts'
+import { drainBlueskyFolloweeReceiptsPage } from './drain-followee-receipts.mts'
 import { requestBlueskyDisconnect } from './disconnect-request.mts'
 import { withBlueskyDisconnectLock } from './disconnect-lock.mts'
 
@@ -80,7 +80,9 @@ async function cleanupBlueskyFollowsBeforeAcceptedDisconnect(
   userId: string,
   linked: BlueskyLinkedAccount,
 ): Promise<void> {
-  await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers(userId)
+  // One page now; a full page enqueues its continuation before revocation, so a failed enqueue
+  // leaves the generation retryable instead of stranding the remainder.
+  await drainBlueskyFolloweeReceiptsPage(userId, null)
   await cleanupFollowerRoleBeforeDisconnect(userId, linked)
 }
 

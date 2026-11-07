@@ -119,35 +119,40 @@ export async function listBlueskyFollowReceiptsForFollower(
   return rows as BlueskyFollowReceipt[]
 }
 
-// Clears receipts where followeeUserId is followed by a different user. Those records live in the
-// other follower's repo, so followeeUserId cannot delete them remotely. A self-follow receipt is
-// excluded because followeeUserId also owns that remote record; disconnect.mts deletes it through
-// the follower cleanup before dropping the local receipt.
-export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers(
+// Clears one keyset page of receipts where followeeUserId is followed by a different user. Those
+// records live in the other follower's repo, so followeeUserId cannot delete them remotely. A
+// self-follow receipt is excluded because followeeUserId also owns that remote record;
+// disconnect.mts deletes it through the follower cleanup before dropping the local receipt. A
+// full page (`hasMore`) means more may remain after `lastFollowerUserId`; the caller continues
+// through the drain job (drain-followee-receipts.mts), never a loop here.
+export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
   followeeUserId: string,
+  afterFollowerUserId: string | null,
   options: QueryOptions = {},
-): Promise<void> {
+): Promise<{ lastFollowerUserId: string | null; hasMore: boolean }> {
   const batchSize = getBlueskyFollowsWorkLimit('backfill_batch_size')
-  // Disconnect must clear all other followers' receipts before revoking the account.
-  /* oxlint-disable no-await-in-loop -- ordered page operations depend on the preceding page */
-  for (;;) {
-    // no-mistakes-disable-next-line query-reached-per-item: each iteration deletes one validated receipt page; disconnect must finish this exact followee cleanup before revocation
-    const { rowCount } = await write(
-      sql`/* deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers */
-        DELETE FROM bluesky_follow_records
+  const { rows } = await write(
+    sql`/* deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage */
+      WITH page AS MATERIALIZED (
+        SELECT follower_user_id, followee_user_id
+        FROM bluesky_follow_records
         WHERE followee_user_id = ${followeeUserId}
           AND follower_user_id <> ${followeeUserId}
-          AND (follower_user_id, followee_user_id) IN (
-          SELECT follower_user_id, followee_user_id
-          FROM bluesky_follow_records
-          WHERE followee_user_id = ${followeeUserId}
-            AND follower_user_id <> ${followeeUserId}
-          LIMIT ${batchSize}
-          FOR UPDATE
-        )`,
-      options,
-    )
-    if (!rowCount) break
+          AND (${afterFollowerUserId}::uuid IS NULL OR follower_user_id > ${afterFollowerUserId}::uuid)
+        ORDER BY follower_user_id
+        LIMIT ${batchSize}
+        FOR UPDATE
+      )
+      DELETE FROM bluesky_follow_records receipt
+      USING page
+      WHERE receipt.follower_user_id = page.follower_user_id
+        AND receipt.followee_user_id = page.followee_user_id
+      RETURNING receipt.follower_user_id`,
+    options,
+  )
+  const followerIds = (rows as { follower_user_id: string }[]).map(row => row.follower_user_id)
+  return {
+    lastFollowerUserId: followerIds.length > 0 ? followerIds.toSorted().at(-1)! : null,
+    hasMore: followerIds.length === batchSize,
   }
-  /* oxlint-enable no-await-in-loop */
 }

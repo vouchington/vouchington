@@ -3,6 +3,7 @@ import {
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB,
+  BLUESKY_FOLLOW_PROPAGATION_DRAIN_FOLLOWEE_RECEIPTS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB,
 } from '@queues/background/enqueues/bluesky-follow-propagation-jobs'
 import { backgroundHandler } from '@queues/background/enqueues/define-handler'
@@ -22,6 +23,9 @@ export const blueskyFollowPropagationHandlers = [
   ),
   backgroundHandler(BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB, job =>
     boundRateLimitDeferral(job, () => processors.disconnectRequested(job.data)),
+  ),
+  backgroundHandler(BLUESKY_FOLLOW_PROPAGATION_DRAIN_FOLLOWEE_RECEIPTS_JOB, job =>
+    processors.drainFolloweeReceipts(job.data),
   ),
   backgroundHandler(BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB, job =>
     boundRateLimitDeferral(job, () => processors.backfillBlueskyFollowPropagation(job.data.after)),
