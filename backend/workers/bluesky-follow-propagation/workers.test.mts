@@ -5,6 +5,7 @@ import {
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB,
+  BLUESKY_FOLLOW_PROPAGATION_DRAIN_FOLLOWEE_RECEIPTS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB,
 } from '@queues/background/enqueues/bluesky-follow-propagation-jobs'
 import { blueskyFollowPropagationHandlers } from './workers.mts'
@@ -33,6 +34,15 @@ describe('Bluesky follow propagation background handlers', () => {
         userId: randomUUID(),
         blueskyDid: 'did:plc:gone',
         linkAuthorizationId: randomUUID(),
+      }),
+    ).resolves.toBeUndefined()
+  })
+
+  it('drains a followee with no receipts left as a no-op', async () => {
+    await expect(
+      run(BLUESKY_FOLLOW_PROPAGATION_DRAIN_FOLLOWEE_RECEIPTS_JOB.name, {
+        userId: randomUUID(),
+        after: LAST_ID,
       }),
     ).resolves.toBeUndefined()
   })
