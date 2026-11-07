@@ -1,98 +1,21 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import {
-  checkContentHashDuplicate,
-  checkEmbeddingsSimilarity,
-  checkReferralLinkInPost,
-} from '../spam-signals.mts'
+import { checkEmbeddingsSimilarity } from '../duplicate-signals.mts'
 import {
   createTestUser,
   insertTestPost,
   addDummyEmbeddingToPost,
-  setPostModerationContentSha256,
-  createReferralProgramFixture,
   makeNearbyEmbedding,
   safeUsername,
 } from '@voucha/test-helpers'
-import { createPostModerationContent } from '@services/posts/content'
+import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+
+const DAY_MS = 86_400_000
+
+/** A post id minted far outside every lookback ceiling, unique per call. */
+const oldPostId = () =>
+  getMinUUIDv7ForDate(new Date(Date.now() - 400 * DAY_MS - Math.random() * 1e8))
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
-
-describe('checkContentHashDuplicate', () => {
-  let userId1: string
-  let userId2: string
-
-  beforeAll(async () => {
-    const u1 = await createTestUser({ username: safeUsername('spam-hash-u1') })
-    const u2 = await createTestUser({ username: safeUsername('spam-hash-u2') })
-    userId1 = u1!.id
-    userId2 = u2!.id
-  })
-
-  it('unique content — not flagged', async () => {
-    const suffix = randomSuffix()
-    const postId = await insertTestPost({
-      title: `Unique post ${suffix}`,
-      slug: `unique-post-${suffix}`,
-      createdById: userId1,
-      markdown: `Unique content that nobody else has written ${suffix}`,
-    })
-
-    const { content_sha256 } = createPostModerationContent({
-      title: `Unique post ${suffix}`,
-      markdown: `Unique content that nobody else has written ${suffix}`,
-      images: [],
-    })
-
-    await setPostModerationContentSha256(postId, content_sha256)
-
-    const result = await checkContentHashDuplicate(content_sha256, userId1)
-    expect(result.flagged).toBe(false)
-    expect(result.score).toBe(0)
-  })
-
-  it('same content from different user — flagged', async () => {
-    const suffix = randomSuffix()
-    const sharedTitle = `Shared title ${suffix}`
-    const sharedMarkdown = `Shared markdown ${suffix}`
-
-    const { content_sha256 } = createPostModerationContent({
-      title: sharedTitle,
-      markdown: sharedMarkdown,
-      images: [],
-    })
-
-    const post1Id = await insertTestPost({
-      title: sharedTitle,
-      slug: `shared-post-1-${suffix}`,
-      createdById: userId1,
-      markdown: sharedMarkdown,
-    })
-    await setPostModerationContentSha256(post1Id, content_sha256)
-
-    const result = await checkContentHashDuplicate(content_sha256, userId2)
-    expect(result.flagged).toBe(true)
-    expect(result.score).toBe(1.0)
-  })
-
-  it('same content from same user — not flagged', async () => {
-    const suffix = randomSuffix()
-    const title = `Same user post ${suffix}`
-    const markdown = `Same user content ${suffix}`
-
-    const { content_sha256 } = createPostModerationContent({ title, markdown, images: [] })
-
-    const postId = await insertTestPost({
-      title,
-      slug: `same-user-post-${suffix}`,
-      createdById: userId1,
-      markdown,
-    })
-    await setPostModerationContentSha256(postId, content_sha256)
-
-    const result = await checkContentHashDuplicate(content_sha256, userId1)
-    expect(result.flagged).toBe(false)
-  })
-})
 
 /**
  * Generates a random unit vector in 1024-dim space.
@@ -221,11 +144,56 @@ describe('checkEmbeddingsSimilarity', () => {
     expect(result.flagged).toBe(false)
   })
 
+  it('similar post from different user older than the lookback window — not flagged', async () => {
+    const suffix = randomSuffix()
+    const oldId = await insertTestPost({
+      id: oldPostId(),
+      title: `Old similar ${suffix}`,
+      slug: `old-similar-${suffix}`,
+      createdById: userId1,
+      markdown: 'old similar content',
+    })
+    const newId = await insertTestPost({
+      title: `New similar ${suffix}`,
+      slug: `new-similar-${suffix}`,
+      createdById: userId2,
+      markdown: 'new similar content',
+    })
+    const base = makeRandomUnitVector()
+    await addDummyEmbeddingToPost(oldId, { embedding: makeNearbyEmbedding(base, 0.01) })
+    await addDummyEmbeddingToPost(newId, { embedding: makeNearbyEmbedding(base, 0.01) })
+
+    const result = await checkEmbeddingsSimilarity(newId, userId2)
+    expect(result.flagged).toBe(false)
+  })
+
+  it('candidate with a zero-norm embedding — not flagged', async () => {
+    // A zero vector has NaN cosine distance to every probe; NaN must never pass the threshold.
+    const suffix = randomSuffix()
+    const zeroCandidateId = await insertTestPost({
+      title: `Zero candidate ${suffix}`,
+      slug: `zero-cand-${suffix}`,
+      createdById: userId1,
+      markdown: 'zero candidate',
+    })
+    const sourceId = await insertTestPost({
+      title: `Normal source ${suffix}`,
+      slug: `normal-src-${suffix}`,
+      createdById: userId2,
+      markdown: 'normal source',
+    })
+    await addDummyEmbeddingToPost(zeroCandidateId, { embedding: Array(1024).fill(0) as number[] })
+    await addDummyEmbeddingToPost(sourceId, { embedding: makeRandomUnitVector() })
+
+    const result = await checkEmbeddingsSimilarity(sourceId, userId2)
+    expect(result.flagged).toBe(false)
+  })
+
   it('source post with zero-norm embedding — not flagged', async () => {
     // Regression: zero-norm embeddings produce NaN cosine distances in pgvector.
     // PostgreSQL evaluates NaN >= threshold as true, causing false-positive spam flags.
-    // The query guards against this with a self-distance = 0 check on both the candidate
-    // and the source post.
+    // The query guards against this with a self-distance = 0 check on the source post, and
+    // the threshold compares distance (NaN never passes) for candidates.
     const suffix = randomSuffix()
     const zeroEmbedding = Array(1024).fill(0) as number[]
 
@@ -249,47 +217,5 @@ describe('checkEmbeddingsSimilarity', () => {
 
     const result = await checkEmbeddingsSimilarity(sourceId, userId2)
     expect(result.flagged).toBe(false)
-  })
-})
-
-describe('checkReferralLinkInPost', () => {
-  let userId: string
-
-  beforeAll(async () => {
-    const user = await createTestUser({ username: safeUsername('spam-ref') })
-    userId = user!.id
-  })
-
-  it('markdown with no links — not flagged', async () => {
-    const result = await checkReferralLinkInPost('Just plain text without any URLs.')
-    expect(result.signal).toBe('referral_link_in_post')
-    expect(result.flagged).toBe(false)
-    expect(result.score).toBe(0)
-  })
-
-  it('markdown with non-referral links — not flagged', async () => {
-    const result = await checkReferralLinkInPost(
-      'Check out [this article](https://non-referral-random-domain.com/article) for details.',
-    )
-    expect(result.flagged).toBe(false)
-    expect(result.score).toBe(0)
-  })
-
-  it('markdown with referral link — flagged', async () => {
-    const suffix = randomSuffix()
-    const fixture = await createReferralProgramFixture({
-      createdById: userId,
-      randomSuffix: suffix,
-      hostname: `spam-ref-${suffix}.example.com`,
-      pathname: '/ref/%',
-    })
-
-    const result = await checkReferralLinkInPost(
-      `Use my link: [click here](https://${fixture.hostname}/ref/mycode) to sign up!`,
-    )
-    expect(result.signal).toBe('referral_link_in_post')
-    expect(result.flagged).toBe(true)
-    expect(result.score).toBe(1.0)
-    expect((result.details as Record<string, unknown>)?.matched_count).toBe(1)
   })
 })

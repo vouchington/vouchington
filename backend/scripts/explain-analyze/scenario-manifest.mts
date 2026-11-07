@@ -191,6 +191,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'follower-distribution-rate-limit-rss_feed_item_send',
   'follower-distribution-selected-recipients',
   'post-creation-moderation-bypass',
+  'spam-content-hash-duplicate',
+  'spam-embeddings-similarity',
   'media-delivery-replay-first',
   'media-delivery-replay-continuation',
   'media-delivery-replay-scoped',

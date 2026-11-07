@@ -1,11 +1,8 @@
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { containsReferralLinks } from '@services/referral-program-link-validations'
 import {
   MAX_EXTERNAL_LINKS,
   LINK_TO_TEXT_RATIO_THRESHOLD,
   SPAM_KEYWORD_PATTERNS,
-  EMBEDDINGS_SIMILARITY_THRESHOLD,
 } from './config.mts'
 import type { SpamSignalResult } from './types.mts'
 
@@ -64,27 +61,6 @@ export function checkSpamKeywords(title: string, markdown: string): SpamSignalRe
   }
 }
 
-export async function checkContentHashDuplicate(
-  contentSha256: Buffer,
-  userId: string,
-): Promise<SpamSignalResult> {
-  const { rows } = await read(sql`/* checkContentHashDuplicate */
-    SELECT 1
-    -- no-mistakes-disable-next-line postgres-required-predicates: duplicate/similarity signals search other posts across post-ID partitions
-    FROM posts
-    WHERE llm_moderation_content_sha256 = ${contentSha256}
-      AND created_by_id != ${userId}
-    LIMIT 1
-  `)
-
-  const flagged = rows.length > 0
-  return {
-    signal: 'content_hash_duplicate',
-    score: flagged ? 1.0 : 0.0,
-    flagged,
-  }
-}
-
 export function checkLowQualityText(markdown: string): SpamSignalResult {
   const signals: string[] = []
 
@@ -122,55 +98,6 @@ export function checkLowQualityText(markdown: string): SpamSignalResult {
     score,
     flagged,
     details: { signals, capsRatio: Math.round(capsRatio * 100) / 100, wordCount },
-  }
-}
-
-export async function checkEmbeddingsSimilarity(
-  postId: string,
-  userId: string,
-): Promise<SpamSignalResult> {
-  // Best-effort: if embeddings aren't ready, return safe default
-  try {
-    const { rows } = await read(sql`/* checkEmbeddingsSimilarity */
-      SELECT 1
-      -- no-mistakes-disable-next-line postgres-required-predicates: duplicate/similarity signals search other posts across post-ID partitions
-      FROM posts p
-      WHERE p.bedrock_nova_multimodal_v1_embedding IS NOT NULL
-        AND p.id != ${postId}
-        AND p.created_by_id != ${userId}
-        AND (
-          SELECT bedrock_nova_multimodal_v1_embedding
-          FROM posts
-          WHERE id = ${postId}
-            AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
-            AND (bedrock_nova_multimodal_v1_embedding <=> bedrock_nova_multimodal_v1_embedding) = 0
-          LIMIT 1
-        ) IS NOT NULL
-        AND (p.bedrock_nova_multimodal_v1_embedding <=> p.bedrock_nova_multimodal_v1_embedding) = 0
-        AND 1 - (
-          p.bedrock_nova_multimodal_v1_embedding <=> (
-            SELECT bedrock_nova_multimodal_v1_embedding
-            FROM posts
-            WHERE id = ${postId}
-          )
-        ) >= ${EMBEDDINGS_SIMILARITY_THRESHOLD}
-      LIMIT 1
-    `)
-
-    const flagged = rows.length > 0
-    return {
-      signal: 'embeddings_similarity',
-      score: flagged ? 1.0 : 0.0,
-      flagged,
-    }
-  } catch {
-    // Embeddings not yet available or query failed — safe default
-    return {
-      signal: 'embeddings_similarity',
-      score: 0,
-      flagged: false,
-      details: { skipped: true },
-    }
   }
 }
 

@@ -3888,6 +3888,9 @@ importers:
       '@services/sitemaps':
         specifier: workspace:^
         version: link:../services/sitemaps
+      '@services/spam-detection':
+        specifier: workspace:^
+        version: link:../services/spam-detection
       '@services/stories':
         specifier: workspace:^
         version: link:../services/stories
@@ -6525,6 +6528,9 @@ importers:
       '@services/sitemaps':
         specifier: workspace:^
         version: link:../sitemaps
+      '@services/spam-detection':
+        specifier: workspace:^
+        version: link:../spam-detection
       '@services/stories':
         specifier: workspace:^
         version: link:../stories
@@ -11089,6 +11095,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../post-clearance
@@ -11101,7 +11110,13 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@services/users':
         specifier: workspace:^
         version: link:../users
