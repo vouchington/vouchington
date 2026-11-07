@@ -31,10 +31,11 @@ export async function finalizeFacebookFriendSync(
   facebookAccountId: string,
   userId: string,
   syncStartTime: string,
+  after = '',
 ): Promise<string | null> {
   const batchSize = getOauthFacebookWorkLimit('friend_mutation_batch_size')
   const maxBatches = getOauthFacebookWorkLimit('max_finalize_batches_per_run')
-  let lastFinalizedKey = ''
+  let lastFinalizedKey = after
   for (let batch = 0; batch < maxBatches; batch += 1) {
     // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
@@ -42,6 +43,7 @@ export async function finalizeFacebookFriendSync(
       facebookAccountId,
       syncStartTime,
       batchSize,
+      lastFinalizedKey,
     )
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
@@ -94,14 +96,15 @@ async function getStaleFacebookFriendIds(
   facebookAccountId: string,
   syncStartTime: string,
   batchSize: number,
+  after: string,
 ): Promise<string[]> {
   const { rows } = await write(
     `/* getStaleFacebookFriendIds */ SELECT facebook_friend_id
      FROM facebook_friends
-     WHERE facebook_account_id = $1 AND last_observed_at < $2::timestamptz
+     WHERE facebook_account_id = $1 AND last_observed_at < $2::timestamptz AND facebook_friend_id > $4
      ORDER BY facebook_friend_id
      LIMIT $3`,
-    [facebookAccountId, syncStartTime, batchSize],
+    [facebookAccountId, syncStartTime, batchSize, after],
   )
   return rows.map(row => (row as { facebook_friend_id: string }).facebook_friend_id)
 }

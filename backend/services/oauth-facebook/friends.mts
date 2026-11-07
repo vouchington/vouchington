@@ -113,6 +113,7 @@ export async function syncFacebookFriends(
     account.id,
     account.user_id,
     syncStartTime,
+    resume?.phase === 'finalize' ? resume.cursor : undefined,
   )
   return lastFinalizedKey === null
     ? null

@@ -108,6 +108,7 @@ export async function syncGithubFriends(
     account.id,
     account.user_id,
     syncStartTime,
+    { after: resume?.phase === 'finalize' ? resume.cursor : undefined },
   )
   return lastFinalizedKey === null
     ? null

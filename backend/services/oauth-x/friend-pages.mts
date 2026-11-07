@@ -26,14 +26,20 @@ export async function finalizeXFriendSync(
   xAccountId: string,
   userId: string,
   syncStartTime: string,
+  after = '',
 ): Promise<string | null> {
   const batchSize = getOauthXWorkLimit('friend_mutation_batch_size')
   const maxBatches = getOauthXWorkLimit('max_finalize_batches_per_run')
-  let lastFinalizedKey = ''
+  let lastFinalizedKey = after
   for (let batch = 0; batch < maxBatches; batch += 1) {
     // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
-    const staleFriendIds = await getStaleXFriendIds(xAccountId, syncStartTime, batchSize)
+    const staleFriendIds = await getStaleXFriendIds(
+      xAccountId,
+      syncStartTime,
+      batchSize,
+      lastFinalizedKey,
+    )
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markXFriendSyncComplete(xAccountId, userId, syncStartTime)
@@ -79,14 +85,15 @@ async function getStaleXFriendIds(
   xAccountId: string,
   syncStartTime: string,
   batchSize: number,
+  after: string,
 ): Promise<string[]> {
   const { rows } = await write(
     `/* getStaleXFriendIds */ SELECT x_friend_id
      FROM x_friends
-     WHERE x_account_id = $1 AND last_observed_at < $2::timestamptz
+     WHERE x_account_id = $1 AND last_observed_at < $2::timestamptz AND x_friend_id > $4
      ORDER BY x_friend_id
      LIMIT $3`,
-    [xAccountId, syncStartTime, batchSize],
+    [xAccountId, syncStartTime, batchSize, after],
   )
   return rows.map(row => (row as { x_friend_id: string }).x_friend_id)
 }

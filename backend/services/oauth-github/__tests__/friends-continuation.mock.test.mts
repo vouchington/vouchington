@@ -95,4 +95,24 @@ describe('syncGithubFriends continuation', () => {
     expect(await countTestFriends('github', githubUserId)).toBe(0)
     expect(await getTestOAuthAccountFriendsSyncedAt('github', githubUserId)).toBeTruthy()
   })
+
+  it('resumes stale-edge cleanup strictly after the last finalized key', async () => {
+    restoreLimits = overrideDynamicConfigFieldsForTest(oauthGithubWorkConfig, {
+      friend_mutation_batch_size: 1,
+      max_finalize_batches_per_run: 1,
+    })
+    const suffix = createRandomString(8)
+    await insertTestFriends('github', githubUserId, [`stale-b-${suffix}`, `stale-c-${suffix}`])
+    fetchSpy.mockResolvedValueOnce(following([]))
+    const resume = await syncGithubFriends(githubUserId)
+    expect(resume).toMatchObject({ phase: 'finalize', cursor: `stale-b-${suffix}` })
+
+    // A stale row ordered before the cursor is not revisited: the next run starts after the cursor.
+    await insertTestFriends('github', githubUserId, [`stale-a-${suffix}`])
+    const second = await syncGithubFriends(githubUserId, resume!)
+
+    expect(second).toMatchObject({ phase: 'finalize', cursor: `stale-c-${suffix}` })
+    expect(await getTestFriend('github', githubUserId, `stale-a-${suffix}`)).toHaveLength(1)
+    expect(await getTestFriend('github', githubUserId, `stale-c-${suffix}`)).toHaveLength(0)
+  })
 })
