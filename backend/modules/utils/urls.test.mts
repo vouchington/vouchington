@@ -76,9 +76,10 @@ describe('normalizeUrlForUrlTable', () => {
 describe('getUrlIdentity', () => {
   it('shares one identity across scheme, www, m, and tracking variants', () => {
     const identity = getUrlIdentity('https://example.com/a?id=1')
-    expect(getUrlIdentity('http://www.example.com/a/?id=1&utm_source=x')).toBe(identity)
+    expect(getUrlIdentity('http://www.example.com/a?id=1&utm_source=x')).toBe(identity)
     expect(getUrlIdentity('https://m.example.com/a?id=1')).toBe(identity)
     expect(getUrlIdentity('https://example.com/a?id=2')).not.toBe(identity)
+    expect(getUrlIdentity('https://example.com/a/?id=1')).not.toBe(identity)
   })
 
   it('rejects a value that is not an http(s) URL', () => {

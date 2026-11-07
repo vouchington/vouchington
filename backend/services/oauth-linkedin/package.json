@@ -26,7 +26,7 @@
     "@modules/utils": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/utils": "^0.11.1"
+    "@vouchington/utils": "^0.12.0"
   },
   "devDependencies": {
     "undici": "^8.12.3"
