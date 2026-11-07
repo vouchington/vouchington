@@ -4,6 +4,7 @@ import { use } from 'react'
 import { PostRelatedTopicsAsideContent } from './post-related-topics-aside-content'
 import type { Post } from '@/types/posts'
 import type { EntityRelationsResponse } from '@/lib/api/entity-relations'
+import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 
 interface PostRelatedTopicsAsideStreamingProps {
   post: Post
@@ -20,7 +21,7 @@ export function PostRelatedTopicsAsideStreaming({
     const rel = entity_relations[r.id]
     return rel ? [rel] : []
   })
-  if (relations.length === 0) return null
+  if (relations.length === 0 && !pageHasContinuation(response.page_info)) return null
   return (
     <PostRelatedTopicsAsideContent
       post={post}

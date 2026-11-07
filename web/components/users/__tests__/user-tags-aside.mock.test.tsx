@@ -37,10 +37,17 @@ vi.mock(
 
 import { UserTagsAside } from '../user-tags-aside'
 
-function makeResponse(withRelation = false): EntityRelationsResponse {
+function makeResponse(
+  withRelation = false,
+  pageInfo: EntityRelationsResponse['page_info'] = {
+    has_next_page: false,
+    end_cursor: null,
+    start_cursor: null,
+  },
+): EntityRelationsResponse {
   return {
     results: withRelation ? [{ __entity_type: 'entity_relation', id: 'relation-1' }] : [],
-    page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+    page_info: pageInfo,
     entity_relations: withRelation
       ? {
           'relation-1': {
@@ -82,6 +89,22 @@ describe('UserTagsAside', () => {
 
     expect(screen.getByText('No user tags yet.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Manage' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument()
+  })
+
+  it('keeps load more available when the first positive tag window is empty', async () => {
+    mockGetEntityRelations.mockResolvedValue(
+      makeResponse(false, {
+        has_next_page: true,
+        end_cursor: 'later-tags',
+        start_cursor: null,
+      }),
+    )
+
+    render(await UserTagsAside({ userId: 'user-2', canManageUserTags: true }))
+
+    expect(screen.getByText('No user tags yet.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Load more' })).toBeInTheDocument()
   })
 
   it('passes the complete curated catalog to the route-free management dialog', async () => {

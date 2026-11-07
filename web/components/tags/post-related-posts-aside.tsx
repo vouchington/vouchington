@@ -4,6 +4,7 @@ import { PostRelatedPostsAsideContent } from './post-related-posts-aside-content
 import { PostRelatedPostsAsideStreaming } from './post-related-posts-aside-streaming'
 import { renderAuthGatedStreaming } from './render-auth-gated-streaming'
 import type { Post } from '@/types/posts'
+import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 import { TAG_ASIDE_SEARCH_PARAMS } from './tag-relation-configs'
 
 interface PostRelatedPostsAsideProps {
@@ -25,7 +26,7 @@ export async function PostRelatedPostsAside({ post }: PostRelatedPostsAsideProps
         const rel = entity_relations[r.id]
         return rel ? [rel] : []
       })
-      if (relations.length === 0) return null
+      if (relations.length === 0 && !pageHasContinuation(response.page_info)) return null
       return (
         <PostRelatedPostsAsideContent
           post={post}
