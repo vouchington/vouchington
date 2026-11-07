@@ -1,14 +1,13 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   assertSafeSqlAlias,
-  buildClearanceClause,
   buildCommunityAccessClause,
   buildCommunityPublicationStateClause,
   buildNonDeletedClause,
-  buildRootAudienceAccessClause,
   buildRootDiscoveryAudienceAccessClause,
   buildStorySourceAccessClause,
 } from './post-publication-eligibility-clauses.mts'
+import { buildPostAccessEligibilityFilter } from './post-publication-access.mts'
 import { buildDiscoveryStateClause } from './post-publication-discovery-state.mts'
 
 export type DirectPostEligibilityOptions = {
@@ -85,7 +84,7 @@ function buildAnonymousPostEligibilityFilter(
     .append(`${candidateAlias}.approved_at IS NOT NULL`)
     .append(sql` AND `)
     .append(`${rootAlias}.approved_at IS NOT NULL`)
-  return statement
+  statement
     .append(sql` AND `)
     .append(buildDiscoveryStateClause(candidateAlias, rootAlias, requireUnarchived))
     .append(sql` AND `)
@@ -102,7 +101,7 @@ function buildAnonymousPostEligibilityFilter(
     )
     .append(sql` AND `)
     .append(buildStorySourceAccessClause(rootAlias))
-    .append(sql`)`)
+  return statement.append(sql`)`)
 }
 
 /** Builds discovery eligibility while retaining author, audience, and staff access. */
@@ -146,40 +145,4 @@ export function buildDirectPostEligibilityFilter(
     ...options,
     requireActiveCommunity: false,
   })
-}
-
-function buildPostAccessEligibilityFilter(
-  candidateAlias: string,
-  rootAlias: string,
-  options: DirectPostEligibilityOptions & { requireActiveCommunity: boolean },
-): SQLStatement {
-  assertSafeSqlAlias(candidateAlias)
-  assertSafeSqlAlias(rootAlias)
-
-  const nonDeleted = buildNonDeletedClause(candidateAlias, rootAlias)
-  if (options.isModerationStaff) return nonDeleted
-
-  const candidateClearance = buildClearanceClause(candidateAlias, options.currentUserId)
-  const rootClearance = buildClearanceClause(rootAlias, options.currentUserId)
-  const communityAccess = buildCommunityAccessClause(
-    rootAlias,
-    options.currentUserId,
-    options.requireActiveCommunity,
-  )
-  const audienceAccess = buildRootAudienceAccessClause(rootAlias, options.currentUserId)
-  const storyAccess = buildStorySourceAccessClause(rootAlias)
-
-  return sql`(`
-    .append(nonDeleted)
-    .append(sql` AND `)
-    .append(candidateClearance)
-    .append(sql` AND `)
-    .append(rootClearance)
-    .append(sql` AND `)
-    .append(communityAccess)
-    .append(sql` AND `)
-    .append(audienceAccess)
-    .append(sql` AND `)
-    .append(storyAccess)
-    .append(sql`)`)
 }

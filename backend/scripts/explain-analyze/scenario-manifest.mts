@@ -7,6 +7,7 @@ import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
 import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario-ids.mts'
 import { BOUNDED_WORK_SCENARIOS } from './scenario-manifest-work.mts'
+import { SEARCH_PAGE_SCENARIO_IDS } from './search-page-scenario-ids.mts'
 import { VOTE_WEIGHT_DISPATCH_SCENARIO_IDS } from './vote-weight-dispatch-scenario-ids.mts'
 import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
 import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
@@ -151,7 +152,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'search-communities-text-virtual-subscriptions',
   'search-communities-virtual-subscriptions',
   'search-community-posts',
-  'search-data-points',
+  ...SEARCH_PAGE_SCENARIO_IDS,
   ...(['search-top-hostnames', 'search-top-hostnames-by-topic'] as const),
   ...([
     'search-topic-aliases',

@@ -77,15 +77,22 @@ function appendReviewTopicFilters(filters: SQLStatement[], topicIds: string[]): 
   })
 }
 
+const DATA_POINT_TOPIC_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function appendDataPointTopicFilters(filters: SQLStatement[], topicIds: string[]): void {
   filters.push(sql`posts.post_type = 'data_point'`)
-  topicIds.forEach(topicId => {
-    filters.push(sql`EXISTS (
+  for (const topicId of topicIds) filters.push(dataPointTopicExists(topicId))
+}
+
+function dataPointTopicExists(topicId: string): SQLStatement {
+  const topicIdMatch = DATA_POINT_TOPIC_ID.exec(topicId)
+  const query = sql`EXISTS (
         SELECT 1 FROM post_data_point_topics
         WHERE post_data_point_topics.post_id = posts.id
-          AND post_data_point_topics.topic_id = ${topicId}
-      )`)
-  })
+          AND post_data_point_topics.topic_id = `
+  if (topicIdMatch) query.append(`'${topicIdMatch[0].toLowerCase()}'::uuid`)
+  else query.append(sql`${topicId}`)
+  return query.append(')')
 }
 
 function appendUniversalTopicFilters(filters: SQLStatement[], topicIds: string[]): void {

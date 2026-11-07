@@ -92440,6 +92440,94 @@
           "unique": false,
           "valid": true
         },
+        "idx_posts__credit_score_range__votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__credit_score_range__votes_score_sort__id ON ONLY public.posts USING btree (((structured_data ->> 'credit_score_range'::text)), votes_score_sort DESC, id DESC) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(structured_data ->> 'credit_score_range'::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "float8_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__data_point_credit_score_range__positive__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__data_point_credit_score_range__positive__id ON ONLY public.posts USING btree (((structured_data ->> 'credit_score_range'::text)), id DESC) INCLUDE (votes_score_sort) WHERE ((deleted_at IS NULL) AND (community_id IS NULL) AND (post_type = 'data_point'::post_types) AND (votes_score_net > (0)::double precision) AND (structured_data IS NOT NULL))",
+          "includedColumns": ["votes_score_sort"],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(structured_data ->> 'credit_score_range'::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (community_id IS NULL) AND (post_type = 'data_point'::post_types) AND (votes_score_net > (0)::double precision) AND (structured_data IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__data_point_result__positive__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__data_point_result__positive__id ON ONLY public.posts USING btree (((structured_data ->> 'result'::text)), id DESC) INCLUDE (votes_score_sort) WHERE ((deleted_at IS NULL) AND (community_id IS NULL) AND (post_type = 'data_point'::post_types) AND (votes_score_net > (0)::double precision) AND (structured_data IS NOT NULL))",
+          "includedColumns": ["votes_score_sort"],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(structured_data ->> 'result'::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (community_id IS NULL) AND (post_type = 'data_point'::post_types) AND (votes_score_net > (0)::double precision) AND (structured_data IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_posts__data_point_vertical": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -92452,6 +92540,40 @@
               "expression": "data_point_vertical",
               "nullsFirst": false,
               "opclass": "text_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((data_point_vertical IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__data_point_vertical__votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__data_point_vertical__votes_score_sort__id ON ONLY public.posts USING btree (data_point_vertical, votes_score_sort DESC, id DESC) WHERE ((data_point_vertical IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "data_point_vertical",
+              "descending": false,
+              "expression": "data_point_vertical",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "float8_ops"
             },
             {
               "column": "id",
@@ -92608,6 +92730,67 @@
           "unique": false,
           "valid": true
         },
+        "idx_posts__post_type__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__post_type__id ON ONLY public.posts USING btree (post_type, id DESC) WHERE ((deleted_at IS NULL) AND (post_type = ANY (ARRAY['story'::post_types, 'data_point'::post_types])))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_type",
+              "descending": false,
+              "expression": "post_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (post_type = ANY (ARRAY['story'::post_types, 'data_point'::post_types])))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__post_type__votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__post_type__votes_score_sort__id ON ONLY public.posts USING btree (post_type, votes_score_sort DESC, id DESC) WHERE ((deleted_at IS NULL) AND (post_type = ANY (ARRAY['story'::post_types, 'data_point'::post_types])))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_type",
+              "descending": false,
+              "expression": "post_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "float8_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (post_type = ANY (ARRAY['story'::post_types, 'data_point'::post_types])))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_posts__privacy_private": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -92756,18 +92939,25 @@
           "unique": false,
           "valid": true
         },
-        "idx_posts__structured_data__result": {
+        "idx_posts__structured_data__credit_score_range__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__structured_data__result ON ONLY public.posts USING btree (((structured_data ->> 'result'::text))) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_posts__structured_data__credit_score_range__id ON ONLY public.posts USING btree (((structured_data ->> 'credit_score_range'::text)), id DESC) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
               "column": null,
               "descending": false,
-              "expression": "(structured_data ->> 'result'::text)",
+              "expression": "(structured_data ->> 'credit_score_range'::text)",
               "nullsFirst": false,
               "opclass": "text_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
@@ -92776,18 +92966,59 @@
           "unique": false,
           "valid": true
         },
-        "idx_posts__structured_data__topic_id": {
+        "idx_posts__structured_data__result__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__structured_data__topic_id ON ONLY public.posts USING btree (((structured_data ->> 'topic_id'::text))) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_posts__structured_data__result__id ON ONLY public.posts USING btree (((structured_data ->> 'result'::text)), id DESC) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
               "column": null,
               "descending": false,
-              "expression": "(structured_data ->> 'topic_id'::text)",
+              "expression": "(structured_data ->> 'result'::text)",
               "nullsFirst": false,
               "opclass": "text_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__structured_data__result__votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__structured_data__result__votes_score_sort__id ON ONLY public.posts USING btree (((structured_data ->> 'result'::text)), votes_score_sort DESC, id DESC) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(structured_data ->> 'result'::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "float8_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",

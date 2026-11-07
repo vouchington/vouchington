@@ -240,4 +240,59 @@ describe('query-builder (basic)', () => {
 
     expect(query.values).toContain(100)
   })
+
+  it('writes closed story and data-point filters as literals', () => {
+    const known = buildPostSearchQuery(undefined, {
+      post_types: ['data_point'],
+      data_point_vertical: 'bank_account',
+      data_point_result: 'pending',
+      data_point_credit_score_range: '300-579',
+      data_point_topic_ids: ['019e0000-ee00-7000-8000-000000000001'],
+    })
+    expect(known.sql).toContain("posts.post_type = 'data_point'")
+    expect(known.sql).toContain("posts.data_point_vertical = 'bank_account'")
+    expect(known.sql).toContain("posts.structured_data->>'result' = 'pending'")
+    expect(known.sql).toContain("posts.structured_data->>'credit_score_range' = '300-579'")
+    expect(known.sql).toContain("'019e0000-ee00-7000-8000-000000000001'::uuid")
+    expect(known.values).not.toContain('bank_account')
+    expect(known.values).not.toContain('pending')
+    expect(known.values).not.toContain('300-579')
+
+    const discussion = buildPostSearchQuery(undefined, { post_types: ['discussion'] })
+    expect(discussion.sql).toContain("posts.post_type = 'discussion'::post_types")
+    expect(discussion.values).not.toContain('discussion')
+
+    const unknown = buildPostSearchQuery(undefined, {
+      post_types: ['topic_recommendation'],
+      data_point_vertical: 'mortgage',
+      data_point_topic_ids: ['not-a-uuid'],
+    })
+    expect(unknown.values).toContain('topic_recommendation')
+    expect(unknown.values).toContain('mortgage')
+    expect(unknown.values).toContain('not-a-uuid')
+
+    for (const result of ['counter_offer', 'retention_offer', 'sign_up_bonus', 'offer']) {
+      const query = buildPostSearchQuery(undefined, {
+        post_types: ['data_point'],
+        data_point_result: result,
+      })
+      expect(query.sql).toContain(`posts.structured_data->>'result' = '${result}'`)
+      expect(query.values).not.toContain(result)
+    }
+    for (const range of ['580-669', '670-739', '740-799', '800-850']) {
+      const query = buildPostSearchQuery(undefined, {
+        post_types: ['data_point'],
+        data_point_credit_score_range: range,
+      })
+      expect(query.sql).toContain(`posts.structured_data->>'credit_score_range' = '${range}'`)
+      expect(query.values).not.toContain(range)
+    }
+    const open = buildPostSearchQuery(undefined, {
+      post_types: ['data_point'],
+      data_point_result: 'unlisted',
+      data_point_credit_score_range: 'not-a-bracket',
+    })
+    expect(open.values).toContain('unlisted')
+    expect(open.values).toContain('not-a-bracket')
+  })
 })

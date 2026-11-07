@@ -114,9 +114,12 @@ export function getVoteScorePublisherScenarios(): readonly RankingScenario[] {
       expectations: [
         {
           kind: 'usesIndexes',
+          // The closed publisher-type slug list can drive the primary key
+          // (subject_id, object_id) instead of a subject-wide index.
           indexes: [
             'idx_relation__topic__publisher_type__topic__subject__best',
             'idx_relation__topic__publisher_type__topic__reverse_index',
+            'relation__topic__publisher_type__topic_pkey',
           ],
           anyOf: true,
         },

@@ -38,6 +38,14 @@ describe('read_data_points.search tool — real DB', () => {
       result: 'denied',
       creditScoreRange: '580-669',
     })
+    await insertTestDataPoint({
+      title: `Tool Bank ${suffix}`,
+      slug: `tool-dp-bank-${suffix}`,
+      createdById: user.id,
+      vertical: 'bank_account',
+      topicId,
+      result: 'approved',
+    })
   })
 
   it('has correct schema name', () => {
@@ -53,6 +61,7 @@ describe('read_data_points.search tool — real DB', () => {
     expect(props).toHaveProperty('result')
     expect(props).toHaveProperty('credit_score_range')
     expect(props).toHaveProperty('limit')
+    expect(props).toHaveProperty('after')
   })
 
   it('no required fields', () => {
@@ -122,5 +131,49 @@ describe('read_data_points.search tool — real DB', () => {
     expect(result.success).toBe(true)
     if (!result.success) return
     expect(Array.isArray(result.results)).toBe(true)
+  })
+
+  it('filters by vertical and credit score', async () => {
+    const execute = searchDataPointsTool.function(user)
+    const vertical = await execute({ topic_id: topicId, vertical: 'bank_account' })
+    expect(vertical.success).toBe(true)
+    if (!vertical.success) return
+    expect(vertical.results.map(row => row.title)).toContain(`Tool Bank ${suffix}`)
+    expect(vertical.results.every(row => row.data_point_vertical === 'bank_account')).toBe(true)
+
+    const scored = await execute({ topic_id: topicId, credit_score_range: '670-739' })
+    expect(scored.success).toBe(true)
+    if (!scored.success) return
+    expect(scored.results.every(row => row.structured_data?.credit_score_range === '670-739')).toBe(
+      true,
+    )
+    expect(scored.results.map(row => row.title)).toContain(`Tool Approved ${suffix}`)
+  })
+
+  it('pages one post at a time without duplicate ids and caps at 25', async () => {
+    const execute = searchDataPointsTool.function(user)
+    const seen = new Set<string>()
+    let after: string | undefined
+    for (let pageNumber = 0; pageNumber < 6; pageNumber += 1) {
+      const page = await execute({ topic_id: topicId, limit: 1, after })
+      expect(page.success).toBe(true)
+      if (!page.success) return
+      expect(page.results.length).toBeLessThanOrEqual(1)
+      expect(page.page_info.has_next_page ? page.results.length : 1).toBe(1)
+      for (const row of page.results) {
+        expect(seen.has(row.id)).toBe(false)
+        seen.add(row.id)
+      }
+      if (!page.page_info.has_next_page) break
+      expect(page.page_info.end_cursor).toEqual(expect.any(String))
+      after = page.page_info.end_cursor ?? undefined
+    }
+    expect(seen.size).toBeGreaterThanOrEqual(3)
+
+    const capped = await execute({ topic_id: topicId, limit: 999 })
+    expect(capped.success).toBe(true)
+    if (!capped.success) return
+    expect(capped.results.length).toBeLessThanOrEqual(25)
+    expect(capped.results.length).toBeGreaterThanOrEqual(3)
   })
 })

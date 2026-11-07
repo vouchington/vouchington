@@ -7,6 +7,9 @@ export type PostSearchSort = 'new' | 'best' | 'hot' | 'relevance' | 'following_n
 // Result type for post search responses
 export type PostSearchResult = PaginatedResult<'post'> & {
   post_type: string
+  title?: string
+  data_point_vertical?: string | null
+  structured_data?: unknown
 }
 
 type PostSearchFilterOptions = {
@@ -26,6 +29,8 @@ type PostSearchFilterOptions = {
   semantic_search_query?: string // Embedding similarity search
   post_types?: PostType[] // Filter by post type
   data_point_vertical?: string // Filter data_point posts by vertical (e.g. 'credit_card', 'bank_account')
+  data_point_result?: string // Filter data_point posts by structured_data.result
+  data_point_credit_score_range?: string // Filter data_point posts by structured_data.credit_score_range
   story_id?: string // Filter posts linked to a specific story
   has_hacker_news_references?: boolean // Posts whose URL is seen or mentioned on Hacker News (true) or not (false)
   include_topic_recommendations?: boolean // Internal opt-in for dedicated recommendation flows
@@ -95,6 +100,8 @@ type PostSearchPaginationOptions =
 type PostSearchQueryOptions = {
   // Pre-computed embedding for semantic search (computed before SQL)
   semanticSearchEmbedding?: number[]
+  // Data-point search returns title, vertical, and structured_data from this read.
+  hydrateDataPointPage?: boolean
   // Internal cursor parameters (decoded from 'after', used by query builder)
   id_lt?: string
   vote_score_lt?: number
