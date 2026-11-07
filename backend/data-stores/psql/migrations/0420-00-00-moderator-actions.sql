@@ -113,8 +113,6 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   backfill_key text,
   rss_category_text text,
   admin_import_batch_id uuid REFERENCES admin_import_batches (id) ON DELETE SET NULL,
-  -- Cross-file foreign key is added in 0625 after membership_ineligible_purchase_reversal_cases exists.
-  membership_ineligible_purchase_reversal_case_id uuid,
   reason text,
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -185,7 +183,6 @@ COMMENT ON COLUMN moderator_actions.scheduled_job_key IS 'Scheduled-job catalog 
 COMMENT ON COLUMN moderator_actions.backfill_key IS 'Backfill catalog key selected for an immediate staff run.';
 COMMENT ON COLUMN moderator_actions.rss_category_text IS 'RSS category text whose editorial assignment or rejection was changed.';
 COMMENT ON COLUMN moderator_actions.admin_import_batch_id IS 'Target import batch created by a staff member.';
-COMMENT ON COLUMN moderator_actions.membership_ineligible_purchase_reversal_case_id IS 'Reversal case created by disposing a Stripe purchase collision review. The review id stays in metadata because that review row is deleted.';
 
 COMMENT ON COLUMN moderator_actions.reason IS 'Optional free-text reason for the action.';
 
@@ -261,11 +258,5 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__operation_request_id
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__admin_import_batch_id
   ON moderator_actions (admin_import_batch_id) WHERE admin_import_batch_id IS NOT NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- The full column name does not fit after idx_moderator_actions__ within 63 bytes.
-CREATE INDEX IF NOT EXISTS idx_moderator_actions__ineligible_purchase_reversal_case_id
-  ON moderator_actions (membership_ineligible_purchase_reversal_case_id)
-  WHERE membership_ineligible_purchase_reversal_case_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__topic_claim_id__id ON moderator_actions(topic_claim_id,id) WHERE topic_claim_id IS NOT NULL;
