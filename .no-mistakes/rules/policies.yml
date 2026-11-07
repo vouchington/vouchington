@@ -612,9 +612,11 @@
           callee: 'updateMatchedCategoriesChunk',
         }
       - { file: backend/services/rss-feed-items/categories.mts, callee: 'readCategoryDataChunk' }
-      # Poison-snapshot isolation: each row upserts, enqueues with its own change_id, and acknowledges its
-      # exact generation independently. The page is capped by category_snapshot_reconciliation_batch_size
-      # (backend/services/rss-feed-items/work-limits.mts).
+      # KEEP (pg-schema ruling): no lock is held across rows. Each row is isolated on purpose: its own
+      # poison-snapshot isolation (one bad snapshot must not fail the page) and its own change_id enqueue,
+      # acknowledging its exact generation independently. The page is capped by
+      # category_snapshot_reconciliation_batch_size, hard max 1000 at
+      # backend/services/rss-feed-items/work-limits.mts:26.
       - {
           file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
           callee: 'acknowledgeRssFeedItemCategorySnapshot',
