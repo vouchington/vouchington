@@ -12,7 +12,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { CommunityBan } from '../types.mts'
-import { clampLimit } from '../../pagination/index.mts'
+import { clampLimit } from '@services/pagination'
 
 export type CommunityBanSummary = Omit<CommunityBan, 'reason' | 'case_id'>
 
