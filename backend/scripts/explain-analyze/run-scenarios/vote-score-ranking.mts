@@ -6,6 +6,7 @@ import { searchRssFeeds } from '@services/rss-feeds/search'
 import { getRssFeedItemFeedIds } from '@services/feeds/rss-feed-items/get-ids'
 import { seedPostId, seedTopicId, seedUser, runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import {
   seedVoteScoreHostnameFixture,
@@ -137,7 +138,8 @@ export function getVoteScorePublisherScenarios(): readonly RankingScenario[] {
         {
           kind: 'maxProcessedRows',
           relation: 'relation__topic__publisher_type__topic',
-          max: 100,
+          // The full-week item walk checks the indexed publisher winner per source link.
+          max: SEEDED_ROWS_BY_RELATION.rss_feed_item_sources!,
         },
       ],
       seededRows: VOTE_SCORE_PUBLISHER_ROWS,

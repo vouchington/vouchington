@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT } from '../seed-data/story-post-related-url-projection.mts'
 import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
 import { getLargeTableSeqScanRelations } from '../plan-warnings.mts'
 import {
@@ -17,6 +18,8 @@ const MAX_SOURCES_PER_BASE_ITEM = Math.ceil(RSS_FEED_SEED_COUNT / HOSTNAME_COUNT
 const TOTAL_RSS_SOURCE_ROWS =
   RSS_FEED_ITEM_SEED_COUNT * MAX_SOURCES_PER_BASE_ITEM + RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT + 1
 const MAX_SOURCE_MEMBERSHIP_PASSES = 2
+const TOTAL_STORY_MEMBER_ROWS =
+  RSS_FEED_WEEKLY_STORY_ITEM_COUNT + STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT
 
 /** Gates the single-statement personalized feed against the measured seeded item corpus. */
 export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void {
@@ -71,9 +74,9 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
     throw new Error(
       `${result.name} rejected ${joinRowsRejected} RSS membership join rows; the corpus/follow-source cross product is at most ${joinRejectionCeiling}`,
     )
-  if (storyProbeRows > RSS_FEED_WEEKLY_STORY_ITEM_COUNT * 2)
+  if (storyProbeRows > TOTAL_STORY_MEMBER_ROWS * 2)
     throw new Error(
-      `${result.name} examined ${storyProbeRows} newer story rows; the ${RSS_FEED_WEEKLY_STORY_ITEM_COUNT}-member skew must use an indexed winner probe`,
+      `${result.name} examined ${storyProbeRows} newer story rows; the ${TOTAL_STORY_MEMBER_ROWS} members across both seeded stories must use indexed winner probes`,
     )
   if (
     !/direct_deliveries\s+AS\s+NOT\s+MATERIALIZED/i.test(result.query_text) ||
