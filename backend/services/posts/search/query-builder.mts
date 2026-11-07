@@ -57,6 +57,18 @@ export function buildPostSearchQuery(
     )
   }
   appendCtes(query, ctes)
+  // Hot orders by a time-decay score no result or credit index can provide. Without this
+  // fence, LIMIT makes a votes index look cheap and the filter then walks the whole window.
+  const fenceHotExpressionFilter =
+    sort === 'hot' &&
+    !useHackerNewsHotCandidates &&
+    (options.data_point_result !== undefined || options.data_point_credit_score_range !== undefined)
+  if (fenceHotExpressionFilter) {
+    query.append(sql`SELECT id, post_type`)
+    if (options.hydrateDataPointPage)
+      query.append(sql`, title, data_point_vertical, structured_data`)
+    query.append(sql` FROM (`)
+  }
   appendPostSearchSelectAndJoins(query, {
     useSemanticCandidates: hasSemanticSearch,
     useHackerNewsHotCandidates,
@@ -87,10 +99,20 @@ export function buildPostSearchQuery(
     hasSemanticSearch,
     hasTextSearch,
     limit,
-    omitLimit,
-    omitOrderBy,
+    omitLimit: fenceHotExpressionFilter || omitLimit,
+    omitOrderBy: fenceHotExpressionFilter || omitOrderBy,
     sort,
   })
+  if (fenceHotExpressionFilter) {
+    query.append(sql`
+    OFFSET 0
+  ) AS data_point_hot_matches`)
+    if (!omitOrderBy) query.append(sql` ORDER BY hot_score DESC, id DESC`)
+    if (!omitLimit)
+      query.append(sql`
+    LIMIT ${limit ?? 100}
+  `)
+  }
 
   return query
 }

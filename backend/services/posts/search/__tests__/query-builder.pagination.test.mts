@@ -120,6 +120,20 @@ describe('query-builder (pagination and moderation)', () => {
     expect(query.sql).toContain('hot_score DESC, posts.id DESC')
   })
 
+  it('fences a hot result filter so the page sort cannot walk past that result', () => {
+    const query = buildPostSearchQuery(undefined, {
+      post_types: ['data_point'],
+      sort: 'hot',
+      data_point_result: 'pending',
+    })
+
+    expect(query.sql).toContain("posts.structured_data->>'result' = 'pending'")
+    expect(query.sql).toContain('OFFSET 0')
+    expect(query.sql).toContain('data_point_hot_matches')
+    expect(query.sql).toContain('ORDER BY hot_score DESC, id DESC')
+    expect(query.values).not.toContain('pending')
+  })
+
   it('buildPostSearchQuery adds composite pagination filter for sort=hot with hot_score_lt and id_lt', () => {
     const testId = '01234567-0000-7000-0000-000000000000'
     const testScore = 0.5
