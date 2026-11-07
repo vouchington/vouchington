@@ -78,8 +78,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     process.env.CI = 'true'
     process.env.WEB_BUILD_FS_CACHE_ENABLED = 'true'
 
-    const modulePath = './setup-web-integration.mts?fs-cache-enabled'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     expect(fs.renameSync).toHaveBeenCalledWith(
       expect.stringContaining('web/.next/cache'),
@@ -101,8 +100,8 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     // Matches a developer's local `pnpm run test:playwright` / `test:integration:web` invocation:
     // no GitHub repository variable reaches those lifecycle hooks, so the cache stays off by
     // default, identical to web/next.config.ts's own unconditional read of the same variable.
-    const modulePath = './setup-web-integration.mts?fs-cache-default-outside-ci'
-    await import(modulePath)
+
+    await import('./setup-web-integration.mts')
 
     expect(fs.renameSync).not.toHaveBeenCalled()
   })
@@ -119,8 +118,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     // review).
     vi.mocked(fs.existsSync).mockImplementation(path => !String(path).includes('/cache/turbopack'))
 
-    const modulePath = './setup-web-integration.mts?fs-cache-first-enabled-run'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     const calls = vi.mocked(fs.writeFileSync).mock.calls
     const [, reportJson] = calls.at(-1)!
@@ -134,8 +132,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     process.env.WEB_BUILD_FS_CACHE_ENABLED = 'true'
     process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings.json'
 
-    const modulePath = './setup-web-integration.mts?timing-report'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       '/tmp/setup-web-timings.json',
@@ -161,8 +158,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     process.env.CI = 'true'
     process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-disabled.json'
 
-    const modulePath = './setup-web-integration.mts?timing-report-disabled'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     expect(fs.renameSync).not.toHaveBeenCalled()
     const calls = vi.mocked(fs.writeFileSync).mock.calls

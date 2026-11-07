@@ -71,8 +71,8 @@ describe('web integration build phases', () => {
       } else queueMicrotask(() => child.emit('close', 0))
       return child as unknown as ReturnType<typeof spawn>
     })
-    const modulePath = './setup-web-integration.mts?sequential-held-builders'
-    const loading = import(modulePath)
+
+    const loading = import('./setup-web-integration.mts')
     const outcome = loading.then(
       () => undefined,
       (err: unknown) => err,
@@ -111,8 +111,8 @@ describe('web integration build phases', () => {
         queueMicrotask(() => child.emit('close', name === WORKER_COMMAND ? workerExit : 9))
         return child as unknown as ReturnType<typeof spawn>
       })
-      const modulePath = './setup-web-integration.mts?sequential-build-failure'
-      await expect(import(modulePath)).rejects.toMatchObject({
+
+      await expect(import('./setup-web-integration.mts')).rejects.toMatchObject({
         message:
           workerExit === 7
             ? `pnpm ${WORKER_COMMAND} failed with exit code 7`
@@ -143,8 +143,8 @@ describe('web integration build phases', () => {
     vi.mocked(fs.rmSync).mockImplementationOnce(() => {
       throw failure
     })
-    const modulePath = './setup-web-integration.mts?cleanup-failure'
-    await expect(import(modulePath)).rejects.toBe(failure)
+
+    await expect(import('./setup-web-integration.mts')).rejects.toBe(failure)
     expect(spawn).not.toHaveBeenCalled()
     const reports = vi
       .mocked(fs.writeFileSync)

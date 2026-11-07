@@ -94,8 +94,8 @@ function getExplainPlanCacheModes(): ExplainPlanCacheMode[] {
   throw new Error(`Invalid EXPLAIN_PLAN_CACHE_MODE: "${mode}"`)
 }
 
-export function prepareOutputDir() {
-  mkdirSync(OUTPUT_DIR, { recursive: true })
+export function prepareOutputDir(outputDir = OUTPUT_DIR) {
+  mkdirSync(outputDir, { recursive: true })
 }
 
 async function captureScenario(
@@ -161,9 +161,9 @@ async function captureScenario(
   completedScenarioIds.push(label)
 }
 
-export function writeResults() {
+export function writeResults(outputDir = OUTPUT_DIR) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const outputPath = join(OUTPUT_DIR, `results-${timestamp}.json`)
+  const outputPath = join(outputDir, `results-${timestamp}.json`)
   writeFileSync(outputPath, JSON.stringify({ results, completedScenarioIds }, null, 2))
   writeSecondPassResults(outputPath, completedScenarioIds)
   console.log(`\nResults written to: ${outputPath}`)

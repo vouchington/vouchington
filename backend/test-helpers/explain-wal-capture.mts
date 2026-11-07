@@ -4,6 +4,7 @@ import { coldWalPageAddress, selectSealedUsers, type LocatedUser } from './expla
 // Fullness is the page hole, not a live-row count. A dirty users page can be
 // full with fewer than 30 rows when other tuples are wider or dead.
 // Wider rows avoid narrow reusable holes; physical validation still decides.
+const COLD_WAL_INITIAL_FILL_ROWS = 16
 const COLD_WAL_FILL_ROWS = 600
 const COLD_WAL_FILL_LIMIT = 2401
 const COLD_WAL_MIN_PAGES = 3
@@ -91,8 +92,13 @@ async function reserveColdWalUsers(ids: string[]): Promise<string[]> {
   if (padding <= 0) throw new Error('Cold WAL users row exceeds inline page target')
   let chosen: string[] = []
   while (ids.length < COLD_WAL_FILL_LIMIT && chosen.length < COLD_WAL_MIN_PAGES) {
-    ids.push(...(await insertColdWalUsers(COLD_WAL_FILL_ROWS, padding)))
-    chosen = await sealedColdWalUsers(ids)
+    // Allow one partial page before three full four-row pages. A dirty heap can
+    // need more candidates; keep the existing bounded fallback for that case.
+    const batchSize = ids.length === 1 ? COLD_WAL_INITIAL_FILL_ROWS : COLD_WAL_FILL_ROWS
+    ids.push(
+      ...(await insertColdWalUsers(Math.min(batchSize, COLD_WAL_FILL_LIMIT - ids.length), padding)),
+    )
+    chosen = (await sealedColdWalUsers(ids)).slice(0, COLD_WAL_MIN_PAGES)
   }
   if (chosen.length < COLD_WAL_MIN_PAGES) {
     throw new Error(
