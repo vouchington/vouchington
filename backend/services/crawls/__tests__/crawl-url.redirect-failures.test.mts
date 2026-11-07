@@ -67,7 +67,7 @@ describe('crawl-url redirect failures', () => {
       hopCount: 0,
       runCrawlUrl: id => {
         destinationId = id
-        return Promise.resolve(undefined)
+        return Promise.resolve(null)
       },
       url: source!,
       visitedUrls: new Set([source!.url]),
