@@ -1,6 +1,7 @@
 import { CrawlerTimeoutError } from '@modules/on-error/errors'
 import { createCrawler } from '@services/crawlers'
 import { addUrl } from '@services/urls/upsert'
+import { getUrlById } from '@services/urls/get'
 import { createTestUser, getLatestCrawlRedirectStatus } from '@voucha/test-helpers'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createCrawl } from '../create.mts'
@@ -46,6 +47,37 @@ describe('crawl-url redirect failures', () => {
       responseStatusCode: 302,
     })
     expect(status!.redirectUrlId).not.toBeNull()
+  })
+
+  it('makes a permanent redirect destination the root of its source page identity', async () => {
+    const random = Math.random().toString(36).slice(2, 15)
+    const hostname = `redirect-variant-${random}.example.com`
+    const source = await addUrl(user.id, `https://${hostname}/page`)
+    const destinationHref = `https://www.${hostname}/page`
+    const crawler = await createCrawler(user, {
+      crawler_type: 'fetch',
+      hostname_id: source!.hostname.id,
+    })
+    const crawl = await createCrawl(source!.id, crawler.id)
+    let destinationId: string | undefined
+
+    await handleCrawlRedirect({
+      crawlId: crawl.id,
+      htmlResult: createMockCrawlerResult(301, destinationHref),
+      hopCount: 0,
+      runCrawlUrl: id => {
+        destinationId = id
+        return Promise.resolve(undefined)
+      },
+      url: source!,
+      visitedUrls: new Set([source!.url]),
+    })
+
+    expect(destinationId).toBeDefined()
+    expect((await getUrlById(destinationId!, { readOnly: false }))?.canonical_url_id).toBeNull()
+    expect((await getUrlById(source!.id, { readOnly: false }))?.canonical_url_id).toBe(
+      destinationId,
+    )
   })
 })
 

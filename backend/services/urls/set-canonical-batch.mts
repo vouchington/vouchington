@@ -15,7 +15,15 @@ export class CircularCanonicalReferenceError extends Error {
   }
 }
 
-export type CanonicalPair = { urlId: string; canonicalUrlId: string }
+/**
+ * `promoteVariantTarget` marks a target that was linked as a variant of the source: an authoritative
+ * redirect makes the target the root again, instead of rejecting the reversed pointer as a cycle.
+ */
+export type CanonicalPair = {
+  urlId: string
+  canonicalUrlId: string
+  promoteVariantTarget?: boolean
+}
 export type ResolvedCanonical = { urlId: string; finalCanonicalId: string }
 
 const MAX_CANONICAL_CHAIN_DEPTH = 10
@@ -47,6 +55,11 @@ export async function setCanonicalUrls(
   // Canonical rewrites can otherwise observe uncommitted chains and create cycles or chains
   // beyond the readers' two-hop bound. Serialize only this short database transaction.
   await lockCanonicalUrlRewrites(query)
+
+  await promoteVariantTargets(
+    pairs.filter(pair => pair.promoteVariantTarget),
+    query,
+  )
 
   const urlIds = pairs.map(pair => pair.urlId)
   const canonicalIds = pairs.map(pair => pair.canonicalUrlId)
@@ -80,6 +93,20 @@ export async function setCanonicalUrls(
     await enqueueHackerNewsFlagsBestEffort([...new Set([...urlIds, ...canonicalIds, ...finalIds])])
   })
   return results
+}
+
+async function promoteVariantTargets(
+  pairs: readonly CanonicalPair[],
+  query: TransactionQuery,
+): Promise<void> {
+  if (pairs.length === 0) return
+  await query(
+    `/* promoteCanonicalVariantTargets */
+    UPDATE urls SET canonical_url_id = NULL
+    FROM unnest($1::uuid[], $2::uuid[]) AS input(url_id, canonical_url_id)
+    WHERE urls.id = input.canonical_url_id AND urls.canonical_url_id = input.url_id`,
+    [pairs.map(pair => pair.urlId), pairs.map(pair => pair.canonicalUrlId)],
+  )
 }
 
 /** Points each source at its final target, then repoints every direct back-reference to it. */

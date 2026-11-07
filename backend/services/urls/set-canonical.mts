@@ -7,9 +7,13 @@ export { CircularCanonicalReferenceError } from './set-canonical-batch.mts'
 const MAX_CANONICAL_CHAIN_DEPTH = 10
 
 /** Returns the canonical target after commit so callers can schedule a fresh lookup for it. */
-export const setCanonicalUrl = async (urlId: string, canonicalUrlId: string): Promise<string> => {
+export const setCanonicalUrl = async (
+  urlId: string,
+  canonicalUrlId: string,
+  options: { promoteVariantTarget?: boolean } = {},
+): Promise<string> => {
   await using query = await beginTransaction()
-  await setCanonicalUrls([{ urlId, canonicalUrlId }], query)
+  await setCanonicalUrls([{ urlId, canonicalUrlId, ...options }], query)
   await query.commit()
 
   // Another canonical rewrite can retarget this URL after commit. Read the primary, and let
