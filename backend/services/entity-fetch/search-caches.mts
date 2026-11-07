@@ -10,27 +10,16 @@ import { searchCommunities } from '@services/communities/search'
 import { getTrendingTopics } from '@services/trending-topics/get-trending-topics'
 import type { TrendingTopicsOptions } from '@services/trending-topics/types'
 import { searchUrlHostnames, type SearchUrlHostnamesOptions } from '@services/urls-hostnames/search'
-import {
-  searchTopHostnames,
-  type SearchTopHostnamesOptions,
-} from '@services/urls-hostnames/search-top'
-import { getTrendingRssFeeds } from '@services/trending-rss-feeds/get-trending-rss-feeds'
-import type { TrendingRssFeedsOptions } from '@services/trending-rss-feeds/types'
 import { getTrendingPosts } from '@services/trending-posts/get-trending-posts'
 import type { TrendingPostsOptions } from '@services/trending-posts/types'
-import { getTrendingCommunities } from '@services/trending-communities/get-trending-communities'
-import type { TrendingCommunityOptions } from '@services/trending-communities/types'
 import { getPlatformStats } from '@services/platform-stats/get-platform-stats'
 import {
   COMMUNITIES_ANON_CACHE,
   PLATFORM_STATS_ANON_CACHE,
   POST_IDS_ANON_CACHE,
   RSS_FEED_ITEMS_ANON_CACHE,
-  TOP_HOSTNAMES_ANON_CACHE,
   TOPIC_IDS_ANON_CACHE,
-  TRENDING_COMMUNITIES_ANON_CACHE,
   TRENDING_POSTS_ANON_CACHE,
-  TRENDING_RSS_FEEDS_ANON_CACHE,
   TRENDING_TOPICS_ANON_CACHE,
   URL_HOSTNAMES_ANON_CACHE,
 } from '@services/entity-cache/anonymous-search-prefixes'
@@ -82,24 +71,9 @@ export const searchUrlHostnamesCached = createSearchCache(
   (options: SearchUrlHostnamesOptions) => searchUrlHostnames(options),
 )
 
-export const searchTopHostnamesCached = createSearchCache(
-  TOP_HOSTNAMES_ANON_CACHE,
-  (options: SearchTopHostnamesOptions) => searchTopHostnames(options),
-)
-
-export const getTrendingRssFeedsCached = createSearchCache(
-  TRENDING_RSS_FEEDS_ANON_CACHE,
-  (options: TrendingRssFeedsOptions) => getTrendingRssFeeds(options),
-)
-
 export const getTrendingPostsCached = createSearchCache(
   TRENDING_POSTS_ANON_CACHE,
   (options: TrendingPostsOptions) => getTrendingPosts(options),
-)
-
-export const getTrendingCommunitiesCached = createSearchCache(
-  TRENDING_COMMUNITIES_ANON_CACHE,
-  (options: TrendingCommunityOptions) => getTrendingCommunities(options),
 )
 
 export const getPlatformStatsCached = createSearchCache(

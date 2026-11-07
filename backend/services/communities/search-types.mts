@@ -1,7 +1,14 @@
 import { buildPageInfo } from '@modules/pagination'
 import type { Community, CommunityMetrics } from './types.mts'
 
-export type CommunitySortMode = 'name' | 'members' | 'virtual_subscriptions'
+export const COMMUNITY_SORT_MODES = [
+  'name',
+  'members',
+  'virtual_subscriptions',
+  'trending',
+] as const
+
+export type CommunitySortMode = (typeof COMMUNITY_SORT_MODES)[number]
 
 export type CommunityFeedCategory = 'posts' | 'news' | 'news_sources' | 'news_topics'
 

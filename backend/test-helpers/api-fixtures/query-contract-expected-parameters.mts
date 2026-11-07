@@ -71,7 +71,6 @@ export const newExpectedParameters = {
   'GET:/api/v1/hostnames/blocked': ['after', 'limit'],
   'GET:/api/v1/hostnames/compare': ['ids'],
   'GET:/api/v1/hostnames/social': ['after', 'limit'],
-  'GET:/api/v1/hostnames/top': ['after', 'limit', 'topic'],
   'GET:/api/v1/lists/contains': ['entity_id', 'item_type'],
   'GET:/api/v1/localization': ['consumer', 'locales', 'selectors'],
   'GET:/api/v1/my/conversations': ['after', 'limit'],
@@ -99,7 +98,6 @@ export const newExpectedParameters = {
     'topic_slug',
     'topic_title',
   ],
-  'GET:/api/v1/trending-communities': ['after', 'limit'],
   'GET:/api/v1/trending-posts': [
     'after',
     'limit',

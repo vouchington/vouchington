@@ -30,6 +30,14 @@ export function communityCandidateSortTail(
     LIMIT ${limit + 1}`
     case 'virtual_subscriptions':
       return virtualSubscriptionTail(cursorScore, cursorId, limit, listedVirtual)
+    case 'trending':
+      return cursorScore !== undefined && cursorId !== undefined
+        ? sql` AND (trending.trending_score, c.id) < (${cursorScore}, ${cursorId})
+    ORDER BY trending.trending_score DESC, c.id DESC
+    LIMIT ${limit + 1}`
+        : sql`
+    ORDER BY trending.trending_score DESC, c.id DESC
+    LIMIT ${limit + 1}`
     default:
       return assertNever(sort, 'Unknown community sort')
   }
@@ -63,6 +71,8 @@ export function communitySelectedSortOrder(sort: CommunitySortMode): SQLStatemen
       return sql` ORDER BY selected.member_count DESC, selected.id DESC`
     case 'virtual_subscriptions':
       return sql` ORDER BY selected.virtual_subscription_count DESC, selected.id DESC`
+    case 'trending':
+      return sql` ORDER BY selected.trending_score DESC, selected.id DESC`
     default:
       return assertNever(sort, 'Unknown community sort')
   }

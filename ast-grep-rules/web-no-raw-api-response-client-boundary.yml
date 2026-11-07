@@ -26,12 +26,12 @@ examples:
     file: 'web/components/comments/use-comment-tree-state.ts'
   - code: |
       'use client'
-      import type { TrendingFeedsResponse } from '@/types/api-responses'
+      import type { TrendingTopicsResponse } from '@/types/api-responses'
     isValid: false
     file: web/components/home/trending-feeds.tsx
   - code: |
       'use client'
-      import type { TrendingFeedsResponse } from '@/types/api-responses/urls-onboarding-and-trends'
+      import type { TrendingTopicsResponse } from '@/types/api-responses/urls-onboarding-and-trends'
     isValid: false
     file: web/components/home/trending-feeds.tsx
   - code: |

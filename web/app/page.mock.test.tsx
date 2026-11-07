@@ -8,10 +8,9 @@ vi.mock(import('@/lib/auth/get-current-user'), () => ({
 }))
 
 vi.mock(import('@/lib/api/server/rss-feeds'), () => ({
-  getTrendingRssFeeds: vi.fn<VitestLooseMock>().mockResolvedValue({
+  getRssFeeds: vi.fn<VitestLooseMock>().mockResolvedValue({
     results: [],
     page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-    rss_feeds: {},
   }),
 }))
 

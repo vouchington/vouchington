@@ -1,18 +1,6 @@
-import { clampLimit } from '@services/pagination'
-import { read } from '@data-stores/psql'
-import type { QueryExecutor } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
-
-import { decodeUuidCursor, isScoreCursor, buildPageInfo } from '@modules/pagination'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
-import type {
-  TrendingCommunityOptions,
-  TrendingCommunitiesResult,
-  TrendingCommunity,
-} from './types.mts'
-
-const DEFAULT_LIMIT = 10
+import { getMinUUIDv7ForDate } from '@modules/utils'
 
 // "Trending" means recently active, not all-time popular — and CI runs every test against one
 // shared, continuously-growing database rather than an isolated one per test, so the candidate
@@ -20,45 +8,23 @@ const DEFAULT_LIMIT = 10
 export const TRENDING_WINDOW_DAYS = 30
 export const TRENDING_CANDIDATE_LIMIT = 1000
 
-type TrendingCommunitiesDependencies = {
-  read: typeof read
-}
-const defaultDependencies: TrendingCommunitiesDependencies = { read }
-
-export async function getTrendingCommunities(
-  options: TrendingCommunityOptions,
-  dependencyOverrides: Partial<TrendingCommunitiesDependencies> = {},
-): Promise<TrendingCommunitiesResult> {
-  const dependencies = { ...defaultDependencies, ...dependencyOverrides }
-  const { limit, after } = options
-
-  const safeLimit = Math.floor(clampLimit(limit, DEFAULT_LIMIT, 50))
-
-  let cursorScore: number | undefined
-  let cursorId: string | undefined
-  if (after) {
-    const cursor = decodeUuidCursor(
-      after,
-      isScoreCursor,
-      'Invalid cursor format: expected score cursor',
-    )
-    cursorScore = cursor.score
-    cursorId = cursor.id
-  }
-
+/**
+ * The CTE chain that scores trending communities, ending in a `scored` CTE of
+ * (id, trending_score). The caller prefixes `WITH` and any earlier CTEs, and reads `scored`.
+ *
+ * Candidates are the top TRENDING_CANDIDATE_LIMIT communities by recent post activity;
+ * members/follows/mutes are then aggregated only for those candidates, so cost is a function
+ * of the cap instead of total community count. A community with no posts in the window never
+ * becomes a candidate, however many members/follows/mutes it has.
+ *
+ * These are set-based equivalents of the view_community_metrics counts. That view's correlated
+ * per-community subqueries cannot apply LIMIT until every public community is scored.
+ */
+export function trendingCommunityScoreCtes(): SQLStatement {
   const windowCutoffDate = new Date(Date.now() - TRENDING_WINDOW_DAYS * 24 * 60 * 60 * 1000)
   const postCutoffId = getMinUUIDv7ForDate(windowCutoffDate)
 
-  // Set-based equivalents of view_community_metrics counts. That view's correlated
-  // per-community subqueries cannot apply LIMIT until every public community is scored.
-  //
-  // Candidates are the top TRENDING_CANDIDATE_LIMIT communities by recent post activity;
-  // members/follows/mutes are then aggregated only for those candidates, so cost is a function
-  // of the cap instead of total community count. A community with no posts in the window never
-  // becomes a candidate, however many members/follows/mutes it has — see the PR description for
-  // that consequence.
-  const query = sql`/* getTrendingCommunities */
-    WITH candidate_reviewed_posts AS (
+  const ctes = sql`candidate_reviewed_posts AS (
       -- Eligibility is inlined via buildPublicPostEligibilityFilter (not joined to
       -- view_public_post_eligibility, itself NOT MATERIALIZED) so it runs against this
       -- CTE's own bounded scan instead of being evaluated once per row of the whole table.
@@ -75,9 +41,9 @@ export async function getTrendingCommunities(
         AND p.id >= ${postCutoffId}
         AND `
 
-  query.append(buildPublicPostEligibilityFilter('p', 'access_post'))
+  ctes.append(buildPublicPostEligibilityFilter('p', 'access_post'))
 
-  query.append(sql`
+  return ctes.append(sql`
     ),
     windowed_post_counts AS (
       SELECT community_id, COUNT(*)::int AS post_count
@@ -121,13 +87,7 @@ export async function getTrendingCommunities(
           + COALESCE(cand.post_count, 0)
           + COALESCE(pf.proxy_follow_count, 0)
           + COALESCE(pm.proxy_mute_count, 0)
-        )::DOUBLE PRECISION AS trending_score,
-        COALESCE(mc.member_count, 0) AS member_count,
-        COALESCE(cand.post_count, 0) AS post_count,
-        (
-          COALESCE(pf.proxy_follow_count, 0)
-          + COALESCE(pm.proxy_mute_count, 0)
-        ) AS virtual_subscription_count
+        )::DOUBLE PRECISION AS trending_score
       FROM candidates cand
       INNER JOIN communities c ON c.id = cand.community_id
       LEFT JOIN member_counts mc ON mc.community_id = c.id
@@ -135,32 +95,39 @@ export async function getTrendingCommunities(
       LEFT JOIN proxy_mute_counts pm ON pm.community_id = c.id
       WHERE c.deleted_at IS NULL
         AND c.visibility = 'public'
-    )
-    SELECT id, trending_score, member_count, post_count, virtual_subscription_count
-    FROM scored
-    WHERE trending_score > 0`)
+    )`)
+}
 
-  if (cursorScore !== undefined && cursorId !== undefined) {
-    query.append(sql`
-      AND (trending_score, id) < (${cursorScore}, ${cursorId})`)
-  }
-
-  query.append(sql`
-    ORDER BY trending_score DESC, id DESC
-    LIMIT ${safeLimit + 1}
-  `)
-
-  const execute = (executor: QueryExecutor) => executor(query.text, query.values)
-  const { rows } = await execute(dependencies.read)
-
-  const hasNextPage = rows.length > safeLimit
-  const communities = rows.slice(0, safeLimit) as TrendingCommunity[]
-
-  return {
-    communities,
-    page_info: buildPageInfo(communities, {
-      hasNextPage,
-      getCursor: item => ({ score: item.trending_score, id: item.id }),
-    }),
-  }
+/**
+ * The candidate query for sort=trending: the scored candidates joined to communities, before the
+ * shared filters, hydration and keyset tail. Only the filters that exist for it apply: q, member_id
+ * and has_list_items.
+ */
+export function startTrendingCommunityCandidates(
+  hasListItems: boolean,
+  search?: string,
+  memberUserId?: string,
+): SQLStatement {
+  const query = sql`/* searchCommunities */ WITH `
+  if (search)
+    query.append(sql`search_matches AS MATERIALIZED (
+      SELECT id FROM communities
+      WHERE deleted_at IS NULL
+        AND search_vector @@ websearch_to_tsquery('voucha_english', ${search})
+    ), `)
+  if (memberUserId)
+    query.append(sql`member_matches AS MATERIALIZED (
+      SELECT community_id AS id FROM community_members
+      WHERE user_id = ${memberUserId} AND removed_at IS NULL
+    ), `)
+  query.append(trendingCommunityScoreCtes()).append(sql`,
+    candidate_communities AS MATERIALIZED (
+      SELECT c.id, c.name, trending.trending_score
+      FROM scored trending
+      JOIN communities c ON c.id = trending.id`)
+  if (search) query.append(sql` JOIN search_matches matched ON matched.id = c.id`)
+  if (memberUserId) query.append(sql` JOIN member_matches member_match ON member_match.id = c.id`)
+  if (hasListItems)
+    query.append(sql` JOIN community_search_counts counts ON counts.community_id = c.id`)
+  return query.append(sql` WHERE c.deleted_at IS NULL`)
 }

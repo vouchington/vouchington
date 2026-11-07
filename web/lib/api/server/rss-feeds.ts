@@ -1,11 +1,7 @@
 import { cache } from 'react'
 import { serverApi } from './instance'
 import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
-import type {
-  RssFeedsListResponseBody,
-  TrendingFeedsResponse,
-  ListResponse,
-} from '@/types/api-responses'
+import type { RssFeedsListResponseBody, ListResponse } from '@/types/api-responses'
 
 interface GetOptions {
   searchParams?: Record<string, string | number | boolean | undefined>
@@ -15,12 +11,6 @@ interface GetOptions {
 export const getRssFeeds = cache(
   async (options: GetOptions = {}): Promise<RssFeedsListResponseBody> => {
     return serverApi.get<RssFeedsListResponseBody>('/api/v1/rss-feeds', options)
-  },
-)
-
-export const getTrendingRssFeeds = cache(
-  async (options: GetOptions = {}): Promise<TrendingFeedsResponse> => {
-    return serverApi.get<TrendingFeedsResponse>('/api/v1/rss-feeds/trending', options)
   },
 )
 

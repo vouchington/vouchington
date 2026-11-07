@@ -1200,18 +1200,12 @@ importers:
       '@services/totp':
         specifier: workspace:^
         version: link:../services/totp
-      '@services/trending-communities':
-        specifier: workspace:^
-        version: link:../services/trending-communities
       '@services/trending-posts':
         specifier: workspace:^
         version: link:../services/trending-posts
       '@services/trending-referral-programs':
         specifier: workspace:^
         version: link:../services/trending-referral-programs
-      '@services/trending-rss-feeds':
-        specifier: workspace:^
-        version: link:../services/trending-rss-feeds
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../services/trending-topics
@@ -2139,18 +2133,12 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../services/topics
-      '@services/trending-communities':
-        specifier: workspace:^
-        version: link:../services/trending-communities
       '@services/trending-posts':
         specifier: workspace:^
         version: link:../services/trending-posts
       '@services/trending-referral-programs':
         specifier: workspace:^
         version: link:../services/trending-referral-programs
-      '@services/trending-rss-feeds':
-        specifier: workspace:^
-        version: link:../services/trending-rss-feeds
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../services/trending-topics
@@ -3906,15 +3894,9 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../services/topics
-      '@services/trending-communities':
-        specifier: workspace:^
-        version: link:../services/trending-communities
       '@services/trending-posts':
         specifier: workspace:^
         version: link:../services/trending-posts
-      '@services/trending-rss-feeds':
-        specifier: workspace:^
-        version: link:../services/trending-rss-feeds
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../services/trending-topics
@@ -6910,15 +6892,9 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
-      '@services/trending-communities':
-        specifier: workspace:^
-        version: link:../trending-communities
       '@services/trending-posts':
         specifier: workspace:^
         version: link:../trending-posts
-      '@services/trending-rss-feeds':
-        specifier: workspace:^
-        version: link:../trending-rss-feeds
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../trending-topics
@@ -11634,37 +11610,6 @@ importers:
         specifier: workspace:^
         version: link:../../types
 
-  backend/services/trending-communities:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/feed-query-builders':
-        specifier: workspace:^
-        version: link:../../modules/feed-query-builders
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/communities':
-        specifier: workspace:^
-        version: link:../communities
-      '@services/pagination':
-        specifier: workspace:^
-        version: link:../pagination
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/services/trending-posts:
     dependencies:
       '@data-stores/psql':
@@ -11725,31 +11670,6 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
-
-  backend/services/trending-rss-feeds:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@services/pagination':
-        specifier: workspace:^
-        version: link:../pagination
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      http-errors:
-        specifier: ^2.0.1
-        version: 2.0.1
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-    devDependencies:
-      '@types/http-errors':
-        specifier: ^2.0.5
-        version: 2.0.5
 
   backend/services/trending-topics:
     dependencies:

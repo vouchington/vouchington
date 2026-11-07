@@ -111,12 +111,6 @@
       "routes": ["GET:/api/v1/topics/:idOrSlug/referral-program"]
     },
     {
-      "target": "discover_communities",
-      "option": "trending",
-      "args": {},
-      "routes": ["GET:/api/v1/trending-communities"]
-    },
-    {
       "target": "discover_topics",
       "option": "trending_referral_programs",
       "args": {},
@@ -161,12 +155,6 @@
         "rss_feed_item_id": "00000000-0000-4000-8000-000000000001"
       },
       "routes": ["GET:/api/v1/rss-feed-items/:id"]
-    },
-    {
-      "target": "discover_rss_feeds",
-      "option": "trending",
-      "args": {},
-      "routes": ["GET:/api/v1/rss-feeds/trending"]
     },
     {
       "target": "discover_rss_feeds",
@@ -351,12 +339,6 @@
         "post_id": "sample"
       },
       "routes": ["GET:/api/v1/posts/:idOrSlug"]
-    },
-    {
-      "target": "read_hostnames",
-      "option": "top",
-      "args": {},
-      "routes": ["GET:/api/v1/hostnames/top"]
     },
     {
       "target": "read_topic",

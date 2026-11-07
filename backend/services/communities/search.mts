@@ -19,6 +19,7 @@ import type {
   CommunityFeedCategory,
   SearchCommunitiesResult,
 } from './search-types.mts'
+export { COMMUNITY_SORT_MODES } from './search-types.mts'
 export type {
   CommunitySortMode,
   CommunityFeedCategory,
@@ -136,6 +137,7 @@ export async function searchCommunities(
     ', u.id AS owner_id, u.username AS owner_username, (SELECT e.account_type FROM view_embedded_users e WHERE e.id = u.id) AS owner_account_type',
   )
   searchQuery.append(buildCommunityImagePlacementSelect())
+  if (sort === 'trending') searchQuery.append(sql`, selected.trending_score`)
   searchQuery.append(sql`,
       vm.member_count,
       vm.post_count,

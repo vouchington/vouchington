@@ -110,7 +110,7 @@ export async function seedPostCategoryRelationVoteDensity(): Promise<void> {
   )
 }
 
-// search-top-hostnames(-by-topic), friend-trusted-hostnames, and url-hostname-search-by-topic all
+// search-hostnames-trust(-by-topic), friend-trusted-hostnames, and url-hostname-search-by-topic all
 // need a real hostname tagged with seedTopicId and carrying a non-zero denormalized vote count —
 // seedHostnames never sets topic_id or votes. The voter is user index 1, whom seedUser (index 0)
 // already follows via seedFollowRelations, satisfying getFriendTrustedHostnames' "friend" join too.

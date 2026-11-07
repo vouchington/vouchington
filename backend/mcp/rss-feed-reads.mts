@@ -2,9 +2,13 @@ import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import { getRssFeedByIdCached } from '@services/entity-fetch'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
-import { searchRssFeeds } from '@services/rss-feeds'
-import { prepareRssFeedsSearchParams, resolveRssFeedsSearchParams } from '@services/search-params'
-import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
+import { buildRssFeedsPage, decodeRssFeedsCursor, searchRssFeeds } from '@services/rss-feeds'
+import {
+  prepareRssFeedsSearchParams,
+  resolveRssFeedsSearchParams,
+  RSS_FEED_SORTS,
+  RSS_FEED_TIME_RANGES,
+} from '@services/search-params'
 import { rssFeedReferenceSchema, topicReferenceSchema } from './entity-reference-schema.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
@@ -29,6 +33,8 @@ type ListArgs = {
   topic?: string
   topic_match?: 'any' | 'all'
   topics?: string[]
+  sort?: (typeof RSS_FEED_SORTS)[number]
+  time_range?: (typeof RSS_FEED_TIME_RANGES)[number]
   limit?: number
   after?: string
 }
@@ -39,7 +45,7 @@ const MAX_LIMIT = 25
 
 export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
   schema: {
-    description: `Search RSS feeds by title, type and current state. Returns at most ${MAX_LIMIT} feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST.`,
+    description: `Search RSS feeds by title, type and current state. Returns at most ${MAX_LIMIT} feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST. sort=trending ranks the feeds that gained follows or items in time_range (day, week or month; default week) and takes no filter besides apply_mutes, limit and after.`,
     parameters: {
       type: 'object',
       properties: {
@@ -57,6 +63,16 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
         topic: topicReferenceSchema,
         topic_match: { type: 'string', enum: ['any', 'all'] },
         topics: { type: 'array', items: topicReferenceSchema },
+        sort: {
+          type: 'string',
+          enum: [...RSS_FEED_SORTS],
+          description: 'trending ranks the most followed and most active feeds in time_range.',
+        },
+        time_range: {
+          type: 'string',
+          enum: [...RSS_FEED_TIME_RANGES],
+          description: 'The trending window. Defaults to week. Only with sort=trending.',
+        },
         limit: { type: 'integer', minimum: 1, description: 'Defaults to 25; clamped to 25.' },
         after: { type: 'string' },
       },
@@ -95,28 +111,26 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
           topic: topics.topic,
           topic_match: args.topic_match,
           topics: topics.topics,
+          sort: args.sort,
+          time_range: args.time_range,
         })
         const { shouldReturnEmpty, searchOptions } = await resolveRssFeedsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
         if (args.after && searchOptions.text_search_query) return null
-        const cursorId = args.after
-          ? decodeUuidCursor(args.after, isSimpleCursor, 'Invalid cursor').id
-          : undefined
+        const cursor = decodeRssFeedsCursor(args.after, searchOptions.sort)
         const limit = clampToolLimit(args.limit, MAX_LIMIT, MAX_LIMIT)
-        const feeds = await searchRssFeeds({
+        const rows = await searchRssFeeds({
           ...searchOptions,
           limit: limit + 1,
-          cursorId,
+          ...cursor,
           ...(args.apply_mutes ? { current_user_id: currentUser.id } : {}),
         })
-        const results = feeds.slice(0, limit)
-        return {
-          results: await toMcpRssFeeds(results),
-          page_info: buildPageInfo(results, {
-            hasNextPage: feeds.length > limit && !searchOptions.text_search_query,
-            getCursor: feed => ({ id: feed.id }),
-          }),
-        }
+        const { feeds, page_info } = buildRssFeedsPage(rows, {
+          limit,
+          sort: searchOptions.sort,
+          hasTextSearch: !!searchOptions.text_search_query,
+        })
+        return { results: await toMcpRssFeeds(feeds), page_info }
       })
       if (!page) return INVALID_CURSOR_RESULT
       return { success: true, ...page }

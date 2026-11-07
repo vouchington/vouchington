@@ -14,7 +14,13 @@ import { extractIdentifier, extractIdentifiers, checkShouldReturnEmpty } from '.
 import { resolveHashtagTopicSearch } from './hashtag-topic-search.mts'
 import { prepareQueryForValidation } from './prepare-query.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import {
+  RSS_FEED_SORTS,
+  RSS_FEED_TIME_RANGES,
+  resolveTrendingOptions,
+} from './rss-feeds-trending.mts'
 export const VALID_FEED_TYPES = ['article', 'podcast', 'video', 'mixed'] as const
+export { RSS_FEED_SORTS, RSS_FEED_TIME_RANGES }
 
 type RssFeedsSearchOptions = {
   topic_id?: string
@@ -30,6 +36,8 @@ type RssFeedsSearchOptions = {
   discoverable?: boolean | null
   feed_type?: (typeof VALID_FEED_TYPES)[number]
   category_topic_id?: string
+  sort?: (typeof RSS_FEED_SORTS)[number]
+  time_range?: (typeof RSS_FEED_TIME_RANGES)[number]
 }
 
 const rssFeedsQueryContract = defineQueryContract({
@@ -46,6 +54,8 @@ const rssFeedsQueryContract = defineQueryContract({
   discoverable: queryNullableBoolean(),
   feed_type: queryEnum(VALID_FEED_TYPES),
   category: queryString(),
+  sort: queryEnum(RSS_FEED_SORTS),
+  time_range: queryEnum(RSS_FEED_TIME_RANGES),
 })
 
 export function prepareRssFeedsSearchParams(query: Record<string, unknown>) {
@@ -64,6 +74,8 @@ export function prepareRssFeedsSearchParams(query: Record<string, unknown>) {
     textSearchQuery: query.text_search_query,
     enabled: query.enabled,
     discoverable: query.discoverable,
+    sort: query.sort,
+    timeRange: query.time_range,
   }
 }
 
@@ -88,6 +100,7 @@ export async function resolveRssFeedsSearchParams(
   if (typeof feedType === 'string' && !isFeedType(feedType)) {
     return { shouldReturnEmpty: true, searchOptions: {} }
   }
+  const trendingOptions = resolveTrendingOptions(prepared)
 
   const [
     hashtagSearch,
@@ -159,6 +172,7 @@ export async function resolveRssFeedsSearchParams(
     ...(discoverable !== undefined ? { discoverable } : {}),
     ...(isFeedType(feedType) ? { feed_type: feedType } : {}),
     ...(resolvedCategoryTopicId ? { category_topic_id: resolvedCategoryTopicId } : {}),
+    ...trendingOptions,
   }
 
   return { shouldReturnEmpty, searchOptions }

@@ -2,7 +2,7 @@ import { escapeLikePattern } from '@modules/search-utils'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendTopicDescendantsCte } from '@services/topics/descendants-sql'
-import type { SearchRssFeedsOptions, ViewRssFeed } from './types.mts'
+import type { RssFeedSearchRow, SearchRssFeedsOptions } from './types.mts'
 import { mutedPublisherTypeFilter, publisherTypeCandidateJoin } from './search-publisher-types.mts'
 export type { SearchRssFeedsOptions }
 
@@ -24,7 +24,11 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     feed_type,
     category_topic_id,
     cursorId,
+    sort,
+    time_range = 'week',
+    cursorScore,
   } = options
+  const trending = sort === 'trending'
 
   const filters: ReturnType<typeof sql>[] = [sql`rss_feeds.deleted_at IS NULL`]
   let sortBy = sql`rss_feeds.id DESC`
@@ -82,7 +86,15 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
       WHERE rfc.rss_feed_id = rss_feeds.id AND rfc.topic_id = ${category_topic_id}
     )`)
   }
-  if (cursorId) filters.push(sql`rss_feeds.id < ${cursorId}::uuid`)
+  if (trending) {
+    filters.push(sql`trending.window_name = ${time_range}`)
+    if (cursorScore !== undefined && cursorId) {
+      filters.push(
+        sql`(trending.trending_score, trending.id) < (${cursorScore}, ${cursorId}::uuid)`,
+      )
+    }
+    sortBy = sql`trending.trending_score DESC, trending.id DESC`
+  } else if (cursorId) filters.push(sql`rss_feeds.id < ${cursorId}::uuid`)
   // is_enabled/discoverable === null means no filter
   if (is_enabled === true) {
     filters.push(sql`rss_feeds.is_enabled = TRUE`)
@@ -95,7 +107,7 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     filters.push(sql`rss_feeds.is_discoverable = FALSE`)
   }
 
-  const hasTextSearch = text_search_query && typeof text_search_query === 'string'
+  const hasTextSearch = !trending && text_search_query && typeof text_search_query === 'string'
   const shouldIncludeTopicDescendants = include_descendants && effectiveTopicIds.length > 0
 
   const query = sql`/* searchRssFeeds */
@@ -124,10 +136,13 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   } else {
     query.append(sql`
       rss_feed_ids AS MATERIALIZED (
-        SELECT id
-    `)
+        SELECT `)
+    query.append(trending ? sql`rss_feeds.id, trending.trending_score AS cursor_score` : sql`id`)
   }
-  if (joinTopicDescendants) {
+  if (trending) {
+    query.append(sql` FROM mv_trending_rss_feeds trending
+      JOIN rss_feeds ON rss_feeds.id = trending.id`)
+  } else if (joinTopicDescendants) {
     // Active topic_id is unique, so each descendant contributes at most one feed.
     query.append(sql` FROM (SELECT DISTINCT topic_id FROM topic_descendants) selected_topics
       JOIN LATERAL (
@@ -157,7 +172,9 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     )
 
     SELECT
-      view_rss_feeds.*
+      view_rss_feeds.*`)
+  if (trending) query.append(sql`, rss_feed_ids.cursor_score`)
+  query.append(sql`
     FROM rss_feed_ids
     JOIN LATERAL (
       WITH keyed_feed AS MATERIALIZED (
@@ -168,8 +185,9 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   `)
 
   // Browse path: outer ORDER BY for deterministic end_cursor (join doesn't preserve CTE order).
-  if (!hasTextSearch) query.append(sql` ORDER BY view_rss_feeds.id DESC`)
+  if (trending) query.append(sql` ORDER BY rss_feed_ids.cursor_score DESC, view_rss_feeds.id DESC`)
+  else if (!hasTextSearch) query.append(sql` ORDER BY view_rss_feeds.id DESC`)
 
-  const { rows } = await read<ViewRssFeed>(query)
+  const { rows } = await read<RssFeedSearchRow>(query)
   return rows
 }

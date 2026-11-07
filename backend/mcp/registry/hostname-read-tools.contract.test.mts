@@ -32,7 +32,7 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>): McpContract
 })
 const names = (page: { results: Row[] }) => page.results.map(row => row.hostname)
 
-describe('read_hostnames.search and read_hostnames.top — real DB', () => {
+describe('read_hostnames.search — real DB', () => {
   const random = createRandomString(8).toLowerCase()
   const host = (label: string) => `${label}-${random}.example.com`
   let member: McpContractCaller
@@ -52,14 +52,6 @@ describe('read_hostnames.search and read_hostnames.top — real DB', () => {
       SCOPES,
     ) as Promise<Page>
   }
-  const top = (args: Body = {}, caller = member) =>
-    callStructuredMcpTool(
-      caller,
-      'read_hostnames',
-      optionArgs('top', args),
-      SCOPES,
-    ) as Promise<Page>
-
   beforeAll(async () => {
     ;[member, admin] = (
       await Promise.all([createTestUser(), createTestUser({ administrator: true })])
@@ -167,47 +159,35 @@ describe('read_hostnames.search and read_hostnames.top — real DB', () => {
     })
   })
 
-  describe('read_hostnames.top', () => {
-    it('lists the voted hostnames of a topic and never a blocked one', async () => {
-      const { results } = await top({ topic: topic.id })
-
-      expect(results).toEqual([
-        {
-          id: ids['topic'],
-          hostname: host('topic'),
-          topic_id: topic.id,
-          election: { votes_count_up: 3, votes_count_down: 0, votes_score_net: 3 },
-        },
-      ])
-      expect((await top({ topic: blockedTopic.slug }, admin)).results).toEqual([])
+  describe('read_hostnames.search sort trust', () => {
+    it('lists the hostnames of a topic by trust, with no blocked one, for every caller', async () => {
+      for (const caller of [member, admin]) {
+        expect(names(await search({ topic: topic.id, sort: 'trust' }, caller))).toEqual([
+          host('topic'),
+        ])
+        expect((await search({ topic: blockedTopic.slug, sort: 'trust' }, caller)).results).toEqual(
+          [],
+        )
+      }
     })
 
-    it('returns the same hostnames as signed-out REST and none for an unknown topic', async () => {
-      const rest = await createRequest().get(`/api/v1/hostnames/top?topic=${topic.id}`).expect(200)
+    it('returns the same hostnames as signed-out REST for a topic by trust', async () => {
+      const rest = await createRequest()
+        .get(`/api/v1/hostnames?topic=${topic.id}&sort=trust`)
+        .expect(200)
 
-      expect((await top({ topic: topic.id })).results.map(row => row.id)).toEqual(
+      expect((await search({ topic: topic.id, sort: 'trust' })).results.map(row => row.id)).toEqual(
         rest.body.results.map((row: { id: string }) => row.id),
       )
-      expect((await top({ topic: `nope-${random}` })).results).toEqual([])
     })
 
-    it('leaves a blocked hostname out of the global top, for every caller', async () => {
+    it('leaves a blocked hostname out of the global trust order, for every caller', async () => {
       for (const caller of [member, admin]) {
-        const { results } = await top({ limit: 25 }, caller)
+        const { results } = await search({ sort: 'trust', limit: 25 }, caller)
 
         expect(results.map(row => row.id)).not.toContain(ids['blocked'])
         expect(results.map(row => row.id)).not.toContain(ids['blockedtopic'])
       }
-    })
-
-    it('pages by cursor and refuses a malformed one', async () => {
-      const first = await top({ limit: 1 })
-      const second = await top({ limit: 1, after: first.page_info.end_cursor })
-
-      expect(first.results).toHaveLength(1)
-      expect(first.page_info.has_next_page).toBe(true)
-      expect(second.results[0]?.id).not.toBe(first.results[0]?.id)
-      expect(await top({ after: 'not-a-cursor' })).toEqual(INVALID_CURSOR)
     })
   })
 })

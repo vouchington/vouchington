@@ -1,11 +1,9 @@
 import type * as Api from './shared'
 import type { CrawlerHtmlStructuredObject, ResolvedEmbed } from './posts-topics-and-feeds'
 
-type HostnameListResponse = Api.HostnameListResponse
 type Topic = Api.Topic
 type TopicMetrics = Api.TopicMetrics
 type PublicUser = Api.PublicUser
-type ViewRssFeed = Api.ViewRssFeed
 type Serialized<T> = Api.Serialized<T>
 type BackendReferralClickLogEntry = Api.BackendReferralClickLogEntry
 type PageInfo = Api.PageInfo
@@ -130,14 +128,6 @@ export interface ContributionStatusResponseBody {
     reason?: 'global_limit' | 'type_limit'
     retry_after_seconds?: number
   }
-}
-
-export type TopHostnamesResponse = HostnameListResponse
-
-export interface TrendingFeedsResponse {
-  results: Array<{ id: string; trending_score: number; follow_count: number; item_count: number }>
-  page_info: PageInfo
-  rss_feeds: Record<string, ViewRssFeed>
 }
 
 export interface TrendingTopicsResponse {
