@@ -4,7 +4,15 @@ import { selectExecutableEntrypoint } from '@modules/utils/executable-entrypoint
 
 /* v8 ignore start -- process entrypoint exercised by the compiled image smoke tests. */
 const ENTRYPOINTS: Record<string, () => Promise<unknown>> = {
+  'image-smoke.mts': async () => {
+    const { checkImageRuntime } = await import('@modules/utils/image-smoke')
+    checkImageRuntime()
+  },
   'enqueue-heartbeat.mts': () => import('@backend/worker-runtime/enqueue-heartbeat'),
+  'cli-smoke.mts': async () => {
+    const { runWorkerIoCliSmoke } = await import('@modules/child-process/image-smoke')
+    await runWorkerIoCliSmoke()
+  },
   'serve.mts': () => import('./serve.mts'),
 }
 

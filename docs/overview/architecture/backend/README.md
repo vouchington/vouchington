@@ -49,7 +49,9 @@ page says which layer owns what.
   flags and runs the entrypoint named next (`migrate.mts`, `schema-reset.mts`,
   `staging-aurora-wake.mts`, `valkey-admin.mts`, `verify-ipv6-egress.mts`). Any other command,
   including a Node `--eval` script, fails instead of serving; the image's `CMD` supplies
-  `serve.mts`. The runtime base stays distroless Node only because the ECS health
-  check command runs its `node`.
+  `serve.mts`. The API executable also owns a bounded local HTTP health probe so task
+  health checks can run without an interpreter. Image smoke checks use the compiled executables
+  as well, exercising the same runtime as the deployed processes. Infrastructure must adopt the
+  executable health command before the runtime image can drop Node.
 
 Test project names for focused runs are in the [project name reference](../../../development/reference-project-name-reference.md).

@@ -151,6 +151,29 @@ describe('reviewed dependency image pins', () => {
     expect(matches[0]?.groups?.currentDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
   })
 
+  it('tracks every reviewed upstream image index', () => {
+    const renovate = JSON.parse(readFileSync('renovate.json', 'utf8')) as {
+      customManagers: Array<{ description: string; matchStrings: string[] }>
+    }
+    const manager = renovate.customManagers.find(
+      candidate => candidate.description === 'Reviewed upstream image indexes copied to GHCR',
+    )
+    assertWorkflowInvariant(manager, 'Expected the upstream image manager')
+    const pattern = manager.matchStrings[0]
+    assertWorkflowInvariant(pattern, 'Expected the upstream image matcher')
+    const inventory = JSON.parse(readFileSync('ci/dependency-mirror/images.json', 'utf8')) as {
+      images: Array<{ source: string; tag: string; digest: string }>
+    }
+    for (const { source, tag, digest } of inventory.images) {
+      const entry = JSON.stringify({ source, tag, digest }, null, 2)
+      expect(new RegExp(pattern, 'u').exec(entry)?.groups).toMatchObject({
+        depName: source,
+        currentValue: tag,
+        currentDigest: digest,
+      })
+    }
+  })
+
   it('updates only the backend Distroless runtime stage', () => {
     const renovate = JSON.parse(readFileSync('renovate.json', 'utf8')) as {
       customManagers?: Array<{
