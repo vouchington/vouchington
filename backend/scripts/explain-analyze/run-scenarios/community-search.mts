@@ -5,8 +5,8 @@ import { searchCommunities } from '../run-services.mts'
 
 export async function runCommunitySearchScenarios() {
   // Candidate caps equal observed matches plus 20% in both compare modes and repeat passes:
-  // member/virtual pages 26 → 32, listed page 1 → 2, text 262 → 315, member filter 1 → 2.
-  // Correlated statistics and key hydration are budgeted independently below.
+  // member/virtual pages 26 → 32, listed page 1 → 2, ordered text walks 27 → 33 and 33 → 40,
+  // member filter 1 → 2. Correlated statistics and key hydration are budgeted independently below.
   registerScenarioContract('search-communities', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
@@ -61,22 +61,49 @@ export async function runCommunitySearchScenarios() {
   registerScenarioContract('search-communities-text', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
-      // GIN returns 262 matching candidates; the custom gate caps them at ceil(262 * 1.2) = 315.
+      // Name order reads the private slug hit plus one 25-result page: 27 rows, ceil(27 * 1.2) = 33.
       { kind: 'custom', name: 'communityTextCandidates' },
-      // Candidate read + 262 keyed lookups to order matches + 52 page/key lookups + 1,052
-      // correlated post-metric community-key reads = 1,628; ceil(1,628 * 1.2) = 1,954.
-      // Text search skips count-index ordering, but still hydrates the selected page's metrics.
-      { kind: 'maxProcessedRows', relation: 'communities', max: 1954 },
+      // The ordered page is smaller than the plain member page, whose metric hydration already
+      // accounts for 1,052 correlated post reads plus 78 key lookups: ceil(1,130 * 1.2) = 1,356.
+      { kind: 'maxProcessedRows', relation: 'communities', max: 1356 },
     ],
   })
   await runAndCapture(
     'search-communities-text',
     async () => {
-      const page = await searchCommunities({ search: 'seed', sort: 'name', limit: 25 })
+      const page = await searchCommunities({ search: 'explain', sort: 'name', limit: 25 })
       if (page.results.some(community => community.id === seedUuid(5, '14')))
         throw new Error('Public community search returned the private seed community')
     },
     'text',
+  )
+  registerScenarioContract('search-communities-text-members', {
+    expectations: [
+      { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      // The ordered count walk read 33 rows to return 26; ceil(33 * 1.2) = 40.
+      { kind: 'custom', name: 'communityTextCandidates' },
+      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 40 },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 1356 },
+    ],
+  })
+  await runAndCapture(
+    'search-communities-text-members',
+    () => searchCommunities({ search: 'explain', sort: 'members', limit: 25 }),
+    'text-members',
+  )
+  registerScenarioContract('search-communities-text-virtual-subscriptions', {
+    expectations: [
+      { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      // The ordered subscription walk read 33 rows to return 26; ceil(33 * 1.2) = 40.
+      { kind: 'custom', name: 'communityTextCandidates' },
+      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 40 },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 1356 },
+    ],
+  })
+  await runAndCapture(
+    'search-communities-text-virtual-subscriptions',
+    () => searchCommunities({ search: 'explain', sort: 'virtual_subscriptions', limit: 25 }),
+    'text-virtual-subscriptions',
   )
 
   registerScenarioContract('search-communities-member', {

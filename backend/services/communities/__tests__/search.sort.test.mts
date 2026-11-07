@@ -6,6 +6,8 @@ import {
   removeTestCommunityMember,
   insertTestProxyFollowCommunity,
   insertTestProxyMuteCommunity,
+  insertTestCommunityListItem,
+  insertTestTopic,
   createRandomString,
 } from '@voucha/test-helpers'
 import { searchCommunities } from '../search.mts'
@@ -185,6 +187,51 @@ describe('search (sort)', () => {
         expect(manyMetrics.virtual_subscription_count).toBeGreaterThanOrEqual(4)
         expect(manyMetrics.proxy_follow_count).toBeGreaterThanOrEqual(2)
         expect(manyMetrics.proxy_mute_count).toBeGreaterThanOrEqual(2)
+      })
+
+      it('keeps list-item communities when there is no text query', async () => {
+        const rand = createRandomString(8)
+        const member = await createTestUser()
+        const [listed, bare] = await Promise.all([
+          insertTestCommunity({
+            createdById: user.id,
+            name: `${rand} Listed`,
+            slug: `${rand}-vsub-listed`,
+            list_type: 'follow',
+          }),
+          insertTestCommunity({
+            createdById: user.id,
+            name: `${rand} Bare`,
+            slug: `${rand}-vsub-bare`,
+            list_type: 'mute',
+          }),
+        ])
+        const topicId = await insertTestTopic({
+          name: `Search Topic ${rand}`,
+          slug: `search-topic-${rand}`,
+          createdById: user.id,
+        })
+        await insertTestCommunityListItem({
+          communityId: listed.id,
+          itemType: 'topic',
+          entityId: topicId,
+        })
+        await Promise.all([
+          insertTestCommunityMember({ communityId: listed.id, userId: member.id }),
+          insertTestCommunityMember({ communityId: bare.id, userId: member.id }),
+        ])
+
+        const ids = (
+          await searchCommunities({
+            currentUser: member,
+            memberUserId: member.id,
+            hasListItems: true,
+            sort: 'virtual_subscriptions',
+          })
+        ).results.map(community => community.id)
+
+        expect(ids).toContain(listed.id)
+        expect(ids).not.toContain(bare.id)
       })
     })
   })

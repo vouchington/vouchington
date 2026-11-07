@@ -30,6 +30,8 @@ const SEARCH_COMMUNITIES_SCENARIOS = new Set([
   'search-communities-has-list-items',
   'search-communities-member',
   'search-communities-text',
+  'search-communities-text-members',
+  'search-communities-text-virtual-subscriptions',
   'search-communities-virtual-subscriptions',
 ])
 const POSTS_COMMUNITY_ID_INDEX = 'posts__default_community_id_idx'

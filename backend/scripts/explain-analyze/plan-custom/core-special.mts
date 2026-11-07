@@ -66,19 +66,23 @@ export function assertCorePlanCheck(name: string, result: ExplainResult): void {
       return
     }
     case 'communityTextCandidates': {
-      const candidateNodes = nodes.filter(
-        node =>
-          (baseRelationName(node) === 'communities' && node['Alias'] === 'communities') ||
-          node['Index Name'] === 'idx_communities__search',
-      )
+      const driving = communityTextDrivingScan(result.scenario_id)
+      const drivingNodes = nodes.filter(node => node['Index Name'] === driving.index)
+      const drivingRows = drivingNodes.reduce((total, node) => total + processedRows(node), 0)
       if (
-        !candidateNodes.some(node => node['Index Name'] === 'idx_communities__search') ||
-        candidateNodes.some(node => processedRows(node) > 315) ||
+        drivingNodes.length === 0 ||
+        drivingRows > driving.cap ||
+        nodes.some(node => node['Index Name'] === 'idx_communities__search') ||
         nodes.some(
-          node => node['Node Type'] === 'Seq Scan' && baseRelationName(node) === 'communities',
+          node =>
+            node['Node Type'] === 'Seq Scan' &&
+            (baseRelationName(node) === 'communities' ||
+              baseRelationName(node) === 'community_search_counts'),
         )
       )
-        throw new Error(`${result.name} must read at most 315 community text candidates via GIN`)
+        throw new Error(
+          `${result.name} must read at most ${driving.cap} ordered text-walk rows from ${driving.index}; observed ${drivingRows}`,
+        )
       return
     }
     case 'relationListingOrder':
@@ -121,4 +125,19 @@ export function assertCorePlanCheck(name: string, result: ExplainResult): void {
     default:
       throw new Error(`Unknown custom plan check: ${name}`)
   }
+}
+
+const COMMUNITY_TEXT_DRIVING_SCANS = {
+  'search-communities-text': { index: 'idx_communities__search_name', cap: 33 },
+  'search-communities-text-members': { index: 'idx_community_search_counts__members', cap: 40 },
+  'search-communities-text-virtual-subscriptions': {
+    index: 'idx_community_search_counts__virtual_subscriptions',
+    cap: 40,
+  },
+} as const
+
+function communityTextDrivingScan(scenarioId: string | undefined): { index: string; cap: number } {
+  if (!scenarioId || !(scenarioId in COMMUNITY_TEXT_DRIVING_SCANS))
+    throw new Error(`communityTextCandidates does not cover scenario ${scenarioId ?? 'missing'}`)
+  return COMMUNITY_TEXT_DRIVING_SCANS[scenarioId as keyof typeof COMMUNITY_TEXT_DRIVING_SCANS]
 }
