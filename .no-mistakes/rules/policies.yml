@@ -321,7 +321,7 @@
           file: backend/services/copyright-notices/form-reviews-reversal.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
-      # Copyright saga: one restore intent per eligible candidate of the schedule page (statutory-restoration-schedule.mts:75); P2b copyright layer reworks this entry. UNVERIFIED: page cap.
+      # Candidates of one deadline: at most one unlifted restriction per target (idx_copyright_restrictions__one_active_per_target) and at most 20 targets (http-input.mts:57), so at most 20 per call. Each runs its own transaction (no lock held across items) revalidating placement, authority and blockers. UNVERIFIED: the 20-target cap is a parse-time check, not a database constraint.
       - {
           file: backend/services/copyright-notices/statutory-restoration-schedule.mts,
           callee: 'createEligibleCopyrightRestoreIntent',
