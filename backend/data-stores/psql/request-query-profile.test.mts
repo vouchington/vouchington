@@ -97,7 +97,9 @@ describe('request query profile baseline', () => {
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     vi.stubEnv('REQUEST_QUERY_PROFILE_DIAGNOSTICS', undefined)
     try {
-      const scopedBaseline = committed.find(entry => entry.annotation === 'addListItem')
+      const scopedBaseline = committed.find(
+        entry => entry.annotation === 'getCommunityWithViewerById',
+      )
       expect(scopedBaseline).toBeDefined()
       serve(scopedBaseline?.annotation ?? '', 'POST', '/api/v1/mcp')
       expect(takeRequestQueryProfileViolations()).toEqual([])
