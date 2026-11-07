@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { buildTimeRangeFilter } from '@services/feeds/time-range-utils'
+import { buildTimeRangeFilter } from '../../modules/feed-query-builders/time-range.mts'
 import { withSeedAnchorClock } from './seed-clock.mts'
 
 const ANCHOR_MS = Date.UTC(2026, 9, 17, 12)
