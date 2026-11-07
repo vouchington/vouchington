@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import {
   createTestUser,
   insertTestCommunity,
@@ -9,6 +7,7 @@ import {
   insertTestModerationReport,
   insertTestPost,
 } from '@voucha/test-helpers'
+import { createTestModInternalConversation } from '@voucha/test-helpers/entities/conversation-participant-rows'
 import { getConversationNotificationContext } from './get-conversation-notification-context.mts'
 
 describe('mod_internal notification recipients', () => {
@@ -48,19 +47,12 @@ describe('mod_internal notification recipients', () => {
       entityType: 'post',
       entityId: postId,
     })
-    const { rows } = await write<{ id: string }>(sql`/* modInternalNotificationFixture */
-      INSERT INTO conversations (channel_type, community_id, moderation_report_id, created_by_id)
-      VALUES ('mod_internal', ${community.id}, ${reportId}, ${owner.id})
-      RETURNING id
-    `)
-    const conversationId = rows[0]?.id
-    if (!conversationId) throw new Error('fixture conversation missing')
-    await write(sql`/* modInternalNotificationFixture */
-      INSERT INTO conversation_participants (conversation_id, user_id, role)
-      VALUES
-        (${conversationId}, ${owner.id}, 'admin'),
-        (${conversationId}, ${staffParticipant.id}, 'admin')
-    `)
+    const { id: conversationId } = await createTestModInternalConversation({
+      communityId: community.id,
+      createdById: owner.id,
+      moderationReportId: reportId,
+      participantUserIds: [owner.id, staffParticipant.id],
+    })
 
     const context = await getConversationNotificationContext(conversationId, owner.id)
 

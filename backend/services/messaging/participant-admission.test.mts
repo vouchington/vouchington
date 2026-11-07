@@ -1,7 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { createTestUser } from '@voucha/test-helpers'
+import { countTestConversationParticipantRows } from '@voucha/test-helpers/entities/conversation-participant-rows'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   addConversationParticipant,
@@ -12,15 +11,6 @@ import {
   conversationParticipantLimitsConfig,
   getConversationParticipantLimit,
 } from './participant-limits.mts'
-
-async function participantRowCount(conversationId: string): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`/* participantAdmissionTestCount */
-    SELECT count(*)::int AS count
-    FROM conversation_participants
-    WHERE conversation_id = ${conversationId}
-  `)
-  return rows[0]?.count ?? 0
-}
 
 describe('conversation participant admission', () => {
   it('counts removed rows and reactivates one row at the cap', async () => {
@@ -48,7 +38,7 @@ describe('conversation participant admission', () => {
     const restored = await addConversationParticipant(owner.id, conversation.id, member.id)
     expect(restored.user_id).toBe(member.id)
     expect(restored.removed_at).toBeNull()
-    expect(await participantRowCount(conversation.id)).toBe(2)
+    expect(await countTestConversationParticipantRows(conversation.id)).toBe(2)
   })
 
   it('rejects a second active add with 409 before growing the conversation', async () => {
@@ -58,7 +48,7 @@ describe('conversation participant admission', () => {
     await expect(
       addConversationParticipant(owner.id, conversation.id, member.id),
     ).rejects.toMatchObject({ status: 409 })
-    expect(await participantRowCount(conversation.id)).toBe(2)
+    expect(await countTestConversationParticipantRows(conversation.id)).toBe(2)
   })
 
   it('does not honor a configured limit above the hard maximum', () => {
