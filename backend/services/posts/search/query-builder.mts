@@ -57,17 +57,19 @@ export function buildPostSearchQuery(
     )
   }
   appendCtes(query, ctes)
-  // Hot orders by a time-decay score no result or credit index can provide. Without this
-  // fence, LIMIT makes a votes index look cheap and the filter then walks the whole window.
+  // Hot orders by a time-decay score no result or credit index can provide. A materialized
+  // candidate set plans that filter before LIMIT, so the page cannot walk the votes index.
   const fenceHotExpressionFilter =
     sort === 'hot' &&
     !useHackerNewsHotCandidates &&
     (options.data_point_result !== undefined || options.data_point_credit_score_range !== undefined)
   if (fenceHotExpressionFilter) {
-    query.append(sql`SELECT id, post_type`)
-    if (options.hydrateDataPointPage)
-      query.append(sql`, title, data_point_vertical, structured_data`)
-    query.append(sql` FROM (`)
+    query.append(
+      ctes.length > 0
+        ? sql`,
+      data_point_hot_matches AS MATERIALIZED (`
+        : sql`WITH data_point_hot_matches AS MATERIALIZED (`,
+    )
   }
   appendPostSearchSelectAndJoins(query, {
     useSemanticCandidates: hasSemanticSearch,
@@ -104,9 +106,12 @@ export function buildPostSearchQuery(
     sort,
   })
   if (fenceHotExpressionFilter) {
+    query.append(sql`)
+  SELECT id, post_type`)
+    if (options.hydrateDataPointPage)
+      query.append(sql`, title, data_point_vertical, structured_data`)
     query.append(sql`
-    OFFSET 0
-  ) AS data_point_hot_matches`)
+    FROM data_point_hot_matches`)
     if (!omitOrderBy) query.append(sql` ORDER BY hot_score DESC, id DESC`)
     if (!omitLimit)
       query.append(sql`
