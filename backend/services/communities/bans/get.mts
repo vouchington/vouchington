@@ -49,7 +49,7 @@ export async function getActiveCommunityBans(
     sql`/* getActiveCommunityBans */
     SELECT id, case_id, community_id, user_id, banned_by_id, reason, expires_at,
       created_at, updated_at, lifted_at, lifted_by_id
-    -- no-mistakes-disable-next-line postgres-bounded-statements: lift authorization checks the issuer privileges of every active ban for this user and community; active-ban count is uncapped, and a LIMIT could omit a ban the caller may not lift.
+    -- no-mistakes-disable-next-line postgres-bounded-statements: read through partial index idx_community_bans__lookup (community_id, user_id) WHERE lifted_at IS NULL, so it touches only the unlifted bans of one user in one community; each row is a separate moderator ban action (a re-ban inserts a second row) and no write cap exists, but lift authorization must check the issuer of every active ban, and a LIMIT could omit a ban the caller may not lift.
     FROM community_bans
     WHERE community_id = ${communityId}
       AND user_id = ${userId}
