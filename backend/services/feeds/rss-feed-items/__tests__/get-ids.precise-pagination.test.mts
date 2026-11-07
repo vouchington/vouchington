@@ -8,6 +8,7 @@ import {
   followUser,
   insertTestStory,
   setTestItemStoryId,
+  setTestRssFeedItemVotes,
   setRssFeedItemShareSortAtForTest,
 } from '@voucha/test-helpers'
 import { getRssFeedItemFeedIds } from '../get-ids.mts'
@@ -23,6 +24,7 @@ describe('RSS feed precise pagination', () => {
     const topic = await createTestTopic()
     const feedId = await createTestRssFeedWithTiming(topic.id)
     await followRssFeed(user, feedId)
+    const second = new Date(Date.now() - 60_000).toISOString().slice(0, 19)
     const items = await upsertRssFeedItems(
       feedId,
       [456, 456, 455, 0].map(microseconds => {
@@ -31,7 +33,7 @@ describe('RSS feed precise pagination', () => {
           guid,
           link: `https://example.com/${guid}`,
           title: 'Precise publication',
-          isoDate: `2020-01-02T03:04:05.123${String(microseconds).padStart(3, '0')}Z`,
+          isoDate: `${second}.${String(microseconds).padStart(6, '0')}Z`,
         }
       }),
     )
@@ -61,17 +63,23 @@ describe('RSS feed precise pagination', () => {
     const feedId = await createTestRssFeedWithTiming((await createTestTopic()).id)
     await followRssFeed(user, feedId)
     for (const sharer of sharers) await followUser(user, sharer)
-    const timestamp = '2020-01-02T03:04:05.123456Z'
+    const timestamp = `${new Date(Date.now() - 60_000).toISOString().slice(0, 19)}.123456Z`
     const items = await upsertRssFeedItems(
       feedId,
-      [timestamp, timestamp, '2020-01-02T03:04:05.123455Z'].map(isoDate => {
+      [timestamp, timestamp, `${timestamp.slice(0, 20)}123455Z`].map(isoDate => {
         const guid = randomUUID()
         return { guid, link: `https://example.com/${guid}`, title: 'Tied delivery', isoDate }
       }),
     )
-    const story = await insertTestStory({ officialRssFeedItemId: items[0].id })
-    await setTestItemStoryId(items[0].id, story.id)
-    await setTestItemStoryId(items[1].id, story.id)
+    const tiedStoryItems = [items[0]!, items[1]!].toSorted((a, b) => a.id.localeCompare(b.id))
+    const canonicalStoryItem = tiedStoryItems[1]!
+    const story = await insertTestStory({ officialRssFeedItemId: tiedStoryItems[0]!.id })
+    await setTestItemStoryId(tiedStoryItems[0]!.id, story.id)
+    await setTestItemStoryId(tiedStoryItems[1]!.id, story.id)
+    await Promise.all([
+      setTestRssFeedItemVotes(items[0].id, 1),
+      setTestRssFeedItemVotes(items[1].id, 1),
+    ])
     for (const [index, sharer] of sharers.entries()) {
       await processFollowerDistributionChunk(
         (await shareRssFeedItemWithFollowers(sharer, items[index].id)).distribution_id,
@@ -95,7 +103,10 @@ describe('RSS feed precise pagination', () => {
     expect(results).toHaveLength(4)
     expect(results.slice(0, 2).map(result => result.delivery_type)).toEqual(['share', 'share'])
     expect(results[0].id.localeCompare(results[1].id)).toBeGreaterThan(0)
-    expect(results.slice(2).map(result => result.entity_id)).toEqual([items[0].id, items[2].id])
+    expect(results.slice(2).map(result => result.entity_id)).toEqual([
+      canonicalStoryItem.id,
+      items[2].id,
+    ])
     expect(new Set(results.map(result => result.id)).size).toBe(4)
     const cursor = (await getRssFeedItemFeedIds(user, options)).page_info.end_cursor!
     await expect(

@@ -11,6 +11,7 @@ import {
   insertTestStory,
   setRssFeedItemShareSortAtForTest,
   setTestItemStoryId,
+  setTestRssFeedItemVotes,
 } from '@voucha/test-helpers'
 import {
   processFollowerDistributionChunk,
@@ -69,6 +70,8 @@ describe('RSS feed decision instant', () => {
     await Promise.all([
       setTestItemStoryId(older.id, story.id),
       setTestItemStoryId(equal.id, story.id),
+      setTestRssFeedItemVotes(older.id, 1),
+      setTestRssFeedItemVotes(equal.id, 1),
     ])
 
     for (const [item, delta] of [
@@ -117,7 +120,7 @@ describe('RSS feed decision instant', () => {
         .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
     ).toEqual(
       [
-        [older.id, 'direct'],
+        [equal.id, 'direct'],
         [older.id, 'share'],
         [equal.id, 'share'],
         [newer.id, 'direct'],

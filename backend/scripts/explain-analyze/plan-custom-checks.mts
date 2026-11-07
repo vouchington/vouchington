@@ -9,11 +9,12 @@ import { assertCopyrightStatementFactsIsTargetBounded } from './plan-custom/copy
 import { assertClaimantMisuseCursorSeek } from './plan-custom/claimant-misuse-cursor.mts'
 import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-custom/embedding-reconciliation.mts'
 import { assertPaginationPlanShape } from './plan-custom/pagination-gates.mts'
+import { assertPostTopicMembershipIsReused } from './plan-custom/post-topic-membership.mts'
 import { assertPostCreationBypassPointRead } from './plan-custom/post-creation-bypass.mts'
 import { assertPostShareEligibilityIsTargetBounded } from './plan-custom/post-share-targets.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/remote-followers.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-custom/review-succession.mts'
-import { assertRssFeedCandidatesAreSetBased } from './plan-custom/rss-feed-candidates.mts'
+import { assertRssFeedPageWorkloadIsBounded } from './plan-custom/rss-feed-page-workload.mts'
 import { assertRssRecencyLateCursorPlan } from './plan-custom/rss-recency-cursor.mts'
 import {
   assertSearchCommunitiesEligibilityIsIndexed,
@@ -41,9 +42,10 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   paginationSpecial: assertPaginationPlanShape,
   postCreationBypassPointRead: assertPostCreationBypassPointRead,
   postShareTargets: assertPostShareEligibilityIsTargetBounded,
+  postTopicMembership: assertPostTopicMembershipIsReused,
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
   reviewSuccession: assertReviewSuccessionCandidatePlanIfApplicable,
-  rssFeedCandidates: assertRssFeedCandidatesAreSetBased,
+  rssFeedPageWorkload: assertRssFeedPageWorkloadIsBounded,
   rssHardDeleteRecoverySeek: assertRssHardDeleteRecoverySeek,
   rssRecencyCursor: assertRssRecencyLateCursorPlan,
   searchCommunitiesEligibility: assertSearchCommunitiesEligibilityIsIndexed,

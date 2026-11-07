@@ -1,5 +1,5 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import { seedUuid } from './common.mts'
+import { postSeedTimestampMs, seedUuid } from './common.mts'
 
 export const STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT = 1_000
 export const STORY_POST_RELATED_URL_PROJECTION_SEED = {
@@ -23,24 +23,31 @@ export async function seedStoryPostRelatedUrlProjection(): Promise<void> {
        VALUES ($1, 'EXPLAIN story URL projection') ON CONFLICT (id) DO NOTHING`,
     [STORY_POST_RELATED_URL_PROJECTION_SEED.storyId],
   )
+  // Keep the semantic/language cohort at the start of the base seed untouched.
   await query(
     `/* seedExplainData */ WITH projection_items AS (
          SELECT ids.id
          FROM rss_feed_item_guids ids
+         JOIN rss_feed_items items ON items.id = ids.id
          WHERE ids.guid LIKE 'seed-item-guid-%'
+           AND items.deleted_at IS NULL
          ORDER BY ids.id DESC
          LIMIT $1
        )
        UPDATE rss_feed_items items
        SET story_id = $2,
-           data = jsonb_set(items.data, '{title}', to_jsonb($3::text))
+           data = items.data || jsonb_build_object(
+             'title', $3::text, 'isoDate', $4::text, 'pubDate', $4::text)
        FROM projection_items
        WHERE items.id = projection_items.id
-         AND (items.story_id IS DISTINCT FROM $2::uuid OR items.data->>'title' IS DISTINCT FROM $3::text)`,
+         AND (items.story_id IS DISTINCT FROM $2::uuid OR items.data->>'title' IS DISTINCT FROM $3::text
+           OR items.data->>'isoDate' IS DISTINCT FROM $4::text
+           OR items.data->>'pubDate' IS DISTINCT FROM $4::text)`,
     [
       STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT,
       STORY_POST_RELATED_URL_PROJECTION_SEED.storyId,
       `Seed Item ${STORY_POST_RELATED_URL_PROJECTION_SEED.feedSearchToken}`,
+      new Date(postSeedTimestampMs(0) - 6 * 24 * 60 * 60_000).toISOString(),
     ],
   )
   await assertSeededStoryPostRelatedUrlProjectionCount(query)
