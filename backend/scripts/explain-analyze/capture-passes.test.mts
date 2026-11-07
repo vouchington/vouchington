@@ -65,7 +65,10 @@ describe('EXPLAIN function-call capture', () => {
     try {
       const cold = await fixture.captureCold()
       const walFpi = (plan: unknown) => (plan as { Plan: { 'WAL FPI': number } }).Plan['WAL FPI']
+      const actualRows = (plan: unknown) =>
+        (plan as { Plan: { 'Actual Rows': number } }).Plan['Actual Rows']
       expect(walFpi(cold.plan)).toBeGreaterThan(0)
+      expect(actualRows(cold.plan)).toBe(fixture.rowCount)
       const first: Awaited<ReturnType<typeof captureScenarioTwice>>[number][] = []
       const second = await captureScenarioTwice(
         [
@@ -78,7 +81,7 @@ describe('EXPLAIN function-call capture', () => {
       expect(second).toHaveLength(2)
       for (const result of [...first, ...second]) {
         expect(walFpi(result.plan)).toBeGreaterThan(0)
-        expect((result.plan as { Plan: { 'Actual Rows': number } }).Plan['Actual Rows']).toBe(1)
+        expect(actualRows(result.plan)).toBe(fixture.rowCount)
       }
       expect([...first, ...second].map(result => result.plan_cache_mode)).toEqual([
         'force_custom_plan',
