@@ -2,7 +2,6 @@ import { getStoriesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
-import { lockReferralLinkEligibility } from '@services/entity-relations/referral-link-eligibility-lock'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
@@ -50,15 +49,6 @@ export async function drainPendingStoryPostRelatedUrlProjectionCrawlEffects(
   return rowCount === rows.length ? rows.length : null
 }
 
-export async function lockProjectionEligibilityAndFindBlockedUrls(
-  query: TransactionQuery,
-  urlIds: readonly string[],
-): Promise<Set<string>> {
-  await lockReferralLinkEligibility(query, 'shared')
-  await lockStoryPostRelatedUrlProjectionHostnameBlocks(query, urlIds)
-  return findBlockedStoryPostRelatedUrlProjectionUrls(query, urlIds)
-}
-
 export async function lockPostScopeAndCheckProjectionWork(
   query: TransactionQuery,
   work: ProjectionWork,
@@ -100,42 +90,6 @@ export async function lockStoryPostRelatedUrlProjectionHostnameBlocks(
       ORDER BY id`,
     [urlIds],
   )
-}
-
-/** Read-only safety for existing active URLs; only the current source page holds host locks. */
-export async function findBlockedStoryPostRelatedUrlProjectionUrls(
-  query: TransactionQuery,
-  urlIds: readonly string[],
-): Promise<Set<string>> {
-  const { rows } = await query<{ url_id: string }>(
-    `/* findBlockedStoryPostRelatedUrlProjectionUrls */
-      WITH RECURSIVE url_targets AS (
-        SELECT url.id AS url_id, hostname.hostname
-        FROM (SELECT DISTINCT id FROM unnest($1::uuid[]) input(id)) requested
-        CROSS JOIN LATERAL (
-          SELECT id, hostname_id FROM urls WHERE id = requested.id LIMIT 1
-        ) url
-        CROSS JOIN LATERAL (
-          SELECT hostname FROM url_hostnames WHERE id = url.hostname_id LIMIT 1
-        ) hostname
-      ), hostname_suffixes AS (
-        SELECT url_id, hostname FROM url_targets
-        UNION ALL
-        SELECT url_id, substring(hostname FROM position('.' IN hostname) + 1)
-        FROM hostname_suffixes
-        WHERE position('.' IN hostname) > 0
-      )
-      SELECT DISTINCT suffix.url_id
-      FROM hostname_suffixes suffix
-      CROSS JOIN LATERAL (
-        SELECT is_blocked FROM url_hostnames WHERE hostname = suffix.hostname LIMIT 1
-      ) candidate
-      WHERE candidate.is_blocked`,
-    [urlIds],
-  )
-  const blockedUrlIds = new Set<string>()
-  for (const row of rows) blockedUrlIds.add(row.url_id)
-  return blockedUrlIds
 }
 
 export async function recordProjectionCrawlRequirements(
