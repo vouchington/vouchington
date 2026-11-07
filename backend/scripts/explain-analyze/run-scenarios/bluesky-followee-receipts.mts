@@ -3,6 +3,7 @@ import {
   deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
   START_OF_IDS,
 } from '@services/bluesky-follows/receipts'
+import { getBlueskyFollowsWorkLimit } from '@services/bluesky-follows/work-limits'
 
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -14,7 +15,6 @@ const FOLLOWEE_ID = seedUuid(5, '01')
 const HOLDER_USER_ID = seedUuid(9, '01')
 const AUTHORIZATION_ID = seedUuid(0, 'b1')
 const HOLDER_DID = 'did:plc:explainblueskyreceipts'
-const PAGE_SIZE = 500
 const SCENARIO_QUERY = 'deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage'
 
 /** One followee with many followers: each drain page is an ordered index range, never a Sort. */
@@ -78,6 +78,10 @@ async function deletePageInRolledBackTransaction(after: string): Promise<void> {
 }
 
 export async function runBlueskyFolloweeReceiptScenarios(): Promise<void> {
+  // The page size is the production LIMIT, so the bound and continuation seed follow its config.
+  const pageSize = getBlueskyFollowsWorkLimit('backfill_batch_size')
+  if (FOLLOWER_COUNT < 10 * pageSize)
+    throw new Error('FOLLOWER_COUNT must stay well above three pages of followee receipts')
   for (const id of ['bluesky-followee-receipts-page', 'bluesky-followee-receipts-continuation']) {
     registerScenarioContract(id, {
       expectations: [
@@ -88,7 +92,7 @@ export async function runBlueskyFolloweeReceiptScenarios(): Promise<void> {
         },
         // Each page row is counted by three nodes: the ordered index scan, the ctid fetch, and the
         // Delete itself. Anything near FOLLOWER_COUNT would mean the page walked the whole followee.
-        { kind: 'maxProcessedRows', relation: 'bluesky_follow_records', max: 3 * PAGE_SIZE },
+        { kind: 'maxProcessedRows', relation: 'bluesky_follow_records', max: 3 * pageSize },
       ],
       seededRows: { bluesky_follow_records: FOLLOWER_COUNT },
     })
@@ -103,7 +107,7 @@ export async function runBlueskyFolloweeReceiptScenarios(): Promise<void> {
     )
     await runAndCapture(
       'bluesky-followee-receipts-continuation',
-      () => deletePageInRolledBackTransaction(seedUuid(100 + PAGE_SIZE, '01')),
+      () => deletePageInRolledBackTransaction(seedUuid(100 + pageSize, '01')),
       undefined,
       SCENARIO_QUERY,
     )
