@@ -24,7 +24,7 @@ const topicsParser = createPaginationParser({
   limit: { min: 1, max: 100, default: 25 },
   filters: {
     topicTypes: true,
-    sort: ['new', 'best', 'relevance'] as const,
+    sort: ['new', 'best', 'relevance', 'link_count'] as const,
     search: true,
   },
 })

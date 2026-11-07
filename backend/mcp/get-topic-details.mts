@@ -4,7 +4,9 @@ import { attachTopicProvenance } from '@services/content-provenance'
 import { resolveTopic } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { getCardAttributes } from '@services/topics/cards'
+import { getReferralProgramAttributes } from '@services/topics'
 import { getRewardsProgramAttributes } from '@services/topics/rewards-programs'
+import { iso } from './mcp-read-output.mts'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
 import type { Topic } from '@services/topics/types'
 import type { Money } from '@ts-shared/money'
@@ -37,6 +39,9 @@ const OUTPUT_SCHEMA = outcomeSchema(
     bank_name: nullableName,
     brand_name: nullableName,
     rewards_program_company: nullableName,
+    company_topic_id: nullableName,
+    enabled_at: nullable({ type: 'string' }),
+    disabled_at: nullable({ type: 'string' }),
     ...HIERARCHY_OUTPUT_PROPERTIES,
   },
   [
@@ -45,6 +50,9 @@ const OUTPUT_SCHEMA = outcomeSchema(
     'bank_name',
     'brand_name',
     'rewards_program_company',
+    'company_topic_id',
+    'enabled_at',
+    'disabled_at',
     ...HIERARCHY_OUTPUT_FIELDS,
   ],
 )
@@ -68,6 +76,9 @@ type ToolResult =
       bank_name?: string | null
       brand_name?: string | null
       rewards_program_company?: string | null
+      company_topic_id?: string | null
+      enabled_at?: string | null
+      disabled_at?: string | null
     } & TopicHierarchyResult)
   | {
       success: false
@@ -77,7 +88,7 @@ type ToolResult =
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand or a rewards program's parent company. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.",
+      "Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand, a rewards program's parent company, or a referral program's company and enabled or disabled time. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.",
     parameters: {
       type: 'object',
       properties: {
@@ -164,6 +175,16 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         return {
           ...base,
           rewards_program_company: companyName,
+        }
+      }
+
+      if (topic.topic_type === 'referral_program') {
+        const attributes = await getReferralProgramAttributes(topic)
+        return {
+          ...base,
+          company_topic_id: attributes?.company_topic_id ?? null,
+          enabled_at: attributes?.enabled_at ? iso(attributes.enabled_at) : null,
+          disabled_at: attributes?.disabled_at ? iso(attributes.disabled_at) : null,
         }
       }
 

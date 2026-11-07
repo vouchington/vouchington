@@ -3130,23 +3130,10 @@
           "tool": {
             "name": "read_topic",
             "title": "Read Topic",
-            "description": "referral_program: Get a referral program's state by topic id, slug, or exact name, including its company and enabled or disabled time. An unknown topic returns Topic not found; a topic that is not a referral program returns Topic is not a referral program. Use get_referral_links for its links.\ncompare: Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"\ndetails: Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand or a rewards program's parent company. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.\nmetrics: Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.",
+            "description": "compare: Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"\ndetails: Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand, a rewards program's parent company, or a referral program's company and enabled or disabled time. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.\nmetrics: Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
-                      "enum": ["referral_program"]
-                    },
-                    "arguments": {
-                      "$ref": "#/$defs/S1"
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                },
                 {
                   "type": "object",
                   "properties": {
@@ -3157,10 +3144,10 @@
                       "type": "object",
                       "properties": {
                         "topic_id_a": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "topic_id_b": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "vertical": {
                           "type": "string",
@@ -3184,7 +3171,7 @@
                       "type": "object",
                       "properties": {
                         "topic_id": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "hierarchy": {
                           "type": "string",
@@ -3215,7 +3202,14 @@
                       "enum": ["metrics"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "type": "object",
+                      "properties": {
+                        "topic_id": {
+                          "$ref": "#/$defs/S1"
+                        }
+                      },
+                      "required": ["topic_id"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -3224,17 +3218,6 @@
               ],
               "$defs": {
                 "S1": {
-                  "type": "object",
-                  "properties": {
-                    "topic_id": {
-                      "type": "string",
-                      "description": "Topic id, slug, or exact name"
-                    }
-                  },
-                  "required": ["topic_id"],
-                  "additionalProperties": false
-                },
-                "S2": {
                   "type": "string",
                   "description": "Topic id, slug, or exact name"
                 }
@@ -3243,42 +3226,6 @@
             "outputSchema": {
               "type": "object",
               "anyOf": [
-                {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "success": {
-                          "const": true
-                        },
-                        "topic_id": {
-                          "type": "string"
-                        },
-                        "company_topic_id": {
-                          "$ref": "#/$defs/S4"
-                        },
-                        "enabled_at": {
-                          "$ref": "#/$defs/S4"
-                        },
-                        "disabled_at": {
-                          "$ref": "#/$defs/S4"
-                        }
-                      },
-                      "required": [
-                        "success",
-                        "topic_id",
-                        "company_topic_id",
-                        "enabled_at",
-                        "disabled_at"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "$ref": "#/$defs/S3"
-                    }
-                  ]
-                },
                 {
                   "type": "object",
                   "oneOf": [
@@ -3433,6 +3380,15 @@
                           "$ref": "#/$defs/S4"
                         },
                         "rewards_program_company": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "company_topic_id": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "enabled_at": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "disabled_at": {
                           "$ref": "#/$defs/S4"
                         },
                         "parents": {
@@ -3694,20 +3650,15 @@
             "_meta": {
               "voucha/requiredScopes": ["topics:read"],
               "voucha/optionOutputPointers": {
-                "referral_program": "#/anyOf/0",
-                "compare": "#/anyOf/1",
-                "details": "#/anyOf/2",
-                "metrics": "#/anyOf/3"
+                "compare": "#/anyOf/0",
+                "details": "#/anyOf/1",
+                "metrics": "#/anyOf/2"
               }
             }
           },
           "plan": "free",
           "roles": null,
           "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/topics/:idOrSlug/referral-program"
-            },
             {
               "method": "GET",
               "path": "/api/v1/topics/compare"
@@ -4169,36 +4120,10 @@
           "tool": {
             "name": "discover_topics",
             "title": "Discover Topics",
-            "description": "trending_referral_programs: List referral programs with the most new active links in the last 30 days. Results give topic ids, scores and link counts. Use read_topic (option details) for a program and get_referral_links for its links.\ntrending: Find topics trending from recent posts and news. Results give topic ids and scores; use read_topic (option details) for full details.\nsearch: Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search.",
+            "description": "trending: Find topics trending from recent posts and news. Results give topic ids and scores; use read_topic (option details) for full details.\nsearch: Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. sort=link_count lists enabled referral programs by all-time active link count and does not combine with text or semantic search.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
-                      "enum": ["trending_referral_programs"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "limit": {
-                          "type": "integer",
-                          "minimum": 1,
-                          "maximum": 25,
-                          "description": "Referral programs per page; defaults to 10."
-                        },
-                        "after": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                },
                 {
                   "type": "object",
                   "properties": {
@@ -4289,7 +4214,7 @@
                         },
                         "sort": {
                           "type": "string",
-                          "enum": ["new", "best", "relevance"]
+                          "enum": ["new", "best", "relevance", "link_count"]
                         },
                         "spending_category": {
                           "type": "boolean"
@@ -4324,73 +4249,6 @@
             "outputSchema": {
               "type": "object",
               "anyOf": [
-                {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "success": {
-                          "const": true
-                        },
-                        "results": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "trending_score": {
-                                "type": "number"
-                              },
-                              "link_count": {
-                                "type": "number"
-                              }
-                            },
-                            "required": ["id", "trending_score", "link_count"],
-                            "additionalProperties": false
-                          }
-                        },
-                        "page_info": {
-                          "type": "object",
-                          "properties": {
-                            "has_next_page": {
-                              "type": "boolean"
-                            },
-                            "start_cursor": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "end_cursor": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["has_next_page", "start_cursor", "end_cursor"],
-                          "additionalProperties": false
-                        }
-                      },
-                      "required": ["success", "results", "page_info"],
-                      "additionalProperties": false
-                    },
-                    {
-                      "$ref": "#/$defs/S2"
-                    }
-                  ]
-                },
                 {
                   "type": "object",
                   "properties": {
@@ -4473,7 +4331,17 @@
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "const": false
+                        },
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["success", "error"],
+                      "additionalProperties": false
                     }
                   ]
                 }
@@ -4508,19 +4376,6 @@
                   },
                   "required": ["end_cursor", "has_next_page", "start_cursor"],
                   "type": "object"
-                },
-                "S2": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "const": false
-                    },
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["success", "error"],
-                  "additionalProperties": false
                 }
               }
             },
@@ -4531,19 +4386,14 @@
             "_meta": {
               "voucha/requiredScopes": ["topics:read"],
               "voucha/optionOutputPointers": {
-                "trending_referral_programs": "#/anyOf/0",
-                "trending": "#/anyOf/1",
-                "search": "#/anyOf/2"
+                "trending": "#/anyOf/0",
+                "search": "#/anyOf/1"
               }
             }
           },
           "plan": "free",
           "roles": null,
           "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/trending-referral-programs"
-            },
             {
               "method": "GET",
               "path": "/api/v1/trending-topics"

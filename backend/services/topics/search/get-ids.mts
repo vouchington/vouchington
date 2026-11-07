@@ -9,6 +9,10 @@ import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { buildTopicSearchPageInfo, decodeTopicSearchCursor } from './get-ids-page-info.mts'
 import type { TopicSearchRow } from './get-ids-types.mts'
+import {
+  assertActiveLinkCountSortStandsAlone,
+  readActiveLinkCountTopicPage,
+} from './link-count-page.mts'
 
 type TopicSearchResponse = {
   results: TopicSearchResult[]
@@ -21,6 +25,35 @@ export async function getTopicIds(options: TopicSearchOptions = {}): Promise<Top
   }
   const limit = clampLimit(options.limit)
   const sort = detectTopicSort(options)
+  if (sort === 'link_count') {
+    assertActiveLinkCountSortStandsAlone(options)
+    const page = await readActiveLinkCountTopicPage({ limit, after: options.after })
+    const resultRows: TopicSearchRow[] = page.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      topic_type: row.topic_type,
+      sort_score: row.active_link_count,
+    }))
+    return {
+      results: resultRows.map(row => ({
+        __entity_type: 'topic' as const,
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        topic_type: row.topic_type,
+      })),
+      page_info: buildTopicSearchPageInfo(resultRows, page.hasNextPage, sort, {
+        hasSemanticSearch: false,
+        hasSemanticSignal: false,
+        hasSimilarPostSearch: false,
+        hasSimilarRssFeedItemSearch: false,
+        hasSimilarTopicSearch: false,
+        hasTextSearch: false,
+        useSemanticRelevanceRanking: false,
+      }),
+    }
+  }
 
   // Fetch embedding BEFORE building state and decoding the cursor so that
   // getTopicSearchState sees the resolved embedding — the same input the

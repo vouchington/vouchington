@@ -1,6 +1,5 @@
 import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { encodeCursor } from '@modules/pagination'
-import { createUserReferralLink } from '@services/user-referral-program-links'
 import {
   createRandomString,
   createTestUser,
@@ -8,13 +7,8 @@ import {
   insertTestCommunityMember,
   insertTestCommunityPostReview,
   insertTestPost,
-  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  createReferralProgramFixture,
-  disableReferralProgramByTopicId,
-} from '@voucha/test-helpers/entities/referral-programs'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Entry = { id: string; trending_score: number } & Record<string, unknown>
@@ -164,89 +158,6 @@ describe('discover_communities.trending — real DB', () => {
       encodeCursor({ id: HIGHEST_ID }),
       encodeCursor({ score: 1, id: 'not-a-uuid' }),
     ]) {
-      expect(await trending({ after })).toEqual(INVALID_CURSOR)
-    }
-  })
-})
-
-describe('discover_topics.trending_referral_programs — real DB', () => {
-  let caller: Caller
-  let busy: string
-  let quiet: string
-  let disabled: string
-
-  const trending = (args: Record<string, unknown> = {}) =>
-    callStructuredMcpTool(
-      caller,
-      'discover_topics',
-      optionArgs('trending_referral_programs', args),
-      ['topics:read'],
-    ) as Promise<Page>
-  const viaTool: PageOf = after => trending({ limit: 25, after })
-  const viaRest: PageOf = async after => {
-    const request = createRequest()
-    await request.authenticateAs(caller)
-    const { body } = await request
-      .get(`/api/v1/trending-referral-programs?limit=25&after=${after}`)
-      .expect(200)
-    return { success: true, results: body.referral_programs, page_info: body.page_info }
-  }
-
-  async function createProgram(links: number) {
-    const owner = await createTestUser()
-    const { referralProgramId, hostname } = await createReferralProgramFixture({
-      createdById: owner.id,
-    })
-    for (let index = 0; index < links; index += 1) {
-      await createUserReferralLink(owner, WEB_PROVENANCE, {
-        user_id: owner.id,
-        referral_program_id: referralProgramId,
-        url: `https://${hostname}/ref/${createRandomString(8)}`,
-      })
-    }
-    return referralProgramId
-  }
-
-  beforeAll(async () => {
-    caller = asCaller(await createTestUser())
-    ;[busy, quiet, disabled] = await Promise.all([
-      createProgram(3),
-      createProgram(1),
-      createProgram(2),
-    ])
-    await disableReferralProgramByTopicId(disabled)
-  })
-
-  it('counts the recent active links of an enabled program, like REST', async () => {
-    const wanted = [busy, quiet]
-    const ours = (entries: Entry[]) => byId(entries.filter(entry => wanted.includes(entry.id)))
-
-    const tool = ours(await seenUntil(wanted, startAt(3), viaTool))
-    const rest = ours(await seenUntil(wanted, startAt(3), viaRest))
-
-    expect(tool).toEqual(
-      byId([
-        { id: busy, trending_score: 3, link_count: 3 },
-        { id: quiet, trending_score: 1, link_count: 1 },
-      ]),
-    )
-    expect(tool).toEqual(rest)
-  })
-
-  it('leaves a disabled program out, however many links it has', async () => {
-    const seen = await seenUntil([busy, quiet], startAt(3), viaTool)
-
-    expect(seen.map(entry => entry.id)).not.toContain(disabled)
-  })
-
-  it('pages by cursor and refuses a malformed one', async () => {
-    const first = await trending({ limit: 1, after: startAt(3) })
-    const second = await trending({ limit: 1, after: first.page_info.end_cursor })
-
-    expect(first.results).toHaveLength(1)
-    expect(first.page_info.has_next_page).toBe(true)
-    expect(second.results[0]?.id).not.toBe(first.results[0]?.id)
-    for (const after of ['not-a-cursor', encodeCursor({ score: 1, id: 'not-a-uuid' })]) {
       expect(await trending({ after })).toEqual(INVALID_CURSOR)
     }
   })
