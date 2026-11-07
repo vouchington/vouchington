@@ -26,7 +26,7 @@ const publicUrl: PublicUrl = {
   id: urlsResponse.results[0]!.id,
   url: urlsResponse.results[0]!.url,
   pathname: urlsResponse.results[0]!.pathname,
-  search_params: { utm_source: 'storybook' },
+  search_params: { id: 'storybook' },
   canonical_url_id: null,
   hostname: {
     __entity_type: 'hostname',

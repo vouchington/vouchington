@@ -103,10 +103,12 @@ async function createSource(
       const resolvedUrlId = await createRssFeedUrlId(resolvedRedirectUrl, {
         preserveHttp: new URL(resolvedRedirectUrl).protocol === 'http:',
       })
-      setCanonicalUrl(originalUrlId, resolvedUrlId).catch((err: unknown) => {
-        if (!(err instanceof CircularCanonicalReferenceError))
-          onError(err instanceof Error ? err : new Error(String(err)))
-      })
+      // Variants such as a trailing-slash redirect normalize to one row, so there is nothing to link.
+      if (originalUrlId !== resolvedUrlId)
+        setCanonicalUrl(originalUrlId, resolvedUrlId).catch((err: unknown) => {
+          if (!(err instanceof CircularCanonicalReferenceError))
+            onError(err instanceof Error ? err : new Error(String(err)))
+        })
     }
 
     return createSource(currentUser, provenance, resolvedRedirectUrl, {

@@ -25,6 +25,7 @@ import { getPostAndModerationVotes } from '@services/elections-votes/shared/post
 import { assertUrlsHaveNoBlockedHostnames } from '@services/urls/assert-hostname-not-blocked'
 import { runRelatablePostAccessScenario } from './relatable-post-access.mts'
 import { runRelationRoundTripScenarios } from './relation-round-trips.mts'
+import { runUrlIdentityScenarios } from './url-identities.mts'
 
 // Budgets are the larger of both plan modes and capture passes, plus 20% rounded up.
 export async function runRelationReadBatchScenarios(): Promise<void> {
@@ -34,6 +35,7 @@ export async function runRelationReadBatchScenarios(): Promise<void> {
   await runHostnameBlockRelationCleanupScenario()
   await runHostnameBlockOwnershipLookupScenarios()
   await runCrawlerBatchScenario()
+  await runUrlIdentityScenarios()
   await runRelatablePostAccessScenario()
   registerScenarioContract('url-blocked-policy-with-values', {
     expectations: [
