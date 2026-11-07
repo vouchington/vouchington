@@ -306,15 +306,10 @@
           file: backend/services/communities/update-transaction.mts,
           callee: 'syncImageSurfacePlacement',
         }
-      # Promise.all over 1 to 20 hosted-image targets, validated at copyright-notices/http-input.mts:57; each resolves a different placement.
+      # Promise.all over 1 to 20 hosted-image targets. Both callers parse with parseCopyrightNoticeForm, whose parseCopyrightTargets enforces 1..20 (copyright-notices/http-input.mts:57): REST api/v1/copyright-notices/moderator-routes.mts:353 and MCP mcp/admin/copyright-decisions-approval.mts:146. Each target resolves a different placement.
       - {
           file: backend/services/copyright-notices/copyright-email-decision-actions.mts,
           callee: 'resolveCopyrightImagePlacement',
-        }
-      # UNVERIFIED hard cap: blocked restore intents of one notice are bounded by its at most 20 targets (http-input.mts:57) times restrictions per target, which has no constant cap (only idx_copyright_restrictions__one_active_per_target for unlifted ones). Per-intent work is heterogeneous (lock, deadline, blocker, authority, placement and readiness checks with early exits).
-      - {
-          file: backend/services/copyright-notices/court-hold-restore-replay.mts,
-          callee: 'replayOriginalRestore',
         }
       # One page of at most batchSize restrictions, maxValue 100 (work-limits.mts:41-43). Each restriction builds its own payload (a builder HttpError is recorded and skipped, dsa-statement-submission-sweep.mts) and commits its own transaction, so no lock is held across items.
       - {

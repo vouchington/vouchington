@@ -1,6 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import sql from 'sql-template-strings'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 import {
   copyrightActionDeliveryFacts,
   lockCopyrightActionDeadline,
@@ -13,7 +14,12 @@ import {
 import { isCurrentPlacementForIntent } from './action-delivery-mutation.mts'
 import { reopenCopyrightRestoreIntentInTransaction } from './action-delivery-state.mts'
 
-/** The caller owns the complete case placement fence and notice lock through commit. */
+/**
+ * One page of at most `getCopyrightSweepLimits().batchSize` (hard max 100) blocked restore intents.
+ * Intents past the page stay blocked for the reconcile sweep, which keyset-pages every blocked
+ * restore intent and continues itself. The caller owns the complete case placement fence and notice
+ * lock through commit.
+ */
 export async function selectBlockedCopyrightRestoreIntentIds(
   noticeId: string,
   query: TransactionQuery,
@@ -25,6 +31,7 @@ export async function selectBlockedCopyrightRestoreIntentIds(
     WHERE target.copyright_notice_id = ${noticeId}
       AND intent.action = 'restore' AND intent.state = 'blocked'
     ORDER BY intent.id
+    LIMIT ${getCopyrightSweepLimits().batchSize}
   `)
   return rows.map(row => row.id)
 }

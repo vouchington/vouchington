@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { beginTransaction } from '@data-stores/psql'
+import {
+  countTestAppealReversalEvents,
+  tryTestAdvisoryKeyLocks,
+} from '@voucha/test-helpers/services/copyright-notices/batch-statements'
 import { createTestUser } from '@voucha/test-helpers'
 import { createTestCopyrightStaff } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
@@ -28,12 +32,7 @@ describe('batched copyright statements', () => {
     await recordRestrictionAppealReversalEvents(transaction, { ...input, restrictionIds: [] })
     await recordRestrictionAppealReversalEvents(transaction, input)
     await recordRestrictionAppealReversalEvents(transaction, input)
-    const { rows } = await transaction<{ total: number }>(
-      `/* countAppealReversalEvents */ SELECT count(*)::int AS total
-       FROM copyright_claimant_misuse_events WHERE copyright_notice_id = $1`,
-      [noticeId],
-    )
-    expect(rows[0]?.total).toBe(2)
+    expect(await countTestAppealReversalEvents(transaction, noticeId)).toBe(2)
   })
 
   it('holds every advisory lock of a batch until the transaction ends', async () => {
@@ -43,11 +42,11 @@ describe('batched copyright statements', () => {
     await lockAdvisoryKeysInOrder(holder, keys)
 
     await using contender = await beginTransaction()
-    const { rows } = await contender<{ key: string; acquired: boolean }>(
-      `/* contendForBatchLocks */ SELECT lock_key.key, pg_try_advisory_xact_lock(hashtextextended(lock_key.key, 0)) AS acquired
-       FROM unnest($1::text[]) AS lock_key(key) ORDER BY lock_key.key`,
-      [['copyright-batch-test:a', 'copyright-batch-test:b']],
-    )
-    expect(rows.map(row => row.acquired)).toEqual([false, false])
+    expect(
+      await tryTestAdvisoryKeyLocks(contender, [
+        'copyright-batch-test:a',
+        'copyright-batch-test:b',
+      ]),
+    ).toEqual([false, false])
   })
 })

@@ -8,19 +8,19 @@ import {
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
 
-/** Candidate selection is not authority: each case is rechecked under its complete placement fence. */
-export function searchBlockedCopyrightHoldRestorationNoticeIds(
+/** One keyset page of blocked restore intents. Candidate selection is not authority: each is rechecked under its notice's complete placement fence. */
+export function searchBlockedCopyrightHoldRestorationIntentIds(
   options: CopyrightSweepPageOptions,
 ): Promise<CopyrightSweepIdPage> {
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright hold restoration cursor',
-    'searchBlockedCopyrightHoldRestorationNoticeIds',
+    'searchBlockedCopyrightHoldRestorationIntentIds',
     'rowId',
     sql`
-    /* searchBlockedCopyrightHoldRestorationNoticeIds */
+    /* searchBlockedCopyrightHoldRestorationIntentIds */
     WITH candidates AS (
-      SELECT DISTINCT target.copyright_notice_id AS id
+      SELECT intent.id
       FROM copyright_notice_action_work_items intent
       JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
@@ -39,27 +39,28 @@ export function searchBlockedCopyrightHoldRestorationNoticeIds(
 }
 
 /** Automatic legal-blocker recovery never resets provider-failed siblings or creates authority. */
-export async function recoverBlockedCopyrightHoldRestorations(
-  noticeId: string,
+export async function recoverBlockedCopyrightHoldRestoration(
+  intentId: string,
   now: Date,
 ): Promise<number> {
   await using transaction = await beginTransaction()
-  await lockCopyrightNoticeHoldPlacements(noticeId, transaction)
-  await transaction(sql`/* recoverBlockedCopyrightHoldRestorations:noticeLock */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
-  `)
-  const { rows } = await transaction<{ id: string }>(sql`
-    /* recoverBlockedCopyrightHoldRestorations:originalIntents */
-    SELECT intent.id FROM copyright_notice_action_work_items intent
+  const { rows } = await transaction<{ notice_id: string }>(sql`
+    /* recoverBlockedCopyrightHoldRestoration:notice */
+    SELECT target.copyright_notice_id AS notice_id
+    FROM copyright_notice_action_work_items intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE target.copyright_notice_id = ${noticeId} AND intent.action = 'restore'
-      AND intent.state = 'blocked'
-    ORDER BY intent.id
+    WHERE intent.id = ${intentId}
+  `)
+  const noticeId = rows[0]?.notice_id
+  if (!noticeId) return 0
+  await lockCopyrightNoticeHoldPlacements(noticeId, transaction)
+  await transaction(sql`/* recoverBlockedCopyrightHoldRestoration:noticeLock */
+    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
   `)
   const reopened = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId,
-    intentIds: rows.map(row => row.id),
+    intentIds: [intentId],
     now,
     query: transaction,
   })

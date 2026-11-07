@@ -34,8 +34,8 @@ export { listCopyrightRepeatInfringerAccountsForNotice } from './repeat-infringe
 export { appendCopyrightLegalHoldAssessment } from './holds.mts'
 export { resolveCopyrightLegalHold } from './hold-resolution.mts'
 export {
-  searchBlockedCopyrightHoldRestorationNoticeIds,
-  recoverBlockedCopyrightHoldRestorations,
+  searchBlockedCopyrightHoldRestorationIntentIds,
+  recoverBlockedCopyrightHoldRestoration,
 } from './hold-restoration-recovery.mts'
 export {
   createDueStatutoryCopyrightRestoreIntentsForDeadline,
