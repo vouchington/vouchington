@@ -11,7 +11,10 @@ import {
   membershipIndividualSql,
   membershipUpdatedAtSql,
 } from '../households/household-membership-page-row.mts'
-import { assertCanAddHouseholdMember } from '../household-limits.mts'
+import {
+  assertCanAddHouseholdMember,
+  householdMemberAdmissionLockPrefix,
+} from '../household-limits.mts'
 import { getOrCreateIndividual } from '../individuals/individuals.mts'
 
 async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, options: QueryOptions) {
@@ -53,7 +56,23 @@ export async function decideHouseholdInvitation(
     owner_user_id: string
     invited_by_id: string
   }>(
-    sql`/* decideHouseholdInvitation:lock-household */
+    decision === 'accept'
+      ? sql`/* decideHouseholdInvitation:lock-household */
+      SELECT h.id, h.owner_user_id, invited.invited_by_id
+      FROM household_invitations invited
+      JOIN households h ON h.id = invited.household_id
+      WHERE invited.id = ${invitationId}
+        AND invited.invited_user_id = ${currentUser.id}
+        AND EXISTS (
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(
+              ${householdMemberAdmissionLockPrefix} || invited.household_id::text,
+              0
+            )
+          )
+        )
+      FOR UPDATE OF h`
+      : sql`/* decideHouseholdInvitation:lock-household */
       SELECT h.id, h.owner_user_id, hi.invited_by_id
       FROM households h
       JOIN household_invitations hi ON hi.household_id = h.id

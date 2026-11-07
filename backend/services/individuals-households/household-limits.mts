@@ -13,7 +13,9 @@ import { getHouseholdLimits } from './household-limits-config.mts'
 /**
  * Admission fences are advisory locks, not row locks on the user or household parent.
  * See docs/development/postgresql/reference-transactions.md#lock-scope.
+ * The member-admission key is also taken before any household row lock on the accept path.
  */
+export const householdMemberAdmissionLockPrefix = 'household-member-admission:'
 export async function assertCanCreateHousehold(
   userId: string,
   options: QueryOptions,
@@ -76,7 +78,7 @@ export async function assertCanAddHouseholdMember(
   const limits = getHouseholdLimits()
   await write(
     sql`/* assertCanAddHouseholdMember:lock-household */
-      SELECT pg_advisory_xact_lock(hashtextextended('household-member-admission:' || ${householdId}, 0))`,
+      SELECT pg_advisory_xact_lock(hashtextextended(${householdMemberAdmissionLockPrefix} || ${householdId}, 0))`,
     options,
   )
   await write(
