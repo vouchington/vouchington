@@ -49,7 +49,7 @@ function candidatePageQuery(after: BlueskyFollowPropagationCandidate | undefined
   const afterFollowee = after?.followeeUserId ?? START_OF_IDS
   return sql`/* listBlueskyFollowPropagationCandidatePage */
     SELECT follower_user_id, followee_user_id FROM (
-      SELECT f.subject_id AS follower_user_id, f.object_id AS followee_user_id
+      (SELECT f.subject_id AS follower_user_id, f.object_id AS followee_user_id
       FROM relation__user__follow__user f
       JOIN bluesky_linked_accounts follower_account ON follower_account.user_id = f.subject_id
       JOIN bluesky_linked_accounts followee_account ON followee_account.user_id = f.object_id
@@ -69,8 +69,10 @@ function candidatePageQuery(after: BlueskyFollowPropagationCandidate | undefined
           SELECT 1 FROM user_suspensions
           WHERE user_id IN (follower.id, followee.id) AND lifted_at IS NULL
         )
+        ORDER BY f.subject_id, f.object_id
+        LIMIT ${limit})
       UNION
-      SELECT receipt.follower_user_id, receipt.followee_user_id
+      (SELECT receipt.follower_user_id, receipt.followee_user_id
       FROM bluesky_follow_records receipt
       JOIN bluesky_linked_accounts follower_account
         ON follower_account.link_authorization_id = receipt.follower_account_link_authorization_id
@@ -95,6 +97,8 @@ function candidatePageQuery(after: BlueskyFollowPropagationCandidate | undefined
         )
         AND follower_account.disconnect_requested_at IS NULL
         AND followee_account.disconnect_requested_at IS NULL
+        ORDER BY receipt.follower_user_id, receipt.followee_user_id
+        LIMIT ${limit})
     ) candidates
     ORDER BY follower_user_id, followee_user_id
     LIMIT ${limit}

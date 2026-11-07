@@ -14,18 +14,23 @@ export async function reorderProfileLinks(userId: string, orderedIds: string[]):
       WHERE user_id = ${userId}
     ),
     requested AS MATERIALIZED (
-      SELECT id, sort_order
+      -- Only canonical lowercase UUID text casts; any other spelling stays NULL and is reported as not found.
+      SELECT
+        raw_id,
+        CASE WHEN raw_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          THEN raw_id::uuid END AS id,
+        sort_order
       FROM UNNEST(${orderedIds}::text[], ${orderedIds.map((_, i) => i)}::bigint[])
-        AS ordering(id, sort_order)
+        AS ordering(raw_id, sort_order)
     ),
     validation AS MATERIALIZED (
       SELECT
         (SELECT COUNT(*)::int FROM existing) AS existing_count,
         (
-          SELECT requested.id
+          SELECT requested.raw_id
           FROM requested
           WHERE NOT EXISTS (
-            SELECT 1 FROM existing WHERE existing.id::text = requested.id
+            SELECT 1 FROM existing WHERE existing.id = requested.id
           )
           ORDER BY requested.sort_order
           LIMIT 1
@@ -35,7 +40,7 @@ export async function reorderProfileLinks(userId: string, orderedIds: string[]):
       UPDATE user_profile_links
       SET sort_order = requested.sort_order
       FROM requested, validation
-      WHERE user_profile_links.id::text = requested.id
+      WHERE user_profile_links.id = requested.id
         AND user_profile_links.user_id = ${userId}
         AND validation.existing_count = ${orderedIds.length}
         AND validation.invalid_id IS NULL

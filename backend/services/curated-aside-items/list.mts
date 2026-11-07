@@ -53,7 +53,7 @@ export async function listCuratedItems(asideType: CuratedAsideType): Promise<Cur
       AND community.deleted_at IS NULL
       AND community.archived_at IS NULL
       AND community.visibility = 'public'
-    WHERE aside_type = ${asideType}
+    WHERE cai.aside_type = ${asideType}
       AND cai.deleted_at IS NULL
     ORDER BY cai.position ASC, cai.id ASC
   `)

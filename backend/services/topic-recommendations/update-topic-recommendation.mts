@@ -61,7 +61,7 @@ export async function updateTopicRecommendation(
         JOIN posts ON posts.id = post_topic_recommendations.post_id
         LEFT JOIN view_url_hostnames primary_hostname
           ON primary_hostname.id = post_topic_recommendations.hostname_id
-        WHERE post_id = ${recommendation.id}
+        WHERE post_topic_recommendations.post_id = ${recommendation.id}
       `)
     const lockedRecommendation = lockedRecommendationQuery.rows[0]
     assert(lockedRecommendation?.reviewed_at === null, 422, 'Recommendation is no longer editable')
