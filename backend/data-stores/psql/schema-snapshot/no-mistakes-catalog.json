@@ -148835,6 +148835,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_url_hostnames__public_votes_score_sort__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__public_votes_score_sort__id ON public.url_hostnames USING btree (votes_score_sort DESC, id DESC) WHERE (publicly_introduced_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "votes_score_sort",
+              "descending": true,
+              "expression": "votes_score_sort",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.float8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(publicly_introduced_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostnames__reversed_hostname__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
