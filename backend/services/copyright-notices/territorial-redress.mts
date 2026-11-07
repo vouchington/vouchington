@@ -3,6 +3,7 @@ import {
   advanceCopyrightLastLegalActivityAt,
   lockCopyrightNoticeForLegalWrite,
 } from './last-legal-activity.mts'
+import { lockAdvisoryKeysInOrder } from './advisory-key-locks.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { getImagePlacementKey } from '@services/images/placements'
@@ -68,12 +69,11 @@ export async function recordTerritorialCopyrightRedressDecision(
       AND request.authorizing_assessment_identity_id IS NOT NULL
     ORDER BY target.placement_id
   `)
-  for (const placement of placements) {
-    // oxlint-disable-next-line no-await-in-loop -- advisory locks use canonical placement order.
-    await transaction(sql`/* recordTerritorialCopyrightRedressDecision:placementAdvisoryLock */
-      SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placement.placement_id)}, 0))
-    `)
-  }
+  // Advisory locks use the canonical placement order of the query above.
+  await lockAdvisoryKeysInOrder(
+    transaction,
+    placements.map(placement => getImagePlacementKey(placement.placement_id)),
+  )
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   assert(lockedNotice, 404, labels.noticeNotFound)
   const { rows: currentRequests } = await transaction<{ decision_is_live: boolean }>(

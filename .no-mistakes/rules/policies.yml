@@ -311,17 +311,17 @@
           file: backend/services/copyright-notices/copyright-email-decision-actions.mts,
           callee: 'resolveCopyrightImagePlacement',
         }
-      # Copyright saga: one durable restore replay per intent id of the court-hold request (court-hold-restore-replay.mts:40); P2b copyright layer (baseline/nm-p2b-copyright) reworks this entry. UNVERIFIED: cap on intentIds.
+      # UNVERIFIED hard cap: blocked restore intents of one notice are bounded by its at most 20 targets (http-input.mts:57) times restrictions per target, which has no constant cap (only idx_copyright_restrictions__one_active_per_target for unlifted ones). Per-intent work is heterogeneous (lock, deadline, blocker, authority, placement and readiness checks with early exits).
       - {
           file: backend/services/copyright-notices/court-hold-restore-replay.mts,
           callee: 'replayOriginalRestore',
         }
-      # Copyright saga: one durable DSA statement submission per restriction of a sweep page (dsa-statement-submission-sweep.mts:59); P2b copyright layer reworks this entry. UNVERIFIED: page cap.
+      # One page of at most batchSize restrictions, maxValue 100 (work-limits.mts:41-43). Each restriction builds its own payload (a builder HttpError is recorded and skipped, dsa-statement-submission-sweep.mts) and commits its own transaction, so no lock is held across items.
       - {
           file: backend/services/copyright-notices/dsa-statement-submission-sweep.mts,
           callee: 'materializeDsaStatementSubmission',
         }
-      # Copyright saga: one restore intent per reversed restriction (form-reviews-reversal.mts:75); P2b copyright layer reworks this entry. UNVERIFIED: cap on restrictions.
+      # Reverses restrictions of one form-intake notice: at most one active restriction per target (idx_copyright_restrictions__one_active_per_target) and at most 20 targets (form-input-validation.mts:51). Each restriction runs a heterogeneous restore saga (assertions, staydown removal, placement revision, intent and lifecycle rows).
       - {
           file: backend/services/copyright-notices/form-reviews-reversal.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
@@ -331,16 +331,12 @@
           file: backend/services/copyright-notices/statutory-restoration-schedule.mts,
           callee: 'createEligibleCopyrightRestoreIntent',
         }
-      # Copyright saga: one restore intent and misuse event per reversal restriction (submission-review-appeal-effects.mts:117); P2b copyright layer reworks these entries. UNVERIFIED: cap on reversalRestrictionIds.
+      # Appeal decisions are at most 20 and unique per restriction (submission-reviews.mts:34-39); each restriction runs a heterogeneous restore saga (assertions, staydown removal, placement revision, intent and lifecycle rows).
       - {
           file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
-      - {
-          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
-          callee: 'recordClaimantMisuseEvent',
-        }
-      # Copyright saga: one restore intent per restriction of the redress decision (territorial-redress.mts:128); P2b copyright layer reworks this entry. UNVERIFIED: cap on restrictions.
+      # Revokes the unlifted restrictions of one territorial notice: at most one per target and at most 20 targets (territorial-decision.mts:56, http-input.mts:57). Each runs a heterogeneous restore saga (assertions, staydown removal, placement revision, intent and lifecycle rows).
       - {
           file: backend/services/copyright-notices/territorial-redress.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
@@ -664,40 +660,9 @@
       - { file: backend/services/attribution/create.mts, callee: 'query', line: 71 }
       # FIX (P2): per-key advisory lock loops; batch as one `pg_advisory_xact_lock(...) FROM unnest($ids) ORDER BY id` (pattern in post-publication/capture-posts.mts). Remove these entries with the fix.
       - {
-          file: backend/services/copyright-notices/automatic-withholding-caps.mts,
-          callee: 'transaction',
-          line: 38,
-        }
-      - {
-          file: backend/services/copyright-notices/form-reviews-reversal.mts,
-          callee: 'transaction',
-          line: 52,
-        }
-      - {
-          file: backend/services/copyright-notices/retention-erasure-preservation.mts,
-          callee: 'transaction',
-          line: 25,
-        }
-      - {
-          file: backend/services/copyright-notices/territorial-redress.mts,
-          callee: 'transaction',
-          line: 73,
-        }
-      - {
           file: backend/services/oauth-authorization-server/active-users.mts,
           callee: 'query',
           line: 17,
-        }
-      # FIX (P2): per-decision UPDATE and INSERT inside the notice lock transaction; batch with unnest. Remove these entries with the fix.
-      - {
-          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
-          callee: 'transaction',
-          line: 47,
-        }
-      - {
-          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
-          callee: 'transaction',
-          line: 55,
         }
       # FIX (P2): per-alias-token UPDATE inside the canonical lineage lock; batch the markFetched updates. Remove this entry with the fix.
       - { file: backend/services/memberships/google/lineage.mts, callee: 'query', line: 163 }

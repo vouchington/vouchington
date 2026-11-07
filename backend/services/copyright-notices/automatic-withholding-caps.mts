@@ -2,6 +2,7 @@ import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AutomaticWithholdingRefusalReason } from './automatic-withholding-gates.mts'
 import type { AutomaticWithholdingThresholds } from './config.mts'
+import { lockAdvisoryKeysInOrder } from './advisory-key-locks.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -33,12 +34,12 @@ export async function checkAutomaticWithholdingCaps(
   `)
   const posterIds = posterRows.map(row => row.user_id)
   // Claimant first, then posters in ID order, so concurrent notices always lock in one order.
-  for (const key of [`claimant:${input.claimantId}`, ...posterIds.map(id => `poster:${id}`)]) {
-    // oxlint-disable-next-line no-await-in-loop -- locks must be taken one at a time, in order, to rule out deadlock.
-    await transaction(sql`/* checkAutomaticWithholdingCaps:lock */
-      SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-automatic-withholding:${key}`}, 0))
-    `)
-  }
+  await lockAdvisoryKeysInOrder(
+    transaction,
+    [`claimant:${input.claimantId}`, ...posterIds.map(id => `poster:${id}`)].map(
+      key => `copyright-automatic-withholding:${key}`,
+    ),
+  )
   const { rows: claimantRows } = await transaction<{ total: number }>(sql`
     /* checkAutomaticWithholdingCaps:claimant */
     -- cross-partition: the legal assessment time is independent of the UUIDv7 insertion clock;
