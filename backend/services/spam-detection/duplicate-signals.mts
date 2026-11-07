@@ -5,9 +5,6 @@ import { EMBEDDINGS_SIMILARITY_THRESHOLD } from './config.mts'
 import type { SpamSignalResult } from './types.mts'
 import { getSpamDetectionWorkLimit } from './work-limits.mts'
 
-/** Nearest other-user posts the similarity probe inspects; the threshold decides within them. */
-const SIMILARITY_CANDIDATE_LIMIT = 10
-
 /** Cap on index tuples one similarity probe may visit while filters discard candidates. */
 export const SIMILARITY_MAX_SCAN_TUPLES = 20000
 
@@ -53,6 +50,7 @@ export async function checkEmbeddingsSimilarity(
       SELECT set_config('hnsw.iterative_scan', ${SIMILARITY_SCAN_SETTINGS['hnsw.iterative_scan']}, true),
              set_config('hnsw.max_scan_tuples', ${SIMILARITY_SCAN_SETTINGS['hnsw.max_scan_tuples']}, true)`)
     const { rows } = await transaction(sql`/* checkEmbeddingsSimilarity */
+      -- nearest 10 other-user posts; the threshold decides within them
       SELECT 1
       FROM (
         SELECT bedrock_nova_multimodal_v1_embedding AS embedding
@@ -70,7 +68,7 @@ export async function checkEmbeddingsSimilarity(
           AND p.id != ${postId}
           AND p.created_by_id != ${userId}
         ORDER BY p.bedrock_nova_multimodal_v1_embedding <=> source.embedding
-        LIMIT ${SIMILARITY_CANDIDATE_LIMIT}
+        LIMIT 10 -- literal: a bound LIMIT hides the top-k from generic plans, which then sort a pkey range instead of walking HNSW
       ) nearest
       -- distance form: a zero-vector candidate has NaN distance, which never satisfies <=
       WHERE nearest.distance <= 1 - ${EMBEDDINGS_SIMILARITY_THRESHOLD}::float8
