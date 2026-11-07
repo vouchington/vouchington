@@ -52,7 +52,7 @@ export async function publishAdmissionEffects(admitted: AdmissionEffects): Promi
 
 export async function dispatchPendingCrawls(
   work: ProjectionWork,
-  rows: SourceRow[],
+  rows: readonly SourceRow[],
 ): Promise<boolean> {
   const { rows: pendingEffects } = await write<{ url_id: string }>(
     `/* storyPostRelatedUrlProjectionPendingCrawlEffects */
@@ -96,7 +96,7 @@ export async function requireStoryTeller(): Promise<StoryTeller> {
   return storyTeller
 }
 
-export function uniqueUrlIds(rows: SourceRow[]): string[] {
+export function uniqueUrlIds(rows: readonly SourceRow[]): string[] {
   const urlIds: string[] = []
   const seen = new Set<string>()
   for (const row of rows) {
