@@ -24,8 +24,9 @@ export async function addListItems(
   if (ids.length === 0) return items
   const entityFacts = itemFactsSql(itemType)
 
-  const inserted = await write(
-    `/* addListItem */
+  const insertBatch = () =>
+    write(
+      `/* addListItem */
     WITH entity_facts AS (${entityFacts}),
     inserted AS (
       -- Dynamic table and column come from the closed list-item storage catalog.
@@ -39,13 +40,21 @@ export async function addListItems(
       entity_facts.label_markdown, entity_facts.label_summary
     FROM inserted JOIN entity_facts USING (entity_id)
     `,
-    [listId, ids],
-  ).catch((err: unknown) => {
-    const code = (err as { code?: string }).code
-    if (code === '23503') assert(false, 404, 'Referenced list or entity does not exist')
-    if (code === '22P02') assert(false, 422, 'Invalid entity ID format')
-    throw err
-  })
+      [listId, ids],
+    )
+  // An entity deleted after the statement's snapshot fails the whole batch's FK check; one retry
+  // re-reads the snapshot without it, so surviving siblings still insert. A repeat means the list is gone.
+  const inserted = await insertBatch()
+    .catch((err: unknown) => {
+      if ((err as { code?: string }).code !== '23503') throw err
+      return insertBatch()
+    })
+    .catch((err: unknown) => {
+      const code = (err as { code?: string }).code
+      if (code === '23503') assert(false, 404, 'Referenced list or entity does not exist')
+      if (code === '22P02') assert(false, 422, 'Invalid entity ID format')
+      throw err
+    })
   for (const row of inserted.rows) items.set(row.entity_id as string, rowToListItem(row, itemType))
 
   const existingIds = ids.filter(id => !items.has(id))
