@@ -73,17 +73,15 @@ export async function listActiveCommunityBans(
 
 function isCursorExpiry(value: string): boolean {
   if (
-    !/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,6})?[+-](0[0-9]|1[0-5])(:[0-5][0-9])?$/.test(
+    !/^[0-9]{4,6}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,6})?[+-](0[0-9]|1[0-5])(:[0-5][0-9])?$/.test(
       value,
     )
   )
     return false
-  const date = value.slice(0, 10)
-  return (
-    Number(value.slice(0, 4)) > 0 &&
-    !Number.isNaN(Date.parse(value)) &&
-    new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date
-  )
+  const [year, month, day] = value.split(' ')[0]!.split('-').map(Number) as [number, number, number]
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+  const monthDays = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+  return year > 0 && !Number.isNaN(Date.parse(value)) && day <= monthDays[month - 1]!
 }
 
 export type UserCommunityBanItem = CommunityBan & { community_slug: string | null }

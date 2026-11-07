@@ -97,7 +97,7 @@ describe('bounded community ban lifts and active pages', () => {
     expect((await getCommunityBanById(protectedBan.id))?.lifted_at).toBeNull()
   })
 
-  it('active pages skip expired history and scope their cursor to the user', async () => {
+  it('active pages skip expired history and scope far-future expiry cursors to the user', async () => {
     const [user, other] = await Promise.all([createTestUser(), createTestUser()])
     await insertTestCommunityBan({
       communityId: community.id,
@@ -109,7 +109,7 @@ describe('bounded community ban lifts and active pages', () => {
       communityId: community.id,
       userId: user.id,
       bannedById: owner.id,
-      expiresAt: new Date(Date.now() + 60_000),
+      expiresAt: new Date('+010000-01-01T00:00:00.000Z'),
     })
     const second = await insertTestCommunityBan({
       communityId: community.id,
