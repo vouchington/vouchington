@@ -148896,7 +148896,7 @@
       },
       "columns": {
         "identity": {
-          "comment": "canonicalizeUrl(url).identity: scheme-less, without www. or m., tracking params, trailing slash, and YouTube aliases.",
+          "comment": "canonicalizeUrl(url).identity: scheme-less, without www. or m., tracking params, and YouTube aliases.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,

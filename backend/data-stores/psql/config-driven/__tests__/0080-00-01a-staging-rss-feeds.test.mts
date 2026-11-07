@@ -25,8 +25,8 @@ const findFirstUnguardedInsertViolation = (sql: string) =>
 
 // The three feeds the staging decision names (vouchington/vouchington#1956).
 const GUARDIAN_URL = 'https://www.theguardian.com/science/rss'
-const CLOUDFLARE_URL = 'https://blog.cloudflare.com/rss'
-const QUANTA_URL = 'https://www.quantamagazine.org/feed'
+const CLOUDFLARE_URL = 'https://blog.cloudflare.com/rss/'
+const QUANTA_URL = 'https://www.quantamagazine.org/feed/'
 const SPEC_FEED_URLS = [GUARDIAN_URL, CLOUDFLARE_URL, QUANTA_URL]
 const urls = STAGING_RSS_FEEDS.map(feed => feed.url)
 const loadSqlTooling = () => Promise.all([loadSqlParserModule(), initSqlAst()])

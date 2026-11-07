@@ -44,12 +44,13 @@ describe('isYouTubeChannelFeedUrl', () => {
 })
 
 describe('normalizeUrlForUrlTable', () => {
-  it('drops tracking params, credentials, default ports, fragments, and trailing slashes', () => {
+  it('drops tracking params, credentials, default ports, and fragments, and keeps the trailing slash', () => {
     expect(
       normalizeUrlForUrlTable(
         'http://user:pass@Example.org:80/a/b/?utm_source=x&z=2&fbclid=y&a=1#top',
       ).href,
-    ).toBe('https://example.org/a/b?a=1&z=2')
+    ).toBe('https://example.org/a/b/?a=1&z=2')
+    expect(normalizeUrlForUrlTable('https://example.org/a/b').href).toBe('https://example.org/a/b')
   })
 
   it('keeps the root path and content params', () => {
@@ -63,7 +64,7 @@ describe('normalizeUrlForUrlTable', () => {
 
   it('keeps http only when asked and still rejects other schemes and bad URLs', () => {
     expect(normalizeUrlForUrlTable('http://example.com/a/', { preserveHttp: true }).href).toBe(
-      'http://example.com/a',
+      'http://example.com/a/',
     )
     expect(() => normalizeUrlForUrlTable('ftp://example.com/a')).toThrow(
       'URL must use http or https',
