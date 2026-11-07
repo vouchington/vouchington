@@ -620,6 +620,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_record_user_data_request_attempt()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_referral_program_active_link_count`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_referral_program_active_link_count()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_refresh_rss_feed_item_unmapped_category_count`
 
 ```sql

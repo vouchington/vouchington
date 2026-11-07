@@ -12,8 +12,7 @@ export const getTrendingReferralPrograms = cache(
     return serverApi.get<TopicsResponseBody>('/api/v1/topics', {
       ...options,
       searchParams: {
-        topic_types: 'referral_program',
-        sort: 'best',
+        sort: 'link_count',
         limit: 5,
         ...options.searchParams,
       },

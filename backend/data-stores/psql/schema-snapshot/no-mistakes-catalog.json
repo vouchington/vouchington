@@ -1719,6 +1719,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_record_user_data_request_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.processing_started_at IS NOT NULL THEN\n    INSERT INTO user_data_request_attempts (\n      request_id,\n      processing_attempt_id,\n      started_at,\n      upload_lease_expires_at\n    ) VALUES (\n      NEW.id,\n      NEW.processing_attempt_id,\n      NEW.processing_started_at,\n      NULL\n    )\n    ON CONFLICT (request_id, processing_attempt_id) DO NOTHING;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
+    "fn_project_referral_program_active_link_count()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_referral_program_active_link_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  old_active BOOLEAN := FALSE;\n  new_active BOOLEAN := FALSE;\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    old_active := OLD.activated_at IS NOT NULL AND OLD.deleted_at IS NULL;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    new_active := NEW.activated_at IS NOT NULL AND NEW.deleted_at IS NULL;\n  END IF;\n\n  IF TG_OP = 'UPDATE'\n     AND OLD.referral_program_topic_id IS NOT DISTINCT FROM NEW.referral_program_topic_id THEN\n    IF old_active AND NOT new_active THEN\n      UPDATE referral_program_topics\n      SET active_link_count = active_link_count - 1\n      WHERE topic_id = OLD.referral_program_topic_id;\n    ELSIF NOT old_active AND new_active THEN\n      UPDATE referral_program_topics\n      SET active_link_count = active_link_count + 1\n      WHERE topic_id = NEW.referral_program_topic_id;\n    END IF;\n  ELSE\n    IF old_active THEN\n      UPDATE referral_program_topics\n      SET active_link_count = active_link_count - 1\n      WHERE topic_id = OLD.referral_program_topic_id;\n    END IF;\n    IF new_active THEN\n      UPDATE referral_program_topics\n      SET active_link_count = active_link_count + 1\n      WHERE topic_id = NEW.referral_program_topic_id;\n    END IF;\n  END IF;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
     "fn_project_refresh_rss_feed_item_unmapped_category_count()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_refresh_rss_feed_item_unmapped_category_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  current_item_count BIGINT;\nBEGIN\n  IF TG_OP != 'INSERT' AND OLD.topic_id IS NULL THEN\n    SELECT item_count INTO current_item_count\n    FROM rss_feed_item_unmapped_category_counts\n    WHERE category_identity_id = OLD.category_identity_id\n    FOR UPDATE;\n\n    IF current_item_count = 1 THEN\n      DELETE FROM rss_feed_item_unmapped_category_counts\n      WHERE category_identity_id = OLD.category_identity_id;\n    ELSIF current_item_count > 1 THEN\n      UPDATE rss_feed_item_unmapped_category_counts\n      SET item_count = item_count - 1\n      WHERE category_identity_id = OLD.category_identity_id;\n    END IF;\n  END IF;\n\n  IF TG_OP != 'DELETE' AND NEW.topic_id IS NULL THEN\n    INSERT INTO rss_feed_item_unmapped_category_counts (category_identity_id, item_count)\n    VALUES (NEW.category_identity_id, 1)\n    ON CONFLICT (category_identity_id) DO UPDATE\n    SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1;\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
@@ -99890,12 +99894,26 @@
     },
     "referral_program_topics": {
       "checkConstraints": {
+        "referral_program_topics_active_link_count_check": {
+          "definition": "CHECK ((active_link_count >= 0))",
+          "validated": true
+        },
         "referral_program_topics_check": {
           "definition": "CHECK ((NOT ((enabled_at IS NOT NULL) AND (disabled_at IS NOT NULL))))",
           "validated": true
         }
       },
       "columns": {
+        "active_link_count": {
+          "comment": "All-time count of active links: activated_at set and deleted_at null, including child links. Maintained by the link row trigger.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
         "company_topic_id": {
           "comment": "The company topic that operates this referral program.",
           "dataType": "uuid",
@@ -99914,7 +99932,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "disabled_at": {
           "comment": "When the program was disabled. NULL if currently enabled.",
@@ -99954,7 +99972,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         }
       },
       "comment": "Extension table for topics of type referral_program. Links program to company.",
@@ -99977,6 +99995,38 @@
         }
       },
       "indexes": {
+        "idx_referral_program_topics__active_link_count__topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_referral_program_topics__active_link_count__topic_id ON public.referral_program_topics USING btree (active_link_count DESC, topic_id DESC) WHERE ((enabled_at IS NOT NULL) AND (disabled_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "active_link_count",
+              "descending": true,
+              "expression": "active_link_count",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "topic_id",
+              "descending": true,
+              "expression": "topic_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((enabled_at IS NOT NULL) AND (disabled_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_referral_program_topics__company_topic_id__topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -161441,6 +161491,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
+        },
+        "trigger_project_referral_program_active_link_count": {
+          "definition": "CREATE TRIGGER trigger_project_referral_program_active_link_count AFTER INSERT OR DELETE OR UPDATE OF activated_at, deleted_at, referral_program_topic_id ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_project_referral_program_active_link_count()"
         },
         "trigger_user_referra_program_links_content_provenance_immutable": {
           "definition": "CREATE TRIGGER trigger_user_referra_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()"

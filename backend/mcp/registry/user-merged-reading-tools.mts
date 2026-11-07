@@ -26,12 +26,10 @@ import read_reference_data_membership_plans from '../get-membership-plans.mts'
 import read_reference_data_platform_stats from '../get-platform-stats.mts'
 import read_reference_data_countries from '../list-countries.mts'
 import read_reference_data_currencies from '../list-currencies.mts'
-import read_topic_referral_program from '../get-topic-referral-program.mts'
 import read_topic_compare from '../compare-topics.mts'
 import read_topic_details from '../get-topic-details.mts'
 import read_topic_metrics from '../get-topic-metrics.mts'
 import discover_communities_search from '../search-communities.mts'
-import discover_topics_trending_referral_programs from '../get-trending-referral-programs.mts'
 import discover_topics_trending from '../get-trending-topics.mts'
 import discover_topics_search from '../search-topics.mts'
 import read_feed_posts from '../get-post-feed.mts'
@@ -71,7 +69,6 @@ export const userMergedReadingGroups = [
   {
     name: 'read_topic',
     options: [
-      { option: 'referral_program', source: read_topic_referral_program },
       { option: 'compare', source: read_topic_compare },
       { option: 'details', source: read_topic_details },
       { option: 'metrics', source: read_topic_metrics },
@@ -84,7 +81,6 @@ export const userMergedReadingGroups = [
   {
     name: 'discover_topics',
     options: [
-      { option: 'trending_referral_programs', source: discover_topics_trending_referral_programs },
       { option: 'trending', source: discover_topics_trending },
       { option: 'search', source: discover_topics_search },
     ],

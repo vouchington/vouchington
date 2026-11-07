@@ -6,9 +6,6 @@ export const referralProgram = {
   name: 'Test Card',
   label: 'Test card',
   url: 'https://example.com/cards/test-card',
-  referral_link_count: 2,
-  trending_score: 9,
-  link_count: 2,
 }
 
 export const referralProgramTopic = {

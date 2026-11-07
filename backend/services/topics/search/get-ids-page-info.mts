@@ -46,6 +46,17 @@ export function decodeTopicSearchCursor(
     const cursor = decodeUuidCursor(options.after, isScoreCursor, 'Invalid cursor for sort=best')
     return { score_lt: cursor.score, id_lt: cursor.id }
   }
+  if (sort === 'link_count') {
+    const cursor = decodeUuidCursor(
+      options.after,
+      isScoreCursor,
+      'Invalid cursor for sort=link_count',
+    )
+    if (!Number.isInteger(cursor.score) || cursor.score < 0) {
+      throw createHttpError(400, 'Invalid cursor for sort=link_count')
+    }
+    return { score_lt: cursor.score, id_lt: cursor.id }
+  }
   if (sort === 'relevance') {
     const cursor = decodeUuidCursor(
       options.after,
@@ -85,7 +96,7 @@ function encodeTopicSearchCursor(row: TopicSearchRow, sort: string, state: Topic
       id: row.id,
     })
   }
-  if (sort === 'best') {
+  if (sort === 'best' || sort === 'link_count') {
     return encodeCursor({ score: requiredNumber(row.sort_score, 'sort_score'), id: row.id })
   }
   return encodeCursor({ id: row.id })

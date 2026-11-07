@@ -3,7 +3,7 @@ import { getRecommendedRssFeeds } from '@services/recommended-rss-feeds/get-reco
 import { getRecommendedTopics } from '@services/recommended-topics/get-recommendations'
 import { getRssFeedsByIdBatch } from '@services/rss-feeds/get-batch'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
-import { getTrendingReferralPrograms } from '@services/trending-referral-programs/get-trending-referral-programs'
+import { readActiveLinkCountTopicPage } from '@services/topics/search/link-count-page'
 import {
   claimEngagementEmailSend,
   releaseUnsentEngagementEmailClaim,
@@ -76,21 +76,21 @@ async function dispatchPostReferralLinkEmails(
   const recipients = await getPostReferralLinkRecipients(dispatchStartedAt, userIds)
   if (recipients.length === 0) return
 
-  const programs = await getTrendingReferralPrograms({ limit: 5 })
-  if (programs.referral_programs.length === 0) return
+  const page = await readActiveLinkCountTopicPage({ limit: 5 })
+  if (page.rows.length === 0) return
 
-  const topics = await getTopicsByAnyBatch(programs.referral_programs.map(program => program.id))
+  const programs = page.rows.map(row => ({ id: row.id, link_count: row.active_link_count }))
   await pMap(
     recipients,
-    recipient => dispatchPostReferralLinkEmail(recipient, programs.referral_programs, topics),
+    recipient => dispatchPostReferralLinkEmail(recipient, programs, page.rows),
     { concurrency: 1, stopOnError: false },
   )
 }
 
 async function dispatchPostReferralLinkEmail(
   recipient: EngagementRecipientRow,
-  programs: Awaited<ReturnType<typeof getTrendingReferralPrograms>>['referral_programs'],
-  topics: Awaited<ReturnType<typeof getTopicsByAnyBatch>>,
+  programs: Array<{ id: string; link_count: number }>,
+  topics: Array<{ name: string; slug: string }>,
 ): Promise<void> {
   let claimed = false
   try {

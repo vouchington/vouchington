@@ -157,6 +157,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-data-point-insights',
   'topic-import-attempts-retention',
   'topic-import-attempts-user-key',
+  'topic-link-count-sort',
   'topic-metrics-batch',
   'topic-rating-stats',
   'topic-search-best',

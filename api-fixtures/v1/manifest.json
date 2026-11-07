@@ -57726,111 +57726,6 @@
       "source": "backend/api/v1/topics/user-tags.mts",
       "statusKnowledge": "default"
     },
-    "GET:/api/v1/trending-referral-programs": {
-      "bodyKind": "content",
-      "hash": "a356e5960f47d6f4beb1326e129dee6c54c7dc7554267712b76d6e161d113d3f",
-      "mediaType": "application/json",
-      "mediaTypeKnowledge": "known",
-      "method": "GET",
-      "routeTemplate": "/api/v1/trending-referral-programs",
-      "schema": {
-        "definitions": {
-          "PageInfo": {
-            "additionalProperties": false,
-            "properties": {
-              "end_cursor": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "has_next_page": {
-                "required": true,
-                "schema": {
-                  "type": "boolean"
-                }
-              },
-              "start_cursor": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              }
-            },
-            "type": "object"
-          },
-          "TrendingReferralProgram": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "link_count": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              },
-              "trending_score": {
-                "required": true,
-                "schema": {
-                  "type": "number"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "TrendingReferralProgramsResult": {
-            "additionalProperties": false,
-            "properties": {
-              "page_info": {
-                "required": true,
-                "schema": {
-                  "name": "PageInfo",
-                  "type": "ref"
-                }
-              },
-              "referral_programs": {
-                "required": true,
-                "schema": {
-                  "items": {
-                    "name": "TrendingReferralProgram",
-                    "type": "ref"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "type": "object"
-          }
-        },
-        "root": {
-          "name": "TrendingReferralProgramsResult",
-          "type": "ref"
-        }
-      },
-      "source": "backend/api/v1/trending-referral-programs/index.mts",
-      "statusKnowledge": "default"
-    },
     "GET:/api/v1/urls#public": {
       "bodyKind": "content",
       "hash": "cef123164b8e4897dca2d390f66bd0a584a014ba11504805f6ffd022f5504831",
@@ -102394,22 +102289,23 @@
     },
     {
       "auth": "fixture-user",
-      "backendResponseContractKey": "GET:/api/v1/trending-referral-programs",
-      "bodyFile": "responses/web.trending-referral-programs.default.json",
-      "consumers": ["swift-core", "dotnet-core"],
-      "id": "web.trending-referral-programs.default",
+      "backendResponseContractKey": "GET:/api/v1/topics",
+      "bodyFile": "responses/web.topics.link-count.default.json",
+      "consumers": ["web"],
+      "id": "web.topics.link-count.default",
       "method": "GET",
       "migratedFrom": ["web/lib/api/server/trending-referral-programs.ts"],
-      "path": "/api/v1/trending-referral-programs",
+      "path": "/api/v1/topics",
       "query": {
-        "limit": "10"
+        "limit": "5",
+        "sort": "link_count"
       },
       "responseSchema": {
-        "hash": "86c4e4b9aa4dcbc078a60b081c11935da32583e9b764e996cf2f99a9d1cae44d",
-        "key": "web.trending-referral-programs.default"
+        "hash": "fa39f9f5da472f81168586700a7b12e370c9e2303888138ec6130261890fdc20",
+        "key": "web.topics.link-count.default"
       },
       "route": {
-        "routeTemplate": "/api/v1/trending-referral-programs"
+        "routeTemplate": "/api/v1/topics"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/referral-cases.mts"

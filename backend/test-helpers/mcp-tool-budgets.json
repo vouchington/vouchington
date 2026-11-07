@@ -65,12 +65,12 @@
       },
       "read_topic": {
         "measured": {
-          "list": 8158,
-          "core": 3000
+          "list": 7407,
+          "core": 2526
         },
         "max": {
-          "list": 9000,
-          "core": 4000
+          "list": 8000,
+          "core": 3000
         }
       },
       "discover_communities": {
@@ -85,12 +85,12 @@
       },
       "discover_topics": {
         "measured": {
-          "list": 5561,
-          "core": 3142
+          "list": 4326,
+          "core": 2677
         },
         "max": {
-          "list": 6000,
-          "core": 4000
+          "list": 5000,
+          "core": 3000
         }
       },
       "discover_rss_feeds": {

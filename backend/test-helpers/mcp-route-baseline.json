@@ -3866,19 +3866,6 @@
         "decision": false
       }
     ],
-    "GET:/api/v1/topics/:idOrSlug/referral-program": [
-      {
-        "audience": "user",
-        "facts": "F65",
-        "inputFields": "I095",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "read_topic",
-          "option": "referral_program"
-        },
-        "decision": false
-      }
-    ],
     "GET:/api/v1/topics/compare": [
       {
         "audience": "user",
@@ -3901,19 +3888,6 @@
         "operation": {
           "tool": "read_posts",
           "option": "trending"
-        },
-        "decision": false
-      }
-    ],
-    "GET:/api/v1/trending-referral-programs": [
-      {
-        "audience": "user",
-        "facts": "F65",
-        "inputFields": "I005",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "discover_topics",
-          "option": "trending_referral_programs"
         },
         "decision": false
       }

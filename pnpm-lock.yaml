@@ -1203,9 +1203,6 @@ importers:
       '@services/trending-posts':
         specifier: workspace:^
         version: link:../services/trending-posts
-      '@services/trending-referral-programs':
-        specifier: workspace:^
-        version: link:../services/trending-referral-programs
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../services/trending-topics
@@ -2136,9 +2133,6 @@ importers:
       '@services/trending-posts':
         specifier: workspace:^
         version: link:../services/trending-posts
-      '@services/trending-referral-programs':
-        specifier: workspace:^
-        version: link:../services/trending-referral-programs
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../services/trending-topics
@@ -6785,9 +6779,6 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
-      '@services/trending-referral-programs':
-        specifier: workspace:^
-        version: link:../trending-referral-programs
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -11715,27 +11706,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-
-  backend/services/trending-referral-programs:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@services/pagination':
-        specifier: workspace:^
-        version: link:../pagination
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
 
   backend/services/trending-topics:
     dependencies:

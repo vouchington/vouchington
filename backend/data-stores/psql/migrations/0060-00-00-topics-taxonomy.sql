@@ -546,6 +546,12 @@ CREATE TABLE IF NOT EXISTS referral_program_topics (
   disabled_at TIMESTAMPTZ,
   CHECK (NOT (enabled_at IS NOT NULL AND disabled_at IS NOT NULL)),
 
+  -- Current active links. A link is active when activated_at is set and deleted_at is null.
+  -- fn_project_referral_program_active_link_count maintains this on every link insert, update,
+  -- and delete, including ON DELETE CASCADE.
+  active_link_count INTEGER NOT NULL DEFAULT 0,
+  CHECK (active_link_count >= 0),
+
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -561,11 +567,19 @@ CREATE INDEX IF NOT EXISTS idx_referral_program_topics__company_topic_id__topic_
 ON referral_program_topics (company_topic_id, topic_id)
 WHERE company_topic_id IS NOT NULL;
 
+-- Keyset for enabled programs ordered by all-time active link count.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_referral_program_topics__active_link_count__topic_id
+ON referral_program_topics (active_link_count DESC, topic_id DESC)
+WHERE enabled_at IS NOT NULL AND disabled_at IS NULL;
+
 COMMENT ON TABLE referral_program_topics IS 'Extension table for topics of type referral_program. Links program to company.';
 COMMENT ON COLUMN referral_program_topics.topic_id IS 'The topic that is a referral program (PK, 1:1 with topics).';
 COMMENT ON COLUMN referral_program_topics.company_topic_id IS 'The company topic that operates this referral program.';
 COMMENT ON COLUMN referral_program_topics.enabled_at IS 'When the program was enabled. NULL if currently disabled.';
 COMMENT ON COLUMN referral_program_topics.disabled_at IS 'When the program was disabled. NULL if currently enabled.';
+COMMENT ON COLUMN referral_program_topics.active_link_count IS 'All-time count of active links: activated_at set and deleted_at null, including child links. Maintained by the link row trigger.';
+COMMENT ON INDEX idx_referral_program_topics__active_link_count__topic_id IS 'Keyset of enabled referral programs by active_link_count DESC, topic_id DESC.';
 
 --------------------------------------------------------------------------------
 -- topics: add rewards_program_topic_id and referral_program_topic_id

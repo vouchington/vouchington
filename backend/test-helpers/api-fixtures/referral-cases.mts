@@ -15,6 +15,27 @@ import {
 } from './referral-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
+const referralProgramTopicSearchBody = {
+  results: [
+    {
+      __entity_type: 'topic',
+      id: referralProgramTopic.id,
+      name: referralProgramTopic.name,
+      slug: referralProgramTopic.slug,
+      topic_type: referralProgramTopic.topic_type,
+    },
+  ],
+  page_info: pageInfo,
+  topics: { [referralProgramTopic.id]: referralProgramTopic },
+  topic_elections: {},
+  election_votes: {},
+  topics_metrics: { [referralProgramTopic.id]: topicMetricsFor(referralProgramTopic.id) },
+  markdown_to_html: {
+    [referralProgramTopic.id]: '<p>A referral program used by native client parity tests.</p>',
+  },
+  bookmarks: {},
+}
+
 export const referralApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'web.topics.search.referral-programs.default',
@@ -24,26 +45,7 @@ export const referralApiFixtureCases: ApiFixtureCase[] = [
     query: { q: 'test', topic_types: 'referral_program', limit: '10' },
     auth: 'fixture-user',
     status: 200,
-    body: {
-      results: [
-        {
-          __entity_type: 'topic',
-          id: referralProgramTopic.id,
-          name: referralProgramTopic.name,
-          slug: referralProgramTopic.slug,
-          topic_type: referralProgramTopic.topic_type,
-        },
-      ],
-      page_info: pageInfo,
-      topics: { [referralProgramTopic.id]: referralProgramTopic },
-      topic_elections: {},
-      election_votes: {},
-      topics_metrics: { [referralProgramTopic.id]: topicMetricsFor(referralProgramTopic.id) },
-      markdown_to_html: {
-        [referralProgramTopic.id]: '<p>A referral program used by native client parity tests.</p>',
-      },
-      bookmarks: {},
-    },
+    body: referralProgramTopicSearchBody,
     consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: ['web/components/my/referral-links-manager/add-referral-link.tsx'],
   },
@@ -153,24 +155,15 @@ export const referralApiFixtureCases: ApiFixtureCase[] = [
     migratedFrom: ['web/components/my/referral-clicks-page.tsx'],
   },
   {
-    id: 'web.trending-referral-programs.default',
+    id: 'web.topics.link-count.default',
     method: 'GET',
-    path: '/api/v1/trending-referral-programs',
-    route: { routeTemplate: '/api/v1/trending-referral-programs' },
-    query: { limit: '10' },
+    path: '/api/v1/topics',
+    route: { routeTemplate: '/api/v1/topics' },
+    query: { sort: 'link_count', limit: '5' },
     auth: 'fixture-user',
     status: 200,
-    body: {
-      referral_programs: [
-        {
-          id: referralProgram.id,
-          link_count: referralProgram.link_count,
-          trending_score: referralProgram.trending_score,
-        },
-      ],
-      page_info: pageInfo,
-    },
-    consumers: ['swift-core', 'dotnet-core'],
+    body: referralProgramTopicSearchBody,
+    consumers: ['web'],
     migratedFrom: ['web/lib/api/server/trending-referral-programs.ts'],
   },
   {
