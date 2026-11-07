@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
 import {
   assertCanAddHouseholdMember,
@@ -29,7 +30,10 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
     'household-owner-capacity',
     async () => {
       await using transaction = await beginTransaction()
-      await assertCanCreateHousehold(seedUser.id, { query: transaction })
+      // The explain seed already owns the signup household and one spending household.
+      await assert.rejects(() => assertCanCreateHousehold(seedUser.id, { query: transaction }), {
+        code: 'HOUSEHOLD_LIMIT_REACHED',
+      })
       await transaction.rollback()
     },
     undefined,
