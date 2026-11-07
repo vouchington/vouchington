@@ -6,7 +6,7 @@ import { AI_AGENTS_DEFAULTS, CLASSIFIER_RUN_ATTEMPTS, CLASSIFIER_RUN_BACKOFF } f
 import { ai_agents } from '../queues.mts'
 import type { ClassifierRunJobData } from '../types.mts'
 import {
-  classifierRunJobExists,
+  classifierRunJobsExist,
   enqueueBulkClassifierRunDispatchers,
   enqueueBulkClassifierRuns,
   enqueueClassifierRun,
@@ -135,13 +135,13 @@ describe('classifier run enqueue', () => {
 
   it('reports whether the run job is still retained', async () => {
     const data = runJobData()
-    await expect(classifierRunJobExists(data.runId)).resolves.toBe(false)
+    await expect(classifierRunJobsExist([data.runId])).resolves.toEqual(new Set())
 
     await enqueueClassifierRun(data)
-    await expect(classifierRunJobExists(data.runId)).resolves.toBe(true)
+    await expect(classifierRunJobsExist([data.runId])).resolves.toEqual(new Set([data.runId]))
 
     removeClassifierRunJobForTest(data.runId)
-    await expect(classifierRunJobExists(data.runId)).resolves.toBe(false)
+    await expect(classifierRunJobsExist([data.runId])).resolves.toEqual(new Set())
   })
 
   it('identifies a sweep page by phase, classifier and cursor so overlapping sweeps add it once', async () => {

@@ -21,20 +21,23 @@ export async function recordClassifierRunSweepEnqueues(runIds: readonly string[]
 }
 
 /**
- * Ends recovery for a run whose last permitted job is gone yet still incomplete. The counter moves
- * past the bound so the sweep stops selecting the run, and the run becomes terminal so nothing
+ * Ends recovery for runs whose last permitted job is gone yet still incomplete. The counter moves
+ * past the bound so the sweep stops selecting a run, and the run becomes terminal so nothing
  * dispatches it again; its recorded outcomes and attempt budget are untouched.
  */
-export async function abandonClassifierRunSweep(runId: string): Promise<'terminal' | 'skipped'> {
-  const { rows } = await write<{ id: string }>(sql`/* abandonClassifierRunSweep */
+export async function abandonClassifierRunSweeps(runIds: readonly string[]): Promise<string[]> {
+  if (runIds.length === 0) return []
+  const { rows } = await write<{ id: string }>(sql`/* abandonClassifierRunSweeps */
     UPDATE classifier_runs
     SET sweep_enqueue_count = ${CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND + 1},
       terminal_failure_kind = 'sweep-bound-exceeded', terminal_failed_at = clock_timestamp(),
       lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
-    WHERE id = ${runId}
-      AND sweep_enqueue_count = ${CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND}
-      AND completed_at IS NULL AND superseded_at IS NULL AND terminal_failed_at IS NULL
-    RETURNING id
+    FROM unnest(${[...runIds]}::uuid[]) AS abandoned(id)
+    WHERE classifier_runs.id = abandoned.id
+      AND classifier_runs.sweep_enqueue_count = ${CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND}
+      AND classifier_runs.completed_at IS NULL AND classifier_runs.superseded_at IS NULL
+      AND classifier_runs.terminal_failed_at IS NULL
+    RETURNING classifier_runs.id
   `)
-  return rows.length > 0 ? 'terminal' : 'skipped'
+  return rows.map(row => row.id)
 }

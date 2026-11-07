@@ -24,7 +24,7 @@ import { completeClassifierRun } from './run-completion.mts'
 import { reserveClassifierRun } from './run-reservation.mts'
 import { persistClassifierRunOutcomes } from './run-outcomes.mts'
 import {
-  abandonClassifierRunSweep,
+  abandonClassifierRunSweeps,
   CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND,
   recordClassifierRunSweepEnqueues,
 } from './run-sweep.mts'
@@ -154,12 +154,12 @@ describe('classifier run sweep bound (real PG)', () => {
     const setup = await createSyntheticFixture()
     const run = await reserveSyntheticRun(setup)
 
-    expect(await abandonClassifierRunSweep(run.runId)).toBe('skipped')
+    expect(await abandonClassifierRunSweeps([run.runId])).toEqual([])
     await setClassifierRunSweepEnqueueCountForTest(run.runId, CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND)
     expect((await drainIncompleteRuns()).map(item => item.runId)).toContain(run.runId)
 
-    expect(await abandonClassifierRunSweep(run.runId)).toBe('terminal')
-    expect(await abandonClassifierRunSweep(run.runId)).toBe('skipped')
+    expect(await abandonClassifierRunSweeps([run.runId])).toEqual([run.runId])
+    expect(await abandonClassifierRunSweeps([run.runId])).toEqual([])
     const [facts] = await getClassifierRunFacts(setup.post.id, setup.slug)
     expect(facts).toMatchObject({
       terminal_failure_kind: 'sweep-bound-exceeded',
