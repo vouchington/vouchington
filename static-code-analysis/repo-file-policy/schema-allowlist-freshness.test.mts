@@ -30,6 +30,21 @@ describe('schema allowlist freshness', () => {
     ])
   })
 
+  it('reports inherited object keys as stale', () => {
+    const entries = [
+      ['posts.owner_id', 'present column'],
+      ['constructor', 'inherited table'],
+      ['constructor.id', 'column on an inherited table'],
+      ['posts.constructor', 'inherited column'],
+    ] as const
+
+    expect(findSchemaAllowlistEntryErrors(entries, schema)).toEqual([
+      'stale PostgreSQL schema allowlist entry: constructor',
+      'stale PostgreSQL schema allowlist entry: constructor.id',
+      'stale PostgreSQL schema allowlist entry: posts.constructor',
+    ])
+  })
+
   it('rejects malformed keys instead of accepting a valid prefix', () => {
     const entries = [
       ['posts.owner_id', 'valid column'],
@@ -60,5 +75,21 @@ describe('schema allowlist freshness', () => {
     expect(errors).toEqual([
       `::error file=${file}::schema allowlist module is missing from freshness registry`,
     ])
+  })
+
+  it('skips non-allowlist paths and a registered module with empty exports', () => {
+    const outsideHelpers = 'scripts/example-allowlist.mts'
+    const allowlistTest = 'backend/test-helpers/x-allowlist.test.mts'
+    const emptyExports = 'backend/test-helpers/empty-allowlist.mts'
+    const errors: string[] = []
+
+    checkSchemaAllowlistFreshness(
+      [outsideHelpers, allowlistTest, emptyExports],
+      schema,
+      new Map([[emptyExports, []]]),
+      errors,
+    )
+
+    expect(errors).toEqual([])
   })
 })
