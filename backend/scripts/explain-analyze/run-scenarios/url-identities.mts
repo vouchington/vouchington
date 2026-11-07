@@ -17,18 +17,33 @@ export async function runUrlIdentityScenarios(): Promise<void> {
   await write(`/* analyzeExplainUrlIdentities */ ANALYZE url_identities`)
   const suffix = crypto.randomUUID()
   const ownerHref = `https://identity-${suffix}.example.test/page`
-  const variantHref = `http://www.identity-${suffix}.example.test/page/?utm_source=explain`
+  const variantHref = `http://www.identity-${suffix}.example.test/page?utm_source=explain`
   await addUrls(seedUser.id, [ownerHref], { skipCreatedEvents: true })
 
+  let variantIds: string[] = []
   registerScenarioContract('url-identity-variant-insert', {
     allowEmptyResult: true,
     expectations: [{ kind: 'maxProcessedRows', relation: 'url_identities', max: 3 }],
   })
   await runAndCapture(
     'url-identity-variant-insert',
-    () => addUrls(seedUser.id, [variantHref], { skipCreatedEvents: true }),
+    async () => {
+      variantIds = (await addUrls(seedUser.id, [variantHref], { skipCreatedEvents: true })).map(
+        url => url.id,
+      )
+    },
     undefined,
     ['registerUrlIdentities', 'linkNewUrlVariants'],
+    {
+      afterCapture: async () => {
+        const { rows } = await write<{ canonical_url_id: string | null }>(
+          `/* assertExplainVariantLinked */ SELECT canonical_url_id FROM urls WHERE id = ANY($1::uuid[])`,
+          [variantIds],
+        )
+        if (rows.length !== 1 || rows[0]!.canonical_url_id === null)
+          throw new Error('url-identity-variant-insert did not link the variant to its owner')
+      },
+    },
   )
 
   registerScenarioContract('url-identity-lookup', {
