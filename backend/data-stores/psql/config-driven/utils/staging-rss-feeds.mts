@@ -45,9 +45,9 @@ export const STAGING_RSS_FEEDS: readonly StagingRssFeed[] = [
     },
   },
   {
-    url: 'https://blog.cloudflare.com/rss/',
+    url: 'https://blog.cloudflare.com/rss',
     hostname: 'blog.cloudflare.com',
-    pathname: '/rss/',
+    pathname: '/rss',
     title: 'Cloudflare Blog',
     slug: 'cloudflare-blog-blog-cloudflare-com-rss',
     ids: {
@@ -61,9 +61,9 @@ export const STAGING_RSS_FEEDS: readonly StagingRssFeed[] = [
     },
   },
   {
-    url: 'https://www.quantamagazine.org/feed/',
+    url: 'https://www.quantamagazine.org/feed',
     hostname: 'www.quantamagazine.org',
-    pathname: '/feed/',
+    pathname: '/feed',
     title: 'Quanta Magazine',
     slug: 'quanta-magazine-quantamagazine-org-feed',
     ids: {

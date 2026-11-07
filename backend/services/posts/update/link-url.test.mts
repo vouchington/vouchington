@@ -10,6 +10,7 @@ import { webRiskConfig } from '@services/web-risk/config'
 import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { getPostHackerNewsFlagStateForTest } from '@voucha/test-helpers/hacker-news-flag-state'
 import { getUrlById } from '@services/urls/get'
+import { addUrl } from '@services/urls/upsert'
 import { updatePost } from '../update.mts'
 import { getPostByAny } from '../get.mts'
 import { assessPostLinkEdit } from './link-url.mts'
@@ -49,6 +50,17 @@ describe('post link URL-ID policy', () => {
       stored: true,
       expected: true,
     })
+  })
+
+  it('links a new variant of a known page to that page instead of rejecting the edit', async () => {
+    const { user, post } = await createPostLinkEditFixtureForTest()
+    const host = `link-variant-${randomUUID()}.example.com`
+    const owner = await addUrl(null, `https://${host}/article`)
+    if (!owner) throw new Error('Expected an owner URL fixture')
+
+    await updatePost(user, post, { url: `https://www.${host}/article/?utm_source=x` })
+
+    expect((await getPostByAny(post.id, { readOnly: false }))?.url_id).toBe(owner.id)
   })
 
   it('fences a concurrent canonical rewrite before it can invert alias and terminal row locks', async () => {

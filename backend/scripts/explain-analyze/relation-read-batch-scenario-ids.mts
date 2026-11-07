@@ -2,6 +2,8 @@ export const RELATION_READ_BATCH_SCENARIO_IDS = [
   'hostname-owner-lock-batch',
   'hostname-owner-relation-policy',
   'hostname-owner-crawler-batch',
+  'url-identity-variant-insert',
+  'url-identity-lookup',
   'hostname-owner-topic-lock',
   'hostname-owner-topic-snapshot',
   'hostname-owner-url-ids',
