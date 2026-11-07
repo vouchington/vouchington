@@ -1,8 +1,10 @@
 'use client'
 
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { CommunityInvite } from '@/types/api-responses/pagination-and-entities'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface Props {
@@ -13,6 +15,7 @@ interface Props {
 
 export function InviteItem({ invite, loading, onRevoke }: Props) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   const isPending = !invite.revoked_at && !invite.accepted_at && !invite.declined_at
   const status = isPending
     ? { label: t('extracted.communities.inviteItem.pending_331551b0'), variant: 'outline' as const }
@@ -37,12 +40,9 @@ export function InviteItem({ invite, loading, onRevoke }: Props) {
         <p className='text-sm font-medium'>
           {invite.invited_email ?? t('extracted.communities.inviteItem.unknownRecipient_5c401ba0')}
         </p>
-        <p
-          className='text-xs text-muted-foreground'
-          suppressHydrationWarning
-        >
+        <p className='text-xs text-muted-foreground'>
           {t('extracted.communities.inviteItem.sentDate', {
-            sentDate: new Date(invite.created_at).toLocaleDateString(),
+            sentDate: formatUtcDate(invite.created_at, uiLocale),
           })}
         </p>
       </div>
