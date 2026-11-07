@@ -57,26 +57,13 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
 
     // A NULL high-water admits an empty prefix and keeps the job. The next pass completes
     // that post. Three posts take two passes each, and the last completion has nothing left.
-    const emptyPrefixPasses = [
-      { continue: true, remaining: 3 },
-      { continue: true, remaining: 2 },
-      { continue: true, remaining: 2 },
-      { continue: true, remaining: 1 },
-      { continue: true, remaining: 1 },
-      { continue: false, remaining: 0 },
-      { continue: false, remaining: 0 },
-    ]
-    for (const expected of emptyPrefixPasses) {
-      assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-        processed: 0,
-        continue: expected.continue,
-      })
-      const remaining = await write<{ count: string }>(
-        `/* storyProjectionDispatcherWitness */ SELECT COUNT(*)::text AS count
-          FROM story_post_related_url_projection_jobs`,
-      )
-      assert.equal(Number(remaining.rows[0]!.count), expected.remaining)
-    }
+    await assertEmptyPrefixSnapshot(true, 3)
+    await assertEmptyPrefixSnapshot(true, 2)
+    await assertEmptyPrefixSnapshot(true, 2)
+    await assertEmptyPrefixSnapshot(true, 1)
+    await assertEmptyPrefixSnapshot(true, 1)
+    await assertEmptyPrefixSnapshot(false, 0)
+    await assertEmptyPrefixSnapshot(false, 0)
   } finally {
     await removeStoryProjectionDispatcherWitness(fixture)
   }
@@ -131,4 +118,20 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
       [planStoryId],
     )
   }
+}
+
+/** One empty-prefix dispatcher pass and the jobs still waiting after it. */
+async function assertEmptyPrefixSnapshot(
+  expectedContinue: boolean,
+  expectedRemaining: number,
+): Promise<void> {
+  assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
+    processed: 0,
+    continue: expectedContinue,
+  })
+  const remaining = await write<{ count: string }>(
+    `/* storyProjectionDispatcherWitness */ SELECT COUNT(*)::text AS count
+      FROM story_post_related_url_projection_jobs`,
+  )
+  assert.equal(Number(remaining.rows[0]!.count), expectedRemaining)
 }
