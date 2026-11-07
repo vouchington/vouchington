@@ -2687,9 +2687,9 @@
       - object: table:domain_blocklist_sources
         reason: 'configuration-seeded catalogue (config-driven/0050-00-01-seed-blacklist-sources.mts seeds the BLACKLISTS constant); name is UNIQUE and staff add sources only by code change'
       - object: table:referral_program_link_validation_rule_sets
-        reason: 'staff-curated referral program catalogue (admin-import and staff routes only, no user writes); link validation reads the enabled rules of one program'
+        reason: 'staff-curated catalogue written only by staff routes and the admin topic CSV import (backend/services/admin-imports/process-topic-row-referral.mts), never by user content; NO write cap exists on rule sets per program or in total, so growth is bounded only by staff data entry, and link validation reads every enabled rule set of one program per call'
       - object: table:referral_program_link_validation_rules
-        reason: 'staff-curated referral program catalogue (admin-import and staff routes only, no user writes); link validation reads the enabled rules of one program'
+        reason: 'staff-curated catalogue written only by staff routes and the admin topic CSV import (backend/services/admin-imports/process-topic-row-referral.mts), never by user content; NO write cap exists on rules per rule set or in total, so growth is bounded only by staff data entry, and link validation reads every enabled rule of one program per call'
       - object: table:migrations
         reason: 'migration ledger; one row per file in backend/data-stores/psql/migrations (id is the primary key), written only by the migration runner'
       - object: table:activitypub_replay_rejection_floors
