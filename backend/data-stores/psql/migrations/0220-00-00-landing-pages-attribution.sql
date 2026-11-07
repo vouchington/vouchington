@@ -270,6 +270,7 @@ CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__topic_id
 -- A single ordered relation for the three source types offered to a page owner.
 CREATE TABLE IF NOT EXISTS user_landing_page_candidates (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   user_id UUID NOT NULL,
   profile_link_id UUID,
   review_post_id UUID,
