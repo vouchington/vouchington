@@ -152,6 +152,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'search-communities-has-list-items',
   'search-communities-member',
   'search-communities-text',
+  'search-communities-text-members',
+  'search-communities-text-virtual-subscriptions',
   'search-communities-virtual-subscriptions',
   'search-community-posts',
   'search-data-points',
