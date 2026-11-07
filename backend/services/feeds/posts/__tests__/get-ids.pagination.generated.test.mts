@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { getPostFeedIds } from '../get-ids.mts'
-import { decodeCursor, encodeCursor, isTimestampCursor } from '@modules/pagination'
+import { decodeCursor, encodeCursor, isPreciseTimestampCursor } from '@modules/pagination'
 import { followUser, createTestUser, createTestPost } from '@voucha/test-helpers'
 import {
   processFollowerDistributionChunk,
@@ -27,7 +27,7 @@ describe('getPostFeedIds (pagination)', () => {
     expect(page1.results.length).toBe(1)
     expect(page1.page_info.has_next_page).toBe(true)
     expect(page1.page_info.end_cursor).toBeDefined()
-    expect(isTimestampCursor(decodeCursor(page1.page_info.end_cursor!))).toBe(true)
+    expect(isPreciseTimestampCursor(decodeCursor(page1.page_info.end_cursor!))).toBe(true)
 
     // Get second page
     expect(page1.page_info.end_cursor).toBeTruthy()
@@ -46,7 +46,7 @@ describe('getPostFeedIds (pagination)', () => {
     await expect(
       getPostFeedIds(user, {
         after: encodeCursor({
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString().replace('Z', '000Z'),
           id: 'not-a-uuid',
         }),
       }),
