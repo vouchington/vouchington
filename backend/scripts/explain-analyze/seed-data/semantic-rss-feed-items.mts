@@ -4,6 +4,7 @@ import { seedUuid } from './common.mts'
 const SEMANTIC_RSS_ITEM_COUNT = 256
 const SEMANTIC_STORY_PAIR_COUNT = 32
 const UNLINKED_STORY_COUNT = 1002
+export const SEMANTIC_RSS_STORY_MEMBER_COUNT = SEMANTIC_STORY_PAIR_COUNT * 2
 
 /**
  * Adds a bounded, deterministic vector-search cohort to the normal RSS seed.
