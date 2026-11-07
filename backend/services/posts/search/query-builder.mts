@@ -109,7 +109,7 @@ export function buildPostSearchQuery(
   })
   if (fenceHotExpressionFilter) {
     query.append(sql`
-    ORDER BY posts.id DESC)
+    ORDER BY id DESC)
   SELECT id, post_type, `)
     query.append(buildHotScoreExpression('data_point_hot_matches'))
     query.append(sql` AS hot_score`)
