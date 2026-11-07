@@ -207,15 +207,6 @@ the referral link and topic recommendation tools do too; see Relation, Referral 
 
 ---
 
-## Server-Only Tools Rationale
-
-Tools with no `meta.audience` are excluded from external MCP servers for one of these reasons:
-
-- **Internal-only data** — `search_rss_feed_items` reads workflow data that is not exposed
-  directly to clients.
-
----
-
 ## External Content
 
 A tool result that includes member-authored or third-party text must mark that text with

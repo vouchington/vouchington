@@ -43,7 +43,6 @@
     "@queues/vote-aggregation": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/classifier-runs": "workspace:^",
-    "@services/crawls": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-relations": "workspace:^",
