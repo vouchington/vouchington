@@ -12,7 +12,6 @@ import {
   type SubjectLimitGroup,
   type RelationAdmission,
 } from './relation-limit-states.mts'
-const relationLimitErrorCapacity = Symbol('relationLimitErrorCapacity')
 const admittedRelations = new AsyncLocalStorage<Map<string, RelationAdmission>>()
 
 /**
@@ -80,13 +79,6 @@ export function isRelationLimitError(err: unknown): boolean {
   )
 }
 
-/** Internal admission evidence; the symbol is non-enumerable and never part of API errors. */
-export function getRelationLimitErrorCapacity(error: unknown): number | undefined {
-  if (!(error instanceof Error)) return undefined
-  const capacity: unknown = Reflect.get(error, relationLimitErrorCapacity)
-  return typeof capacity === 'number' ? capacity : undefined
-}
-
 async function getRelationLimitStates(
   subjectId: string,
   groups: readonly LimitGroup[],
@@ -121,11 +113,8 @@ function assertWithinCapacity(
   const newCount = [...new Set(objectIds.map(id => id.toLowerCase()))].filter(
     id => !existing.has(id),
   ).length
-  if (newCount > state.remaining) {
-    const error = createCodedError(409, 'Relation limit reached', RELATION_LIMIT_REACHED)
-    Object.defineProperty(error, relationLimitErrorCapacity, { value: state.capacity })
-    throw error
-  }
+  if (newCount > state.remaining)
+    throw createCodedError(409, 'Relation limit reached', RELATION_LIMIT_REACHED)
 }
 
 /** Read capacity once, admit the fitting prefix, and preserve that decision through its writes. */
