@@ -1,4 +1,3 @@
-export type { Pool } from 'pg'
 export type {
   PoolClient,
   QueryExecutor,
