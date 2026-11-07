@@ -1,9 +1,11 @@
 import { claimModerationQueueItem, releaseModerationQueueItem } from '@services/moderation-claims'
 import {
+  assertLiveModInternalReader,
   deEscalateModerationQueueItem,
   escalateModerationQueueItem,
   openModInternalThread,
 } from '@services/moderation-threads'
+import { isModerationStaff } from '@services/users'
 import { dismissCommunityAutomodFlag } from '@services/communities/publications/automod-flag'
 import {
   communityModerationNoContent,
@@ -60,6 +62,7 @@ async function openThread(
   item: Item,
 ) {
   const { community } = await staffOrModeratorCommunity(user, args.community)
+  if (!isModerationStaff(user)) await assertLiveModInternalReader(user.id, community.id)
   const conversation = await openModInternalThread(user.id, {
     communityId: community.id,
     ...target(args, item),

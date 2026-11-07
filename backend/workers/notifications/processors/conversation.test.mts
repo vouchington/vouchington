@@ -8,6 +8,8 @@ import {
   insertTestMute,
   insertTestCommunity,
   insertTestCommunityMember,
+  insertTestModerationReport,
+  insertTestPost,
   softDeleteEntityRelationTest,
 } from '@voucha/test-helpers'
 import {
@@ -18,6 +20,7 @@ import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
 import { background } from '@queues/background/queues'
 import { NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB } from '@queues/background/enqueues/notifications-jobs'
 import { openModmailThread } from '@services/modmail/threads'
+import { openModInternalThread } from '@services/moderation-threads'
 import { listNotifications } from '@services/notifications/list'
 import { processConversationMessageNotification } from './conversation.mts'
 
@@ -156,6 +159,39 @@ describe('conversation notification relation filtering', () => {
     await dispatch('00000000-0000-7000-8000-000000000001', senderId)
 
     expect(await queuedPushes([senderId])).toEqual([])
+  })
+
+  it('does not write a notification for a mod_internal thread', async () => {
+    const owner = await createTestUser()
+    const mod = await createTestUser()
+    const author = await createTestUser()
+    const reporter = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id })
+    await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: mod.id,
+      role: 'moderator',
+    })
+    const postId = await insertTestPost({
+      createdById: author.id,
+      slug: `mod-internal-dispatch-${crypto.randomUUID().slice(0, 8)}`,
+      title: 'Internal dispatch',
+      markdown: 'body',
+      communityId: community.id,
+    })
+    const reportId = await insertTestModerationReport({
+      reporterUserId: reporter.id,
+      entityType: 'post',
+      entityId: postId,
+    })
+    const thread = await openModInternalThread(owner.id, { communityId: community.id, reportId })
+
+    await dispatch(thread.id, owner.id)
+
+    expect(await queuedPushes([owner.id, mod.id, author.id, reporter.id])).toEqual([])
+    expect((await listNotifications(mod.id)).results).toHaveLength(0)
+    expect((await listNotifications(reporter.id)).results).toHaveLength(0)
   })
 
   it('notifies only the other participant of a direct conversation', async () => {

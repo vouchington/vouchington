@@ -331,10 +331,10 @@ BEFORE UPDATE ON conversation_participants
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- One row per user for the life of the conversation, including removed participants.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_conversation_participants__conversation_user
-ON conversation_participants (conversation_id, user_id)
-WHERE user_id IS NOT NULL AND removed_at IS NULL;
+ON conversation_participants (conversation_id, user_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversation_participants__user_id

@@ -22,6 +22,11 @@ export async function processConversationMessageNotification(data: {
 }) {
   const context = await getConversationNotificationContext(data.conversationId, data.senderId)
   if (!context) return
+  // Internal moderator talk has no notification entity type. The recipient read above stays bounded.
+  if (context.channel_type === 'mod_internal') {
+    await dispatchPushes([])
+    return
+  }
 
   // Modmail is official community communication — block/mute must not suppress it.
   let eligibleUserIds = context.participant_user_ids

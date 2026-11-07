@@ -9,6 +9,7 @@ export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
   'community-lifecycle-notifications',
   'community-create',
   'conversation-participant-add-read',
+  'conversation-participant-admission',
   'community-invite-redeem',
   'community-application-questions',
   'rss-feed-state-changes',

@@ -21,11 +21,13 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/request-client-info": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
+    "@services/community-member-vacations": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/pagination": "workspace:^",
     "@services/search-params": "workspace:^",
@@ -33,7 +35,8 @@
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
