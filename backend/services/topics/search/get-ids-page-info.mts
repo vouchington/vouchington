@@ -46,17 +46,6 @@ export function decodeTopicSearchCursor(
     const cursor = decodeUuidCursor(options.after, isScoreCursor, 'Invalid cursor for sort=best')
     return { score_lt: cursor.score, id_lt: cursor.id }
   }
-  if (sort === 'link_count') {
-    const cursor = decodeUuidCursor(
-      options.after,
-      isScoreCursor,
-      'Invalid cursor for sort=link_count',
-    )
-    if (!Number.isInteger(cursor.score) || cursor.score < 0) {
-      throw createHttpError(400, 'Invalid cursor for sort=link_count')
-    }
-    return { score_lt: cursor.score, id_lt: cursor.id }
-  }
   if (sort === 'relevance') {
     const cursor = decodeUuidCursor(
       options.after,
