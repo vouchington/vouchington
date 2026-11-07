@@ -109,7 +109,7 @@ export async function upsertUrlRows(
  * The upsert statement's snapshot is taken before its row-lock wait. A canonical target committed
  * during that wait is visible only to a later statement.
  */
-async function attachDistinctCanonicalHostnames(
+export async function attachDistinctCanonicalHostnames(
   rows: UpsertedUrlRow[],
   options: QueryOptions,
 ): Promise<UpsertedUrlRow[]> {

@@ -1,4 +1,5 @@
 import { createTopicEmbeddingContent } from '@voucha/types/entities/topic'
+import { getUrlIdentity } from '@modules/utils/urls'
 import { STAGING_RSS_FEEDS, type StagingRssFeed } from './utils/staging-rss-feeds.mts'
 
 const RSS_MIME_TYPE = 'application/rss+xml'
@@ -51,6 +52,14 @@ FROM url_hostnames h
 JOIN media_types ct ON ct.mime_type = ${lit(RSS_MIME_TYPE)}
 WHERE h.hostname = ${lit(feed.hostname)}
   AND NOT EXISTS (SELECT 1 FROM urls WHERE url = ${lit(feed.url)})
+ON CONFLICT DO NOTHING;`,
+    // addUrls registers every inserted row's page identity; do the same so a later variant of this
+    // feed URL points at it instead of becoming the owner.
+    `
+INSERT INTO url_identities (url_id, identity)
+SELECT u.id, ${lit(getUrlIdentity(feed.url))}
+FROM urls u
+WHERE u.url = ${lit(feed.url)}
 ON CONFLICT DO NOTHING;`,
     // aliases is set here instead of by the product's follow-up UPDATE: same end state, insert-only.
     // topics.hostname_id only; url_hostnames.topic_id stays NULL (that column means a whole domain).

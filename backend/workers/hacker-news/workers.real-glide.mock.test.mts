@@ -16,7 +16,7 @@ import {
   getHackerNewsItemsByUrlIds,
   getHackerNewsTotalsByUrlIds,
 } from '@services/urls/hacker-news-references-read'
-import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
+import { hardDeleteTestUrl, insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { MockAgent, withMockAgentDefaultFetchForTest } from '@voucha/test-helpers/provider-http'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { heartbeat } from '@workers/heartbeat/workers'
@@ -39,7 +39,7 @@ describe('Hacker News lookup worker', () => {
   it('drops queued work while pulling is disabled and resumes admissions after it is enabled', async () => {
     await hackerNewsQueueConfig.waitForInitialization()
     expect(hackerNewsQueueConfig.defaultFields.lookups_enabled).toBe(true)
-    const row = await insertTestUrlDirect(null, `${recording.query}?utm_source=${randomUUID()}`)
+    const row = await insertFreshRecordingUrl()
     if (!row) throw new Error('Expected a test URL')
     const neverAdmitted = randomUUID()
     const runAt = new Date(Date.now() + 2500).toISOString()
@@ -99,8 +99,7 @@ describe('Hacker News lookup worker', () => {
   // no-mistakes-timeout-reason: Two queue jobs share global limiting and provider pacing.
   it('persists a lookup, skips a fresh duplicate, and leaves other queues free while refreshes wait', async () => {
     const identity = recording.search_query
-    const url = `${recording.query}?utm_source=${randomUUID()}`
-    const row = await insertTestUrlDirect(null, url)
+    const row = await insertFreshRecordingUrl()
     if (!row) throw new Error('Expected a test URL')
     const agent = new MockAgent()
     agent.disableNetConnect()
@@ -219,4 +218,11 @@ function completion(worker: Worker, id?: string) {
     forId,
     stop: () => worker.off('completed', onCompleted),
   }
+}
+
+/** Tracking params collapse into one stored row, so drop earlier lookups and start from a new row. */
+async function insertFreshRecordingUrl() {
+  const existing = await insertTestUrlDirect(null, recording.query)
+  if (existing) await hardDeleteTestUrl(existing.id)
+  return insertTestUrlDirect(null, recording.query)
 }

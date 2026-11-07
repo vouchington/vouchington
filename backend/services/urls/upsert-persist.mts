@@ -16,6 +16,8 @@ import type { ViewUrl } from './types.mts'
 import createError from 'http-errors'
 import { invalidate } from '@services/entity-cache'
 import { upsertUrlRows } from './upsert-write.mts'
+import { lockCanonicalUrlRewrites } from './canonical-lock.mts'
+import { linkNewUrlVariants } from './url-identities.mts'
 
 export type AddUrlOptions = {
   content_type?: string
@@ -53,6 +55,9 @@ async function persistInTransaction(
     preserveHttp: _preserveHttp,
     ...queryOptions
   } = options
+  // The shared canonical fence precedes hostname and URL row locks, matching canonical rewrites;
+  // variants are linked under it, so only rewrites ever take the exclusive lock.
+  await lockCanonicalUrlRewrites(options.query, 'shared')
   // ast-grep-ignore: no-three-sequential-awaits -- Resolved hostname ids select ownership locks; the fresh local-policy recheck must reject blocked hostnames before URL persistence.
   const resolved = await prepareUrlHostnamesForOwnedMutation(
     userId,
@@ -93,11 +98,12 @@ async function persistInTransaction(
     mimeTypeId = await upsertMediaTypes(content_type, queryOptions)
   }
 
-  const rows = await upsertUrlRows(
+  const upserted = await upsertUrlRows(
     values,
     mimeTypeId === null ? null : uniqueUrls.map(() => mimeTypeId),
     queryOptions,
   )
+  const rows = await linkNewUrlVariants(upserted, options.query)
 
   const idsByUrl = new Map(rows.map(row => [row.url, row]))
   const viewUrls = uniqueUrls.flatMap(url => {
