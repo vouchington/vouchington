@@ -15,6 +15,7 @@ import { getHouseholdLimits } from './household-limits-config.mts'
  * See docs/development/postgresql/reference-transactions.md#lock-scope.
  * Accept takes the member-admission key in its own statement before FOR UPDATE on the household.
  * An EXISTS target list does not run the lock.
+ * Keys hash canonical uuid text, so a mixed-case id shares the fence with the row's ::text form.
  */
 export const householdMemberAdmissionLockPrefix = 'household-member-admission:'
 export const householdIndividualAdmissionLockPrefix = 'household-individual-admission:'
@@ -25,7 +26,7 @@ export async function assertCanCreateHousehold(
   const limits = getHouseholdLimits()
   await write(
     sql`/* assertCanCreateHousehold:lock */
-      SELECT pg_advisory_xact_lock(hashtextextended('household-owner-admission:' || ${userId}, 0))`,
+      SELECT pg_advisory_xact_lock(hashtextextended('household-owner-admission:' || ${userId}::uuid::text, 0))`,
     options,
   )
   const { rows: people } = await write<{ individual_id: string | null }>(
@@ -37,7 +38,7 @@ export async function assertCanCreateHousehold(
   if (individualId) {
     await write(
       sql`/* assertCanCreateHousehold:lock-individual */
-        SELECT pg_advisory_xact_lock(hashtextextended(${householdIndividualAdmissionLockPrefix} || ${individualId}, 0))`,
+        SELECT pg_advisory_xact_lock(hashtextextended(${householdIndividualAdmissionLockPrefix} || ${individualId}::uuid::text, 0))`,
       options,
     )
   }
@@ -80,12 +81,12 @@ export async function assertCanAddHouseholdMember(
   const limits = getHouseholdLimits()
   await write(
     sql`/* assertCanAddHouseholdMember:lock-household */
-      SELECT pg_advisory_xact_lock(hashtextextended(${householdMemberAdmissionLockPrefix} || ${householdId}, 0))`,
+      SELECT pg_advisory_xact_lock(hashtextextended(${householdMemberAdmissionLockPrefix} || ${householdId}::uuid::text, 0))`,
     options,
   )
   await write(
     sql`/* assertCanAddHouseholdMember:lock-individual */
-      SELECT pg_advisory_xact_lock(hashtextextended(${householdIndividualAdmissionLockPrefix} || ${individualId}, 0))`,
+      SELECT pg_advisory_xact_lock(hashtextextended(${householdIndividualAdmissionLockPrefix} || ${individualId}::uuid::text, 0))`,
     options,
   )
   const distinctLimit = limits.householdsPerIndividual + 1
