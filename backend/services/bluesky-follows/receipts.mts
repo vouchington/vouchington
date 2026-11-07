@@ -127,7 +127,7 @@ export const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
 // self-follow receipt is excluded because followeeUserId also owns that remote record;
 // disconnect.mts deletes it through the follower cleanup before dropping the local receipt. A
 // full page (`hasMore`) means more may remain after `lastFollowerUserId`; the caller continues
-// through the drain job (drain-followee-receipts.mts), never a loop here.
+// through a disconnect continuation job (disconnect.mts), never a loop here.
 // The page rows are locked in the CTE, so their ctids stay valid for the delete in this statement;
 // deleting by ctid keeps the delete on the page instead of re-joining the whole table.
 export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(

@@ -12,9 +12,12 @@ export type DisconnectRequestedData = {
   userId: string
   blueskyDid: string
   linkAuthorizationId: string
+  /**
+   * Last follower id already cleaned. Only a continuation carries it; the first run and a sweep
+   * re-drive start from the head.
+   */
+  after?: string
 }
-/** One page of other followers' receipts for `userId` after `after`; the first page has no cursor. */
-export type DrainFolloweeReceiptsData = { userId: string; after?: string }
 /** One page of follow pairs after the cursor pair; the first page has no cursor. */
 export type BackfillBlueskyFollowPropagationData = { after?: ReconcileFollowData }
 /** One page of pending disconnects after `afterId`; the first page has no cursor. */
@@ -39,15 +42,6 @@ export const BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB =
     priority: PRIORITY_TASK,
     ...DEFAULTS,
   })
-// Database-only bulk cleanup after the disconnect already responded. It touches no Bluesky
-// session, so it gets its own lane instead of the token-rotation group.
-export const BLUESKY_FOLLOW_PROPAGATION_DRAIN_FOLLOWEE_RECEIPTS_JOB =
-  defineBackgroundJob<DrainFolloweeReceiptsData>(BLUESKY_FOLLOW_PROPAGATION_DOMAIN, {
-    name: 'drainFolloweeReceipts',
-    priority: PRIORITY_DISPATCH,
-    ordering: { key: 'bluesky-follow-propagation:receipt-cleanup' },
-    ...DEFAULTS,
-  })
 export const BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB =
   defineBackgroundJob<BackfillBlueskyFollowPropagationData>(BLUESKY_FOLLOW_PROPAGATION_DOMAIN, {
     name: 'backfillBlueskyFollowPropagation',
@@ -64,7 +58,6 @@ export const BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB =
 export const BLUESKY_FOLLOW_PROPAGATION_JOBS = [
   BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB,
   BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB,
-  BLUESKY_FOLLOW_PROPAGATION_DRAIN_FOLLOWEE_RECEIPTS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB,
 ] as const

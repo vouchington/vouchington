@@ -29,7 +29,6 @@ export const BACKGROUND_ORDERING_CAPS = {
   'activitypub:inbound': 4,
   'follower-distributions': 5,
   'bluesky-follow-propagation': 1,
-  'bluesky-follow-propagation:receipt-cleanup': 1,
   'rss-feeds': 5,
   'rss-feeds:dispatcher': 1,
   'fediverse-instances': 5,

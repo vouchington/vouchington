@@ -3,7 +3,6 @@ import {
   listPendingBlueskyDisconnectPage,
   disconnectAcceptedBlueskyAccountAndCleanupFollows,
   listBlueskyFollowPropagationCandidatePage,
-  drainBlueskyFolloweeReceiptsPage,
 } from '@services/bluesky-follows'
 import {
   enqueueBackfillBlueskyDisconnectRequestsContinuation,
@@ -11,17 +10,11 @@ import {
   enqueueBulkDisconnectRequested,
   enqueueBulkReconcileBlueskyFollow,
   type DisconnectRequestedData,
-  type DrainFolloweeReceiptsData,
   type ReconcileFollowData,
 } from '@queues/bluesky-follow-propagation/enqueues'
 
 export async function disconnectRequested(data: DisconnectRequestedData): Promise<void> {
   await disconnectAcceptedBlueskyAccountAndCleanupFollows(data.userId, data)
-}
-
-/** Deletes one page of other followers' receipts and enqueues the next page when this one was full. */
-export async function drainFolloweeReceipts(data: DrainFolloweeReceiptsData): Promise<void> {
-  await drainBlueskyFolloweeReceiptsPage(data.userId, data.after)
 }
 
 /**

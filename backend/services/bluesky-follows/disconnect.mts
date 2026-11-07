@@ -15,15 +15,16 @@ import { restoreBlueskySession, type OAuthSession } from '@modules/bluesky-oauth
 import onError from '@modules/on-error'
 import {
   deleteBlueskyFollowReceipt,
+  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
   listBlueskyFollowReceiptsForFollower,
+  START_OF_IDS,
   type BlueskyFollowReceipt,
 } from './receipts.mts'
 import { deleteFollowOnBluesky } from './agent.mts'
-import { drainBlueskyFolloweeReceiptsPage } from './drain-followee-receipts.mts'
 import { requestBlueskyDisconnect } from './disconnect-request.mts'
 import { withBlueskyDisconnectLock } from './disconnect-lock.mts'
 
-type ExactGeneration = { blueskyDid: string; linkAuthorizationId: string }
+type ExactGeneration = { blueskyDid: string; linkAuthorizationId: string; after?: string }
 
 // Best-effort, like sanitizeStripeCustomers in @services/users/delete.mts: one Bluesky failure
 // must not block the others or the disconnect itself. Successful deletes remove receipts eagerly;
@@ -66,24 +67,36 @@ export async function disconnectAcceptedBlueskyAccountAndCleanupFollows(
   )
 }
 
+// Other followers' receipts are cleaned one page per run while the generation stays pending
+// (disconnect_requested_at set, link authorization attached). A full page enqueues a continuation
+// that carries its cursor and returns without revoking; only a short page runs the follower-role
+// cleanup and revokes. Nothing here loops, so the lock is never held across pages. A lost
+// continuation is re-driven by the pending-disconnect sweep, which enqueues with no cursor and so
+// restarts from the head. The one-account-per-user unique index on bluesky_linked_accounts keeps
+// the user from relinking until the generation is revoked, so a stale run cannot delete receipts
+// of a newer link.
 async function disconnectAcceptedBlueskyAccountWithoutLock(
   userId: string,
   generation: ExactGeneration,
 ): Promise<void> {
   const linked = await getExactBlueskyAccountForDisconnect(userId, generation)
   if (!linked) return
-  await cleanupBlueskyFollowsBeforeAcceptedDisconnect(userId, linked)
-  await disconnectAcceptedBlueskyGeneration(userId, generation)
-}
-
-async function cleanupBlueskyFollowsBeforeAcceptedDisconnect(
-  userId: string,
-  linked: BlueskyLinkedAccount,
-): Promise<void> {
-  // One page now; a full page enqueues its continuation before revocation, so a failed enqueue
-  // leaves the generation retryable instead of stranding the remainder.
-  await drainBlueskyFolloweeReceiptsPage(userId)
+  const page = await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
+    userId,
+    generation.after ?? START_OF_IDS,
+  )
+  if (page.hasMore) {
+    // An enqueue failure throws before revocation, leaving the generation pending and retryable.
+    await enqueueDisconnectRequested({
+      userId,
+      blueskyDid: linked.bluesky_did,
+      linkAuthorizationId: linked.link_authorization_id,
+      after: page.lastFollowerUserId!,
+    })
+    return
+  }
   await cleanupFollowerRoleBeforeDisconnect(userId, linked)
+  await disconnectAcceptedBlueskyGeneration(userId, generation)
 }
 
 async function cleanupFollowerRoleBeforeDisconnect(

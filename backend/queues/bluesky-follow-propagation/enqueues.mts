@@ -3,20 +3,19 @@ import {
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB,
-  BLUESKY_FOLLOW_PROPAGATION_DRAIN_FOLLOWEE_RECEIPTS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB,
   type DisconnectRequestedData,
-  type DrainFolloweeReceiptsData,
   type ReconcileFollowData,
 } from '@queues/background/enqueues/bluesky-follow-propagation-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { BACKFILL_DEDUPLICATION_TTL_MS } from './config.mts'
 
-export type { DisconnectRequestedData, DrainFolloweeReceiptsData, ReconcileFollowData }
+export type { DisconnectRequestedData, ReconcileFollowData }
 
 export function disconnectRequestedJobOptions(data: DisconnectRequestedData): Partial<JobOptions> {
-  const logicalId = `disconnect_${data.userId}_${data.linkAuthorizationId}`
+  // A continuation needs its own id: the plain logical id would dedupe against the running job.
+  const logicalId = `disconnect_${data.userId}_${data.linkAuthorizationId}${data.after ? `__${data.after}` : ''}`
   return {
     jobId: logicalId,
     deduplication: { id: logicalId, mode: 'simple' },
@@ -112,20 +111,6 @@ export function enqueueBackfillBlueskyDisconnectRequestsContinuation(
 ): EnqueueReturnType {
   return enqueueBackfillBlueskyDisconnectRequestsJob({ afterId }, {
     jobId: `backfill_bluesky_disconnect_requests__${afterId}`,
-    removeOnComplete: true,
-    removeOnFail: true,
-  } satisfies Partial<JobOptions>)
-}
-
-const enqueueDrainFolloweeReceiptsJob = createBackgroundEnqueue(
-  BLUESKY_FOLLOW_PROPAGATION_DRAIN_FOLLOWEE_RECEIPTS_JOB,
-)
-
-// The job id is the page cursor, so a retried page cannot enqueue a second continuation and a
-// finished record releases the id.
-export function enqueueDrainFolloweeReceipts(data: DrainFolloweeReceiptsData): EnqueueReturnType {
-  return enqueueDrainFolloweeReceiptsJob(data, {
-    jobId: `drain_followee_receipts__${data.userId}__${data.after ?? 'start'}`,
     removeOnComplete: true,
     removeOnFail: true,
   } satisfies Partial<JobOptions>)
