@@ -11,6 +11,7 @@ export async function stageCurrentDeliveryRecords(
 ): Promise<void> {
   if (records.length === 0) return
   await using transaction = await beginTransaction()
+  // ast-grep-ignore: no-three-sequential-awaits -- Placement fences must be held before the authority read, which must precede staging, so the steps are dependent.
   await lockImageDeliveryMutation(transaction, {
     placementIds: records.map(record => record.placement_id),
     placementOnly: true,
