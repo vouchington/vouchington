@@ -231,9 +231,12 @@ describe('MCP RSS and feed reads — real DB contracts', () => {
       ['rss-feeds:read'],
     )
     expect(search).toMatchObject({ success: true, results: [{ id: feedId }] })
-    await callStructuredMcpTool(free, 'discover_rss_feeds', optionArgs('trending', { limit: 1 }), [
-      'rss-feeds:read',
-    ])
+    await callStructuredMcpTool(
+      free,
+      'discover_rss_feeds',
+      optionArgs('search', { sort: 'trending', limit: 1 }),
+      ['rss-feeds:read'],
+    )
     await callStructuredMcpTool(
       free,
       'discover_rss_feeds',

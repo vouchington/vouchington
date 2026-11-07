@@ -19,7 +19,12 @@ const CASES = [
     scope: 'feeds:read',
   },
   { name: 'discover_rss_feeds', option: 'search', args: {}, scope: 'rss-feeds:read' },
-  { name: 'discover_rss_feeds', option: 'trending', args: {}, scope: 'rss-feeds:read' },
+  {
+    name: 'discover_rss_feeds',
+    option: 'search',
+    args: { sort: 'trending' },
+    scope: 'rss-feeds:read',
+  },
   { name: 'discover_rss_feeds', option: 'recommended', args: {}, scope: 'rss-feeds:read' },
 ] as const
 
