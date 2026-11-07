@@ -14,9 +14,11 @@ import type { PrivateUser } from '@services/users/types'
 
 describe('spending-categories.generated', () => {
   let user: PrivateUser
+  let householdId: string
 
   beforeAll(async () => {
     user = await createTestUser()
+    householdId = (await createHousehold(user)).id
   })
   it('createHouseholdSpendingCategory - creates a spending category', async () => {
     const topicId = await insertTestSpendingCategory({
@@ -149,13 +151,12 @@ describe('spending-categories.generated', () => {
 
   it('createHouseholdSpendingCategory - creates a household-level spending entry', async () => {
     const topicId = await insertTestSpendingCategory({ createdById: user.id })
-    const household = await createHousehold(user)
     const spendingCategory = await createHouseholdSpendingCategory(
       user,
       user,
       topicId,
       { amount: { amount: 15_000, currency: 'usd' }, spending_frequency: 'monthly' },
-      household.id,
+      householdId,
     )
 
     expect(spendingCategory).toBeDefined()
@@ -204,7 +205,6 @@ describe('spending-categories.generated', () => {
 
   it('createHouseholdSpendingCategory - non-owner cannot create household entry', async () => {
     const otherUser = await createTestUser()
-    const household = await createHousehold(user)
     const topicId = await insertTestSpendingCategory({ createdById: user.id })
 
     await expect(
@@ -213,20 +213,19 @@ describe('spending-categories.generated', () => {
         otherUser,
         topicId,
         { amount: { amount: 10_000, currency: 'usd' } },
-        household.id,
+        householdId,
       ),
     ).rejects.toThrow(Error)
   })
 
   it('updateHouseholdSpendingCategoryById - updates household spending entry', async () => {
     const topicId = await insertTestSpendingCategory({ createdById: user.id })
-    const household = await createHousehold(user)
     const created = await createHouseholdSpendingCategory(
       user,
       user,
       topicId,
       { amount: { amount: 10_000, currency: 'usd' } },
-      household.id,
+      householdId,
     )
     const updated = await updateHouseholdSpendingCategoryById(user, user, created!.id, {
       amount: { amount: 250, currency: 'jpy' },
@@ -239,13 +238,12 @@ describe('spending-categories.generated', () => {
 
   it('deleteHouseholdSpendingCategoryById - deletes household spending entry', async () => {
     const topicId = await insertTestSpendingCategory({ createdById: user.id })
-    const household = await createHousehold(user)
     const created = await createHouseholdSpendingCategory(
       user,
       user,
       topicId,
       { amount: { amount: 10_000, currency: 'usd' } },
-      household.id,
+      householdId,
     )
     await deleteHouseholdSpendingCategoryById(user, created!.id)
 

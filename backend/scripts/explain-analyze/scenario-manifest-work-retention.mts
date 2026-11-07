@@ -30,6 +30,8 @@ export const RETENTION_WORK_SCENARIOS = [
   'fk-actor-agent-moderations-deleted-by-no-match',
   'fk-actor-moderation-cases-resolved-by-no-match',
   'community-membership-capacity',
+  'household-owner-capacity',
+  'household-member-capacity',
   'community-moderator-capacity',
   'community-membership-cache-user-miss',
   'community-membership-auth-target',

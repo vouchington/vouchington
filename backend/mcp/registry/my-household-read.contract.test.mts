@@ -22,7 +22,6 @@ describe('read_my_households REST twins — real DB', () => {
     const request = createRequest()
     await request.authenticateAs(owner)
     await request.post('/api/v1/households').send({}).expect(201)
-    await request.post('/api/v1/households').send({}).expect(201)
 
     const rest = await request
       .get('/api/v1/households')

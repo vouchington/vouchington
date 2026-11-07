@@ -6446,6 +6446,9 @@ importers:
       '@services/images':
         specifier: workspace:^
         version: link:../images
+      '@services/individuals-households':
+        specifier: workspace:^
+        version: link:../individuals-households
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
@@ -7672,6 +7675,12 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -7708,6 +7717,9 @@ importers:
       '@vouchington/pagination':
         specifier: ^0.0.4
         version: 0.0.4
+      '@vouchington/sentry':
+        specifier: ^0.6.0
+        version: 0.6.0(@sentry/browser@11.10.0)(@sentry/core@11.10.0)(@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
       '@vouchington/utils':
         specifier: ^0.12.0
         version: 0.12.0
@@ -7720,6 +7732,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5

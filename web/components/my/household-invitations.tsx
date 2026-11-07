@@ -11,6 +11,7 @@ import {
   getMyHouseholdInvitationsClient,
   revokeHouseholdInvitation,
 } from '@/lib/api/client/household-invitations'
+import { householdLimitDisplayMessages } from '@/lib/api/household-limit-messages'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { HouseholdInvitation, HouseholdInvitationPage } from '@/types/household-invitations'
@@ -118,7 +119,10 @@ export function HouseholdInvitations(props: Props) {
       )
       refresh()
     } catch (err) {
-      onError(err, { fallback: t('settings.householdInvitations.invitationUpdateFailed') })
+      onError(err, {
+        fallback: t('settings.householdInvitations.invitationUpdateFailed'),
+        displayMessageByCode: householdLimitDisplayMessages(),
+      })
     } finally {
       inFlight.current = false
       setSaving(false)

@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/client'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import type { ListResponse, PageInfo } from '@/types/api-responses'
+import { householdLimitDisplayMessages } from '@/lib/api/household-limit-messages'
 import onError, { onSuccess } from '@/lib/on-error'
 
 interface Props {
@@ -105,7 +106,10 @@ export function HouseholdManager({
       onHouseholdCreated?.(household)
       onSuccess('Household created')
     } catch (err) {
-      onError(err, { fallback: 'Failed to create household' })
+      onError(err, {
+        fallback: 'Failed to create household',
+        displayMessageByCode: householdLimitDisplayMessages(),
+      })
     } finally {
       createInFlight.current = false
       setCreating(false)

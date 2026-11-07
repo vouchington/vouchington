@@ -1,8 +1,9 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { validateUUID } from '@modules/utils/ids'
 import type { PrivateUser } from '@services/users/types'
+import { assertCanAddHouseholdMember, assertCanCreateHousehold } from '../household-limits.mts'
 import type { HouseholdMembershipRow, HouseholdRow } from '../types.mts'
 import { readHouseholdMemberManageAccess } from '../authorization.mts'
 import {
@@ -12,12 +13,20 @@ import {
 
 export async function createHousehold(currentUser: PrivateUser | null) {
   assert(currentUser, 401, 'User not logged in')
-  const { rows } = await write<HouseholdRow>(sql`/* createHousehold */
-    INSERT INTO households (owner_user_id)
-    VALUES (${currentUser.id})
-    RETURNING id, owner_user_id, updated_at
-  `)
-  return rows[0]
+  await using transaction = await beginTransaction()
+  const options = { query: transaction }
+  await assertCanCreateHousehold(currentUser.id, options)
+  const { rows } = await write<HouseholdRow>(
+    sql`/* createHousehold */
+      INSERT INTO households (owner_user_id)
+      VALUES (${currentUser.id})
+      RETURNING id, owner_user_id, updated_at`,
+    options,
+  )
+  const household = rows[0]
+  assert(household, 500, 'Household was not created')
+  await transaction.commit()
+  return household
 }
 export async function getHousehold(currentUser: PrivateUser | null, householdId: string) {
   assert(currentUser, 401, 'User not logged in')
@@ -80,6 +89,9 @@ export async function addHouseholdMembership(
   )
   assert(individualExists, 404, 'Individual not found')
 
+  await using transaction = await beginTransaction()
+  const options = { query: transaction }
+  await assertCanAddHouseholdMember(householdId, individualId, options)
   const query = sql`/* addHouseholdMembership */
     WITH inserted AS (
       INSERT INTO household_members (household_id, individual_id, relationship)
@@ -99,9 +111,10 @@ export async function addHouseholdMembership(
     FROM inserted
     LEFT JOIN individuals i ON i.id = inserted.individual_id
     LEFT JOIN users u ON u.individual_id = i.id`)
-  const { rows } = await write<HouseholdMembershipRow>(query)
+  const { rows } = await write<HouseholdMembershipRow>(query, options)
   const membership = rows[0]
   assert(membership, 500, 'Household membership was not saved')
+  await transaction.commit()
   return membership
 }
 export async function removeHouseholdMembership(

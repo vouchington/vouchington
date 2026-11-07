@@ -2612,6 +2612,10 @@
         { reason: 'a rule set has a few rules' }
       hostname_path_boilerplate_removal_urls.hostname_path_boilerplate_removal_id:
         { reason: 'the sole writer stores the at most 3 sampled candidate urls per removal' }
+      households.owner_user_id: { reason: 'a user owns at most 2 households' }
+      household_members.household_id: { reason: 'a household has at most 25 members' }
+      household_members.individual_id:
+        { reason: 'an individual belongs to at most 5 households, owned or joined' }
 
 - name: counter columns have nonnegative checks
   rule: postgres-column-check-constraints

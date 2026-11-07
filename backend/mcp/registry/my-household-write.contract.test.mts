@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { householdLimitsConfig } from '@services/individuals-households/household-limits-config'
 import {
   countTestHouseholdSpendingEntries,
   createTestUser,
@@ -27,6 +29,8 @@ describe('manage_my_households REST twins — real DB', () => {
     const request = createRequest()
     await request.authenticateAs(owner)
     const rest = await request.post('/api/v1/households').send({}).expect(201)
+    // Signup plus this household fills the owned cap, so REST must release it before MCP creates.
+    await request.delete(`/api/v1/households/${rest.body.household.id}`).expect(204)
     const tool = await writeHouseholds(plus(owner), 'create', {})
     expect(tool.household).toMatchObject({ owner_user_id: rest.body.household.owner_user_id })
     const household_id = (tool.household as { id: string }).id
@@ -60,6 +64,26 @@ describe('manage_my_households REST twins — real DB', () => {
     })
     expect(await countTestHouseholdSpendingEntries(household_id)).toBe(0)
     await request.get(`/api/v1/households/${household_id}`).expect(404)
+  })
+
+  it('returns the owned-household limit code on REST and MCP', async () => {
+    const owner = await createTestUser()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(householdLimitsConfig, { max_households_per_user: 1 }),
+    )
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    const rest = await request.post('/api/v1/households').send({}).expect(409)
+    expect(rest.body.code).toBe('HOUSEHOLD_LIMIT_REACHED')
+    const mcp = await callRejectedMcpTool(
+      plus(owner),
+      'manage_my_households',
+      optionArgs('create', {}),
+      WRITE,
+    )
+    expect(JSON.parse(mcp)).toMatchObject({
+      error: { status: 409, code: 'HOUSEHOLD_LIMIT_REACHED' },
+    })
   })
 
   it('denies a visible nonowner and adding another user without an invitation', async () => {

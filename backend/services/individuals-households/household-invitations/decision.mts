@@ -11,6 +11,7 @@ import {
   membershipIndividualSql,
   membershipUpdatedAtSql,
 } from '../households/household-membership-page-row.mts'
+import { assertCanAddHouseholdMember } from '../household-limits.mts'
 import { getOrCreateIndividual } from '../individuals/individuals.mts'
 
 async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, options: QueryOptions) {
@@ -76,6 +77,7 @@ export async function decideHouseholdInvitation(
     return
   }
   const individual = await getOrCreateLockedInviteeIndividual(currentUser, options)
+  await assertCanAddHouseholdMember(changed[0].household_id, individual.id, options)
   await write(
     sql`/* decideHouseholdInvitation:insert-membership */
       INSERT INTO household_members (household_id, individual_id, relationship)

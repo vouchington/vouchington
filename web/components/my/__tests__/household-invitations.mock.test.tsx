@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { HouseholdInvitations } from '../household-invitations'
 import * as api from '@/lib/api/client/household-invitations'
+import { householdLimitDisplayMessages } from '@/lib/api/household-limit-messages'
 import onError from '@/lib/on-error'
 import {
   makeHouseholdInvitation,
@@ -238,6 +239,7 @@ describe('household invitation actions', () => {
     expect(document.querySelectorAll('[data-pw="household-invitation-row"]')).toHaveLength(1)
     expect(onError).toHaveBeenCalledWith(error, {
       fallback: 'The invitation could not be updated.',
+      displayMessageByCode: householdLimitDisplayMessages(),
     })
     expect(nav.refresh).not.toHaveBeenCalled()
   })
