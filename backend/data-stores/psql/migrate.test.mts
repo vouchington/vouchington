@@ -48,12 +48,7 @@ describe('applyAllMigrations', () => {
     await runAllMigrations({ apply, exit, logger, verifySchema })
 
     expect(verifySchema).toHaveBeenCalledTimes(1)
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.stringContaining('committed, but schema verification did not complete'),
-        cause: drift,
-      }),
-    )
+    expect(logger.error).not.toHaveBeenCalled()
     expect(exit).toHaveBeenCalledExactlyOnceWith(1)
     expect(logger.log).not.toHaveBeenCalledWith('Migrations complete!')
   })
@@ -69,12 +64,7 @@ describe('applyAllMigrations', () => {
     await runAllMigrations({ apply, exit, logger, verifySchema })
 
     expect(verifySchema).toHaveBeenCalledTimes(1)
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.stringContaining('committed, but schema verification did not complete'),
-        cause: expect.objectContaining({ code: '57P01' }),
-      }),
-    )
+    expect(logger.error).not.toHaveBeenCalled()
     expect(logger.log).not.toHaveBeenCalledWith('Migrations complete!')
     expect(exit).toHaveBeenCalledExactlyOnceWith(1)
   })
@@ -83,20 +73,25 @@ describe('applyAllMigrations', () => {
     const failure = new Error('migration DDL failed')
     const apply = vi.fn<typeof applyAllMigrations>().mockRejectedValue(failure)
     const exit = vi.fn<typeof process.exit>()
-    const logger = { error: vi.fn<(error: unknown) => void>(), log: vi.fn<() => void>() }
     const verifySchema = vi.fn<VerifySchemaAfterMigration>().mockResolvedValue(undefined)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('CI', '')
 
-    await runAllMigrations({ apply, exit, logger, verifySchema })
+    try {
+      await runAllMigrations({ apply, exit, verifySchema })
 
-    expect(verifySchema).not.toHaveBeenCalled()
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.stringContaining('Migration application did not complete'),
-        cause: failure,
-      }),
-    )
-    expect(logger.log).not.toHaveBeenCalledWith('Migrations complete!')
-    expect(exit).toHaveBeenCalledExactlyOnceWith(1)
+      expect(verifySchema).not.toHaveBeenCalled()
+      expect(consoleError).toHaveBeenCalledTimes(1)
+      const loggedValues = consoleError.mock.calls.flat()
+      expect(loggedValues.every(value => typeof value === 'string')).toBe(true)
+      expect(loggedValues.join(' ')).not.toContain(failure.message)
+      expect(loggedValues.join(' ')).not.toContain('\n')
+      expect(exit).toHaveBeenCalledExactlyOnceWith(1)
+    } finally {
+      consoleError.mockRestore()
+      vi.unstubAllEnvs()
+    }
   })
 
   it('succeeds when an idle connection dies but verification completes', async () => {
