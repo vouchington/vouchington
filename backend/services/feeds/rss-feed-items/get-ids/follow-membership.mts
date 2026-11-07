@@ -1,40 +1,18 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { RssFeedItemFeedType } from '../../types.mts'
+import { buildItemTopicPredicateMatch } from './item-membership.mts'
+import { buildActiveFollowedRssFeed, buildActiveFollowedTopic } from './viewer-membership.mts'
 
 export function buildFollowedSourceMatch(itemId: SQLStatement): SQLStatement {
-  // Make the viewer's active followed ids one uncorrelated input so generic plans cannot
-  // multiply every source row by the followed-feed set for each candidate item.
-  return sql`COALESCE((
-    SELECT BOOL_OR(source.rss_feed_id = ANY(ARRAY(
-      SELECT followed.rss_feed_id FROM followed_rss_feeds followed
-      JOIN rss_feeds feed ON feed.id = followed.rss_feed_id
-        AND feed.is_enabled = TRUE AND feed.deleted_at IS NULL
-    )))
-    FROM rss_feed_item_sources source
-    WHERE source.rss_feed_item_id = `.append(itemId).append(sql`
-  ), FALSE)`)
+  const query = sql`COALESCE((SELECT BOOL_OR(`
+  query.append(buildActiveFollowedRssFeed(sql`source.rss_feed_id`))
+  query.append(sql`) FROM rss_feed_item_sources source WHERE source.rss_feed_item_id = `)
+  query.append(itemId).append(sql`), FALSE)`)
+  return query
 }
 
 export function buildFollowedTopicMatch(itemId: SQLStatement): SQLStatement {
-  return sql`(
-    EXISTS (SELECT 1 FROM rss_feed_item_categories category
-      JOIN followed_topics followed ON followed.topic_id = category.topic_id
-      WHERE category.rss_feed_item_id = `
-    .append(itemId)
-    .append(sql`)
-    OR EXISTS (SELECT 1 FROM relation__rss_feed_item__category__topic relation
-      JOIN followed_topics followed ON followed.topic_id = relation.object_id
-      WHERE relation.subject_id = `)
-    .append(itemId)
-    .append(sql`
-        AND relation.deleted_at IS NULL AND relation.votes_score_net > 0)
-    OR EXISTS (SELECT 1 FROM relation__rss_feed_item__category__topic_alias relation
-      JOIN topic_aliases alias ON alias.id = relation.object_id
-      JOIN followed_topics followed ON followed.topic_id = alias.topic_id
-      WHERE relation.subject_id = `)
-    .append(itemId).append(sql`
-        AND relation.deleted_at IS NULL AND relation.votes_score_net > 0)
-  )`)
+  return buildItemTopicPredicateMatch(itemId, buildActiveFollowedTopic, true)
 }
 
 /** `all` is the owner's source-or-topic union for this personalized RSS feed. */

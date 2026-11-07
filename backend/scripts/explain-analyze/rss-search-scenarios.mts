@@ -12,6 +12,9 @@ export const RSS_SEARCH_SCENARIOS = [
 
 export const RSS_FEED_WEEKLY_SCENARIO_IDS = [
   'rss-feed-item-feed-weekly-selective-text',
+  'rss-feed-item-feed-proxy-community-list-workload',
+  'rss-feed-item-feed-hashtag-topic-filter',
+  'rss-feed-item-feed-hashtag-topic-filter-after',
   'rss-feed-item-feed-1m',
   'rss-feed-item-feed-1m-after',
   'rss-feed-item-feed-1m-outside-window',
