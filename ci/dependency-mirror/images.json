@@ -50,12 +50,6 @@
       "digest": "sha256:4cf82f5686b196504fe119db3fcd9185b191f82ece82c40680e597228ec6070a"
     },
     {
-      "package": "dependency-distroless-nodejs",
-      "source": "gcr.io/distroless/nodejs26-debian13",
-      "tag": "nonroot",
-      "digest": "sha256:96455baef11b178fc135b32206e3922c515dbed2400676c94f907f8f84e6abf6"
-    },
-    {
       "package": "dependency-distroless-cc",
       "source": "gcr.io/distroless/cc-debian13",
       "tag": "nonroot",
