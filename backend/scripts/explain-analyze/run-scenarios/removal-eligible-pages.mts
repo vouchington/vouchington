@@ -84,6 +84,7 @@ export async function runRemovalEligiblePageScenarios(): Promise<void> {
                 postIds[cursorIndex]!,
                 `user-removed-community-posts:${userId}:unpublished-desc-post-id-desc`,
               )
+        // no-mistakes-disable-next-line query-reached-per-item: four fixed community/combined first/later scenarios require separate serialized query captures and plan gates
         await runAndCapture(scenarioId, () =>
           listUserRemovedPosts(userId, { limit: 25, includePlatform, after }),
         )
