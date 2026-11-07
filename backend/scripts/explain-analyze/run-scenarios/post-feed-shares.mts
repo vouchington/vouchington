@@ -17,12 +17,20 @@ const PROBES_PER_DELIVERY = 2
 /** A keyset walk reads the page plus one row per arm; each row probes its post and root post. */
 const WALK_ROWS = (PAGE + 1) * PROBES_PER_DELIVERY * 3
 
+/** Seeded posts are one minute apart, so a one-week window holds this many. */
+const WINDOW_POSTS = 7 * 24 * 60
+
 /**
- * new and best stop after `limit + 1` rows per arm. hot ranks by a computed score, so its bound
- * is the 30-day window: every positive-score followed post and every share the viewer holds.
+ * best stops after `limit + 1` rows per arm. new stops early under a custom plan, but a generic
+ * plan may range-scan the window, so its bound is the window plus one probe per followed post.
+ * hot ranks by a computed score, so its bound is the 30-day window: every positive-score followed
+ * post and every share the viewer holds.
  */
 const bounds: Record<'new' | 'hot' | 'best', { posts: number; shares: number }> = {
-  new: { posts: WALK_ROWS * 4, shares: (PAGE + 1) * 2 },
+  new: {
+    posts: WINDOW_POSTS + HEAVY_FOLLOW_POSTS + (PAGE + 1) * PROBES_PER_DELIVERY,
+    shares: (PAGE + 1) * 2,
+  },
   hot: {
     posts: PROBES_PER_DELIVERY * (HEAVY_FOLLOW_POSTS + HEAVY_FOLLOW_SHARES),
     shares: Math.ceil(HEAVY_FOLLOW_SHARES * 1.25),
