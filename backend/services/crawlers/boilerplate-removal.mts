@@ -1,10 +1,7 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import {
-  CRAWL_HTML_SNAPSHOT_RETENTION_DAYS,
-  CRAWL_MAX_START_TO_COMPLETION_DAYS,
-} from '@voucha/config'
+import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS, CRAWL_CLEANUP_MAX_AGE_DAYS } from '@voucha/config'
 import sql from 'sql-template-strings'
 
 type BoilerplateRemovalUrlCandidate = {
@@ -28,7 +25,7 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
     sampledNowMs - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   )
   const crawlIdFloor = getMinUUIDv7ForDate(
-    new Date(recentCutoffDate.getTime() - CRAWL_MAX_START_TO_COMPLETION_DAYS * 24 * 60 * 60 * 1000),
+    new Date(recentCutoffDate.getTime() - CRAWL_CLEANUP_MAX_AGE_DAYS * 24 * 60 * 60 * 1000),
   )
 
   // Match URLs directly under the parent path (e.g., /blog/ for parent_path=/blog)

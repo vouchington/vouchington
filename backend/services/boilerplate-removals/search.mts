@@ -3,7 +3,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { getMaxUUIDv7ForDate, getMinUUIDv7ForDate } from '@modules/utils'
 import {
   CRAWL_HTML_SNAPSHOT_RETENTION_DAYS,
-  CRAWL_MAX_START_TO_COMPLETION_DAYS,
+  CRAWL_CLEANUP_MAX_AGE_DAYS,
 } from '@services/crawls/constants'
 import sql from 'sql-template-strings'
 
@@ -23,7 +23,7 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
   )
   const recentCutoffId = getMaxUUIDv7ForDate(recentCutoffDate)
   const crawlIdFloor = getMinUUIDv7ForDate(
-    new Date(recentCutoffDate.getTime() - CRAWL_MAX_START_TO_COMPLETION_DAYS * 24 * 60 * 60 * 1000),
+    new Date(recentCutoffDate.getTime() - CRAWL_CLEANUP_MAX_AGE_DAYS * 24 * 60 * 60 * 1000),
   )
   const query = sql`/* searchParentPathsNeedingBoilerplateRemoval */
     WITH recent_html_urls AS (

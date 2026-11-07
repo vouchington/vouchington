@@ -10,4 +10,3 @@ export const CRAWL_HTML_SNAPSHOT_RETENTION_DAYS = 7
 // partitions. Residual risk: only a crawl that outlives the hard max because cleanup lagged is
 // missed, which drops one sample from a best-effort boilerplate heuristic and is harmless.
 export const CRAWL_CLEANUP_MAX_AGE_DAYS = 365
-export const CRAWL_MAX_START_TO_COMPLETION_DAYS = CRAWL_CLEANUP_MAX_AGE_DAYS
