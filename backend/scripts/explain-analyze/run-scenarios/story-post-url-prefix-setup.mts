@@ -14,6 +14,7 @@ export const STORY_ID = seedUuid(1, 'f7')
 export const HIGH_WATER_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 export const ITEM_INDEX = 'idx_rss_feed_items__story_id__deleted_at__id'
 export const PRUNE_INDEX = 'idx_relation__post__related__url__subject__projection_source'
+export const NEWEST_INDEX = 'idx_relation__post__related__url__subject__newest'
 export const DEFAULT_LEASE = seedUuid(2, 'f7')
 export const MAXIMUM_LEASE = seedUuid(3, 'f7')
 
