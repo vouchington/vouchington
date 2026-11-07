@@ -3,7 +3,6 @@ import {
   buildPageInfo,
   decodeScopedScoreCursor,
   decodeUuidCursor,
-  encodeCursor,
   isTimestampCursor,
 } from '@modules/pagination'
 import { RECENTLY_VIEWED_ZSET_LIMIT, searchRecentlyViewedPage } from '@services/recently-viewed'
@@ -115,17 +114,11 @@ export async function getUserRssFeedsCollection(
   )
 
   const hasNextPage = relRows.length > limit
-  const inspected = relRows.slice(0, limit)
-  const pageRows = inspected.filter(row => row.kept)
-  const end = inspected.at(-1)
-  const page_info: PageInfo = {
-    has_next_page: hasNextPage,
-    start_cursor: pageRows[0]
-      ? encodeCursor({ timestamp: pageRows[0].created_us, id: pageRows[0].object_id })
-      : null,
-    end_cursor:
-      hasNextPage && end ? encodeCursor({ timestamp: end.created_us, id: end.object_id }) : null,
-  }
+  const pageRows = relRows.slice(0, limit)
+  const page_info = buildPageInfo(pageRows, {
+    hasNextPage,
+    getCursor: row => ({ timestamp: row.created_us, id: row.object_id }),
+  })
 
   if (pageRows.length === 0) {
     return { results: [], page_info }

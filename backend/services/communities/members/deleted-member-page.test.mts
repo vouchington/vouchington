@@ -46,7 +46,7 @@ describe('deleted parent pages', () => {
     }
 
     expect(seen).toEqual([liveBefore.id, liveAfter.id])
-    expect(emptyContinuation).toBe(true)
+    expect(emptyContinuation).toBe(false)
   })
 
   it('keeps later communities when a deleted community sits between them', async () => {
@@ -77,7 +77,7 @@ describe('deleted parent pages', () => {
     }
 
     expect(seen).toEqual([communities[0]!.id, communities[2]!.id])
-    expect(emptyContinuation).toBe(true)
+    expect(emptyContinuation).toBe(false)
   })
 
   it('pages owners without returning regular members between them', async () => {
@@ -124,7 +124,7 @@ describe('deleted parent pages', () => {
     }
 
     expect(seen).toEqual([owners[0]!.id, owners[2]!.id])
-    expect(emptyContinuation).toBe(true)
+    expect(emptyContinuation).toBe(false)
   })
 
   it('pages the moderator roster without regular members between them', async () => {

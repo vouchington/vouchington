@@ -262,3 +262,123 @@ CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__review_id
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__topic_id
   ON user_landing_page_items (topic_id)
   WHERE topic_id IS NOT NULL;
+
+--------------------------------------------------------------------------------
+-- user_landing_page_candidates
+--------------------------------------------------------------------------------
+
+-- A single ordered relation for the three source types offered to a page owner.
+CREATE TABLE IF NOT EXISTS user_landing_page_candidates (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  user_id UUID NOT NULL,
+  profile_link_id UUID,
+  review_post_id UUID,
+  referral_link_id UUID,
+  tier SMALLINT NOT NULL,
+  sort_order INTEGER,
+  tier_sort SMALLINT GENERATED ALWAYS AS (-tier) STORED,
+  position_sort INTEGER GENERATED ALWAYS AS (COALESCE(sort_order, 0)) STORED,
+  source_sort_key BYTEA GENERATED ALWAYS AS (
+    CASE WHEN profile_link_id IS NOT NULL THEN uuid_send(profile_link_id)
+      ELSE decode(translate(encode(uuid_send(COALESCE(review_post_id, referral_link_id)), 'hex'),
+        '0123456789abcdef', 'fedcba9876543210'), 'hex') END
+  ) STORED,
+  CHECK (
+    (tier = 2 AND profile_link_id IS NOT NULL AND review_post_id IS NULL AND referral_link_id IS NULL AND sort_order IS NOT NULL)
+    OR (tier = 1 AND profile_link_id IS NULL AND review_post_id IS NOT NULL AND referral_link_id IS NULL AND sort_order IS NULL)
+    OR (tier = 0 AND profile_link_id IS NULL AND review_post_id IS NULL AND referral_link_id IS NOT NULL AND sort_order IS NULL)
+  )
+);
+
+ALTER TABLE user_landing_page_candidates ADD CONSTRAINT fk_user_landing_page_candidates__user_id
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE user_landing_page_candidates VALIDATE CONSTRAINT fk_user_landing_page_candidates__user_id;
+ALTER TABLE user_landing_page_candidates ADD CONSTRAINT fk_user_landing_page_candidates__profile_link_id
+  FOREIGN KEY (profile_link_id) REFERENCES user_profile_links(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE user_landing_page_candidates VALIDATE CONSTRAINT fk_user_landing_page_candidates__profile_link_id;
+ALTER TABLE user_landing_page_candidates ADD CONSTRAINT fk_user_landing_page_candidates__review_post_id
+  FOREIGN KEY (review_post_id) REFERENCES posts(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE user_landing_page_candidates VALIDATE CONSTRAINT fk_user_landing_page_candidates__review_post_id;
+ALTER TABLE user_landing_page_candidates ADD CONSTRAINT fk_user_landing_page_candidates__referral_link_id
+  FOREIGN KEY (referral_link_id) REFERENCES user_referral_program_links(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE user_landing_page_candidates VALIDATE CONSTRAINT fk_user_landing_page_candidates__referral_link_id;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_landing_page_candidates__profile_link_id
+ON user_landing_page_candidates (profile_link_id) WHERE profile_link_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_landing_page_candidates__review_post_id
+ON user_landing_page_candidates (review_post_id) WHERE review_post_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_landing_page_candidates__referral_link_id
+ON user_landing_page_candidates (referral_link_id) WHERE referral_link_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_landing_page_candidates__user_order
+ON user_landing_page_candidates (user_id, tier_sort, position_sort, source_sort_key);
+
+COMMENT ON TABLE user_landing_page_candidates IS 'Owner-ordered projection of potential landing page items; source eligibility remains on source rows.';
+COMMENT ON COLUMN user_landing_page_candidates.id IS 'Identity of the candidate projection row.';
+COMMENT ON COLUMN user_landing_page_candidates.user_id IS 'Owner whose landing page may include the source.';
+COMMENT ON COLUMN user_landing_page_candidates.profile_link_id IS 'Profile link source for tier 2.';
+COMMENT ON COLUMN user_landing_page_candidates.review_post_id IS 'Review post source for tier 1.';
+COMMENT ON COLUMN user_landing_page_candidates.referral_link_id IS 'Referral link source for tier 0.';
+COMMENT ON COLUMN user_landing_page_candidates.tier IS 'Candidate type ordering: profile link 2, review 1, referral link 0.';
+COMMENT ON COLUMN user_landing_page_candidates.sort_order IS 'Profile link ordering within its tier; null for other source types.';
+COMMENT ON COLUMN user_landing_page_candidates.tier_sort IS 'Negated tier for ascending index order.';
+COMMENT ON COLUMN user_landing_page_candidates.position_sort IS 'Profile link order or zero for sources ordered by descending id.';
+COMMENT ON COLUMN user_landing_page_candidates.source_sort_key IS 'Source UUID bytes in ascending profile order or complemented for descending review and referral order.';
+
+CREATE OR REPLACE FUNCTION fn_sync_user_landing_page_candidate_profile_link()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO user_landing_page_candidates (user_id, profile_link_id, tier, sort_order)
+  VALUES (NEW.user_id, NEW.id, 2, NEW.sort_order)
+  ON CONFLICT (profile_link_id) WHERE profile_link_id IS NOT NULL DO UPDATE
+    SET user_id = EXCLUDED.user_id, sort_order = EXCLUDED.sort_order
+    WHERE (user_landing_page_candidates.user_id, user_landing_page_candidates.sort_order)
+      IS DISTINCT FROM (EXCLUDED.user_id, EXCLUDED.sort_order);
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trigger_user_profile_links_landing_page_candidate
+AFTER INSERT OR UPDATE OF user_id, sort_order ON user_profile_links
+FOR EACH ROW EXECUTE FUNCTION fn_sync_user_landing_page_candidate_profile_link();
+
+CREATE OR REPLACE FUNCTION fn_sync_user_landing_page_candidate_review_post()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.post_type = 'review' AND NEW.created_by_id IS NOT NULL THEN
+    INSERT INTO user_landing_page_candidates (user_id, review_post_id, tier)
+    VALUES (NEW.created_by_id, NEW.id, 1)
+    ON CONFLICT (review_post_id) WHERE review_post_id IS NOT NULL DO UPDATE SET user_id = EXCLUDED.user_id
+      WHERE user_landing_page_candidates.user_id IS DISTINCT FROM EXCLUDED.user_id;
+  ELSE
+    DELETE FROM user_landing_page_candidates WHERE review_post_id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trigger_posts_landing_page_candidate_insert
+AFTER INSERT ON posts
+FOR EACH ROW WHEN (NEW.post_type = 'review' AND NEW.created_by_id IS NOT NULL)
+EXECUTE FUNCTION fn_sync_user_landing_page_candidate_review_post();
+
+CREATE OR REPLACE TRIGGER trigger_posts_landing_page_candidate_update
+AFTER UPDATE OF post_type, created_by_id ON posts
+FOR EACH ROW WHEN (OLD.post_type = 'review' OR NEW.post_type = 'review')
+EXECUTE FUNCTION fn_sync_user_landing_page_candidate_review_post();
+
+CREATE OR REPLACE FUNCTION fn_sync_user_landing_page_candidate_referral_link()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO user_landing_page_candidates (user_id, referral_link_id, tier)
+  VALUES (NEW.user_id, NEW.id, 0)
+  ON CONFLICT (referral_link_id) WHERE referral_link_id IS NOT NULL
+    DO UPDATE SET user_id = EXCLUDED.user_id
+      WHERE user_landing_page_candidates.user_id IS DISTINCT FROM EXCLUDED.user_id;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trigger_user_referral_program_links_landing_page_candidate
+AFTER INSERT OR UPDATE OF user_id ON user_referral_program_links
+FOR EACH ROW EXECUTE FUNCTION fn_sync_user_landing_page_candidate_referral_link();

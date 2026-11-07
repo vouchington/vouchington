@@ -1,3 +1,4 @@
+import { ELIGIBLE_LIST_SCENARIO_IDS } from './eligible-list-scenario-ids.mts'
 import { HACKER_NEWS_VIEWER_SCENARIO_IDS } from './hacker-news-viewer-scenario-ids.mts'
 import { COPYRIGHT_CASE_PURGE_SCENARIO_IDS } from './copyright-case-purge-scenario-ids.mts'
 import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
@@ -6,6 +7,7 @@ import { NOTIFICATION_VISIBILITY_SCENARIO_IDS } from './notification-visibility-
 import { POST_URL_CAPACITY_SCENARIOS } from './post-related-url-capacity-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
+  ...ELIGIBLE_LIST_SCENARIO_IDS,
   'community-agent-prompt-capacity',
   'community-agent-prompts-first-page',
   'community-agent-prompts-deep-page',

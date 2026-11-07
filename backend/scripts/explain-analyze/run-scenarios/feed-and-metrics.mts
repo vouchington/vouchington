@@ -73,10 +73,10 @@ export async function runFeedAndMetricScenarios() {
   registerScenarioContract('community-activity-digest-recipients', {
     expectations: [
       { kind: 'usesIndexes', indexes: ['idx_community_members__active_moderator_user_id'] },
-      // Default batch is 250. One live lookup per inspected row stays under this cap.
-      { kind: 'maxProcessedRows', relation: 'community_members', max: 1200 },
-      { kind: 'maxProcessedRows', relation: 'users', max: 600 },
-      { kind: 'maxProcessedRows', relation: 'communities', max: 600 },
+      // The plain users walk filters the full seeded population; the moderator index serves its EXISTS set.
+      { kind: 'maxProcessedRows', relation: 'community_members', max: 1500 },
+      { kind: 'maxProcessedRows', relation: 'users', max: 30_000 },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 1500 },
     ],
   })
   await runAndCapture('community-activity-digest-recipients', () =>

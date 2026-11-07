@@ -17,16 +17,16 @@ describe('searchTopicAliases deleted topics', () => {
 
     const seen: string[] = []
     let after: string | undefined
-    let emptyContinuation = false
+    let continuationWasFull = true
     for (let step = 0; step < 6; step++) {
       const page = await searchTopicAliases({ prefixQuery: prefix, limit: 1, after })
       seen.push(...page.results.map(row => row.alias))
-      if (page.results.length === 0 && page.hasNextPage) emptyContinuation = true
+      if (page.hasNextPage && page.results.length !== 1) continuationWasFull = false
       if (!page.hasNextPage) break
       after = page.endAlias ?? undefined
     }
 
     expect(seen).toEqual([`${prefix}-a`, `${prefix}-c`])
-    expect(emptyContinuation).toBe(true)
+    expect(continuationWasFull).toBe(true)
   })
 })

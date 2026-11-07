@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS post_moderation_versions (
 
 CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__post_id__id
 ON post_moderation_versions (post_id, id DESC);
+-- Current-policy reconciliation walks versions in id order before expanding automated sources.
+CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__policy_revision__id
+ON post_moderation_versions (policy_revision, id) INCLUDE (post_id, content_sha256, deadline_at);
 CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__retention_due
 ON post_moderation_versions (retention_due_at, id) WHERE retention_due_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__retention_hash_post

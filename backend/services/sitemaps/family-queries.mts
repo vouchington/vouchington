@@ -1,11 +1,7 @@
 import { read } from '@data-stores/psql'
 import { getTopicTypeSlug, topicTypes } from '@voucha/types/entities/topic'
 import sql from 'sql-template-strings'
-import {
-  buildLandingPageSourceQuery,
-  buildLandingPagesQuery,
-} from './family-landing-pages-query.mts'
-import type { SitemapSourcePage } from './generation-page-types.mts'
+import { buildLandingPagesQuery } from './family-landing-pages-query.mts'
 import type { SitemapFamilyEntry, SitemapFamilyType } from './types.mts'
 
 type FamilyPageOptions = {
@@ -24,27 +20,6 @@ function buildTopicSlugCaseSql() {
   return caseSql
 }
 
-export async function readLandingSitemapSourcePage(
-  options: FamilyPageOptions,
-): Promise<SitemapSourcePage<SitemapFamilyEntry>> {
-  const { rows } = await read<SitemapFamilyEntry & { kept: boolean }>(
-    buildLandingPageSourceQuery(options),
-  )
-  if (rows.length > options.limit) throw new Error('Sitemap source exceeded its query limit')
-  const exhausted = rows.length < options.limit
-  const inspected = exhausted ? rows : rows.slice(0, options.limit - 1)
-  const last = inspected.at(-1)
-  return {
-    entries: inspected.flatMap(row =>
-      row.kept && row.path ? [{ id: row.id, path: row.path, updated_at: row.updated_at }] : [],
-    ),
-    exhausted,
-    afterId: last?.id ?? null,
-    afterPath: null,
-    boundId: rows[0]?.id ?? null,
-  }
-}
-
 export async function readSitemapFamilyPage(
   family: SitemapFamilyType,
   options: FamilyPageOptions,
@@ -56,7 +31,8 @@ export async function readSitemapFamilyPage(
       sql` AND (id < ${options.afterId} OR (id = ${options.afterId} AND path > ${options.afterPath}))`,
     )
   }
-  statement.append(sql` ORDER BY id DESC, path ASC LIMIT ${options.limit}`)
+  statement.append(family === 'topics' ? sql` ORDER BY id DESC, path ASC` : sql` ORDER BY id DESC`)
+  statement.append(sql` LIMIT ${options.limit}`)
   const { rows } = await read(statement)
   return rows as SitemapFamilyEntry[]
 }
@@ -90,73 +66,32 @@ function buildUsersQuery(options: FamilyPageOptions) {
           AND us.lifted_at IS NULL
       )
   `
-  return appendFamilyBounds(query, options, false)
+  return appendFamilyBounds(query, options)
 }
 
 function buildTopicsQuery(options: FamilyPageOptions) {
   const query = sql`/* buildSitemapTopicsQuery */
-    WITH eligible_topics AS (
-      SELECT
-        id,
-        slug,
-        topic_type,
-        should_allow_reviews,
-        referral_program_topic_id,
-        updated_at
-      FROM topics
-      WHERE deleted_at IS NULL
-        AND merged_into_topic_id IS NULL
-        AND is_noindexed IS NOT TRUE
-        AND slug IS NOT NULL
-        AND topic_type = ANY(${Object.keys(topicTypes)})
-  `
-  appendFamilyBounds(query, options, true)
-  query.append(sql`)
-    SELECT id, CONCAT('/', slug_path, '/', slug, '/', subpage) AS path, updated_at
-    FROM (
-      SELECT `)
+    SELECT topics.id, CONCAT('/', `
   query.append(buildTopicSlugCaseSql())
-  query.append(sql` AS slug_path, slug, updated_at, 'posts' AS subpage, id
-      FROM eligible_topics
-
-      UNION ALL
-
-      SELECT `)
-  query.append(buildTopicSlugCaseSql())
-  query.append(sql` AS slug_path, slug, updated_at, 'data-points' AS subpage, id
-      FROM eligible_topics
-
-      UNION ALL
-
-      SELECT `)
-  query.append(buildTopicSlugCaseSql())
-  query.append(sql` AS slug_path, slug, updated_at, 'latest' AS subpage, id
-      FROM eligible_topics
-
-      UNION ALL
-
-      SELECT `)
-  query.append(buildTopicSlugCaseSql())
-  query.append(sql` AS slug_path, slug, updated_at, 'news' AS subpage, id
-      FROM eligible_topics
-
-      UNION ALL
-
-      SELECT `)
-  query.append(buildTopicSlugCaseSql())
-  query.append(sql` AS slug_path, slug, updated_at, 'reviews' AS subpage, id
-      FROM eligible_topics
-      WHERE should_allow_reviews IS TRUE
-
-      UNION ALL
-
-      SELECT `)
-  query.append(buildTopicSlugCaseSql())
-  query.append(sql` AS slug_path, slug, updated_at, 'referral-links' AS subpage, id
-      FROM eligible_topics
-      WHERE topic_type = 'referral_program' OR referral_program_topic_id IS NOT NULL
-    ) entries
+  query.append(sql`, '/', topics.slug, '/', pages.subpage) AS path, topics.updated_at
+    FROM topics
+    CROSS JOIN LATERAL (VALUES
+      ('posts', TRUE),
+      ('data-points', TRUE),
+      ('latest', TRUE),
+      ('news', TRUE),
+      ('reviews', topics.should_allow_reviews IS TRUE),
+      ('referral-links', topics.topic_type = 'referral_program' OR topics.referral_program_topic_id IS NOT NULL)
+    ) AS pages(subpage, eligible)
+    WHERE topics.deleted_at IS NULL
+      AND topics.merged_into_topic_id IS NULL
+      AND topics.is_noindexed IS NOT TRUE
+      AND topics.slug IS NOT NULL
+      AND topics.topic_type = ANY(${Object.keys(topicTypes)})
+      AND pages.eligible
   `)
+  if (options.highWaterId) query.append(sql` AND topics.id <= ${options.highWaterId}`)
+  if (options.afterId) query.append(sql` AND topics.id <= ${options.afterId}`)
   return query
 }
 
@@ -167,7 +102,7 @@ function buildCommunitiesQuery(options: FamilyPageOptions) {
     WHERE deleted_at IS NULL
       AND visibility = 'public'
   `
-  return appendFamilyBounds(query, options, false)
+  return appendFamilyBounds(query, options)
 }
 
 function buildDomainsQuery(options: FamilyPageOptions) {
@@ -178,21 +113,16 @@ function buildDomainsQuery(options: FamilyPageOptions) {
       AND publicly_introduced_at IS NOT NULL
       AND votes_count_up > 0
   `
-  return appendFamilyBounds(query, options, false)
+  return appendFamilyBounds(query, options)
 }
 
 function appendFamilyBounds<T extends ReturnType<typeof sql>>(
   query: T,
   options: FamilyPageOptions,
-  includeSameId: boolean,
 ): T {
   if (options.highWaterId) query.append(sql` AND id <= ${options.highWaterId}`)
   if (options.afterId) {
-    if (includeSameId) query.append(sql` AND id <= ${options.afterId}`)
-    else query.append(sql` AND id < ${options.afterId}`)
+    query.append(sql` AND id < ${options.afterId}`)
   }
-  query.append(
-    sql` ORDER BY id DESC LIMIT ${options.limit + (includeSameId && options.afterId ? 1 : 0)}`,
-  )
   return query
 }

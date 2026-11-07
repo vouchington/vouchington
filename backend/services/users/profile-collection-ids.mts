@@ -3,10 +3,9 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { searchRecentlyViewed } from '@services/recently-viewed'
 import type { RelationTableName } from './profile-collection-tables.mts'
 
-type RelationPageRow = {
+type RelationRow = {
   object_id: string
   created_us: number
-  kept: boolean
 }
 
 type ChildPage = {
@@ -15,51 +14,42 @@ type ChildPage = {
   after?: { timestamp: number; id: string }
 }
 
-function relationPageBody(
-  tableName: RelationTableName,
-  relationWhere: string,
-  child: { table: 'rss_feeds'; alias: 'rf' } | { table: 'rss_feed_items'; alias: 'rfi' },
-  childWhere: string,
-): string {
-  return `
-    WITH relation_page AS MATERIALIZED (
-      SELECT rel.object_id, rel.created_at
-      FROM ${tableName} rel
-      WHERE ${relationWhere}
-      ORDER BY rel.created_at DESC, rel.object_id DESC
-      LIMIT $2
-    )
-    SELECT page.object_id,
-           (EXTRACT(EPOCH FROM page.created_at) * 1000000)::bigint AS created_us,
-           (${child.alias}.id IS NOT NULL) AS kept
-    FROM relation_page page
-    LEFT JOIN LATERAL (
-      SELECT ${child.alias}.id
-      FROM ${child.table} ${child.alias}
-      WHERE ${child.alias}.id = page.object_id AND ${childWhere}
-      LIMIT 1
-    ) ${child.alias} ON TRUE
-    ORDER BY page.created_at DESC, page.object_id DESC`
-}
-
-async function readLiveRelationPage(
+async function readRelationPage(
+  queryName: 'getRssFeedRelationRows' | 'getRssFeedItemRelationRows',
   tableName: RelationTableName,
   userId: string,
   safeLimit: number,
   options: QueryOptions,
   child: ChildPage,
-): Promise<RelationPageRow[]> {
+): Promise<RelationRow[]> {
   const params: unknown[] = [userId, safeLimit]
-  const relationConditions = ['rel.subject_id = $1', 'rel.deleted_at IS NULL']
+  const conditions = ['rel.subject_id = $1', 'rel.deleted_at IS NULL']
   const childAlias = child.kind === 'feeds' ? 'rf' : 'rfi'
-  const childConditions = [`${childAlias}.deleted_at IS NULL`]
+  conditions.push(`${childAlias}.deleted_at IS NULL`)
+  if (child.kind === 'feeds') {
+    conditions.push(`EXISTS (
+      SELECT 1
+      FROM topics eligible_topic
+      WHERE eligible_topic.id = rf.topic_id
+        AND eligible_topic.deleted_at IS NULL
+        AND eligible_topic.merged_into_topic_id IS NULL
+    )`)
+  } else {
+    // Mirror item hydration's chosen-source semantics: an item is visible only when its
+    // ranked primary source can itself be joined through view_rss_feeds.
+    conditions.push(`EXISTS (
+      SELECT 1
+      FROM view_rss_feed_items eligible_item
+      WHERE eligible_item.id = rfi.id
+    )`)
+  }
   let paramIdx = 2
 
   if (child.filterValue !== undefined) {
     paramIdx++
     params.push(child.filterValue)
     const column = child.kind === 'feeds' ? 'feed_type' : 'media_type'
-    childConditions.push(`${childAlias}.${column} = $${paramIdx}`)
+    conditions.push(`${childAlias}.${column} = $${paramIdx}`)
   }
 
   if (child.after) {
@@ -67,44 +57,29 @@ async function readLiveRelationPage(
     params.push(child.after.timestamp)
     const idIdx = ++paramIdx
     params.push(child.after.id)
-    relationConditions.push(
+    conditions.push(
       `(rel.created_at, rel.object_id) < (TO_TIMESTAMP($${tsIdx}::numeric / 1000000), $${idIdx}::uuid)`,
     )
   }
 
-  const relationWhere = relationConditions.join('\n        AND ')
-  const childWhere = childConditions.join(' AND ')
-  const body =
-    child.kind === 'feeds'
-      ? relationPageBody(tableName, relationWhere, { table: 'rss_feeds', alias: 'rf' }, childWhere)
-      : relationPageBody(
-          tableName,
-          relationWhere,
-          { table: 'rss_feed_items', alias: 'rfi' },
-          childWhere,
-        )
-  const queryRows =
-    child.kind === 'feeds'
-      ? await read<{ object_id: string; created_us: string; kept: boolean }>(
-          `/* getRssFeedRelationRows */${body}`,
-          params,
-          options,
-        )
-      : await read<{ object_id: string; created_us: string; kept: boolean }>(
-          `/* getRssFeedItemRelationRows */${body}`,
-          params,
-          options,
-        )
-  const { rows } = queryRows
+  const { rows } = await read<{ object_id: string; created_us: string }>(
+    `/* ${queryName} */
+    SELECT rel.object_id,
+           (EXTRACT(EPOCH FROM rel.created_at) * 1000000)::bigint AS created_us
+    FROM ${tableName} rel
+    JOIN ${child.kind === 'feeds' ? 'rss_feeds' : 'rss_feed_items'} ${childAlias}
+      ON ${childAlias}.id = rel.object_id
+    WHERE ${conditions.join('\n      AND ')}
+    ORDER BY rel.created_at DESC, rel.object_id DESC
+    LIMIT $2`,
+    params,
+    options,
+  )
 
-  return rows.map(row => ({
-    object_id: row.object_id,
-    created_us: Number(row.created_us),
-    kept: row.kept,
-  }))
+  return rows.map(row => ({ object_id: row.object_id, created_us: Number(row.created_us) }))
 }
 
-export type RssFeedRelationRow = RelationPageRow
+export type RssFeedRelationRow = RelationRow
 
 export async function getRssFeedRelationRows(
   tableName: RelationTableName,
@@ -116,18 +91,14 @@ export async function getRssFeedRelationRows(
     after?: { timestamp: number; id: string }
   } = {},
 ): Promise<RssFeedRelationRow[]> {
-  return readLiveRelationPage(tableName, userId, safeLimit, options, {
+  return readRelationPage('getRssFeedRelationRows', tableName, userId, safeLimit, options, {
     kind: 'feeds',
     filterValue: filters.feedType,
     after: filters.after,
   })
 }
 
-export type RssFeedItemRelationRow = {
-  entity_id: string
-  created_us: number
-  kept: boolean
-}
+export type RssFeedItemRelationRow = { entity_id: string; created_us: number }
 
 export async function getRssFeedItemRelationRows(
   tableName: RelationTableName,
@@ -139,15 +110,21 @@ export async function getRssFeedItemRelationRows(
     after?: { timestamp: number; id: string }
   } = {},
 ): Promise<RssFeedItemRelationRow[]> {
-  const rows = await readLiveRelationPage(tableName, userId, safeLimit, options, {
-    kind: 'items',
-    filterValue: filters.mediaType,
-    after: filters.after,
-  })
+  const rows = await readRelationPage(
+    'getRssFeedItemRelationRows',
+    tableName,
+    userId,
+    safeLimit,
+    options,
+    {
+      kind: 'items',
+      filterValue: filters.mediaType,
+      after: filters.after,
+    },
+  )
   return rows.map(row => ({
     entity_id: row.object_id,
     created_us: row.created_us,
-    kept: row.kept,
   }))
 }
 
