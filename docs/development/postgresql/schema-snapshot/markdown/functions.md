@@ -1581,6 +1581,30 @@ CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind
  LANGUAGE plpgsql
 ```
 
+## `fn_sync_user_landing_page_candidate_profile_link`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_user_landing_page_candidate_profile_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_sync_user_landing_page_candidate_referral_link`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_user_landing_page_candidate_referral_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_sync_user_landing_page_candidate_review_post`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_user_landing_page_candidate_review_post()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_text_to_timestamptz(text_value text)`
 
 ```sql
