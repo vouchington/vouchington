@@ -24,6 +24,7 @@
     "@backend/service-registrations": "workspace:^",
     "@backend/worker-runtime": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
+    "@modules/child-process": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/account-lifecycle": "workspace:^",

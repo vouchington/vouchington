@@ -1715,6 +1715,9 @@ importers:
       '@jongleberry/vurst-runtime':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modules/child-process':
+        specifier: workspace:^
+        version: link:../../modules/child-process
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -1806,6 +1809,9 @@ importers:
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
+      '@modules/child-process':
+        specifier: workspace:^
+        version: link:../../modules/child-process
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error

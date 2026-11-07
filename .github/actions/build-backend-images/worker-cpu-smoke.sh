@@ -74,7 +74,7 @@ docker run --rm --network host --user 65532:65532 \
   "$IMAGE" check-native-addons.mts
 # The executable runs embedded native addons from temporary copies in TMPDIR, so that
 # directory must be writable by the nonroot user the image runs as.
-docker exec "$WORKER_CONTAINER" /nodejs/bin/node -e 'const fs=require("node:fs");const dir=process.env.TMPDIR;if(process.getuid()!==65532)throw new Error("not uid 65532");fs.accessSync(dir,fs.constants.W_OK);const addons=fs.readdirSync(dir).filter(name=>name.startsWith(".bun-65532-")&&name.endsWith(".node"));if(addons.length===0)throw new Error("no embedded native addon extracted to "+dir);console.log("✓ "+addons.length+" native addons extracted to "+dir+" as uid 65532")'
+docker exec "$WORKER_CONTAINER" /app/backend/worker-cpu image-smoke.mts
 
 # NODE_ENV=test skips the signal handlers; prove a deployed-mode boot and a clean stop.
 "$GITHUB_ACTION_PATH/deployed-boot-smoke.sh" "$IMAGE" "Workers: workers loaded."

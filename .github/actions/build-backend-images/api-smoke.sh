@@ -49,12 +49,17 @@ if [ "$BODY" != "pong" ]; then
   exit 1
 fi
 echo "✓ /infra/ping returned 200 pong"
-# The infrastructure health check runs the base image's Node, not the executable.
-docker exec "$SERVER_CONTAINER" /nodejs/bin/node -e "fetch('http://127.0.0.1:$PORT/infra/ping').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# Run the supported executable command that infrastructure uses for its local HTTP probe.
+docker exec "$SERVER_CONTAINER" /app/backend/api healthcheck.mts
 echo "✓ ECS health check command passed"
+if docker exec -e PORT=1 "$SERVER_CONTAINER" /app/backend/api healthcheck.mts; then
+  echo "✗ Health command succeeded without an HTTP listener"
+  exit 1
+fi
+echo "✓ ECS health check command failed without a listener"
 # The executable runs embedded native addons from temporary copies in TMPDIR, so that
 # directory must be writable by the nonroot user the image runs as.
-docker exec "$SERVER_CONTAINER" /nodejs/bin/node -e 'const fs=require("node:fs");const dir=process.env.TMPDIR;if(process.getuid()!==65532)throw new Error("not uid 65532");fs.accessSync(dir,fs.constants.W_OK);const addons=fs.readdirSync(dir).filter(name=>name.startsWith(".bun-65532-")&&name.endsWith(".node"));if(addons.length===0)throw new Error("no embedded native addon extracted to "+dir);console.log("✓ "+addons.length+" native addons extracted to "+dir+" as uid 65532")'
+docker exec "$SERVER_CONTAINER" /app/backend/api image-smoke.mts
 
 echo "Running deployed Valkey diagnostic in a fresh container..."
 DIAGNOSTIC_OUTPUT=$(docker run --rm --network host \
