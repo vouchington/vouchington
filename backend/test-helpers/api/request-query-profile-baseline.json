@@ -8,14 +8,6 @@
     "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
-    "annotation": "addListItem",
-    "maxCount": 100,
-    "reason": "The recorded #3345 decision keeps these writes per target so each batch result retains its own persisted row; the delegated batch contract caps the loop at 100 items.",
-    "permanent": true,
-    "code": "backend/mcp/add-list-items.mts:82",
-    "routes": ["POST /api/v1/mcp"]
-  },
-  {
     "annotation": "allocateCommunityAgentPromptSlot",
     "maxCount": null,
     "reason": "The slot UPDATE runs after FOR UPDATE locks all of the creator's prompts and the slot-count check made under that lock, so concurrent allocations serialize",
