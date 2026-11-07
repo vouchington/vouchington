@@ -66,7 +66,15 @@ describe('discover_communities.search sort trending — real DB', () => {
       optionArgs('search', { sort: 'trending', ...args }),
       ['communities:read'],
     ) as Promise<Page>
-  const viaTool: PageOf = after => trending({ limit: 25, after })
+  /** Community entries nest the community; the REST rows carry the id directly. */
+  const withId = (page: Page): Page => ({
+    ...page,
+    results: page.results.map(entry => ({
+      ...entry,
+      id: (entry as { community?: { id: string } }).community?.id ?? entry.id,
+    })),
+  })
+  const viaTool: PageOf = async after => withId(await trending({ limit: 25, after }))
   const viaRest: PageOf = async after => {
     const request = createRequest()
     await request.authenticateAs(caller)
@@ -136,8 +144,8 @@ describe('discover_communities.search sort trending — real DB', () => {
   })
 
   it('pages by cursor and ends each page on the score order', async () => {
-    const first = await trending({ limit: 1, after: startAt(6) })
-    const second = await trending({ limit: 1, after: first.page_info.end_cursor })
+    const first = withId(await trending({ limit: 1, after: startAt(6) }))
+    const second = withId(await trending({ limit: 1, after: first.page_info.end_cursor }))
 
     expect(first.results).toHaveLength(1)
     expect(first.page_info.has_next_page).toBe(true)
@@ -168,7 +176,15 @@ describe('discover_topics.trending_referral_programs — real DB', () => {
       optionArgs('trending_referral_programs', args),
       ['topics:read'],
     ) as Promise<Page>
-  const viaTool: PageOf = after => trending({ limit: 25, after })
+  /** Community entries nest the community; the REST rows carry the id directly. */
+  const withId = (page: Page): Page => ({
+    ...page,
+    results: page.results.map(entry => ({
+      ...entry,
+      id: (entry as { community?: { id: string } }).community?.id ?? entry.id,
+    })),
+  })
+  const viaTool: PageOf = async after => withId(await trending({ limit: 25, after }))
   const viaRest: PageOf = async after => {
     const request = createRequest()
     await request.authenticateAs(caller)
