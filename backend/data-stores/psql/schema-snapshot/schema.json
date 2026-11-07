@@ -140981,6 +140981,104 @@
         }
       }
     },
+    "url_identities": {
+      "checkConstraints": {
+        "url_identities_identity_check": "CHECK ((char_length(identity) <= 2083))"
+      },
+      "columns": {
+        "identity": {
+          "collation": null,
+          "comment": "canonicalizeUrl(url).identity: scheme-less, without www. or m., tracking params, and YouTube aliases.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "url_id": {
+          "collation": null,
+          "comment": "The oldest URL registered for this identity (UUIDv7 order within one batch); its canonical target is what later variants point at. Deleted with its URL: variants then get canonical_url_id NULL (ON DELETE SET NULL) and the next new variant becomes the owner.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Scheme-less page identity of URLs inserted through addUrls; the first row registered for an identity owns it. Rows written by other paths have no identity.",
+      "foreignKeys": {
+        "url_identities_url_id_fkey": {
+          "columns": ["url_id"],
+          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "url_identities_identity_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_identities_identity_key ON public.url_identities USING btree (identity)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "identity",
+              "descending": false,
+              "expression": "identity",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "url_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_identities_pkey ON public.url_identities USING btree (url_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_id"],
+        "definition": "PRIMARY KEY (url_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "url_identities_identity_key": {
+          "columns": ["identity"],
+          "definition": "UNIQUE (identity)"
+        }
+      }
+    },
     "urls": {
       "checkConstraints": {
         "urls_check": "CHECK (((canonical_url_id IS NULL) OR (canonical_url_id <> id)))",

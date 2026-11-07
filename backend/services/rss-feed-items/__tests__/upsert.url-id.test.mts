@@ -1,6 +1,8 @@
 import { it, expect, describe } from 'vitest'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { getRssFeedItemById } from '../get.mts'
+import { getUrlEmbedByUrlId } from '../get-url-embed.mts'
+import { addUrl } from '@services/urls/upsert'
 import { insertTestRssFeedDirect } from '@voucha/test-helpers'
 
 describe('upsert.url-id', () => {
@@ -132,5 +134,25 @@ describe('upsert.url-id', () => {
     const item = await getRssFeedItemById(items[0].id)
     expect(item).toBeDefined()
     expect(item!.url.url).toBe(`https://example-${random}.com/public-article`)
+  })
+  it('attaches an item for a variant link to the canonical url so its embed resolves there', async () => {
+    const feed = await insertTestRssFeedDirect({})
+    const random = Math.random().toString(36).slice(2, 15)
+    const owner = await addUrl(null, `https://variant-${random}.example.com/episode`)
+
+    const items = await upsertRssFeedItems(feed.id, [
+      {
+        link: `https://www.variant-${random}.example.com/episode`,
+        guid: `variant-item-${random}`,
+        title: 'Variant item',
+        enclosure_url: `https://cdn.example.com/${random}.mp3`,
+        enclosure_type: 'audio/mpeg',
+        duration_seconds: 321,
+      },
+    ])
+
+    const item = await getRssFeedItemById(items[0].id)
+    expect(item!.url.id).toBe(owner!.id)
+    expect((await getUrlEmbedByUrlId(owner!.id))?.duration_seconds).toBe(321)
   })
 })

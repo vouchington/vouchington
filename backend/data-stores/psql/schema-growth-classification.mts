@@ -15,6 +15,7 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'topics',
   'url_hostnames',
   'urls',
+  'url_identities',
   'url_crawl_states',
   'users',
 ] as const

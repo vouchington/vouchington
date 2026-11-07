@@ -80,6 +80,7 @@ Crawl work is triggered through these paths:
 
 - **URL row first created** — `addUrls` in `backend/services/urls/upsert.mts` awaits the debounced URL-created job admission after its transaction commits; an admission failure is reported without failing the committed URL write. Borrowed transactions still call `processUrlCreatedInline`, which only creates the hostname crawler record. Neither path immediately enqueues a crawl for the URL itself; scheduled dispatchers handle that.
 - **URL entity-relation upserted** — `upsertEntityRelation` in `backend/services/entity-relations/upsert.mts` calls `enqueueBulkCrawlUrls` for every object with `object_type === 'url'`. This ensures a fresh crawl is enqueued even when an existing URL row is attached to a post or other entity as a related link.
+- **URL variants share one page** — Variants of a page that differ only by scheme, `www.`/`m.` host prefix, or tracking parameters link to one canonical page, so crawl and embed data accumulate in one place; a trailing slash is significant, so `/feed` and `/feed/` stay separate pages. An authoritative permanent redirect to a same-page variant makes that variant the canonical root.
 - **Manual admin trigger** — `POST /api/v1/urls/:id/crawl` in `backend/api/v1/urls/url.mts`.
 
 ## URL Crawl Routing And Exclusivity

@@ -1,3 +1,4 @@
+import { getUrlIdentity } from '@modules/utils/urls'
 import onError from '@modules/on-error'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import { addUrl, setCanonicalUrl } from '@services/urls'
@@ -56,7 +57,11 @@ export async function handleCrawlRedirect(params: {
   })
 
   if (isPermanentRedirect) {
-    await trySetCanonicalUrl(url.id, redirectUrlEntry.id)
+    // A destination first seen as a variant of this URL's page now wins as the page's root.
+    const promoteVariantTarget =
+      redirectUrlEntry.canonical_url_id === url.id &&
+      getUrlIdentity(redirectUrlEntry.url) === getUrlIdentity(url.url)
+    await trySetCanonicalUrl(url.id, redirectUrlEntry.id, { promoteVariantTarget })
   }
 
   if (options?.ensureCrawlerForRedirects === true) {
@@ -102,9 +107,13 @@ function isWeakSetKey(value: unknown): value is object {
   return (typeof value === 'object' && value !== null) || typeof value === 'function'
 }
 
-export async function trySetCanonicalUrl(urlId: string, canonicalUrlId: string) {
+export async function trySetCanonicalUrl(
+  urlId: string,
+  canonicalUrlId: string,
+  options: { promoteVariantTarget?: boolean } = {},
+) {
   try {
-    await setCanonicalUrl(urlId, canonicalUrlId)
+    await setCanonicalUrl(urlId, canonicalUrlId, options)
   } catch (err) {
     if (!(err instanceof CircularCanonicalReferenceError)) {
       onError(err instanceof Error ? err : new Error(String(err)))

@@ -2,6 +2,7 @@ import _validator from 'validator'
 import { isPrivateIp } from 'ssrf-guard'
 import net from 'node:net'
 import createHttpError from 'http-errors'
+import { canonicalizeUrl } from '@vouchington/utils/urls'
 
 const isFQDN = _validator.isFQDN
 
@@ -61,6 +62,9 @@ type NormalizeUrlOptions = {
  * - Upgrades `http:` to `https:` automatically (unless `preserveHttp` is true).
  * - Strips trailing dots from hostnames before storage and hostname policy checks.
  * - Strips fragments because urls.url stores fetchable resources, not document anchors.
+ * - Removes tracking params (`utm_*` and the shared tracker list), credentials, and default
+ *   ports, keeps the trailing slash (`/feed` and `/feed/` are different resources), and sorts the
+ *   remaining params (`canonicalizeUrl(...).url`).
  * - Throws a TypeError for malformed URLs (non-parseable by WHATWG URL).
  * - Throws an Error for non-http(s) schemes (javascript:, ftp:, data:, mailto:, …).
  * - Throws an Error for values that violate urls table length checks.
@@ -101,7 +105,15 @@ export const normalizeUrlForUrlTable = (href: string, options?: NormalizeUrlOpti
       cause: new Error('URL must include an http(s) authority'),
     })
   }
-  url.hash = ''
+  // The stored form drops tracking params, credentials, and default ports and
+  // sorts the remaining params, so tracking variants never get their own urls row.
+  const canonical = canonicalizeUrl(url)
+  if (!canonical) {
+    throw new TypeError(`Invalid URL: ${href}`, {
+      cause: new Error('URL cannot be canonicalized'),
+    })
+  }
+  url = new URL(canonical.url)
   if (url.toString().length > MAX_URL_TABLE_URL_LENGTH) {
     throw new Error(`URL exceeds ${MAX_URL_TABLE_URL_LENGTH} characters`)
   }
@@ -109,6 +121,16 @@ export const normalizeUrlForUrlTable = (href: string, options?: NormalizeUrlOpti
     throw new Error(`URL pathname exceeds ${MAX_URL_TABLE_PATHNAME_LENGTH} characters`)
   }
   return url
+}
+
+/**
+ * Returns the scheme-less dedupe key shared by variants of one page: `http`, `https`, `www.`,
+ * `m.`, and YouTube aliases collapse to one value. Input must already be a urls table URL.
+ */
+export const getUrlIdentity = (href: string | URL): string => {
+  const canonical = canonicalizeUrl(href)
+  if (!canonical) throw new TypeError(`Invalid URL: ${String(href)}`)
+  return canonical.identity
 }
 
 /**
