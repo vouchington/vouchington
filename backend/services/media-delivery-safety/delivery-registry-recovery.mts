@@ -1,8 +1,9 @@
 import { write } from '@data-stores/psql'
 import { isMediaDeliveryRegistryPublicationEnabled } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
-import { reconcileDeliveryRepairMarker } from './delivery-repair-markers.mts'
+import { reconcileDeliveryRepairMarkers } from './delivery-repair-markers.mts'
 import { processMediaDeliveryRegistryRecord } from './delivery-registry-process.mts'
+import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
 
 /** Immediate rollback recovery consumes the same durable wakeups as the bounded worker. */
 export async function repairFailedImageDeliveryMutation(input: {
@@ -26,10 +27,11 @@ export async function repairFailedImageDeliveryMutation(input: {
     WHERE binding.post_id = ANY(${input.postIds ?? []}::uuid[])
       OR binding.image_id = ANY(${input.imageIds ?? []}::uuid[])
     ORDER BY marker.media_delivery_registry_record_id
+    LIMIT ${getMediaDeliverySafetyWorkLimit('recovery_page_size')}
   `)
+  // Markers beyond the page stay durable; the bounded repair worker consumes them.
+  await reconcileDeliveryRepairMarkers(rows)
   for (const marker of rows) {
-    // oxlint-disable-next-line no-await-in-loop -- one exact placement authority domain per repair.
-    await reconcileDeliveryRepairMarker(marker)
     // oxlint-disable-next-line no-await-in-loop -- projection follows committed exact-authority repair.
     await processMediaDeliveryRegistryRecord(marker.media_delivery_registry_record_id)
   }

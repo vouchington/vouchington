@@ -105,6 +105,9 @@ export async function recordPostTopicRelationPublicationChanges(
   )
 }
 
+/** Hard page cap for one publisher-type feed fanout; the page size is rss_feed_publisher_batch_size. */
+const MAX_PUBLISHER_TYPE_FEED_PAGES = 1000
+
 /** Captures every feed whose discoverability derives from a changed publisher-type relation. */
 async function recordPublisherTypeRelationPublicationChanges(
   query: TransactionQuery,
@@ -115,7 +118,7 @@ async function recordPublisherTypeRelationPublicationChanges(
   )
   const topicIds = [...new Set(changes.map(change => change.subject_id))].toSorted()
   let afterRssFeedId: string | null = null
-  while (true) {
+  for (let page = 0; page < MAX_PUBLISHER_TYPE_FEED_PAGES; page += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each feed fanout page is bounded and sorted.
     const result = await query<{ id: string }>(
       `/* recordPublisherTypeRelationPublicationChanges */
@@ -137,6 +140,10 @@ async function recordPublisherTypeRelationPublicationChanges(
     )
     afterRssFeedId = rows.at(-1)!.id
   }
+  // The fanout must capture every feed in this transaction; fail closed with the resume position.
+  throw new Error(
+    `publisher-type feed fanout exceeded ${MAX_PUBLISHER_TYPE_FEED_PAGES} pages; continuation after rss_feed ${afterRssFeedId}`,
+  )
 }
 
 export async function recordPostRelatedUrlPublicationChanges(

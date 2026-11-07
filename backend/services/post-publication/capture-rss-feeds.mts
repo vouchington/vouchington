@@ -91,6 +91,9 @@ export async function lockPostPublicationRssFeedScopes(
   }
 }
 
+/** Hard page cap for one topic feed scope discovery; the page size is capture_batch_size. */
+const MAX_TOPIC_FEED_SCOPE_PAGES = 1000
+
 /**
  * Locks every feed attached to the supplied topics before a writer takes topic-backed FK locks.
  * The attachment lifecycle lock makes feed discovery stable while preserving global topic/feed order.
@@ -107,8 +110,9 @@ export async function lockTopicRssFeedPublicationScopes(
   }
 
   const rssFeedIds: string[] = []
+  let exhausted = false
   let afterRssFeedId: string | null = null
-  while (true) {
+  for (let page = 0; page < MAX_TOPIC_FEED_SCOPE_PAGES; page += 1) {
     // oxlint-disable-next-line no-await-in-loop -- globally ordered feed pages keep scope discovery bounded.
     const result = await query<{ id: string }>(
       `/* listTopicRssFeedPublicationScopes */
@@ -122,10 +126,18 @@ export async function lockTopicRssFeedPublicationScopes(
       [ids, afterRssFeedId, POST_PUBLICATION_CAPTURE_BATCH_SIZE],
     )
     const rows: Array<{ id: string }> = result.rows
-    if (rows.length === 0) break
+    if (rows.length === 0) {
+      exhausted = true
+      break
+    }
     rssFeedIds.push(...rows.map(row => row.id))
     afterRssFeedId = rows.at(-1)!.id
   }
+  // Every feed scope must be locked in this transaction; fail closed with the resume position.
+  if (!exhausted)
+    throw new Error(
+      `topic feed scope discovery exceeded ${MAX_TOPIC_FEED_SCOPE_PAGES} pages; continuation after rss_feed ${afterRssFeedId}`,
+    )
   await lockPostPublicationRssFeedScopes(query, rssFeedIds)
   return rssFeedIds
 }

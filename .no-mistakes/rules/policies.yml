@@ -296,7 +296,7 @@
           file: backend/services/posts/ban-evasion-embedding-enqueues.mts,
           callee: 'enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk',
         }
-      # One placement sync per changed image surface of a single community update (update-transaction.mts:40), serial inside the owner lock because admission was declared as one owner batch. UNVERIFIED: surfaces are a small closed set but no constant cap was checked.
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: closed surface-kind set, at most the two references built in prepublishChangedCommunitySurfaces (community-profile-image, community-banner-image) in communities/update-transaction.mts.
       - {
           file: backend/services/communities/update-transaction.mts,
           callee: 'syncImageSurfacePlacement',
@@ -371,7 +371,7 @@
           file: backend/services/elections-votes/entity-relation/vote-stats-batch.mts,
           callee: 'refreshChunkAndCapture',
         }
-      # FIX (P2): called from the same bare `while (true)` keyset loop as the line-120 entry (post-topic-publication.mts:118); add the page cap and remove this entry with it.
+      # Called from the capped keyset page loop (MAX_PUBLISHER_TYPE_FEED_PAGES 1000, post-topic-publication.mts:109), one set-based capture per page. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/entity-relations/post-topic-publication.mts,
           callee: 'recordRssFeedDiscoverabilityChanges',
@@ -381,33 +381,10 @@
           file: backend/services/images/cleanup-abandoned-uploads.mts,
           callee: 'cleanupStagedUploadSource',
         }
-      # FIX (P2): per-tuple denial inside a transaction that already holds the rows FOR UPDATE; batch the denial statements.
-      - {
-          file: backend/services/media-delivery-safety/delivery-denials.mts,
-          callee: 'prepublishImagePlacementDenial',
-        }
+      # Marker page of one repair call, capped by recovery_page_size (hard max 1000, media-delivery-safety/work-limits.mts:10); each record needs its own lease claim, edge publication and failure bookkeeping, and runs outside any shared lock-holding transaction.
       - {
           file: backend/services/media-delivery-safety/delivery-registry-recovery.mts,
           callee: 'processMediaDeliveryRegistryRecord',
-        }
-      - {
-          file: backend/services/media-delivery-safety/delivery-registry-recovery.mts,
-          callee: 'reconcileDeliveryRepairMarker',
-        }
-      # Per delivery registry record of one staging page (delivery-registry-staging-page.mts:147). UNVERIFIED: page cap; the P2b delivery layer owns this file.
-      - {
-          file: backend/services/media-delivery-safety/delivery-registry-staging-page.mts,
-          callee: 'stageCurrentDeliveryRecord',
-        }
-      # Per repair marker of one page (delivery-repair-markers.mts:46) reconciled with its registry row. UNVERIFIED: page cap; the P2b delivery layer owns this file.
-      - {
-          file: backend/services/media-delivery-safety/delivery-repair-markers.mts,
-          callee: 'reconcileDeliveryRepairMarker',
-        }
-      # FIX (P2): per-tuple denial with placementLocked inside the owner transaction; batch the denial statements.
-      - {
-          file: backend/services/media-delivery-safety/index.mts,
-          callee: 'prepublishImagePlacementDenial',
         }
       # Dependent chain: each token alias is ensured after its linked predecessor in order (lineage.mts:150), and the root lookup depth is capped by MAX_LINKED_TOKEN_DEPTH (lineage.mts:38); no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed.
       - {
@@ -579,7 +556,7 @@
           file: backend/services/stripe/event-charge-handlers.mts,
           callee: 'recordMembershipRefundEvent',
         }
-      # One placement sync per image reference of a single topic update (topics/update.mts:102), serial inside the owner lock. UNVERIFIED: no constant cap on references.
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: closed surface-kind set, at most the two references built in topics/update.mts (topic-logo-image, topic-hero-image).
       - { file: backend/services/topics/update.mts, callee: 'syncImageSurfacePlacement' }
       # Each pending request is a different follower user with their own relation limits and authorization, so it cannot share one batch; requests are one LIMIT batchSize page (auto-follow-on-approval.mts:38) followed with chunked concurrency.
       - {
@@ -649,22 +626,6 @@
           callee: 'query',
           line: 77,
         }
-      # FIX (P2): bare while(true) keyset page loop with no constant page cap; add a maxBatches-style cap and continuation. Remove these entries with the fix.
-      - {
-          file: backend/services/entity-relations/post-topic-publication.mts,
-          callee: 'query',
-          line: 120,
-        }
-      - {
-          file: backend/services/post-publication/capture-rss-feeds.mts,
-          callee: 'query',
-          line: 113,
-        }
-      - {
-          file: backend/services/post-publication/capture-topic-alias.mts,
-          callee: 'query',
-          line: 66,
-        }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the loop advances chunks of insert_chunk_size (getAdminImportsWorkLimit) rows, one INSERT per chunk.
       - { file: backend/services/admin-imports/create-batch.mts, callee: 'write', line: 57 }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the loop advances chunks of import_insert_chunk_size (getUserImportExportConfig) urls, one INSERT per chunk.
@@ -677,7 +638,25 @@
       - {
           file: backend/services/entity-relations/post-topic-publication.mts,
           callee: 'query',
-          line: 170,
+          line: 177,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: keyset page loop capped at MAX_PUBLISHER_TYPE_FEED_PAGES (1000, post-topic-publication.mts:109), each page one rss_feed_publisher_batch_size set-based capture; overflow throws with the continuation id.
+      - {
+          file: backend/services/entity-relations/post-topic-publication.mts,
+          callee: 'query',
+          line: 123,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: keyset page loop capped at MAX_TOPIC_FEED_SCOPE_PAGES (1000, capture-rss-feeds.mts:95), page size capture_batch_size; overflow throws with the continuation id.
+      - {
+          file: backend/services/post-publication/capture-rss-feeds.mts,
+          callee: 'query',
+          line: 117,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: keyset page loop capped at MAX_ALIAS_IMPACT_PAGES (1000, capture-topic-alias.mts:57), page size effect_payload_key_batch_size; overflow throws with the continuation id.
+      - {
+          file: backend/services/post-publication/capture-topic-alias.mts,
+          callee: 'query',
+          line: 69,
         }
       # no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed: Promise.all over claim-token groups of one claim call; each group completes its whole id batch with one UPDATE.
       - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query', line: 79 }

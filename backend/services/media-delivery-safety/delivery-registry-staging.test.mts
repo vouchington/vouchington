@@ -13,6 +13,7 @@ import {
   stageTestImagePlacementDeliveryRecordsForImageIds,
 } from '@voucha/test-helpers/media-delivery-recovery'
 import { stageImagePlacementDeliveryRecord } from './index.mts'
+import { stageImagePlacementDeliveryRecords } from './delivery-registry-staging.mts'
 
 describe('media registry staging state', () => {
   it('retains earlier desired states and generations when authority changes or is republished', async () => {
@@ -104,6 +105,26 @@ describe('media registry staging state', () => {
       next_attempt_at: null,
       failure_message: null,
     })
+  })
+  it('stages several tuples in one statement and returns unchanged ones', async () => {
+    const [a, b] = [await createPlacement(), await createPlacement()]
+    const key = (t: typeof a) => `${t.placementId}:${t.revision}:${t.imageId}`
+    const first = await stageImagePlacementDeliveryRecords([
+      { ...a, state: 'allow' },
+      { ...b, state: 'allow' },
+      { ...b, state: 'withheld' },
+    ])
+    expect(first.size).toBe(2)
+    const second = await stageImagePlacementDeliveryRecords([
+      { ...a, state: 'allow' },
+      { ...b, state: 'withheld' },
+    ])
+    expect(second).toEqual(first)
+    const third = await stageImagePlacementDeliveryRecords([{ ...b, state: 'allow' }])
+    expect(BigInt(third.get(key(b))!.generation)).toBeGreaterThan(
+      BigInt(first.get(key(b))!.generation),
+    )
+    expect(await stageImagePlacementDeliveryRecords([])).toEqual(new Map())
   })
 })
 

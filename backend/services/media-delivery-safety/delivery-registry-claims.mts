@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
@@ -10,20 +9,22 @@ import {
 export type MediaDeliveryClaim = ImageDeliveryRecord & { lease_token: string }
 
 /** Callers retain the authority lock before claiming or publishing this exact generation. */
-export async function claimMediaDeliveryProjection(
+export async function claimMediaDeliveryProjections(
   query: QueryExecutor,
-  mediaDeliveryRegistryRecordId: string,
+  mediaDeliveryRegistryRecordIds: readonly string[],
   now = new Date(),
-): Promise<MediaDeliveryClaim | null> {
-  const statement = sql`/* claimMediaDeliveryProjection */
+): Promise<MediaDeliveryClaim[]> {
+  if (mediaDeliveryRegistryRecordIds.length === 0) return []
+  const statement = sql`/* claimMediaDeliveryProjections */
     WITH candidate AS (
       SELECT work.media_delivery_registry_record_id FROM media_delivery_registry_projection_work_items work
       JOIN media_delivery_registry_records record ON record.id = work.media_delivery_registry_record_id
-      WHERE work.media_delivery_registry_record_id = ${mediaDeliveryRegistryRecordId} AND work.generation = record.generation AND `
-  statement.append(mediaDeliveryClaimable(now)).append(sql` FOR UPDATE OF work
+      WHERE work.media_delivery_registry_record_id = ANY(${[...mediaDeliveryRegistryRecordIds]}::uuid[]) AND work.generation = record.generation AND `
+  statement.append(mediaDeliveryClaimable(now))
+    .append(sql` ORDER BY work.media_delivery_registry_record_id FOR UPDATE OF work
     ), claimed AS (
       UPDATE media_delivery_registry_projection_work_items work
-      SET lease_token = ${randomUUID()}::uuid, leased_at = clock_timestamp(),
+      SET lease_token = gen_random_uuid(), leased_at = clock_timestamp(),
         lease_expires_at = clock_timestamp() + ${MEDIA_DELIVERY_CLAIM_TIMEOUT_MS} * interval '1 millisecond',
         attempt_count = attempt_count + 1
       FROM candidate WHERE work.media_delivery_registry_record_id = candidate.media_delivery_registry_record_id
@@ -37,7 +38,16 @@ export async function claimMediaDeliveryProjection(
       FROM claimed JOIN media_delivery_registry_records record ON record.id = claimed.media_delivery_registry_record_id
   `)
   const { rows } = await query<MediaDeliveryClaim>(statement)
-  return rows[0] ?? null
+  return rows
+}
+
+export async function claimMediaDeliveryProjection(
+  query: QueryExecutor,
+  mediaDeliveryRegistryRecordId: string,
+  now = new Date(),
+): Promise<MediaDeliveryClaim | null> {
+  const claims = await claimMediaDeliveryProjections(query, [mediaDeliveryRegistryRecordId], now)
+  return claims[0] ?? null
 }
 
 export async function ownsMediaDeliveryProjection(

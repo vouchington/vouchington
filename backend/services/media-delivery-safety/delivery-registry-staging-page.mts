@@ -1,15 +1,15 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbCursorScope, sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
-import { imageDeliveryAuthorityProof, imageDeliveryIsAuthorized } from './delivery-authority.mts'
-import { lockImageDeliveryMutation } from './delivery-lock.mts'
-import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
+import { imageDeliveryAuthorityProof } from './delivery-authority.mts'
+import {
+  stageCurrentDeliveryRecords,
+  type DeliveryTuple as Tuple,
+} from './delivery-registry-staging-current.mts'
 import { getMediaDeliveryRegistryScanBefore } from './delivery-registry-recovery-scan.mts'
-
-type Tuple = { placement_id: string; placement_revision: number; image_id: string }
 
 /** Bound the base-table tuple page before legal proof or current-history view lookups. */
 export async function stageImagePlacementDeliveryRecordPage(
@@ -142,15 +142,12 @@ export async function stageImagePlacementDeliveryRecordPage(
       desired_state: 'allow' | 'withheld' | null
     }
   >(statement)
-  let staged = 0
   const page = rows.slice(0, limit)
-  for (const record of page) {
-    if (!record.is_active) continue
-    if (record.existing_desired_state === record.desired_state) continue
-    // oxlint-disable-next-line no-await-in-loop -- each tuple retains its own authority domain.
-    await stageCurrentDeliveryRecord(record)
-    staged++
-  }
+  const changed = page.filter(
+    record => record.is_active && record.existing_desired_state !== record.desired_state,
+  )
+  await stageCurrentDeliveryRecords(changed)
+  const staged = changed.length
   const last = page.at(-1)
   return {
     staged,
@@ -164,23 +161,4 @@ export async function stageImagePlacementDeliveryRecordPage(
       },
     }),
   }
-}
-
-async function stageCurrentDeliveryRecord(record: Tuple): Promise<void> {
-  await using transaction = await beginTransaction()
-  await lockImageDeliveryMutation(transaction, {
-    placementIds: [record.placement_id],
-    placementOnly: true,
-  })
-  const state = (await imageDeliveryIsAuthorized(transaction, record)) ? 'allow' : 'withheld'
-  await stageImagePlacementDeliveryRecord(
-    {
-      placementId: record.placement_id,
-      revision: record.placement_revision,
-      imageId: record.image_id,
-      state,
-    },
-    { query: transaction },
-  )
-  await transaction.commit()
 }

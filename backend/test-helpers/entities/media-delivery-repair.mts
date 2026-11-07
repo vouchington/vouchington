@@ -1,7 +1,7 @@
 import { read, write, writePool, withTransactionOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { reconcileDeliveryRepairMarker } from '../../services/media-delivery-safety/delivery-repair-markers.mts'
+import { reconcileDeliveryRepairMarkers } from '../../services/media-delivery-safety/delivery-repair-markers.mts'
 import { syncImageSurfacePlacement } from '../../services/media-delivery-safety/surface-placement-sync.mts'
 
 /** Real autocommit executor for rejecting authority calls without a retained transaction. */
@@ -125,11 +125,11 @@ export async function advanceTestDeliveryPlacementRevision(
 export async function reconcileTestDeliveryRepairMarker(
   mediaDeliveryRegistryRecordId: string,
 ): Promise<void> {
-  const { rows } = await read<Parameters<typeof reconcileDeliveryRepairMarker>[0]>(sql`
+  const { rows } = await read<Parameters<typeof reconcileDeliveryRepairMarkers>[0][number]>(sql`
     /* reconcileTestDeliveryRepairMarker */
     SELECT media_delivery_registry_record_id, marker_token
     FROM media_delivery_repair_markers WHERE media_delivery_registry_record_id = ${mediaDeliveryRegistryRecordId}
   `)
   if (!rows[0]) throw new Error('Owned delivery repair marker missing')
-  await reconcileDeliveryRepairMarker(rows[0])
+  await reconcileDeliveryRepairMarkers([rows[0]])
 }

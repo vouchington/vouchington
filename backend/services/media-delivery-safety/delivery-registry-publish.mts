@@ -3,54 +3,73 @@ import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import { isMediaDeliveryRegistryPublicationEnabled } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
-import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
-import { recordImageDeliveryRepairMarker } from './delivery-repair-markers.mts'
+import {
+  stageImagePlacementDeliveryRecord,
+  stageImagePlacementDeliveryRecords,
+} from './delivery-registry-staging.mts'
+import {
+  recordImageDeliveryRepairMarker,
+  recordImageDeliveryRepairMarkers,
+} from './delivery-repair-markers.mts'
 import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
 import {
   claimMediaDeliveryProjection,
+  claimMediaDeliveryProjections,
   ownsMediaDeliveryProjection,
   type MediaDeliveryClaim,
 } from './delivery-registry-claims.mts'
-import { publishPersistedDeliveryRecord } from './delivery-registry-acknowledgement.mts'
+import {
+  publishPersistedDeliveryRecord,
+  publishPersistedDeliveryRecords,
+} from './delivery-registry-acknowledgement.mts'
 import {
   imageDeliveryIsAuthorized,
   lockImageDeliveryLegalAuthority,
 } from './delivery-authority.mts'
 
+type PlacementDenial = { placementId: string; revision: number; imageId: string }
+
 export async function prepublishImagePlacementDenial(
-  input: {
-    placementId: string
-    revision: number
-    imageId: string
-  },
+  input: PlacementDenial,
   options: QueryOptions & { placementLocked?: boolean } = {},
 ): Promise<void> {
+  await prepublishImagePlacementDenialBatch([input], options)
+}
+
+/** Withholds, stages and publishes every tuple with one statement per step. */
+export async function prepublishImagePlacementDenialBatch(
+  inputs: readonly PlacementDenial[],
+  options: QueryOptions & { placementLocked?: boolean } = {},
+): Promise<void> {
+  if (inputs.length === 0) return
   if (!options.query) {
     await using transaction = await beginTransaction()
-    await prepublishImagePlacementDenial(input, { query: transaction })
+    await prepublishImagePlacementDenialBatch(inputs, { query: transaction })
     await transaction.commit()
     return
   }
   const query = options.query
-  // A caller that already held this placement's lock (lockImageSurfacePlacements) passes it down.
+  // A caller that already held these placements' locks (lockImageSurfacePlacements) passes it down.
   if (!options.placementLocked)
     await lockImageDeliveryMutation(query, {
-      placementIds: [input.placementId],
+      placementIds: inputs.map(input => input.placementId),
       placementOnly: true,
     })
-  if (isMediaDeliveryRegistryPublicationEnabled()) await recordImageDeliveryRepairMarker(input)
-  const staged = await stageImagePlacementDeliveryRecord(
-    { ...input, state: 'withheld' },
+  if (isMediaDeliveryRegistryPublicationEnabled()) await recordImageDeliveryRepairMarkers(inputs)
+  const staged = await stageImagePlacementDeliveryRecords(
+    inputs.map(input => ({ ...input, state: 'withheld' as const })),
     { query, forceGeneration: true },
   )
-  if (isMediaDeliveryRegistryPublicationEnabled()) {
-    const claim = await claimMediaDeliveryProjection(query, staged.mediaDeliveryRegistryRecordId)
-    if (!claim)
-      throw new Error(
-        `Media delivery projection is already owned ${staged.mediaDeliveryRegistryRecordId}`,
-      )
-    await publishPersistedDeliveryRecord(claim, query)
+  if (!isMediaDeliveryRegistryPublicationEnabled()) return
+  const recordIds = [...staged.values()].map(record => record.mediaDeliveryRegistryRecordId)
+  const claims = await claimMediaDeliveryProjections(query, recordIds)
+  if (claims.length !== recordIds.length) {
+    const claimed = new Set(claims.map(claim => claim.media_delivery_registry_record_id))
+    throw new Error(
+      `Media delivery projection is already owned ${recordIds.find(id => !claimed.has(id))}`,
+    )
   }
+  await publishPersistedDeliveryRecords(claims, query)
 }
 
 /** Publishes only the immutable tuple already staged by an authority-owning transaction. */
