@@ -133,13 +133,14 @@ async function readModInternalRecipients(
   const modQuery = sql`/* getConversationNotificationContext:mod-internal-recipients */
     SELECT user_id FROM (
       SELECT cm.user_id
-      FROM community_members cm
+      FROM UNNEST(${moderators}::uuid[]) AS moderator(user_id)
+      JOIN community_members cm
+        ON cm.community_id = ${communityId}
+       AND cm.user_id = moderator.user_id
+       AND cm.removed_at IS NULL
+       AND cm.role IN ('owner', 'moderator')
       JOIN users u ON u.id = cm.user_id AND u.deleted_at IS NULL
-      WHERE cm.community_id = ${communityId}
-        AND cm.role IN ('owner', 'moderator')
-        AND cm.removed_at IS NULL
-        AND cm.user_id = ANY(${moderators}::uuid[])
-        AND NOT EXISTS (
+      WHERE NOT EXISTS (
           SELECT 1 FROM community_member_vacations v
           WHERE v.community_id = cm.community_id
             AND v.user_id = cm.user_id
