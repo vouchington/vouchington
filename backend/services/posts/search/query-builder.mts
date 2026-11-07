@@ -107,7 +107,7 @@ export function buildPostSearchQuery(
   })
   if (fenceHotExpressionFilter) {
     query.append(sql`)
-  SELECT id, post_type`)
+  SELECT id, post_type, hot_score`)
     if (options.hydrateDataPointPage)
       query.append(sql`, title, data_point_vertical, structured_data`)
     query.append(sql`
