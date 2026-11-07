@@ -81152,7 +81152,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 31
         },
         "hostname_crawler_configuration_id": {
           "comment": "Target crawler created, edited, or deleted by staff.",
@@ -81182,7 +81182,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 32
         },
         "metadata": {
           "comment": "Structured context snapshot (e.g. role change target role, topic slugs for tags).",
@@ -81192,7 +81192,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31
+          "ordinalPosition": 30
         },
         "moderation_appeal_id": {
           "comment": "Target moderation appeal for resolve_appeal/dismiss_appeal actions.",
@@ -81262,7 +81262,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 29
         },
         "report_abuse_penalty_id": {
           "comment": "Target report-abuse penalty applied, reviewed or revoked.",

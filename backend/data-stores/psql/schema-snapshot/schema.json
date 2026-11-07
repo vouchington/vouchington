@@ -76630,7 +76630,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "hostname_crawler_configuration_id": {
@@ -76663,7 +76663,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 32,
           "type": "uuid"
         },
         "metadata": {
@@ -76674,7 +76674,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31,
+          "ordinalPosition": 30,
           "type": "jsonb"
         },
         "moderation_appeal_id": {
@@ -76751,7 +76751,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 29,
           "type": "text"
         },
         "report_abuse_penalty_id": {
