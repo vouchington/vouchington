@@ -92,11 +92,35 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
       )
     if (
       !result.query_text.includes('search_vector @@') &&
-      ![...indexNames].some(indexName => /published_at.*id/i.test(indexName))
+      !nodes.some(node => {
+        const indexName = node['Index Name']
+        return (
+          node['Alias'] === 'rss_feed_items' &&
+          typeof indexName === 'string' &&
+          !indexName.includes('story_id') &&
+          (/^(?:idx_rss_feed_items__published_at__id|idx_rss_feed_items__media_type__published)$/.test(
+            indexName,
+          ) ||
+            /(?:^|_)(?:media_type_)?published_at_id_idx$/.test(indexName))
+        )
+      })
     )
       throw new Error(`${result.name} must walk recent RSS items through a published_at/id index`)
-    if (storyProbeRows > 0 && ![...indexNames].some(indexName => /story_id.*id/i.test(indexName)))
-      throw new Error(`${result.name} must probe story winners through a story_id/id index`)
+    if (
+      storyProbeRows > 0 &&
+      !nodes.some(node => {
+        const indexName = node['Index Name']
+        return (
+          node['Alias'] === 'newer' &&
+          typeof indexName === 'string' &&
+          (indexName === 'idx_rss_feed_items__story_id__published_at__id' ||
+            /story_id_published_at_id_idx$/.test(indexName))
+        )
+      })
+    )
+      throw new Error(
+        `${result.name} must probe story winners through a story_id/published_at/id index`,
+      )
     if (
       result.scenario_id.includes('follow-topics') &&
       !indexNames.has('rss_feed_item_categories_pkey')
