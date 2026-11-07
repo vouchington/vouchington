@@ -85,11 +85,9 @@ export async function getHouseholdSpendingCategoriesByUserId(
   const { rows: accessibleHouseholds } = await query<{ id: string }>(
     sql`
     /* getAccessibleHouseholdsForSpendingCategories */
-    SELECT h.id
-    FROM households h
-    LEFT JOIN household_members hm
-      ON hm.household_id = h.id AND hm.individual_id = ${individualId}
-    WHERE h.owner_user_id = ${user.id} OR hm.individual_id IS NOT NULL
+    SELECT id FROM households WHERE owner_user_id = ${user.id}
+    UNION
+    SELECT household_id FROM household_members WHERE individual_id = ${individualId}
   `,
     queryOptions,
   )
