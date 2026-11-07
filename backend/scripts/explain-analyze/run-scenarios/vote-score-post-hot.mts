@@ -135,7 +135,31 @@ export function getVoteScorePostHotScenarios(
   ].map(scenario => ({
     ...scenario,
     contract: {
-      expectations: postScanGate(),
+      expectations: [
+        ...postScanGate(),
+        ...(scenario.id.startsWith('vote-score-post-feed-hot-')
+          ? [{ kind: 'custom' as const, name: 'postTopicMembership' }]
+          : []),
+        ...(scenario.id.startsWith('vote-score-post-feed-hot-')
+          ? [
+              'relation__post__category__topic',
+              'relation__post__category__topic_alias',
+              'topic_aliases',
+            ].map(relation => ({
+              kind: 'maxProcessedRows' as const,
+              relation,
+              // Follow and mute can each inspect the candidate post's topic children.
+              max: WEEKLY_POST_SCAN_CAP * 2,
+            }))
+          : []),
+      ],
+      forbidSequentialScans: scenario.id.startsWith('vote-score-post-feed-hot-')
+        ? [
+            'relation__post__category__topic',
+            'relation__post__category__topic_alias',
+            'topic_aliases',
+          ]
+        : [],
       crossPartition: {
         posts: 'Hot ranking traverses eligible positive-score posts across the requested week.',
       },

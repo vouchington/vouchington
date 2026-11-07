@@ -96,7 +96,7 @@ describe('appendPostFeedDeliveryCTEs', () => {
     )
     expect(query.text).not.toContain('post_topic_alias_sources')
     expect(query.text).toContain('FROM relation__post__category__topic_alias relation')
-    expect(query.text).toContain('followed_topics.topic_id = alias.topic_id')
+    expect(query.text).toContain('alias.topic_id IN (SELECT topic_id FROM followed_topics)')
   })
 
   it('pushes timestamp pagination into materialized shared candidates', () => {
