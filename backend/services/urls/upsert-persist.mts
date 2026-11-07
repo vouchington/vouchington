@@ -17,7 +17,7 @@ import createError from 'http-errors'
 import { invalidate } from '@services/entity-cache'
 import { upsertUrlRows } from './upsert-write.mts'
 import { lockCanonicalUrlRewrites } from './canonical-lock.mts'
-import { linkNewUrlVariants } from './url-identities.mts'
+import { assertCanonicalHostnamesNotBlocked, linkNewUrlVariants } from './url-identities.mts'
 
 export type AddUrlOptions = {
   content_type?: string
@@ -104,6 +104,7 @@ async function persistInTransaction(
     queryOptions,
   )
   const rows = await linkNewUrlVariants(upserted, options.query)
+  await assertCanonicalHostnamesNotBlocked(rows, options.query)
 
   const idsByUrl = new Map(rows.map(row => [row.url, row]))
   const viewUrls = uniqueUrls.flatMap(url => {

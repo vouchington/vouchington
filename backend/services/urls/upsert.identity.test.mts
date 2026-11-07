@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { write } from '@data-stores/psql'
 import { getUrlByAny } from './get.mts'
 import { setCanonicalUrl } from './set-canonical.mts'
 import { addUrl, addUrls } from './upsert.mts'
@@ -86,5 +87,19 @@ describe('addUrls page identity', () => {
 
     expect(page?.id).not.toBe(other?.id)
     expect(other?.canonical_url_id).toBeNull()
+  })
+
+  it('rejects a variant whose canonical owner hostname became blocked', async () => {
+    const host = runHost()
+    await addUrl(null, `https://www.${host}/page`)
+    await write(
+      `/* blockIdentityOwnerHost */ UPDATE url_hostnames SET is_blocked = TRUE WHERE hostname = $1`,
+      [`www.${host}`],
+    )
+
+    const error = await addUrl(null, `https://${host}/page`).catch((err: unknown) => err)
+
+    expect(error).toHaveProperty('status', 422)
+    expect(error).toHaveProperty('message', `Hostname www.${host} is blocked`)
   })
 })

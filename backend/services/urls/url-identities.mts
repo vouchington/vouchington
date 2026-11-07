@@ -1,6 +1,11 @@
 import { getUrlIdentity } from '@modules/utils/urls'
 import { read, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import createError from 'http-errors'
+import {
+  getHostnamePolicyGroups,
+  getLocalHostnamePolicies,
+} from '@services/urls-hostnames/policies'
 import { attachDistinctCanonicalHostnames, type UpsertedUrlRow } from './upsert-write.mts'
 
 /**
@@ -68,4 +73,35 @@ export async function findUrlIdByIdentity(
     options,
   )
   return rows[0]?.url_id ?? null
+}
+
+/**
+ * A row adopts its page's canonical destination when published, so a blocked destination hostname
+ * blocks the submission just as a blocked submitted hostname does.
+ */
+export async function assertCanonicalHostnamesNotBlocked(
+  rows: UpsertedUrlRow[],
+  query: TransactionQuery,
+): Promise<void> {
+  const hostnameIds = [
+    ...new Set(
+      rows.flatMap(row =>
+        row.canonical_hostname_id && row.canonical_hostname_id !== row.hostname_id
+          ? [row.canonical_hostname_id]
+          : [],
+      ),
+    ),
+  ]
+  if (hostnameIds.length === 0) return
+  const { rows: hostnames } = await query<{ hostname: string }>(
+    `/* canonicalDestinationHostnames */
+    SELECT hostname FROM url_hostnames WHERE id = ANY($1::uuid[])`,
+    [hostnameIds],
+  )
+  const policies = await getLocalHostnamePolicies(
+    getHostnamePolicyGroups(hostnames.map(row => row.hostname)),
+    { query },
+  )
+  for (const [hostname, policy] of policies)
+    if (policy.is_blocked) throw createError(422, `Hostname ${hostname} is blocked`)
 }

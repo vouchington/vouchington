@@ -140,7 +140,6 @@ describe('post link URL-ID policy', () => {
       if (!alias) throw new Error('Expected an alias URL')
       const assessment = await assessPostLinkEdit(post, { url: alias.url })
       if (!assessment.urls) throw new Error('Expected an assessed raw alias')
-      await blockPostLinkDestinationForTest(nextDestination)
       await setCanonicalUrl(target === 'alias' ? source : destination, nextDestination)
       await expect(
         persistAssessedPostLinkEditForTest(user.id, assessment.changes, assessment.urls),
@@ -156,7 +155,6 @@ describe('post link URL-ID policy', () => {
     const alias = await insertTestUrlDirect(null, href)
     if (!alias) throw new Error('Expected the concurrently inserted alias')
     const destination = await createTestUrlWithHostname()
-    await blockPostLinkDestinationForTest(destination)
     await setCanonicalUrl(alias.id, destination)
     await expect(
       persistAssessedPostLinkEditForTest(user.id, assessment.changes, assessment.urls),
