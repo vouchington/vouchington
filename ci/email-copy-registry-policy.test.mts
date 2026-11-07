@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { residualProductCopy } from '../ci/email-copy-registry-policy.mts'
+import { residualProductCopy } from './email-copy-registry-policy.mts'
 
 describe('residual product copy registries', () => {
   it('allows catalog-backed product copy', () => {
