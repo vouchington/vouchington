@@ -37,6 +37,10 @@ describe('blocklist bloom rebuild generation', () => {
     const existing = await bloomFilters.getJob(emailPrimaryJobId)
     const pending = await openUncommittedPrimaryTransaction()
     let streamed = false
+    // A dropped follow-up EXPIRE must not leave the retry counter without a TTL.
+    const expire = vi
+      .spyOn(bloomValkeyClient, 'expire')
+      .mockRejectedValue(new Error('expire dropped'))
     try {
       await bumpBlocklistBloomGeneration(emailBlocklist, pending.id)
       await rebuildCurrentBlocklistBloomFilter({
@@ -48,6 +52,37 @@ describe('blocklist bloom rebuild generation', () => {
       })
       expect(streamed).toBe(false)
       expect(await bloomFilters.getJob(emailPrimaryJobId)).toBeTruthy()
+      await expect(bloomValkeyClient.get(retriesKey)).resolves.toBe('1')
+      const ttl = await bloomValkeyClient.ttl(retriesKey)
+      expect(ttl).toBeGreaterThan(0)
+      expect(ttl).toBeLessThanOrEqual(60 * 60)
+      expect(expire).not.toHaveBeenCalled()
+    } finally {
+      await pending.rollback()
+      await bumpBlocklistBloomGeneration(emailBlocklist)
+      await bloomValkeyClient.unlink([retriesKey])
+      await removeQueuedRebuild(existing)
+    }
+  })
+
+  it('stops a visibility retry when the counter script returns no count', async () => {
+    const existing = await bloomFilters.getJob(emailPrimaryJobId)
+    const pending = await openUncommittedPrimaryTransaction()
+    const invokeScript = bloomValkeyClient.invokeScript
+    vi.spyOn(bloomValkeyClient, 'invokeScript').mockImplementation((script, options) => {
+      if (options?.keys?.[0] === retriesKey) return Promise.resolve({ unexpected: true } as never)
+      return invokeScript.call(bloomValkeyClient, script, options)
+    })
+    try {
+      await bumpBlocklistBloomGeneration(emailBlocklist, pending.id)
+      await expect(
+        rebuildCurrentBlocklistBloomFilter({
+          filter: emailBlocklist,
+          readyKey: 'bloom-filter:email-blocklist:ready:invalid-count',
+          stream: async () => undefined,
+        }),
+      ).rejects.toThrow('blocklist visibility retry script returned an invalid count')
+      await expect(bloomValkeyClient.get(retriesKey)).resolves.toBeNull()
     } finally {
       await pending.rollback()
       await bumpBlocklistBloomGeneration(emailBlocklist)
