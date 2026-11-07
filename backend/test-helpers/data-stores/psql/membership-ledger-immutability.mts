@@ -29,7 +29,6 @@ export async function createTestImmutableMembershipGrant(): Promise<string> {
     SELECT id, user_id, ${products[0]!.id}, 30, 'Test issuer' FROM source RETURNING id`)
   return rows[0]!.id
 }
-// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestMembershipGrantMutation(
   grantId: string,
   transition: 'changeCalendarDays' | 'delete' | 'revoke' | 'rewriteReason' | 'rewriteRevoker',
@@ -100,7 +99,6 @@ export function claimTestMembershipOperation(
     sql`/* claimImmutableTestOperation */ UPDATE membership_operation_execution_work_items SET lease_token = ${claimToken}, leased_at = clock_timestamp(), lease_expires_at = clock_timestamp() + INTERVAL '5 minutes', attempt_count = attempt_count + 1 WHERE membership_operation_id = ${operationId}`,
   )
 }
-// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestMembershipOperationTransition(
   operationId: string,
   transition: MembershipOperationTransition,
@@ -136,7 +134,6 @@ export function attemptTestMembershipOperationTransition(
       )
   }
 }
-// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestRefundMembershipOperationTransition(
   operationId: string,
   transition: MembershipRefundOperationTransition,

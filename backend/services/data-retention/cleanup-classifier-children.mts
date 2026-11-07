@@ -94,7 +94,6 @@ export async function sweepClassifierChildPageWithQuery(
   return { scanned: page.length, deleted, hasMore }
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed sweep switch is exhaustive; Oxlint misses its terminal flow.
 function childPageStatement(
   sweep: ChildSweep,
   lowerBoundId: string,
@@ -136,7 +135,6 @@ function childPageStatement(
   }
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed sweep switch is exhaustive; Oxlint misses its terminal flow.
 async function deleteTerminalChildren(
   query: OwnedTransaction,
   sweep: ChildSweep,

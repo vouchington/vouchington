@@ -8,7 +8,6 @@ import { AvailabilityIndicator } from '@/components/ui/availability-indicator'
 import { topicHref, communityHref } from '@/lib/links/entity-href'
 import { getCanonicalPostPath } from '@/lib/post-helpers'
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed conflict.kind switch is exhaustive; Oxlint misses its terminal flow.
 function ConflictLink({ conflict }: { conflict: AvailabilityConflict }) {
   switch (conflict.kind) {
     case 'topic': {

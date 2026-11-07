@@ -8,7 +8,6 @@ import type { CopyrightStatementInput } from './statement-of-reasons-types.mts'
  * The first paragraph of every statement. The email carries the full statement and the in-app
  * notice links to the case, so neither paragraph points the reader at the case page for reasons.
  */
-// oxlint-disable-next-line typescript/consistent-return -- Typed input.event switch is exhaustive; Oxlint misses its terminal flow.
 export function copyrightStatementSummary(input: CopyrightStatementInput): string {
   switch (input.event) {
     case 'restricted':

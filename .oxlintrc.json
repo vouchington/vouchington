@@ -566,7 +566,7 @@
     "typescript/no-unnecessary-type-arguments": "error",
     "typescript/no-redundant-type-constituents": "error",
     "typescript/unbound-method": "off",
-    "typescript/consistent-return": "error",
+    "typescript/consistent-return": "off", // Policy: tsc noImplicitReturns covers a missing return. Oxlint only sees syntax, so exhaustive switches were false positives.
     "typescript/no-base-to-string": "error",
     "typescript/no-unnecessary-type-parameters": "error",
     "typescript/no-misused-spread": "error",

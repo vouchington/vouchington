@@ -16,7 +16,6 @@ import {
   insertTestTopic,
 } from './entities/index.mts'
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed jobType switch is exhaustive; Oxlint misses its terminal flow.
 export async function createLockedEntityId(
   jobType: BatchJobType,
   userId: string,

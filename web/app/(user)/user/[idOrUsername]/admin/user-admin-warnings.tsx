@@ -13,7 +13,6 @@ type State =
 
 type Action = { type: 'loaded'; warnings: UserWarningItem[] } | { type: 'error' }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed action.type switch is exhaustive; Oxlint misses its terminal flow.
 function reducer(_state: State, action: Action): State {
   switch (action.type) {
     case 'loaded': {

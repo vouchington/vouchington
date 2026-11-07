@@ -11,7 +11,6 @@ export const emails = createWorker(QUEUE_NAME, (job: Job) => processEmailJob(job
   concurrency: getWorkerConcurrency('emails', { baseline: 5 }),
 })
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed parsed.kind switch is exhaustive; Oxlint misses its terminal flow.
 async function processEmailJob(job: Job): Promise<unknown> {
   const parsed = parseEmailJob(job.name, job.data)
   switch (parsed.kind) {
