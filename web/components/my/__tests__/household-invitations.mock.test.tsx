@@ -82,7 +82,6 @@ describe('household invitation actions', () => {
     expect(rows[1]!.textContent).not.toContain("'s household")
     expect(document.body.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)
   })
-
   it('identifies sent invitations by invitee with a null-username fallback', () => {
     const first = makeHouseholdInvitation()
     const second = makeHouseholdInvitation({
@@ -101,7 +100,6 @@ describe('household invitation actions', () => {
     expect(screen.getByRole('link', { name: '@alex' })).toBeTruthy()
     expect(document.body.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)
   })
-
   it('sends a selected user once while pending, and keeps duplicate responses as one row', async () => {
     const invitation = makeHouseholdInvitation()
     const request = deferred<Awaited<ReturnType<typeof api.createHouseholdInvitation>>>()
