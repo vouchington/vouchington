@@ -65,7 +65,12 @@ export async function runTrustHostnameContinuation(
 }
 
 export async function runZeroTrustContinuation(cursor: string): Promise<unknown> {
-  const page = await searchUrlHostnames({ sort: 'trust', limit: PAGE_SIZE, after: cursor })
+  const page = await searchUrlHostnames({
+    sort: 'trust',
+    is_blocked: false,
+    limit: PAGE_SIZE,
+    after: cursor,
+  })
   if (
     page.results.length !== PAGE_SIZE ||
     !page.page_info.has_next_page ||
