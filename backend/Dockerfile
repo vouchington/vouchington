@@ -34,17 +34,6 @@ RUN set -- /usr/lib/*-linux-gnu/libssl.so.3 && \
     dpkg-query -s openssl-provider-legacy > "$overlay/var/lib/dpkg/status.d/openssl-provider-legacy" && \
     dpkg-query -s zlib1g > "$overlay/var/lib/dpkg/status.d/zlib1g"
 
-FROM base-node AS zlib-overlay
-RUN set -- /usr/lib/*-linux-gnu/libz.so.1 && \
-    [ "$#" -eq 1 ] && \
-    libz="$1" && \
-    resolved="$(readlink -f "$libz")" && \
-    overlay=/distroless-zlib && \
-    mkdir -p "$overlay/var/lib/dpkg/status.d" && \
-    cp -a --parents "$resolved" "$overlay" && \
-    if [ "$resolved" != "$libz" ]; then cp -a --parents "$libz" "$overlay"; fi && \
-    dpkg-query -s zlib1g > "$overlay/var/lib/dpkg/status.d/zlib1g"
-
 # Distroless runtime base: glibc and libstdc++ for the compiled Bun executables and their native
 # addons, with no shell, apt, or package managers; nonroot user (65532) is built in.
 # nodejs26-debian13 uses Debian trixie (glibc 2.40), matching base-node, so
@@ -53,7 +42,6 @@ RUN set -- /usr/lib/*-linux-gnu/libz.so.1 && \
 # until infrastructure switches to the supported healthcheck.mts executable command.
 FROM ghcr.io/vouchington/dependency-distroless-nodejs:nonroot@sha256:96455baef11b178fc135b32206e3922c515dbed2400676c94f907f8f84e6abf6 AS runtime-base
 COPY --from=openssl-overlay /distroless-openssl/ /
-COPY --from=zlib-overlay /distroless-zlib/ /
 
 # Stage 1: Install the workspace and compile the backend executables. Each runtime image ships one
 # executable and the files it reads from disk, not a node_modules tree.

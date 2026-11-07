@@ -22,7 +22,7 @@ target "_common" {
   dockerfile      = "backend/Dockerfile"
   platforms       = ["linux/arm64"]
   pull            = true
-  no-cache-filter = ["base-node", "openssl-overlay", "zlib-overlay"]
+  no-cache-filter = ["base-node", "openssl-overlay"]
   args = {
     GIT_COMMIT = "${GIT_COMMIT}"
   }
