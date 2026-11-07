@@ -15,6 +15,7 @@ export function appendPartitionAndPaginationFilters(
     options,
     rankingScoreExpression,
     sort,
+    omitHotCursor = false,
   }: {
     decisionInstant: Date
     paginationOnly: boolean
@@ -24,6 +25,7 @@ export function appendPartitionAndPaginationFilters(
     options: PostSearchOptions
     rankingScoreExpression: SQLStatement | null
     sort: string
+    omitHotCursor?: boolean
   },
 ): void {
   const timeRangeFilter = paginationOnly
@@ -37,6 +39,7 @@ export function appendPartitionAndPaginationFilters(
     options,
     rankingScoreExpression,
     sort,
+    omitHotCursor,
   })
 }
 
@@ -49,6 +52,7 @@ function appendPaginationFilters(
     options,
     rankingScoreExpression,
     sort,
+    omitHotCursor = false,
   }: {
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
@@ -56,6 +60,7 @@ function appendPaginationFilters(
     options: PostSearchOptions
     rankingScoreExpression: SQLStatement | null
     sort: string
+    omitHotCursor?: boolean
   },
 ): void {
   if (sort === 'new' && options.id_lt) filters.push(sql`posts.id < ${options.id_lt}`)
@@ -72,12 +77,15 @@ function appendPaginationFilters(
       sql`(posts.votes_score_sort, posts.id) < (${options.vote_score_lt}, ${options.id_lt})`,
     )
   } else if (sort === 'hot' && options.hot_score_lt !== undefined) {
-    appendCompositePagination(filters, {
-      expression: buildHotScoreExpression(),
-      idLt: options.id_lt,
-      scoreLt: options.hot_score_lt,
-      scoreName: 'hot_score_lt',
-    })
+    if (!options.id_lt) throw createHttpError(500, 'hot_score_lt requires id_lt')
+    if (!omitHotCursor) {
+      appendCompositePagination(filters, {
+        expression: buildHotScoreExpression(),
+        idLt: options.id_lt,
+        scoreLt: options.hot_score_lt,
+        scoreName: 'hot_score_lt',
+      })
+    }
   } else if (sort === 'relevance' && options.ranking_lt !== undefined) {
     appendCompositePagination(filters, {
       expression: requiredRankingExpression(rankingScoreExpression),

@@ -6,7 +6,7 @@ import {
   hasSemanticSearch as hasSemanticSearchFn,
   hasTextSearch as hasTextSearchFn,
 } from '@modules/search-utils'
-import { buildPostRankingScoreExpression } from './query-builder-utils.mts'
+import { buildHotScoreExpression, buildPostRankingScoreExpression } from './query-builder-utils.mts'
 import { appendCtes, buildPostSearchCtes } from './query-builder/ctes.mts'
 import { appendPostSearchOrderAndLimit } from './query-builder/order-and-limit.mts'
 import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins.mts'
@@ -57,8 +57,8 @@ export function buildPostSearchQuery(
     )
   }
   appendCtes(query, ctes)
-  // Hot orders by a time-decay score no result or credit index can provide. A materialized
-  // candidate set plans that filter before LIMIT, so the page cannot walk the votes index.
+  // The positive votes index matches votes_score_net > 0, then filters a rare result or credit
+  // value. Read those matches in id order first. Score and page that set afterward.
   const fenceHotExpressionFilter =
     sort === 'hot' &&
     !useHackerNewsHotCandidates &&
@@ -84,6 +84,7 @@ export function buildPostSearchQuery(
         ? sql`posts.ranking_score`
         : rankingScoreExpression,
     sort,
+    deferHotScore: fenceHotExpressionFilter,
   })
   appendPostSearchWhereClause(query, {
     paginationOnly: useHackerNewsHotCandidates,
@@ -95,6 +96,7 @@ export function buildPostSearchQuery(
     options,
     rankingScoreExpression,
     sort,
+    deferHotPredicate: fenceHotExpressionFilter,
   })
   appendPostSearchOrderAndLimit(query, {
     followingRankExpression,
@@ -106,12 +108,21 @@ export function buildPostSearchQuery(
     sort,
   })
   if (fenceHotExpressionFilter) {
-    query.append(sql`)
-  SELECT id, post_type, hot_score`)
+    query.append(sql`
+    ORDER BY posts.id DESC)
+  SELECT id, post_type, `)
+    query.append(buildHotScoreExpression('data_point_hot_matches'))
+    query.append(sql` AS hot_score`)
     if (options.hydrateDataPointPage)
       query.append(sql`, title, data_point_vertical, structured_data`)
     query.append(sql`
-    FROM data_point_hot_matches`)
+    FROM data_point_hot_matches
+    WHERE votes_score_net > 0`)
+    if (options.hot_score_lt !== undefined) {
+      query.append(sql` AND (`)
+      query.append(buildHotScoreExpression('data_point_hot_matches'))
+      query.append(sql`, id) < (${options.hot_score_lt}, ${options.id_lt})`)
+    }
     if (!omitOrderBy) query.append(sql` ORDER BY hot_score DESC, id DESC`)
     if (!omitLimit)
       query.append(sql`
