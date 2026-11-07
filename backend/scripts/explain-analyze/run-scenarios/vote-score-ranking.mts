@@ -31,8 +31,8 @@ type RankingScenario = Readonly<{
 export function getVoteScoreHostnameScenarios(
   cursors: VoteScoreRankingCursors,
 ): readonly RankingScenario[] {
-  const hostnameIndex = (index: string) => [
-    { kind: 'usesIndexes' as const, indexes: [index] },
+  const hostnameIndex = (...indexes: string[]) => [
+    { kind: 'usesIndexes' as const, indexes, anyOf: indexes.length > 1 },
     { kind: 'maxProcessedRows' as const, relation: 'url_hostnames', max: 100 },
   ]
   return [
@@ -74,7 +74,12 @@ export function getVoteScoreHostnameScenarios(
       id: 'vote-score-hostnames-trust-deep-zero-after',
       queryName: 'searchUrlHostnames',
       run: () => runZeroTrustContinuation(cursors.trustZero),
-      expectations: hostnameIndex('idx_url_hostnames__public_votes_score_sort__id'),
+      // A backward scan of the generic (votes_score_sort, id) index serves the same order, and inside
+      // the zero-score tie group the planner may pick either; maxProcessedRows is the real bound.
+      expectations: hostnameIndex(
+        'idx_url_hostnames__public_votes_score_sort__id',
+        'idx_url_hostnames__votes_score_sort__id',
+      ),
       seededRows: VOTE_SCORE_HOSTNAME_ROWS,
     },
   ]
