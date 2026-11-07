@@ -304,7 +304,7 @@
           file: backend/services/admin-imports/process-topic-row-relations.mts,
           callee: 'updateRetailerAttributes',
         }
-      # Operator seed script, not a request or job path: backend/scripts/seed/index.mts runs seedTopicsFromCsvs() over the shipped backend/seed/*-topics.csv files (SEED_DIR, seed-csvs.mts:11); the barrel re-export in admin-imports/index.mts:8 has no production caller. Each row is a distinct topic upsert whose pass-2 retry clears its own pass-1 error.
+      # Operator/seed script loops only: the flagged calls are the two loops in seed-csvs.mts (:79, :99) over the shipped backend/seed/*-topics.csv files (SEED_DIR, seed-csvs.mts:13), and the only non-test caller of seedTopicsFromCsvs is backend/scripts/seed/index.mts:12. Every row passes validateTopicRows first (seed-csvs.mts:68), so the 20-slug parent cap applies. This is not the production import path: the admin-imports worker calls processTopicRow once per row job with no loop (workers/admin-imports/processors.mts:61), so no row-count cap is claimed for it. Each seed row is a distinct topic upsert whose pass-2 retry clears its own pass-1 error.
       - { file: backend/services/admin-imports/seed-csvs.mts, callee: 'processTopicRow' }
       # Ordered article writes retain their service locks, transactions, and per-file results.
       - { file: backend/services/articles/sync-process.mts, callee: 'createPost' }

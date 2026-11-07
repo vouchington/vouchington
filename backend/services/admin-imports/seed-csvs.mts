@@ -5,6 +5,7 @@ import { mintUUIDv7 } from '@modules/utils/ids'
 import { upsertSystemUser } from '@services/users/system-users'
 import { getPrivateUserByAny } from '@services/users/get'
 import { processTopicRow } from './process-topic-row.mts'
+import { validateTopicRows } from './validate-topics.mts'
 import { runSystemTopicSeedImport } from '@services/topics/seed-import-authority'
 import type { PrivateUser } from '@services/users/types'
 import type { ImportRow } from './types.mts'
@@ -60,9 +61,19 @@ async function seedTopicsFromRows(
 
 async function importSeedRows(
   actor: PrivateUser,
-  allRows: Record<string, string>[],
+  rawRows: Record<string, string>[],
 ): Promise<SeedCsvsResult> {
   const errors: SeedCsvsResult['errors'] = []
+  // Seeds use the same row rules as admin imports (including the parent_slugs cap).
+  const validation = validateTopicRows(rawRows)
+  const allRows = rawRows.filter((_, index) => validation.rows[index]?.valid)
+  for (const result of validation.rows) {
+    if (result.valid) continue
+    errors.push({
+      slug: rawRows[result.row_index]?.slug?.trim() || `row-${result.row_index}`,
+      error: new Error(result.errors.join('; ')),
+    })
+  }
 
   // Pass 1: create / update every topic (establishes within-file parent relations)
   for (let i = 0; i < allRows.length; i++) {
@@ -102,7 +113,7 @@ async function importSeedRows(
     }
   }
 
-  return { processed: allRows.length - errors.length, errors }
+  return { processed: rawRows.length - errors.length, errors }
 }
 
 /** The seed script imports the shipped catalog; callers may supply an actor and a bounded batch. */

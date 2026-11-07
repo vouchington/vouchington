@@ -7,7 +7,8 @@ import { getPrivateUserByAny } from '@services/users/get'
 import { describe, it, expect } from 'vitest'
 import { getTopicBySlug } from '@services/topics/get'
 import { getTopicParents } from '@services/topics/hierarchy'
-import { seedTopicsFromCsvs } from './seed-csvs.mts'
+import { readSeedCsvRows, seedTopicsFromCsvs } from './seed-csvs.mts'
+import { validateTopicRows } from './validate-topics.mts'
 
 describe('seedTopicsFromRows', () => {
   it('uses the bootstrap system actor for a supplied fixture batch', async () => {
@@ -113,11 +114,29 @@ describe('seedTopicsFromRows', () => {
     expect(result.errors).toHaveLength(1)
     expect(result.errors[0]).toMatchObject({
       slug: invalidSlug,
-      error: { status: 422, message: expect.stringContaining('Invalid topic type') },
+      error: { message: expect.stringContaining('topic_type must be one of') },
     })
     await expect(getTopicBySlug(validSlug)).resolves.toMatchObject({
       slug: validSlug,
       name: `Valid seed topic ${suffix}`,
     })
+  })
+
+  it('rejects a seed row with more than 20 parent_slugs without importing it', async () => {
+    const suffix = crypto.randomUUID()
+    const slug = `seed-csvs-many-parents-${suffix}`
+    const parents = Array.from({ length: 21 }, (_, index) => `seed-parent-${index}`).join('|')
+
+    const result = await seedTopicsFromCsvs({ rows: [{ slug, name: slug, parent_slugs: parents }] })
+
+    expect(result.processed).toBe(0)
+    expect(result.errors).toMatchObject([
+      { slug, error: { message: expect.stringContaining('at most 20 slugs') } },
+    ])
+    await expect(getTopicBySlug(slug)).resolves.toBeNull()
+  })
+
+  it('accepts every shipped seed CSV row', () => {
+    expect(validateTopicRows(readSeedCsvRows())).toMatchObject({ valid: true })
   })
 })
