@@ -23,6 +23,22 @@ async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, opti
   return getOrCreateIndividual(currentUser, options)
 }
 
+async function insertAcceptedHouseholdMember(
+  householdId: string,
+  individualId: string,
+  relationship: string | null,
+  options: QueryOptions,
+): Promise<void> {
+  await assertCanAddHouseholdMember(householdId, individualId, options)
+  await write(
+    sql`/* decideHouseholdInvitation:insert-membership */
+      INSERT INTO household_members (household_id, individual_id, relationship)
+      VALUES (${householdId}, ${individualId}, ${relationship})
+      ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING`,
+    options,
+  )
+}
+
 export async function decideHouseholdInvitation(
   currentUser: PrivateUser,
   invitationId: string,
@@ -77,12 +93,10 @@ export async function decideHouseholdInvitation(
     return
   }
   const individual = await getOrCreateLockedInviteeIndividual(currentUser, options)
-  await assertCanAddHouseholdMember(changed[0].household_id, individual.id, options)
-  await write(
-    sql`/* decideHouseholdInvitation:insert-membership */
-      INSERT INTO household_members (household_id, individual_id, relationship)
-      VALUES (${changed[0].household_id}, ${individual.id}, ${changed[0].relationship})
-      ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING`,
+  await insertAcceptedHouseholdMember(
+    changed[0].household_id,
+    individual.id,
+    changed[0].relationship,
     options,
   )
   const membershipQuery = sql`/* decideHouseholdInvitation:membership */
