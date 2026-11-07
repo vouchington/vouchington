@@ -54,6 +54,7 @@ export async function recoverBlockedCopyrightHoldRestoration(
   `)
   const noticeId = rows[0]?.notice_id
   if (!noticeId) return 0
+  // ast-grep-ignore: no-three-sequential-awaits -- the placement fence precedes the notice lock, and replay rechecks state only after both are held
   await lockCopyrightNoticeHoldPlacements(noticeId, transaction)
   await transaction(sql`/* recoverBlockedCopyrightHoldRestoration:noticeLock */
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
