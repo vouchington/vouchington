@@ -17,7 +17,6 @@ export function appendPostSearchSelectAndJoins(
     useSemanticCandidates = false,
     useHackerNewsHotCandidates = false,
     includeHotCandidateColumns = false,
-    deferHotScore = false,
   }: {
     currentUser?: BasicUser
     followingRankExpression: SQLStatement | null
@@ -29,7 +28,6 @@ export function appendPostSearchSelectAndJoins(
     useSemanticCandidates?: boolean
     useHackerNewsHotCandidates?: boolean
     includeHotCandidateColumns?: boolean
-    deferHotScore?: boolean
   },
 ): void {
   query.append(sql`SELECT
@@ -47,11 +45,7 @@ export function appendPostSearchSelectAndJoins(
   if (rankingScoreExpression) appendSelectExpression(query, rankingScoreExpression, 'ranking_score')
   if (followingRankExpression)
     appendSelectExpression(query, followingRankExpression, 'following_rank')
-  if (deferHotScore && sort === 'hot') {
-    query.append(sql`, posts.votes_score_sort, posts.votes_score_net`)
-  } else {
-    query.append(sortSelectColumn(sort))
-  }
+  query.append(sortSelectColumn(sort))
   if (useHackerNewsHotCandidates) {
     query.append(sql`
       FROM hacker_news_hot_candidates posts

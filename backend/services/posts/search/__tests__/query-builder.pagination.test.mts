@@ -120,30 +120,33 @@ describe('query-builder (pagination and moderation)', () => {
     expect(query.sql).toContain('hot_score DESC, posts.id DESC')
   })
 
-  it('fences a hot result filter so the page sort cannot walk past that result', () => {
-    const query = buildPostSearchQuery(undefined, {
+  it('keeps a hot result or credit filter in the same statement as the page sort', () => {
+    const result = buildPostSearchQuery(undefined, {
       post_types: ['data_point'],
       sort: 'hot',
       data_point_result: 'pending',
     })
+    const credit = buildPostSearchQuery(undefined, {
+      post_types: ['data_point'],
+      sort: 'hot',
+      data_point_credit_score_range: '300-579',
+    })
 
-    const cteEnd = query.sql.indexOf('ORDER BY id DESC)')
-    const inner = query.sql.slice(0, cteEnd)
-    const outer = query.sql.slice(cteEnd)
-
-    expect(inner).toContain("posts.structured_data->>'result' = 'pending'")
-    expect(inner).toContain('data_point_hot_matches AS MATERIALIZED')
-    expect(inner).not.toContain('POWER(2.0')
-    expect(inner).not.toContain('votes_score_net > 0')
-    expect(outer).toContain('ORDER BY id DESC)')
-    expect(outer).toContain('votes_score_net > 0')
-    expect(outer).toContain('POWER(2.0')
-    expect(outer).toContain('AS hot_score')
-    expect(outer).toContain('ORDER BY hot_score DESC, id DESC')
-    expect(query.values).not.toContain('pending')
+    for (const query of [result, credit]) {
+      expect(query.sql).not.toContain('MATERIALIZED')
+      expect(query.sql).toContain('posts.votes_score_net > 0')
+      expect(query.sql).toContain('POWER(2.0')
+      expect(query.sql).toContain('AS hot_score')
+      expect(query.sql).toContain('ORDER BY hot_score DESC, posts.id DESC')
+      expect(query.sql).toContain('LIMIT')
+    }
+    expect(result.sql).toContain("posts.structured_data->>'result' = 'pending'")
+    expect(result.values).not.toContain('pending')
+    expect(credit.sql).toContain("posts.structured_data->>'credit_score_range' = '300-579'")
+    expect(credit.values).not.toContain('300-579')
   })
 
-  it('applies a hot result cursor after the result matches are read', () => {
+  it('applies a hot result cursor in that same statement', () => {
     const query = buildPostSearchQuery(undefined, {
       post_types: ['data_point'],
       sort: 'hot',
@@ -151,10 +154,11 @@ describe('query-builder (pagination and moderation)', () => {
       hot_score_lt: 0.5,
       id_lt: '01234567-0000-7000-0000-000000000000',
     })
-    const cteEnd = query.sql.indexOf('ORDER BY id DESC)')
 
-    expect(query.sql.slice(0, cteEnd)).not.toContain('POWER(2.0')
-    expect(query.sql.slice(cteEnd)).toContain(', id) < (')
+    expect(query.sql).not.toContain('MATERIALIZED')
+    expect(query.sql).toContain("posts.structured_data->>'result' = 'pending'")
+    expect(query.sql).toContain('posts.votes_score_net > 0')
+    expect(query.sql).toContain(', posts.id) < (')
     expect(query.values).toContain(0.5)
     expect(query.values).toContain('01234567-0000-7000-0000-000000000000')
   })
