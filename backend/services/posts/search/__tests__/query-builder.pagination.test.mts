@@ -120,6 +120,49 @@ describe('query-builder (pagination and moderation)', () => {
     expect(query.sql).toContain('hot_score DESC, posts.id DESC')
   })
 
+  it('keeps a hot result or credit filter in the same statement as the page sort', () => {
+    const result = buildPostSearchQuery(undefined, {
+      post_types: ['data_point'],
+      sort: 'hot',
+      data_point_result: 'pending',
+    })
+    const credit = buildPostSearchQuery(undefined, {
+      post_types: ['data_point'],
+      sort: 'hot',
+      data_point_credit_score_range: '300-579',
+    })
+
+    for (const query of [result, credit]) {
+      expect(query.sql).not.toContain('MATERIALIZED')
+      expect(query.sql).toContain('posts.votes_score_net > 0')
+      expect(query.sql).toContain('POWER(2.0')
+      expect(query.sql).toContain('AS hot_score')
+      expect(query.sql).toContain('ORDER BY hot_score DESC, posts.id DESC')
+      expect(query.sql).toContain('LIMIT')
+    }
+    expect(result.sql).toContain("posts.structured_data->>'result' = 'pending'")
+    expect(result.values).not.toContain('pending')
+    expect(credit.sql).toContain("posts.structured_data->>'credit_score_range' = '300-579'")
+    expect(credit.values).not.toContain('300-579')
+  })
+
+  it('applies a hot result cursor in that same statement', () => {
+    const query = buildPostSearchQuery(undefined, {
+      post_types: ['data_point'],
+      sort: 'hot',
+      data_point_result: 'pending',
+      hot_score_lt: 0.5,
+      id_lt: '01234567-0000-7000-0000-000000000000',
+    })
+
+    expect(query.sql).not.toContain('MATERIALIZED')
+    expect(query.sql).toContain("posts.structured_data->>'result' = 'pending'")
+    expect(query.sql).toContain('posts.votes_score_net > 0')
+    expect(query.sql).toContain(', posts.id) < (')
+    expect(query.values).toContain(0.5)
+    expect(query.values).toContain('01234567-0000-7000-0000-000000000000')
+  })
+
   it('buildPostSearchQuery adds composite pagination filter for sort=hot with hot_score_lt and id_lt', () => {
     const testId = '01234567-0000-7000-0000-000000000000'
     const testScore = 0.5
@@ -199,5 +242,50 @@ describe('query-builder (pagination and moderation)', () => {
 
     // Admins bypass the clearance gate entirely
     expect(query.sql).not.toContain('approved_at IS NOT NULL')
+  })
+
+  it('keeps public story search on a discoverable source', () => {
+    const query = buildPostSearchQuery(undefined, { post_types: ['story'] })
+
+    expect(query.sql).toContain('story_posts post_story')
+    expect(query.sql).toContain('is_discoverable')
+    expect(query.sql).toContain('approved_at IS NOT NULL')
+  })
+
+  it('keeps a moderator story search on the discoverable source clause', () => {
+    const userId = '123e4567-e89b-12d3-a456-426614174000'
+    const moderator = buildPostSearchQuery(
+      { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
+      { post_types: ['story'] },
+    )
+    expect(moderator.sql).toContain('story_posts post_story')
+    expect(moderator.sql).toContain('rss_feed_items story_item')
+    expect(moderator.sql).toContain('is_discoverable')
+    expect(moderator.sql).toContain("posts.post_type = 'story'")
+    expect(moderator.sql).not.toContain('post_type = ANY')
+  })
+
+  it('keeps administrator, public-only, and story lookup search on the shared clause', () => {
+    const userId = '123e4567-e89b-12d3-a456-426614174000'
+    const administrator = buildPostSearchQuery(
+      { id: userId, roles: ['administrator'] } as unknown as PrivateUser,
+      { post_types: ['story'] },
+    )
+    expect(administrator.sql).not.toContain('story_posts')
+    expect(administrator.sql).not.toContain('approved_at IS NOT NULL')
+
+    const publicOnly = buildPostSearchQuery(
+      { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
+      { post_types: ['story'], public_eligibility_only: true },
+    )
+    expect(publicOnly.sql).toContain('story_posts post_story')
+    expect(publicOnly.sql).toContain('is_discoverable')
+
+    const lookup = buildPostSearchQuery(
+      { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
+      { post_types: ['story'], story_id: userId },
+    )
+    expect(lookup.sql).toContain('story_posts post_story')
+    expect(lookup.sql).toContain('is_discoverable')
   })
 })

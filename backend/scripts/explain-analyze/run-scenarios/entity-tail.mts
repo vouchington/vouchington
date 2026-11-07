@@ -2,6 +2,7 @@ import { SEED_PREFIX, runAndCapture, seedTopicId, seedUser } from '../run-suppor
 import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
 import { runAdminUserSearchScenarios } from './admin-user-search.mts'
+import { runDataPointSearchScenarios } from './data-point-search.mts'
 import { runUserRemovedPostPageScenarios } from './user-removed-post-pages.mts'
 import { runViewDrivenHostnameScenarios } from './view-driven-hostnames.mts'
 
@@ -13,7 +14,6 @@ const {
   getRevenue,
   getTopicDataPointInsights,
   getUserBookmarkCounts,
-  searchDataPoints,
   searchTopicAliases,
   updateTopicRatingStats,
 } = services
@@ -38,10 +38,7 @@ export async function runEntityTailScenarios(): Promise<void> {
     searchTopicAliases({ prefixQuery: 'seed', limit: 25 }),
   )
 
-  // Data point search — JSONB + EXISTS subquery
-  await runAndCapture('search-data-points', () =>
-    searchDataPoints({ topic_id: seedTopicId, limit: 25 }),
-  )
+  await runDataPointSearchScenarios()
 
   // User bookmark counts — dynamic UNION ALL of COUNT queries across bookmark tables
   await runAndCapture('user-bookmark-counts', () => getUserBookmarkCounts(seedUser.id))

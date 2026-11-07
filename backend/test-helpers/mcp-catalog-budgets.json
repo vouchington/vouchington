@@ -6,9 +6,9 @@
       "all": {
         "on": {
           "count": 78,
-          "list": 267000,
+          "list": 268000,
           "core": 113000,
-          "output": 250000
+          "output": 251000
         }
       },
       "Reader": {

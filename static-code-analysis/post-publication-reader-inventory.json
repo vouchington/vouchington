@@ -115,10 +115,6 @@
       "classification": "public-sql"
     },
     {
-      "path": "backend/services/data-points/search.mts",
-      "classification": "public-sql"
-    },
-    {
       "path": "backend/services/data-points/insights.mts",
       "classification": "public-sql"
     },

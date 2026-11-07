@@ -44,17 +44,16 @@ export async function getPostIds(
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
   const hasRankingScore =
     buildPostRankingScoreExpression({ hasTextSearch, hasSemanticSearch }) !== null
-
-  const { id_lt, vote_score_lt, ranking_lt, hot_score_lt } = decodePostSearchCursor(
-    options,
-    sort,
-    hasRankingScore,
-  )
   // Post search is always time-bounded; callers needing the full history pass 'all'. Only an
   // author's own drafts listing (their user id plus drafts) keeps that full history.
   const effectiveTimeRange =
     options.time_range ??
     (isOwnDraftsListing(currentUser, options) ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
+  const { id_lt, vote_score_lt, ranking_lt, hot_score_lt } = decodePostSearchCursor(
+    options,
+    sort,
+    hasRankingScore,
+  )
   // Build query - pass decoded cursor values and use limit + 1
   const queryOptions: PostSearchOptions = {
     ...options,
@@ -75,6 +74,13 @@ export async function getPostIds(
     __entity_type: 'post',
     id: row.id,
     post_type: row.post_type,
+    ...(row.title === undefined
+      ? {}
+      : {
+          title: row.title,
+          data_point_vertical: row.data_point_vertical ?? null,
+          structured_data: row.structured_data ?? null,
+        }),
   }))
   return {
     results,

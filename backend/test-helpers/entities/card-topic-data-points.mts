@@ -27,6 +27,7 @@ export async function insertTestCardTopicsWithDataPoints(input: {
 }): Promise<{
   user: PrivateUser
   topicIds: string[]
+  postIds: string[]
 }> {
   const user = await createTestUser()
   const topicIds: string[] = []
@@ -41,17 +42,20 @@ export async function insertTestCardTopicsWithDataPoints(input: {
     )
   }
 
+  const postIds: string[] = []
   for (const { topicIndex, ...dataPoint } of input.dataPoints) {
     const topicId = topicIds[topicIndex]
     if (topicId === undefined) {
       throw new Error(`Card topic fixture index ${topicIndex} is out of range`)
     }
-    await insertTestDataPoint({
-      ...dataPoint,
-      createdById: user.id,
-      topicId,
-    })
+    postIds.push(
+      await insertTestDataPoint({
+        ...dataPoint,
+        createdById: user.id,
+        topicId,
+      }),
+    )
   }
 
-  return { user, topicIds }
+  return { user, topicIds, postIds }
 }

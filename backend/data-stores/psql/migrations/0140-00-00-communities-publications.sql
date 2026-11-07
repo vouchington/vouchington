@@ -582,7 +582,6 @@ ALTER TABLE posts VALIDATE CONSTRAINT fk_posts_community_id;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__community_id ON posts (community_id, id) WHERE community_id IS NOT NULL;
 
-
 -- community_pinned_posts
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_pinned_posts (

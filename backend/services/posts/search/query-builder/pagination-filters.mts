@@ -72,6 +72,7 @@ function appendPaginationFilters(
       sql`(posts.votes_score_sort, posts.id) < (${options.vote_score_lt}, ${options.id_lt})`,
     )
   } else if (sort === 'hot' && options.hot_score_lt !== undefined) {
+    if (!options.id_lt) throw createHttpError(500, 'hot_score_lt requires id_lt')
     appendCompositePagination(filters, {
       expression: buildHotScoreExpression(),
       idLt: options.id_lt,
