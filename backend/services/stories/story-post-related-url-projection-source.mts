@@ -1,21 +1,14 @@
 import { beginTransaction, write, type QueryOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { getRelationTypeLimit } from '@services/entity-relations/relation-limits-config'
+import { blockedUrlIdsForHostnameBlocks } from '@services/hostname-blocking'
 import { containsReferralLinks } from '@services/referral-program-link-validations/contains-referral-links'
-import pMap from 'p-map'
-import {
-  decidePendingRowsInOrder,
-  decidePendingStoryPostRelatedUrlProjectionRow,
-  type PendingEligibilityInput,
-} from './story-post-related-url-projection-source-decisions.mts'
 import type {
   ProjectionWork,
   SourceDecision,
   SourceRow,
 } from './story-post-related-url-projection-types.mts'
 import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
-
-const SAFETY_CONCURRENCY = 5
 
 export async function getStoryPostRelatedUrlProjectionPrefix(
   input: {
@@ -97,18 +90,12 @@ export async function decideStoryPostRelatedUrlProjectionRows(
   })
   const referralUrls = new Set<string>()
   for (const row of matched) referralUrls.add(row.url)
-  const pendingInputs: PendingEligibilityInput[] = []
-  for (const row of pendingRows) pendingInputs.push({ row, referralUrls })
-  const decisions = options.query
-    ? await decidePendingRowsInOrder(pendingInputs, options)
-    : await pMap(
-        pendingInputs,
-        input => decidePendingStoryPostRelatedUrlProjectionRow(input, options),
-        { concurrency: SAFETY_CONCURRENCY, stopOnError: true },
-      )
+  const pendingUrlIds: string[] = []
+  for (const row of pendingRows) pendingUrlIds.push(row.url_id)
+  const blockedUrlIds = await blockedUrlIdsForHostnameBlocks(pendingUrlIds, options)
   const pendingDecisions = new Map<string, boolean>()
-  for (let index = 0; index < pendingInputs.length; index++) {
-    pendingDecisions.set(pendingInputs[index]!.row.url_id, decisions[index]!)
+  for (const row of pendingRows) {
+    pendingDecisions.set(row.url_id, !referralUrls.has(row.url) && !blockedUrlIds.has(row.url_id))
   }
   const sourceDecisions: SourceDecision[] = []
   for (const row of uniqueRows) {

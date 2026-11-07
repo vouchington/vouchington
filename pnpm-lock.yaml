@@ -11171,6 +11171,9 @@ importers:
       '@services/feeds':
         specifier: workspace:^
         version: link:../feeds
+      '@services/hostname-blocking':
+        specifier: workspace:^
+        version: link:../hostname-blocking
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -11210,9 +11213,6 @@ importers:
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
-      p-map:
-        specifier: ^7.1.1
-        version: 7.1.1
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
