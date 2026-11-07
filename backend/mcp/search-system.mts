@@ -10,11 +10,6 @@ export type SearchSystemArgs = {
   similar_rss_feed_item_id?: string
 }
 
-type NormalizeSearchToolArgsOptions = {
-  defaultLimit: number
-  maxLimit: number
-}
-
 export function clampToolLimit(
   value: number | undefined,
   defaultLimit: number,
@@ -38,23 +33,6 @@ export function expandHybridSearchArgs(args: SearchSystemArgs): {
   }
 
   return { text_search_query, semantic_search_query }
-}
-
-export function normalizeSearchToolArgs<T extends SearchSystemArgs>(
-  args: T,
-  options: NormalizeSearchToolArgsOptions,
-): T & {
-  limit: number
-  text_search_query?: string
-  semantic_search_query?: string
-} {
-  const safeLimit = clampToolLimit(args.limit, options.defaultLimit, options.maxLimit)
-
-  return {
-    ...args,
-    limit: safeLimit,
-    ...expandHybridSearchArgs(args),
-  }
 }
 
 export function buildSearchToolSchemaProperties(options?: {
