@@ -37,36 +37,45 @@ type StoryTeller = Awaited<ReturnType<typeof requireStoryTeller>>
 
 export async function admitStoryPostRelatedUrlProjectionPrefix(
   work: ProjectionWork,
+  rows?: readonly SourceRow[],
 ): Promise<{ ok: boolean; processed: number }> {
   const storyTeller = await requireStoryTeller()
   await using transaction = await beginTransaction()
   await markProjectionWrite(transaction)
-  const rows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work, transaction)
-  const admitted = await admitPreparedRows(transaction, work, rows, storyTeller)
-  if (!admitted.ok) return { ok: false, processed: 0 }
+  const loaded = await loadAdmittedRows(transaction, work, rows, storyTeller)
+  if (!loaded.admitted.ok) return { ok: false, processed: 0 }
   await transaction.commit()
-  await publishAdmissionEffects(admitted)
-  return { ok: await dispatchPendingCrawls(work, rows), processed: rows.length }
-}
-
-export async function writeStoryPostRelatedUrlProjectionRelations(
-  work: ProjectionWork,
-  rows: SourceRow[],
-): Promise<boolean> {
-  const storyTeller = await requireStoryTeller()
-  await using transaction = await beginTransaction()
-  await markProjectionWrite(transaction)
-  const admitted = await admitPreparedRows(transaction, work, rows, storyTeller)
-  if (!admitted.ok) return false
-  await transaction.commit()
-  await publishAdmissionEffects(admitted)
-  return await dispatchPendingCrawls(work, rows)
+  await publishAdmissionEffects(loaded.admitted)
+  const dispatched = await dispatchPendingCrawls(work, loaded.sourceRows)
+  return { ok: dispatched, processed: loaded.sourceRows.length }
 }
 
 type PreparedAdmission = {
   ok: true
   relation: ReturnType<typeof getEntityRelationMetadataOrThrow>
   internalRelations: EntityRelation[]
+}
+
+async function loadAdmittedRows(
+  transaction: TransactionQuery,
+  work: ProjectionWork,
+  rows: readonly SourceRow[] | undefined,
+  storyTeller: StoryTeller,
+): Promise<{ sourceRows: readonly SourceRow[]; admitted: PreparedAdmission | { ok: false } }> {
+  const sourceRows =
+    rows === undefined
+      ? await getStoryPostRelatedUrlProjectionSourcePageForWork(work, transaction)
+      : rows
+  const admitted = await admitPreparedRows(transaction, work, sourceRows, storyTeller)
+  return { sourceRows, admitted }
+}
+
+async function lockPrefixHostnames(
+  transaction: TransactionQuery,
+  urlIds: readonly string[],
+): Promise<void> {
+  await lockReferralLinkEligibility(transaction, 'shared')
+  await lockStoryPostRelatedUrlProjectionHostnameBlocks(transaction, urlIds)
 }
 
 async function admitPreparedRows(
@@ -76,8 +85,7 @@ async function admitPreparedRows(
   storyTeller: StoryTeller,
 ): Promise<PreparedAdmission | { ok: false }> {
   const urlIds = uniqueUrlIds(rows)
-  await lockReferralLinkEligibility(transaction, 'shared')
-  await lockStoryPostRelatedUrlProjectionHostnameBlocks(transaction, urlIds)
+  await lockPrefixHostnames(transaction, urlIds)
   const decisions = await decideStoryPostRelatedUrlProjectionRows(work, rows, {
     query: transaction,
   })
@@ -127,11 +135,11 @@ async function admitPreparedRows(
       work.post_id,
       urlsToInsert,
     )
-    await handleElectionVotes(creator, relation, internalRelations, { query: transaction })
     const newlyActiveSubjectIds: string[] = []
     for (const row of internalRelations) {
       if (row.newly_active !== false) newlyActiveSubjectIds.push(row.subject_id)
     }
+    await handleElectionVotes(creator, relation, internalRelations, { query: transaction })
     await recordPostRelatedUrlPublicationChanges(transaction, newlyActiveSubjectIds)
     if (newlyActiveSubjectIds.length > 0)
       await markStoryPostRelatedUrlProjectionInvalidationRequired(transaction, work)

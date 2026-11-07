@@ -13,8 +13,8 @@ export async function decidePendingRowsInOrder(
 ): Promise<boolean[]> {
   const decisions: boolean[] = []
   for (const input of inputs) {
-    // oxlint-disable-next-line no-await-in-loop -- hostname advisory locks must be taken in url id order
-    decisions.push(await decidePendingStoryPostRelatedUrlProjectionRow(input, options))
+    // no-mistakes-disable-next-line query-reached-per-item: hostname advisory locks are taken in url id order, so each prefix URL is decided on its own
+    decisions.push(await decidePendingStoryPostRelatedUrlProjectionRow(input, options)) // oxlint-disable-line no-await-in-loop -- hostname advisory locks must be taken in url id order
   }
   return decisions
 }
