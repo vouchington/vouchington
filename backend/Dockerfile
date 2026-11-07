@@ -34,27 +34,12 @@ RUN set -- /usr/lib/*-linux-gnu/libssl.so.3 && \
     dpkg-query -s openssl-provider-legacy > "$overlay/var/lib/dpkg/status.d/openssl-provider-legacy" && \
     dpkg-query -s zlib1g > "$overlay/var/lib/dpkg/status.d/zlib1g"
 
-# Distroless lags the zlib security upload the same way. Copy the upgraded library and its
-# package status from base-node so the runtime image and the Trivy scan see that package.
-FROM base-node AS zlib-overlay
-RUN set -- /usr/lib/*-linux-gnu/libz.so.1 && \
-    [ "$#" -eq 1 ] && \
-    multiarch_dir="${1%/libz.so.1}" && \
-    overlay=/distroless-zlib && \
-    mkdir -p "$overlay/var/lib/dpkg/status.d" && \
-    cp -a --parents \
-      "$multiarch_dir/libz.so.1" \
-      "$multiarch_dir"/libz.so.1.* \
-      "$overlay" && \
-    dpkg-query -s zlib1g > "$overlay/var/lib/dpkg/status.d/zlib1g"
-
 # Distroless runtime base: glibc and libstdc++ for the compiled Bun executables and their native
 # addons, with no shell, apt, or package managers; nonroot user (65532) is built in.
 # cc-debian13 uses Debian trixie (glibc 2.40), matching base-node, so
 # @glidemq/speedkey's prebuilt native binary (__isoc23_sscanf, added in glibc 2.38) works.
 FROM ghcr.io/vouchington/dependency-distroless-cc:nonroot@sha256:08476c244888bfb425bae1ae4dd7c17f093e972aab8426883d97f3c6f280f7c1 AS runtime-base
 COPY --from=openssl-overlay /distroless-openssl/ /
-COPY --from=zlib-overlay /distroless-zlib/ /
 
 # Stage 1: Install the workspace and compile the backend executables. Each runtime image ships one
 # executable and the files it reads from disk, not a node_modules tree.
