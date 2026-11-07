@@ -155,7 +155,6 @@ export async function callMcpTool(
   }
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed resolution.status switch is exhaustive; Oxlint misses its terminal flow.
 function toMcpToolCallError(
   resolution: Exclude<McpToolCallResolution, { status: 'allowed' }>,
   toolName: string,

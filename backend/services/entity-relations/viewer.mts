@@ -16,7 +16,6 @@ export type EntityRelationViewer =
 export const ANONYMOUS_ENTITY_RELATION_VIEWER: EntityRelationViewer = { kind: 'anonymous' }
 
 /** Post access for the viewer. */
-// oxlint-disable-next-line typescript/consistent-return -- Typed viewer.kind switch is exhaustive; Oxlint misses its terminal flow.
 export function postEligibilityFor(viewer: EntityRelationViewer): DirectPostEligibilityOptions {
   switch (viewer.kind) {
     case 'anonymous':

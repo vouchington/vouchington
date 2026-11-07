@@ -16,7 +16,6 @@ export async function repairEntityBloomKeys(
   if (keys.length > 0) await addEntityBloomKeys(entityType, keys)
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed entityType switch is exhaustive; Oxlint misses its terminal flow.
 function entityKeysQuery(entityType: EntityBloomFilterType, id: string) {
   switch (entityType) {
     case 'users':

@@ -26,9 +26,9 @@
   runbooks, and unenforced invariants; no restated code or drifting numbers ([rules](docs/AGENTS.md)).
 - Agent hooks and harness configuration follow [hook instructions](dev/codex-hooks/AGENTS.md).
   Keep shared `AGENTS.md`; no shadowing `CLAUDE.md` files.
-- No local AST parsers. Vouchington-specific parsing belongs in `vouchington-tooling`;
-  generalizable rules belong in `no-mistakes`. Before building AST parsing, ask a human. ast-grep and Oxlint rules may live here; Oxlint plugins belong in
-  `vouchington-tooling`.
+- No local AST parsers; ask a human first. Voucha-specific parsing and Oxlint plugins go in
+  `vouchington-tooling`, generic rules in `no-mistakes`; ast-grep and Oxlint rules may live here.
+  Never enable a rule that tsc or a higher check tier already enforces.
 - Tests follow the [suite rules](docs/development/tests.md#test-suite-rules). Delete tests of dependencies, even our own packages.
 - Tests use synthetic Git refs; keep production pins, checksums, and intentional historical refs exact.
   Test helpers belong only in `test-helpers/**` or immediately below

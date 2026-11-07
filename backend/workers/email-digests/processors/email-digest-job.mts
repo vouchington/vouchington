@@ -34,7 +34,6 @@ const defaultTemplates: EmailDigestTemplates = {
  * Runs one digest job by its local name. The payload is a trust boundary: a name and payload that
  * do not match the job's enqueue contract fail before any processor runs.
  */
-// oxlint-disable-next-line typescript/consistent-return -- Typed parsed.kind switch is exhaustive; Oxlint misses its terminal flow.
 export async function processEmailDigestJob(
   name: string,
   data: unknown,
@@ -52,7 +51,6 @@ export async function processEmailDigestJob(
   }
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed name switch is exhaustive; Oxlint misses its terminal flow.
 function runDispatcher(
   name: keyof EmailDigestDispatchers,
   dispatchers: EmailDigestDispatchers,

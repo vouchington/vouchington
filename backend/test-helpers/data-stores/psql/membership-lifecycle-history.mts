@@ -36,7 +36,6 @@ export async function createTestNotificationFirstLineage(): Promise<string> {
   return rows[0]!.id
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestProviderLineageTransition(
   lineageId: string,
   transition: ProviderLineageTransition,
@@ -71,7 +70,6 @@ export async function createTestImmutableLifecycleLineageBinding(
   return { boundAt: rows[0]!.bound_at, id: rows[0]!.id }
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestLifecycleLineageBindingTransition(
   bindingId: string,
   transition: LineageBindingTransition,
@@ -146,7 +144,6 @@ export async function createTestGrantActivationPeriod(): Promise<string> {
   return rows[0]!.id
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed transition switch is exhaustive; Oxlint misses its terminal flow.
 export function attemptTestGrantActivationTransition(
   activationId: string,
   transition: GrantActivationTransition,

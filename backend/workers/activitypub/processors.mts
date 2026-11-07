@@ -59,7 +59,6 @@ export async function processDistributeActivityJob(
   return result
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed data.activityType switch is exhaustive; Oxlint misses its terminal flow.
 function nextDistributionPage(
   data: DistributeActivityData,
   cursor: string | undefined,

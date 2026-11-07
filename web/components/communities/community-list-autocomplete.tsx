@@ -31,7 +31,6 @@ interface Props {
   disabled?: boolean
 }
 
-// oxlint-disable-next-line typescript/consistent-return -- Typed itemType switch is exhaustive; Oxlint misses its terminal flow.
 async function searchByItemType(
   itemType: CommunityListItemType,
   q: string,
