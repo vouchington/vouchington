@@ -5,6 +5,7 @@ import { seedUuid } from '../seed-data/common.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import * as services from '../run-services.mts'
 import { runFeedRssScenarios } from './feed-rss.mts'
+import { runTopicMetricsBatchScenario } from './topic-metrics.mts'
 import { runPrioritizedReferralLinkScenarios } from './prioritized-referral-links.mts'
 import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
 import { runCommentDescendantDepthScenario } from './comment-descendant-depth.mts'
@@ -19,7 +20,6 @@ const {
   getPostMetricsByAny,
   getPostMetricsByAnyBatch,
   getTopicIds,
-  getTopicMetricsByAnyBatch,
   getTopicViewerCounts,
   getTopUrlsByHostnameIds,
   getTrendingTopics,
@@ -123,31 +123,7 @@ export async function runFeedAndMetricScenarios() {
     `${SEED_PREFIX}-0100-7000-8000-000000000004`,
   ]
   await runAndCapture('user-metrics-batch', () => getUserMetricsByAnyBatch(seedUserIds))
-  registerScenarioContract('topic-metrics-batch', {
-    expectations: [
-      { kind: 'queryBinds', token: 'requested_topic_ids' },
-      { kind: 'forbidCorrelatedAggregates' },
-      ...Object.entries({
-        posts: 5_000,
-        relation__post__category__topic: 5_000,
-        relation__post__category__topic_alias: 5_000,
-        post_review_topic_ratings: 5_000,
-        post_data_point_topics: 5_000,
-        rss_feed_item_categories: 6_000,
-        rss_feed_item_sources: 20_000,
-        rss_feed_items: 10_000,
-        rss_feeds: 6_000,
-      }).map(([relation, max]) => ({ kind: 'maxProcessedRows' as const, relation, max })),
-    ],
-    crossPartition: {
-      posts: 'Topic metrics aggregate posts for 100 requested topics across their id ranges.',
-      relation__post__category__topic: 'Topic metrics aggregate category relations across posts.',
-      post_review_topic_ratings: 'Topic metrics aggregate ratings across posts.',
-      post_data_point_topics: 'Topic metrics aggregate data points across posts.',
-      rss_feed_items: 'Topic metrics aggregate matching RSS items across the seed window.',
-    },
-  })
-  await runAndCapture('topic-metrics-batch', () => getTopicMetricsByAnyBatch(seedAllTopicIds))
+  await runTopicMetricsBatchScenario(seedAllTopicIds)
   const seedPostIds = Array.from({ length: 200 }, (_, index) => seedUuid(index, '05'))
   registerScenarioContract('post-metrics-batch', {
     expectations: [

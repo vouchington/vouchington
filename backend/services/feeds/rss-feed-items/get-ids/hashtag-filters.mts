@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { buildRssFeedItemTopicMembershipExists } from '@modules/feed-query-builders'
+import { buildItemSourceTopicMatch, buildItemTopicMatch } from './item-membership.mts'
 
 export function appendRssFeedItemHashtagFilters(
   query: SQLStatement,
@@ -17,34 +17,21 @@ export function appendRssFeedItemHashtagFilters(
 ): void {
   if (hasUnknownHashtag) query.append(sql` AND FALSE`)
   for (const topicId of [...new Set(topicIds ?? [])]) {
+    const topicIdArray = sql`ARRAY[${topicId}::uuid]`
     query
-      .append(sql`
-      AND (
-        EXISTS (
-          SELECT 1
-          FROM rss_feed_item_sources hashtag_sources
-          JOIN rss_feeds hashtag_feeds ON hashtag_feeds.id = hashtag_sources.rss_feed_id
-          WHERE hashtag_sources.rss_feed_item_id = `)
-      .append(rssFeedItemId)
-      .append(sql`
-            AND hashtag_feeds.topic_id = ${topicId}
-            AND hashtag_feeds.is_enabled = TRUE
-            AND hashtag_feeds.deleted_at IS NULL
-        )
-        OR `)
-      .append(buildRssFeedItemTopicMembershipExists(rssFeedItemId.text, topicId)).append(sql`
-      )
-    `)
+      .append(sql` AND (`)
+      .append(buildItemSourceTopicMatch(rssFeedItemId, topicIdArray))
+      .append(sql` OR `)
+      .append(buildItemTopicMatch(rssFeedItemId, topicIdArray, false))
+      .append(sql`)`)
   }
   for (const aliasId of [...new Set(aliasIds ?? [])]) {
     query
-      .append(sql`
-      AND EXISTS (
-        SELECT 1 FROM relation__rss_feed_item__category__topic_alias relation
-        WHERE relation.subject_id = `)
-      .append(rssFeedItemId).append(sql` AND relation.object_id = ${aliasId}
-          AND relation.deleted_at IS NULL AND relation.votes_score_net > 0
-      )
-    `)
+      .append(sql` AND COALESCE((SELECT TRUE
+      FROM relation__rss_feed_item__category__topic_alias relation
+      WHERE relation.subject_id = `)
+      .append(rssFeedItemId).append(sql` AND relation.object_id = ${aliasId}::uuid
+        AND relation.deleted_at IS NULL
+        AND relation.votes_score_net > 0), FALSE)`)
   }
 }

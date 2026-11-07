@@ -6,7 +6,7 @@ import type { BasicUser } from '@services/users/types'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
-import { appendRssFeedItemViewerCTEs } from './get-ids/relation-ctes.mts'
+import { appendPersonalizedExclusionCTEs } from './get-ids/personalized-exclusions.mts'
 import {
   appendRssFeedItemViewerEligibilityFilters,
   buildRssFeedItemSourceMuteFilter,
@@ -34,7 +34,7 @@ export async function getStoryMemberPagesBatch(
   )
   if (requests.length === 0) return {}
   const prepared = requests.map(request => prepareRequest(currentUser, request))
-  const query = appendRssFeedItemViewerCTEs(sql``, currentUser?.id).append(sql` `)
+  const query = appendPersonalizedExclusionCTEs(sql``, currentUser?.id).append(sql` `)
   const first = prepared.filter(request => !request.after_id)
   const continuation = prepared.filter(request => request.after_id)
   if (first.length) query.append(buildMemberSelection(first, limit, false))

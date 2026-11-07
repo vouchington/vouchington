@@ -14,6 +14,7 @@ describe('RSS opaque precise cursor routes', () => {
     const user = await createTestUser()
     const feedId = await createTestRssFeedWithTiming((await createTestTopic()).id)
     await followRssFeed(user, feedId)
+    const publicationSecond = new Date(Date.now() - 60_000).toISOString().slice(0, 19)
     const items = await upsertRssFeedItems(
       feedId,
       [456, 456, 455].map(microseconds => {
@@ -22,7 +23,7 @@ describe('RSS opaque precise cursor routes', () => {
           guid,
           link: `https://example.com/${guid}`,
           title: 'Route publication',
-          isoDate: `2020-01-02T03:04:05.123${microseconds}Z`,
+          isoDate: `${publicationSecond}.123${microseconds}Z`,
         }
       }),
     )

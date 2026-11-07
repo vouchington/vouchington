@@ -755,5 +755,11 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id__id__url_id
 ALTER INDEX idx_rss_feed_items__story_id__id__url_id
   ATTACH PARTITION rss_feed_items_default_story_id_id_url_id_idx;
 
+-- Story suppression compares publication tuples independently of the page cursor.
+-- ID order alone can rescan older siblings for every chronologically ingested member.
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id__published_at__id
+ON rss_feed_items (story_id, published_at DESC, id DESC)
+WHERE story_id IS NOT NULL AND deleted_at IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_rss_feed_items__enclosure_media_type_id ON rss_feed_items (enclosure_media_type_id);

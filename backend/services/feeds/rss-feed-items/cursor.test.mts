@@ -22,12 +22,12 @@ const options = {
 const scope = getRssFeedItemFeedCursorScope(id, options)
 
 describe('RSS feed scoped precise cursor', () => {
-  it.each([0, 1] as const)('round trips delivery tier %s with exact timestamps', tier => {
-    const row = { cursor_sort_at: timestamp, sort_rank: tier, cursor_id: id }
+  it('round trips the exact timestamp and delivery ID', () => {
+    const row = { cursor_sort_at: timestamp, cursor_id: id }
     const info = buildRssFeedItemFeedPageInfo([row], true, scope)
     expect(parseRssFeedItemFeedCursor(info.end_cursor!, scope)).toEqual({
-      published_lt: timestamp,
-      [tier ? 'share_event_id_lt' : 'item_id_lt']: id,
+      sort_at_lt: timestamp,
+      id_lt: id,
     })
     expect(info.start_cursor).toBe(info.end_cursor)
     expect(buildRssFeedItemFeedPageInfo([row], false, scope).end_cursor).toBeNull()
@@ -43,7 +43,7 @@ describe('RSS feed scoped precise cursor', () => {
     encodeCursor({ timestamp, tier: 1, id: `share:${id}`, scope }),
     encodeScopedTierPreciseUuidCursor(timestamp, 2, id, scope),
     encodeScopedTierPreciseUuidCursor(timestamp, 0, id, 'another-resource'),
-    encodeScopedPreciseTimestampCursor(timestamp, id, scope),
+    encodeScopedPreciseTimestampCursor(timestamp, id, 'another-resource'),
     encodeCursor({ timestamp: '2020-01-02T03:04:05.123Z', tier: 0, id, scope }),
     'not-base64!!!',
   ])('rejects invalid or replayed cursor %s', after => {
@@ -87,7 +87,7 @@ describe('RSS feed scoped precise cursor', () => {
   ])('binds effective access and filters %j', changed => {
     expect(() =>
       parseRssFeedItemFeedCursor(
-        encodeScopedTierPreciseUuidCursor(timestamp, 0, id, scope),
+        encodeScopedPreciseTimestampCursor(timestamp, id, scope),
         getRssFeedItemFeedCursorScope(id, { ...options, ...changed }),
       ),
     ).toThrow(/Invalid cursor/)

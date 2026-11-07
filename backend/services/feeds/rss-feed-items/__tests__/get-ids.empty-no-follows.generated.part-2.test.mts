@@ -35,7 +35,7 @@ describe('getRssFeedItemFeedIds', () => {
     const feedId = await createTestRssFeedWithTiming(topic.id)
     await followRssFeed(user, feedId)
 
-    const sharedIsoDate = new Date('2020-01-01T00:00:00.000Z').toISOString()
+    const sharedIsoDate = new Date(Date.now() - 60_000).toISOString()
     const embedding = new Array(1024).fill(0.01)
 
     const createItemWithSharedSortTs = async (guid: string) => {
@@ -61,6 +61,7 @@ describe('getRssFeedItemFeedIds', () => {
     const page1 = await getRssFeedItemFeedIds(user, {
       feed_type: 'follow_rss_feeds',
       limit: 2,
+      time_range: 'all',
     })
     const cursor = page1.page_info.end_cursor
     expect(cursor).toBeDefined()
@@ -73,6 +74,7 @@ describe('getRssFeedItemFeedIds', () => {
       feed_type: 'follow_rss_feeds',
       after: cursor,
       limit: 2,
+      time_range: 'all',
     })
 
     const allIds = [...page1.results, ...page2.results].map(row => row.id)

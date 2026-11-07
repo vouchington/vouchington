@@ -1,3 +1,4 @@
+import * as rss from './seed-data/rss-feed-weekly-proxy.mts'
 import * as prompt from './community-agent-prompt-page-ids.mts'
 import { UPLOAD_CLEANUP_TOTAL_ROWS } from './seed-data/upload-cleanup-cohort.mts'
 import { LANDING_PAGE_REVIEW_COUNT } from './seed-data/landing-page-candidates.mts'
@@ -18,7 +19,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   user_email_addresses: 40_000,
   oauth_clients: 26_000,
-  topics: 3_603,
+  topics: 3_603 + rss.RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT,
   individual_cards: 10_000,
   individual_rewards_program_point_valuations: 10_000,
   spending_entries: 20_000,
@@ -33,10 +34,10 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   url_hostname_blocks: 6,
   urls: 10_000,
   rss_feeds: 2_500,
-  rss_feed_items: 25_000,
-  rss_feed_item_guids: 25_000,
-  rss_feed_item_sources: 65_000,
-  rss_feed_item_categories: 5_000,
+  rss_feed_items: 35_001, // 25k base + 10k weekly items + one eight-day witness.
+  rss_feed_item_guids: 35_001,
+  rss_feed_item_sources: 75_001,
+  rss_feed_item_categories: 15_001,
   rss_category_identities: 201, // 200 category values plus seedTopHashtags' seedhashtag.
   relation__user__follow__user: 11_000,
   relation__user__mute__user: 2_500,
@@ -62,7 +63,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   oauth_authorizations: 3,
   communities: 21_261 + 1 + prompt.COMMUNITY_AGENT_PROMPT_NOISE_COMMUNITIES,
   community_search_counts: 21_261,
-  community_list_topics: 1,
+  community_list_topics: 1 + rss.RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT,
   community_members:
     13_199 +
     prompt.COMMUNITY_AGENT_PROMPT_CREATOR_COUNT +
@@ -88,7 +89,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   relation__post__related__url: 2,
   relation__topic__parent__topic: 1_500,
   relation__user__mute__topic: 0,
-  relation__user__proxy_follow__community: 100,
+  relation__user__proxy_follow__community: 101 + rss.RSS_FEED_WEEKLY_PROXY_NOISE_FOLLOW_COUNT,
   relation__user__proxy_mute__community: 200,
   relation__user__save__post: 5_000,
   topic_metrics: 5_000,
@@ -100,7 +101,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   classifier_decision_batches: 6_000,
   community_applications: ANCILLARY_SEED_ROW_UPPER_BOUND,
   community_list_posts: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  community_list_rss_feeds: ANCILLARY_SEED_ROW_UPPER_BOUND,
+  community_list_rss_feeds: ANCILLARY_SEED_ROW_UPPER_BOUND + 10_050,
   community_list_url_hostnames: ANCILLARY_SEED_ROW_UPPER_BOUND,
   community_list_urls: ANCILLARY_SEED_ROW_UPPER_BOUND,
   community_member_vacations: ANCILLARY_SEED_ROW_UPPER_BOUND,
