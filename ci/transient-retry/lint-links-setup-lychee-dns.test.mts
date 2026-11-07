@@ -92,6 +92,22 @@ describe('lint-links-setup-lychee-download-flake github.com DNS', () => {
     expect(result.matchedRule).toBe('')
   })
 
+  it('matches a setup-lychee curl 504 that exits with curl status 22', async () => {
+    const log = [
+      'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+      'lint-links\tInstall lychee\tbash "$GITHUB_WORKSPACE/.vouchington-tooling-checkout/packages/vouchington-tooling/scripts/gha/install-github-release.sh" \\',
+      'lint-links\tInstall lychee\t  --repo lycheeverse/lychee \\',
+      'lint-links\tInstall lychee\t##[endgroup]',
+      'lint-links\tInstall lychee\tcurl: (22) The requested URL returned error: 504',
+      'lint-links\tInstall lychee\t##[error]Process completed with exit code 22.',
+    ].join('\n')
+
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
+
+    expect(result.decision).toBe('rerun')
+    expect(result.matchedRule).toBe('lint-links-setup-lychee-download-flake')
+  })
+
   it('does not match the github.com DNS fingerprint after the retry cap is exhausted', async () => {
     const result = await decide(
       makeCtx({ runAttempt: 2, failedJobLogs: failedJobLogs(setupLycheeCurl6DnsLog) }),

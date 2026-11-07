@@ -1,6 +1,6 @@
 import { terminalFailedGithubActionsStepLog } from 'vouchington-tooling/transient-retry'
 import {
-  hasCurlGithubReleaseTransportFailure,
+  hasCurlGithubReleaseTransportExit,
   isGithubReleasesDownloadFlake,
 } from './github-releases-download-fingerprint.mts'
 import type { TransientRetryRule } from './types.mts'
@@ -22,9 +22,7 @@ function hasGitleaksInstallReleasesDownloadFlake(log: string): boolean {
 
   return (
     (usesGitleaksInstaller && installStepTimedOut) ||
-    (usesGitleaksInstaller &&
-      hasCurlGithubReleaseTransportFailure(installLog) &&
-      installLog.includes('Process completed with exit code 1.')) ||
+    (usesGitleaksInstaller && hasCurlGithubReleaseTransportExit(installLog)) ||
     (downloadFailedSlice !== '' &&
       isGithubReleasesDownloadFlake(
         downloadFailedSlice,
@@ -54,8 +52,8 @@ export const gitleaksInstallReleasesDownloadFlakeRule: TransientRetryRule = {
   description:
     'Gitleaks fails before scanning because the install step cannot download the release archive or checksum file from GitHub Releases (timeout, transport failure, or 5xx).',
   rationale:
-    'The scan never starts; the only failed job is the standalone Gitleaks job and the stable fingerprint is an external GitHub Releases download failure, not a repository secret finding or local code failure.',
-  exampleRunIds: ['26831005135', '27120697184', '27121476157'],
+    'The scan never starts. The only failed jobs are the Gitleaks scan and its gate, and the fingerprint is an external GitHub Releases download failure. install-github-release.sh runs curl -fsSL under set -e, so HTTP 5xx and transport failures exit 22, 28, or 56; older wrappers exited 1 for the same curl lines. A secret finding or any other install error stays closed.',
+  exampleRunIds: ['42157598394', '26831005135', '27120697184', '27121476157'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

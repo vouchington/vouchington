@@ -119,6 +119,76 @@ describe('Gitleaks transient retry rules', () => {
     expect(result.matchedRule).toBe('gitleaks-install-releases-download-flake')
   })
 
+  // install-github-release.sh runs `curl -fsSL` under `set -e`, so the step exits with curl's
+  // status. Run 42157598394 printed curl (22) HTTP 504 and `Process completed with exit code 22`
+  // after the install group, then an artifact upload group with no exit line.
+  it.each([
+    [22, 'curl: (22) The requested URL returned error: 504'],
+    [28, 'curl: (28) SSL connection timeout'],
+    [56, 'curl: (56) Recv failure: Connection reset by peer'],
+  ])(
+    'matches a Gitleaks install curl failure that exits with curl status %s',
+    async (exitCode, curlLine) => {
+      const log = [
+        'gitleaks\tInstall gitleaks\t##[group]Run set -euo pipefail',
+        'gitleaks\tInstall gitleaks\tbash "$GITHUB_WORKSPACE/.vouchington-tooling-checkout/packages/vouchington-tooling/scripts/gha/install-github-release.sh" \\',
+        'gitleaks\tInstall gitleaks\t  --repo gitleaks/gitleaks \\',
+        'gitleaks\tInstall gitleaks\t##[endgroup]',
+        `gitleaks\tInstall gitleaks\t${curlLine}`,
+        `gitleaks\tInstall gitleaks\t##[error]Process completed with exit code ${exitCode}.`,
+        'gitleaks\tUpload gitleaks report\t##[group]Run actions/upload-artifact@vNEXT',
+        'gitleaks\tUpload gitleaks report\tNo files were found with the provided path: gitleaks-report.json. No artifacts will be uploaded.',
+      ].join('\n')
+      const result = await decide(
+        makeCtx({
+          workflowName: 'Gitleaks',
+          failedJobNames: [gitleaksJobName, gitleaksGateJobName],
+          failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, log]])),
+        }),
+        rules,
+      )
+      expect(result.decision).toBe('rerun')
+      expect(result.matchedRule).toBe('gitleaks-install-releases-download-flake')
+    },
+  )
+
+  it('does not match a Gitleaks install HTTP 404 that exits with curl status 22', async () => {
+    const log = [
+      'gitleaks\tInstall gitleaks\t##[group]Run set -euo pipefail',
+      'gitleaks\tInstall gitleaks\t  --repo gitleaks/gitleaks \\',
+      'gitleaks\tInstall gitleaks\tcurl: (22) The requested URL returned error: 404',
+      'gitleaks\tInstall gitleaks\t##[error]Process completed with exit code 22.',
+    ].join('\n')
+    const result = await decide(
+      makeCtx({
+        workflowName: 'Gitleaks',
+        failedJobNames: [gitleaksJobName, gitleaksGateJobName],
+        failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, log]])),
+      }),
+      rules,
+    )
+    expect(result.decision).toBe('dispatch')
+    expect(result.matchedRule).toBe('')
+  })
+
+  it('does not match a propagated curl 504 outside the Gitleaks installer', async () => {
+    const log = [
+      'gitleaks\tScan git history\t##[group]Run gitleaks git --config .gitleaks.toml',
+      'gitleaks\tScan git history\tcurl: (22) The requested URL returned error: 504',
+      'gitleaks\tScan git history\t##[error]Process completed with exit code 22.',
+    ].join('\n')
+    const result = await decide(
+      makeCtx({
+        workflowName: 'Gitleaks',
+        failedJobNames: [gitleaksJobName, gitleaksGateJobName],
+        failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, log]])),
+      }),
+      rules,
+    )
+    expect(result.decision).toBe('dispatch')
+    expect(result.matchedRule).toBe('')
+  })
+
   it('does not match a recovered install curl flake followed by a scan leak', async () => {
     const ctx = makeCtx({
       workflowName: 'Gitleaks',
