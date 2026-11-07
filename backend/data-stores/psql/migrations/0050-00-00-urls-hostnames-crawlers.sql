@@ -408,10 +408,9 @@ COMMENT ON COLUMN urls.canonical_url_id IS 'Self-referencing FK to the canonical
 -- row owns it, so a later variant can point its canonical_url_id at the owner when it is inserted.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS url_identities (
-  identity TEXT PRIMARY KEY CHECK (char_length(identity) <= 2083),
-  url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE
+  url_id UUID PRIMARY KEY REFERENCES urls ON DELETE CASCADE,
+  identity TEXT NOT NULL UNIQUE CHECK (char_length(identity) <= 2083)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_url_identities__url_id ON url_identities (url_id);
 COMMENT ON TABLE url_identities IS 'Scheme-less page identity of URLs inserted through addUrls; the first row registered for an identity owns it. Rows written by other paths have no identity.';
 COMMENT ON COLUMN url_identities.identity IS 'canonicalizeUrl(url).identity: scheme-less, without www. or m., tracking params, trailing slash, and YouTube aliases.';
 COMMENT ON COLUMN url_identities.url_id IS 'The oldest URL registered for this identity (UUIDv7 order within one batch); its canonical target is what later variants point at. Deleted with its URL.';
