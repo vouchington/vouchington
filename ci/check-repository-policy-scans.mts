@@ -15,6 +15,8 @@ import { checkWorkflowAreaCoveragePolicy } from './check-workflow-area-coverage-
 import { checkVitestProjectCommandPolicy } from './check-vitest-project-command-policy.mts'
 import { checkVitestReporterPolicy } from './check-vitest-reporter-policy.mts'
 import { buildToolingVitestArgs } from './tooling-test-runner.mts'
+import { checkEmailCopyRegistry } from './check-email-copy-registry.mts'
+import { checkWorkflowTestActionRefs } from './check-workflow-test-action-refs.mts'
 
 /** Run live repository policies once in the dedicated static CI job. */
 export async function checkRepositoryPolicyScans(root: string): Promise<void> {
@@ -39,6 +41,8 @@ export async function checkRepositoryPolicyScans(root: string): Promise<void> {
     ...checkBuildWebTargetsContractPolicy(root),
     ...checkScheduledPromptIndexPolicy(root),
     ...checkWorkflowCachePnpmPolicy(root),
+    ...checkEmailCopyRegistry(root),
+    ...checkWorkflowTestActionRefs(root),
   ]
   if (violations.length > 0) {
     throw new Error(violations.join('\n'))

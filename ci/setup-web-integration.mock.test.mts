@@ -102,15 +102,13 @@ describe('setup-web-integration', () => {
   it('passes the explicit IMAGE_ORIGIN into the production web build', async () => {
     process.env.IMAGE_ORIGIN = 'http://images.example.test'
 
-    const modulePath = './setup-web-integration.mts?explicit-image-origin'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     expect(webBuildEnv().IMAGE_ORIGIN).toBe('http://images.example.test')
   })
 
   it('marks the production web build as a test build', async () => {
-    const modulePath = './setup-web-integration.mts?test-build-env'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     expect(webBuildEnv().NEXT_TEST_BUILD).toBe('1')
   })
@@ -118,8 +116,8 @@ describe('setup-web-integration', () => {
   it('builds the Cloudflare Worker, then Storybook, before starting the Next build', async () => {
     const fs = await import('node:fs')
     const { resolve } = await import('node:path')
-    const modulePath = './setup-web-integration.mts?sequential-builds'
-    await import(modulePath)
+
+    await import('./setup-web-integration.mts')
 
     expect(buildEvents).toEqual([
       'start:--dir cloudflare-worker build',
@@ -152,8 +150,7 @@ describe('setup-web-integration', () => {
   it('allows callers to opt out of the test build flag', async () => {
     process.env.NEXT_TEST_BUILD = '0'
 
-    const modulePath = './setup-web-integration.mts?test-build-env-override'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     expect(webBuildEnv().NEXT_TEST_BUILD).toBe('0')
   })
@@ -161,8 +158,7 @@ describe('setup-web-integration', () => {
   it('derives IMAGE_ORIGIN from IMAGE_LAMBDA_PORT for integration builds', async () => {
     process.env.IMAGE_LAMBDA_PORT = '3109'
 
-    const modulePath = './setup-web-integration.mts?image-lambda-port'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     expect(webBuildEnv().IMAGE_ORIGIN).toBe('http://localhost:3109')
   })
@@ -176,8 +172,7 @@ describe('setup-web-integration', () => {
     process.env.PORT = '31234'
     process.env.NEXT_PORT = '31235'
 
-    const modulePath = './setup-web-integration.mts?no-port-derivation'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     const env = webBuildEnv()
     expect(env.NEXT_PUBLIC_API_BASE_URL).toBeUndefined()
@@ -188,8 +183,7 @@ describe('setup-web-integration', () => {
     process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api.example.test'
     process.env.NEXT_PUBLIC_ASSET_PREFIX = 'https://assets.example.test'
 
-    const modulePath = './setup-web-integration.mts?explicit-port-env-passthrough'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     const env = webBuildEnv()
     expect(env.NEXT_PUBLIC_API_BASE_URL).toBe('https://api.example.test')
@@ -201,8 +195,7 @@ describe('setup-web-integration', () => {
     const timingPath = '/tmp/setup-web-timings-partial.json'
     process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = timingPath
 
-    const modulePath = './setup-web-integration.mts?timing-report-partial'
-    await import(modulePath)
+    await import('./setup-web-integration.mts')
 
     const calls = vi
       .mocked(fs.writeFileSync)
@@ -235,9 +228,7 @@ describe('setup-web-integration', () => {
       }
     })
 
-    const modulePath = './setup-web-integration.mts?timing-report-write-failure'
-
-    await expect(import(modulePath)).resolves.toBeDefined()
+    await expect(import('./setup-web-integration.mts')).resolves.toBeDefined()
     expect(buildEvents).toContain('exit:--dir web build')
   })
 

@@ -1,51 +1,30 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-
-const directory = import.meta.dirname
-const repoRoot = join(directory, '..')
-const allowedByLocale = new Set<string>()
-
-function findResidualProductCopy(root: string): string[] {
-  return readdirSync(root, { encoding: 'utf8', recursive: true }).filter(name => {
-    if (!name.endsWith('.mts') && !name.endsWith('.tsx')) return false
-    if (name.includes('.test.')) return false
-    const source = readFileSync(join(root, name), 'utf8')
-    const localeRegistry = source.includes('ByLocale') && !allowedByLocale.has(name)
-    const localeBranch = /locale === '(?:en|es|fr|pt)'/.test(source) && name !== 'catalog-copy.mts'
-    return localeRegistry || localeBranch
-  })
-}
+import { residualProductCopy } from '../ci/email-copy-registry-policy.mts'
 
 describe('residual product copy registries', () => {
-  it('keeps locale registries out of catalog-backed product copy', () => {
-    expect(findResidualProductCopy(directory)).toEqual([])
-    expect(existsSync(join(repoRoot, 'ts-shared/ui-messages/messages'))).toBe(false)
-    expect(existsSync(join(repoRoot, 'dev/localization/import.mts'))).toBe(false)
+  it('allows catalog-backed product copy', () => {
+    expect(
+      residualProductCopy([
+        { path: 'catalog-copy.mts', text: "locale === 'en'" },
+        { path: 'nested/catalog.tsx', text: 'const copy = emailCopy(locale)\n' },
+        { path: 'copy.test.mts', text: 'const copyByLocale = {}' },
+        { path: 'notes.md', text: 'ByLocale' },
+      ]),
+    ).toEqual([])
   })
 
   it('finds locale registries nested below the template root', () => {
-    const root = mkdtempSync(join(tmpdir(), 'voucha-email-copy-'))
-    try {
-      mkdirSync(join(root, 'nested'))
-      writeFileSync(join(root, 'nested', 'catalog.tsx'), 'const copy = emailCopy(locale)\n')
-      writeFileSync(
-        join(root, 'nested', 'residual.tsx'),
-        'const nestedCopyByLocale = { en: "Hello" }\n',
-      )
+    expect(
+      residualProductCopy([
+        { path: 'nested/catalog.tsx', text: 'const copy = emailCopy(locale)\n' },
+        { path: 'nested/residual.tsx', text: 'const nestedCopyByLocale = { en: "Hello" }\n' },
+      ]),
+    ).toEqual(['nested/residual.tsx'])
+  })
 
-      expect(findResidualProductCopy(root)).toEqual([join('nested', 'residual.tsx')])
-    } finally {
-      rmSync(root, { force: true, recursive: true })
-    }
+  it('rejects inline locale branches outside the catalog reader', () => {
+    expect(
+      residualProductCopy([{ path: 'inline.mts', text: "locale === 'fr' ? 'Bonjour' : 'Hello'" }]),
+    ).toEqual(['inline.mts'])
   })
 })

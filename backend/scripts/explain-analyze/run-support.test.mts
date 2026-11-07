@@ -1,4 +1,5 @@
-import { readFileSync, readdirSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { executeCapturedStatement } from '@voucha/test-helpers/query-capture'
@@ -57,23 +58,21 @@ describe('writeResults', () => {
     }).toThrow(
       'postSearch must use index(es) idx_membership_refunds__stripe_charge_id, idx_membership_refunds__stripe_payment_intent_id',
     )
-    support.prepareOutputDir()
-    const existing = new Set(readdirSync(support.OUTPUT_DIR))
+    const outputDir = mkdtempSync(join(tmpdir(), 'explain-results-'))
     try {
-      support.writeResults()
-      const resultFile = readdirSync(support.OUTPUT_DIR).find(
-        name => !existing.has(name) && name.startsWith('results-'),
-      )
+      support.prepareOutputDir(outputDir)
+      support.writeResults(outputDir)
+      const files = readdirSync(outputDir)
+      expect(files).toHaveLength(2)
+      const resultFile = files.find(name => name.startsWith('results-'))
       if (!resultFile) throw new Error('writeResults did not create a new result file')
       const repeatFile = resultFile.replace(/^results-/, 'repeat-')
-      const written = JSON.parse(readFileSync(join(support.OUTPUT_DIR, resultFile), 'utf8'))
+      const written = JSON.parse(readFileSync(join(outputDir, resultFile), 'utf8'))
       expect(written).toMatchObject({ results: [failing], completedScenarioIds: [] })
-      const repeated = JSON.parse(readFileSync(join(support.OUTPUT_DIR, repeatFile), 'utf8'))
+      const repeated = JSON.parse(readFileSync(join(outputDir, repeatFile), 'utf8'))
       expect(repeated).toMatchObject({ results: [], completedScenarioIds: [] })
     } finally {
-      for (const name of readdirSync(support.OUTPUT_DIR)) {
-        if (!existing.has(name)) rmSync(join(support.OUTPUT_DIR, name))
-      }
+      rmSync(outputDir, { recursive: true, force: true })
     }
   })
 })
