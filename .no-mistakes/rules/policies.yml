@@ -321,12 +321,12 @@
           file: backend/services/copyright-notices/form-reviews-reversal.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
-      # Replays one LIMITed page of blocked restore intents: selectBlockedCopyrightRestoreIntentIds reads at most batchSize (hard max 100, work-limits.mts:41-43) in the request paths and the reconcile sweep passes a single intent id (hold-restoration-recovery.mts); intents past the page stay blocked for the sweep's keyset continuation. Each intent runs a heterogeneous replay (lock, deadline, blocker, authority, placement and readiness checks) that cannot be one statement.
+      # Replays one LIMITed page of blocked restore intents: selectBlockedCopyrightRestoreIntentIds reads at most batchSize (hard max 100, work-limits.mts:41-43) in the request paths and the reconcile sweep passes a single intent id (hold-restoration-recovery.mts); intents past the page stay blocked for the sweep's keyset continuation. A notice's blocked intents are normally at most 20 (one active restriction per target, at most 20 targets). Each intent runs a heterogeneous replay (lock, deadline, blocker, authority, placement and readiness checks) that cannot be one statement.
       - {
           file: backend/services/copyright-notices/court-hold-restore-replay.mts,
           callee: 'replayOriginalRestore',
         }
-      # Candidates of one deadline: at most one unlifted restriction per target (idx_copyright_restrictions__one_active_per_target) and at most 20 targets (http-input.mts:57), so at most 20 per call. Each runs its own transaction (no lock held across items) revalidating placement, authority and blockers. UNVERIFIED: the 20-target cap is a parse-time check, not a database constraint.
+      # Candidates of one deadline: at most one unlifted restriction per target (idx_copyright_restrictions__one_active_per_target) and at most 20 targets per notice, so at most 20 per call. The 20-target cap is a parse-time check, but every production path that inserts copyright_notice_targets (the sole inserter is insertCopyrightNoticeTargetsInTransaction, notice-targets.mts) passes it first: REST form intake submission-routes.mts:54 -> createCopyrightFormIntake -> assertStructuredNoticeStatutoryFields (form-input-validation.mts:51, enforced again in the service for every caller); email approval via parseCopyrightNoticeForm (http-input.mts:39, 1..20 at :53-57) from REST copyright-email-intake-decision-routes.mts:59 and MCP copyright-decisions-approval.mts:146; territorial decisions via parseCopyrightTargets (territorial-http-input.mts:35) plus the service assert territorial-decision.mts:56. Each candidate runs its own transaction (no lock held across items) revalidating placement, authority and blockers.
       - {
           file: backend/services/copyright-notices/statutory-restoration-schedule.mts,
           callee: 'createEligibleCopyrightRestoreIntent',
