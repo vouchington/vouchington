@@ -53,6 +53,7 @@ async function liftSelectedCommunityBans(
 
   await using transaction = await beginTransaction()
   // Gate before write-target locks; then lock selected ban rows by id for consistent lock order.
+  // Scalar-array key probes prevent generic plans from scanning unselected ban history.
   // A concurrent insertion is outside this statement's snapshot and remains active.
   const { rows } = await write<LiftStatementResult>(
     sql`/* liftSelectedCommunityBans */
@@ -105,10 +106,10 @@ async function liftSelectedCommunityBans(
       locked AS MATERIALIZED (
         SELECT ban.id
         FROM community_bans ban
-        JOIN candidates candidate ON candidate.id = ban.id
         CROSS JOIN gate
         WHERE gate.candidate_count BETWEEN 1 AND ${cap}
           AND gate.actor_allowed AND NOT gate.protected_issuer
+          AND ban.id = ANY(ARRAY(SELECT candidate.id FROM candidates candidate))
           AND ban.lifted_at IS NULL
           AND COALESCE(ban.expires_at, 'infinity'::timestamptz) > CURRENT_TIMESTAMP
         ORDER BY ban.id
