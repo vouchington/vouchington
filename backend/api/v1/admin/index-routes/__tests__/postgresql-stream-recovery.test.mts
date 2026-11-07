@@ -1,20 +1,10 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { createMigrationStatusFixture } from '@voucha/test-helpers/migration-status-fixture'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
-vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), async importOriginal =>
-  importOriginal(),
-)
-
 const TICKER_INTERVAL_MS = 30_000
-const MIGRATIONS_DIRECTORY = path.resolve(
-  import.meta.dirname,
-  '../../../../../data-stores/psql/migrations',
-)
-
 let admin: PrivateUser
 
 describe('PostgreSQL SSE stream recovery', () => {
@@ -27,15 +17,7 @@ describe('PostgreSQL SSE stream recovery', () => {
     const request = createRequest()
     await request.authenticateAs(admin)
 
-    const originalReaddir = fs.readdir
-    let failNextMigrationRead = false
-    const readdirSpy = vi.spyOn(fs, 'readdir').mockImplementation(async (...args) => {
-      if (failNextMigrationRead && path.resolve(String(args[0])) === MIGRATIONS_DIRECTORY) {
-        failNextMigrationRead = false
-        throw new Error('Migration directory read failed')
-      }
-      return originalReaddir(...args)
-    })
+    const migrationFixture = await createMigrationStatusFixture()
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
     const tickerStopped = Promise.withResolvers<void>()
     const clearFakeInterval = globalThis.clearInterval
@@ -75,7 +57,7 @@ describe('PostgreSQL SSE stream recovery', () => {
               }
               if (snapshotCount === 1 && !advanced) {
                 advanced = true
-                failNextMigrationRead = true
+                migrationFixture.failNextRead(new Error('Migration directory read failed'))
                 void vi.advanceTimersByTimeAsync(TICKER_INTERVAL_MS).catch(reject)
               }
             })
@@ -100,7 +82,6 @@ describe('PostgreSQL SSE stream recovery', () => {
       try {
         responseToDestroy?.destroy()
       } finally {
-        readdirSpy.mockRestore()
         clearIntervalSpy.mockRestore()
         // Drain retained restorers before restoring real timer globals.
         vi.restoreAllMocks()
