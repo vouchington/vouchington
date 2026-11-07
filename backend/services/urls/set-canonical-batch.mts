@@ -74,6 +74,20 @@ export async function setCanonicalUrls(
   })
   const finalIds = results.map(result => result.finalCanonicalId)
 
+  await rewriteCanonicalPointers(urlIds, finalIds, query)
+  await removeSourceHackerNewsReferences(urlIds, query)
+  registerPostCommitAction(query, async () => {
+    await enqueueHackerNewsFlagsBestEffort([...new Set([...urlIds, ...canonicalIds, ...finalIds])])
+  })
+  return results
+}
+
+/** Points each source at its final target, then repoints every direct back-reference to it. */
+async function rewriteCanonicalPointers(
+  urlIds: string[],
+  finalIds: string[],
+  query: TransactionQuery,
+): Promise<void> {
   await query(
     `/* setCanonicalUrl */
     UPDATE urls SET canonical_url_id = input.final_id
@@ -89,11 +103,6 @@ export async function setCanonicalUrls(
     WHERE urls.canonical_url_id = input.url_id AND urls.id <> input.url_id`,
     [urlIds, finalIds],
   )
-  await removeSourceHackerNewsReferences(urlIds, query)
-  registerPostCommitAction(query, async () => {
-    await enqueueHackerNewsFlagsBestEffort([...new Set([...urlIds, ...canonicalIds, ...finalIds])])
-  })
-  return results
 }
 
 /** The URL row lock also fences refreshes: the writer skips URLs that gained a canonical. */
