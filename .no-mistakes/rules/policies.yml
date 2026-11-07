@@ -16,6 +16,7 @@
           file: backend/services/entity-relation-actions/create.mts,
           callee: 'refreshEntityRelationVoteStatsFromPrimaryWithFallback',
         }
+      # Operator-run one-off backfill: each iteration runs one batch of --batch-size rows (checked by assertRssFeedItemSourcePublicationBackfillBatchSize) and the loop ends when a batch updates 0 rows, throwing if rows remain.
       - {
           file: backend/scripts/backfill-rss-feed-item-source-publications.mts,
           callee: 'backfillRssFeedItemSourcePublications',
@@ -97,23 +98,23 @@
           file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
           callee: 'createRssHashtagItem',
         }
-      # The contention probe retries one owned refresh after a concurrent lock holder releases.
-      - {
-          file: backend/scripts/native-mv-contracts/refresh-lock.mts,
-          callee: 'refreshMaterializedView',
-        }
       - {
           file: backend/scripts/native-mv-contracts/trending-http.mts,
           callee: 'insertEntityRelation',
         }
+      # Sequential EXPLAIN captures over the literal scenarios() list and two plan modes against the disposable explain-analyze database; order attributes each captured production query to its scenario.
       - { file: backend/scripts/explain-analyze/pruning/capture.mts, callee: 'explainAnalyze' }
       - { file: backend/scripts/explain-analyze/pruning/capture.mts, callee: 'getPartitionLeaves' }
+      # Loops the PRUNING_PARENTS x PROOF_YEARS constants of this file in a one-off proof script against the disposable explain-analyze database.
       - { file: backend/scripts/explain-analyze/pruning/partitions.mts, callee: 'query' }
+      # Seeds the three-row pruning fixture (years 2024-2026, pruning/fixture-ids.mts:12-14) per PRUNING_PARENTS; a fixed proof set in the disposable explain-analyze database.
       - { file: backend/scripts/explain-analyze/pruning/seed.mts, callee: 'write' }
+      # Sequential EXPLAIN capture over the literal follower-distribution actions list; run one at a time so captured queries stay attributable.
       - {
           file: backend/scripts/explain-analyze/run-scenarios/follower-distributions.mts,
           callee: 'runAndCapture',
         }
+      # Sequential EXPLAIN capture over the literal scenario/view pairs in this file; refreshes must run one at a time to be measured.
       - {
           file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
           callee: 'read',
@@ -122,6 +123,7 @@
           file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
           callee: 'runAndCapture',
         }
+      # Sequential EXPLAIN capture and ownership assertions over the `cases` scenario list of this file; run one at a time so captured queries stay attributable.
       - {
           file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
           callee: 'analyzeMediaDeliveryReplayRelations',
@@ -138,6 +140,7 @@
           file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
           callee: 'runAndCapture',
         }
+      # Sequential EXPLAIN capture over literal feed-type, user, and sort lists in this file; run one at a time so captured queries stay attributable.
       - {
           file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
           callee: 'runAndCapture',
@@ -146,6 +149,7 @@
           file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
           callee: 'runSharePages',
         }
+      # Sequential EXPLAIN capture over the literal variants, sort, and rss lists in this file; run one at a time so captured queries stay attributable.
       - {
           file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
           callee: 'inspectSemanticPostSeed',
@@ -162,6 +166,7 @@
           file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
           callee: 'runAndCapture',
         }
+      # Sequential EXPLAIN capture over the literal limit ([1, 3]) and HYDRATION_QUERY_NAMES lists in this file; run one at a time so captured queries stay attributable.
       - {
           file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
           callee: 'captureHydration',
@@ -192,6 +197,7 @@
         }
       - { file: backend/scripts/explain-analyze/seed-data/individual-cards.mts, callee: 'query' }
       - { file: backend/scripts/explain-analyze/seed-data/maintenance.mts, callee: 'write' }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: chunks of BATCH_SIZE failed ids
       - {
           file: backend/scripts/explain-analyze/seed-data/media-delivery-replay.mts,
           callee: 'rearmMediaDeliveryReplayPage',
@@ -223,6 +229,7 @@
           callee: 'query',
         }
       - { file: backend/scripts/explain-analyze/seed-data/votes-and-aliases.mts, callee: 'query' }
+      # Dev-only login helper: loops the requested extraRoles, a short fixed persona role list, for one locally minted user.
       - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }
       - { file: backend/scripts/login-as/run.mts, callee: 'mintDeepLink' }
       - {
@@ -237,7 +244,6 @@
           file: backend/services/account-data-requests/stream-entity-relations.mts,
           callee: 'createAsyncGeneratorFromCursor',
         }
-      - { file: backend/services/admin-imports/create-batch.mts, callee: 'write' }
       - {
           file: backend/services/admin-imports/process-topic-row-relations.mts,
           callee: 'replaceSpendingCategoryAttributes',
@@ -256,7 +262,6 @@
       - { file: backend/services/articles/sync-process.mts, callee: 'tagPostWithTopics' }
       - { file: backend/services/articles/sync-process.mts, callee: 'updatePost' }
       - { file: backend/services/articles/sync.mts, callee: 'processPreparedArticles' }
-      - { file: backend/services/attribution/create.mts, callee: 'query' }
       - {
           file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'cleanupBatchLocks',
@@ -264,10 +269,6 @@
       - {
           file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'processBatch',
-        }
-      - {
-          file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
-          callee: 'write',
         }
       - {
           file: backend/services/bluesky-follows/disconnect.mts,
@@ -287,10 +288,7 @@
           file: backend/services/communities/update-transaction.mts,
           callee: 'syncImageSurfacePlacement',
         }
-      - {
-          file: backend/services/copyright-notices/automatic-withholding-caps.mts,
-          callee: 'transaction',
-        }
+      # Promise.all over 1 to 20 hosted-image targets, validated at copyright-notices/http-input.mts:57; each resolves a different placement.
       - {
           file: backend/services/copyright-notices/copyright-email-decision-actions.mts,
           callee: 'resolveCopyrightImagePlacement',
@@ -308,14 +306,6 @@
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
       - {
-          file: backend/services/copyright-notices/form-reviews-reversal.mts,
-          callee: 'transaction',
-        }
-      - {
-          file: backend/services/copyright-notices/retention-erasure-preservation.mts,
-          callee: 'transaction',
-        }
-      - {
           file: backend/services/copyright-notices/statutory-restoration-schedule.mts,
           callee: 'createEligibleCopyrightRestoreIntent',
         }
@@ -328,14 +318,9 @@
           callee: 'recordClaimantMisuseEvent',
         }
       - {
-          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
-          callee: 'transaction',
-        }
-      - {
           file: backend/services/copyright-notices/territorial-redress.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
-      - { file: backend/services/copyright-notices/territorial-redress.mts, callee: 'transaction' }
       - {
           file: backend/services/crawls/dispatch-crawl-hostnames.mts,
           callee: 'dispatchHostnamePage',
@@ -364,39 +349,15 @@
           file: backend/services/elections-votes/entity-relation/vote-stats-batch.mts,
           callee: 'refreshChunkAndCapture',
         }
-      - { file: backend/services/entity-relations/post-topic-publication.mts, callee: 'query' }
       - {
           file: backend/services/entity-relations/post-topic-publication.mts,
           callee: 'recordRssFeedDiscoverabilityChanges',
         }
       - {
-          file: backend/services/hostname-blocking/soft-delete-relations.mts,
-          callee: 'lockPostPublicationPostScopes',
-        }
-      - { file: backend/services/hostname-blocking/soft-delete-relations.mts, callee: 'query' }
-      - {
-          file: backend/services/hostname-blocking/soft-delete-relations.mts,
-          callee: 'recordPostRelatedUrlPublicationChanges',
-        }
-      - {
           file: backend/services/images/cleanup-abandoned-uploads.mts,
           callee: 'cleanupStagedUploadSource',
         }
-      - { file: backend/services/images/delete-rollback.mts, callee: 'compensatePostRevision' }
-      - {
-          file: backend/services/images/delete-rollback.mts,
-          callee: 'ensureCurrentPostModerationVersion',
-        }
-      - {
-          file: backend/services/images/delete-rollback.mts,
-          callee: 'recordRestoredPostContentChange',
-        }
-      - { file: backend/services/images/delete-rollback.mts, callee: 'resetPostClearance' }
-      - { file: backend/services/images/delete-rollback.mts, callee: 'restorePostClearanceStatus' }
-      - {
-          file: backend/services/images/delete-rollback.mts,
-          callee: 'updatePostModerationContentHash',
-        }
+      # FIX (P2): per-tuple denial inside a transaction that already holds the rows FOR UPDATE; batch the denial statements.
       - {
           file: backend/services/media-delivery-safety/delivery-denials.mts,
           callee: 'prepublishImagePlacementDenial',
@@ -417,11 +378,11 @@
           file: backend/services/media-delivery-safety/delivery-repair-markers.mts,
           callee: 'reconcileDeliveryRepairMarker',
         }
+      # FIX (P2): per-tuple denial with placementLocked inside the owner transaction; batch the denial statements.
       - {
           file: backend/services/media-delivery-safety/index.mts,
           callee: 'prepublishImagePlacementDenial',
         }
-      - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query' }
       - {
           file: backend/services/memberships/google/lineage.mts,
           callee: 'ensureGooglePlayTokenAlias',
@@ -430,7 +391,7 @@
           file: backend/services/memberships/google/lineage.mts,
           callee: 'getKnownGooglePlayCanonicalRoot',
         }
-      - { file: backend/services/memberships/google/lineage.mts, callee: 'query' }
+      # Rare error path: one UPDATE per malformed evidence row of a single recovery page, bounded by google_cursor_page_size (getMembershipWorkLimit, notification-recovery.mts:29).
       - {
           file: backend/services/memberships/google/notification-recovery.mts,
           callee: 'rejectMalformedRecoveryEvidence',
@@ -445,7 +406,6 @@
           file: backend/services/memberships/grants/expire-elapsed.mts,
           callee: 'activateOldestQueuedGrant',
         }
-      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query' }
       - {
           file: backend/services/memberships/grants/expire-elapsed.mts,
           callee: 'recordMembershipChange',
@@ -454,6 +414,7 @@
           file: backend/services/memberships/grants/expire-elapsed.mts,
           callee: 'restoreFallbackAfterCurrentAccessEndsInTransaction',
         }
+      # FIX (P2): per-grant recordMembershipChange inside the user transaction; batch per page.
       - {
           file: backend/services/memberships/grants/resume-after-direct-termination.mts,
           callee: 'recordMembershipChange',
@@ -479,7 +440,6 @@
           file: backend/services/notifications/reconcile-temp-tables.mts,
           callee: 'dispatchNextCreatedNotificationBatch',
         }
-      - { file: backend/services/oauth-authorization-server/active-users.mts, callee: 'query' }
       - {
           file: backend/services/oauth-authorization-server/retention.mts,
           callee: 'deleteExpiredRows',
@@ -527,84 +487,14 @@
           file: backend/services/openai-moderation/delete-flagged.mts,
           callee: 'deleteFlaggedImage',
         }
-      - { file: backend/services/post-publication/capture-deletions.mts, callee: 'query' }
-      - {
-          file: backend/services/post-publication/capture-deletions.mts,
-          callee: 'retainLockedFeedIdentityPage',
-        }
-      - {
-          file: backend/services/post-publication/capture-deletions.mts,
-          callee: 'retainPostPublicationImpactKeys',
-        }
-      - {
-          file: backend/services/post-publication/capture-deletions.mts,
-          callee: 'retainPublicationIdentityBridges',
-        }
-      - {
-          file: backend/services/post-publication/capture-impacts.mts,
-          callee: 'retainPostPublicationKeys',
-        }
-      - { file: backend/services/post-publication/capture-posts.mts, callee: 'query' }
-      - {
-          file: backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts,
-          callee: 'query',
-        }
-      - {
-          file: backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts,
-          callee: 'recordTopicAliasPublicationWork',
-        }
-      - {
-          file: backend/services/post-publication/capture-rss-feed-hard-delete-topics.mts,
-          callee: 'query',
-        }
-      - {
-          file: backend/services/post-publication/capture-rss-feed-hard-delete-topics.mts,
-          callee: 'retainPostPublicationImpactKeys',
-        }
       - {
           file: backend/services/post-publication/capture-rss-feeds.mts,
           callee: 'lockPostPublicationRssFeedScopes',
         }
-      - { file: backend/services/post-publication/capture-rss-feeds.mts, callee: 'query' }
       - {
           file: backend/services/post-publication/capture-topic-alias.mts,
           callee: 'lockTopicAliasPublicationScopes',
         }
-      - { file: backend/services/post-publication/capture-topic-alias.mts, callee: 'query' }
-      - {
-          file: backend/services/post-publication/identity-source-paging.mts,
-          callee: 'listSourceRows',
-        }
-      - {
-          file: backend/services/post-publication/orphan-identities.mts,
-          callee: 'getOrCreateSnapshot',
-        }
-      - {
-          file: backend/services/post-publication/orphan-identities.mts,
-          callee: 'retainSnapshotReceiptPage',
-        }
-      - { file: backend/services/post-publication/prepare-identity-bridges.mts, callee: 'query' }
-      - {
-          file: backend/services/post-publication/prepare-identity-bridges.mts,
-          callee: 'retainPublicationIdentityBridges',
-        }
-      - {
-          file: backend/services/post-publication/reconcile.mts,
-          callee: 'materializePostPublicationIdentitySnapshot',
-        }
-      - {
-          file: backend/services/post-publication/retain-rss-feed-notification-impacts.mts,
-          callee: 'retainNotificationImpactPage',
-        }
-      - {
-          file: backend/services/post-publication/retained-key-writes.mts,
-          callee: 'insertPostPublicationKeyBatch',
-        }
-      - {
-          file: backend/services/post-publication/retained-key-writes.mts,
-          callee: 'retainPublicationIdentityBridges',
-        }
-      - { file: backend/services/post-publication/story-lifecycle-lock.mts, callee: 'query' }
       - {
           file: backend/services/rss-feed-items/categories-chunks.mts,
           callee: 'insertMissingCategoriesChunk',
@@ -631,25 +521,25 @@
           file: backend/services/rss-feed-items/reconcile-category-votes.mts,
           callee: 'retractUnsupportedCategorizerVotesForKind',
         }
-      - { file: backend/services/rss-feed-items/story-publication-change.mts, callee: 'query' }
-      - { file: backend/services/rss-feed-items/upsert-existing.mts, callee: 'read' }
       - { file: backend/services/rss-feed-items/upsert-prepare.mts, callee: 'addUrls' }
-      - { file: backend/services/rss-feed-items/upsert-write-locks.mts, callee: 'txQuery' }
       - {
           file: backend/services/rss-feed-items/upsert-write-locks.mts,
           callee: 'upsertRssFeedItemIdentities',
         }
       - { file: backend/services/rss-feed-items/upsert.mts, callee: 'upsertRssFeedItemContent' }
       - { file: backend/services/rss-feeds/categories.mts, callee: 'upsertRssFeedCategoriesChunk' }
+      # Best-effort lease per refund operation recorded for this one event; the operation ids derive from the same single refund page as recordMembershipRefundEvent (event-charge-handlers.mts:79).
       - {
           file: backend/services/stripe/event-charge-handlers.mts,
           callee: 'leaseDueRefundReconciliation',
         }
+      # One write per refund of a single charge; the refunds come from the webhook payload or one Stripe refunds.list page (default limit 10, modules/stripe/refunds.mts:37).
       - {
           file: backend/services/stripe/event-charge-handlers.mts,
           callee: 'recordMembershipRefundEvent',
         }
       - { file: backend/services/topics/update.mts, callee: 'syncImageSurfacePlacement' }
+      # Each pending request is a different follower user with their own relation limits and authorization, so it cannot share one batch; requests are one LIMIT batchSize page (auto-follow-on-approval.mts:38) followed with chunked concurrency.
       - {
           file: backend/services/user-import-export/auto-follow-on-approval.mts,
           callee: 'followRequest',
@@ -658,19 +548,17 @@
           file: backend/services/user-import-export/import-topics.mts,
           callee: 'admitImportedTopicRecommendation',
         }
-      - { file: backend/services/user-import-export/rss-feed-import-records.mts, callee: 'write' }
       - {
           file: backend/services/users/delete-entity-relation-votes.mts,
           callee: 'recordPostTopicRelationPublicationChanges',
         }
-      - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query' }
       - { file: backend/services/users/delete-phases.mts, callee: 'deleteOwnedRows' }
       - { file: backend/services/users/delete-phases.mts, callee: 'deleteUserSubjectRelationRows' }
-      - { file: backend/services/users/record-deleted-relation-impacts.mts, callee: 'query' }
       - {
           file: backend/services/users/record-deleted-relation-impacts.mts,
           callee: 'recordRelationTableImpacts',
         }
+      # Rare error path: three effects per run that exhausted CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND, a subset of one listIncompleteClassifierRuns page capped by discovery_page_size (classifier-runs/run-discovery.mts:50).
       - {
           file: backend/workers/ai-agents/processors/process-reconcile-classifier-runs.mts,
           callee: 'giveUpSweepRun',
@@ -687,10 +575,12 @@
           file: backend/workers/memberships/processors/renewal-notification-check.mts,
           callee: 'getUsersApproachingRenewalWithPriceIncrease',
         }
+      # Prepares each user of one keyset page capped by LIMIT batchSize (getMembershipWorkLimits, renewal-notification-check.mts:14) over at most maxBatches pages per job; prepare is several statements per user and cannot share one batch.
       - {
           file: backend/workers/memberships/processors/renewal-notification-check.mts,
           callee: 'prepareRenewalPriceIncreaseNotification',
         }
+      # Exhausted posts of one reconcile page, capped by reconciliation_batch_size (post-clearance/moderation-ledger-reconciliation.mts:35); each post needs its own clearance recomputation.
       - {
           file: backend/workers/openai-moderation/processors/openai-moderation-omni-single.mts,
           callee: 'checkPostClearance',
@@ -699,6 +589,162 @@
       - {
           file: playwright/tests/tags/tag-voting-helpers.mts,
           callee: 'softDeleteScoredPostTopicCategoryRelation',
+        }
+      # FIX (P2): per-user ordered lock loop; batch as one `SELECT fn_lock_active_user_for_mutation(...) FROM unnest(...) ORDER BY`. Remove these entries with the fix.
+      - { file: backend/services/attribution/create.mts, callee: 'query', line: 64 }
+      - { file: backend/services/attribution/create.mts, callee: 'query', line: 71 }
+      # FIX (P2): per-key advisory lock loops; batch as one `pg_advisory_xact_lock(...) FROM unnest($ids) ORDER BY id` (pattern in post-publication/capture-posts.mts). Remove these entries with the fix.
+      - {
+          file: backend/services/copyright-notices/automatic-withholding-caps.mts,
+          callee: 'transaction',
+          line: 38,
+        }
+      - {
+          file: backend/services/copyright-notices/form-reviews-reversal.mts,
+          callee: 'transaction',
+          line: 52,
+        }
+      - {
+          file: backend/services/copyright-notices/retention-erasure-preservation.mts,
+          callee: 'transaction',
+          line: 25,
+        }
+      - {
+          file: backend/services/copyright-notices/territorial-redress.mts,
+          callee: 'transaction',
+          line: 73,
+        }
+      - {
+          file: backend/services/oauth-authorization-server/active-users.mts,
+          callee: 'query',
+          line: 17,
+        }
+      # FIX (P2): per-decision UPDATE and INSERT inside the notice lock transaction; batch with unnest. Remove these entries with the fix.
+      - {
+          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
+          callee: 'transaction',
+          line: 47,
+        }
+      - {
+          file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
+          callee: 'transaction',
+          line: 55,
+        }
+      # FIX (P2): per-alias-token UPDATE inside the canonical lineage lock; batch the markFetched updates. Remove this entry with the fix.
+      - { file: backend/services/memberships/google/lineage.mts, callee: 'query', line: 163 }
+      # FIX (P2): per-membership source/activation updates inside the user lock; batch per page with unnest. Remove these entries with the fix.
+      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 61 }
+      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 67 }
+      # FIX (P2): per-root fn_ensure_retained_identity loop (batch with unnest) and an uncapped while(true) retry loop (add a constant retry cap). Remove these entries with the fix.
+      - {
+          file: backend/services/users/record-deleted-relation-impacts.mts,
+          callee: 'query',
+          line: 29,
+        }
+      - {
+          file: backend/services/users/record-deleted-relation-impacts.mts,
+          callee: 'query',
+          line: 62,
+        }
+      - {
+          file: backend/services/users/record-deleted-relation-impacts.mts,
+          callee: 'query',
+          line: 70,
+        }
+      # FIX (P2): bare while(true) keyset page loop with no constant page cap; add a maxBatches-style cap and continuation. Remove these entries with the fix.
+      - {
+          file: backend/services/entity-relations/post-topic-publication.mts,
+          callee: 'query',
+          line: 120,
+        }
+      - {
+          file: backend/services/post-publication/capture-rss-feeds.mts,
+          callee: 'query',
+          line: 113,
+        }
+      - {
+          file: backend/services/post-publication/capture-topic-alias.mts,
+          callee: 'query',
+          line: 66,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the loop advances chunks of insert_chunk_size (getAdminImportsWorkLimit) rows, one INSERT per chunk.
+      - { file: backend/services/admin-imports/create-batch.mts, callee: 'write', line: 57 }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the loop advances chunks of import_insert_chunk_size (getUserImportExportConfig) urls, one INSERT per chunk.
+      - {
+          file: backend/services/user-import-export/rss-feed-import-records.mts,
+          callee: 'write',
+          line: 47,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the loop advances chunks of alias_resolution_batch_size (getEntityRelationsWorkLimit) alias ids.
+      - {
+          file: backend/services/entity-relations/post-topic-publication.mts,
+          callee: 'query',
+          line: 170,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed: Promise.all over claim-token groups of one claim call; each group completes its whole id batch with one UPDATE.
+      - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query', line: 79 }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: counter-bounded loop, batch < maxBatches with LIMIT batchSize per page (getMembershipWorkLimits, expire-elapsed.mts:24).
+      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 29 }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loops advance chunks of capture_batch_size (getPostPublicationWorkLimit), one unnest ORDER BY statement per chunk.
+      - { file: backend/services/post-publication/capture-posts.mts, callee: 'query', line: 73 }
+      - { file: backend/services/post-publication/capture-rss-feeds.mts, callee: 'query', line: 83 }
+      - {
+          file: backend/services/post-publication/capture-topic-alias.mts,
+          callee: 'query',
+          line: 42,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loop advances chunks of story_lifecycle_lock_batch_size (getPostPublicationWorkLimit), one unnest ORDER BY statement per chunk.
+      - {
+          file: backend/services/post-publication/story-lifecycle-lock.mts,
+          callee: 'query',
+          line: 17,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: discovery and lock loops advance chunks of story_category_item_batch_size or story_category_change_batch_size (getRssFeedItemsWorkLimit), each statement takes an ANY($ids) batch.
+      - {
+          file: backend/services/rss-feed-items/story-publication-change.mts,
+          callee: 'query',
+          line: 27,
+        }
+      - {
+          file: backend/services/rss-feed-items/story-publication-change.mts,
+          callee: 'query',
+          line: 39,
+        }
+      - {
+          file: backend/services/rss-feed-items/story-publication-change.mts,
+          callee: 'query',
+          line: 69,
+        }
+      - {
+          file: backend/services/rss-feed-items/story-publication-change.mts,
+          callee: 'query',
+          line: 83,
+        }
+      - {
+          file: backend/services/rss-feed-items/story-publication-change.mts,
+          callee: 'query',
+          line: 123,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: Promise.all over chunkArray chunks of sql_batch_size (getRssFeedItemsWorkLimit) guids, one SELECT per chunk.
+      - { file: backend/services/rss-feed-items/upsert-existing.mts, callee: 'read', line: 16 }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loops advance chunks of sql_batch_size (getRssFeedItemsWorkLimit), one ANY($ids) statement per chunk.
+      - {
+          file: backend/services/rss-feed-items/upsert-write-locks.mts,
+          callee: 'txQuery',
+          line: 86,
+        }
+      - {
+          file: backend/services/rss-feed-items/upsert-write-locks.mts,
+          callee: 'txQuery',
+          line: 111,
+        }
+      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: loops the fixed literal statements array of processUserDeletionCredentialsBatch; each statement deletes at most batchSize rows and the first non-empty one ends the page.
+      - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query', line: 63 }
+      # Real exception: one UPDATE per stale batch after that batch provider stop and lock cleanup, serial by design so one Bedrock quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in bedrock-embeddings-batch/orchestrator/find-stale.mts:13.
+      - {
+          file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+          callee: 'write',
+          line: 65,
         }
 - name: GitHub Actions uses pins
   rule: github-actions-pinned-hash
