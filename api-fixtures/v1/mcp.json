@@ -7521,7 +7521,7 @@
           "tool": {
             "name": "read_data_points",
             "title": "Read Data Points",
-            "description": "topic_insights: Get aggregate data point statistics for a topic (card, bank account, etc.). Returns approval rate, median credit limit, and credit score distribution.\nsearch: Search for data point posts with optional JSONB filters. Use this to find approval rates, credit limits, and application outcomes for a specific card or topic.",
+            "description": "topic_insights: Get aggregate data point statistics for a topic (card, bank account, etc.). Returns approval rate, median credit limit, and credit score distribution.\nsearch: Search for data point posts from the last 30 days with optional JSONB filters. has_next_page covers only matches within that window. Use this to find approval rates, credit limits, and application outcomes for a specific card or topic.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -7585,7 +7585,7 @@
                         },
                         "after": {
                           "type": "string",
-                          "description": "Opaque cursor. Pass page_info.end_cursor from the previous response with the same filters while has_next_page is true. Stop when has_next_page is false."
+                          "description": "Opaque cursor. Pass page_info.end_cursor from the previous response with the same filters while has_next_page is true. Stop when has_next_page is false. has_next_page covers only matches within the last 30 days."
                         }
                       },
                       "required": [],
