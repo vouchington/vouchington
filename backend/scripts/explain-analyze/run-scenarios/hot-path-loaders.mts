@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { runUserProfileMetricsScenario } from './hot-path-profile-metrics.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import * as services from '../run-services.mts'
@@ -15,7 +16,6 @@ const {
   getUserPostsCollection,
   getPostsByAnyBatch,
   getPublicUsersByAnyBatch,
-  getUserProfileMetricsByAny,
   getBookmarksForEntityGroups,
   listProfileLinks,
 } = services
@@ -179,14 +179,5 @@ export async function runHotPathLoaderScenarios() {
     }),
   )
 
-  // One profile facet scan stops at profile_post_count_cap (default 1,000).
-  // A 10,000-review author processed about 2,253 post rows at that cap.
-  // Saved-post private counts still look up about 5,000 posts, under this budget.
-  // The old uncapped facet scan processed 6,076 on its own.
-  registerScenarioContract('user-profile-metrics', {
-    expectations: [{ kind: 'maxProcessedRows', relation: 'posts', max: 6_000 }],
-  })
-  await runAndCapture('user-profile-metrics', () =>
-    getUserProfileMetricsByAny(seedUser.id, { currentUser: seedUser }),
-  )
+  await runUserProfileMetricsScenario()
 }

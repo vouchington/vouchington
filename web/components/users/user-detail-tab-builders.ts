@@ -9,20 +9,6 @@ import { formatNumber, type NumberFormatLocale } from '@ts-shared/utils/format'
 
 type PublicContentKey = 'reviews' | 'discussions' | 'comments'
 
-export function formatProfilePostCount(
-  count: number,
-  {
-    capped,
-    uiLocale,
-  }: {
-    capped: boolean
-    uiLocale?: NumberFormatLocale
-  },
-): string {
-  const showPlus = capped && count > 0
-  return `${formatNumber(count, uiLocale)}${showPlus ? '+' : ''}`
-}
-
 export function appendContentTab(
   tabs: UserDetailTab[],
   userPath: string,
@@ -38,10 +24,7 @@ export function appendContentTab(
   const routeSuffix = `/${key}`
   if (count === 0 && activeRouteSuffix !== routeSuffix) return
 
-  const countDisplay = formatProfilePostCount(count, {
-    capped: metrics?.post_counts_capped === true,
-    uiLocale,
-  })
+  const countDisplay = formatNumber(count, uiLocale)
   tabs.push({
     value: key,
     label: t(labelKey, { count: countDisplay }),
