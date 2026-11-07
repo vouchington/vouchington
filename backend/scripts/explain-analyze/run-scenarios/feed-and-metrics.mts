@@ -70,6 +70,15 @@ export async function runFeedAndMetricScenarios() {
   await runAndCapture('notifications-unread-summary', () =>
     getUnreadNotificationsSummary(seedUser.id, 10),
   )
+  registerScenarioContract('community-activity-digest-recipients', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_community_members__active_moderator_user_id'] },
+      // Default batch is 250. One live lookup per inspected row stays under this cap.
+      { kind: 'maxProcessedRows', relation: 'community_members', max: 1200 },
+      { kind: 'maxProcessedRows', relation: 'users', max: 600 },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 600 },
+    ],
+  })
   await runAndCapture('community-activity-digest-recipients', () =>
     listCommunityActivityDigestRecipientPage(),
   )

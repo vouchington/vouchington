@@ -26,15 +26,16 @@ export function ModQueuePostsPanel({
 }) {
   const t = useTranslations()
   const { clearError, endCursor, fetchError, hasNextPage, loadMore, loadingMore, resetKey } = queue
-  if (queue.pendingPosts.length === 0) {
-    return (
-      <p
-        className='py-6 text-center text-sm text-muted-foreground'
-        data-pw='mod-queue-posts-empty'
-      >
-        {t('extracted.communities.modQueue.noPendingPosts_df860938')}
-      </p>
-    )
+  const pendingPostsEmpty = (
+    <p
+      className='py-6 text-center text-sm text-muted-foreground'
+      data-pw='mod-queue-posts-empty'
+    >
+      {t('extracted.communities.modQueue.noPendingPosts_df860938')}
+    </p>
+  )
+  if (queue.pendingPosts.length === 0 && !hasNextPage) {
+    return pendingPostsEmpty
   }
 
   return (
@@ -47,24 +48,30 @@ export function ModQueuePostsPanel({
       clearError={clearError}
       resetKey={resetKey}
     >
-      <ModQueuePosts
-        activeAction={queue.state.activeAction}
-        activeKey={activeKey}
-        bulkDisabled={selection.mutationsDisabled}
-        communitySlug={communitySlug}
-        currentUserId={currentUserId}
-        loading={queue.state.loading}
-        onActiveChange={onActiveChange}
-        onApprove={actions.handleApprove}
-        onCancelReject={() => queue.dispatch({ type: 'reject-cancelled' })}
-        onRejectStart={postId => queue.dispatch({ type: 'reject-started', postId })}
-        onRejectSubmit={actions.handleRejectSubmit}
-        onRejectionReasonChange={value => queue.dispatch({ type: 'reject-reason-changed', value })}
-        onSelectionToggle={postId => selection.toggleSelected(`post:${postId}`)}
-        posts={queue.pendingPosts}
-        rejectionReason={queue.state.rejectionReason}
-        selectedIds={selection.selectedPostIds}
-      />
+      {queue.pendingPosts.length > 0 ? (
+        <ModQueuePosts
+          activeAction={queue.state.activeAction}
+          activeKey={activeKey}
+          bulkDisabled={selection.mutationsDisabled}
+          communitySlug={communitySlug}
+          currentUserId={currentUserId}
+          loading={queue.state.loading}
+          onActiveChange={onActiveChange}
+          onApprove={actions.handleApprove}
+          onCancelReject={() => queue.dispatch({ type: 'reject-cancelled' })}
+          onRejectStart={postId => queue.dispatch({ type: 'reject-started', postId })}
+          onRejectSubmit={actions.handleRejectSubmit}
+          onRejectionReasonChange={value =>
+            queue.dispatch({ type: 'reject-reason-changed', value })
+          }
+          onSelectionToggle={postId => selection.toggleSelected(`post:${postId}`)}
+          posts={queue.pendingPosts}
+          rejectionReason={queue.state.rejectionReason}
+          selectedIds={selection.selectedPostIds}
+        />
+      ) : (
+        pendingPostsEmpty
+      )}
     </InfiniteScroll>
   )
 }

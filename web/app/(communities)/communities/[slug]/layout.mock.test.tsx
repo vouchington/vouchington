@@ -101,6 +101,38 @@ describe('CommunityLayout', () => {
     expect(mockGetCommunityMembers).toHaveBeenCalledTimes(2)
   })
 
+  it('follows an empty moderator page when later live moderators exist', async () => {
+    mockGetCommunityListItemCounts.mockResolvedValue({ topic: 0, rss_feed: 0 })
+    mockGetCommunityMembers.mockImplementation(
+      (_slug: string, options?: { searchParams?: { role?: string; after?: string } }) => {
+        if (options?.searchParams?.role === 'moderator' && !options.searchParams.after) {
+          return Promise.resolve({
+            results: [],
+            page_info: { has_next_page: true, start_cursor: null, end_cursor: 'cursor-1' },
+            community_members: {},
+            users: {},
+          })
+        }
+        return Promise.resolve({
+          results: [{ __entity_type: 'community_member', id: 'member-2' }],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+          community_members: { 'member-2': { id: 'member-2', user_id: 'user-2' } },
+          users: {},
+        })
+      },
+    )
+
+    const result = await CommunityLayout({
+      params: Promise.resolve({ slug: 'rewards' }),
+      children: <div>child</div>,
+    })
+
+    expect(result).toBeDefined()
+    expect(mockGetCommunityMembers).toHaveBeenCalledWith('rewards', {
+      searchParams: { role: 'moderator', limit: 20, after: 'cursor-1' },
+    })
+  })
+
   it('returns notFound before loading members when the community is missing', async () => {
     mockGetCommunity.mockResolvedValueOnce(null)
 

@@ -83,23 +83,21 @@ describe('GET /api/v1/users/:idOrSlug paginated public collections', () => {
       })
     }
 
-    const first = await createRequest()
-      .get(`/api/v1/users/${owner.username}/communities/member?limit=2`)
-      .expect(200)
-    const second = await createRequest()
-      .get(
-        `/api/v1/users/${owner.username}/communities/member?limit=2&after=${encodeURIComponent(first.body.page_info.end_cursor)}`,
-      )
-      .expect(200)
+    const seen: string[] = []
+    let after: string | undefined
+    for (let step = 0; step < 6; step++) {
+      const path = after
+        ? `/api/v1/users/${owner.username}/communities/member?limit=2&after=${encodeURIComponent(after)}`
+        : `/api/v1/users/${owner.username}/communities/member?limit=2`
+      const page = await createRequest().get(path).expect(200)
+      expect(page.body.results.length).toBeLessThanOrEqual(2)
+      seen.push(...page.body.results.map((community: { id: string }) => community.id))
+      if (!page.body.page_info.has_next_page) break
+      expect(page.body.page_info.end_cursor).toEqual(expect.any(String))
+      after = page.body.page_info.end_cursor
+    }
 
-    expect(first.body.results).toHaveLength(2)
-    expect(first.body.page_info.has_next_page).toBe(true)
-    expect(second.body.results).toHaveLength(1)
-    expect(second.body.page_info.has_next_page).toBe(false)
-    const resultIds = [...first.body.results, ...second.body.results].map(
-      (community: { id: string }) => community.id,
-    )
-    expect(resultIds).toEqual(visibleIds)
+    expect(seen).toEqual(visibleIds)
   })
 
   it('rejects an invalid community-membership cursor', async () => {

@@ -19,7 +19,7 @@ export const searchTopicAliases = async ({
   topicId?: string
   limit?: number
   after?: string
-}): Promise<{ results: SearchedTopicAlias[]; hasNextPage: boolean }> => {
+}): Promise<{ results: SearchedTopicAlias[]; hasNextPage: boolean; endAlias: string | null }> => {
   const limit = Math.max(1, Math.min(100, rawLimit ?? 24))
   const values: (string | number)[] = []
   const filters: string[] = []
@@ -41,29 +41,46 @@ export const searchTopicAliases = async ({
     filters.push(`alias > $${values.push(after)}`)
   }
 
+  const limitParam = values.push(limit + 1)
+  const where = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : ''
   const query = `/* searchTopicAliases */
+    WITH alias_page AS MATERIALIZED (
+      SELECT topic_aliases.topic_id, topic_aliases.alias
+      FROM topic_aliases
+      ${where}
+      ORDER BY alias
+      LIMIT $${limitParam}
+    )
     SELECT
-      topic_aliases.topic_id,
-      topic_aliases.alias,
+      page.topic_id,
+      page.alias,
       json_build_object(
         'id', topics.id,
         'name', topics.name,
         'slug', topics.slug,
         'topic_type', topics.topic_type
-      ) AS topic
-    FROM topic_aliases
-    JOIN topics
-      ON topics.id = topic_aliases.topic_id
-      AND topics.deleted_at IS NULL
-    ${filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : ''}
-    ORDER BY alias
-    LIMIT $${values.push(limit + 1)}
+      ) AS topic,
+      (topics.id IS NOT NULL) AS kept
+    FROM alias_page page
+    LEFT JOIN LATERAL (
+      SELECT live.id, live.name, live.slug, live.topic_type
+      FROM topics live
+      WHERE live.id = page.topic_id
+        AND live.deleted_at IS NULL
+      LIMIT 1
+    ) topics ON TRUE
+    ORDER BY page.alias
   `
 
-  const { rows } = await read<SearchedTopicAlias>(query, values)
+  const { rows } = await read<SearchedTopicAlias & { kept: boolean }>(query, values)
   const hasNextPage = rows.length > limit
-  const results = rows.slice(0, limit)
-  return { results, hasNextPage }
+  const inspected = rows.slice(0, limit)
+  const results = inspected.flatMap(row => {
+    if (!row.kept) return []
+    const { kept, ...alias } = row
+    return [alias]
+  })
+  return { results, hasNextPage, endAlias: hasNextPage ? (inspected.at(-1)?.alias ?? null) : null }
 }
 
 export function topicAliasSearchCursorScope(filters: {

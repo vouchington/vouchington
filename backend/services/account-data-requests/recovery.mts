@@ -26,47 +26,45 @@ export async function claimRecoverableDataRequests(
   // Both mutation streams consume one shared, globally ordered candidate page.
   const { rows: candidateRows } = await transaction<{ id: string; user_id: string | null }>(sql`
     /* claimRecoverableDataRequests:candidates */
-    WITH orphan_ids AS (
-      -- cross-partition: a deleted user's unfinished export can be in any request range
-      -- no-mistakes-disable-next-line postgres-required-predicates: deleted users' unfinished exports span all retained request ranges
-      SELECT id, user_id FROM user_data_requests
-      WHERE user_id IS NULL AND completed_at IS NULL AND failed_at IS NULL
-        AND (${requestIds ?? null}::uuid[] IS NULL OR id = ANY(${requestIds ?? null}::uuid[]))
-      ORDER BY id LIMIT ${batchSize}
-    ), active_ids AS (
-      -- cross-partition: stalled active exports remain recoverable across every retained request range
-      -- no-mistakes-disable-next-line postgres-required-predicates: stalled active exports must be recovered across all ranges
-      SELECT request.id, request.user_id FROM user_data_requests request
-      JOIN users active_user ON active_user.id = request.user_id AND active_user.deleted_at IS NULL
-      WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
-        AND request.completed_at IS NULL AND request.failed_at IS NULL
-        AND ((request.processing_started_at IS NULL AND request.dispatched_at < NOW() - ${ACCOUNT_DATA_REQUESTS_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
-          OR request.processing_started_at < NOW() - ${ACCOUNT_DATA_REQUESTS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
-      ORDER BY request.id LIMIT ${batchSize}
-    )
-    SELECT id, user_id FROM (SELECT * FROM orphan_ids UNION ALL SELECT * FROM active_ids) candidates
-    ORDER BY id LIMIT ${batchSize}
+    -- cross-partition: unfinished exports remain recoverable across every retained request range
+    -- no-mistakes-disable-next-line postgres-required-predicates: unfinished exports span all retained request ranges
+    SELECT id, user_id FROM user_data_requests request
+    WHERE request.completed_at IS NULL AND request.failed_at IS NULL
+      AND (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
+      AND (
+        request.user_id IS NULL
+        OR (request.processing_started_at IS NULL AND request.dispatched_at < NOW() - ${ACCOUNT_DATA_REQUESTS_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
+        OR request.processing_started_at < NOW() - ${ACCOUNT_DATA_REQUESTS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
+      )
+    ORDER BY request.id
+    LIMIT ${batchSize}
   `)
   const selectedIds = candidateRows.map(row => row.id)
+  const activeUserIds: string[] = []
+  const deletedUserIds: string[] = []
+  for (const userId of [
+    ...new Set(candidateRows.flatMap(row => (row.user_id ? [row.user_id] : []))),
+  ].toSorted()) {
+    // oxlint-disable-next-line no-await-in-loop -- sorted lifecycle locks fence every candidate before a request-row lock.
+    if (await lockActiveDataRequestUser(transaction, userId)) activeUserIds.push(userId)
+    else deletedUserIds.push(userId)
+  }
   const { rowCount: deletedCount } =
     await transaction(sql`/* claimRecoverableDataRequests:deletedUsers */
     WITH candidates AS (
-      SELECT id FROM user_data_requests
-      WHERE id = ANY(${selectedIds}::uuid[]) AND user_id IS NULL
-        AND completed_at IS NULL AND failed_at IS NULL
-      ORDER BY id LIMIT ${batchSize} FOR UPDATE SKIP LOCKED
+      SELECT request.id FROM user_data_requests request
+      WHERE request.id = ANY(${selectedIds}::uuid[])
+        AND request.completed_at IS NULL AND request.failed_at IS NULL
+        AND (
+          request.user_id IS NULL
+          OR request.user_id = ANY(${deletedUserIds}::uuid[])
+        )
+      ORDER BY request.id LIMIT ${batchSize} FOR UPDATE SKIP LOCKED
     )
     UPDATE user_data_requests SET failed_at = CURRENT_TIMESTAMP,
       last_error_message = 'User was deleted before the export completed'
     WHERE id IN (SELECT id FROM candidates)
   `)
-  const activeUserIds: string[] = []
-  for (const userId of [
-    ...new Set(candidateRows.flatMap(row => (row.user_id ? [row.user_id] : []))),
-  ].toSorted()) {
-    // oxlint-disable-next-line no-await-in-loop -- sorted user lifecycle locks fence every candidate before the claim update.
-    if (await lockActiveDataRequestUser(transaction, userId)) activeUserIds.push(userId)
-  }
   if (activeUserIds.length === 0) {
     await transaction.commit()
     return {

@@ -1,11 +1,12 @@
 import { createTestDataRequestSweepNeighbor } from '@voucha/test-helpers/account-data-request-sweep-neighbor'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestUser,
   makeUserDataRequestRecoverableForTest,
   restoreUser,
   softDeleteUser,
 } from '@voucha/test-helpers'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { createDataRequest } from './create.mts'
 import { claimRecoverableDataRequests } from './recovery.mts'
 import { dataRequestConfig } from './work-limits.mts'
@@ -76,6 +77,34 @@ describe('account data request recovery', () => {
     expect(await markDataRequestFailed(request.id, staleAttemptId, 'stale failure', true)).toBe(
       false,
     )
+  })
+
+  it('locks a deleted owner before failing the export', async () => {
+    const user = await createTestUser()
+    const request = await createDataRequest(user.id, user.id)
+    await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
+    await softDeleteUser(user.id)
+    let heldBeforeFail = false
+    onTestFinished(
+      runBeforePostgresStatementForTest(
+        'claimRecoverableDataRequests:deletedUsers',
+        async query => {
+          const { rows } = await query<{ held: boolean }>(
+            `/* recoveryLockOrder */ SELECT EXISTS (
+              SELECT 1 FROM pg_locks
+              WHERE locktype = 'advisory' AND granted AND pid = pg_backend_pid() AND objsubid = 1
+            ) AS held`,
+          )
+          if (rows[0]?.held) heldBeforeFail = true
+        },
+      ),
+    )
+    try {
+      expect((await claimRecoverableDataRequests([request.id])).requests).toEqual([])
+      expect(heldBeforeFail).toBe(true)
+    } finally {
+      await restoreUser(user.id)
+    }
   })
 
   it('does not recover an export after its owner is deleted', async () => {

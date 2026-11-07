@@ -1,6 +1,7 @@
 import { SEED_PREFIX, runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { searchCommunityPosts, searchPendingPosts } from '@services/communities/publications/get'
+import { runPendingReviewDensityScenario } from './pending-review-density.mts'
 import { searchCommunityAgentPromptSimulationPosts } from '@services/community-agent-prompts/simulations'
 import { withSeedAnchorClock } from '../seed-clock.mts'
 
@@ -119,11 +120,6 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
       run: () => searchCommunityPosts(communityId, { time_range: '1m', limit: 25 }),
     },
     {
-      id: 'search-pending-community-posts',
-      description: 'Pending community search lists posts across the community history.',
-      run: () => searchPendingPosts(communityId, { limit: 25 }),
-    },
-    {
       id: 'search-community-agent-simulation-posts',
       description: 'Simulation scans the community approval window.',
       run: () =>
@@ -143,10 +139,26 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
     await runAndCapture(scenario.id, scenario.run)
   }
 
+  // The pending page is the review keyset, not the approved candidate_posts CTE.
+  // search-pending-posts-dense-approved proves idx_comm_post_reviews__pending.
+  registerScenarioContract('search-pending-community-posts', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 720 },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 1200 },
+    ],
+    crossPartition: {
+      posts: 'Pending community search lists posts across the community history.',
+    },
+  })
+  await runAndCapture('search-pending-community-posts', () =>
+    searchPendingPosts(communityId, { limit: 25 }),
+  )
+
   const communityHotScenarios = getCommunityHotScenarios(await prepareCommunityHotCursors())
   for (const scenario of communityHotScenarios) {
     registerScenarioContract(scenario.id, scenario.contract)
     // no-mistakes-disable-next-line query-reached-per-item: capture both pages separately.
     await runAndCapture(scenario.id, scenario.run)
   }
+  await runPendingReviewDensityScenario()
 }

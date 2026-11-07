@@ -10,6 +10,8 @@ import type {
   CommunityMemberRole,
   CommunityMemberRosterVisibility,
 } from '../types.mts'
+import { appendUserMembershipPrivacyFilter } from './member-privacy-filter.mts'
+import { appendMembershipPageSource, membershipPageRoles } from './member-roster-page.mts'
 
 export async function getCommunityMember(
   communityId: string,
@@ -54,57 +56,82 @@ export async function searchCommunityMembers(
     cursorId = cursor.id
   }
 
+  const roster = memberRosterFilter(options)
+  // The id page is index-only, so a low row estimate cannot bitmap the member heap.
+  const afterId =
+    cursorName !== undefined && cursorId !== undefined
+      ? cursorId
+      : '00000000-0000-0000-0000-000000000000'
   const query = sql`/* searchCommunityMembers */
-    SELECT cm.*
-    FROM community_members cm
-    INNER JOIN users member_user ON member_user.id = cm.user_id
-      AND member_user.deleted_at IS NULL
-    WHERE cm.community_id = ${communityId}
-      AND cm.removed_at IS NULL
+    WITH membership_page AS MATERIALIZED (
+      SELECT full_member.*
+      FROM (SELECT ${communityId}::uuid AS community_id, ${afterId}::uuid AS after_id LIMIT 1) requested
   `
-
-  appendVisibleMemberFilter(query, options)
-
-  if (options?.role) {
-    query.append(sql` AND cm.role = ${options.role}`)
-  }
-
-  if (cursorName !== undefined && cursorId !== undefined) {
-    query.append(sql` AND cm.id > ${cursorId}`)
-  }
-
+  appendMembershipPageSource(query, membershipPageRoles(options?.role, roster), limit)
   query.append(sql`
-    ORDER BY cm.id ASC
-    LIMIT ${limit + 1}
+      JOIN LATERAL (
+        SELECT loaded.* FROM community_members loaded
+        WHERE loaded.id = page.id
+        LIMIT 1
+      ) full_member ON TRUE
+    )
+    SELECT cm.*, (member_user.id IS NOT NULL) AS kept
+    FROM membership_page cm
+    LEFT JOIN LATERAL (
+      SELECT live_user.id, live_user.community_memberships_visibility
+      FROM users live_user
+      WHERE live_user.id = cm.user_id
+        AND live_user.deleted_at IS NULL
+      LIMIT 1
+    ) member_user ON TRUE
   `)
+  appendMemberRosterVisibilityFilter(query, roster, options?.currentUser ?? null)
+  query.append(sql` ORDER BY cm.id ASC`)
 
-  const { rows } = await read(query, options)
-
+  const { rows } = await read<CommunityMember & { kept: boolean }>(query, options)
   const hasNextPage = rows.length > limit
-  const results: CommunityMember[] = []
-  for (let i = 0; i < Math.min(rows.length, limit); i++) {
-    results.push(rows[i]! as CommunityMember)
-  }
+  const inspected = rows.slice(0, limit)
+  const results = inspected.flatMap(row => (row.kept ? [membershipWithoutKept(row)] : []))
+  const end = inspected.at(-1)
 
   return {
     results,
     page_info: {
       has_next_page: hasNextPage,
-      end_cursor:
-        hasNextPage && results.length > 0
-          ? encodeCursor({
-              name: results.at(-1)!.id,
-              id: results.at(-1)!.id,
-            })
-          : null,
-      start_cursor:
-        results.length > 0 ? encodeCursor({ name: results[0]!.id, id: results[0]!.id }) : null,
+      end_cursor: hasNextPage && end ? encodeCursor({ name: end.id, id: end.id }) : null,
+      start_cursor: results[0] ? encodeCursor({ name: results[0].id, id: results[0].id }) : null,
     },
   }
 }
 
-function appendVisibleMemberFilter(
+function membershipWithoutKept(row: CommunityMember & { kept: boolean }): CommunityMember {
+  const { kept, ...member } = row
+  void kept
+  return member
+}
+
+function appendMemberRosterVisibilityFilter(
   query: SQLStatement,
+  roster: 'all' | 'moderators' | 'privacy',
+  currentUser: PrivateUser | null,
+) {
+  switch (roster) {
+    case 'all':
+    case 'moderators':
+      return
+    case 'privacy':
+      query.append(sql` AND (cm.role IN ('owner', 'moderator') OR `)
+      appendUserMembershipPrivacyFilter(query, currentUser)
+      query.append(sql`)`)
+      return
+    default: {
+      const unexpected: never = roster
+      throw new Error(`Unexpected member roster ${String(unexpected)}`)
+    }
+  }
+}
+
+function memberRosterFilter(
   options:
     | (QueryOptions & {
         currentUser?: PrivateUser | null
@@ -112,32 +139,19 @@ function appendVisibleMemberFilter(
         viewerMembership?: CommunityMember | null
       })
     | undefined,
-) {
+): 'all' | 'moderators' | 'privacy' {
   const currentUser = options?.currentUser ?? null
-  const rosterVisibility = options?.rosterVisibility ?? 'public'
   const canModerateRoster =
     currentUser?.roles.includes('administrator') ||
     options?.viewerMembership?.role === 'owner' ||
     options?.viewerMembership?.role === 'moderator'
-
-  if (canModerateRoster) return
-
+  if (canModerateRoster) return 'all'
   const regularMembersVisible = communityRosterAllowsRegularMembers(
-    rosterVisibility,
+    options?.rosterVisibility ?? 'public',
     currentUser,
     options?.viewerMembership,
   )
-  if (!regularMembersVisible) {
-    query.append(sql` AND cm.role IN ('owner', 'moderator')`)
-    return
-  }
-
-  query.append(sql` AND (
-    cm.role IN ('owner', 'moderator')
-    OR `)
-  appendUserMembershipPrivacyFilter(query, currentUser)
-  query.append(sql`
-  )`)
+  return regularMembersVisible ? 'privacy' : 'moderators'
 }
 // oxlint-disable-next-line typescript/consistent-return -- Typed rosterVisibility switch is exhaustive; Oxlint misses its terminal flow.
 function communityRosterAllowsRegularMembers(
@@ -155,46 +169,4 @@ function communityRosterAllowsRegularMembers(
     case 'moderators':
       return false
   }
-}
-
-export function appendUserMembershipPrivacyFilter(
-  query: SQLStatement,
-  currentUser: PrivateUser | null,
-) {
-  if (currentUser?.roles.includes('administrator')) {
-    query.append(sql`TRUE`)
-    return
-  }
-  if (!currentUser) {
-    query.append(sql`member_user.community_memberships_visibility = 'everyone'`)
-    return
-  }
-  query.append(sql`(
-    cm.user_id = ${currentUser.id}
-    OR member_user.community_memberships_visibility IN ('everyone', 'users')
-    OR (
-      member_user.community_memberships_visibility = 'followers'
-      AND EXISTS (
-        SELECT 1 FROM relation__user__follow__user rufu
-        WHERE rufu.subject_id = ${currentUser.id}
-          AND rufu.object_id = cm.user_id
-          AND rufu.deleted_at IS NULL
-      )
-    )
-    OR (
-      member_user.community_memberships_visibility = 'mutual_followers'
-      AND EXISTS (
-        SELECT 1 FROM relation__user__follow__user viewer_follow
-        WHERE viewer_follow.subject_id = ${currentUser.id}
-          AND viewer_follow.object_id = cm.user_id
-          AND viewer_follow.deleted_at IS NULL
-      )
-      AND EXISTS (
-        SELECT 1 FROM relation__user__follow__user member_follow
-        WHERE member_follow.subject_id = cm.user_id
-          AND member_follow.object_id = ${currentUser.id}
-          AND member_follow.deleted_at IS NULL
-      )
-    )
-  )`)
 }

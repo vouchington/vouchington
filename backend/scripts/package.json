@@ -83,6 +83,7 @@
     "@services/oauth-authorization-server": "workspace:^",
     "@services/openai-moderation": "workspace:^",
     "@services/platform-stats": "workspace:^",
+    "@services/post-clearance": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",

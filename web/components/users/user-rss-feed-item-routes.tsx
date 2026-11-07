@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getUserRssFeedItemsCollection } from '@/lib/api/server'
 import { RssFeedItemModal } from '@/components/rss-feed-items/rss-feed-item-modal'
-import { UserRssFeedItemList } from './user-rss-feed-item-list'
+import { PaginatedUserRssFeedItemList } from './paginated-user-rss-feed-item-list'
 import { USER_RELATION_ACTIONS } from './user-relation-actions'
 import { getOwnerRelationAction } from './user-relation-owner-action'
 import { createUserPathname } from '@/lib/links/entity-href'
@@ -33,13 +33,12 @@ export async function UserHiddenRssFeedItemsRoute({
           {t('extracted.users.userRssFeedItemRoutes.hiddenRssItems_28d66515')}
         </h1>
       )}
-      <UserRssFeedItemList
-        items={itemsData.results}
+      <PaginatedUserRssFeedItemList
+        initialData={itemsData}
+        endpoint={`/api/v1/users/${encodeURIComponent(idOrUsername)}/rss-feed-items/hidden`}
+        params={mediaType ? { media_type: mediaType } : {}}
         emptyTitle='No hidden RSS items'
         emptyDescription='There are no hidden RSS feed items to show.'
-        thumbnailUrls={itemsData.rss_feed_item_thumbnail_url}
-        embeds={itemsData.rss_feed_item_embeds}
-        hackerNewsReferences={itemsData.rss_feed_item_hacker_news_references}
         relationAction={await getOwnerRelationAction(
           idOrUsername,
           USER_RELATION_ACTIONS.rssFeedItem.hidden,
@@ -49,7 +48,7 @@ export async function UserHiddenRssFeedItemsRoute({
           pathname={modalPathname ?? createUserPathname(idOrUsername, '/rss-feed-items/hidden')}
           searchParams={searchParams}
         />
-      </UserRssFeedItemList>
+      </PaginatedUserRssFeedItemList>
     </>
   )
 }
@@ -69,13 +68,12 @@ export async function UserSavedRssFeedItemsRoute({
   if (!itemsData) notFound()
 
   return (
-    <UserRssFeedItemList
-      items={itemsData.results}
+    <PaginatedUserRssFeedItemList
+      initialData={itemsData}
+      endpoint={`/api/v1/users/${encodeURIComponent(idOrUsername)}/rss-feed-items/saved`}
+      params={mediaType ? { media_type: mediaType } : {}}
       emptyTitle='No saved RSS items'
       emptyDescription='There are no saved RSS feed items to show.'
-      thumbnailUrls={itemsData.rss_feed_item_thumbnail_url}
-      embeds={itemsData.rss_feed_item_embeds}
-      hackerNewsReferences={itemsData.rss_feed_item_hacker_news_references}
       relationAction={await getOwnerRelationAction(
         idOrUsername,
         USER_RELATION_ACTIONS.rssFeedItem.saved,
@@ -85,7 +83,7 @@ export async function UserSavedRssFeedItemsRoute({
         pathname={modalPathname ?? createUserPathname(idOrUsername, '/rss-feed-items/saved')}
         searchParams={searchParams}
       />
-    </UserRssFeedItemList>
+    </PaginatedUserRssFeedItemList>
   )
 }
 
@@ -104,18 +102,17 @@ export async function UserViewedRssFeedItemsRoute({
   if (!itemsData) notFound()
 
   return (
-    <UserRssFeedItemList
-      items={itemsData.results}
+    <PaginatedUserRssFeedItemList
+      initialData={itemsData}
+      endpoint={`/api/v1/users/${encodeURIComponent(idOrUsername)}/rss-feed-items/viewed`}
+      params={mediaType ? { media_type: mediaType } : {}}
       emptyTitle='No viewed RSS items'
       emptyDescription='There are no viewed RSS feed items to show.'
-      thumbnailUrls={itemsData.rss_feed_item_thumbnail_url}
-      embeds={itemsData.rss_feed_item_embeds}
-      hackerNewsReferences={itemsData.rss_feed_item_hacker_news_references}
     >
       <RssFeedItemModal
         pathname={modalPathname ?? createUserPathname(idOrUsername, '/rss-feed-items/viewed')}
         searchParams={searchParams}
       />
-    </UserRssFeedItemList>
+    </PaginatedUserRssFeedItemList>
   )
 }

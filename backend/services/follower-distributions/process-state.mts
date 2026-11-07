@@ -24,29 +24,46 @@ export async function getDistributionForUpdate(
   return (rows[0] as DistributionRow | undefined) ?? null
 }
 
+export type RecipientBatch = {
+  ids: string[]
+  inspectedIds: string[]
+  hasMore: boolean
+}
+
 export async function getNextRecipientBatch(
   distribution: DistributionRow,
   chunkSize: number,
   query: TransactionQuery,
-): Promise<string[]> {
+): Promise<RecipientBatch> {
   if (distribution.audience === 'selected_followers') {
-    const { rows } = await query(sql`/* getNextRecipientBatch:selected */
-      SELECT recipients.recipient_user_id AS id
-      FROM follower_distribution_selected_recipients recipients
-      JOIN users ON users.id = recipients.recipient_user_id
-      WHERE recipients.distribution_id = ${distribution.id}
-        AND users.deleted_at IS NULL
-        AND (
-          ${distribution.cursor_recipient_id}::uuid IS NULL
-          OR recipients.recipient_user_id > ${distribution.cursor_recipient_id}
-        )
-      ORDER BY recipients.recipient_user_id
-      LIMIT ${chunkSize}
+    const { rows } = await query<{
+      id: string
+      kept: boolean
+    }>(sql`/* getNextRecipientBatch:selected */
+      WITH recipient_page AS MATERIALIZED (
+        SELECT recipients.recipient_user_id AS id
+        FROM follower_distribution_selected_recipients recipients
+        WHERE recipients.distribution_id = ${distribution.id}
+          AND (
+            ${distribution.cursor_recipient_id}::uuid IS NULL
+            OR recipients.recipient_user_id > ${distribution.cursor_recipient_id}
+          )
+        ORDER BY recipients.recipient_user_id
+        LIMIT ${chunkSize}
+      )
+      SELECT page.id, (users.id IS NOT NULL) AS kept
+      FROM recipient_page page
+      LEFT JOIN users ON users.id = page.id AND users.deleted_at IS NULL
+      ORDER BY page.id
     `)
-    return rows.map(row => row.id as string)
+    return {
+      ids: rows.flatMap(row => (row.kept ? [row.id] : [])),
+      inspectedIds: rows.map(row => row.id),
+      hasMore: rows.length === chunkSize,
+    }
   }
 
-  const { rows } = await query(sql`/* getNextRecipientBatch */
+  const { rows } = await query<{ user_id: string }>(sql`/* getNextRecipientBatch */
     SELECT subject_id AS user_id
     FROM relation__user__follow__user
     WHERE object_id = ${distribution.sender_user_id}
@@ -62,7 +79,8 @@ export async function getNextRecipientBatch(
     ORDER BY subject_id
     LIMIT ${chunkSize}
   `)
-  return rows.map(row => row.user_id as string)
+  const ids = rows.map(row => row.user_id)
+  return { ids, inspectedIds: ids, hasMore: ids.length === chunkSize }
 }
 
 export async function ensureDeliveryRows(

@@ -97,16 +97,31 @@ export async function listLiveItemSourceFeedsPage(
   after: string | null,
 ): Promise<IdPage> {
   const limit = getPostPublicationWorkLimit('capture_batch_size')
-  const { rows } = await write<{ id: string }>(
+  const { rows } = await write<{ id: string; kept: boolean }>(
     `/* listLiveItemSourceFeedsPage */
-    SELECT source.rss_feed_id AS id FROM rss_feed_item_sources source
-    JOIN rss_feeds feed ON feed.id = source.rss_feed_id AND feed.deleted_at IS NULL
-    WHERE source.rss_feed_item_id = $1::uuid
-      AND source.rss_feed_id > COALESCE($2::uuid, $4::uuid)
-    ORDER BY source.rss_feed_id LIMIT $3`,
+    WITH source_page AS MATERIALIZED (
+      SELECT source.rss_feed_id AS id
+      FROM rss_feed_item_sources source
+      WHERE source.rss_feed_item_id = $1::uuid
+        AND source.rss_feed_id > COALESCE($2::uuid, $4::uuid)
+      ORDER BY source.rss_feed_id
+      LIMIT $3
+    )
+    SELECT page.id, (feed.id IS NOT NULL) AS kept
+    FROM source_page page
+    LEFT JOIN LATERAL (
+      SELECT feed.id
+      FROM rss_feeds feed
+      WHERE feed.id = page.id AND feed.deleted_at IS NULL
+      LIMIT 1
+    ) feed ON TRUE
+    ORDER BY page.id`,
     [itemId, after, limit, MIN_UUID],
   )
-  return page(rows, limit)
+  return {
+    ids: rows.flatMap(row => (row.kept ? [row.id] : [])),
+    cursor: rows.length === limit ? rows.at(-1)!.id : null,
+  }
 }
 
 function page(rows: Array<{ id: string }>, limit: number): IdPage {

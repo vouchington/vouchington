@@ -76,19 +76,18 @@ export async function generateSitemapPage<T extends SourceEntry>(
   }
 
   if (!progress.finished) {
-    const rows = await dependencies.readPage({
+    const source = await dependencies.readPage({
       ...(progress.high_water_id ? { highWaterId: progress.high_water_id } : {}),
       ...(progress.after_id ? { afterId: progress.after_id } : {}),
       ...(progress.after_path ? { afterPath: progress.after_path } : {}),
       limit: maxRows + 1,
     })
-    if (rows.length > maxRows + 1) throw new Error('Sitemap source exceeded its query limit')
-    if (!progress.high_water_id && rows[0]) {
-      progress = { ...progress, high_water_id: rows[0].id }
+    if (!progress.high_water_id && source.boundId) {
+      progress = { ...progress, high_water_id: source.boundId }
       await dependencies.putProgress(progress)
     }
 
-    const pageRows = rows.slice(0, maxRows)
+    const pageRows = source.entries
     if (pageRows.length > 0) {
       const page = progress.page_count + 1
       if (page > SITEMAP_CONFIG.MAX_URLS_PER_SITEMAP) {
@@ -111,26 +110,34 @@ export async function generateSitemapPage<T extends SourceEntry>(
       } finally {
         await deleteTemporaryGzipFile(file.filePath)
       }
-      const last = pageRows.at(-1)
-      if (!last) throw new Error('Sitemap page lost its final row')
       progress = {
         ...progress,
-        after_id: last.id,
-        after_path: last.path ?? null,
+        after_id: source.afterId,
+        after_path: source.afterPath,
         page_count: page,
         content_hash: contentHash,
-        finished: rows.length <= maxRows,
+        finished: source.exhausted,
+      }
+    } else if (!source.exhausted && source.afterId) {
+      progress = {
+        ...progress,
+        after_id: source.afterId,
+        after_path: source.afterPath,
+        finished: false,
       }
     } else {
       progress = { ...progress, finished: true }
     }
     await dependencies.putProgress(progress)
     if (!progress.finished) {
+      const publishedAnotherPage = pageRows.length > 0
       return {
         manifest: null,
         hasMore: true,
         generationId: progress.generation_id,
-        continuationId: `${progress.generation_id}-${progress.page_count + 1}`,
+        continuationId: publishedAnotherPage
+          ? `${progress.generation_id}-${progress.page_count + 1}`
+          : `${progress.generation_id}-scan-${progress.after_id}`,
       }
     }
   }

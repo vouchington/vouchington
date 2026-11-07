@@ -59,6 +59,8 @@ export async function runAccountDataExportScenarios(): Promise<void> {
     allowEmptyResult: true,
     expectations: [
       {
+        // Stall compares dispatched_at with now(), so that predicate cannot be indexed.
+        // idx_user_data_requests__nonterminal_id orders unfinished rows; this gate stays at 500.
         kind: 'usesIndexes',
         indexes: ['user_data_requests__default_id_idx', 'user_data_requests__default_pkey'],
         anyOf: true,

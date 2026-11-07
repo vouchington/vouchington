@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { PaginatedUserRssFeedItemList } from '@/components/users/paginated-user-rss-feed-item-list'
 import { PaginatedUserRssFeedList } from '@/components/users/paginated-user-rss-feed-list'
 import { USER_RELATION_ACTIONS } from '@/components/users/user-relation-actions'
-import { UserRssFeedItemList } from '@/components/users/user-rss-feed-item-list'
 import { newsItems, rssFeeds } from '@/storybook/entities/fixtures/feeds'
 import { page_info } from '@/storybook/entities/fixtures/shared'
 import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
@@ -10,7 +10,7 @@ import {
   setStoryMutationFixture,
 } from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
-import type { RssFeedsListResponseBody } from '@/types/api-responses'
+import type { RssFeedItemsListResponseBody, RssFeedsListResponseBody } from '@/types/api-responses'
 
 const meta = {
   title: 'Users/RSS Feed Lists',
@@ -62,11 +62,19 @@ export const NoFeeds: Story = {
   ),
 }
 
+const savedItemsPage = {
+  results: newsItems.slice(0, 2),
+  page_info,
+  rss_feed_item_thumbnail_url: {},
+  rss_feed_item_embeds: {},
+} as RssFeedItemsListResponseBody
+
 export const SavedItems: Story = {
   render: () => (
     <StoryFrame width='max-w-3xl'>
-      <UserRssFeedItemList
-        items={newsItems.slice(0, 2)}
+      <PaginatedUserRssFeedItemList
+        initialData={savedItemsPage}
+        endpoint='/api/v1/users/user-alex/rss-feed-items/saved'
         emptyTitle='No saved items'
         emptyDescription='Items you save will appear here.'
       />
@@ -77,8 +85,9 @@ export const SavedItems: Story = {
 export const SavedItemsManaged: Story = {
   render: () => (
     <StoryFrame width='max-w-3xl'>
-      <UserRssFeedItemList
-        items={newsItems.slice(0, 2)}
+      <PaginatedUserRssFeedItemList
+        initialData={savedItemsPage}
+        endpoint='/api/v1/users/user-alex/rss-feed-items/saved'
         emptyTitle='No saved items'
         emptyDescription='Items you save will appear here.'
         relationAction={USER_RELATION_ACTIONS.rssFeedItem.saved}
@@ -90,8 +99,9 @@ export const SavedItemsManaged: Story = {
 export const NoSavedItems: Story = {
   render: () => (
     <StoryFrame width='max-w-3xl'>
-      <UserRssFeedItemList
-        items={[]}
+      <PaginatedUserRssFeedItemList
+        initialData={{ ...savedItemsPage, results: [] }}
+        endpoint='/api/v1/users/user-alex/rss-feed-items/saved'
         emptyTitle='No saved items'
         emptyDescription='Items you save will appear here.'
       />

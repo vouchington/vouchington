@@ -71,9 +71,16 @@ export async function listUserRemovedPosts(
   const { cursor, cursorScope, includePlatform } = traversal
 
   const query = buildUserRemovedPostsQuery(userId, { limit, includePlatform, cursor })
-  const { rows } = await read(query, options)
+  const { rows } = await read<UserRemovedPost & { kept: boolean }>(query, options)
   const hasNextPage = rows.length > limit
-  const results = rows.slice(0, limit) as UserRemovedPost[]
+  const inspected = rows.slice(0, limit)
+  const results = inspected.flatMap(row => {
+    if (!row.kept) return []
+    const { kept, ...result } = row
+    void kept
+    return [result]
+  })
+  const end = inspected.at(-1)
   const encodeResultCursor = (post: UserRemovedPost): string =>
     includePlatform
       ? encodeScopedTierPreciseUuidCursor(
@@ -88,8 +95,8 @@ export async function listUserRemovedPosts(
     results,
     page_info: {
       has_next_page: hasNextPage,
-      end_cursor: hasNextPage && results.length > 0 ? encodeResultCursor(results.at(-1)!) : null,
-      start_cursor: results.length > 0 ? encodeResultCursor(results[0]!) : null,
+      end_cursor: hasNextPage && end ? encodeResultCursor(end) : null,
+      start_cursor: results[0] ? encodeResultCursor(results[0]) : null,
     },
   }
 }

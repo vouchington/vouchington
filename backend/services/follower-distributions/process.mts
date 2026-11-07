@@ -28,18 +28,22 @@ export async function processFollowerDistributionChunk(
     return emptyResult(distributionId, true)
   }
   const recipients = await getNextRecipientBatch(distribution, chunkSize, query)
-  if (recipients.length === 0) {
+  if (recipients.inspectedIds.length === 0) {
     await markDistributionCompleted(distribution.id, query)
     await query.commit()
     return emptyResult(distribution.id, true)
   }
-  const targetRowsResult = await processTargetRows(distribution, recipients, query)
-  if (targetRowsResult.failed) {
-    await query.commit()
-    return emptyResult(distribution.id, true)
+  let notificationsToDeliver: FollowerDistributionProcessResult['notificationsToDeliver'] = []
+  if (recipients.ids.length > 0) {
+    const targetRowsResult = await processTargetRows(distribution, recipients.ids, query)
+    if (targetRowsResult.failed) {
+      await query.commit()
+      return emptyResult(distribution.id, true)
+    }
+    notificationsToDeliver = targetRowsResult.notificationsToDeliver
   }
-  const cursorRecipientId = recipients.at(-1)!
-  const completed = recipients.length < chunkSize
+  const cursorRecipientId = recipients.inspectedIds.at(-1)!
+  const completed = !recipients.hasMore
   if (!options.deferCursorUpdate) {
     await updateDistributionCursor(distribution.id, cursorRecipientId, query)
   }
@@ -50,8 +54,8 @@ export async function processFollowerDistributionChunk(
   return {
     distributionId: distribution.id,
     completed,
-    processed: recipients.length,
-    notificationsToDeliver: targetRowsResult.notificationsToDeliver,
+    processed: recipients.ids.length,
+    notificationsToDeliver,
     cursorRecipientId,
   }
 }

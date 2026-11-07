@@ -21224,6 +21224,67 @@
           "unique": false,
           "valid": true
         },
+        "idx_community_members__active_community_role_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__active_community_role_id ON public.community_members USING btree (community_id, role, id) WHERE (removed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "role",
+              "descending": false,
+              "expression": "role",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(removed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_members__active_moderator_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__active_moderator_user_id ON public.community_members USING btree (user_id, community_id) WHERE ((removed_at IS NULL) AND (role = ANY (ARRAY['owner'::community_member_roles, 'moderator'::community_member_roles])))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((removed_at IS NULL) AND (role = ANY (ARRAY['owner'::community_member_roles, 'moderator'::community_member_roles])))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_members__active_moderators": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -22523,7 +22584,7 @@
         "idx_comm_post_reviews__pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_comm_post_reviews__pending ON public.community_post_reviews USING btree (community_id) WHERE ((approved_at IS NULL) AND (rejected_at IS NULL))",
+          "definition": "CREATE INDEX idx_comm_post_reviews__pending ON public.community_post_reviews USING btree (community_id, post_id) WHERE ((approved_at IS NULL) AND (rejected_at IS NULL) AND (unpublished_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -22532,9 +22593,16 @@
               "expression": "community_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((approved_at IS NULL) AND (rejected_at IS NULL))",
+          "predicate": "((approved_at IS NULL) AND (rejected_at IS NULL) AND (unpublished_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -92232,6 +92300,33 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__created_by_id__review": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__created_by_id__review ON ONLY public.posts USING btree (created_by_id, id) WHERE (post_type = 'review'::post_types)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_type = 'review'::post_types)",
           "primary": false,
           "ready": true,
           "unique": false,

@@ -5,6 +5,7 @@ import {
   createTestUser,
   makeUserDataRequestRecoverableForTest,
   getUserDataRequestStatusAndS3KeyForTest,
+  softDeleteUser,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { dataRequestConfig } from './work-limits.mts'
@@ -82,6 +83,30 @@ describe('account export work caps', () => {
       hasMore: false,
     })
     expect(await neighbor.readState()).toEqual(neighbor.state)
+  })
+
+  it('fails a deleted owner inside the raw page and still claims the next live export', async () => {
+    const liveBefore = await createTestUser()
+    const deleted = await createTestUser()
+    const liveAfter = await createTestUser()
+    const before = await createDataRequest(liveBefore.id, liveBefore.id)
+    const removed = await createDataRequest(deleted.id, deleted.id)
+    const after = await createDataRequest(liveAfter.id, liveAfter.id)
+    await makeUserDataRequestRecoverableForTest(before.id, 'unstarted')
+    await makeUserDataRequestRecoverableForTest(removed.id, 'unstarted')
+    await makeUserDataRequestRecoverableForTest(after.id, 'unstarted')
+    await softDeleteUser(deleted.id)
+    const ids = [before.id, removed.id, after.id]
+
+    const claimed: string[] = []
+    for (let step = 0; step < 6; step++) {
+      const page = await claimRecoverableDataRequests(ids, 1)
+      claimed.push(...page.requests.map(request => request.requestId))
+      if (!page.hasMore) break
+    }
+
+    expect(claimed).toEqual([before.id, after.id])
+    expect((await getUserDataRequestStatusAndS3KeyForTest(removed.id))?.status).toBe('failed')
   })
 
   it('fails only one orphaned export per page and resumes its deleted-owner work', async () => {

@@ -53,7 +53,7 @@ app.route('/api/v1/topics/aliases').get(async (ctx: Context) => {
   const after = options.after
     ? decodeScopedAliasCursor(options.after, scope, 'Invalid cursor format').alias
     : undefined
-  const { results, hasNextPage } = await searchTopicAliases({
+  const { results, hasNextPage, endAlias } = await searchTopicAliases({
     prefixQuery: q,
     limit: options.limit,
     after,
@@ -63,10 +63,7 @@ app.route('/api/v1/topics/aliases').get(async (ctx: Context) => {
     page_info: {
       has_next_page: hasNextPage,
       start_cursor: results[0] ? encodeScopedAliasCursor(results[0].alias, scope) : null,
-      end_cursor:
-        hasNextPage && results.at(-1)
-          ? encodeScopedAliasCursor(results.at(-1)!.alias, scope)
-          : null,
+      end_cursor: hasNextPage && endAlias ? encodeScopedAliasCursor(endAlias, scope) : null,
     },
   })
 })

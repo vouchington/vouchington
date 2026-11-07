@@ -20,6 +20,7 @@ export function communityModerationSummarySelect(
         WHERE cpr.community_id = c.id
           AND cpr.approved_at IS NULL
           AND cpr.rejected_at IS NULL
+          AND cpr.unpublished_at IS NULL
       ), 0) AS pending_post_reviews,
       COALESCE((
         SELECT COUNT(*)::int
@@ -44,6 +45,7 @@ export function communityModerationSummarySelect(
         WHERE cpr.community_id = c.id
           AND cpr.approved_at IS NULL
           AND cpr.rejected_at IS NULL
+          AND cpr.unpublished_at IS NULL
           AND cpr.escalated_at IS NOT NULL
       ), 0) + COALESCE((
         SELECT COUNT(*)::int

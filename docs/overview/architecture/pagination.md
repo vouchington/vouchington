@@ -33,6 +33,10 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   the cursor can name a row the viewer was not shown. Decoding the opaque cursor can reveal that
   such a row exists and its sort key, not its content. Preserve filter inputs on every
   continuation request and reject a cursor whose encoded query or sort shape is incompatible.
+- Known accepted gap: `end_cursor` is best effort. It may resume after the last inspected row,
+  including a row the viewer was never shown because it was hidden, deleted, blocked, or otherwise
+  ineligible, so a page can come back short. The cursor stays opaque. Someone who decodes it could
+  learn that such a row exists and its sort key, such as an id or timestamp, but not its content.
 - Relevance-ranked RSS search uses the same rule with a score, microsecond publication timestamp,
   and UUID keyset. Its opaque scope binds normalized semantic query input, effective filters, and
   viewer identity only when a viewer-dependent filter is active.

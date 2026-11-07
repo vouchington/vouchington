@@ -160,6 +160,14 @@ private docs site at `/mcp/`, alongside the PostgreSQL reference.
 - **Alternatives** — `get_domain_ratings` takes exactly one of `url` or `hostname`; its schema
   enforces this with `minProperties`/`maxProperties`, which MCP argument validation checks.
 
+### Paged results
+
+`after` takes the previous page's `page_info.end_cursor`. The cursor is opaque and can skip past
+rows the caller cannot see. That is a known, accepted gap: continuation is best effort, and a short
+page can still have a next page. Decoding the cursor could show that a hidden, deleted, blocked, or
+otherwise ineligible row exists and its sort key, but not its content. See
+[cursor pagination](../pagination.md).
+
 ### Shared building blocks
 
 Schema validation, merged and manage-entity tool factories, bounded results, and untrusted-output

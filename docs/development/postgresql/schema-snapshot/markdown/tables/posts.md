@@ -143,6 +143,7 @@ _none_
 - `idx_posts__created_by_id`: `CREATE INDEX idx_posts__created_by_id ON ONLY public.posts USING btree (created_by_id, id)`
 - `idx_posts__created_by_id__community_id__id`: `CREATE INDEX idx_posts__created_by_id__community_id__id ON ONLY public.posts USING btree (created_by_id, community_id, id) WHERE (deleted_at IS NULL)`
 - `idx_posts__created_by_id__is_anonymous`: `CREATE INDEX idx_posts__created_by_id__is_anonymous ON ONLY public.posts USING btree (created_by_id, is_anonymous) WHERE (deleted_at IS NULL)`
+- `idx_posts__created_by_id__review`: `CREATE INDEX idx_posts__created_by_id__review ON ONLY public.posts USING btree (created_by_id, id) WHERE (post_type = 'review'::post_types)`
 - `idx_posts__created_by_rejected_at_id`: `CREATE INDEX idx_posts__created_by_rejected_at_id ON ONLY public.posts USING btree (created_by_id, rejected_at DESC, id DESC) WHERE ((rejected_at IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__created_via_oauth_client_id`: `CREATE INDEX idx_posts__created_via_oauth_client_id ON ONLY public.posts USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_posts__creation_source_url_id`: `CREATE INDEX idx_posts__creation_source_url_id ON ONLY public.posts USING btree (creation_source_url_id) WHERE (creation_source_url_id IS NOT NULL)`

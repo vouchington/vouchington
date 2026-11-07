@@ -8,12 +8,18 @@ import {
   LANDING_PAGE_REVIEW_OWNER_ID,
   landingPageReviewId,
 } from '../seed-data/landing-page-candidates.mts'
+import { runLandingPageReviewTypeScenario } from './landing-page-review-type-page.mts'
 
 export async function runLandingPageCandidateScenarios(): Promise<void> {
   const { rows: authorIndexes } = await read<{ index_name: string }>(
     `/* landingPageCandidateAuthorIndexes */
      SELECT index_class.relname AS index_name
      FROM pg_partition_tree('idx_posts__created_by_id'::regclass) tree
+     JOIN pg_class index_class ON index_class.oid = tree.relid
+     WHERE tree.isleaf
+     UNION ALL
+     SELECT index_class.relname
+     FROM pg_partition_tree('idx_posts__created_by_id__review'::regclass) tree
      JOIN pg_class index_class ON index_class.oid = tree.relid
      WHERE tree.isleaf`,
   )
@@ -81,4 +87,5 @@ export async function runLandingPageCandidateScenarios(): Promise<void> {
         )
     })
   }
+  await runLandingPageReviewTypeScenario()
 }
