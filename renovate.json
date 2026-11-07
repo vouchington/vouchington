@@ -37,7 +37,7 @@
       "description": "Reviewed upstream image indexes copied to GHCR",
       "managerFilePatterns": ["ci/dependency-mirror/images.json"],
       "matchStrings": [
-        "\"source\": \"(?<depName>(?:docker\\.io/[^\"]+|gcr\\.io/distroless/(?:nodejs26-debian13|cc-debian13)))\",\\s*\"tag\": \"(?<currentValue>[^\"]+)\",\\s*\"digest\": \"(?<currentDigest>sha256:[0-9a-f]{64})\""
+        "\"source\": \"(?<depName>(?:docker\\.io/[^\"]+|gcr\\.io/distroless/cc-debian13))\",\\s*\"tag\": \"(?<currentValue>[^\"]+)\",\\s*\"digest\": \"(?<currentDigest>sha256:[0-9a-f]{64})\""
       ],
       "datasourceTemplate": "docker"
     },
@@ -64,7 +64,7 @@
       "description": "Secondary Distroless runtime stage in the backend Dockerfile",
       "managerFilePatterns": ["backend/Dockerfile"],
       "matchStrings": [
-        "FROM\\s+(?<depName>ghcr\\.io/vouchington/dependency-distroless-nodejs):(?<currentValue>nonroot)@(?<currentDigest>sha256:[0-9a-f]{64})\\s+AS\\s+runtime-base"
+        "FROM\\s+(?<depName>ghcr\\.io/vouchington/dependency-distroless-cc):(?<currentValue>nonroot)@(?<currentDigest>sha256:[0-9a-f]{64})\\s+AS\\s+runtime-base"
       ],
       "datasourceTemplate": "docker"
     },
