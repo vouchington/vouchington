@@ -25,11 +25,11 @@ export const assertRewardsProgramExists = async (id: string, fieldName: string):
   validateUUID(id)
   const { rows } = await read(sql`/* assertRewardsProgramExists */
     SELECT rp.topic_id AS id
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge creates the destination rewards_program_topics row and removes the source subtype; rewards-program validation still excludes deleted topics
     FROM rewards_program_topics rp
     JOIN topics t ON t.id = rp.topic_id
     WHERE rp.topic_id = ${id}
       AND t.deleted_at IS NULL
+      AND t.merged_into_topic_id IS NULL
     LIMIT 1
   `)
   assert(rows[0], 422, `${fieldName} must reference an existing rewards program`)
@@ -44,11 +44,11 @@ export const assertReferralProgramExists = async (
   const { rows } = await read(
     sql`/* assertReferralProgramExists */
     SELECT rp.topic_id AS id
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge creates the destination referral_program_topics row and removes the source subtype; referral-program validation still excludes deleted topics
     FROM referral_program_topics rp
     JOIN topics t ON t.id = rp.topic_id
     WHERE rp.topic_id = ${id}
       AND t.deleted_at IS NULL
+      AND t.merged_into_topic_id IS NULL
     LIMIT 1
   `,
     options,
@@ -63,11 +63,11 @@ export const assertRewardsProgramStatusExists = async (
   validateUUID(id)
   const { rows } = await read(sql`/* assertRewardsProgramStatusExists */
     SELECT t.id, t.rewards_program_topic_id AS rewards_program_id
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge creates the destination rewards_program_status_topics row and removes the source subtype; status validation still excludes deleted topics
     FROM topics t
     JOIN rewards_program_status_topics rps ON rps.topic_id = t.id
     WHERE t.id = ${id}
       AND t.deleted_at IS NULL
+      AND t.merged_into_topic_id IS NULL
     LIMIT 1
   `)
   const row = rows[0] as RewardsProgramStatusRecord | undefined
@@ -130,11 +130,11 @@ export const assertReferralProgramAndLinkValidationExist = async (
       SELECT
         EXISTS (
           SELECT 1
-          -- no-mistakes-disable-next-line postgres-required-predicates: merge removes the source referral_program_topics subtype after creating the destination; link-validation ownership checks still exclude deleted topics
           FROM referral_program_topics rp
           JOIN topics t ON t.id = rp.topic_id
           WHERE rp.topic_id = ${referralProgramId}
             AND t.deleted_at IS NULL
+            AND t.merged_into_topic_id IS NULL
         ) AS referral_program_exists,
         EXISTS (
           SELECT 1

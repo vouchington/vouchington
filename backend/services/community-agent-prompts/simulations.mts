@@ -17,6 +17,9 @@ export type CommunityAgentPromptSimulationPost = {
   content_excerpt: string
 }
 
+/** The false-positive rate is an estimate over this many of the prompt's newest flagged moderations. */
+export const FALSE_POSITIVE_ESTIMATE_SAMPLE_SIZE = 1000
+
 export type CommunityAgentPromptFalsePositiveEstimate = {
   historical_flagged_count: number
   historical_approved_count: number
@@ -103,6 +106,18 @@ export async function getCommunityAgentPromptFalsePositiveEstimate(
   promptId: string,
 ): Promise<CommunityAgentPromptFalsePositiveEstimate> {
   const { rows } = await read(sql`/* getCommunityAgentPromptFalsePositiveEstimate */
+    WITH sampled_moderations AS MATERIALIZED (
+      SELECT am.post_id, cap.community_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: no-mistakes FP jonathanong/no-mistakes#3112; remove when fixed. Newest FALSE_POSITIVE_ESTIMATE_SAMPLE_SIZE flagged moderations of one prompt, read through idx_agent_moderations__flagged_prompt (prompt_id, post_id DESC); the prompt's history is not a post_id range
+      FROM agent_moderations am
+      JOIN community_agent_prompts cap ON cap.id = am.prompt_id
+      WHERE cap.community_id = ${communityId}
+        AND am.prompt_id = ${promptId}
+        AND am.is_flagged = true
+        AND am.deleted_at IS NULL
+      ORDER BY am.post_id DESC
+      LIMIT ${FALSE_POSITIVE_ESTIMATE_SAMPLE_SIZE}
+    )
     SELECT
       COUNT(*)::integer AS historical_flagged_count,
       COUNT(*) FILTER (
@@ -111,17 +126,11 @@ export async function getCommunityAgentPromptFalsePositiveEstimate(
           AND cpr.rejected_at IS NULL
           AND p.approved_at IS NOT NULL
       )::integer AS historical_approved_count
-    -- no-mistakes-disable-next-line postgres-required-predicates: a prompt/community simulation totals flagged moderation history across post_id partitions
-    FROM agent_moderations am
-    JOIN community_agent_prompts cap ON cap.id = am.prompt_id
-    LEFT JOIN view_posts p ON p.id = am.post_id
+    FROM sampled_moderations sample
+    LEFT JOIN view_posts p ON p.id = sample.post_id
     LEFT JOIN community_post_reviews cpr
-      ON cpr.post_id = am.post_id
-      AND cpr.community_id = cap.community_id
-    WHERE cap.community_id = ${communityId}
-      AND am.prompt_id = ${promptId}
-      AND am.is_flagged = true
-      AND am.deleted_at IS NULL
+      ON cpr.post_id = sample.post_id
+      AND cpr.community_id = sample.community_id
   `)
 
   const row = rows[0] as

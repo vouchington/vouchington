@@ -26,12 +26,12 @@ export async function classifyCreatedFediverseInstance(
     hostname: string
   }>(sql`/* classifyCreatedFediverseInstance:hostname */
     SELECT h.hostname
-    -- no-mistakes-disable-next-line postgres-required-predicates: merge removes the source fediverse_instance_topics row after creating the destination subtype; hostname lookup still excludes deleted topics
     FROM fediverse_instance_topics fi
     JOIN topics t ON t.id = fi.topic_id
     JOIN url_hostnames h ON h.id = t.hostname_id
     WHERE fi.topic_id = ${topicId} AND h.id = ${hostnameId}
       AND t.deleted_at IS NULL
+      AND t.merged_into_topic_id IS NULL
     LIMIT 1
   `)
   const hostname = rows[0]?.hostname

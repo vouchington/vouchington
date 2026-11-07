@@ -21,7 +21,6 @@ export type ApprovedFediverseInstanceHostname = {
 export async function listApprovedFediverseInstanceHostnames(): Promise<
   ApprovedFediverseInstanceHostname[]
 > {
-  // no-mistakes-disable-next-line postgres-required-predicates: merge creates the destination fediverse_instance_topics row and removes the source subtype; approved-instance lookup still excludes deleted topics
   const { rows } = await read<ApprovedFediverseInstanceHostname>(sql`
     /* listApprovedFediverseInstanceHostnames */
     SELECT uh.hostname
@@ -33,6 +32,7 @@ export async function listApprovedFediverseInstanceHostnames(): Promise<
     JOIN url_hostnames uh ON uh.id = t.hostname_id
     WHERE tfi.integration_status = 'approved'
       AND t.deleted_at IS NULL
+      AND t.merged_into_topic_id IS NULL
     ORDER BY uh.hostname
   `)
   return rows

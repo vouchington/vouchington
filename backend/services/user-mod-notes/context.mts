@@ -4,6 +4,9 @@ import type { PrivateUser } from '@services/users/types'
 import { computeTrustTier, getAccountAgeMs } from '@services/user-rate-limits/trust-tier'
 import { getUserRateLimitContext } from '@services/user-rate-limits/context'
 
+/** content_removal_count saturates here so a heavily moderated author cannot make the count scan unbounded. */
+export const CONTENT_REMOVAL_COUNT_CAP = 1000
+
 export interface UserModerationContext {
   account_age_ms: number
   trust_tier: number | null
@@ -36,11 +39,14 @@ export async function getUserModerationContext(
   const { rows } = await read(sql`/* getUserModerationContextCounts */
     SELECT
       (
-        -- no-mistakes-disable-next-line postgres-required-predicates: moderation context counts all posts removed from the target user across post-ID partitions
-        SELECT count(*)::int FROM posts
-        WHERE created_by_id = ${targetUser.id}
-          AND deleted_by_id IS NOT NULL
-          AND deleted_by_id <> created_by_id
+        SELECT count(*)::int FROM (
+          -- no-mistakes-disable-next-line postgres-required-predicates: no-mistakes FP jonathanong/no-mistakes#3112; remove when fixed. The count reads at most CONTENT_REMOVAL_COUNT_CAP rows via idx_posts__created_by_id (created_by_id, id); one author's posts are not an id range
+          SELECT 1 FROM posts
+          WHERE created_by_id = ${targetUser.id}
+            AND deleted_by_id IS NOT NULL
+            AND deleted_by_id <> created_by_id
+          LIMIT ${CONTENT_REMOVAL_COUNT_CAP}
+        ) AS removed_posts
       ) AS content_removal_count,
       (
         SELECT count(*)::int FROM community_members

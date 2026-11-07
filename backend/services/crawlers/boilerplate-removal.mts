@@ -1,6 +1,10 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from '@voucha/config'
+import { getMinUUIDv7ForDate } from '@modules/utils'
+import {
+  CRAWL_HTML_SNAPSHOT_RETENTION_DAYS,
+  CRAWL_MAX_START_TO_COMPLETION_DAYS,
+} from '@voucha/config'
 import sql from 'sql-template-strings'
 
 type BoilerplateRemovalUrlCandidate = {
@@ -22,6 +26,9 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
   if (!Number.isFinite(sampledNowMs)) throw new RangeError('Invalid HTML snapshot decision time')
   const recentCutoffDate = new Date(
     sampledNowMs - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+  )
+  const crawlIdFloor = getMinUUIDv7ForDate(
+    new Date(recentCutoffDate.getTime() - CRAWL_MAX_START_TO_COMPLETION_DAYS * 24 * 60 * 60 * 1000),
   )
 
   // Match URLs directly under the parent path (e.g., /blog/ for parent_path=/blog)
@@ -48,9 +55,9 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
         FROM urls u
         JOIN url_hostnames h
           ON h.id = u.hostname_id
-        -- no-mistakes-disable-next-line postgres-required-predicates: hostname/path candidate search joins URLs to crawls and has no bound crawl URL ID
         JOIN crawls c
           ON c.url_id = u.id
+          AND c.id >= ${crawlIdFloor}::uuid
         WHERE u.hostname_id = ${hostnameId}
           AND u.pathname LIKE ${likePattern} ESCAPE '\\'
           AND u.pathname NOT LIKE ${escapedExclude} ESCAPE '\\'
