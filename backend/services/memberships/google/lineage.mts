@@ -2,7 +2,8 @@ import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getKnownGooglePlayCanonicalRoot } from './canonical-root.mts'
 import { tokenDigest } from './token-digest.mts'
-import { ensureGooglePlayTokenAlias, GooglePlayLineageConflictError } from './token-alias.mts'
+import { markGooglePlayTokensFetched, type GooglePlayTokenFetch } from './mark-tokens-fetched.mts'
+import { ensureGooglePlayTokenAlias } from './token-alias.mts'
 export { tokenDigest } from './token-digest.mts'
 export { GooglePlayLineageConflictError } from './token-alias.mts'
 export { getLatestKnownGooglePlayPurchaseToken } from './known-lineage.mts'
@@ -147,6 +148,7 @@ export async function persistGooglePlayTokenLineage(
     ).rows[0]?.id
   if (!lineageId) throw new Error('Google Play canonical lineage was not returned')
   let submittedTokenFirstFetched = false
+  const fetches: GooglePlayTokenFetch[] = []
   for (let index = options.resolved.tokens.length - 1; index >= 0; index--) {
     const item = options.resolved.tokens[index]!
     let predecessor = null
@@ -157,18 +159,9 @@ export async function persistGooglePlayTokenLineage(
     // eslint-disable-next-line no-await-in-loop -- aliases share a locked canonical lineage
     const alias = await ensureGooglePlayTokenAlias(item.token, contextId, lineageId, query)
     if (index === 0) submittedTokenFirstFetched = item.fetched && alias.fetchedAt === null
-    if (!item.fetched) continue
-    // A reported-only alias becomes fetched on the same row; the successor FK never changes.
-    // eslint-disable-next-line no-await-in-loop -- the canonical lineage lock serializes this update
-    const { rows } = await query<{ id: string }>(sql`/* persistGooglePlayTokenLineage.markFetched */
-      UPDATE membership_google_play_purchase_tokens
-      SET fetched_at = COALESCE(fetched_at, CURRENT_TIMESTAMP),
-        linked_purchase_token_id = COALESCE(linked_purchase_token_id, ${predecessor?.id ?? null})
-      WHERE id = ${alias.id}
-        AND (${predecessor?.id ?? null}::UUID IS NULL OR linked_purchase_token_id IS NULL OR linked_purchase_token_id = ${predecessor?.id ?? null})
-      RETURNING id`)
-    if (!rows[0]) throw new GooglePlayLineageConflictError()
+    if (item.fetched) fetches.push({ aliasId: alias.id, predecessorId: predecessor?.id ?? null })
   }
+  await markGooglePlayTokensFetched(fetches, query)
   return { lineageId, submittedTokenFirstFetched }
 }
 

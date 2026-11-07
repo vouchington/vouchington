@@ -1,6 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { recordMembershipChange } from '../changes.mts'
+import { recordMembershipExpirations } from '../expiration-changes.mts'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../fallback/restore-after-current-access-ends.mts'
 import { activateOldestQueuedGrant } from './activate-queued.mts'
 import { getCurrentMembershipProjection } from './current-projection.mts'
@@ -67,25 +67,25 @@ export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
       ORDER BY projection_ended_at DESC NULLS LAST, id DESC
       LIMIT 1
     ) membership ON true`)
-  for (const exhausted of exhaustedRows as Array<{
-    expired_at: Date
-    membership_grant_id: string
-    membership_id: string
-    membership_product_id: string
-    membership_source_id: string
-  }>) {
-    // eslint-disable-next-line no-await-in-loop
-    await recordMembershipChange({
+  await recordMembershipExpirations(
+    userId,
+    (
+      exhaustedRows as Array<{
+        expired_at: Date
+        membership_grant_id: string
+        membership_id: string
+        membership_product_id: string
+        membership_source_id: string
+      }>
+    ).map(exhausted => ({
       membershipId: exhausted.membership_id,
-      userId,
       membershipSourceId: exhausted.membership_source_id,
       membershipGrantId: exhausted.membership_grant_id,
-      changeType: 'expiration',
-      fromSkuId: exhausted.membership_product_id,
+      membershipProductId: exhausted.membership_product_id,
       expiredAt: exhausted.expired_at,
-      query,
-    })
-  }
+    })),
+    query,
+  )
   await query(sql`/* resumeGrantAfterDirectTermination: release viable paused grant */
     UPDATE membership_source_states source_state
     SET paused_at = NULL
