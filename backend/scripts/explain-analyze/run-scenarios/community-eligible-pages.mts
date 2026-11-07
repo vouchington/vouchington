@@ -61,6 +61,7 @@ export async function runCommunityEligiblePageScenarios(): Promise<void> {
           { kind: 'maxProcessedRows', relation: 'users', max: maxTargets },
         ],
       })
+      // no-mistakes-disable-next-line query-reached-per-item: two fixed first/later page scenarios require separate serialized query captures and plan gates
       await runAndCapture(`community-members-deleted-prefix-${suffix}`, () =>
         searchCommunityMembers(communityIds.at(-1)!, {
           limit: 25,
@@ -75,6 +76,7 @@ export async function runCommunityEligiblePageScenarios(): Promise<void> {
           { kind: 'maxProcessedRows', relation: 'communities', max: maxTargets },
         ],
       })
+      // no-mistakes-disable-next-line query-reached-per-item: two fixed first/later page scenarios require separate serialized query captures and plan gates
       await runAndCapture(`member-communities-deleted-prefix-${suffix}`, () =>
         listUserMemberCommunities(target.id, target, {
           limit: 25,

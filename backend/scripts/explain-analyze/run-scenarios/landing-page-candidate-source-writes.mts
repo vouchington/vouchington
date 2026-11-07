@@ -24,7 +24,7 @@ export async function runLandingPageCandidateSourceWriteScenarios(): Promise<voi
         { kind: 'maxProcessedRows', relation: 'user_profile_links', max: 3 },
         {
           kind: 'maxFunctionCalls',
-          function: 'fn_sync_user_landing_page_candidate_profile_link',
+          function: 'fn_project_user_landing_page_candidate_profile_link',
           max: 1,
         },
       ],
@@ -43,7 +43,7 @@ export async function runLandingPageCandidateSourceWriteScenarios(): Promise<voi
         { kind: 'maxProcessedRows', relation: 'posts', max: 1 },
         {
           kind: 'maxFunctionCalls',
-          function: 'fn_sync_user_landing_page_candidate_review_post',
+          function: 'fn_project_user_landing_page_candidate_review_post',
           max: 1,
         },
       ],
@@ -71,7 +71,7 @@ export async function runLandingPageCandidateSourceWriteScenarios(): Promise<voi
         { kind: 'maxProcessedRows', relation: 'user_referral_program_links', max: 1 },
         {
           kind: 'maxFunctionCalls',
-          function: 'fn_sync_user_landing_page_candidate_referral_link',
+          function: 'fn_project_user_landing_page_candidate_referral_link',
           max: 1,
         },
       ],

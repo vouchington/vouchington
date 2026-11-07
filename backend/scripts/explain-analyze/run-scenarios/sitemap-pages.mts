@@ -58,6 +58,7 @@ export async function runSitemapPageScenarios(): Promise<void> {
         ],
         seededRows: { user_landing_page_items: 100 },
       })
+      // no-mistakes-disable-next-line query-reached-per-item: two fixed first/deep sitemap pages require separate serialized query captures and plan gates
       await runAndCapture(scenario, async () => {
         const page = await readSitemapFamilyPage('landing-pages', {
           highWaterId: sitemapLandingHighWaterId,

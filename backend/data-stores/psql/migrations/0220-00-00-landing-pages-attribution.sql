@@ -325,7 +325,7 @@ COMMENT ON COLUMN user_landing_page_candidates.tier_sort IS 'Negated tier for as
 COMMENT ON COLUMN user_landing_page_candidates.position_sort IS 'Profile link order or zero for sources ordered by descending id.';
 COMMENT ON COLUMN user_landing_page_candidates.source_sort_key IS 'Source UUID bytes in ascending profile order or complemented for descending review and referral order.';
 
-CREATE OR REPLACE FUNCTION fn_sync_user_landing_page_candidate_profile_link()
+CREATE OR REPLACE FUNCTION fn_project_user_landing_page_candidate_profile_link()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   INSERT INTO user_landing_page_candidates (user_id, profile_link_id, tier, sort_order)
@@ -340,9 +340,9 @@ $$;
 
 CREATE OR REPLACE TRIGGER trigger_user_profile_links_landing_page_candidate
 AFTER INSERT OR UPDATE OF user_id, sort_order ON user_profile_links
-FOR EACH ROW EXECUTE FUNCTION fn_sync_user_landing_page_candidate_profile_link();
+FOR EACH ROW EXECUTE FUNCTION fn_project_user_landing_page_candidate_profile_link();
 
-CREATE OR REPLACE FUNCTION fn_sync_user_landing_page_candidate_review_post()
+CREATE OR REPLACE FUNCTION fn_project_user_landing_page_candidate_review_post()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.post_type = 'review' AND NEW.created_by_id IS NOT NULL THEN
@@ -360,14 +360,14 @@ $$;
 CREATE OR REPLACE TRIGGER trigger_posts_landing_page_candidate_insert
 AFTER INSERT ON posts
 FOR EACH ROW WHEN (NEW.post_type = 'review' AND NEW.created_by_id IS NOT NULL)
-EXECUTE FUNCTION fn_sync_user_landing_page_candidate_review_post();
+EXECUTE FUNCTION fn_project_user_landing_page_candidate_review_post();
 
 CREATE OR REPLACE TRIGGER trigger_posts_landing_page_candidate_update
 AFTER UPDATE OF post_type, created_by_id ON posts
 FOR EACH ROW WHEN (OLD.post_type = 'review' OR NEW.post_type = 'review')
-EXECUTE FUNCTION fn_sync_user_landing_page_candidate_review_post();
+EXECUTE FUNCTION fn_project_user_landing_page_candidate_review_post();
 
-CREATE OR REPLACE FUNCTION fn_sync_user_landing_page_candidate_referral_link()
+CREATE OR REPLACE FUNCTION fn_project_user_landing_page_candidate_referral_link()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   INSERT INTO user_landing_page_candidates (user_id, referral_link_id, tier)
@@ -381,4 +381,4 @@ $$;
 
 CREATE OR REPLACE TRIGGER trigger_user_referral_program_links_landing_page_candidate
 AFTER INSERT OR UPDATE OF user_id ON user_referral_program_links
-FOR EACH ROW EXECUTE FUNCTION fn_sync_user_landing_page_candidate_referral_link();
+FOR EACH ROW EXECUTE FUNCTION fn_project_user_landing_page_candidate_referral_link();
