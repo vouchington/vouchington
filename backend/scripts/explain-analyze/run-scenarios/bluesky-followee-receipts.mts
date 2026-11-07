@@ -86,7 +86,9 @@ export async function runBlueskyFolloweeReceiptScenarios(): Promise<void> {
           indexes: ['idx_bluesky_follow_records__followee_follower'],
           noSort: true,
         },
-        { kind: 'maxProcessedRows', relation: 'bluesky_follow_records', max: 2 * PAGE_SIZE },
+        // Each page row is counted by three nodes: the ordered index scan, the ctid fetch, and the
+        // Delete itself. Anything near FOLLOWER_COUNT would mean the page walked the whole followee.
+        { kind: 'maxProcessedRows', relation: 'bluesky_follow_records', max: 3 * PAGE_SIZE },
       ],
       seededRows: { bluesky_follow_records: FOLLOWER_COUNT },
     })
