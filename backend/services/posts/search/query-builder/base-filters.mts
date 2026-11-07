@@ -16,14 +16,18 @@ export function appendBaseFilters(
     exclude_for_user_id,
     include_topic_recommendations,
     post_types,
+    profileCountPostType,
     public_eligibility_only,
     user_id,
   }: PostSearchOptions,
 ): boolean {
   filters.push(sql`posts.deleted_at IS NULL`)
   filters.push(sql`posts.community_id IS NULL`)
-  if (!include_topic_recommendations) filters.push(sql`posts.post_type != 'topic_recommendation'`)
-  if (!post_types?.length) filters.push(sql`posts.post_type != 'comment'`)
+  // A profile count's only post_type predicate is its literal, so the partial index can be proved.
+  if (!profileCountPostType && !include_topic_recommendations) {
+    filters.push(sql`posts.post_type != 'topic_recommendation'`)
+  }
+  if (!profileCountPostType && !post_types?.length) filters.push(sql`posts.post_type != 'comment'`)
 
   // Public-only callers (MCP read_posts(search)) are judged as signed out, so neither an author nor an
   // administrator widens what they see. The exclusions below still follow `currentUser`.
@@ -61,7 +65,14 @@ export function appendBaseFilters(
     filters.push(publicEligibility)
   }
   if (exclude_for_user_id) appendUserExclusionFilters(filters)
-  if (user_id) appendUserFilter(filters, { currentUser: viewer, isAdmin, user_id })
+  if (user_id) {
+    appendUserFilter(filters, {
+      currentUser: viewer,
+      isAdmin,
+      user_id,
+      anonymousEqualsFalse: profileCountPostType !== undefined,
+    })
+  }
   return isAdmin
 }
 
@@ -95,17 +106,22 @@ function appendUserExclusionFilters(filters: SQLStatement[]): void {
 function appendUserFilter(
   filters: SQLStatement[],
   {
+    anonymousEqualsFalse,
     currentUser,
     isAdmin,
     user_id,
   }: {
+    anonymousEqualsFalse: boolean
     currentUser?: BasicUser
     isAdmin: boolean
     user_id: string
   },
 ): void {
   filters.push(buildPostSearchAuthorFilter(user_id))
-  if (!isAdmin && currentUser?.id !== user_id) filters.push(sql`posts.is_anonymous IS NOT TRUE`)
+  if (isAdmin || currentUser?.id === user_id) return
+  filters.push(
+    anonymousEqualsFalse ? sql`posts.is_anonymous = false` : sql`posts.is_anonymous IS NOT TRUE`,
+  )
 }
 
 /** Static aliases keep the same bound author scope visible to candidate planning. */

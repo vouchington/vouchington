@@ -97685,10 +97685,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_posts__created_by_id__is_anonymous": {
+        "idx_posts__created_by_id__is_anonymous__comment": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__created_by_id__is_anonymous ON ONLY public.posts USING btree (created_by_id, is_anonymous) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_posts__created_by_id__is_anonymous__comment ON ONLY public.posts USING btree (created_by_id, is_anonymous) WHERE ((post_type = 'comment'::post_types) AND (deleted_at IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -97711,7 +97711,71 @@
             }
           ],
           "live": true,
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": "((post_type = 'comment'::post_types) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__created_by_id__is_anonymous__discussion": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__created_by_id__is_anonymous__discussion ON ONLY public.posts USING btree (created_by_id, is_anonymous) WHERE ((post_type = 'discussion'::post_types) AND (deleted_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "is_anonymous",
+              "descending": false,
+              "expression": "is_anonymous",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((post_type = 'discussion'::post_types) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__created_by_id__is_anonymous__review": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__created_by_id__is_anonymous__review ON ONLY public.posts USING btree (created_by_id, is_anonymous) WHERE ((post_type = 'review'::post_types) AND (deleted_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "is_anonymous",
+              "descending": false,
+              "expression": "is_anonymous",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((post_type = 'review'::post_types) AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

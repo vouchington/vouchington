@@ -40,7 +40,7 @@ interface UserProfileHeaderProps {
     | 'verified_display_name'
     | 'lingua_rs_detected_language'
   > & { roles?: readonly string[] }
-  metrics?: Pick<UserMetrics, 'count' | 'post_counts_capped'>
+  metrics?: Pick<UserMetrics, 'count'>
   profileLinks?: Array<Pick<ProfileLink, 'id' | 'link_type' | 'url' | 'handle' | 'name'>>
   aboutHtml?: string | null
   isAdmin?: boolean
@@ -61,9 +61,7 @@ export function UserProfileHeader({
   const displayName = getUserLabel(user, t('shared.user.deletedUser'))
   const canFollow = currentUserId !== user.id
   const profileCountLabel = (count: number, unit: 'review' | 'discussion' | 'comment') => {
-    const formattedCount = `${formatNumber(count, uiLocale)}${
-      metrics?.post_counts_capped && count > 0 ? '+' : ''
-    }`
+    const formattedCount = formatNumber(count, uiLocale)
     return t('shared.countLabel.formatted', { count, formattedCount, unit })
   }
   const summaryItems = [
