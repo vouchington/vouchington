@@ -13,10 +13,17 @@ export default function generateHostnameElectionsIndexes(): string {
 
   return `
 -- Serves searchUrlHostnames with sort=trust and a topic filter (topic_id = $1 or ANY):
--- ORDER BY votes_score_sort DESC, id DESC. Unfiltered sort=trust is served by
--- idx_url_hostnames__votes_score_sort__id.
+-- ORDER BY votes_score_sort DESC, id DESC.
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__topic_id__votes_score_sort__id
 ON url_hostnames (topic_id, votes_score_sort DESC, id DESC)
 WHERE topic_id IS NOT NULL;
+
+-- Serves searchUrlHostnames with sort=trust and no topic filter. The generic
+-- idx_url_hostnames__votes_score_sort__id orders id ascending, so a descending id tiebreak would
+-- sort every row sharing a score; this index matches the order exactly and holds only the
+-- publicly introduced hostnames the search lists.
+CREATE INDEX IF NOT EXISTS idx_url_hostnames__public_votes_score_sort__id
+ON url_hostnames (votes_score_sort DESC, id DESC)
+WHERE publicly_introduced_at IS NOT NULL;
 `.trim()
 }
