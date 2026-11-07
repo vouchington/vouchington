@@ -12,7 +12,7 @@ import { captureTransactionQuery as captureQuery } from './query-capture.mts'
 import type { QueryExecutor, QueryOptions, PoolClient, TransactionQuery } from './types.mts'
 
 type AdapterTransactionOptions = Psql['withTransactionOptions']
-export type OwnedTransaction = TransactionQuery & Omit<Transaction, keyof TransactionQuery>
+export type OwnedTransaction = Transaction
 
 type PostCommitAction = () => Promise<void>
 type PostCommitActionScope = {

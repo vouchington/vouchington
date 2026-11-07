@@ -1,4 +1,3 @@
-import type pg from 'pg'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { beginTransaction, read, readPool } from '@data-stores/psql'
 
@@ -14,9 +13,10 @@ export const SEMANTIC_POST_SEARCH_SETTINGS = {
   'hnsw.max_scan_tuples': '20000',
 } as const
 
-export async function executePostSearchQuery<
-  Row extends pg.QueryResultRow = Record<string, unknown>,
->(query: SQLStatement, hasSemanticSearch: boolean) {
+export async function executePostSearchQuery<Row extends object = Record<string, unknown>>(
+  query: SQLStatement,
+  hasSemanticSearch: boolean,
+) {
   if (!hasSemanticSearch) return read<Row>(query)
 
   await using transaction = await beginTransaction({ client: readPool })

@@ -88,7 +88,7 @@ export const updateRssFeedById = async (
       )
     }
     if (sets.length === 0) return id
-    const { rows } = await query(updateQuery)
+    const { rows } = await query<{ id: string }>(updateQuery)
     const result = rows[0]?.id || null
     if (result && changes.topic_id !== undefined && changes.topic_id !== previousTopicId) {
       await recordRssFeedDiscoverabilityPublicationChange(
@@ -106,7 +106,7 @@ export const updateRssFeedById = async (
     void enqueueEvaluateRssFeedDiscoverability(id)
   }
   if (updatedId && !options.query && !options.client) void enqueueRefreshTopHashtags()
-  return updatedId as string | null
+  return updatedId
 }
 
 async function runInTransaction<Result>(
