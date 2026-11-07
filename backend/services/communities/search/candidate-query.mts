@@ -1,5 +1,6 @@
 import sql from 'sql-template-strings'
 import type { CommunitySortMode } from '../search-types.mts'
+import { startTrendingCommunityCandidates } from './trending-candidates.mts'
 
 export function startCommunityCandidates(
   sort: CommunitySortMode,
@@ -8,6 +9,8 @@ export function startCommunityCandidates(
   search?: string,
   memberUserId?: string,
 ): ReturnType<typeof sql> {
+  if (sort === 'trending')
+    return startTrendingCommunityCandidates(hasListItems, search, memberUserId)
   const listedVirtual = hasListItems && sort === 'virtual_subscriptions'
   const query = sql`/* searchCommunities */ WITH `
   if (search)

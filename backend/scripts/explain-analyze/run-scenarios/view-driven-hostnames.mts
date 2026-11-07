@@ -1,6 +1,5 @@
 import { runAndCapture, seedTopicId } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { searchTopHostnames } from '@services/urls-hostnames/search-top'
 import { searchBlockedHostnames, searchUrlHostnames } from '@services/urls-hostnames/search'
 
 // This seeded substring matches 111 of the 1,000 hostnames, leaving enough rows for a second page.
@@ -8,21 +7,23 @@ const hostnameTextQuery = 'host-2'
 const hostnameTextPageLimit = 25
 
 export async function runViewDrivenHostnameScenarios(): Promise<void> {
-  registerScenarioContract('search-top-hostnames', {
+  registerScenarioContract('search-hostnames-trust', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_url_hostnames__top_sort'] },
+      { kind: 'usesIndexes', indexes: ['idx_url_hostnames__votes_score_sort__id'] },
       { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 100 },
     ],
   })
-  registerScenarioContract('search-top-hostnames-by-topic', {
+  registerScenarioContract('search-hostnames-trust-by-topic', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_url_hostnames__top_sort_by_topic'] },
+      { kind: 'usesIndexes', indexes: ['idx_url_hostnames__topic_id__votes_score_sort__id'] },
       { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 100 },
     ],
   })
-  await runAndCapture('search-top-hostnames', () => searchTopHostnames({ limit: 25 }))
-  await runAndCapture('search-top-hostnames-by-topic', () =>
-    searchTopHostnames({ topic_id: seedTopicId, limit: 25 }),
+  await runAndCapture('search-hostnames-trust', () =>
+    searchUrlHostnames({ sort: 'trust', is_blocked: false, limit: 25 }),
+  )
+  await runAndCapture('search-hostnames-trust-by-topic', () =>
+    searchUrlHostnames({ sort: 'trust', is_blocked: false, topic_id: seedTopicId, limit: 25 }),
   )
   registerScenarioContract('search-blocked-hostnames', {
     expectations: [

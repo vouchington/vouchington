@@ -52,7 +52,7 @@ async function seenUntil(wanted: string[], after: string, pageOf: PageOf): Promi
   return seen
 }
 
-describe('discover_communities.trending — real DB', () => {
+describe('discover_communities.search sort trending — real DB', () => {
   const random = createRandomString(8).toLowerCase()
   let caller: Caller
   let high: { id: string }
@@ -60,17 +60,20 @@ describe('discover_communities.trending — real DB', () => {
   let hidden: { id: string }
 
   const trending = (args: Record<string, unknown> = {}) =>
-    callStructuredMcpTool(caller, 'discover_communities', optionArgs('trending', args), [
-      'communities:read',
-    ]) as Promise<Page>
+    callStructuredMcpTool(
+      caller,
+      'discover_communities',
+      optionArgs('search', { sort: 'trending', ...args }),
+      ['communities:read'],
+    ) as Promise<Page>
   const viaTool: PageOf = after => trending({ limit: 25, after })
   const viaRest: PageOf = async after => {
     const request = createRequest()
     await request.authenticateAs(caller)
     const { body } = await request
-      .get(`/api/v1/trending-communities?limit=25&after=${after}`)
+      .get(`/api/v1/communities?sort=trending&limit=25&after=${after}`)
       .expect(200)
-    return { success: true, results: body.communities, page_info: body.page_info }
+    return { success: true, results: body.results, page_info: body.page_info }
   }
 
   async function createCommunity(visibility: 'public' | 'private', posts: number, members: number) {
@@ -113,32 +116,16 @@ describe('discover_communities.trending — real DB', () => {
     ])
   })
 
-  it('scores a public community by its reviewed posts and members, like REST', async () => {
+  it('ranks a public community by its reviewed posts and members, like REST', async () => {
     const wanted = [high.id, low.id]
-    const ours = (entries: Entry[]) => byId(entries.filter(entry => wanted.includes(entry.id)))
+    const ours = (entries: Entry[]) => entries.filter(entry => wanted.includes(entry.id))
 
     const tool = ours(await seenUntil(wanted, startAt(6), viaTool))
     const rest = ours(await seenUntil(wanted, startAt(6), viaRest))
 
-    expect(tool).toEqual(
-      byId([
-        {
-          id: high.id,
-          trending_score: 5,
-          member_count: 2,
-          post_count: 3,
-          virtual_subscription_count: 0,
-        },
-        {
-          id: low.id,
-          trending_score: 2,
-          member_count: 1,
-          post_count: 1,
-          virtual_subscription_count: 0,
-        },
-      ]),
-    )
-    expect(tool).toEqual(rest)
+    expect(tool.map(entry => entry.id)).toEqual([high.id, low.id])
+    expect(rest.map(entry => entry.id)).toEqual(tool.map(entry => entry.id))
+    expect(tool[0]).not.toHaveProperty('trending_score')
   })
 
   it('never lists a private community, whoever asks and whatever it scores', async () => {
@@ -155,7 +142,6 @@ describe('discover_communities.trending — real DB', () => {
     expect(first.results).toHaveLength(1)
     expect(first.page_info.has_next_page).toBe(true)
     expect(second.results[0]?.id).not.toBe(first.results[0]?.id)
-    expect(second.results[0]!.trending_score).toBeLessThanOrEqual(first.results[0]!.trending_score)
   })
 
   it('refuses a malformed cursor and a cursor of another kind', async () => {

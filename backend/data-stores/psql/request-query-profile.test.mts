@@ -7,7 +7,7 @@ import { recordQueryTiming } from './query-timing.mts'
 import { createVouchaApiApp } from '../../api/create-voucha-api-app.mts'
 
 const matcher = createVouchaApiApp()
-matcher.route('/api/v1/rss-feeds/trending').get(() => {})
+matcher.route('/api/v1/rss-feeds/recommended').get(() => {})
 matcher.route('/api/v1/mcp').post(() => {})
 
 const BASELINE_URL = new URL(
@@ -32,7 +32,7 @@ describe('request query profile baseline', () => {
     expect(profile.summarize().totalQueries).toBe(1)
   })
 
-  it('rejects repeated awaited RSS batch queries on the trending route', async () => {
+  it('rejects repeated awaited RSS batch queries on the recommended route', async () => {
     const { profileRequestQueries } =
       await import('../../test-helpers/api/request-query-profile.mts')
     const { withRequestQueryProfileGuard } =
@@ -59,14 +59,11 @@ describe('request query profile baseline', () => {
         )
         res.emit('finish')
       })
-    await expect(serve('/api/v1/rss-feeds/trending?limit=30', 2)).rejects.toThrow(
-      'GET /api/v1/rss-feeds/trending: getRssFeedsByIdBatch (x2)',
-    )
-    await expect(serve('/api/v1/rss-feeds/trending', 3)).rejects.toThrow(
-      'GET /api/v1/rss-feeds/trending: getRssFeedsByIdBatch (x3)',
-    )
-    await expect(serve('/api/v1/rss-feeds/recommended', 2)).rejects.toThrow(
+    await expect(serve('/api/v1/rss-feeds/recommended?limit=30', 2)).rejects.toThrow(
       'GET /api/v1/rss-feeds/recommended: getRssFeedsByIdBatch (x2)',
+    )
+    await expect(serve('/api/v1/rss-feeds/recommended', 3)).rejects.toThrow(
+      'GET /api/v1/rss-feeds/recommended: getRssFeedsByIdBatch (x3)',
     )
   })
 

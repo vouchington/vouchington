@@ -5,7 +5,7 @@ import type {
   CommunitiesSearchResponseBody,
   PlatformStatsResponse,
   TopicsResponseBody,
-  TrendingFeedsResponse,
+  RssFeedsListResponseBody,
   TrendingTopicsResponse,
 } from '@/types/api-responses'
 import { getTopicTypeLabel } from '@/types/topics'
@@ -54,21 +54,15 @@ export type PlatformStatsViewModel = Pick<
 >
 
 export function projectTrendingFeeds(
-  data: TrendingFeedsResponse | null,
+  data: Pick<RssFeedsListResponseBody, 'results'> | null,
 ): TrendingFeedsViewModel | null {
   if (data === null) return null
-  return data.results.flatMap(result => {
-    const feed = data.rss_feeds[result.id]
-    if (!feed) return []
-    return [
-      {
-        id: result.id,
-        title: feed.title,
-        displayName: getTopicDisplayName(feed.topic, { feedType: feed.feed_type }),
-        href: topicHref(feed.topic),
-      },
-    ]
-  })
+  return data.results.map(feed => ({
+    id: feed.id,
+    title: feed.title,
+    displayName: getTopicDisplayName(feed.topic, { feedType: feed.feed_type }),
+    href: topicHref(feed.topic),
+  }))
 }
 
 export function projectTrendingTopics(

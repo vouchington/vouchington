@@ -10,10 +10,7 @@ import {
   listRssFeedCrawlsTool as read_rss_feed_crawls,
   getRssFeedCrawlTool as read_rss_feed_crawl,
 } from '../rss-feed-crawl-reads.mts'
-import {
-  getTrendingRssFeedsTool as discover_rss_feeds_trending,
-  getRecommendedRssFeedsTool as discover_rss_feeds_recommended,
-} from '../rss-feed-discovery.mts'
+import { getRecommendedRssFeedsTool as discover_rss_feeds_recommended } from '../rss-feed-discovery.mts'
 import {
   searchRssFeedsTool as discover_rss_feeds_search,
   getRssFeedTool as read_rss_feed_details,
@@ -33,7 +30,6 @@ import read_topic_referral_program from '../get-topic-referral-program.mts'
 import read_topic_compare from '../compare-topics.mts'
 import read_topic_details from '../get-topic-details.mts'
 import read_topic_metrics from '../get-topic-metrics.mts'
-import discover_communities_trending from '../get-trending-communities.mts'
 import discover_communities_search from '../search-communities.mts'
 import discover_topics_trending_referral_programs from '../get-trending-referral-programs.mts'
 import discover_topics_trending from '../get-trending-topics.mts'
@@ -46,7 +42,6 @@ import read_posts_descendants from '../get-post-descendants.mts'
 import read_posts_details from '../get-post.mts'
 import read_posts_trending from '../get-trending-posts.mts'
 import read_posts_search from '../search-posts.mts'
-import read_hostnames_top from '../get-top-hostnames.mts'
 import read_hostnames_search from '../search-hostnames.mts'
 import read_data_points_topic_insights from '../get-topic-insights.mts'
 import read_data_points_search from '../search-data-points.mts'
@@ -84,10 +79,7 @@ export const userMergedReadingGroups = [
   },
   {
     name: 'discover_communities',
-    options: [
-      { option: 'trending', source: discover_communities_trending },
-      { option: 'search', source: discover_communities_search },
-    ],
+    options: [{ option: 'search', source: discover_communities_search }],
   },
   {
     name: 'discover_topics',
@@ -101,7 +93,6 @@ export const userMergedReadingGroups = [
     name: 'discover_rss_feeds',
     options: [
       { option: 'search', source: discover_rss_feeds_search },
-      { option: 'trending', source: discover_rss_feeds_trending },
       { option: 'recommended', source: discover_rss_feeds_recommended },
     ],
   },
@@ -142,10 +133,7 @@ export const userMergedReadingGroups = [
   },
   {
     name: 'read_hostnames',
-    options: [
-      { option: 'top', source: read_hostnames_top },
-      { option: 'search', source: read_hostnames_search },
-    ],
+    options: [{ option: 'search', source: read_hostnames_search }],
   },
   {
     name: 'read_data_points',

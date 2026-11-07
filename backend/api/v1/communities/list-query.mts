@@ -1,6 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import type { PrivateUser } from '@services/users/types'
 import {
+  COMMUNITY_SORT_MODES,
   isCommunityRootPostType,
   type CommunityRootPostType,
   type CommunitySortMode,
@@ -30,11 +31,7 @@ export function parseEligiblePostType(
   return eligiblePostTypeParam
 }
 
-export const VALID_SORT_MODES = [
-  'name',
-  'members',
-  'virtual_subscriptions',
-] as const satisfies readonly CommunitySortMode[]
+export const VALID_SORT_MODES = COMMUNITY_SORT_MODES
 export const VALID_LIST_TYPES = ['follow', 'mute'] as const
 export const VALID_LIST_SCOPES = ['mine'] as const
 export const VALID_FEED_CATEGORIES = ['posts', 'news', 'news_sources', 'news_topics'] as const

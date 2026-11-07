@@ -5,7 +5,7 @@ import {
   makeTopic,
   makeTopicsSearchResponse,
 } from '@/test-helpers/api-responses'
-import type { TrendingFeedsResponse, TrendingTopicsResponse } from '@/types/api-responses'
+import type { RssFeedsListResponseBody, TrendingTopicsResponse } from '@/types/api-responses'
 import {
   projectPlatformStats,
   projectTopCommunities,
@@ -23,12 +23,8 @@ describe('homepage view models', () => {
       topic_type: 'rss_feed',
     })
     const feeds = {
-      results: [{ id: 'feed-1' }],
-      rss_feeds: {
-        'feed-1': { id: 'feed-1', title: 'Planet Money', feed_type: 'podcast', topic },
-        orphan: { id: 'orphan', title: 'Orphan', feed_type: 'article', topic },
-      },
-    } as unknown as TrendingFeedsResponse
+      results: [{ id: 'feed-1', title: 'Planet Money', feed_type: 'podcast', topic }],
+    } as unknown as RssFeedsListResponseBody
     expect(projectTrendingFeeds(feeds)).toEqual([
       {
         id: 'feed-1',
@@ -77,9 +73,7 @@ describe('homepage view models', () => {
   })
 
   it('preserves successful empty responses as empty arrays', () => {
-    expect(
-      projectTrendingFeeds({ results: [], rss_feeds: {} } as unknown as TrendingFeedsResponse),
-    ).toEqual([])
+    expect(projectTrendingFeeds({ results: [] })).toEqual([])
     expect(
       projectTrendingTopics({
         results: [],

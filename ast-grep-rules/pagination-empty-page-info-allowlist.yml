@@ -9,7 +9,6 @@ ignores:
   - 'backend/api/v1/**/__tests__/**'
   - 'backend/api/v1/web-search/web-search.mts'
   - 'backend/api/v1/hostnames/hostnames.mts'
-  - 'backend/api/v1/hostnames/top-hostnames.mts'
 rule:
   pattern:
     context: '({ page_info: EMPTY_PAGE_INFO })'

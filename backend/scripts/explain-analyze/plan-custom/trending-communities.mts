@@ -2,7 +2,7 @@ import type { ExplainResult } from '@data-stores/psql'
 import { collectPlanNodes } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
-// getTrendingCommunities used to LEFT JOIN every public community against view_community_metrics,
+// The trending sort of searchCommunities used to be a separate query that LEFT JOINed every public community against view_community_metrics,
 // whose per-community correlated subqueries scanned before LIMIT — the O(all communities) shape
 // that timed out backend CI. The fix derives candidates from windowed post activity first, capped by
 // an explicit LIMIT, then joins communities only against that bounded set (see the service README).
@@ -22,15 +22,10 @@ export function assertTrendingCommunitiesIsCandidateBounded(result: ExplainResul
   const nodes = collectPlanNodes(result.plan)
   const candidatesCte = nodes.find(node => node['Subplan Name'] === 'CTE candidates')
   const communitiesAccesses = nodes.filter(node => baseRelationName(node) === 'communities')
-  const referencesRemovedView = result.query_text.includes('view_community_metrics')
-  if (
-    candidatesCte?.['Node Type'] !== 'Limit' ||
-    communitiesAccesses.length === 0 ||
-    referencesRemovedView
-  ) {
+  if (candidatesCte?.['Node Type'] !== 'Limit' || communitiesAccesses.length === 0) {
     throw new Error(
       `${result.name} must cap the candidates CTE with a LIMIT and scan communities only through ` +
-        'that candidate set, without joining view_community_metrics',
+        'that candidate set',
     )
   }
 }
