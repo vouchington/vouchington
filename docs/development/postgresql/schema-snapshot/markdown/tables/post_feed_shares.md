@@ -33,6 +33,7 @@ _none_
 **Indexes:**
 
 - `idx_post_feed_shares__post_id`: `CREATE INDEX idx_post_feed_shares__post_id ON ONLY public.post_feed_shares USING btree (post_id)`
+- `idx_post_feed_shares__recipient__post__id`: `CREATE INDEX idx_post_feed_shares__recipient__post__id ON ONLY public.post_feed_shares USING btree (recipient_user_id, post_id, id DESC)`
 - `idx_post_feed_shares__recipient__sort`: `CREATE INDEX idx_post_feed_shares__recipient__sort ON ONLY public.post_feed_shares USING btree (recipient_user_id, sort_at DESC, id DESC)`
 - `idx_post_feed_shares__sharer__post__id_desc`: `CREATE INDEX idx_post_feed_shares__sharer__post__id_desc ON ONLY public.post_feed_shares USING btree (shared_by_id, post_id, id DESC)`
 - `post_feed_shares_pkey`: `CREATE UNIQUE INDEX post_feed_shares_pkey ON ONLY public.post_feed_shares USING btree (recipient_user_id, id)`
