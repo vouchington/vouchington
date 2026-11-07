@@ -133,7 +133,7 @@ export async function lockTopicRssFeedPublicationScopes(
     rssFeedIds.push(...rows.map(row => row.id))
     afterRssFeedId = rows.at(-1)!.id
   }
-  // Every feed scope must be locked in this transaction; fail closed with the resume position.
+  // Safety cap: exceeding it fails the transaction instead of running unbounded; redesign tracked in vouchington/vouchington#5327
   if (!exhausted)
     throw new Error(
       `topic feed scope discovery exceeded ${MAX_TOPIC_FEED_SCOPE_PAGES} pages; continuation after rss_feed ${afterRssFeedId}`,

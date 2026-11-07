@@ -100,7 +100,7 @@ export async function captureDestroyedTopicAliasPostImpacts(
     })
     afterPostId = rows.at(-1)!.post_id
   }
-  // Impacts must be captured before the unlink commits; fail closed with the resume position.
+  // Safety cap: exceeding it fails the transaction instead of running unbounded; redesign tracked in vouchington/vouchington#5327
   throw new Error(
     `topic alias ${topicAliasId} impact capture exceeded ${MAX_ALIAS_IMPACT_PAGES} pages; continuation after post ${afterPostId}`,
   )

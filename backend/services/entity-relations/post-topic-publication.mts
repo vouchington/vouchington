@@ -140,7 +140,7 @@ async function recordPublisherTypeRelationPublicationChanges(
     )
     afterRssFeedId = rows.at(-1)!.id
   }
-  // The fanout must capture every feed in this transaction; fail closed with the resume position.
+  // Safety cap: exceeding it fails the transaction instead of running unbounded; redesign tracked in vouchington/vouchington#5328
   throw new Error(
     `publisher-type feed fanout exceeded ${MAX_PUBLISHER_TYPE_FEED_PAGES} pages; continuation after rss_feed ${afterRssFeedId}`,
   )
