@@ -85,11 +85,13 @@ describe('AWS request timeouts', () => {
       socketTimeout: DEFERRED_SOCKET_TIMEOUT_MS,
     })
     const handle = handler.handle
-    let socket: IncomingMessage['socket'] = null
+    // The handler assigns this after headers. A `let` initialized to null is narrowed
+    // to null at the later read, so the captured socket lives on an object.
+    const captured: { socket: IncomingMessage['socket'] | null } = { socket: null }
     handler.handle = async (...args: Parameters<typeof handle>) => {
       const output = await handle.call(handler, ...args)
       const body: unknown = output.response.body
-      if (isIncomingMessage(body)) socket = body.socket
+      if (isIncomingMessage(body)) captured.socket = body.socket
       return output
     }
     const client = new S3Client({
@@ -114,7 +116,7 @@ describe('AWS request timeouts', () => {
 
     try {
       expect(await Promise.race([outcome, checkpoint])).toBe('checkpoint')
-      expect(socket?.listenerCount('timeout')).toBe(1)
+      expect(captured.socket?.listenerCount('timeout')).toBe(1)
     } finally {
       client.destroy()
     }
