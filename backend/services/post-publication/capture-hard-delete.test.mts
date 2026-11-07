@@ -1,4 +1,6 @@
+import { write } from '@data-stores/psql'
 import { beginTransaction, createTestPost, createTestUser } from '@voucha/test-helpers'
+import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import {
   retainUserCascadeHardDeletedPosts,
@@ -18,12 +20,12 @@ describe('retainUserCascadeHardDeletedPosts', () => {
   it('fails instead of capturing more than the cap of posts that survived the author drain', async () => {
     const user = await createTestUser()
     if (!user) throw new Error('Expected user')
-    const total = USER_CASCADE_CAPTURE_MAX_POSTS + 1
-    for (let start = 0; start < total; start += 50) {
-      await Promise.all(
-        Array.from({ length: Math.min(50, total - start) }, () => createTestPost({ user })),
-      )
-    }
+    await write(sql`/* capture-hard-delete.test:seed */
+      INSERT INTO posts (id, created_via, post_type, markdown, created_by_id, broadcast, privacy,
+        is_anonymous, bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
+      SELECT uuidv7(), 'system', 'discussion', 'post ' || seed.n, ${user.id}, 'everyone', 'public',
+        false, decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex')
+      FROM generate_series(1, ${USER_CASCADE_CAPTURE_MAX_POSTS + 1}) AS seed(n)`)
 
     await using transaction = await beginTransaction()
     await expect(retainUserCascadeHardDeletedPosts(transaction, user.id)).rejects.toThrow(
