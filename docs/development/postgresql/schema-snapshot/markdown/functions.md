@@ -668,6 +668,30 @@ CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_user_landing_page_candidate_profile_link`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_user_landing_page_candidate_profile_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_user_landing_page_candidate_referral_link`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_user_landing_page_candidate_referral_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_user_landing_page_candidate_review_post`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_user_landing_page_candidate_review_post()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_user_profile_image_placement`
 
 ```sql
@@ -1578,30 +1602,6 @@ CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)
  RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_sync_user_landing_page_candidate_profile_link`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_user_landing_page_candidate_profile_link()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_user_landing_page_candidate_referral_link`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_user_landing_page_candidate_referral_link()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_user_landing_page_candidate_review_post`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_user_landing_page_candidate_review_post()
- RETURNS trigger
  LANGUAGE plpgsql
 ```
 
