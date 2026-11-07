@@ -27,8 +27,10 @@ export async function seedStoryPostRelatedUrlProjection(): Promise<void> {
     `/* seedExplainData */ WITH projection_items AS (
          SELECT ids.id
          FROM rss_feed_item_guids ids
+         JOIN rss_feed_items items ON items.id = ids.id
          WHERE ids.guid LIKE 'seed-item-guid-%'
-         ORDER BY ids.id DESC
+           AND items.deleted_at IS NULL
+         ORDER BY items.published_at DESC, items.id DESC
          LIMIT $1
        )
        UPDATE rss_feed_items items

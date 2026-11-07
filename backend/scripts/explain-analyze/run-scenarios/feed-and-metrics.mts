@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -8,6 +9,8 @@ import { runFeedRssScenarios } from './feed-rss.mts'
 import { runPrioritizedReferralLinkScenarios } from './prioritized-referral-links.mts'
 import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
 import { runCommentDescendantDepthScenario } from './comment-descendant-depth.mts'
+
+const METRICS_ANCILLARY_ROW_ALLOWANCE = 1_000
 
 const {
   getCommentAncestorsByAny,
@@ -133,9 +136,15 @@ export async function runFeedAndMetricScenarios() {
         relation__post__category__topic_alias: 5_000,
         post_review_topic_ratings: 5_000,
         post_data_point_topics: 5_000,
-        rss_feed_item_categories: 6_000,
-        rss_feed_item_sources: 20_000,
-        rss_feed_items: 10_000,
+        // Category and feed-topic branches can each visit the RSS corpus.
+        rss_feed_item_categories:
+          SEEDED_ROWS_BY_RELATION.rss_feed_item_categories! + METRICS_ANCILLARY_ROW_ALLOWANCE,
+        rss_feed_item_sources:
+          (SEEDED_ROWS_BY_RELATION.rss_feed_item_sources! + METRICS_ANCILLARY_ROW_ALLOWANCE) * 2,
+        rss_feed_items:
+          SEEDED_ROWS_BY_RELATION.rss_feed_items! +
+          SEEDED_ROWS_BY_RELATION.rss_feed_item_sources! +
+          METRICS_ANCILLARY_ROW_ALLOWANCE * 2,
         rss_feeds: 6_000,
       }).map(([relation, max]) => ({ kind: 'maxProcessedRows' as const, relation, max })),
     ],
