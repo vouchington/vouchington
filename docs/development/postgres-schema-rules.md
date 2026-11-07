@@ -155,8 +155,10 @@ recovery follow [One current contract](../../AGENTS.md).
   an optimizer fence: outer filters and ordering cannot reach its indexes, so when they reject most
   of its rows, or sort or aggregate them, the query reads every row up to the CTE's own LIMIT. Use it
   only when it holds the final LIMIT or a small viewer-scoped set.
-- **A list or feed read is one walk over the listed entity.** Filters go in WHERE and are served by
-  an index. Use `ORDER BY key DESC, id DESC LIMIT page+1` with a `(key, id) < ($1, $2)` keyset cursor.
+- **A list or feed read is one walk over the listed entity** or, for membership-ordered lists
+  (saved posts, lists), over the membership index joined to the targets, with eligibility in WHERE. Filters go in WHERE and are served by
+  an index. Use, for example, `ORDER BY key DESC, id DESC LIMIT page+1` with a `(key, id) < ($1, $2)` keyset
+  cursor; the cursor predicate matches every ordering key and direction.
   A keyset alone does not bound rows scanned. When a filter can reject long runs, such as a
   viewer's blocks or mutes, the time window is the scan bound where the sort has one, and EXPLAIN at
   representative cardinality compares rows read with rows returned. No candidate pools: no capped or `MATERIALIZED` CTE of
