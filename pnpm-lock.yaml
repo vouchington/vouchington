@@ -5937,9 +5937,6 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
-      '@modules/feed-query-builders':
-        specifier: workspace:^
-        version: link:../../modules/feed-query-builders
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -10650,9 +10647,6 @@ importers:
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../classifier-runs
-      '@services/crawls':
-        specifier: workspace:^
-        version: link:../crawls
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes

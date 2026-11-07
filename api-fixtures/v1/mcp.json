@@ -5369,7 +5369,7 @@
           "tool": {
             "name": "read_rss_feed_item",
             "title": "Read Rss Feed Item",
-            "description": "list: Search and page RSS feed items by keyword, semantic text, similar item, feed, media type or read state. Returns at most 100 items per page and page_info.end_cursor for the next page. The old internal search_rss_feed_items tool has no cursor; use this tool for MCP reads.\ndetails: Get an RSS feed item by UUID, with article text marked as external content.\nfollow_context: For an RSS item, list up to five users you follow who voted positively or negatively, with the total for each side. Uses the same follow and vote visibility policy as REST.\nvotes: List votes on an RSS item. As on REST, administrators see all votes and other callers see only their own. Returns at most 100 per page with page_info.end_cursor.",
+            "description": "list: Search and page RSS feed items by keyword, semantic text, similar item, feed, media type or read state. Returns at most 100 items per page and page_info.end_cursor for the next page.\ndetails: Get an RSS feed item by UUID, with article text marked as external content.\nfollow_context: For an RSS item, list up to five users you follow who voted positively or negatively, with the total for each side. Uses the same follow and vote visibility policy as REST.\nvotes: List votes on an RSS item. As on REST, administrators see all votes and other callers see only their own. Returns at most 100 per page with page_info.end_cursor.",
             "inputSchema": {
               "type": "object",
               "oneOf": [

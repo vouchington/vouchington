@@ -115,8 +115,8 @@
       },
       "read_rss_feed_item": {
         "measured": {
-          "list": 7881,
-          "core": 3833
+          "list": 7793,
+          "core": 3745
         },
         "max": {
           "list": 8000,

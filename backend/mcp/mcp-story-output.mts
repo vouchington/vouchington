@@ -90,7 +90,7 @@ export async function toMcpStory(story: StoryRow): Promise<McpStory> {
   }
 }
 
-/** A story member article, shaped and sanitized like the `search_rss_feed_items` results. */
+/** A story member article. Title and markdown use the same RSS sanitization as an item read. */
 async function toMcpStoryItem(item: RssItem): Promise<McpStoryItem> {
   return {
     id: item.id,

@@ -4,8 +4,6 @@ import { clampLimit } from '@services/pagination'
  * Supports optional text search via the `text_search_query` option.
  * When `semantic_search_query` is provided, delegates to searchRssFeedItemsBySemantic
  * for embedding-ranked results with relevance cursor pagination.
- *
- * For agent-tool similarity search (similar_post_id, etc.), see tools/search.mts.
  */
 import { read } from '@data-stores/psql'
 import type { RssFeedItemsResult } from './types.mts'

@@ -28,7 +28,6 @@
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@modules/aws": "workspace:^",
-    "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",

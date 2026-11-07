@@ -6,7 +6,6 @@ import { clampLimit } from '@services/pagination'
  * Results use a scoped relevance cursor so callers can traverse stable result pages.
  *
  * For the recency-ordered public search, see search.mts.
- * For agent-tool similarity search (similar_post_id, etc.), see tools/search.mts.
  */
 import { read } from '@data-stores/psql'
 import { buildEmbeddingCtes, EMBEDDING_DISTANCE_THRESHOLD } from '@modules/search-utils'
