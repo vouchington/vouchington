@@ -7,7 +7,7 @@ export function appendPersonalizedExclusionCTEs(
   communityId?: string,
 ): SQLStatement {
   const userId = currentUserId ?? null
-  query.append(sql`viewer_scope AS MATERIALIZED (
+  query.append(sql`viewer_scope AS (
     SELECT ${userId}::uuid AS user_id, ${communityId ?? null}::uuid AS community_id,
       EXISTS (SELECT 1 FROM relation__user__proxy_follow__community proxy
         WHERE proxy.subject_id = ${userId}::uuid AND proxy.deleted_at IS NULL) AS has_proxy_follow,
@@ -37,7 +37,7 @@ export function appendPersonalizedExclusionCTEs(
         })
       : sql`hidden_items AS (SELECT NULL::uuid AS rss_feed_item_id WHERE FALSE)`,
   )
-  return query.append(sql`, excluded_hostnames AS NOT MATERIALIZED (
+  return query.append(sql`, excluded_hostnames AS (
     SELECT hostname.reversed_hostname FROM relation__user__block__url_hostname blocked
     JOIN url_hostnames hostname ON hostname.id = blocked.object_id
     WHERE blocked.subject_id = ${userId}::uuid AND blocked.deleted_at IS NULL

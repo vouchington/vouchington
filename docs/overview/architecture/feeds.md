@@ -4,7 +4,7 @@ Personalized post and RSS feed item feeds for logged-in users. Feeds are filtere
 
 ## Query Pipeline
 
-Both feeds combine direct and shared deliveries with the viewer's follow and exclusion relations. Personalized RSS reads the recent publication window in one SQL statement. Followed sources and topics are indexed membership filters, combined as a union. Eligibility, score thresholds, search, media and related-post filters run before the final page limit, so selective filters can inspect the entire window without exposing an empty continuation page.
+Both feeds combine direct and shared deliveries with the viewer's follow and exclusion relations. Personalized RSS reads the recent publication window in one SQL statement. Followed sources and topics are indexed membership filters, combined as a union. Eligibility, score thresholds, search, media and related-post filters are conditions on each ordered item walk. Direct and shared walks each stop after a page and its lookahead, then merge in delivery order. Selective filters can inspect the publication window without exposing an empty continuation page.
 
 The item publication window bounds the RSS read instead of a candidate budget. Longer requested ranges use the personal feed's maximum horizon; narrower ranges remain narrower. Direct items use their publication tuple, while shares retain their independent delivery tuple and metadata. Both the target item and the share delivery must fit the requested horizon. Live item, follow or score changes can change results between requests.
 
@@ -30,12 +30,12 @@ flowchart TD
     subgraph RSS["RSS item feed - getRssFeedItemFeedIds"]
         RR["Follow and exclusion relations"] --> RM
         RR --> RE
-        RM["Recent RSS item walk with indexed source OR topic membership"] --> RD
+        RM["Cursor-relative RSS item walk with indexed source OR topic membership"] --> RD
         RD["Visibility, score, search, media and related-post filters"] --> RW
-        RW["Cursor-independent newest matching story representative"] --> RCombined
-        RE["Recent recipient share deliveries and eligible recent targets"] --> RCombined
+        RW["Indexed check for a newer matching story member, then ordered page + lookahead"] --> RCombined
+        RE["Eligible recent recipient shares, ordered page + lookahead"] --> RCombined
         RCombined["Direct and shared deliveries = UNION ALL"] --> RFinal
-        RFinal["Strict delivery cursor/order -> LIMIT+1"]
+        RFinal["Delivery order -> page + lookahead"]
     end
 ```
 
