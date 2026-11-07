@@ -126,6 +126,24 @@ describe('admin Stripe purchase collision reviews', () => {
       readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
     ).resolves.toMatchObject({ id: seeded.review.id })
   })
+
+  it('rejects a missing review, a non-numeric amount, and an unparseable period', async () => {
+    const seeded = await seedTestStripePurchaseCollisionReview()
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    await request.get(`${LIST}/${randomUUID()}`).expect(404)
+    await request
+      .post(`${LIST}/${seeded.review.id}/disposition`)
+      .send({ ...staffBody(seeded), amount: { amount: '900', currency: 'usd' } })
+      .expect(400)
+    await request
+      .post(`${LIST}/${seeded.review.id}/disposition`)
+      .send({ ...staffBody(seeded), period_started_at: '2025-01-01T23:59:60.000Z' })
+      .expect(400)
+    await expect(
+      readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
+    ).resolves.toMatchObject({ id: seeded.review.id })
+  })
 })
 
 function staffBody(seeded: Awaited<ReturnType<typeof seedTestStripePurchaseCollisionReview>>) {

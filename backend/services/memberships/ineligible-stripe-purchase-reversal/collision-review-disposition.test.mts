@@ -1,3 +1,4 @@
+import type { QueryExecutor } from '@data-stores/psql'
 import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import { recordStripePurchaseCollisionReviews } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-review'
 import { createProviderMembershipSource } from '@services/memberships/provider-source'
@@ -6,7 +7,11 @@ import { bindStripePurchaseCollisionReviewSeed } from '@voucha/test-helpers/stri
 import { readTestStripePurchaseCollisionReview } from '@voucha/test-helpers/stripe-purchase-collision-work'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { disposeStripePurchaseCollisionReview } from './collision-review-disposition.mts'
+import { insertStaffStripePurchaseCollisionCase } from './collision-review-case-insert.mts'
+import {
+  applyStripePurchaseCollisionReviewDisposition,
+  disposeStripePurchaseCollisionReview,
+} from './collision-review-disposition.mts'
 
 const { restoreTestStripePurchaseCollisionReview, seedTestStripePurchaseCollisionReview } =
   bindStripePurchaseCollisionReviewSeed({
@@ -116,8 +121,81 @@ describe('Stripe purchase collision review disposition', () => {
     await expect(
       disposeStripePurchaseCollisionReview({ reviewId: randomUUID() }),
     ).rejects.toMatchObject({ status: 404 })
+    const seeded = await seedTestStripePurchaseCollisionReview()
+    await expect(
+      disposeStripePurchaseCollisionReview({ ...staffAmount(seeded), reviewId: randomUUID() }),
+    ).rejects.toMatchObject({ status: 404 })
+    await expect(
+      readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
+    ).resolves.toMatchObject({ id: seeded.review.id })
+  })
+
+  it('rejects an amount that is missing its price, currency, or a real period', async () => {
+    const seeded = await seedTestStripePurchaseCollisionReview()
+    await expect(
+      disposeStripePurchaseCollisionReview({
+        reviewId: seeded.review.id,
+        amountMinorUnits: 1_200,
+      }),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(
+      disposeStripePurchaseCollisionReview({
+        ...staffAmount(seeded),
+        stripePriceId: ` ${seeded.stripePriceId}`,
+      }),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(
+      disposeStripePurchaseCollisionReview({ ...staffAmount(seeded), currencyCode: 'usd ' }),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(
+      disposeStripePurchaseCollisionReview({
+        ...staffAmount(seeded),
+        periodStartedAt: new Date('not-a-date'),
+      }),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(
+      readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
+    ).resolves.toMatchObject({ id: seeded.review.id })
+  })
+
+  it('keeps the review when the case insert cannot read its counts or the delete misses', async () => {
+    const seeded = await seedTestStripePurchaseCollisionReview()
+    const staff = staffAmount(seeded)
+    const counts = { reviewCount: 'bad', matchedCount: 1, insertedCount: 1, existingCount: 0 }
+    await expect(
+      insertStaffStripePurchaseCollisionCase(
+        {
+          reviewId: staff.reviewId,
+          amount: staff.amountMinorUnits,
+          stripePriceId: staff.stripePriceId,
+          currencyCode: staff.currencyCode,
+          periodStartedAt: staff.periodStartedAt,
+          periodEndsAt: staff.periodEndsAt,
+        },
+        rowsQuery([counts]),
+      ),
+    ).rejects.toThrow('Staff reversal case write did not return a count')
+    let calls = 0
+    const disappearingReview: QueryExecutor = () => {
+      calls += 1
+      return Promise.resolve(
+        calls === 1
+          ? { command: '', fields: [], rowCount: 1, rows: [{ ...counts, reviewCount: 1 }] }
+          : { command: '', fields: [], rowCount: 0, rows: [] },
+      )
+    }
+    await expect(
+      applyStripePurchaseCollisionReviewDisposition(staffAmount(seeded), disappearingReview),
+    ).rejects.toMatchObject({ status: 404 })
+    await expect(
+      readTestStripePurchaseCollisionReview(seeded.sourceId, seeded.invoiceId),
+    ).resolves.toMatchObject({ id: seeded.review.id })
   })
 })
+
+function rowsQuery(rows: ReadonlyArray<Record<string, unknown>>): QueryExecutor {
+  return () => Promise.resolve({ command: '', fields: [], rowCount: rows.length, rows: [...rows] })
+}
 
 function staffAmount(seeded: Awaited<ReturnType<typeof seedTestStripePurchaseCollisionReview>>) {
   return {
