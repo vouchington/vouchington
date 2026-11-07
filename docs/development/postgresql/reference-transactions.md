@@ -24,3 +24,33 @@ status. A callback reading the getter immediately sees stale `T`, and a promise 
 packet-boundary racy: it sees `E` only if both packets parsed in the same turn. Upstream's own
 tests run a follow-up `SELECT 1` before asserting `E`. Do not replace the SAVEPOINT probes with the
 getter until upstream documents and tests a safe immediate `E`, and do not patch `pg`.
+
+## Lock scope
+
+A transaction locks only the rows it writes. It never locks rows it only reads, including:
+
+- the parent and ancestors of the row
+- the thread root
+- the community
+- membership sets
+
+This applies to row locks (`FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`), advisory locks and
+lock helpers alike.
+
+**Why:**
+
+- Locks on read context grow with the data. A reply that locks its ancestor chain takes one lock
+  per level of an unbounded depth.
+- Every write that shares that context waits on the same rows, so unrelated branches of one thread
+  take turns.
+- Wider lock sets add lock-order cycles and deadlocks.
+
+**How to close a race instead:**
+
+- **Database guarantees:** foreign keys, unique and check constraints, and conditional
+  `UPDATE ... WHERE` predicates on the written row.
+- **Read-time rules:** readers resolve whatever window remains. For example, a reply written under
+  a comment that is hidden at the same moment disappears with that comment's subtree when read.
+
+Automated reviewers often report "race" findings that ask for locks on read context. Decline them
+with a link to this section instead of adding the lock.
