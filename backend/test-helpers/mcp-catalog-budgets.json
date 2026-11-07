@@ -72,9 +72,9 @@
       "all": {
         "on": {
           "count": 4,
-          "list": 77000,
-          "core": 28000,
-          "output": 75000
+          "list": 80000,
+          "core": 29000,
+          "output": 77000
         }
       },
       "Reader": {
@@ -104,17 +104,17 @@
       "CommunityFree": {
         "on": {
           "count": 1,
-          "list": 43000,
+          "list": 44000,
           "core": 8000,
-          "output": 42000
+          "output": 44000
         }
       },
       "CommunityPlus": {
         "on": {
           "count": 4,
-          "list": 77000,
-          "core": 28000,
-          "output": 75000
+          "list": 80000,
+          "core": 29000,
+          "output": 77000
         }
       },
       "LegalRead": {
