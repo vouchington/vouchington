@@ -16,21 +16,41 @@ function isIncomingMessage(body: unknown): body is IncomingMessage {
 
 function armResponseBodyTimeout(body: IncomingMessage, timeoutMs: number): void {
   const socket = body.socket
+  if (socket === null) return
+
   const timeoutError = new AwsResponseBodyTimeoutError(
     `AWS response body was inactive for ${timeoutMs} ms`,
   )
-  const onTimeout = () => body.destroy(timeoutError)
-  let cleared = false
-  const clear = () => {
-    if (cleared) return
-    cleared = true
+  let released = false
+  const onTimeout = () => {
+    body.destroy(timeoutError)
+  }
+  const release = () => {
+    if (released) return
+    released = true
+    Reflect.deleteProperty(socket, 'setTimeout')
     socket.removeListener('timeout', onTimeout)
     if (!socket.destroyed) socket.setTimeout(0)
   }
 
-  body.setTimeout(timeoutMs, onTimeout)
-  body.once('end', clear)
-  body.once('close', clear)
+  // The SDK leaves its idle-timeout listener armed after headers and destroys an
+  // incomplete body with a TimeoutError that has no code. Windows of at least
+  // 6000 ms register again after 3000 ms and would restart this timer. Activity
+  // still refreshes the socket timer directly, so a live transfer is unaffected.
+  socket.removeAllListeners('timeout')
+  socket.setTimeout(timeoutMs, onTimeout)
+  const setSocketTimeout = socket.setTimeout
+  Object.defineProperty(socket, 'setTimeout', {
+    configurable: true,
+    writable: true,
+    value: (timeout: number, callback?: () => void) => {
+      if (released) return setSocketTimeout.call(socket, timeout, callback)
+      return socket
+    },
+  })
+
+  body.once('end', release)
+  body.once('close', release)
 }
 
 // The application bounds bodies after headers; the platform owns SDK handler configuration.
