@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { lockAdvisoryKeysInOrder } from '../../../services/copyright-notices/advisory-key-locks.mts'
-import { recordRestrictionAppealReversalEvents } from '../../../services/copyright-notices/claimant-misuse-ledger.mts'
+import { lockAdvisoryKeysInOrder } from '../services/copyright-notices/advisory-key-locks.mts'
+import { recordRestrictionAppealReversalEvents } from '../services/copyright-notices/claimant-misuse-ledger.mts'
 
 /** Records an empty batch, then the same batch twice, and counts the notice's events. */
 export async function recordTestAppealReversalEventsTwice(input: {

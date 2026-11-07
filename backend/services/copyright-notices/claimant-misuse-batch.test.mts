@@ -3,7 +3,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import {
   probeTestAdvisoryKeyLocksHeldByBatch,
   recordTestAppealReversalEventsTwice,
-} from '@voucha/test-helpers/services/copyright-notices/batch-statements'
+} from '@voucha/test-helpers/copyright-batch-statements'
 import { createTestCopyrightStaff } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
