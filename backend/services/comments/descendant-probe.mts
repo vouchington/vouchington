@@ -90,6 +90,7 @@ export async function readCommentChildrenForFrontier(
         FROM posts p
         WHERE p.root_post_id IS NOT DISTINCT FROM ${rootId}
           AND p.parent_post_id = frontier.parent_id
+          AND p.id > frontier.parent_id
           AND p.post_type = 'comment'
         ORDER BY p.id
         LIMIT frontier.row_limit
