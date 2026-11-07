@@ -1101,8 +1101,8 @@
       },
       "search_moderator_actions": {
         "measured": {
-          "list": 2666,
-          "core": 1725
+          "list": 2709,
+          "core": 1768
         },
         "max": {
           "list": 3000,
