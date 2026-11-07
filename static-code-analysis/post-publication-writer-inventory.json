@@ -36,7 +36,6 @@
     "backend/services/stories/assign.mts",
     "backend/services/stories/clustering/membership.mts",
     "backend/services/stories/story-post-create.mts",
-    "backend/services/stories/story-post-related-url-projection-reconcile.mts",
     "backend/services/stories/story-post-related-url-projection-relations.mts",
     "backend/services/stories/story-post-related-url-projection-prune.mts",
     "backend/services/users/suspension.mts",
