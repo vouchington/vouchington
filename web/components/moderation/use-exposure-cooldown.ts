@@ -61,20 +61,19 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
     const cooldownEndsAtMs = cooldownEndsAt ? new Date(cooldownEndsAt).getTime() : Number.NaN
     if (!exposureState?.in_cooldown || !Number.isFinite(cooldownEndsAtMs)) return undefined
 
-    let cancelled = false
-    let confirmationPending = false
-    let lastConfirmationSettledAtMs: number | undefined
+    const lifetime = new AbortController()
+    const confirmation = { pending: false, lastSettledAtMs: undefined as number | undefined }
     const confirmExpiredCooldown = () => {
       const now = Date.now()
       if (
         now < cooldownEndsAtMs ||
-        confirmationPending ||
-        (lastConfirmationSettledAtMs !== undefined &&
-          now - lastConfirmationSettledAtMs < COOLDOWN_CONFIRMATION_INTERVAL_MS)
+        confirmation.pending ||
+        (confirmation.lastSettledAtMs !== undefined &&
+          now - confirmation.lastSettledAtMs < COOLDOWN_CONFIRMATION_INTERVAL_MS)
       ) {
         return
       }
-      confirmationPending = true
+      confirmation.pending = true
       setExposureStateIsStale(true)
       revealBlockedRef.current = true
       const requestRevision = ++exposureRequestRevisionRef.current
@@ -82,7 +81,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
       getExposureState()
         .then(res => {
           if (
-            cancelled ||
+            lifetime.signal.aborted ||
             requestRevision !== exposureRequestRevisionRef.current ||
             observedRevealOutcomeRevision !== revealOutcomeRevisionRef.current
           ) {
@@ -95,7 +94,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
         })
         .catch((err: unknown) => {
           if (
-            cancelled ||
+            lifetime.signal.aborted ||
             requestRevision !== exposureRequestRevisionRef.current ||
             observedRevealOutcomeRevision !== revealOutcomeRevisionRef.current
           ) {
@@ -106,8 +105,8 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
           onError(err, { fallback: 'Failed to load exposure state' })
         })
         .finally(() => {
-          confirmationPending = false
-          lastConfirmationSettledAtMs = Date.now()
+          confirmation.pending = false
+          confirmation.lastSettledAtMs = Date.now()
         })
     }
 
@@ -115,7 +114,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
     const intervalId = setInterval(confirmExpiredCooldown, COOLDOWN_CONFIRMATION_INTERVAL_MS)
 
     return () => {
-      cancelled = true
+      lifetime.abort()
       clearInterval(intervalId)
     }
   }, [exposureState?.cooldown_ends_at, exposureState?.in_cooldown])

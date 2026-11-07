@@ -50,16 +50,15 @@ function OAuthBrokerCallbackContent() {
   useEffect(() => {
     if (!flowId) return undefined
     const activeFlowId = flowId
-    let cancelled = false
-    let cancelPoll: (() => void) | undefined
-    let cancelReceipt: (() => void) | undefined
+    const lifetime = new AbortController()
+    const pending: { cancelPoll?: () => void; cancelReceipt?: () => void } = {}
 
     async function complete() {
       try {
         const result = await completeOAuthAuthorization<CompletionResponse>(activeFlowId)
-        if (cancelled) return
+        if (lifetime.signal.aborted) return
         if ('status' in result && result.status === 'pending') {
-          cancelPoll = scheduleOAuthCompletion(complete)
+          pending.cancelPoll = scheduleOAuthCompletion(complete)
           return
         }
         const opener = window.opener
@@ -81,20 +80,20 @@ function OAuthBrokerCallbackContent() {
                 status: 'user' in result ? 'authenticated' : 'connected',
               }
         const receipt = waitForOAuthBrokerReceipt(opener, activeFlowId)
-        cancelReceipt = receipt.cancel
+        pending.cancelReceipt = receipt.cancel
         opener.postMessage(completionMessage, window.location.origin)
         if (!(await receipt.result)) {
-          if (!cancelled) setFailed(true)
+          if (!lifetime.signal.aborted) setFailed(true)
           return
         }
-        if (cancelled) return
+        if (lifetime.signal.aborted) return
         await acknowledgeOAuthAuthorization(activeFlowId)
-        if (cancelled) return
+        if (lifetime.signal.aborted) return
         window.close()
       } catch (err) {
-        if (!cancelled) {
+        if (!lifetime.signal.aborted) {
           if (isRetryableCompletionError(err)) {
-            cancelPoll = scheduleOAuthCompletion(complete)
+            pending.cancelPoll = scheduleOAuthCompletion(complete)
             return
           }
           if (window.opener) {
@@ -116,9 +115,9 @@ function OAuthBrokerCallbackContent() {
 
     void complete()
     return () => {
-      cancelled = true
-      cancelPoll?.()
-      cancelReceipt?.()
+      lifetime.abort()
+      pending.cancelPoll?.()
+      pending.cancelReceipt?.()
     }
   }, [flowId])
 

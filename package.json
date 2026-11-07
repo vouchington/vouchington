@@ -161,7 +161,7 @@
     "knip": "^6",
     "no-mistakes": "^0.109.4",
     "oxfmt": "^0.76.0",
-    "oxlint": "^1.90.0",
+    "oxlint": "^1.91.0",
     "oxlint-plugin-react-doctor": "^0.9.21",
     "oxlint-tsgolint": "^7.0.2005",
     "picomatch": "^4.0.4",

@@ -75,22 +75,22 @@ export function HackerNewsConfigProvider({
   const initialPostTimeRangeCap = initialConfig.post_time_range_cap
   const router = useRouter()
   useEffect(() => {
-    let active = true
+    const lifetime = new AbortController()
     const serverConfig: HackerNewsConfig = {
       references_visible: initialReferencesVisible,
       post_time_range_cap: initialPostTimeRangeCap,
     }
-    let current = observedConfig.current
+    const seen = { config: observedConfig.current }
     async function refresh() {
       try {
         const next = await getHackerNewsConfigClient()
-        if (!active) return
+        if (lifetime.signal.aborted) return
         const changed =
-          next.references_visible !== current.references_visible ||
-          next.post_time_range_cap !== current.post_time_range_cap
+          next.references_visible !== seen.config.references_visible ||
+          next.post_time_range_cap !== seen.config.post_time_range_cap
         if (changed) {
-          const observedHiddenCycle = current.references_visible && !next.references_visible
-          current = next
+          const observedHiddenCycle = seen.config.references_visible && !next.references_visible
+          seen.config = next
           setSnapshot(previous => ({
             ...previous,
             config: next,
@@ -114,7 +114,7 @@ export function HackerNewsConfigProvider({
       void refresh()
     }, 30_000)
     return () => {
-      active = false
+      lifetime.abort()
       clearInterval(timer)
     }
   }, [router, initialReferencesVisible, initialPostTimeRangeCap])

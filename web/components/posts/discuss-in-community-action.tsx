@@ -42,9 +42,9 @@ export function DiscussInCommunityAction({
   async function loadCommunities() {
     if (hasLoadedCommunities || isLoading) return
     setIsLoading(true)
-    let hasAvailableCommunities = communities.length > 0
+    const availability = { hasAny: communities.length > 0 }
     const showAvailableCommunities = (available: Community[]) => {
-      hasAvailableCommunities = available.length > 0
+      availability.hasAny = available.length > 0
       setCommunities(available)
       setCommunitySlug(current =>
         current && available.some(community => community.slug === current)
@@ -58,7 +58,7 @@ export function DiscussInCommunityAction({
       setHasLoadedCommunities(true)
     } catch {
       toast.error(
-        hasAvailableCommunities
+        availability.hasAny
           ? t('extracted.posts.discussInCommunityAction.couldNotLoadEveryCommunity_017411ef')
           : t('extracted.posts.discussInCommunityAction.couldNotLoadYourCommunities_e6130bd4'),
       )

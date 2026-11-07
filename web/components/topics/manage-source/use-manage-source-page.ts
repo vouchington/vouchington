@@ -34,16 +34,16 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
     idGenerationRef.current += 1
     if (id !== initialIdRef.current) hasLeftInitialIdRef.current = true
     if (hasInitialDataRef.current && !hasLeftInitialIdRef.current) return undefined
-    let active = true
+    const lifetime = new AbortController()
     // A topic switch invalidates any additional-hostnames load-more in flight for the
     // previous topic: reset that state immediately rather than leaving it to the
     // (now-stale-gated) settlement of the old request, which may never touch it again.
     dispatch({ loadingMoreHostnames: false, hostnamesFetchError: null })
     void loadManageSourceState(id).then(nextState => {
-      if (active) dispatch(nextState)
+      if (!lifetime.signal.aborted) dispatch(nextState)
     })
     return () => {
-      active = false
+      lifetime.abort()
     }
   }, [id])
 
