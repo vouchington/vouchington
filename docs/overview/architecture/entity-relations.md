@@ -60,8 +60,9 @@ kept by the generation's mutation fence. A block that lands on an already-writte
 statement commits is handled by the next generation, which prunes projected URLs missing from the
 new eligible prefix.
 
-This serialized capacity guarantee applies to post-related URLs; other relation types retain their
-check-before-write behavior and may overshoot during concurrent admission.
+Post-related URL writes recheck the relation cap under the post scope lock, so they cannot exceed
+it. Other relation types keep check-before-write behavior and may overshoot during concurrent
+admission.
 
 ## Table Structure
 
