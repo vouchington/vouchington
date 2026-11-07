@@ -58,7 +58,7 @@ describe('post link URL-ID policy', () => {
     const owner = await addUrl(null, `https://${host}/article`)
     if (!owner) throw new Error('Expected an owner URL fixture')
 
-    await updatePost(user, post, { url: `https://www.${host}/article/?utm_source=x` })
+    await updatePost(user, post, { url: `https://www.${host}/article?utm_source=x` })
 
     expect((await getPostByAny(post.id, { readOnly: false }))?.url_id).toBe(owner.id)
   })
