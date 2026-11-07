@@ -153366,6 +153366,16 @@
         }
       },
       "columns": {
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
         "id": {
           "comment": "Identity of the candidate projection row.",
           "dataType": "uuid",
@@ -153384,7 +153394,7 @@
           "generatedExpression": "COALESCE(sort_order, 0)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "profile_link_id": {
           "comment": "Profile link source for tier 2.",
@@ -153394,7 +153404,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "referral_link_id": {
           "comment": "Referral link source for tier 0.",
@@ -153404,7 +153414,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "review_post_id": {
           "comment": "Review post source for tier 1.",
@@ -153414,7 +153424,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "sort_order": {
           "comment": "Profile link ordering within its tier; null for other source types.",
@@ -153424,7 +153434,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "source_sort_key": {
           "comment": "Source UUID bytes in ascending profile order or complemented for descending review and referral order.",
@@ -153434,7 +153444,7 @@
           "generatedExpression": "\nCASE\n    WHEN (profile_link_id IS NOT NULL) THEN uuid_send(profile_link_id)\n    ELSE decode(translate(encode(uuid_send(COALESCE(review_post_id, referral_link_id)), 'hex'::text), '0123456789abcdef'::text, 'fedcba9876543210'::text), 'hex'::text)\nEND",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "tier": {
           "comment": "Candidate type ordering: profile link 2, review 1, referral link 0.",
@@ -153444,7 +153454,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "tier_sort": {
           "comment": "Negated tier for ascending index order.",
@@ -153454,7 +153464,7 @@
           "generatedExpression": "(- tier)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "user_id": {
           "comment": "Owner whose landing page may include the source.",
@@ -153464,7 +153474,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         }
       },
       "comment": "Owner-ordered projection of potential landing page items; source eligibility remains on source rows.",

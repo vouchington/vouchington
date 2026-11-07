@@ -145148,6 +145148,17 @@
         "user_landing_page_candidates_check": "CHECK ((((tier = 2) AND (profile_link_id IS NOT NULL) AND (review_post_id IS NULL) AND (referral_link_id IS NULL) AND (sort_order IS NOT NULL)) OR ((tier = 1) AND (profile_link_id IS NULL) AND (review_post_id IS NOT NULL) AND (referral_link_id IS NULL) AND (sort_order IS NULL)) OR ((tier = 0) AND (profile_link_id IS NULL) AND (review_post_id IS NULL) AND (referral_link_id IS NOT NULL) AND (sort_order IS NULL))))"
       },
       "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
         "id": {
           "collation": null,
           "comment": "Identity of the candidate projection row.",
@@ -145167,7 +145178,7 @@
           "generatedExpression": "COALESCE(sort_order, 0)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "integer"
         },
         "profile_link_id": {
@@ -145178,7 +145189,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "referral_link_id": {
@@ -145189,7 +145200,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "review_post_id": {
@@ -145200,7 +145211,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "sort_order": {
@@ -145211,7 +145222,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "integer"
         },
         "source_sort_key": {
@@ -145222,7 +145233,7 @@
           "generatedExpression": "\nCASE\n    WHEN (profile_link_id IS NOT NULL) THEN uuid_send(profile_link_id)\n    ELSE decode(translate(encode(uuid_send(COALESCE(review_post_id, referral_link_id)), 'hex'::text), '0123456789abcdef'::text, 'fedcba9876543210'::text), 'hex'::text)\nEND",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "bytea"
         },
         "tier": {
@@ -145233,7 +145244,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "smallint"
         },
         "tier_sort": {
@@ -145244,7 +145255,7 @@
           "generatedExpression": "(- tier)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "smallint"
         },
         "user_id": {
@@ -145255,7 +145266,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "uuid"
         }
       },
