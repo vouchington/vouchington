@@ -90,16 +90,28 @@ export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void 
       `${result.name} examined ${storyProbeRows} story winner rows; the ${TOTAL_STORY_MEMBER_ROWS} members across the seeded story cohorts must use indexed winner probes`,
     )
   if (
-    !/eligible_direct_items\s+AS\s+MATERIALIZED/i.test(result.query_text) ||
-    !/story_winners\s+AS\s+MATERIALIZED/i.test(result.query_text) ||
-    !/direct_deliveries\s+AS\s+NOT\s+MATERIALIZED/i.test(result.query_text) ||
-    !/shared_deliveries\s+AS\s+NOT\s+MATERIALIZED/i.test(result.query_text) ||
-    !/ORDER\s+BY\s+sort_at\s+DESC,\s*result_id\s+DESC/i.test(result.query_text) ||
+    /\bMATERIALIZED\b/i.test(result.query_text) ||
+    !/ORDER\s+BY\s+feed_item\.published_at\s+DESC,\s*feed_item\.id\s+DESC\s+LIMIT\s+\$/i.test(
+      result.query_text,
+    ) ||
+    !/ORDER\s+BY\s+share\.sort_at\s+DESC,\s*share\.id\s+DESC\s+LIMIT\s+\$/i.test(
+      result.query_text,
+    ) ||
+    !/ORDER\s+BY\s+sort_at\s+DESC,\s*result_id\s+DESC\s+LIMIT\s+\$/i.test(result.query_text) ||
+    !/story_id\s+IS\s+NULL\s+OR\s+NOT\s+EXISTS/i.test(result.query_text) ||
     /candidate_(?:feed|topic)|source_limit|max_windows_per_page/i.test(result.query_text)
   ) {
     throw new Error(
-      `${result.name} must be one bounded-horizon direct/share walk ordered by the UUID delivery id`,
+      `${result.name} must merge ordered, individually limited direct/share walks without materialized pools`,
     )
+  }
+  // Same-corpus main first page uses 264k custom / 325k generic buffer hits.
+  if (
+    result.scenario_id === 'rss-feed-item-feed-heavy-follow-rss-feeds' &&
+    Number(nodes[0]?.['Shared Hit Blocks'] ?? 0) + Number(nodes[0]?.['Shared Read Blocks'] ?? 0) >
+      250_000
+  ) {
+    throw new Error(`${result.name} must beat main's followed-source first-page buffer work`)
   }
   if (Number(nodes[0]?.['Actual Rows'] ?? 0) > 0) {
     if (!indexNames.has('idx_rss_feed_item_sources__item_feed'))
