@@ -107,10 +107,11 @@ async function captureHostLocks(id: string, cap: number): Promise<void> {
   await runAndCapture(
     id,
     () => lockStoryPostRelatedUrlProjectionHostnameBlocks(query, urlIds),
-    undefined,
+    // The plan capture takes these transaction advisory locks on another connection.
+    // Release them first so that capture does not wait out the idle-in-transaction timeout.
+    { afterCapture: () => query.rollback() },
     'lockStoryPostRelatedUrlProjectionHostnameBlocks',
   )
-  await query.rollback()
 }
 
 async function capturePrune(
@@ -145,10 +146,10 @@ async function capturePrune(
         seed.user,
         admittedUrlIds,
       ),
-    undefined,
+    // Roll back the callback's row locks before EXPLAIN runs the same update.
+    { afterCapture: () => query.rollback() },
     'pruneStoryPostRelatedUrlsOutsidePrefix',
   )
-  await query.rollback()
 }
 
 function pruneWork(postId: string, leaseToken: string): ProjectionWork {
