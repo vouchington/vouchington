@@ -1,4 +1,9 @@
-export type CrawlEmbedsJobs = 'backfill_crawl_embeds' | 'resolve_crawl_oembed'
+export type CrawlEmbedsJobPayloads = {
+  backfill_crawl_embeds: Record<string, never>
+  resolve_crawl_oembed: ResolveCrawlOembedData
+}
+
+export type ResolveCrawlOembedData = { crawl_id: string }
 
 export type CrawlEmbedEntry = {
   crawlId: string

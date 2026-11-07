@@ -7,6 +7,7 @@ import {
 } from '@modules/scheduled-job-manifest'
 import { psql } from '../queues.mts'
 import { MATERIALIZED_VIEW_REFRESH_SCHEDULES } from './materialized-view-refresh-schedules.mts'
+import type { PsqlJobPayloads } from '../types.mts'
 import {
   CREATE_PARTITIONS_JOB_NAME,
   CREATE_PARTITIONS_SCHEDULER_ID,
@@ -68,7 +69,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     repeat: { pattern },
     template: {
       name: REFRESH_MATERIALIZED_VIEW_JOB_NAME,
-      data: { viewName },
+      data: { viewName } satisfies PsqlJobPayloads[typeof REFRESH_MATERIALIZED_VIEW_JOB_NAME],
       opts: MATERIALIZED_VIEW_SCHEDULE_OPTS,
     },
     operatorSurfaces: [
@@ -84,7 +85,11 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
     schedulerId: CREATE_PARTITIONS_SCHEDULER_ID,
     repeat: { pattern: CREATE_PARTITIONS_CRON },
-    template: { name: CREATE_PARTITIONS_JOB_NAME, data: {}, opts: SCHEDULE_OPTS },
+    template: {
+      name: CREATE_PARTITIONS_JOB_NAME,
+      data: {} satisfies PsqlJobPayloads[typeof CREATE_PARTITIONS_JOB_NAME],
+      opts: SCHEDULE_OPTS,
+    },
     operatorSurfaces: [{ kind: 'psql', jobType: 'createPartitions' }],
   },
   {
@@ -92,7 +97,9 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     repeat: { pattern: REFRESH_TOP_HASHTAGS_CRON },
     template: {
       name: REFRESH_MATERIALIZED_VIEW_JOB_NAME,
-      data: { viewName: TOP_HASHTAGS_VIEW },
+      data: {
+        viewName: TOP_HASHTAGS_VIEW,
+      } satisfies PsqlJobPayloads[typeof REFRESH_MATERIALIZED_VIEW_JOB_NAME],
       opts: MATERIALIZED_VIEW_SCHEDULE_OPTS,
     },
     operatorSurfaces: [
@@ -108,7 +115,11 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
     schedulerId: CLEANUP_PARTITIONS_SCHEDULER_ID,
     repeat: { pattern: CLEANUP_PARTITIONS_CRON },
-    template: { name: CLEANUP_PARTITIONS_JOB_NAME, data: {}, opts: getPartitionCleanupJobOptions },
+    template: {
+      name: CLEANUP_PARTITIONS_JOB_NAME,
+      data: {} satisfies PsqlJobPayloads[typeof CLEANUP_PARTITIONS_JOB_NAME],
+      opts: getPartitionCleanupJobOptions,
+    },
     operatorSurfaces: [{ kind: 'psql', jobType: 'cleanupPartitions' }],
   },
   {
@@ -116,7 +127,9 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     repeat: { pattern: REFRESH_RSS_FEED_CRAWL_TIERS_CRON },
     template: {
       name: REFRESH_MATERIALIZED_VIEW_JOB_NAME,
-      data: { viewName: RSS_FEED_CRAWL_TIERS_VIEW },
+      data: {
+        viewName: RSS_FEED_CRAWL_TIERS_VIEW,
+      } satisfies PsqlJobPayloads[typeof REFRESH_MATERIALIZED_VIEW_JOB_NAME],
       opts: MATERIALIZED_VIEW_SCHEDULE_OPTS,
     },
     operatorSurfaces: [
@@ -132,7 +145,11 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
     schedulerId: DATA_RETENTION_SCHEDULER_ID,
     repeat: { pattern: DATA_RETENTION_CRON },
-    template: { name: DATA_RETENTION_JOB_NAME, data: {}, opts: DATA_RETENTION_SCHEDULE_OPTS },
+    template: {
+      name: DATA_RETENTION_JOB_NAME,
+      data: {} satisfies PsqlJobPayloads[typeof DATA_RETENTION_JOB_NAME],
+      opts: DATA_RETENTION_SCHEDULE_OPTS,
+    },
     environment: 'deployed',
     operatorSurfaces: [
       {
@@ -147,7 +164,11 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
     schedulerId: RECONCILE_VOTE_DRIFT_SCHEDULER_ID,
     repeat: { pattern: RECONCILE_VOTE_DRIFT_CRON },
-    template: { name: RECONCILE_VOTE_DRIFT_JOB_NAME, data: {}, opts: SCHEDULE_OPTS },
+    template: {
+      name: RECONCILE_VOTE_DRIFT_JOB_NAME,
+      data: {} satisfies PsqlJobPayloads[typeof RECONCILE_VOTE_DRIFT_JOB_NAME],
+      opts: SCHEDULE_OPTS,
+    },
     // Runs everywhere (no `environment` restriction), including staging and developer laptops:
     // counter drift is caused by code paths that write the denormalized counter without writing
     // post_votes, and those land on staging first. Stopping it there would delete the

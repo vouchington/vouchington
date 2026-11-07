@@ -7,11 +7,11 @@ import processEmail from './processors.mts'
 import type { Job } from 'glide-mq'
 import { processSendCopyrightNoticeEmail } from './processors/copyright-notice.mts'
 
-export const emails = createWorker(QUEUE_NAME, (job: Job) => processEmailJob(job), {
+export const emails = createWorker(QUEUE_NAME, (job: Job<unknown>) => processEmailJob(job), {
   concurrency: getWorkerConcurrency('emails', { baseline: 5 }),
 })
 
-async function processEmailJob(job: Job): Promise<unknown> {
+async function processEmailJob(job: Job<unknown>): Promise<unknown> {
   const parsed = parseEmailJob(job.name, job.data)
   switch (parsed.kind) {
     case 'copyright':

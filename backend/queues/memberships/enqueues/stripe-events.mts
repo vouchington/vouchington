@@ -1,18 +1,17 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER, QUEUE_NAME } from '../config.mts'
 import { memberships } from '../queues.mts'
-import type { MembershipsJobs, ProcessStripeEventData } from '../types.mts'
+import type { MembershipsJobPayloads, MembershipsJobs, ProcessStripeEventData } from '../types.mts'
+import { createMembershipEnqueueFunction } from './typed-job.mts'
 
-const STRIPE_EVENT_JOB_NAME: MembershipsJobs = 'processStripeEvent'
-const STRIPE_RECOVERY_JOB_NAME: MembershipsJobs = 'recoverStripeEvents'
+const STRIPE_EVENT_JOB_NAME = 'processStripeEvent' satisfies MembershipsJobs
+const STRIPE_RECOVERY_JOB_NAME = 'recoverStripeEvents' satisfies MembershipsJobs
 const STRIPE_RECOVERY_INTERVAL_MS = 300_000
 
-const enqueueProcessStripeEventJob = createEnqueueFunction<ProcessStripeEventData, MembershipsJobs>(
-  { queue: memberships, queueName: QUEUE_NAME, jobName: STRIPE_EVENT_JOB_NAME },
-)
+const enqueueProcessStripeEventJob = createMembershipEnqueueFunction(STRIPE_EVENT_JOB_NAME)
 
 const enqueueBulkProcessStripeEvents = createBulkEnqueueFunction({
   queue: memberships,
@@ -27,7 +26,7 @@ const enqueueBulkProcessStripeEvents = createBulkEnqueueFunction({
   buildJob: (data: ProcessStripeEventData) => {
     const jobId = stripeEventJobId(data)
     return {
-      data,
+      data: data satisfies MembershipsJobPayloads[typeof STRIPE_EVENT_JOB_NAME],
       opts: {
         jobId,
         priority: PRIORITY_DEFAULT,
@@ -52,19 +51,12 @@ export function enqueueOrReactivateBulkProcessStripeEvents(events: ProcessStripe
   })
 }
 
-const enqueueRecoverStripeEventsJob = createEnqueueFunction<Record<string, never>, MembershipsJobs>(
-  {
-    queue: memberships,
-    queueName: QUEUE_NAME,
-    jobName: STRIPE_RECOVERY_JOB_NAME,
-    defaults: {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-    },
-  },
-)
+const enqueueRecoverStripeEventsJob = createMembershipEnqueueFunction(STRIPE_RECOVERY_JOB_NAME, {
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+  removeOnComplete: 100,
+  removeOnFail: 100,
+})
 
 export function enqueueProcessStripeEvent(data: ProcessStripeEventData): EnqueueReturnType {
   const jobId = stripeEventJobId(data)

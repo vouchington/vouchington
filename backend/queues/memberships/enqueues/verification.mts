@@ -1,4 +1,4 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
@@ -12,13 +12,15 @@ import {
 } from '../config.mts'
 import { memberships } from '../queues.mts'
 import type {
+  MembershipsJobPayloads,
   MembershipsJobs,
   ProcessMembershipVerificationData,
   RecoverMembershipVerificationsData,
 } from '../types.mts'
+import { createMembershipEnqueueFunction } from './typed-job.mts'
 
-const VERIFICATION_JOB_NAME: MembershipsJobs = 'processMembershipVerification'
-const VERIFICATION_RECOVERY_JOB_NAME: MembershipsJobs = 'recoverMembershipVerifications'
+const VERIFICATION_JOB_NAME = 'processMembershipVerification' satisfies MembershipsJobs
+const VERIFICATION_RECOVERY_JOB_NAME = 'recoverMembershipVerifications' satisfies MembershipsJobs
 const VERIFICATION_RECOVERY_INTERVAL_MS = 300_000
 
 const verificationDefaults = {
@@ -28,15 +30,10 @@ const verificationDefaults = {
   removeOnFail: true,
 }
 
-const enqueueProcessMembershipVerificationJob = createEnqueueFunction<
-  ProcessMembershipVerificationData,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: VERIFICATION_JOB_NAME,
-  defaults: verificationDefaults,
-})
+const enqueueProcessMembershipVerificationJob = createMembershipEnqueueFunction(
+  VERIFICATION_JOB_NAME,
+  verificationDefaults,
+)
 
 export const enqueueBulkProcessMembershipVerifications = createBulkEnqueueFunction({
   queue: memberships,
@@ -44,20 +41,15 @@ export const enqueueBulkProcessMembershipVerifications = createBulkEnqueueFuncti
   jobName: VERIFICATION_JOB_NAME,
   defaults: verificationDefaults,
   buildJob: (data: ProcessMembershipVerificationData) => ({
-    data,
+    data: data satisfies MembershipsJobPayloads[typeof VERIFICATION_JOB_NAME],
     opts: verificationJobOptions(data),
   }),
 })
 
-const enqueueRecoverMembershipVerificationsJob = createEnqueueFunction<
-  RecoverMembershipVerificationsData,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: VERIFICATION_RECOVERY_JOB_NAME,
-  defaults: { ...verificationDefaults, ...pagedDispatchJobOptions('memberships') },
-})
+const enqueueRecoverMembershipVerificationsJob = createMembershipEnqueueFunction(
+  VERIFICATION_RECOVERY_JOB_NAME,
+  { ...verificationDefaults, ...pagedDispatchJobOptions('memberships') },
+)
 
 export function enqueueProcessMembershipVerification(
   data: ProcessMembershipVerificationData,

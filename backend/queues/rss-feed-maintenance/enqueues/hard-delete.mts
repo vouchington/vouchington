@@ -1,16 +1,21 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
 import { PRIORITY_HARD_DELETE, PRIORITY_RECOVERY, QUEUE_NAME } from '../config.mts'
 import { rssFeedMaintenance } from '../queues.mts'
-import type { RssFeedHardDeleteChildPhase, RssFeedHardDeletePageData } from '../types.mts'
+import type {
+  RssFeedHardDeleteChildPhase,
+  RssFeedHardDeletePageData,
+  RssFeedMaintenanceJobPayloads,
+} from '../types.mts'
+import { createRssFeedMaintenanceEnqueue } from './create-enqueue.mts'
 
 const enqueueSourcePages = createBulkEnqueueFunction({
   queue: rssFeedMaintenance,
   queueName: QUEUE_NAME,
   jobName: 'processHardDeleteRssFeedSourcePage',
   buildJob: (data: RssFeedHardDeletePageData) => ({
-    data,
+    data: data satisfies RssFeedMaintenanceJobPayloads['processHardDeleteRssFeedSourcePage'],
     opts: deletePageOptions(data, 'sources'),
   }),
 })
@@ -19,7 +24,7 @@ const enqueueChildPages = createBulkEnqueueFunction({
   queueName: QUEUE_NAME,
   jobName: 'processHardDeleteRssFeedChildPage',
   buildJob: (data: RssFeedHardDeletePageData & { phase: RssFeedHardDeleteChildPhase }) => ({
-    data,
+    data: data satisfies RssFeedMaintenanceJobPayloads['processHardDeleteRssFeedChildPage'],
     opts: deletePageOptions(data, data.phase),
   }),
 })
@@ -28,14 +33,11 @@ const enqueueFinalizers = createBulkEnqueueFunction({
   queueName: QUEUE_NAME,
   jobName: 'processFinalizeHardDeleteRssFeed',
   buildJob: (data: RssFeedHardDeletePageData) => ({
-    data,
+    data: data satisfies RssFeedMaintenanceJobPayloads['processFinalizeHardDeleteRssFeed'],
     opts: deletePageOptions(data, 'finalize'),
   }),
 })
-const enqueueRecoveryPageJob = createEnqueueFunction<
-  { afterId: string | null },
-  'processRecoverRssFeedHardDeletes'
->({ queue: rssFeedMaintenance, queueName: QUEUE_NAME, jobName: 'processRecoverRssFeedHardDeletes' })
+const enqueueRecoveryPageJob = createRssFeedMaintenanceEnqueue('processRecoverRssFeedHardDeletes')
 
 /** A live canonical page wins over recovery; native terminal records can be reactivated. */
 export function enqueueHardDeleteRssFeedSourcePages(inputs: RssFeedHardDeletePageData[]) {

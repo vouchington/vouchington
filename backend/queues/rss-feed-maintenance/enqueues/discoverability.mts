@@ -3,7 +3,7 @@ import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { RSS_FEED_DISCOVERABILITY_DEFAULTS, QUEUE_NAME } from '../config.mts'
 import { rssFeedMaintenance } from '../queues.mts'
-import type { RssFeedDiscoverabilityJobs } from '../types.mts'
+import type { RssFeedDiscoverabilityJobs, RssFeedMaintenanceJobPayloads } from '../types.mts'
 
 const JOB_NAME: RssFeedDiscoverabilityJobs = 'processEvaluateRssFeedDiscoverability'
 
@@ -12,7 +12,7 @@ const enqueueBulkEvaluateJobs = createBulkEnqueueFunction({
   queueName: QUEUE_NAME,
   jobName: JOB_NAME,
   buildJob: (rssFeedId: string) => ({
-    data: { rssFeedId },
+    data: { rssFeedId } satisfies RssFeedMaintenanceJobPayloads[typeof JOB_NAME],
     opts: {
       attempts: RSS_FEED_DISCOVERABILITY_DEFAULTS.attempts,
       backoff: RSS_FEED_DISCOVERABILITY_DEFAULTS.backoff,

@@ -43,7 +43,9 @@ describe('user deletion recovery with a retained failed job under the attempt to
       await expect(redispatched.getState()).resolves.not.toMatch(/^(completed|failed)$/)
       expect(redispatched.data).toEqual(attempt)
 
-      await processUserDeletionJob(redispatched)
+      await processUserDeletionJob(
+        redispatched as unknown as Parameters<typeof processUserDeletionJob>[0],
+      )
 
       const claimed = await getUserDeletionRequestForTest(request.id)
       expect(claimed?.processingAttempts).toBe(1)

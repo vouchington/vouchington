@@ -1,6 +1,5 @@
 import { createTestDataRequestSweepNeighbor } from '@voucha/test-helpers/account-data-request-sweep-neighbor'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import type { Job } from 'glide-mq'
 import { createDataRequest, getDataRequestById } from '@services/account-data-requests'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
@@ -86,6 +85,11 @@ function exportJobId(request: { id: string; processing_attempt_id: string }): st
   return `account-data-export__${request.id}__${request.processing_attempt_id}`
 }
 
-function job(name: string, data: Record<string, unknown> = {}): Job {
-  return { name, data, attemptsMade: 2, opts: { attempts: 3 } } as Job
+function job(
+  name: string,
+  data: Record<string, unknown> = {},
+): Parameters<typeof processAccountDataRequestJob>[0] {
+  return { name, data, attemptsMade: 2, opts: { attempts: 3 } } as unknown as Parameters<
+    typeof processAccountDataRequestJob
+  >[0]
 }

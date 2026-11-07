@@ -9,7 +9,8 @@ import {
 import { memberships } from '../queues.mts'
 import type {
   AcknowledgeGooglePlayPurchaseData,
-  ProcessGooglePlayNotificationData,
+  MembershipsJobPayloads,
+  MembershipsJobs,
   ReconcileGooglePlayActiveSourceData,
 } from '../types.mts'
 
@@ -28,7 +29,7 @@ export type GooglePlayNotificationInput = {
 }
 
 export function buildGooglePlayNotificationJob(data: GooglePlayNotificationInput): {
-  data: ProcessGooglePlayNotificationData
+  data: MembershipsJobPayloads[typeof NOTIFICATION_JOB_NAME]
   opts: Partial<JobOptions>
 } {
   const purchaseTokenLookupSha256 = createHash('sha256').update(data.purchaseToken).digest('hex')
@@ -49,6 +50,10 @@ export function buildGooglePlayNotificationJob(data: GooglePlayNotificationInput
     },
   }
 }
+
+const NOTIFICATION_JOB_NAME = 'processGooglePlayNotification' satisfies MembershipsJobs
+const ACKNOWLEDGEMENT_JOB_NAME = 'acknowledgeGooglePlayPurchase' satisfies MembershipsJobs
+const ACTIVE_SOURCE_JOB_NAME = 'reconcileGooglePlayActiveSource' satisfies MembershipsJobs
 
 export function googlePlayAcknowledgementJobOptions(
   data: AcknowledgeGooglePlayPurchaseData,
@@ -80,7 +85,7 @@ function googlePlayActiveSourceJobOptions(
 export const enqueueBulkProcessGooglePlayNotifications = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
-  jobName: 'processGooglePlayNotification',
+  jobName: NOTIFICATION_JOB_NAME,
   defaults: googlePlayJobDefaults,
   buildJob: buildGooglePlayNotificationJob,
 })
@@ -89,10 +94,10 @@ export const enqueueBulkProcessGooglePlayNotifications = createBulkEnqueueFuncti
 export const enqueueBulkAcknowledgeGooglePlayPurchases = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
-  jobName: 'acknowledgeGooglePlayPurchase',
+  jobName: ACKNOWLEDGEMENT_JOB_NAME,
   defaults: googlePlayJobDefaults,
   buildJob: (data: AcknowledgeGooglePlayPurchaseData) => ({
-    data,
+    data: data satisfies MembershipsJobPayloads[typeof ACKNOWLEDGEMENT_JOB_NAME],
     opts: googlePlayAcknowledgementJobOptions(data),
   }),
 })
@@ -100,10 +105,10 @@ export const enqueueBulkAcknowledgeGooglePlayPurchases = createBulkEnqueueFuncti
 const enqueueBulkActiveSource = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
-  jobName: 'reconcileGooglePlayActiveSource',
+  jobName: ACTIVE_SOURCE_JOB_NAME,
   defaults: googlePlayJobDefaults,
   buildJob: ({ bucket, ...data }: ReconcileGooglePlayActiveSourceData & { bucket: number }) => ({
-    data,
+    data: data satisfies MembershipsJobPayloads[typeof ACTIVE_SOURCE_JOB_NAME],
     opts: googlePlayActiveSourceJobOptions(data, bucket),
   }),
 })

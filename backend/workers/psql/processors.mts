@@ -36,15 +36,7 @@ import {
   getDataRetentionLimits,
 } from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
-import {
-  AI_RETENTION_FAMILIES,
-  type PsqlJobs,
-  type AgentModerationRetentionContinuationData,
-  type PsqlPartitionJobData,
-  type PsqlRetentionJobData,
-  type RefreshMaterializedViewData,
-  type VoteRetentionContinuationData,
-} from '@queues/psql/types'
+import { AI_RETENTION_FAMILIES, type PsqlJobs, type PsqlJobPayloads } from '@queues/psql/types'
 import {
   processCopyrightRetentionContinuation,
   type CopyrightRetentionScope,
@@ -58,23 +50,25 @@ type ProcessPsqlDependencies = PartitionCleanupDependencies & {
   runViews: typeof runViews
 }
 
+type ProcessPsqlOptions = {
+  vote?: VoteRetentionCleanupOptions
+  agentModeration?: AgentModerationRetentionOptions
+  copyright?: CopyrightRetentionScope
+  retention?: DataRetentionCleanupOptions
+}
+
+type ProcessPsqlArgs = {
+  [TName in PsqlJobs]: [
+    jobName: TName,
+    data?: Partial<PsqlJobPayloads[TName]>,
+    dependencies?: Partial<ProcessPsqlDependencies>,
+    jobId?: string,
+    options?: ProcessPsqlOptions,
+  ]
+}[PsqlJobs]
+
 export default async function processPsql(
-  jobName: PsqlJobs,
-  data?: Partial<
-    RefreshMaterializedViewData &
-      PsqlPartitionJobData &
-      PsqlRetentionJobData &
-      AgentModerationRetentionContinuationData &
-      VoteRetentionContinuationData
-  >,
-  dependencies?: Partial<ProcessPsqlDependencies>,
-  jobId?: string,
-  options?: {
-    vote?: VoteRetentionCleanupOptions
-    agentModeration?: AgentModerationRetentionOptions
-    copyright?: CopyrightRetentionScope
-    retention?: DataRetentionCleanupOptions
-  },
+  ...[jobName, data, dependencies, jobId, options]: ProcessPsqlArgs
 ) {
   switch (jobName) {
     case 'runMigrations':

@@ -1,5 +1,5 @@
-import type { Job, Worker } from 'glide-mq'
-import { createWorker } from '@data-stores/valkey-glide-mq'
+import type { Worker } from 'glide-mq'
+import { createWorker, type NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import { recordSpendCapBreach } from '@modules/on-error'
 import { isModelProviderError } from '@vouchington/ai/providers'
 import { isOpenAIRateLimitError } from '@vouchington/ai/openai'
@@ -13,19 +13,20 @@ import {
   AI_AGENT_JOB_PRODUCES_SPEND,
   AI_AGENTS_QUEUE_NAME,
   CLASSIFIER_RUN_BACKOFF,
-  type AIAgentJobName,
 } from '@queues/ai-agents/config'
 import { evaluateSpendCapBreach, SpendCapBreachError } from '@services/ai-usage'
 import { processAIAgent } from '../processors.mts'
 import { handleModelProviderError } from '../processors/provider-failure.mts'
 import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts'
-import type { AIAgentJobData } from '@queues/ai-agents/types'
+import type { AIAgentJobPayloads } from '@queues/ai-agents/types'
 import {
   createBackgroundResponseJobContext,
   recoverJobBackgroundResponses,
 } from '../processors/background-response-job.mts'
 
-async function processAIAgentWorkerJob(job: Job<AIAgentJobData>): Promise<unknown> {
+type AIAgentWorkerJob = NamedQueueJob<AIAgentJobPayloads>
+
+async function processAIAgentWorkerJob(job: AIAgentWorkerJob): Promise<unknown> {
   const responseContext = createBackgroundResponseJobContext(job)
   try {
     if (await recoverJobBackgroundResponses(job, responseContext)) return undefined
@@ -68,16 +69,15 @@ async function processAIAgentWorkerJob(job: Job<AIAgentJobData>): Promise<unknow
   }
 }
 
-function jobProducesSpend(job: Job<AIAgentJobData>): boolean {
-  return AI_AGENT_JOB_PRODUCES_SPEND[job.name as AIAgentJobName]
+function jobProducesSpend(job: AIAgentWorkerJob): boolean {
+  return AI_AGENT_JOB_PRODUCES_SPEND[job.name]
 }
 
 // DB predicates run only after the cheap static filter and an active breach, so spend-free
 // story-post retries do not pay a round trip on every dispatch.
-async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
+async function jobWouldIncurSpend(job: AIAgentWorkerJob): Promise<boolean> {
   if (job.name === 'story-post') {
-    const data = job.data as import('@queues/ai-agents/types').StoryPostJobData
-    return wouldStoryPostCallOpenAI(data.post_id, data.force ?? false)
+    return wouldStoryPostCallOpenAI(job.data.post_id, job.data.force ?? false)
   }
   return true
 }
@@ -85,7 +85,7 @@ async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
 export function createAIAgentsWorker(): Worker {
   return createWorker(
     AI_AGENTS_QUEUE_NAME,
-    (job: Job<AIAgentJobData>): Promise<unknown> => processAIAgentWorkerJob(job),
+    (job: AIAgentWorkerJob): Promise<unknown> => processAIAgentWorkerJob(job),
     {
       dedicatedCommandClient: true,
       concurrency: getWorkerConcurrency('aiAgents', { baseline: 5 }),

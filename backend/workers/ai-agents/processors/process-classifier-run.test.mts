@@ -22,6 +22,12 @@ import {
 import { setPostClassifierToggleForTest } from '@voucha/test-helpers/entities/post-classifier-toggles'
 import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-clearance'
 import { processAIAgent } from '../processors.mts'
+import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
+import type { AIAgentJobPayloads } from '@queues/ai-agents/types'
+
+function runProcessAIAgent(job: unknown) {
+  return processAIAgent(job as NamedQueueJob<AIAgentJobPayloads>)
+}
 import { processClassifierRun } from './process-classifier-run.mts'
 
 const runsOf = (postId: string) => getClassifierRunFacts(postId, POST_CLASSIFIER_SLUG)
@@ -37,10 +43,10 @@ describe('classifier run dispatcher', () => {
     const { post, inputSha256 } = await createApprovedClassifierPost(true, true)
     await requestPostClassifierRun(post, inputSha256)
 
-    await expect(processAIAgent(classifierRunDispatcherJobFor(post.id))).resolves.toEqual({
+    await expect(runProcessAIAgent(classifierRunDispatcherJobFor(post.id))).resolves.toEqual({
       kind: 'enqueued',
     })
-    await expect(processAIAgent(classifierRunDispatcherJobFor(post.id))).resolves.toEqual({
+    await expect(runProcessAIAgent(classifierRunDispatcherJobFor(post.id))).resolves.toEqual({
       kind: 'enqueued',
     })
 
@@ -65,7 +71,7 @@ describe('classifier run dispatcher', () => {
     await requestPostClassifierRun(post, inputSha256)
     await setTestPostClearanceStatus(post.id, 'pending')
 
-    await expect(processAIAgent(classifierRunDispatcherJobFor(post.id))).resolves.toEqual({
+    await expect(runProcessAIAgent(classifierRunDispatcherJobFor(post.id))).resolves.toEqual({
       kind: 'stale',
     })
 
@@ -84,7 +90,7 @@ describe('classifier run dispatcher', () => {
     const { post, inputSha256 } = await createApprovedClassifierPost(false, false)
     await requestPostClassifierRun(post, inputSha256)
 
-    await expect(processAIAgent(classifierRunDispatcherJobFor(post.id))).resolves.toEqual({
+    await expect(runProcessAIAgent(classifierRunDispatcherJobFor(post.id))).resolves.toEqual({
       kind: 'no-work',
     })
 
@@ -98,9 +104,9 @@ describe('classifier run dispatcher', () => {
     const both = classifierRunDispatcherJobFor(randomUUID())
     both.data.rssFeedItemId = randomUUID()
 
-    await expect(processAIAgent(both)).resolves.toEqual({ kind: 'stale' })
+    await expect(runProcessAIAgent(both)).resolves.toEqual({ kind: 'stale' })
     await expect(
-      processAIAgent(classifierRunDispatcherJobFor(randomUUID(), 'unregistered-classifier')),
+      runProcessAIAgent(classifierRunDispatcherJobFor(randomUUID(), 'unregistered-classifier')),
     ).rejects.toThrow('No classifier run handler is registered for unregistered-classifier')
     expect(await readClassifierRunDispatcherJobsForTest(both.data.postId!)).toEqual([])
   })
@@ -118,7 +124,7 @@ describe('classifier run job', () => {
     vi.stubEnv('OPENROUTER_API_KEY', '')
     const { post, data, runId } = await dispatchApprovedClassifierPost(false)
 
-    await expect(processAIAgent(classifierRunJobFor(data))).resolves.toMatchObject({
+    await expect(runProcessAIAgent(classifierRunJobFor(data))).resolves.toMatchObject({
       kind: 'completed',
     })
     await expect(processClassifierRun(classifierRunJobFor(data))).resolves.toEqual({

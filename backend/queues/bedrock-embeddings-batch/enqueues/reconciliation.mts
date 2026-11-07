@@ -1,9 +1,7 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
-import { backgroundCpu } from '@queues/background-cpu/queues'
+import { createBackgroundCpuEnqueueFunction } from '@queues/background-cpu/enqueues/typed-job'
 import type { ReconciliationEntityType, ReconciliationFlow } from '../types.mts'
 
 const RECONCILIATION_ROOT_THROTTLE_MS = 60_000
@@ -18,22 +16,12 @@ export function reconciliationJobOptions(flow: ReconciliationFlow, after?: strin
   }
 }
 
-const enqueueReconcileExisting = createEnqueueFunction<
-  { entityType: ReconciliationEntityType; after?: string },
-  string
->({
-  queue: backgroundCpu,
-  queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: 'bedrock-embeddings.reconcile_existing',
-  defaults: requireBackgroundCpuJob('bedrock-embeddings.reconcile_existing').options,
-})
-
-const enqueuePostTriggerRecoveryJob = createEnqueueFunction<{ after?: string }, string>({
-  queue: backgroundCpu,
-  queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: 'bedrock-embeddings.post_trigger_recovery',
-  defaults: requireBackgroundCpuJob('bedrock-embeddings.post_trigger_recovery').options,
-})
+const enqueueReconcileExisting = createBackgroundCpuEnqueueFunction(
+  'bedrock-embeddings.reconcile_existing',
+)
+const enqueuePostTriggerRecoveryJob = createBackgroundCpuEnqueueFunction(
+  'bedrock-embeddings.post_trigger_recovery',
+)
 
 export function enqueueReconcileExistingEmbeddings(
   entityType: ReconciliationEntityType,

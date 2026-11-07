@@ -3,7 +3,6 @@ import { BACKGROUND_CPU_JOBS } from '@queues/background-cpu/enqueues/registry'
 import type { BackgroundCpuHandler } from '@queues/background-cpu/types'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import type {
-  LanguageDetectionBackfillCursor,
   LanguageDetectionBackfillJobName,
   LanguageDetectionEntityType,
 } from '@queues/content-analysis/types'
@@ -11,6 +10,7 @@ import type { Job } from 'glide-mq'
 import { withBedrockRateLimit } from './bedrock-rate.mts'
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import { processUploadCleanupJob } from './upload-cleanup.mts'
+import type { CpuJob, LanguageBackfillJob, LanguageDetectionJob } from './job-types.mts'
 
 const CRAWL_DISPATCH = new Set([
   'crawl.enqueueCrawlHostnamesDispatcher',
@@ -88,9 +88,25 @@ function resolveCpuJobRoute(name: string): string | undefined {
   return undefined
 }
 
-async function runCpuJob(job: Job): Promise<unknown> {
+function isLanguageBackfillJob(job: CpuJob): job is LanguageBackfillJob {
+  return (
+    job.name.startsWith('content-analysis.') &&
+    LANGUAGE_BACKFILL.has(job.name.slice('content-analysis.'.length))
+  )
+}
+
+function isLanguageDetectionJob(job: CpuJob): job is LanguageDetectionJob {
+  return (
+    job.name.startsWith('content-analysis.') &&
+    LANGUAGE_DETECTION.has(job.name.slice('content-analysis.'.length))
+  )
+}
+
+async function runCpuJob(rawJob: Job<unknown>): Promise<unknown> {
+  // The registry and route guard are the deserialization boundary for the shared queue.
+  const job = rawJob as CpuJob
   const route = resolveCpuJobRoute(job.name)
-  if (route === 'crawler') {
+  if (route === 'crawler' && job.name === 'crawl.crawl_url') {
     const { processCrawlerJob } = await import('@workers/crawler/processors')
     return processCrawlerJob(job)
   }
@@ -108,7 +124,12 @@ async function runCpuJob(job: Job): Promise<unknown> {
       await import('@workers/unfurl-referral-links/processors')
     return processUnfurlReferralLinksJob(job)
   }
-  if (route === 'bedrock-single')
+  if (
+    route === 'bedrock-single' &&
+    (job.name === 'bedrock-embeddings.topic' ||
+      job.name === 'bedrock-embeddings.post' ||
+      job.name === 'bedrock-embeddings.rss_feed_item')
+  )
     return withBedrockRateLimit(async () => {
       const { processBedrockNovaMultimodalV1SingleJob } =
         await import('@workers/bedrock-embeddings/processors/nova-multimodal-v1-single')
@@ -127,13 +148,14 @@ async function runCpuJob(job: Job): Promise<unknown> {
         await import('@workers/bedrock-embeddings-batch/processors/worker-router')
       return processBedrockEmbeddingsBatchJob(job)
     })
-  if (route === 'spend-cap') {
+  if (route === 'spend-cap' && job.name === 'ai-spend-cap.recheck') {
     const { processSpendCapRecheckJob } =
       await import('@workers/ai-agents/processors/spend-cap-recheck')
     return processSpendCapRecheckJob(job)
   }
-  if (route === 'upload-cleanup') return processUploadCleanupJob(job)
-  if (route === 'staydown-hash') {
+  if (route === 'upload-cleanup' && job.name === 'content-analysis.cleanup-abandoned-uploads')
+    return processUploadCleanupJob(job)
+  if (route === 'staydown-hash' && job.name === 'content-analysis.staydown-hash') {
     const id = job.data?.id
     if (typeof id !== 'string') throw new Error('Staydown hash job requires id')
     const { processStaydownHash } =
@@ -143,18 +165,18 @@ async function runCpuJob(job: Job): Promise<unknown> {
   }
   if (route === 'language-backfill' || route === 'language-detection') {
     const localName = job.name.slice('content-analysis.'.length)
-    if (LANGUAGE_BACKFILL.has(localName))
+    if (isLanguageBackfillJob(job))
       return processRetainedSweep(job, async save => {
         const { processLanguageDetectionBackfill } =
           await import('@workers/content-analysis/processors')
         return processLanguageDetectionBackfill(
           localName as LanguageDetectionBackfillJobName,
           undefined,
-          job.data?.cursor as LanguageDetectionBackfillCursor | undefined,
+          job.data?.cursor,
           cursor => save({ cursor }),
         )
       })
-    if (LANGUAGE_DETECTION.has(localName)) {
+    if (isLanguageDetectionJob(job)) {
       const id = job.data?.id
       if (typeof id !== 'string') throw new Error('Language detection job requires id')
       const { processLanguageDetection } = await import('@workers/content-analysis/processors')

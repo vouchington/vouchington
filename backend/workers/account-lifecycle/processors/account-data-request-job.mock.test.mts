@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
-import type { Job } from 'glide-mq'
 import { dataRequestPubSub } from '@data-stores/valkey-pubsub'
 import { createDataRequest, getDataRequestById } from '@services/account-data-requests'
 import { ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB } from '@queues/background/enqueues/account-lifecycle-jobs'
@@ -65,11 +64,11 @@ function exportJob(
   request: { id: string; processing_attempt_id: string },
   userId: string,
   attemptsMade: number,
-): Job {
+): Parameters<typeof processAccountDataRequestJob>[0] {
   return {
     name: ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name,
     data: { requestId: request.id, userId, processingAttemptId: request.processing_attempt_id },
     attemptsMade,
     opts: { attempts: 3 },
-  } as Job
+  } as unknown as Parameters<typeof processAccountDataRequestJob>[0]
 }

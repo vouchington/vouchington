@@ -1,30 +1,33 @@
-export type MembershipsJobs =
-  | 'processStripePurchaseCollisionWork'
-  | 'recoverStripePurchaseCollisions'
-  | 'processStripeEvent'
-  | 'processAppleNotification'
-  | 'recoverAppleNotifications'
-  | 'processGooglePlayNotification'
-  | 'recoverGooglePlayNotifications'
-  | 'reconcileGooglePlayActiveSource'
-  | 'recoverGooglePlayActiveSources'
-  | 'acknowledgeGooglePlayPurchase'
-  | 'recoverGooglePlayAcknowledgements'
-  | 'refreshGooglePlayOidcTrust'
-  | 'recoverMicrosoftStoreSources'
-  | 'reconcileMicrosoftStoreSource'
-  | 'processMembershipVerification'
-  | 'recoverMembershipVerifications'
-  | 'recoverStripeEvents'
-  | 'reconcileStripeMembershipCatalog'
-  | 'deliverMembershipEntitlementEffects'
-  | 'expireElapsedMemberships'
-  | 'processRenewalNotificationCheck'
-  | 'processSendRenewalPriceIncreaseEmail'
-  | 'dispatchMembershipRefundReconciliation'
-  | 'reconcileMembershipRefundOperation'
-  | 'dispatchMembershipPauseCollection'
-  | 'syncMembershipPauseCollection'
+export type MembershipsJobPayloads = {
+  processStripePurchaseCollisionWork: { workId: string }
+  recoverStripePurchaseCollisions: RecoverStripePurchaseCollisionsData
+  processStripeEvent: ProcessStripeEventData
+  processAppleNotification: ProcessAppleNotificationData
+  recoverAppleNotifications: Record<string, never>
+  processGooglePlayNotification: ProcessGooglePlayNotificationData
+  recoverGooglePlayNotifications: Record<string, never>
+  reconcileGooglePlayActiveSource: ReconcileGooglePlayActiveSourceData
+  recoverGooglePlayActiveSources: Record<string, never>
+  acknowledgeGooglePlayPurchase: AcknowledgeGooglePlayPurchaseData
+  recoverGooglePlayAcknowledgements: Record<string, never>
+  refreshGooglePlayOidcTrust: Record<string, never>
+  recoverMicrosoftStoreSources: Record<string, never>
+  reconcileMicrosoftStoreSource: ReconcileMicrosoftStoreSourceData
+  processMembershipVerification: ProcessMembershipVerificationData
+  recoverMembershipVerifications: RecoverMembershipVerificationsData
+  recoverStripeEvents: Record<string, never>
+  reconcileStripeMembershipCatalog: Record<string, never>
+  deliverMembershipEntitlementEffects: Record<string, never>
+  expireElapsedMemberships: Record<string, never>
+  processRenewalNotificationCheck: { afterId?: string }
+  processSendRenewalPriceIncreaseEmail: ProcessSendRenewalPriceIncreaseEmailData
+  dispatchMembershipRefundReconciliation: Record<string, never>
+  reconcileMembershipRefundOperation: ReconcileMembershipRefundOperationData
+  dispatchMembershipPauseCollection: Record<string, never>
+  syncMembershipPauseCollection: SyncMembershipPauseCollectionData
+}
+
+export type MembershipsJobs = keyof MembershipsJobPayloads
 
 export type ProcessStripeEventData = {
   stripeEventRecordId: string

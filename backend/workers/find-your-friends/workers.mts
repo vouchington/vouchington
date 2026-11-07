@@ -1,4 +1,8 @@
-import { createWorker, processRetainedSweep } from '@data-stores/valkey-glide-mq'
+import {
+  createWorker,
+  processRetainedSweep,
+  type NamedQueueJob,
+} from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { QUEUE_NAME } from '@queues/find-your-friends/config'
 import {
@@ -6,7 +10,7 @@ import {
   enqueueResumeSyncGithubFriends,
   enqueueResumeSyncXFriends,
 } from '@queues/find-your-friends/enqueues'
-import type { FriendSyncResume } from '@queues/find-your-friends/types'
+import type { FriendSyncResume, FindYourFriendsJobPayloads } from '@queues/find-your-friends/types'
 import { processFindYourFriendsDispatcher } from './processors.mts'
 import { syncFacebookFriends } from '@services/oauth-facebook/friends'
 import { syncXFriends } from '@services/oauth-x/friends'
@@ -15,11 +19,12 @@ import {
   getFriendSyncProviderUserId,
   type FriendSyncProvider,
 } from '@services/friend-recommendations/accounts-to-sync'
-import type { Job } from 'glide-mq'
 
-export const findYourFriends = createWorker(
+type FindYourFriendsJob = NamedQueueJob<FindYourFriendsJobPayloads>
+
+export const findYourFriends = createWorker<unknown, unknown, FindYourFriendsJob>(
   QUEUE_NAME,
-  (job: Job) => {
+  (job: FindYourFriendsJob) => {
     if (job.name === 'dispatchFindYourFriends')
       return processRetainedSweep(job, save => processFindYourFriendsDispatcher(job.data, save))
     const orderingKey = job.opts.ordering?.key

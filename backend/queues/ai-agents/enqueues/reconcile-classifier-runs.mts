@@ -1,14 +1,9 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
-import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
-import { ai_agents } from '../queues.mts'
+import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS } from '../config.mts'
 import type { ReconcileClassifierRunsJobData } from '../types.mts'
+import { createAIAgentEnqueue } from './create-enqueue.mts'
 
-const enqueue = createEnqueueFunction<ReconcileClassifierRunsJobData, 'reconcile-classifier-runs'>({
-  queue: ai_agents,
-  queueName: AI_AGENTS_QUEUE_NAME,
-  jobName: 'reconcile-classifier-runs',
-})
+const enqueue = createAIAgentEnqueue('reconcile-classifier-runs')
 
 /** The tick that starts a sweep from its first page. */
 export function enqueueReconcileClassifierRuns(): ReturnType<typeof enqueue> {

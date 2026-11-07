@@ -7,14 +7,14 @@ import {
   QUEUE_NAME,
 } from '../config.mts'
 import { psql } from '../queues.mts'
-import type { CopyrightCasePurgeJobData } from '../types.mts'
+import type { PsqlJobPayloads } from '../types.mts'
 
 const enqueueBulk = createBulkEnqueueFunction({
   queue: psql,
   queueName: QUEUE_NAME,
   jobName: COPYRIGHT_CASE_PURGE_JOB_NAME,
   sensitive: true,
-  buildJob: (data: CopyrightCasePurgeJobData) => ({
+  buildJob: (data: PsqlJobPayloads[typeof COPYRIGHT_CASE_PURGE_JOB_NAME]) => ({
     data,
     opts: getCopyrightCasePurgeJobOptions(data.noticeId),
   }),

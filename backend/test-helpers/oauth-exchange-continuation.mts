@@ -84,7 +84,9 @@ export async function runTestOAuthExchangeContinuation(
                       try {
                         if (fault === 'provider-outcome' && attempts.length === 1) await lock()
                         await processOAuthAuthorizationExchangeJob(
-                          job,
+                          job as unknown as Parameters<
+                            typeof processOAuthAuthorizationExchangeJob
+                          >[0],
                           undefined,
                           async (id, _dependencies, ownership) => {
                             if (!ownership)

@@ -18,7 +18,6 @@ import { dataRequestPubSub } from '@data-stores/valkey-pubsub'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { publishTerminalStatus } from './account-data-request-publish-terminal-status.mts'
 import { ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB } from '@queues/background/enqueues/account-lifecycle-jobs'
-import type { Job } from 'glide-mq'
 import { processAccountDataRequestJob } from './account-data-request-job.mts'
 import { processCleanupExpiredExports } from './account-data-request-recovery-cleanup.mts'
 
@@ -116,7 +115,7 @@ describe('processAccountDataRequestJob cleanup', () => {
         data: {},
         attemptsMade: 0,
         opts: {},
-      } as Job),
+      } as unknown as Parameters<typeof processAccountDataRequestJob>[0]),
     ).rejects.toThrow('expiry sweep reached')
   })
 })

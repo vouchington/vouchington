@@ -2,8 +2,8 @@ import type { JobOptions } from 'glide-mq'
 import onError from '@modules/on-error'
 import { trackJobEnqueue } from '@services/analytics'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
-import { ai_agents } from '../queues.mts'
 import type { DisputeResolutionJobData } from '../types.mts'
+import { addAIAgentJob } from './create-enqueue.mts'
 
 function buildDisputeResolutionJob(
   disputeId: string,
@@ -48,7 +48,7 @@ export function enqueueDisputeResolution(
   rerunById?: string | null,
 ): void {
   const { data, opts } = buildDisputeResolutionJob(disputeId, requestToken, rerunById)
-  ai_agents.add('dispute-resolution', data, opts).catch(onError)
+  addAIAgentJob('dispute-resolution', data, opts).catch(onError)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'dispute-resolution')
 }
 
@@ -62,7 +62,7 @@ export async function enqueueDisputeResolutionQueued(
   rerunById?: string | null,
 ): Promise<string> {
   const { data, opts } = buildDisputeResolutionJob(disputeId, requestToken, rerunById)
-  const job = await ai_agents.add('dispute-resolution', data, opts)
+  const job = await addAIAgentJob('dispute-resolution', data, opts)
   if (!job) throw new Error('Dispute resolution rerun was not admitted to the queue')
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'dispute-resolution')
   return job.id

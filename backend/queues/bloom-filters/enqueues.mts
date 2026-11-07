@@ -16,56 +16,33 @@ import { bloomFilters } from './queues.mts'
 import type {
   BackfillBloomFilterData,
   BackfillUserBookmarkBloomFilterData,
-  BloomFilterProcessorJobs,
+  BloomFilterJobPayloads,
   DeleteUserBookmarkBloomFilterData,
   RebuildBloomFilterData,
-  RebuildEmbeddingBloomFilterData,
 } from './types.mts'
 
-const enqueueBackfillBloomFilterJob = createEnqueueFunction<
-  BackfillBloomFilterData,
-  BloomFilterProcessorJobs
->({
-  queue: bloomFilters,
-  queueName: QUEUE_NAME,
-  jobName: 'processBackfillBloomFilter',
-})
+function createBloomEnqueueFunction<TName extends keyof BloomFilterJobPayloads>(jobName: TName) {
+  return createEnqueueFunction<BloomFilterJobPayloads[TName], TName>({
+    queue: bloomFilters,
+    queueName: QUEUE_NAME,
+    jobName,
+  })
+}
 
-const enqueueBackfillUserBookmarkBloomFilterJob = createEnqueueFunction<
-  BackfillUserBookmarkBloomFilterData,
-  BloomFilterProcessorJobs
->({
-  queue: bloomFilters,
-  queueName: QUEUE_NAME,
-  jobName: 'processBackfillUserBookmarkBloomFilter',
-})
+const enqueueBackfillBloomFilterJob = createBloomEnqueueFunction('processBackfillBloomFilter')
+const enqueueBackfillUserBookmarkBloomFilterJob = createBloomEnqueueFunction(
+  'processBackfillUserBookmarkBloomFilter',
+)
 
-const enqueueDeleteUserBookmarkBloomFilterJob = createEnqueueFunction<
-  DeleteUserBookmarkBloomFilterData,
-  BloomFilterProcessorJobs
->({
-  queue: bloomFilters,
-  queueName: QUEUE_NAME,
-  jobName: 'processDeleteUserBookmarkBloomFilter',
-})
+const enqueueDeleteUserBookmarkBloomFilterJob = createBloomEnqueueFunction(
+  'processDeleteUserBookmarkBloomFilter',
+)
 
-const enqueueRebuildBloomFilterJob = createEnqueueFunction<
-  RebuildBloomFilterData,
-  BloomFilterProcessorJobs
->({
-  queue: bloomFilters,
-  queueName: QUEUE_NAME,
-  jobName: 'processRebuildBloomFilter',
-})
+const enqueueRebuildBloomFilterJob = createBloomEnqueueFunction('processRebuildBloomFilter')
 
-const enqueueRebuildEmbeddingBloomFilterJob = createEnqueueFunction<
-  RebuildEmbeddingBloomFilterData,
-  BloomFilterProcessorJobs
->({
-  queue: bloomFilters,
-  queueName: QUEUE_NAME,
-  jobName: 'processRebuildEmbeddingBloomFilter',
-})
+const enqueueRebuildEmbeddingBloomFilterJob = createBloomEnqueueFunction(
+  'processRebuildEmbeddingBloomFilter',
+)
 
 export function enqueueBackfillBloomFilter(
   data: BackfillBloomFilterData,

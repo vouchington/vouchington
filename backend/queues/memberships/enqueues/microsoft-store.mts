@@ -1,4 +1,4 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
@@ -8,7 +8,12 @@ import {
   QUEUE_NAME,
 } from '../config.mts'
 import { memberships } from '../queues.mts'
-import type { MembershipsJobs, ReconcileMicrosoftStoreSourceData } from '../types.mts'
+import type {
+  MembershipsJobPayloads,
+  MembershipsJobs,
+  ReconcileMicrosoftStoreSourceData,
+} from '../types.mts'
+import { createMembershipEnqueueFunction } from './typed-job.mts'
 
 const defaults = {
   attempts: 10,
@@ -18,20 +23,17 @@ const defaults = {
 }
 const recoveryOrdering = { key: 'microsoft-store-recovery', concurrency: 1 }
 
-const enqueueRecovery = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: 'recoverMicrosoftStoreSources',
-  defaults,
-})
+const RECOVERY_JOB_NAME = 'recoverMicrosoftStoreSources' satisfies MembershipsJobs
+const SOURCE_JOB_NAME = 'reconcileMicrosoftStoreSource' satisfies MembershipsJobs
+const enqueueRecovery = createMembershipEnqueueFunction(RECOVERY_JOB_NAME, defaults)
 
 const enqueueBulkSource = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
-  jobName: 'reconcileMicrosoftStoreSource',
+  jobName: SOURCE_JOB_NAME,
   defaults,
   buildJob: ({ bucket, ...data }: ReconcileMicrosoftStoreSourceData & { bucket: number }) => ({
-    data,
+    data: data satisfies MembershipsJobPayloads[typeof SOURCE_JOB_NAME],
     opts: sourceJobOptions(data, bucket),
   }),
 })

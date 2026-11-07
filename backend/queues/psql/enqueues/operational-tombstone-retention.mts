@@ -5,7 +5,7 @@ import {
   operationalTombstoneRetentionJobId,
   getOperationalTombstoneRetentionJobOptions,
 } from '../config.mts'
-import type { OperationalTombstoneRetentionData } from '../types.mts'
+import type { OperationalTombstoneRetentionData, PsqlJobPayloads } from '../types.mts'
 
 /** Finished claims reactivate; live claims retain the one canonical family job. */
 export function createOperationalTombstoneRetentionEnqueue(queue: PriorityQueue<unknown>) {
@@ -13,7 +13,7 @@ export function createOperationalTombstoneRetentionEnqueue(queue: PriorityQueue<
     queue,
     queueName: queue.name,
     jobName: OPERATIONAL_TOMBSTONE_RETENTION_JOB_NAME,
-    buildJob: (data: OperationalTombstoneRetentionData) => ({
+    buildJob: (data: PsqlJobPayloads[typeof OPERATIONAL_TOMBSTONE_RETENTION_JOB_NAME]) => ({
       data,
       opts: getOperationalTombstoneRetentionJobOptions(data.family),
     }),

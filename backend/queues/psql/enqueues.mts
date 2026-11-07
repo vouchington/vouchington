@@ -22,14 +22,18 @@ export {
   enqueueCleanupPartitionsContinuation,
 } from './enqueues/partition-maintenance.mts'
 import type {
+  PsqlJobPayloads,
   PsqlJobs,
   PsqlRetentionJobData,
-  RefreshMaterializedViewData,
   VoteRetentionContinuationData,
 } from './types.mts'
 
-function createPsqlEnqueue(jobName: PsqlJobs) {
-  const enqueue = createEnqueueFunction<Record<string, never>, PsqlJobs>({
+type EmptyPsqlJobName = {
+  [TName in PsqlJobs]: PsqlJobPayloads[TName] extends Record<string, never> ? TName : never
+}[PsqlJobs]
+
+function createPsqlEnqueue(jobName: EmptyPsqlJobName) {
+  const enqueue = createEnqueueFunction<Record<string, never>, typeof jobName>({
     queue: psql,
     queueName: QUEUE_NAME,
     jobName,
@@ -45,7 +49,10 @@ export const enqueueRunViews = createPsqlEnqueue('runViews')
 export const enqueueRunConfigDriven = createPsqlEnqueue('runConfigDriven')
 export const enqueueReconcileVoteDrift = createPsqlEnqueue('reconcileVoteDrift')
 
-const enqueueRetentionJob = createEnqueueFunction<PsqlRetentionJobData, PsqlJobs>({
+const enqueueRetentionJob = createEnqueueFunction<
+  PsqlJobPayloads['dataRetentionCleanup'],
+  'dataRetentionCleanup'
+>({
   queue: psql,
   queueName: QUEUE_NAME,
   jobName: 'dataRetentionCleanup',
@@ -110,7 +117,7 @@ const enqueueBulkDataRetentionContinuations = createBulkEnqueueFunction({
     removeOnFail: true,
   },
   buildJob: (input: RetentionContinuationInput, _index: number) => ({
-    data: input.data,
+    data: input.data satisfies PsqlJobPayloads[typeof VOTE_RETENTION_CONTINUATION_JOB_NAME],
     opts: {
       jobId: dataRetentionContinuationId(input),
       priority: getDeployEnvironment() === 'staging' ? PRIORITY_DEFAULT + 10 : PRIORITY_DEFAULT,
@@ -131,8 +138,8 @@ export function enqueueDataRetentionContinuation(
 }
 
 const enqueueRefreshMaterializedViewJob = createEnqueueFunction<
-  RefreshMaterializedViewData,
-  PsqlJobs
+  PsqlJobPayloads['refreshMaterializedView'],
+  'refreshMaterializedView'
 >({
   queue: psql,
   queueName: QUEUE_NAME,

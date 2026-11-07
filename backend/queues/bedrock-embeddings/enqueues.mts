@@ -1,10 +1,11 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
 import { PRIORITY_DEFAULT } from './config.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
-import type { DefaultBedrockEmbeddingsJobData } from './types.mts'
+import { createBackgroundCpuEnqueueFunction } from '@queues/background-cpu/enqueues/typed-job'
+import type { BackgroundCpuJobPayloads } from '@queues/background-cpu/types'
 import { trackAIEmbeddingShortCircuit } from '@services/analytics'
 import onError from '@modules/on-error'
 import { isSingleEmbeddingBackedUp } from './enqueues/single-backlog.mts'
@@ -17,33 +18,21 @@ async function isSingleQueueBackedUp(): Promise<boolean> {
   }
 }
 
-const enqueueCreateTopicEmbeddingJob = createEnqueueFunction<
-  DefaultBedrockEmbeddingsJobData,
-  string
->({
-  queue: backgroundCpu,
-  queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: 'bedrock-embeddings.topic',
-  defaults: requireBackgroundCpuJob('bedrock-embeddings.topic').options,
-})
-
-const enqueueCreatePostEmbeddingJob = createEnqueueFunction<
-  DefaultBedrockEmbeddingsJobData,
-  string
->({
-  queue: backgroundCpu,
-  queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: 'bedrock-embeddings.post',
-  defaults: requireBackgroundCpuJob('bedrock-embeddings.post').options,
-})
+const enqueueCreateTopicEmbeddingJob = createBackgroundCpuEnqueueFunction(
+  'bedrock-embeddings.topic',
+)
+const enqueueCreatePostEmbeddingJob = createBackgroundCpuEnqueueFunction('bedrock-embeddings.post')
+const RSS_FEED_ITEM_JOB_NAME = 'bedrock-embeddings.rss_feed_item'
 
 const enqueueBulkCreateRssFeedItemEmbeddingJobs = createBulkEnqueueFunction({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: 'bedrock-embeddings.rss_feed_item',
-  defaults: requireBackgroundCpuJob('bedrock-embeddings.rss_feed_item').options,
+  jobName: RSS_FEED_ITEM_JOB_NAME,
+  defaults: requireBackgroundCpuJob(RSS_FEED_ITEM_JOB_NAME).options,
   buildJob: (item: { rss_feed_item_id: string }) => ({
-    data: { rss_feed_item_id: item.rss_feed_item_id },
+    data: {
+      rss_feed_item_id: item.rss_feed_item_id,
+    } satisfies BackgroundCpuJobPayloads[typeof RSS_FEED_ITEM_JOB_NAME],
     opts: {
       deduplication: {
         id: `bedrock-embeddings:single:rss-feed-item:${item.rss_feed_item_id}`,

@@ -2,6 +2,7 @@ import type { JobOptions } from 'glide-mq'
 import { trackJobEnqueue } from '@services/analytics'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
 import { ai_agents } from '../queues.mts'
+import { addAIAgentJob } from './create-enqueue.mts'
 
 const jobIdFor = (submissionId: string) => `copyright_appeal_recommendation_${submissionId}`
 
@@ -13,7 +14,7 @@ export async function enqueueCopyrightAppealRecommendation(submissionId: string)
     deduplication: { id: `copyright_appeal_recommendation_${submissionId}`, mode: 'simple' },
     ordering: { key: `copyright_appeal_recommendation_${submissionId}`, concurrency: 1 },
   }
-  await ai_agents.add('copyright-appeal-recommendation', { submission_id: submissionId }, opts)
+  await addAIAgentJob('copyright-appeal-recommendation', { submission_id: submissionId }, opts)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'copyright-appeal-recommendation')
 }
 

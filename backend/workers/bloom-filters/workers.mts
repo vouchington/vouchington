@@ -1,18 +1,18 @@
-import { createBatchWorker } from '@data-stores/valkey-glide-mq'
+import { createBatchWorker, type NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import {
   BLOOM_FILTER_LOCK_DURATION_MS,
   BLOOM_FILTER_STALLED_INTERVAL_MS,
   QUEUE_NAME,
 } from '@queues/bloom-filters/config'
-import type { BloomFilterProcessorJobs } from '@queues/bloom-filters/types'
-import type { Job } from 'glide-mq'
+import type { BloomFilterJobPayloads } from '@queues/bloom-filters/types'
 import { processBatchSettled } from './processors/process-batch-settled.mts'
 import * as processors from './processors.mts'
 
-function runOne(job: Job): Promise<void> {
-  const jobName = job.name as BloomFilterProcessorJobs
+type BloomFilterJob = NamedQueueJob<BloomFilterJobPayloads>
 
+function runOne(job: BloomFilterJob): Promise<void> {
+  const jobName = job.name
   switch (jobName) {
     case 'processRebuildBloomFilter':
       return processors.processRebuildBloomFilter(job.data)
@@ -31,9 +31,9 @@ function runOne(job: Job): Promise<void> {
   }
 }
 
-export const bloomFilters = createBatchWorker(
+export const bloomFilters = createBatchWorker<unknown, unknown, BloomFilterJob>(
   QUEUE_NAME,
-  (jobs: Job[]) => processBatchSettled(jobs, runOne),
+  (jobs: BloomFilterJob[]) => processBatchSettled(jobs, runOne),
   {
     dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('bloomFilters', { baseline: 5 }),

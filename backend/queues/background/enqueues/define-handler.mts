@@ -1,11 +1,26 @@
 import type { Job } from 'glide-mq'
 import type { BackgroundHandler, BackgroundJobDefinition } from '../types.mts'
 
-export function backgroundHandler<TData>(
-  job: BackgroundJobDefinition<TData>,
-  handle: (job: Job<TData>) => unknown,
-): BackgroundHandler<TData> {
-  return { job, handle }
+type DefinitionData<TDefinition> =
+  TDefinition extends BackgroundJobDefinition<infer TData> ? TData : never
+
+export function backgroundHandler<
+  TDefinition extends BackgroundJobDefinition & { readonly name: string },
+>(
+  job: TDefinition,
+  handle: (
+    job: Job<DefinitionData<TDefinition>> & { readonly name: TDefinition['name'] },
+  ) => unknown,
+): BackgroundHandler<DefinitionData<TDefinition>> {
+  return {
+    job: job as BackgroundJobDefinition<DefinitionData<TDefinition>>,
+    handle: queued =>
+      handle(
+        queued as Job<DefinitionData<TDefinition>> & {
+          readonly name: TDefinition['name']
+        },
+      ),
+  }
 }
 
 /**

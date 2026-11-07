@@ -1,33 +1,21 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import {
   CATEGORY_SNAPSHOT_RECOVERY_DEDUPLICATION_ID,
   CATEGORY_SNAPSHOT_RECOVERY_DEDUPLICATION_TTL_MS,
   PRIORITY_DEFAULT,
   PRIORITY_RECOVERY,
-  QUEUE_NAME,
   RSS_FEED_ITEM_CATEGORY_ORDERING,
 } from '../config.mts'
-import { rssFeedMaintenance } from '../queues.mts'
-import type { TopicTextCategoryJob, TopicTextCategoryCursor } from '../types.mts'
+import type { TopicTextCategoryCursor } from '../types.mts'
+import { createRssFeedMaintenanceEnqueue } from './create-enqueue.mts'
 
-const enqueueBackfillCategoriesForTopicAliasesJob = createEnqueueFunction<
-  TopicTextCategoryJob,
-  'processBackfillCategoriesForTopicAliases'
->({
-  queue: rssFeedMaintenance,
-  queueName: QUEUE_NAME,
-  jobName: 'processBackfillCategoriesForTopicAliases',
-})
+const enqueueBackfillCategoriesForTopicAliasesJob = createRssFeedMaintenanceEnqueue(
+  'processBackfillCategoriesForTopicAliases',
+)
 
-const enqueueReconcileRssFeedItemCategorySnapshotsJob = createEnqueueFunction<
-  { rssFeedItemIds?: string[] },
-  'processReconcileRssFeedItemCategorySnapshots'
->({
-  queue: rssFeedMaintenance,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcileRssFeedItemCategorySnapshots',
-})
+const enqueueReconcileRssFeedItemCategorySnapshotsJob = createRssFeedMaintenanceEnqueue(
+  'processReconcileRssFeedItemCategorySnapshots',
+)
 
 export const enqueueReconcileRssFeedItemCategorySnapshots = (
   options: { deduplicationId?: string } = {},
@@ -68,14 +56,9 @@ export const enqueueBackfillCategoriesForTopicAliases = (
   )
 }
 
-const enqueueBackfillRssFeedCategoriesForTopicAliasJob = createEnqueueFunction<
-  TopicTextCategoryJob,
-  'processBackfillRssFeedCategoriesForTopicAlias'
->({
-  queue: rssFeedMaintenance,
-  queueName: QUEUE_NAME,
-  jobName: 'processBackfillRssFeedCategoriesForTopicAlias',
-})
+const enqueueBackfillRssFeedCategoriesForTopicAliasJob = createRssFeedMaintenanceEnqueue(
+  'processBackfillRssFeedCategoriesForTopicAlias',
+)
 
 export const enqueueBackfillRssFeedCategoriesForTopicAlias = (
   topicId: string,

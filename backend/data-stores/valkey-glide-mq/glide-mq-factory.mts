@@ -1,9 +1,10 @@
 import '@data-stores/valkey-core/shutdown'
 
-import type { Queue } from 'glide-mq'
+import type { BatchProcessor, Job, Processor, Queue, Worker, WorkerOptions } from 'glide-mq'
 import {
   createGlideMqRuntime,
   type RuntimeQueueOptions,
+  type RuntimeWorkerOptions,
 } from '@vouchington/worker-runtime/glide-mq'
 import onError from '@modules/on-error'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
@@ -23,6 +24,11 @@ import {
 } from './guarded-worker-processors.mts'
 
 export type PriorityQueue<T> = Queue<T> & { readonly priorityKind: QueuePriorityKind }
+
+/** Correlates a queue job's name with the payload declared by its producer package. */
+export type NamedQueueJob<TPayloads extends Record<string, unknown>, TResult = unknown> = {
+  [TName in keyof TPayloads & string]: Job<TPayloads[TName], TResult> & { readonly name: TName }
+}[keyof TPayloads & string]
 
 const priorityKinds = new Map<string, QueuePriorityKind>()
 const orderingConcurrency = new Map<string, (key: string) => number>()
@@ -74,9 +80,39 @@ export function createQueue<T = unknown>(
  */
 export const createMaintenanceQueue = runtime.createMaintenanceQueue
 
-export const createWorker = runtime.createWorker
+export function createWorker<
+  TData = unknown,
+  TResult = unknown,
+  TJob extends Job<TData, TResult> = Job<TData, TResult>,
+>(
+  name: string,
+  processor: (job: TJob) => Promise<TResult>,
+  options?: RuntimeWorkerOptions,
+): Worker<TJob['data'], TResult> {
+  // GlideMQ deserializes a string name and payload independently. Queue processors retain the
+  // runtime unknown-name rejection; this is the one boundary where their correlated type enters.
+  return runtime.createWorker<TJob['data'], TResult>(
+    name,
+    processor as Processor<TJob['data'], TResult>,
+    options,
+  )
+}
 
 /** A worker whose processor receives up to `batch.size` jobs at once instead of one. */
-export const createBatchWorker = runtime.createBatchWorker
+export function createBatchWorker<
+  TData = unknown,
+  TResult = unknown,
+  TJob extends Job<TData, TResult> = Job<TData, TResult>,
+>(
+  name: string,
+  processor: (jobs: TJob[]) => Promise<TResult[]>,
+  options: RuntimeWorkerOptions & Required<Pick<WorkerOptions, 'batch'>>,
+): Worker<TJob['data'], TResult> {
+  return runtime.createBatchWorker<TJob['data'], TResult>(
+    name,
+    processor as BatchProcessor<TJob['data'], TResult>,
+    options,
+  )
+}
 
 export const closeAndUnregisterGlideMQInstance = runtime.close

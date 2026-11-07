@@ -1,3 +1,22 @@
+import type { CrawlUrlJobData } from '../crawler/types.mts'
+import type { CrawlDispatchCursor, CrawlHostnameDispatchCursor } from '../crawl-dispatch/types.mts'
+import type {
+  CrawlReferralLinkEntry,
+  ReferralCrawlDispatchData,
+} from '../crawl-referral-links/types.mts'
+import type {
+  RemoveUnfurledChildrenForUserEntry,
+  UnfurlDispatchCursor,
+  UnfurlReferralLinkEntry,
+} from '../unfurl-referral-links/types.mts'
+import type { DefaultBedrockEmbeddingsJobData } from '../bedrock-embeddings/types.mts'
+import type { ReconciliationEntityType } from '../bedrock-embeddings-batch/types.mts'
+import type {
+  CleanupAbandonedUploadsData,
+  LanguageDetectionBackfillCursor,
+} from '../content-analysis/types.mts'
+import type { SpendCapRecheckJobData } from '../ai-agents/types.mts'
+
 import type { Job, JobOptions } from 'glide-mq'
 import type { BackgroundCpuDomain } from './config.mts'
 
@@ -40,4 +59,56 @@ export type BackgroundCpuHandler<TData = unknown> = {
   readonly job: BackgroundCpuJobDefinition<TData>
   // Method syntax keeps handlers of different payload types assignable to `BackgroundCpuHandler`.
   handle(job: Job<TData>): unknown
+}
+
+type Empty = Record<string, never>
+type BatchCursor = { afterId: string; throughId: string }
+
+/** The only payload contract for jobs admitted to the shared background-cpu queue. */
+export type BackgroundCpuJobPayloads = {
+  'crawl.crawl_url': CrawlUrlJobData
+  'crawl.crawl_referral_link': CrawlReferralLinkEntry
+  'crawl.crawl_referral_links_dispatcher': ReferralCrawlDispatchData
+  'crawl.unfurl_referral_link': UnfurlReferralLinkEntry
+  'crawl.remove_unfurled_children_for_user': RemoveUnfurledChildrenForUserEntry
+  'crawl.unfurl_referral_links_dispatcher': { cursor?: UnfurlDispatchCursor }
+  'crawl.crawl_hostnames_dispatcher': { cursor?: CrawlHostnameDispatchCursor }
+  'crawl.crawl_urls_per_hostname_dispatcher': { hostname_id: string; cursor?: CrawlDispatchCursor }
+  'crawl.crawl_tier1_dispatcher': { cursor?: CrawlDispatchCursor }
+  'crawl.crawl_tier2_dispatcher': { cursor?: CrawlDispatchCursor }
+  'crawl.refresh_hostname_crawler_dispatcher': { cursor?: CrawlDispatchCursor }
+  'crawl.refresh_hostname_crawler': { hostname_id: string }
+  'crawl.crawl_cleanup': { cutoffId?: string }
+  'crawl.boilerplate_removal_dispatcher': Empty
+  'crawl.boilerplate_removal': { hostname_id: string; parent_path: string }
+  'bedrock-embeddings.topic': DefaultBedrockEmbeddingsJobData
+  'bedrock-embeddings.post': DefaultBedrockEmbeddingsJobData
+  'bedrock-embeddings.rss_feed_item': DefaultBedrockEmbeddingsJobData
+  'bedrock-embeddings.create_topics': Empty
+  'bedrock-embeddings.create_posts': Empty
+  'bedrock-embeddings.create_rss_feed_items': Empty
+  'bedrock-embeddings.create_crawl_chunks': Empty
+  'bedrock-embeddings.create_images': Empty
+  'bedrock-embeddings.poll_batch': { batch_id: string }
+  'bedrock-embeddings.poll_dispatcher': { cursor?: BatchCursor }
+  'bedrock-embeddings.creation_dispatcher': { cursor?: BatchCursor }
+  'bedrock-embeddings.backlog_dispatcher': { cursor?: BatchCursor }
+  'bedrock-embeddings.stale_cleanup_dispatcher': { cursor?: BatchCursor }
+  'bedrock-embeddings.reconcile_existing': { entityType: ReconciliationEntityType; after?: string }
+  'bedrock-embeddings.post_trigger_recovery': { after?: string }
+  'ai-spend-cap.recheck': SpendCapRecheckJobData
+  'content-analysis.post': { id: string }
+  'content-analysis.rss_feed_item': { id: string }
+  'content-analysis.crawl': { id: string }
+  'content-analysis.community': { id: string }
+  'content-analysis.user': { id: string }
+  'content-analysis.topic': { id: string }
+  'content-analysis.staydown-hash': { id: string }
+  'content-analysis.backfill_posts': { cursor?: LanguageDetectionBackfillCursor }
+  'content-analysis.backfill_rss_feed_items': { cursor?: LanguageDetectionBackfillCursor }
+  'content-analysis.backfill_crawls': { cursor?: LanguageDetectionBackfillCursor }
+  'content-analysis.backfill_communities': { cursor?: LanguageDetectionBackfillCursor }
+  'content-analysis.backfill_users': { cursor?: LanguageDetectionBackfillCursor }
+  'content-analysis.backfill_topics': { cursor?: LanguageDetectionBackfillCursor }
+  'content-analysis.cleanup-abandoned-uploads': CleanupAbandonedUploadsData
 }

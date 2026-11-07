@@ -1,14 +1,14 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
 import { PRIORITY_DEFAULT } from './config.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
+import { createBackgroundCpuEnqueueFunction } from '@queues/background-cpu/enqueues/typed-job'
+import type { BackgroundCpuJobPayloads } from '@queues/background-cpu/types'
 import type { LanguageDetectionBackfillJobName, LanguageDetectionEntityType } from './types.mts'
 
 const ONE_HOUR_MS = 3_600_000
-
-type LanguageDetectionData = { id: string }
 
 function makeJobOpts(
   entityType: LanguageDetectionEntityType,
@@ -25,13 +25,7 @@ function makeJobOpts(
 }
 
 function createLanguageDetectionEnqueue(jobName: LanguageDetectionEntityType) {
-  const job = requireBackgroundCpuJob(`content-analysis.${jobName}`)
-  return createEnqueueFunction<LanguageDetectionData, string>({
-    queue: backgroundCpu,
-    queueName: BACKGROUND_CPU_QUEUE_NAME,
-    jobName: job.name,
-    defaults: job.options,
-  })
+  return createBackgroundCpuEnqueueFunction(`content-analysis.${jobName}`)
 }
 
 type LanguageDetectionEnqueueResult = ReturnType<ReturnType<typeof createLanguageDetectionEnqueue>>
@@ -52,7 +46,10 @@ function createBulkLanguageDetectionEnqueue(jobName: LanguageDetectionEntityType
     queueName: BACKGROUND_CPU_QUEUE_NAME,
     jobName: job.name,
     defaults: job.options,
-    buildJob: (id: string) => ({ data: { id }, opts: makeJobOpts(jobName, id, PRIORITY_DEFAULT) }),
+    buildJob: (id: string) => ({
+      data: { id } satisfies BackgroundCpuJobPayloads[`content-analysis.${typeof jobName}`],
+      opts: makeJobOpts(jobName, id, PRIORITY_DEFAULT),
+    }),
   })
 }
 
@@ -91,13 +88,7 @@ export function enqueueBulkLanguageDetection(
 
 // Backfill dispatcher enqueue functions (throttle, 1h TTL, priority 100)
 function makeBackfillEnqueue(jobName: LanguageDetectionBackfillJobName) {
-  const job = requireBackgroundCpuJob(`content-analysis.${jobName}`)
-  const enqueue = createEnqueueFunction<Record<string, never>, string>({
-    queue: backgroundCpu,
-    queueName: BACKGROUND_CPU_QUEUE_NAME,
-    jobName: job.name,
-    defaults: job.options,
-  })
+  const enqueue = createBackgroundCpuEnqueueFunction(`content-analysis.${jobName}`)
   return () =>
     enqueue(
       {},

@@ -8,10 +8,10 @@ import {
   partitionCleanupConfig,
 } from '../config.mts'
 import { psql } from '../queues.mts'
-import type { PsqlJobs, PsqlPartitionJobData } from '../types.mts'
+import type { PsqlJobPayloads, PsqlPartitionJobData } from '../types.mts'
 
 function createPartitionEnqueue(jobName: 'createPartitions' | 'cleanupPartitions') {
-  const enqueue = createEnqueueFunction<PsqlPartitionJobData, PsqlJobs>({
+  const enqueue = createEnqueueFunction<PsqlPartitionJobData, typeof jobName>({
     queue: psql,
     queueName: QUEUE_NAME,
     jobName,
@@ -59,8 +59,8 @@ export const enqueueCreatePartitions = createPartitionEnqueue('createPartitions'
 export const enqueueCleanupPartitions = createPartitionEnqueue('cleanupPartitions')
 
 const enqueuePartitionCleanupContinuationJob = createEnqueueFunction<
-  PsqlPartitionJobData,
-  PsqlJobs
+  PsqlJobPayloads['cleanupPartitions'],
+  'cleanupPartitions'
 >({
   queue: psql,
   queueName: QUEUE_NAME,

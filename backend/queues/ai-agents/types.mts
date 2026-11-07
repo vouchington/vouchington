@@ -96,24 +96,33 @@ export type SpendCapRecheckJobData = {
   cursor?: string
 }
 
-export type AIAgentJobData = (
-  | CopyrightAgentSweepData
-  | AutotaggerRssFeedItemJobData
-  | ClassifierRunDispatcherJobData
-  | ClassifierRunJobData
-  | ReportJudgementJobData
-  | DisputeResolutionJobData
-  | AppealResolutionJobData
-  | CopyrightEmailIntakeJobData
-  | CopyrightFormScreeningJobData
-  | CopyrightAppealRecommendationJobData
-  | CopyrightSubmissionGuidanceJobData
-  | StoryPostJobData
-  | BackfillReportJudgementsJobData
-  | ReconcileClassifierRunsJobData
-  | AutoDispatchJudgementJobData
-) &
-  SpendCapDelayedData &
-  BackgroundResponseJobData
-
 export type CopyrightAgentSweepData = { after?: string }
+
+type AIAgentJobPayloadsByName = {
+  'autotagger-rss-feed-item': AutotaggerRssFeedItemJobData
+  'classifier-run-dispatcher': ClassifierRunDispatcherJobData
+  'classifier-run': ClassifierRunJobData
+  'reconcile-classifier-runs': ReconcileClassifierRunsJobData
+  'report-judgement': ReportJudgementJobData
+  'dispute-resolution': DisputeResolutionJobData
+  'appeal-resolution': AppealResolutionJobData
+  'copyright-email-intake': CopyrightEmailIntakeJobData
+  'copyright-form-screening': CopyrightFormScreeningJobData
+  'copyright-appeal-recommendation': CopyrightAppealRecommendationJobData
+  'copyright-submission-guidance': CopyrightSubmissionGuidanceJobData
+  'story-post': StoryPostJobData
+  backfill_report_judgements: BackfillReportJudgementsJobData
+  'auto-dispatch-judgement': AutoDispatchJudgementJobData
+  'reconcile-auto-dispatch-judgements': Record<string, never>
+  'recover-background-response': BackgroundResponseJobData
+  'reconcile-copyright-agent-dispatches': CopyrightAgentSweepData
+}
+
+/** Shared recovery/spend metadata is added by the worker after queue admission. */
+export type AIAgentJobPayloads = {
+  [TName in keyof AIAgentJobPayloadsByName]: AIAgentJobPayloadsByName[TName] &
+    SpendCapDelayedData &
+    BackgroundResponseJobData
+}
+
+export type AIAgentJobData = AIAgentJobPayloads[keyof AIAgentJobPayloads]

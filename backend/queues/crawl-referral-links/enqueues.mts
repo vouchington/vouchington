@@ -1,14 +1,15 @@
 import { createHash } from 'node:crypto'
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { getBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
-import type { ReferralCrawlDispatchData } from './types.mts'
+import { createBackgroundCpuEnqueueFunction } from '@queues/background-cpu/enqueues/typed-job'
+import type { BackgroundCpuJobPayloads } from '@queues/background-cpu/types'
+import type { CrawlReferralLinkEntry, ReferralCrawlDispatchData } from './types.mts'
 
-type CrawlReferralLinkEntry = { linkId: string; urlId: string; referralProgramId: string }
 const CRAWL_JOB_NAME = 'crawl.crawl_referral_link'
 const DISPATCHER_JOB_NAME = 'crawl.crawl_referral_links_dispatcher'
 
@@ -18,7 +19,7 @@ const enqueueBulkCrawlReferralLinkJobs = createBulkEnqueueFunction({
   jobName: CRAWL_JOB_NAME,
   defaults: getBackgroundCpuJob(CRAWL_JOB_NAME)!.options,
   buildJob: (data: CrawlReferralLinkEntry) => ({
-    data,
+    data: data satisfies BackgroundCpuJobPayloads[typeof CRAWL_JOB_NAME],
     opts: {
       deduplication: {
         id: `${CRAWL_JOB_NAME}__${data.linkId}`,
@@ -28,15 +29,8 @@ const enqueueBulkCrawlReferralLinkJobs = createBulkEnqueueFunction({
   }),
 })
 
-const enqueueCrawlReferralLinksDispatcherJob = createEnqueueFunction<
-  ReferralCrawlDispatchData,
-  string
->({
-  queue: backgroundCpu,
-  queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: DISPATCHER_JOB_NAME,
-  defaults: getBackgroundCpuJob(DISPATCHER_JOB_NAME)!.options,
-})
+const enqueueCrawlReferralLinksDispatcherJob =
+  createBackgroundCpuEnqueueFunction(DISPATCHER_JOB_NAME)
 
 export function enqueueBulkCrawlReferralLinks(
   entries: CrawlReferralLinkEntry[],

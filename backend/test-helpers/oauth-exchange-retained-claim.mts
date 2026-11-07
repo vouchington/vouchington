@@ -63,7 +63,9 @@ export async function recoverTestRetainedOAuthClaim(
             try {
               await owner.run(() =>
                 withTestOAuthAuthorizationRowLocked(authorizationId, () =>
-                  processOAuthAuthorizationExchangeJob(job),
+                  processOAuthAuthorizationExchangeJob(
+                    job as unknown as Parameters<typeof processOAuthAuthorizationExchangeJob>[0],
+                  ),
                 ),
               )
             } catch (err) {
@@ -126,7 +128,11 @@ export async function recoverTestRetainedOAuthClaim(
           new Worker<OAuthAuthorizationExchangeJobData>(
             name,
             (job: Job<OAuthAuthorizationExchangeJobData>) =>
-              owner.run(() => processOAuthAuthorizationExchangeJob(job)),
+              owner.run(() =>
+                processOAuthAuthorizationExchangeJob(
+                  job as unknown as Parameters<typeof processOAuthAuthorizationExchangeJob>[0],
+                ),
+              ),
             { ...options, blockTimeout: 100, promotionInterval: retainedClaimPromotionIntervalMs },
           ),
       )

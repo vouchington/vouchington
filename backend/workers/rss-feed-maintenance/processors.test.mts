@@ -1,8 +1,8 @@
-import type { Job } from 'glide-mq'
 import { describe, expect, it } from 'vitest'
 import { processRssFeedMaintenanceJob } from './processors.mts'
 
-const job = (name: string, data?: unknown) => ({ name, data }) as unknown as Job
+const job = (name: string, data?: unknown) =>
+  ({ name, data }) as unknown as Parameters<typeof processRssFeedMaintenanceJob>[0]
 
 describe('topic alias unlink jobs', () => {
   it.each(['processUnlinkTopicAliasPage', 'processRecoverTopicAliasUnlinks'])(

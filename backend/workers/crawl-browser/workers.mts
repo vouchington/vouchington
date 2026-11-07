@@ -1,15 +1,17 @@
-import type { CrawlBrowserJobs } from '@queues/crawl-browser/types'
-import { createWorker } from '@data-stores/valkey-glide-mq'
+import { createWorker, type NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import { CRAWL_BROWSER_QUEUE_NAME } from '@queues/crawl-browser/config'
 import { getCrawlerById } from '@services/crawlers'
 import { getUrlById } from '@services/urls/get'
-import type { Job } from 'glide-mq'
+import type { CrawlBrowserJobPayloads } from '@queues/crawl-browser/types'
 import { processBrowserCrawl } from './processors.mts'
 
-export const crawlBrowser = createWorker(
+type CrawlBrowserJob = NamedQueueJob<CrawlBrowserJobPayloads>
+
+export const crawlBrowser = createWorker<unknown, unknown, CrawlBrowserJob>(
   CRAWL_BROWSER_QUEUE_NAME,
-  async (job: Job) => {
-    switch (job.name as CrawlBrowserJobs) {
+  async (job: CrawlBrowserJob) => {
+    const jobName: string = job.name
+    switch (job.name) {
       case 'crawl_browser': {
         const { linkId, urlId, crawlerId } = job.data ?? {}
         if (!linkId) throw new Error('crawl_browser job .linkId is required')
@@ -26,7 +28,7 @@ export const crawlBrowser = createWorker(
         return
       }
       default:
-        throw new Error(`crawl_browser: unrecognised job name "${job.name}"`)
+        throw new Error(`crawl_browser: unrecognised job name "${jobName}"`)
     }
   },
   {

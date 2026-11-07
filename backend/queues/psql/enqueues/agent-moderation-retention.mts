@@ -2,11 +2,11 @@ import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { DATA_RETENTION_ORDERING, PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
 import { psql } from '../queues.mts'
-import type { AgentModerationRetentionContinuationData, PsqlJobs } from '../types.mts'
+import type { AgentModerationRetentionContinuationData, PsqlJobPayloads } from '../types.mts'
 
 const enqueueAgentModerationRetentionJob = createEnqueueFunction<
-  AgentModerationRetentionContinuationData,
-  PsqlJobs
+  PsqlJobPayloads['continueAgentModerationRetentionCleanup'],
+  'continueAgentModerationRetentionCleanup'
 >({ queue: psql, queueName: QUEUE_NAME, jobName: 'continueAgentModerationRetentionCleanup' })
 
 export function enqueueAgentModerationRetentionContinuation(

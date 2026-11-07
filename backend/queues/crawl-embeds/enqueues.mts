@@ -10,10 +10,10 @@ import {
   PRIORITY_DISPATCHER,
 } from './config.mts'
 import { crawlEmbedsQueue } from './queues.mts'
-import type { CrawlEmbedEntry, CrawlEmbedsJobs, EnqueueCrawlEmbedOptions } from './types.mts'
+import type { CrawlEmbedEntry, CrawlEmbedsJobPayloads, EnqueueCrawlEmbedOptions } from './types.mts'
 
-const JOB_NAME: CrawlEmbedsJobs = 'resolve_crawl_oembed'
-const BACKFILL_JOB_NAME: CrawlEmbedsJobs = 'backfill_crawl_embeds'
+const JOB_NAME = 'resolve_crawl_oembed' satisfies keyof CrawlEmbedsJobPayloads
+const BACKFILL_JOB_NAME = 'backfill_crawl_embeds' satisfies keyof CrawlEmbedsJobPayloads
 
 const defaults = {
   attempts: CRAWL_EMBEDS_DEFAULTS.attempts,
@@ -22,12 +22,18 @@ const defaults = {
   removeOnFail: CRAWL_EMBEDS_DEFAULTS.removeOnFail,
 } satisfies Partial<JobOptions>
 
-const enqueueCrawlEmbedJob = createEnqueueFunction<{ crawl_id: string }, CrawlEmbedsJobs>({
-  queue: crawlEmbedsQueue,
-  queueName: CRAWL_EMBEDS_QUEUE_NAME,
-  jobName: JOB_NAME,
-  defaults,
-})
+function createCrawlEmbedsEnqueueFunction<TName extends keyof CrawlEmbedsJobPayloads>(
+  jobName: TName,
+) {
+  return createEnqueueFunction<CrawlEmbedsJobPayloads[TName], TName>({
+    queue: crawlEmbedsQueue,
+    queueName: CRAWL_EMBEDS_QUEUE_NAME,
+    jobName,
+    defaults,
+  })
+}
+
+const enqueueCrawlEmbedJob = createCrawlEmbedsEnqueueFunction(JOB_NAME)
 
 const enqueueBulkCrawlEmbedJobs = createBulkEnqueueFunction({
   queue: crawlEmbedsQueue,
@@ -35,19 +41,12 @@ const enqueueBulkCrawlEmbedJobs = createBulkEnqueueFunction({
   jobName: JOB_NAME,
   defaults,
   buildJob: (entry: CrawlEmbedEntry) => ({
-    data: { crawl_id: entry.crawlId },
+    data: { crawl_id: entry.crawlId } satisfies CrawlEmbedsJobPayloads[typeof JOB_NAME],
     opts: crawlEmbedJobOptions(entry.crawlId, entry.endpointHostname),
   }),
 })
 
-const enqueueBackfillCrawlEmbedsJob = createEnqueueFunction<Record<string, never>, CrawlEmbedsJobs>(
-  {
-    queue: crawlEmbedsQueue,
-    queueName: CRAWL_EMBEDS_QUEUE_NAME,
-    jobName: BACKFILL_JOB_NAME,
-    defaults,
-  },
-)
+const enqueueBackfillCrawlEmbedsJob = createCrawlEmbedsEnqueueFunction(BACKFILL_JOB_NAME)
 
 /**
  * The endpoint hostname configures queue ordering only. The job itself carries

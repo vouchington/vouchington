@@ -1,34 +1,24 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
   MEMBERSHIP_PAUSE_COLLECTION_INTERVAL_MS,
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
-  QUEUE_NAME,
 } from '../config.mts'
-import { memberships } from '../queues.mts'
 import type { MembershipsJobs, SyncMembershipPauseCollectionData } from '../types.mts'
 
-const DISPATCH_JOB_NAME: MembershipsJobs = 'dispatchMembershipPauseCollection'
-const SYNC_JOB_NAME: MembershipsJobs = 'syncMembershipPauseCollection'
+import { createMembershipEnqueueFunction } from './typed-job.mts'
+
+const DISPATCH_JOB_NAME = 'dispatchMembershipPauseCollection' satisfies MembershipsJobs
+const SYNC_JOB_NAME = 'syncMembershipPauseCollection' satisfies MembershipsJobs
 const INTERVAL_MS = MEMBERSHIP_PAUSE_COLLECTION_INTERVAL_MS
 
-const enqueueDispatchJob = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: DISPATCH_JOB_NAME,
-})
-const enqueueSyncJob = createEnqueueFunction<SyncMembershipPauseCollectionData, MembershipsJobs>({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: SYNC_JOB_NAME,
-  defaults: {
-    attempts: 5,
-    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-  },
+const enqueueDispatchJob = createMembershipEnqueueFunction(DISPATCH_JOB_NAME)
+const enqueueSyncJob = createMembershipEnqueueFunction(SYNC_JOB_NAME, {
+  attempts: 5,
+  backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+  removeOnComplete: 100,
+  removeOnFail: 100,
 })
 
 function enqueueDispatchMembershipPauseCollection(): EnqueueReturnType {

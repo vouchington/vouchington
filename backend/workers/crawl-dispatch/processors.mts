@@ -1,4 +1,6 @@
 import type { Job } from 'glide-mq'
+import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
+import type { BackgroundCpuJobPayloads } from '@queues/background-cpu/types'
 import { enqueueBulkBoilerplateRemoval } from '@queues/crawl-dispatch/enqueues/boilerplate'
 import { processCrawlHostnamesJob } from './processors/hostnames.mts'
 import {
@@ -6,7 +8,24 @@ import {
   processBoilerplateRemovalDispatcher,
 } from './processors/boilerplate.mts'
 
-export async function processCrawlDispatchJob(job: Job): Promise<unknown> {
+type CrawlDispatchJob = NamedQueueJob<
+  Pick<
+    BackgroundCpuJobPayloads,
+    | 'crawl.crawl_hostnames_dispatcher'
+    | 'crawl.crawl_urls_per_hostname_dispatcher'
+    | 'crawl.crawl_tier1_dispatcher'
+    | 'crawl.crawl_tier2_dispatcher'
+    | 'crawl.refresh_hostname_crawler_dispatcher'
+    | 'crawl.refresh_hostname_crawler'
+    | 'crawl.crawl_cleanup'
+    | 'crawl.boilerplate_removal_dispatcher'
+    | 'crawl.boilerplate_removal'
+  >
+>
+
+export async function processCrawlDispatchJob(rawJob: Job<unknown>): Promise<unknown> {
+  const job = rawJob as CrawlDispatchJob
+  const jobName = rawJob.name
   switch (job.name) {
     case 'crawl.crawl_hostnames_dispatcher':
     case 'crawl.crawl_urls_per_hostname_dispatcher':
@@ -34,6 +53,6 @@ export async function processCrawlDispatchJob(job: Job): Promise<unknown> {
       return processBoilerplateRemoval(hostnameId, parentPath)
     }
     default:
-      throw new Error(`Crawl dispatch job ${job.name} not found`)
+      throw new Error(`Crawl dispatch job ${jobName} not found`)
   }
 }

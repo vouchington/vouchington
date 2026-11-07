@@ -3,6 +3,7 @@ import { trackJobEnqueue } from '@services/analytics'
 import { AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import type { CopyrightEmailIntakeJobData } from '../types.mts'
+import { addAIAgentJob } from './create-enqueue.mts'
 
 const jobIdFor = (intakeId: string) => `copyright_email_intake_${intakeId}`
 
@@ -61,6 +62,6 @@ export async function enqueueOrRetryCopyrightEmailIntake(
 
 export async function enqueueCopyrightEmailIntake(intakeId: string): Promise<void> {
   const { data, opts } = buildCopyrightEmailIntakeJob(intakeId)
-  await ai_agents.add('copyright-email-intake', data, opts)
+  await addAIAgentJob('copyright-email-intake', data, opts)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'copyright-email-intake')
 }

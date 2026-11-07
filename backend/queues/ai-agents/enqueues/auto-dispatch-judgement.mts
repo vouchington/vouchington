@@ -1,17 +1,11 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
-import type { AutoDispatchJudgementJobData } from '../types.mts'
+import type { AIAgentJobPayloads, AutoDispatchJudgementJobData } from '../types.mts'
+import { createAIAgentEnqueue } from './create-enqueue.mts'
 
-const enqueueAutoDispatchJudgementJob = createEnqueueFunction<
-  AutoDispatchJudgementJobData,
-  'auto-dispatch-judgement'
->({
-  queue: ai_agents,
-  queueName: AI_AGENTS_QUEUE_NAME,
-  jobName: 'auto-dispatch-judgement',
-})
+const enqueueAutoDispatchJudgementJob = createAIAgentEnqueue('auto-dispatch-judgement')
 
 /** One batched add of `enqueueAutoDispatchJudgement` jobs, each with its own dedup id. */
 export const enqueueBulkAutoDispatchJudgements = createBulkEnqueueFunction({
@@ -19,7 +13,7 @@ export const enqueueBulkAutoDispatchJudgements = createBulkEnqueueFunction({
   queueName: AI_AGENTS_QUEUE_NAME,
   jobName: 'auto-dispatch-judgement',
   buildJob: (data: AutoDispatchJudgementJobData) => ({
-    data,
+    data: data satisfies AIAgentJobPayloads['auto-dispatch-judgement'],
     opts: autoDispatchJudgementJobOptions(data),
   }),
 })

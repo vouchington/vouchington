@@ -1,9 +1,10 @@
-export type BloomFilterProcessorJobs =
-  | 'processRebuildBloomFilter'
-  | 'processBackfillBloomFilter'
-  | 'processBackfillUserBookmarkBloomFilter'
-  | 'processDeleteUserBookmarkBloomFilter'
-  | 'processRebuildEmbeddingBloomFilter'
+export type BloomFilterJobPayloads = {
+  processRebuildBloomFilter: RebuildBloomFilterData
+  processBackfillBloomFilter: BackfillBloomFilterData
+  processBackfillUserBookmarkBloomFilter: BackfillUserBookmarkBloomFilterData
+  processDeleteUserBookmarkBloomFilter: DeleteUserBookmarkBloomFilterData
+  processRebuildEmbeddingBloomFilter: RebuildEmbeddingBloomFilterData
+}
 
 export type BloomFilterRebuildInput =
   | 'url-blocklist'

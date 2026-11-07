@@ -1,5 +1,3 @@
-import type { BatchListingCursor } from '@services/bedrock-embeddings/batch/orchestrator/listing-page'
-import type { ReconciliationEntityType } from '@queues/bedrock-embeddings-batch/types'
 import {
   processBatchPolling,
   processBatchPollingDispatcher,
@@ -10,70 +8,67 @@ import {
   processPostEmbeddingTriggerRecovery,
 } from '../processors.mts'
 import type { Job } from 'glide-mq'
+import type { NamedQueueJob } from '../../../data-stores/valkey-glide-mq/glide-mq-factory.mts'
+import type { BackgroundCpuJobPayloads } from '../../../queues/background-cpu/types.mts'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { decodeScopedUuidCursor } from '@modules/pagination'
 
-type JobData = Record<string, unknown>
+type BatchJob = NamedQueueJob<
+  Pick<
+    BackgroundCpuJobPayloads,
+    | 'bedrock-embeddings.poll_batch'
+    | 'bedrock-embeddings.poll_dispatcher'
+    | 'bedrock-embeddings.creation_dispatcher'
+    | 'bedrock-embeddings.backlog_dispatcher'
+    | 'bedrock-embeddings.stale_cleanup_dispatcher'
+    | 'bedrock-embeddings.reconcile_existing'
+    | 'bedrock-embeddings.post_trigger_recovery'
+  >
+>
 
 export const processBedrockEmbeddingsBatchJob = async (
-  job: Job<JobData>,
+  rawJob: Job<unknown>,
   scope?: { entityIds?: readonly string[] },
 ): Promise<unknown> => {
+  const job = rawJob as BatchJob
+  const jobName = rawJob.name
   const orderingKey = job.opts.ordering?.key
 
   switch (orderingKey) {
     case 'bedrock-embeddings:polling': {
-      switch (job.name) {
-        case 'bedrock-embeddings.poll_batch': {
-          const batchId = job.data?.batch_id
-          if (!batchId) throw new Error('Batch ID is required')
-          return processBatchPolling(batchId as string)
-        }
-        default:
-          throw new Error(`Unknown polling job type: ${job.name}`)
+      if (job.name === 'bedrock-embeddings.poll_batch') {
+        const batchId = job.data?.batch_id
+        if (!batchId) throw new Error('Batch ID is required')
+        return processBatchPolling(batchId)
       }
+      throw new Error(`Unknown polling job type: ${jobName}`)
     }
     case 'bedrock-embeddings:dispatcher': {
-      switch (job.name) {
-        case 'bedrock-embeddings.poll_dispatcher':
-          return processBatchPollingDispatcher(job.data.cursor as BatchListingCursor | undefined)
-        case 'bedrock-embeddings.creation_dispatcher':
-          return processBatchCreationDispatcher()
-        case 'bedrock-embeddings.backlog_dispatcher':
-          return processBacklogDispatcher()
-        case 'bedrock-embeddings.stale_cleanup_dispatcher':
-          return processStaleCleanupDispatcher(job.data.cursor as BatchListingCursor | undefined)
-        default:
-          throw new Error(`Unknown dispatcher job type: ${job.name}`)
-      }
+      if (job.name === 'bedrock-embeddings.poll_dispatcher')
+        return processBatchPollingDispatcher(job.data.cursor)
+      if (job.name === 'bedrock-embeddings.creation_dispatcher')
+        return processBatchCreationDispatcher()
+      if (job.name === 'bedrock-embeddings.backlog_dispatcher') return processBacklogDispatcher()
+      if (job.name === 'bedrock-embeddings.stale_cleanup_dispatcher')
+        return processStaleCleanupDispatcher(job.data.cursor)
+      throw new Error(`Unknown dispatcher job type: ${jobName}`)
     }
     case 'bedrock-embeddings:reconciliation': {
-      switch (job.name) {
-        case 'bedrock-embeddings.reconcile_existing': {
-          const data = assertReconciliationPayload(job.data, ['entityType'], ['after'])
-          const entityType = data.entityType
-          if (
-            entityType !== 'topics' &&
-            entityType !== 'posts' &&
-            entityType !== 'rss_feed_items'
-          ) {
-            throw new UnrecoverableError('Invalid reconciliation entity type')
-          }
-          assertReconciliationCursor(data.after, `embedding-reconciliation:${entityType}:id-asc`)
-          return processExistingEmbeddingReconciliation(
-            entityType as ReconciliationEntityType,
-            data.after as string | undefined,
-            scope?.entityIds,
-          )
+      if (job.name === 'bedrock-embeddings.reconcile_existing') {
+        const data = assertReconciliationPayload(job.data, ['entityType'], ['after'])
+        const entityType = data.entityType
+        if (entityType !== 'topics' && entityType !== 'posts' && entityType !== 'rss_feed_items') {
+          throw new UnrecoverableError('Invalid reconciliation entity type')
         }
-        case 'bedrock-embeddings.post_trigger_recovery': {
-          const data = assertReconciliationPayload(job.data, [], ['after'])
-          assertReconciliationCursor(data.after, 'ban-evasion:post-embedding:pending:id-asc')
-          return processPostEmbeddingTriggerRecovery(data.after as string | undefined)
-        }
-        default:
-          throw new UnrecoverableError(`Unknown reconciliation job type: ${job.name}`)
+        assertReconciliationCursor(data.after, `embedding-reconciliation:${entityType}:id-asc`)
+        return processExistingEmbeddingReconciliation(entityType, data.after, scope?.entityIds)
       }
+      if (job.name === 'bedrock-embeddings.post_trigger_recovery') {
+        const data = assertReconciliationPayload(job.data, [], ['after'])
+        assertReconciliationCursor(data.after, 'ban-evasion:post-embedding:pending:id-asc')
+        return processPostEmbeddingTriggerRecovery(data.after)
+      }
+      throw new UnrecoverableError(`Unknown reconciliation job type: ${jobName}`)
     }
     case undefined:
       break
@@ -94,7 +89,7 @@ function assertReconciliationPayload(
   value: unknown,
   requiredKeys: string[],
   optionalKeys: string[],
-): Record<string, unknown> {
+): Record<string, unknown> & { after?: string } {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new UnrecoverableError('Invalid reconciliation payload')
   }
@@ -107,5 +102,5 @@ function assertReconciliationPayload(
   ) {
     throw new UnrecoverableError('Invalid reconciliation payload')
   }
-  return data
+  return data as Record<string, unknown> & { after?: string }
 }
