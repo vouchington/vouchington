@@ -86,7 +86,7 @@ export async function checkEmbeddingsSimilarity(
     }
   } catch (err) {
     // Best-effort: keep the safe default, but surface transaction/settings/query failures.
-    onError(err)
+    onError(err instanceof Error ? err : new Error(String(err)))
     return {
       signal: 'embeddings_similarity',
       score: 0,
