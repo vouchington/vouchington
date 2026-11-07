@@ -29,20 +29,22 @@ export async function publishPersistedDeliveryRecords(
   `)
   if (owned.length !== records.length)
     throw new Error(`Media delivery generation changed while publishing ${ids.join(',')}`)
-  for (const record of records) {
-    // oxlint-disable-next-line no-await-in-loop -- edge publication then purge, in order, for each claimed record.
-    await putMediaDeliveryRegistryRecord({
-      deliveryKey: getImagePlacementDeliveryKey({
-        placementId: record.placement_id,
-        revision: record.placement_revision,
-        imageId: record.image_id,
-      }),
-      state: record.desired_state,
-      generation: record.generation,
-    })
-    // oxlint-disable-next-line no-await-in-loop -- purge follows its own registry publication.
-    await invalidateMediaDeliveryPath(getMediaDeliveryPath(record))
-  }
+  // Records publish concurrently so the batch stays within one claim lease (the slowest record
+  // bounds it, as it did when each record was claimed and acknowledged alone).
+  await Promise.all(
+    records.map(async record => {
+      await putMediaDeliveryRegistryRecord({
+        deliveryKey: getImagePlacementDeliveryKey({
+          placementId: record.placement_id,
+          revision: record.placement_revision,
+          imageId: record.image_id,
+        }),
+        state: record.desired_state,
+        generation: record.generation,
+      })
+      await invalidateMediaDeliveryPath(getMediaDeliveryPath(record))
+    }),
+  )
   const { rowCount } = await query(sql`/* markPublishedMediaDeliveryRecords */
     INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, delivery_attempt_count, projected_at, invalidated_at, completed_at)
     SELECT work.media_delivery_registry_record_id, work.generation, 'completed', work.attempt_count, clock_timestamp(), clock_timestamp(), clock_timestamp()
