@@ -1,4 +1,5 @@
 import { waitForOwnedVoteRouteJob } from './owned-vote-route-job-completion.mts'
+import { admissionObservationDeadline } from './real-glide-terminal-deadline.mts'
 import { throwVoteRouteFailures } from './settle-vote-route-operations.mts'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Job, Queue, Worker } from 'glide-mq'
@@ -87,7 +88,7 @@ export async function observeOwnedVoteRouteAdmissions(
   const settle = async () => {
     const settledAttempts = new Set<Attempt>()
     const admittedKinds = new Set<string>()
-    const deadline = AbortSignal.timeout(25_000)
+    const deadline = admissionObservationDeadline()
     while (true) {
       const ownedAttempts = attempts.filter(
         attempt => !settledAttempts.has(attempt) && attempt.calls.some(ownedCall),
@@ -178,23 +179,18 @@ export function observeOwnedPenaltyAdmissions(ownedUserIds: Set<string>) {
     false,
   )
 }
+const voteAdmissionKinds: Record<string, string> = {
+  'vote-aggregation.processUpdateElectionVoteStats': 'elections',
+  'vote-aggregation.processUpdateTopicRatingStats': 'topic-ratings',
+  'vote-aggregation.processVoteIntegrityCheck': 'vote-integrity',
+  'vote-aggregation.processRecalculateUserVoteWeight': 'vote-weight',
+  'vote-aggregation.processRecalculateVoteWeightDispatcher': 'vote-weight',
+  'vote-aggregation.processVoteWeightAgeMilestones': 'vote-weight',
+  'vote-aggregation.processVoteWeightMembershipExpirations': 'vote-weight',
+  'vote-aggregation.processVoteWeightFamilySourceChanges': 'vote-weight',
+  'vote-aggregation.processVoteWeightDirtyMarkers': 'vote-weight',
+  'vote-aggregation.enqueueUserElectionUpdates': 'vote-weight',
+}
 function voteAdmissionKind(name: string): string {
-  switch (name) {
-    case 'vote-aggregation.processUpdateElectionVoteStats':
-      return 'elections'
-    case 'vote-aggregation.processUpdateTopicRatingStats':
-      return 'topic-ratings'
-    case 'vote-aggregation.processVoteIntegrityCheck':
-      return 'vote-integrity'
-    case 'vote-aggregation.processRecalculateUserVoteWeight':
-    case 'vote-aggregation.processRecalculateVoteWeightDispatcher':
-    case 'vote-aggregation.processVoteWeightAgeMilestones':
-    case 'vote-aggregation.processVoteWeightMembershipExpirations':
-    case 'vote-aggregation.processVoteWeightFamilySourceChanges':
-    case 'vote-aggregation.processVoteWeightDirtyMarkers':
-    case 'vote-aggregation.enqueueUserElectionUpdates':
-      return 'vote-weight'
-    default:
-      return 'vote-aggregation'
-  }
+  return voteAdmissionKinds[name] ?? 'vote-aggregation'
 }

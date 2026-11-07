@@ -3,6 +3,7 @@ import type { Job } from 'glide-mq'
 import { onTestFinished } from 'vitest'
 import { observeOwnedElectionQueue } from './election-vote-stats-observer-source.mts'
 import { createElectionInstrumentation } from './election-vote-stats-instrumentation.mts'
+import { admissionObservationDeadline } from './real-glide-terminal-deadline.mts'
 let active = false
 
 /** Retain original call-through logical duties; terminal transport follows the actual queue binding. */
@@ -14,7 +15,7 @@ export async function runWithOwnedPostElectionVoteStats(
 ) {
   if (active) throw new Error('Overlapping owned election observation')
   active = true
-  const deadline = AbortSignal.timeout(25_000)
+  const deadline = admissionObservationDeadline()
   let entity: ReturnType<typeof observeOwnedElectionQueue> | undefined
   let election: ReturnType<typeof observeOwnedElectionQueue> | undefined
   let instrumentation: ReturnType<typeof createElectionInstrumentation> | undefined
