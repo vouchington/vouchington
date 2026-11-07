@@ -3,10 +3,11 @@ import { write } from '@data-stores/psql'
 import { seedUuid } from '../seed-data/common.mts'
 import { POST_URL_CAPACITY_SEED as seed } from '../seed-data/post-related-url-capacity.mts'
 
-const PREFIX_ITEM_COUNT = 10_000
 // The maximum cap has to stay a prefix of this story. When LIMIT equals every
 // story row, the planner sorts a sequential scan instead of stopping on
-// idx_rss_feed_items__story_id__deleted_at__id.
+// idx_rss_feed_items__story_id__deleted_at__id. Insert these rows. Rewriting
+// seeded rss_feed_items changes published_at correlation, and the later
+// topic-metrics plan then reads every live item.
 const EXTRA_ITEM_COUNT = 30_000
 const EXTRA_ITEM_BATCH = 5_000
 const EXTRA_ITEM_ID_PREFIX = '019f0000-f800-7000-8000-'
@@ -18,8 +19,6 @@ export const NEWEST_INDEX = 'idx_relation__post__related__url__subject__newest'
 export const DEFAULT_LEASE = seedUuid(2, 'f7')
 export const MAXIMUM_LEASE = seedUuid(3, 'f7')
 
-let previousItems: Array<{ id: string; story_id: string | null }> = []
-
 export async function attachPrefixItems(): Promise<void> {
   await write(
     `/* prepareStoryPostUrlPrefix:story */
@@ -27,26 +26,6 @@ export async function attachPrefixItems(): Promise<void> {
      ON CONFLICT (id) DO NOTHING`,
     [STORY_ID],
   )
-  const { rows } = await write<{ id: string; story_id: string | null }>(
-    `/* prepareStoryPostUrlPrefix:items */
-     WITH chosen AS (
-       SELECT id, story_id
-       FROM rss_feed_items
-       WHERE deleted_at IS NULL AND story_id IS DISTINCT FROM $1::uuid
-       ORDER BY id
-       LIMIT $2
-     ), updated AS (
-       UPDATE rss_feed_items items
-       SET story_id = $1
-       FROM chosen
-       WHERE items.id = chosen.id
-       RETURNING chosen.id, chosen.story_id
-     )
-     SELECT id, story_id FROM updated`,
-    [STORY_ID, PREFIX_ITEM_COUNT],
-  )
-  previousItems = rows
-  assert.equal(rows.length, PREFIX_ITEM_COUNT)
   await insertExtraPrefixItems()
   await write(`/* prepareStoryPostUrlPrefix:analyze */ ANALYZE rss_feed_items`)
 }
@@ -92,7 +71,7 @@ async function insertExtraPrefixItems(): Promise<void> {
      WHERE story_id = $1 AND deleted_at IS NULL`,
     [STORY_ID],
   )
-  assert.equal(counts[0]?.count, PREFIX_ITEM_COUNT + EXTRA_ITEM_COUNT)
+  assert.equal(counts[0]?.count, EXTRA_ITEM_COUNT)
 }
 
 export async function leasePruneJobs(): Promise<void> {
@@ -108,21 +87,10 @@ export async function leasePruneJobs(): Promise<void> {
 }
 
 export async function restorePrefixItems(): Promise<void> {
-  if (previousItems.length > 0) {
-    await write(
-      `/* restoreStoryPostUrlPrefix:items */
-       UPDATE rss_feed_items items
-       SET story_id = input.story_id
-       FROM unnest($1::uuid[], $2::uuid[]) AS input(id, story_id)
-       WHERE items.id = input.id`,
-      [previousItems.map(row => row.id), previousItems.map(row => row.story_id)],
-    )
-    previousItems = []
-  }
   await removeExtraPrefixItems()
   await write(`/* restoreStoryPostUrlPrefix:story */ DELETE FROM stories WHERE id = $1`, [STORY_ID])
-  // Deleting the extra prefix rows leaves dead tuples. Vacuum the way the seed does so later
-  // plans see the restored rss_feed_items table.
+  // Inserts append past the seed heap. Vacuum drops those dead tuples so later plans see the
+  // seeded rss_feed_items table and its published_at correlation.
   await write(`/* restoreStoryPostUrlPrefix:analyze */ VACUUM (ANALYZE) rss_feed_items`)
 }
 
