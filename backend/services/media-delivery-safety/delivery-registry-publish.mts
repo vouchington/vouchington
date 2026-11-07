@@ -19,7 +19,7 @@ import {
   type MediaDeliveryClaim,
 } from './delivery-registry-claims.mts'
 import {
-  EDGE_PUBLISH_BATCH_SIZE,
+  getEdgePublishBatchSize,
   publishPersistedDeliveryRecord,
   publishPersistedDeliveryRecords,
 } from './delivery-registry-acknowledgement.mts'
@@ -63,10 +63,11 @@ export async function prepublishImagePlacementDenialBatch(
   )
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
   const recordIds = [...staged.values()].map(record => record.mediaDeliveryRegistryRecordId)
-  for (let offset = 0; offset < recordIds.length; offset += EDGE_PUBLISH_BATCH_SIZE) {
-    const batchIds = recordIds.slice(offset, offset + EDGE_PUBLISH_BATCH_SIZE)
+  const batchSize = getEdgePublishBatchSize()
+  for (let offset = 0; offset < recordIds.length; offset += batchSize) {
+    const batchIds = recordIds.slice(offset, offset + batchSize)
     // oxlint-disable-next-line no-await-in-loop -- each constant-size group is claimed, published and acknowledged inside its own lease
-    const claims = await claimMediaDeliveryProjections(query, batchIds) // no-mistakes-disable-line query-reached-per-item: groups of EDGE_PUBLISH_BATCH_SIZE (4) so each group's claim lease covers its own edge calls; the denial must reach the edge before the owner mutation, so it cannot queue; iterations = placements of one image or post / 4
+    const claims = await claimMediaDeliveryProjections(query, batchIds) // no-mistakes-disable-line query-reached-per-item: groups of edge_publish_batch_size (default 4, max 16) so each group's claim lease covers its own edge calls; the denial must reach the edge before the owner mutation, so it cannot queue; iterations = placements of one image or post / batch size
     if (claims.length !== batchIds.length) {
       const claimed = new Set(claims.map(claim => claim.media_delivery_registry_record_id))
       throw new Error(

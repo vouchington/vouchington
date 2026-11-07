@@ -6,19 +6,23 @@ import {
 import sql from 'sql-template-strings'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import type { MediaDeliveryClaim } from './delivery-registry-claims.mts'
+import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
 import { getMediaDeliveryPath } from './delivery-registry-types.mts'
 
 /** Most records claimed, published and acknowledged together: bounds concurrent edge calls and keeps the batch inside one claim lease. */
-export const EDGE_PUBLISH_BATCH_SIZE = 4
+export function getEdgePublishBatchSize(): number {
+  return getMediaDeliverySafetyWorkLimit('edge_publish_batch_size')
+}
 
-/** Publishes up to EDGE_PUBLISH_BATCH_SIZE claimed records at the edge, then writes their completion receipts in one statement. */
+/** Publishes up to the edge publish batch size claimed records at the edge, then writes their completion receipts in one statement. */
 export async function publishPersistedDeliveryRecords(
   records: readonly MediaDeliveryClaim[],
   query: QueryExecutor,
 ): Promise<void> {
   if (records.length === 0) return
-  if (records.length > EDGE_PUBLISH_BATCH_SIZE)
-    throw new Error(`Edge publication batch exceeds ${EDGE_PUBLISH_BATCH_SIZE} records`)
+  const batchSize = getEdgePublishBatchSize()
+  if (records.length > batchSize)
+    throw new Error(`Edge publication batch exceeds ${batchSize} records`)
   const ids = records.map(record => record.media_delivery_registry_record_id)
   const generations = records.map(record => record.generation)
   const leaseTokens = records.map(record => record.lease_token)
@@ -34,7 +38,7 @@ export async function publishPersistedDeliveryRecords(
   `)
   if (owned.length !== records.length)
     throw new Error(`Media delivery generation changed while publishing ${ids.join(',')}`)
-  // At most EDGE_PUBLISH_BATCH_SIZE records publish concurrently, so the slowest record bounds the lease.
+  // At most the edge publish batch size records publish concurrently, so the slowest record bounds the lease.
   await Promise.all(
     records.map(async record => {
       await putMediaDeliveryRegistryRecord({

@@ -20,6 +20,8 @@ export const backgroundWorkRegistryEntries7 = {
     maxValues: mediaDeliverySafetyWorkMaxValues,
     descriptions: {
       recovery_page_size: 'Recovery page size for media delivery safety processing.',
+      edge_publish_batch_size:
+        'Records claimed, published at the edge and acknowledged together within one claim lease.',
       registry_reconciliation_page_size:
         'Registry reconciliation page size for media delivery safety processing.',
     },
