@@ -5,6 +5,10 @@
 export const BASELINE_FINGERPRINTS = [
   // The bounded hostname candidate probes one small recent crawl partition.
   'crawler-boilerplate-candidates|0|searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId:force_custom_plan|force_custom_plan:crawls',
+  // Paired CI 42360011422: 1,000 item sources cover 39% of live feeds. The custom
+  // hash scan uses 179 buffers versus 1,518 for the observed generic PK lookup path;
+  // keep the 1,100-source / 2,600-feed row gates and the generic walk unchanged.
+  'deleted-parent-source-feeds|0|listLiveItemSourceFeedsPage:force_custom_plan|force_custom_plan:rss_feeds',
   // Engagement recipients are globally ranked by claimed-at fairness across eligible users.
   // Paired CI 42086515835 also selected these custom scans after the prompt fixture grew users.
   'engagement-follow-news-sources|0|getFollowNewsSourcesRecipients:force_custom_plan|force_custom_plan:relation__user__follow__rss_feed',
@@ -56,4 +60,10 @@ export const BASELINE_FINGERPRINTS = [
   'trending-topics|0|getTrendingTopics:force_generic_plan|force_generic_plan:topics',
   'user-metrics-batch|0|getUserMetricsByAnyBatch:force_generic_plan|force_generic_plan:relation__user__follow__rss_feed',
   'user-metrics-batch|0|getUserMetricsByAnyBatch:force_generic_plan|force_generic_plan:relation__user__follow__topic',
+  // Paired CI 42360011422: eligible joins inspect 4,050 review tuples once for
+  // the 2,000-review author fixture. Custom plans use 246/449 buffers versus
+  // 6,297/6,300 for the observed generic indexed plans.
+  // The same uncapped single-walk controls choose these scans; existing row gates stay.
+  'user-removed-community-posts-page|0|listUserRemovedPosts:force_custom_plan|force_custom_plan:community_post_reviews',
+  'user-removed-posts-page|0|listUserRemovedPosts:force_custom_plan|force_custom_plan:community_post_reviews',
 ] as const
