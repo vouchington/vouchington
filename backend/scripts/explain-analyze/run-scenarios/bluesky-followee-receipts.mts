@@ -46,6 +46,8 @@ async function seedFolloweeReceipts(): Promise<void> {
       HOLDER_DID,
     ],
   )
+  // Without statistics the planner assumes a tiny table and picks a bitmap scan plus Sort.
+  await write('/* seedExplainBlueskyReceipts:analyze */ ANALYZE bluesky_follow_records')
 }
 
 async function removeFolloweeReceipts(): Promise<void> {
