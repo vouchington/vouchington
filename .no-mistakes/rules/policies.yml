@@ -98,6 +98,7 @@
           file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
           callee: 'createRssHashtagItem',
         }
+      # Native-MV trending contract inserts one follow relation per feed of the literal [trendingId, hiddenId, secondaryId] list (trending-http.mts:88); no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/scripts/native-mv-contracts/trending-http.mts,
           callee: 'insertEntityRelation',
@@ -175,6 +176,7 @@
           file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
           callee: 'capturePage',
         }
+      # Disposable explain-analyze seed database, script-only: each loop advances fixed 500- or 1000-row chunks to its seed-size count, one multi-row INSERT per chunk, and literal lists run once (maintenance.mts loops the SEEDED_ROW_COUNT_TARGETS and ANALYZE_TARGETS constants; comments-and-recently-viewed upserts one row per generated view of the seed-size count). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/scripts/explain-analyze/seed-data/admin-emails.mts, callee: 'transaction' }
       - {
           file: backend/scripts/explain-analyze/seed-data/comments-and-recently-viewed.mts,
@@ -202,10 +204,12 @@
           file: backend/scripts/explain-analyze/seed-data/media-delivery-replay.mts,
           callee: 'rearmMediaDeliveryReplayPage',
         }
+      # Seed transaction runs two fixed statements (seed-data/media-delivery-replay.mts:20,26); no per-item loop at the flagged calls. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/scripts/explain-analyze/seed-data/media-delivery-replay.mts,
           callee: 'transaction',
         }
+      # Disposable explain-analyze seed database, script-only: each loop advances fixed 500- or 1000-row chunks to its seed-size count, one multi-row INSERT per chunk, and literal lists run once. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed. MEMBERSHIP_PRODUCTS is a closed list; later seed files follow the same shape.
       - { file: backend/scripts/explain-analyze/seed-data/memberships.mts, callee: 'transaction' }
       - { file: backend/scripts/explain-analyze/seed-data/notifications.mts, callee: 'query' }
       - { file: backend/scripts/explain-analyze/seed-data/point-valuations.mts, callee: 'query' }
@@ -229,21 +233,26 @@
           callee: 'query',
         }
       - { file: backend/scripts/explain-analyze/seed-data/votes-and-aliases.mts, callee: 'query' }
-      # Dev-only login helper: loops the requested extraRoles, a short fixed persona role list, for one locally minted user.
+      # Dev-only login helper: loops the requested extraRoles, a short fixed persona role list, for one locally minted user (login-as/run.mts:96). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }
+      # Dev-only login helper: mints one deep link per persona of the closed ALL_PERSONAS list (login-as/run.mts:121). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/scripts/login-as/run.mts, callee: 'mintDeepLink' }
+      # FIX (P2): per-user lifecycle lock query in an ordered loop (recovery.mts:45); batch as one `SELECT ... FROM unnest($ids) ORDER BY` lock statement (pattern in post-publication/capture-posts.mts). Remove this entry with the fix.
       - {
           file: backend/services/account-data-requests/recovery.mts,
           callee: 'lockActiveDataRequestUser',
         }
+      # Closed set: one export cursor per user bookmark relation of the static entityRelationMetadatum list (stream-bookmarks.mts:18); each cursor streams its own table. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/account-data-requests/stream-bookmarks.mts,
           callee: 'createAsyncGeneratorFromCursor',
         }
+      # Closed set: one export cursor per non-bookmark relation of the static entityRelationMetadatum list (stream-entity-relations.mts:18); each cursor streams its own table. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/account-data-requests/stream-entity-relations.mts,
           callee: 'createAsyncGeneratorFromCursor',
         }
+      # Promise.all over the extension names of one admin topic row, each branch a different callee (process-topic-row-relations.mts:15-20); no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed.
       - {
           file: backend/services/admin-imports/process-topic-row-relations.mts,
           callee: 'replaceSpendingCategoryAttributes',
@@ -252,16 +261,20 @@
           file: backend/services/admin-imports/process-topic-row-relations.mts,
           callee: 'updateRetailerAttributes',
         }
+      # One upsert per parent topic of a single admin CSV row (parentTopics, process-topic-row-relations.mts:39), run by an admin import row by row. UNVERIFIED: no constant cap on the parent topic count per row.
       - {
           file: backend/services/admin-imports/process-topic-row-relations.mts,
           callee: 'upsertEntityRelation',
         }
+      # Operator-run seed over the rows of the repository seed CSVs (seed-csvs.mts:68) and then the retry rows (seed-csvs.mts:88), sequential on purpose: pass 1 must create each topic before child rows resolve their within-file parents. UNVERIFIED: row count is bounded only by the CSV files.
       - { file: backend/services/admin-imports/seed-csvs.mts, callee: 'processTopicRow' }
       # Ordered article writes retain their service locks, transactions, and per-file results.
       - { file: backend/services/articles/sync-process.mts, callee: 'createPost' }
       - { file: backend/services/articles/sync-process.mts, callee: 'tagPostWithTopics' }
       - { file: backend/services/articles/sync-process.mts, callee: 'updatePost' }
+      # Chunk loop: advances batchSize markdown files per iteration (sync.mts:50), one prepared batch per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/articles/sync.mts, callee: 'processPreparedArticles' }
+      # Per stale batch (stale-cleanup.mts:26): the Bedrock provider stop and lock cleanup differ per batch and run serially so one quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in bedrock-embeddings-batch/orchestrator/find-stale.mts:13.
       - {
           file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'cleanupBatchLocks',
@@ -270,20 +283,25 @@
           file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'processBatch',
         }
+      # One remote Bluesky delete per follow receipt (disconnect.mts:36), an external call that cannot be one statement. UNVERIFIED: receipts are uncapped here; the P3 receipts-cap PR (baseline/nm-p3 bluesky) adds the cap.
       - {
           file: backend/services/bluesky-follows/disconnect.mts,
           callee: 'deleteBlueskyFollowReceipt',
         }
+      # Closed set: allRelations is the static user is_bookmark subset of entityRelationMetadatum (bloom-filter.mts:80); each relation has its own table, streamed in BOOKMARK_BLOOM_BATCH_SIZE batches. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/bookmarks/bloom-filter.mts, callee: 'bookmarkBloomBatchesFromDb' }
       - {
           file: backend/services/bookmarks/bloom-filter.mts,
           callee: 'getUserBookmarkRelationCount',
         }
+      # Closed set: one query per narrowed bookmark relation plan of the static entityRelationMetadatum list (get.mts:77); each plan reads its own table with a bounded object id list. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/bookmarks/get.mts, callee: 'queryBookmarksForRelation' }
+      # Chunk loop: advances EMBEDDED_FIRST_COMMUNITY_POSTS_CHUNK_SIZE post ids per iteration (ban-evasion-embedding-enqueues.mts:25), one enqueue per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/posts/ban-evasion-embedding-enqueues.mts,
           callee: 'enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk',
         }
+      # One placement sync per changed image surface of a single community update (update-transaction.mts:40), serial inside the owner lock because admission was declared as one owner batch. UNVERIFIED: surfaces are a small closed set but no constant cap was checked.
       - {
           file: backend/services/communities/update-transaction.mts,
           callee: 'syncImageSurfacePlacement',
@@ -293,22 +311,27 @@
           file: backend/services/copyright-notices/copyright-email-decision-actions.mts,
           callee: 'resolveCopyrightImagePlacement',
         }
+      # Copyright saga: one durable restore replay per intent id of the court-hold request (court-hold-restore-replay.mts:40); P2b copyright layer (baseline/nm-p2b-copyright) reworks this entry. UNVERIFIED: cap on intentIds.
       - {
           file: backend/services/copyright-notices/court-hold-restore-replay.mts,
           callee: 'replayOriginalRestore',
         }
+      # Copyright saga: one durable DSA statement submission per restriction of a sweep page (dsa-statement-submission-sweep.mts:59); P2b copyright layer reworks this entry. UNVERIFIED: page cap.
       - {
           file: backend/services/copyright-notices/dsa-statement-submission-sweep.mts,
           callee: 'materializeDsaStatementSubmission',
         }
+      # Copyright saga: one restore intent per reversed restriction (form-reviews-reversal.mts:75); P2b copyright layer reworks this entry. UNVERIFIED: cap on restrictions.
       - {
           file: backend/services/copyright-notices/form-reviews-reversal.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
+      # Copyright saga: one restore intent per eligible candidate of the schedule page (statutory-restoration-schedule.mts:75); P2b copyright layer reworks this entry. UNVERIFIED: page cap.
       - {
           file: backend/services/copyright-notices/statutory-restoration-schedule.mts,
           callee: 'createEligibleCopyrightRestoreIntent',
         }
+      # Copyright saga: one restore intent and misuse event per reversal restriction (submission-review-appeal-effects.mts:117); P2b copyright layer reworks these entries. UNVERIFIED: cap on reversalRestrictionIds.
       - {
           file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
@@ -317,42 +340,52 @@
           file: backend/services/copyright-notices/submission-review-appeal-effects.mts,
           callee: 'recordClaimantMisuseEvent',
         }
+      # Copyright saga: one restore intent per restriction of the redress decision (territorial-redress.mts:128); P2b copyright layer reworks this entry. UNVERIFIED: cap on restrictions.
       - {
           file: backend/services/copyright-notices/territorial-redress.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
+      # Capped page loop: `while (count + probes < maxRows)` (dispatch-crawl-hostnames.mts:25), one dispatch page per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/crawls/dispatch-crawl-hostnames.mts,
           callee: 'dispatchHostnamePage',
         }
+      # Per soft-deleted user of one LIMIT batchSize page, stopping when the remainingRows budget is spent (cleanup-batches.mts:64-80); each user commits independently so one blocked user cannot stall the page.
       - {
           file: backend/services/data-retention/cleanup-batches.mts,
           callee: 'cleanupSoftDeletedUser',
         }
+      # Closed set: one cursor transaction per key of the ROOT_FAMILIES constant (cleanup-retained-identities.mts:23); page size is validated to 1..1000. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/data-retention/cleanup-retained-identities.mts,
           callee: 'cleanupRetainedIdentityFamily',
         }
+      # Closed set: one cursor transaction per elected relation table of the static relation metadata (cleanup-retained-relation-identities.mts:61); page size is validated to 1..1000. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/data-retention/cleanup-retained-relation-identities.mts,
           callee: 'cleanupRelationFamily',
         }
+      # Capped page loop: `while (batchesRun < maxBatches)` (cleanup-orphaned-oauth-accounts.mts:35), one DELETE batch per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/data-retention/cleanup-orphaned-oauth-accounts.mts,
           callee: 'deleteOrphanedOAuthAccountBatch',
         }
+      # Capped page loop: `for (batch < maxBatches)` (cleanup-soft-deleted-users.mts:16), one batch per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/data-retention/cleanup-soft-deleted-users.mts,
           callee: 'cleanupSoftDeletedUserBatch',
         }
+      # Chunk loop over the id chunks of one vote-stats refresh (vote-stats-batch.mts:41), one refresh statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/elections-votes/entity-relation/vote-stats-batch.mts,
           callee: 'refreshChunkAndCapture',
         }
+      # FIX (P2): called from the same bare `while (true)` keyset loop as the line-120 entry (post-topic-publication.mts:118); add the page cap and remove this entry with it.
       - {
           file: backend/services/entity-relations/post-topic-publication.mts,
           callee: 'recordRssFeedDiscoverabilityChanges',
         }
+      # Storage-provider cleanup per staged upload: slices of STAGED_SOURCE_CLEANUP_CONCURRENCY from a page capped at cleanup_batch_size (getImagesWorkLimit); each takes its own advisory-lock session so it cannot be one statement. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed for the slice loop.
       - {
           file: backend/services/images/cleanup-abandoned-uploads.mts,
           callee: 'cleanupStagedUploadSource',
@@ -370,10 +403,12 @@
           file: backend/services/media-delivery-safety/delivery-registry-recovery.mts,
           callee: 'reconcileDeliveryRepairMarker',
         }
+      # Per delivery registry record of one staging page (delivery-registry-staging-page.mts:147). UNVERIFIED: page cap; the P2b delivery layer owns this file.
       - {
           file: backend/services/media-delivery-safety/delivery-registry-staging-page.mts,
           callee: 'stageCurrentDeliveryRecord',
         }
+      # Per repair marker of one page (delivery-repair-markers.mts:46) reconciled with its registry row. UNVERIFIED: page cap; the P2b delivery layer owns this file.
       - {
           file: backend/services/media-delivery-safety/delivery-repair-markers.mts,
           callee: 'reconcileDeliveryRepairMarker',
@@ -383,6 +418,7 @@
           file: backend/services/media-delivery-safety/index.mts,
           callee: 'prepublishImagePlacementDenial',
         }
+      # Dependent chain: each token alias is ensured after its linked predecessor in order (lineage.mts:150), and the root lookup depth is capped by MAX_LINKED_TOKEN_DEPTH (lineage.mts:38); no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed.
       - {
           file: backend/services/memberships/google/lineage.mts,
           callee: 'ensureGooglePlayTokenAlias',
@@ -391,11 +427,12 @@
           file: backend/services/memberships/google/lineage.mts,
           callee: 'getKnownGooglePlayCanonicalRoot',
         }
-      # Rare error path: one UPDATE per malformed evidence row of a single recovery page, bounded by google_cursor_page_size (getMembershipWorkLimit, notification-recovery.mts:29).
+      # FIX (P2): batch as one UPDATE … FROM unnest($ids); it runs one identical UPDATE per malformed evidence row (notification-recovery.mts:65). Remove this entry with the fix.
       - {
           file: backend/services/memberships/google/notification-recovery.mts,
           callee: 'rejectMalformedRecoveryEvidence',
         }
+      # FIX (P2): per-user locked expiry transaction (expire-elapsed-batch.mts:60); the P2b memberships layer reworks it together with the expire-elapsed entries below.
       - {
           file: backend/services/memberships/grants/expire-elapsed-batch.mts,
           callee: 'expireElapsedMembershipsForUserInTransaction',
@@ -419,31 +456,39 @@
           file: backend/services/memberships/grants/resume-after-direct-termination.mts,
           callee: 'recordMembershipChange',
         }
+      # Failure path over the pending reversal operations plus the cancellation of one purchase (execute.mts:50), a handful per reversal. UNVERIFIED: no constant cap on pending operations.
       - {
           file: backend/services/memberships/ineligible-stripe-purchase-reversal/execute.mts,
           callee: 'failIneligiblePurchaseReversal',
         }
+      # One lookup per invoice id of a single Stripe dispute (reconcile-won-stripe-dispute.mts:41), a small list from the webhook payload. UNVERIFIED: no constant cap on invoiceIds.
       - {
           file: backend/services/memberships/reconcile-won-stripe-dispute.mts,
           callee: 'getIneligiblePurchaseReversalCase',
         }
+      # Closed set: one publish per descriptor of the CATALOG constant (stripe-catalog.mts:88). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/memberships/stripe-catalog.mts,
           callee: 'publishStripeCatalogMapping',
         }
+      # Line 91 is a heterogeneous Promise.all of distinct calls (no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed); line 172 resolves one case per distinct case id of a single resolve call. UNVERIFIED: no constant cap on caseIds at line 172.
       - { file: backend/services/moderation-reports/resolve.mts, callee: 'maybeResolveCase' }
+      # Loop is closed by the recipient temp table, which is created with LIMIT pageSize (reconcile-batches.mts:73), so at most pageSize/batchSize iterations; each iteration mutates session temp tables before the cursor advances. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/notifications/reconcile-batches.mts,
           callee: 'createNextRecipientNotificationBatch',
         }
+      # Loop is closed by the created-notification temp table filled from one pageSize recipient page, so at most pageSize/batchSize iterations; each callback applies backpressure before the keyset cursor advances. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/notifications/reconcile-temp-tables.mts,
           callee: 'dispatchNextCreatedNotificationBatch',
         }
+      # Closed set: one DELETE per retention table inside a loop capped by `remaining > 0 && deleted < budget` (retention.mts:60). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/oauth-authorization-server/retention.mts,
           callee: 'deleteExpiredRows',
         }
+      # FIX (P2): finalize loop is a bare `while (true)` (friends-persistence.mts:32) that ends only when no stale friend remains, with no constant page cap; add a maxBatches-style cap. persistFacebookFriendBatch is a fixed FRIEND_MUTATION_BATCH_SIZE chunk loop (no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed). Remove the finalize entries with the fix.
       - {
           file: backend/services/oauth-facebook/friends-persistence.mts,
           callee: 'deleteFacebookFriendBatch',
@@ -460,7 +505,9 @@
           file: backend/services/oauth-facebook/friends-persistence.mts,
           callee: 'persistFacebookFriendBatch',
         }
+      # One persist transaction per Facebook friends page (friends.mts:78); the page size is fixed by the provider request and the page count by the provider cursor. UNVERIFIED: no constant cap on provider pages.
       - { file: backend/services/oauth-facebook/friends.mts, callee: 'persistFacebookFriendPage' }
+      # FIX (P2): finalize loop is a bare `while (true)` (friends-persistence.mts:28) that ends only when no stale friend remains, with no constant page cap; add a maxBatches-style cap. persistGithubFriendBatch is a fixed FRIEND_MUTATION_BATCH_SIZE chunk loop (no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed). Remove the finalize entries with the fix.
       - {
           file: backend/services/oauth-github/friends-persistence.mts,
           callee: 'deleteGithubFriendBatch',
@@ -477,24 +524,31 @@
           file: backend/services/oauth-github/friends-persistence.mts,
           callee: 'persistGithubFriendBatch',
         }
+      # One persist transaction per GitHub following page (friends.mts:73); the page count follows the provider hasNextPage flag. UNVERIFIED: no constant cap on provider pages.
       - { file: backend/services/oauth-github/friends.mts, callee: 'persistGithubFriendPage' }
+      # FIX (P2): finalize loop is a bare `while (true)` (friend-pages.mts:27) that ends only when no stale friend remains, with no constant page cap; add a maxBatches-style cap. persistXFriendBatch is a fixed FRIEND_MUTATION_BATCH_SIZE chunk loop (no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed). Remove the finalize entries with the fix.
       - { file: backend/services/oauth-x/friend-pages.mts, callee: 'deleteXFriendBatch' }
       - { file: backend/services/oauth-x/friend-pages.mts, callee: 'getStaleXFriendIds' }
       - { file: backend/services/oauth-x/friend-pages.mts, callee: 'markXFriendSyncComplete' }
       - { file: backend/services/oauth-x/friend-pages.mts, callee: 'persistXFriendBatch' }
+      # One persist transaction per X following page (max_results 1000); the page count follows the provider pagination token. UNVERIFIED: no constant cap on provider pages.
       - { file: backend/services/oauth-x/friends.mts, callee: 'persistXFriendPage' }
+      # Per flagged image row of one pending quarantine page (delete-flagged.mts:89): a storage transfer that must not run concurrently for the same source image. UNVERIFIED: page cap set by the caller.
       - {
           file: backend/services/openai-moderation/delete-flagged.mts,
           callee: 'deleteFlaggedImage',
         }
+      # Ordered lock loops advance POST_PUBLICATION_CAPTURE_BATCH_SIZE feed ids per iteration (capture-rss-feeds.mts:23,52), one unnest ORDER BY statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/post-publication/capture-rss-feeds.mts,
           callee: 'lockPostPublicationRssFeedScopes',
         }
+      # Ordered lock loop advances POST_PUBLICATION_CAPTURE_BATCH_SIZE alias ids per iteration (capture-topic-alias.mts:16), one unnest ORDER BY statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/post-publication/capture-topic-alias.mts,
           callee: 'lockTopicAliasPublicationScopes',
         }
+      # Chunk loops over orderedCategoryChunks (categories-chunks.mts:41,115), one statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/rss-feed-items/categories-chunks.mts,
           callee: 'insertMissingCategoriesChunk',
@@ -503,6 +557,7 @@
           file: backend/services/rss-feed-items/categories-chunks.mts,
           callee: 'updateMatchedCategoriesChunk',
         }
+      # Chunk loops over categorySqlBatches (categories.mts:66,149), one SELECT per batch. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/rss-feed-items/categories.mts, callee: 'readCategoryDataChunk' }
       # KEEP (pg-schema ruling): no lock is held across rows. Each row is isolated on purpose: its own
       # poison-snapshot isolation (one bad snapshot must not fail the page) and its own change_id enqueue,
@@ -517,16 +572,21 @@
           file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
           callee: 'upsertRssFeedItemCategories',
         }
+      # Closed set: the literal ['topic', 'topic_alias'] kinds (reconcile-category-votes.mts:65). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/rss-feed-items/reconcile-category-votes.mts,
           callee: 'retractUnsupportedCategorizerVotesForKind',
         }
+      # Chunk loop over urlChunks (upsert-prepare.mts:46), one addUrls call per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/rss-feed-items/upsert-prepare.mts, callee: 'addUrls' }
+      # Chunk loop of RSS_FEED_ITEM_SQL_BATCH_SIZE items (upsert-write-locks.mts:48), one statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/rss-feed-items/upsert-write-locks.mts,
           callee: 'upsertRssFeedItemIdentities',
         }
+      # Chunk loop of RSS_FEED_ITEM_SQL_BATCH_SIZE items (upsert.mts:120), one statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/rss-feed-items/upsert.mts, callee: 'upsertRssFeedItemContent' }
+      # Chunk loop of RSS_FEED_CATEGORY_SQL_BATCH_SIZE categories (categories.mts:38), one statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/rss-feeds/categories.mts, callee: 'upsertRssFeedCategoriesChunk' }
       # Best-effort lease per refund operation recorded for this one event; the operation ids derive from the same single refund page as recordMembershipRefundEvent (event-charge-handlers.mts:79).
       - {
@@ -538,39 +598,47 @@
           file: backend/services/stripe/event-charge-handlers.mts,
           callee: 'recordMembershipRefundEvent',
         }
+      # One placement sync per image reference of a single topic update (topics/update.mts:102), serial inside the owner lock. UNVERIFIED: no constant cap on references.
       - { file: backend/services/topics/update.mts, callee: 'syncImageSurfacePlacement' }
       # Each pending request is a different follower user with their own relation limits and authorization, so it cannot share one batch; requests are one LIMIT batchSize page (auto-follow-on-approval.mts:38) followed with chunked concurrency.
       - {
           file: backend/services/user-import-export/auto-follow-on-approval.mts,
           callee: 'followRequest',
         }
+      # Per new imported topic input (import-topics.mts:59): each admission checks contribution limits and attributes its own result, so it stays ordered. UNVERIFIED: no constant cap on import inputs.
       - {
           file: backend/services/user-import-export/import-topics.mts,
           callee: 'admitImportedTopicRecommendation',
         }
+      # Closed set: one call per relation table with changes, sorted (delete-entity-relation-votes.mts:160). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/users/delete-entity-relation-votes.mts,
           callee: 'recordPostTopicRelationPublicationChanges',
         }
+      # Closed set: deleteOwnedRows loops the VOTE_SCHEMA_CONFIGS constant (delete-phases.mts:77) and deleteUserSubjectRelationRows loops userRelationTables (delete-phases.mts:107), both bounded per page. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/users/delete-phases.mts, callee: 'deleteOwnedRows' }
       - { file: backend/services/users/delete-phases.mts, callee: 'deleteUserSubjectRelationRows' }
+      # Closed set: one call per relation table, sorted (record-deleted-relation-impacts.mts:34). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/users/record-deleted-relation-impacts.mts,
           callee: 'recordRelationTableImpacts',
         }
-      # Rare error path: three effects per run that exhausted CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND, a subset of one listIncompleteClassifierRuns page capped by discovery_page_size (classifier-runs/run-discovery.mts:50).
+      # FIX (P2): giveUpSweepRun runs three effects per exhausted run (job-exists check, one identical abandonClassifierRunSweep UPDATE, one alarm) and none differ per run beyond the id; batch the job check, run one UPDATE … FROM unnest($ids) RETURNING id, and alarm from the returned rows. The set is at most one listIncompleteClassifierRuns page, capped by discovery_page_size (classifier-runs/run-discovery.mts:50). Remove this entry with the fix.
       - {
           file: backend/workers/ai-agents/processors/process-reconcile-classifier-runs.mts,
           callee: 'giveUpSweepRun',
         }
+      # Capped page loop: `for (batch < maxBatches)` (api-key-expiry.mts:22), one keyset page per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/workers/email-digests/processors/api-key-expiry.mts,
           callee: 'getApiKeysDueForExpiryReminder',
         }
+      # FIX (P2): per URL id of one post, a URL read, cache invalidate, crawler lookup and enqueue (post-created-recovery.mts:40); batch the reads and enqueues per post.
       - {
           file: backend/workers/entity-listeners/processors/post-created-recovery.mts,
           callee: 'recoverUrlEffect',
         }
+      # Capped page loop: `for (batch < maxBatches)` (renewal-notification-check.mts:16), one keyset page per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/workers/memberships/processors/renewal-notification-check.mts,
           callee: 'getUsersApproachingRenewalWithPriceIncrease',
@@ -585,6 +653,7 @@
           file: backend/workers/openai-moderation/processors/openai-moderation-omni-single.mts,
           callee: 'checkPostClearance',
         }
+      # Playwright test helper: cleans up the few discussion posts the test created (discussionIds.map, tag-voting-helpers.mts:25); test-only, not production code.
       - { file: playwright/tests/tags/tag-voting-helpers.mts, callee: 'deleteTestPost' }
       - {
           file: playwright/tests/tags/tag-voting-helpers.mts,
