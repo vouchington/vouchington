@@ -174,7 +174,7 @@ describe('community membership role locks', () => {
     expect(moderatorMembership?.role).toBe('member')
   })
 
-  it('liftCommunityBan rechecks moderator authority after the actor lock releases', async () => {
+  it('liftCommunityBan rejects a moderator demoted before the lift statement', async () => {
     const { target, community } = await createOwnerAndTarget('member')
     const moderator = await createTestUser()
     await insertTestCommunityMember({
@@ -182,42 +182,15 @@ describe('community membership role locks', () => {
       userId: moderator.id,
       role: 'moderator',
     })
-    await insertTestCommunityBan({
+    const ban = await insertTestCommunityBan({
       communityId: community.id,
       userId: target.id,
       bannedById: moderator.id,
     })
-    const ready = Promise.withResolvers<void>()
-    const demote = Promise.withResolvers<void>()
-    const holderProcessId = Promise.withResolvers<number>()
-    const holder = holdModeratorLockUntilDemoted()
-
-    async function holdModeratorLockUntilDemoted(): Promise<void> {
-      await using query = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
-      const options = { query }
-      await lockCommunityUser(community.id, moderator.id, options)
-      ready.resolve()
-      await demote.promise
-      await updateTestCommunityMemberRole(community.id, moderator.id, 'member', options)
-
-      await query.commit()
-    }
-    await ready.promise
-
-    const liftRejection = await withHeldCommunityUserWait({
-      holderProcessId: await holderProcessId.promise,
-      communityId: community.id,
-      userId: moderator.id,
-      releaseHolder: async () => {
-        demote.resolve()
-        await holder
-      },
-      start: () =>
-        liftCommunityBan(moderator, community.id, target.id).catch((err: unknown) => err),
+    await updateTestCommunityMemberRole(community.id, moderator.id, 'member')
+    await expect(liftCommunityBan(moderator, community.id, ban.id)).rejects.toMatchObject({
+      status: 403,
     })
-
-    expect(liftRejection).toMatchObject({ status: 403 })
     const activeBan = await getActiveCommunityBan(community.id, target.id)
     expect(activeBan).not.toBeNull()
     const moderatorMembership = await getCommunityMember(community.id, moderator.id)

@@ -573,3 +573,7 @@ change makes no new native UI parity claim.
 ## Personalized RSS horizon and follow union
 
 Personalized RSS returns the recent publication horizon, including when callers request a longer time range. The existing narrower selection remains narrower. RSS `all` and `any` both match followed sources or followed topics; a direct item matching both appears once. The response shape and last-returned delivery cursor stay unchanged. Share deliveries keep their independent identities, and their target items must also be recent. Native callers currently use the default horizon; [the client follow-up](https://github.com/vouchington/vouchington-clients/issues/546) owns contract verification and any client-facing explanation.
+
+## Community ban moderation
+
+Community ban history uses paged summaries; moderators open a ban to read its reason and lift it individually. The explicit confirmed lift-all action can refuse protected issuers or a bounded batch, in which case permitted bans can be lifted individually. REST and MCP share these operations and outcomes. Native adoption is tracked in [clients #555](https://github.com/vouchington/vouchington-clients/issues/555); the producer lands first and this change makes no native UI parity claim.

@@ -7,7 +7,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../../types.mts'
-import { liftCommunityBan } from '../lift.mts'
+import { liftCommunityBan, liftAllCommunityBans } from '../lift.mts'
 import { getActiveCommunityBan, assertNotBanned, getCommunityBanById } from '../get.mts'
 import { searchCommunityBans } from '../search.mts'
 import { encodeCursor } from '@modules/pagination'
@@ -111,13 +111,13 @@ describe('liftCommunityBan', () => {
 
   it('owner can lift a ban', async () => {
     const user = await createTestUser()
-    await insertTestCommunityBan({
+    const inserted = await insertTestCommunityBan({
       communityId: community.id,
       userId: user.id,
       bannedById: owner.id,
     })
 
-    await liftCommunityBan(owner, community.id, user.id)
+    await liftCommunityBan(owner, community.id, inserted.id)
     const ban = await getActiveCommunityBan(community.id, user.id)
     expect(ban).toBeNull()
   })
@@ -138,7 +138,7 @@ describe('liftCommunityBan', () => {
       reason: 'current',
     })
 
-    await liftCommunityBan(owner, community.id, user.id)
+    await liftCommunityBan(owner, community.id, active.id)
 
     const { results } = await searchCommunityBans(community.id)
     const expiredRow = results.find(b => b.id === expired.id)
@@ -149,26 +149,26 @@ describe('liftCommunityBan', () => {
 
   it('moderator can lift a ban issued by a moderator', async () => {
     const user = await createTestUser()
-    await insertTestCommunityBan({
+    const inserted = await insertTestCommunityBan({
       communityId: community.id,
       userId: user.id,
       bannedById: moderator.id,
     })
 
-    await liftCommunityBan(moderator, community.id, user.id)
+    await liftCommunityBan(moderator, community.id, inserted.id)
     const ban = await getActiveCommunityBan(community.id, user.id)
     expect(ban).toBeNull()
   })
 
   it('moderator cannot lift a ban issued by the owner', async () => {
     const user = await createTestUser()
-    await insertTestCommunityBan({
+    const inserted = await insertTestCommunityBan({
       communityId: community.id,
       userId: user.id,
       bannedById: owner.id,
     })
 
-    await expect(liftCommunityBan(moderator, community.id, user.id)).rejects.toMatchObject({
+    await expect(liftCommunityBan(moderator, community.id, inserted.id)).rejects.toMatchObject({
       status: 403,
     })
   })
@@ -182,14 +182,14 @@ describe('liftCommunityBan', () => {
 
   it('second lift throws 404', async () => {
     const user = await createTestUser()
-    await insertTestCommunityBan({
+    const inserted = await insertTestCommunityBan({
       communityId: community.id,
       userId: user.id,
       bannedById: owner.id,
     })
 
-    await liftCommunityBan(owner, community.id, user.id)
-    await expect(liftCommunityBan(owner, community.id, user.id)).rejects.toMatchObject({
+    await liftCommunityBan(owner, community.id, inserted.id)
+    await expect(liftCommunityBan(owner, community.id, inserted.id)).rejects.toMatchObject({
       status: 404,
     })
   })
@@ -207,7 +207,7 @@ describe('liftCommunityBan', () => {
       bannedById: owner.id,
     })
 
-    await liftCommunityBan(owner, community.id, user.id)
+    await liftAllCommunityBans(owner, community.id, user.id)
 
     const ban = await getActiveCommunityBan(community.id, user.id)
     expect(ban).toBeNull()
@@ -216,13 +216,13 @@ describe('liftCommunityBan', () => {
   it('non-member cannot lift a ban', async () => {
     const user = await createTestUser()
     const nonMember = await createTestUser()
-    await insertTestCommunityBan({
+    const inserted = await insertTestCommunityBan({
       communityId: community.id,
       userId: user.id,
       bannedById: owner.id,
     })
 
-    await expect(liftCommunityBan(nonMember, community.id, user.id)).rejects.toMatchObject({
+    await expect(liftCommunityBan(nonMember, community.id, inserted.id)).rejects.toMatchObject({
       status: 403,
     })
   })

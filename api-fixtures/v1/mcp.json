@@ -19857,7 +19857,7 @@
           "tool": {
             "name": "read_community_moderation",
             "title": "read community moderation",
-            "description": "list_applications: GET /api/v1/communities/:idOrSlug/applications\nread_application: GET /api/v1/communities/:idOrSlug/applications/:id\nlist_automod_actions: GET /api/v1/communities/:idOrSlug/automod/recent-actions\nlist_bans: GET /api/v1/communities/:idOrSlug/bans\nlist_invites: GET /api/v1/communities/:idOrSlug/invites\nread_moderation_analytics: GET /api/v1/communities/:idOrSlug/moderation-analytics\nread_moderator_stats: GET /api/v1/communities/:idOrSlug/moderator-stats\nread_moderator_vacation: GET /api/v1/communities/:idOrSlug/moderator-vacation\nread_modlog: GET /api/v1/communities/:idOrSlug/modlog\nlist_pending_posts: GET /api/v1/communities/:idOrSlug/posts/pending\nlist_pending_reports: GET /api/v1/communities/:idOrSlug/reports/pending\nlist_restrictions: GET /api/v1/communities/:idOrSlug/restrictions\nlist_saved_replies: GET /api/v1/communities/:idOrSlug/saved-replies",
+            "description": "list_applications: GET /api/v1/communities/:idOrSlug/applications\nread_application: GET /api/v1/communities/:idOrSlug/applications/:id\nlist_automod_actions: GET /api/v1/communities/:idOrSlug/automod/recent-actions\nlist_bans: GET /api/v1/communities/:idOrSlug/bans\nlist_active_bans: GET /api/v1/communities/:idOrSlug/bans/users/:userId\nread_ban: GET /api/v1/communities/:idOrSlug/bans/:banId\nlist_invites: GET /api/v1/communities/:idOrSlug/invites\nread_moderation_analytics: GET /api/v1/communities/:idOrSlug/moderation-analytics\nread_moderator_stats: GET /api/v1/communities/:idOrSlug/moderator-stats\nread_moderator_vacation: GET /api/v1/communities/:idOrSlug/moderator-vacation\nread_modlog: GET /api/v1/communities/:idOrSlug/modlog\nlist_pending_posts: GET /api/v1/communities/:idOrSlug/posts/pending\nlist_pending_reports: GET /api/v1/communities/:idOrSlug/reports/pending\nlist_restrictions: GET /api/v1/communities/:idOrSlug/restrictions\nlist_saved_replies: GET /api/v1/communities/:idOrSlug/saved-replies",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -19906,10 +19906,7 @@
                           "$ref": "#/$defs/S2"
                         },
                         "id": {
-                          "type": "string",
-                          "format": "uuid",
-                          "minLength": 36,
-                          "maxLength": 36
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["community", "id"],
@@ -19979,6 +19976,61 @@
                     },
                     "arguments": {
                       "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["list_active_bans"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "userId": {
+                          "type": "string",
+                          "description": "User id or username"
+                        },
+                        "after": {
+                          "type": "string"
+                        },
+                        "limit": {
+                          "maximum": 100,
+                          "minimum": 1,
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["community", "userId"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["read_ban"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "banId": {
+                          "$ref": "#/$defs/S4"
+                        }
+                      },
+                      "required": ["community", "banId"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -20297,6 +20349,12 @@
                     "blog_post"
                   ],
                   "type": "string"
+                },
+                "S4": {
+                  "type": "string",
+                  "format": "uuid",
+                  "minLength": 36,
+                  "maxLength": 36
                 }
               }
             },
@@ -20602,12 +20660,11 @@
                   "additionalProperties": false
                 },
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "results": {
-                      "type": "array",
                       "items": {
-                        "type": "object",
+                        "additionalProperties": false,
                         "properties": {
                           "__entity_type": {
                             "const": "community_ban"
@@ -20617,8 +20674,9 @@
                           }
                         },
                         "required": ["__entity_type", "id"],
-                        "additionalProperties": false
-                      }
+                        "type": "object"
+                      },
+                      "type": "array"
                     },
                     "page_info": {
                       "$ref": "#/$defs/S5"
@@ -20626,7 +20684,7 @@
                     "community_bans": {
                       "type": "object",
                       "additionalProperties": {
-                        "type": "object",
+                        "additionalProperties": false,
                         "properties": {
                           "id": {
                             "type": "string"
@@ -20638,13 +20696,10 @@
                             "type": "string"
                           },
                           "banned_by_id": {
-                            "$ref": "#/$defs/S3"
-                          },
-                          "reason": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S2"
                           },
                           "expires_at": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S2"
                           },
                           "created_at": {
                             "type": "string"
@@ -20653,10 +20708,10 @@
                             "type": "string"
                           },
                           "lifted_at": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S2"
                           },
                           "lifted_by_id": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S2"
                           }
                         },
                         "required": [
@@ -20664,14 +20719,13 @@
                           "community_id",
                           "user_id",
                           "banned_by_id",
-                          "reason",
                           "expires_at",
                           "created_at",
                           "updated_at",
                           "lifted_at",
                           "lifted_by_id"
                         ],
-                        "additionalProperties": false
+                        "type": "object"
                       }
                     },
                     "users": {
@@ -20679,7 +20733,62 @@
                     }
                   },
                   "required": ["results", "page_info", "community_bans", "users"],
-                  "additionalProperties": false
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "community_ban": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "community_id": {
+                          "type": "string"
+                        },
+                        "user_id": {
+                          "type": "string"
+                        },
+                        "banned_by_id": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "expires_at": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "lifted_at": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "lifted_by_id": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "reason": {
+                          "$ref": "#/$defs/S3"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "community_id",
+                        "user_id",
+                        "banned_by_id",
+                        "expires_at",
+                        "created_at",
+                        "updated_at",
+                        "lifted_at",
+                        "lifted_by_id",
+                        "reason"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["community_ban"],
+                  "type": "object"
                 },
                 {
                   "type": "object",
@@ -23222,15 +23331,17 @@
                 "read_application": "#/anyOf/1",
                 "list_automod_actions": "#/anyOf/2",
                 "list_bans": "#/anyOf/3",
-                "list_invites": "#/anyOf/4",
-                "read_moderation_analytics": "#/anyOf/5",
-                "read_moderator_stats": "#/anyOf/6",
-                "read_moderator_vacation": "#/anyOf/7",
-                "read_modlog": "#/anyOf/8",
-                "list_pending_posts": "#/anyOf/9",
-                "list_pending_reports": "#/anyOf/10",
-                "list_restrictions": "#/anyOf/11",
-                "list_saved_replies": "#/anyOf/12"
+                "list_active_bans": "#/anyOf/3",
+                "read_ban": "#/anyOf/4",
+                "list_invites": "#/anyOf/5",
+                "read_moderation_analytics": "#/anyOf/6",
+                "read_moderator_stats": "#/anyOf/7",
+                "read_moderator_vacation": "#/anyOf/8",
+                "read_modlog": "#/anyOf/9",
+                "list_pending_posts": "#/anyOf/10",
+                "list_pending_reports": "#/anyOf/11",
+                "list_restrictions": "#/anyOf/12",
+                "list_saved_replies": "#/anyOf/13"
               }
             }
           },
@@ -23252,6 +23363,14 @@
             {
               "method": "GET",
               "path": "/api/v1/communities/:idOrSlug/bans"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/bans/users/:userId"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/bans/:banId"
             },
             {
               "method": "GET",
@@ -25347,7 +25466,7 @@
           "tool": {
             "name": "remove_community_moderation",
             "title": "remove community moderation",
-            "description": "unlock_post: DELETE /api/v1/posts/:idOrSlug/lock\ndelete_mod_note: DELETE /api/v1/users/:userId/mod-notes/:noteId\ndismiss_ban_evasion: DELETE /api/v1/communities/:idOrSlug/ban-evasion/:userId\nlift_ban: DELETE /api/v1/communities/:idOrSlug/bans/:userId\nrevoke_invite: DELETE /api/v1/communities/:idOrSlug/invites/:id\nremove_domain_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/domains/:itemId\nremove_post_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/posts/:itemId\nremove_rss_feed_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/rss-feeds/:itemId\nremove_topic_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/topics/:itemId\nremove_url_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/urls/:itemId\nremove_member: DELETE /api/v1/communities/:idOrSlug/members/:userId\nclear_moderator_vacation: DELETE /api/v1/communities/:idOrSlug/moderator-vacation\nrelease_post_claim: DELETE /api/v1/communities/:idOrSlug/posts/:postId/claim\ndeescalate_post: DELETE /api/v1/communities/:idOrSlug/posts/:postId/escalation\nrelease_report_claim: DELETE /api/v1/communities/:idOrSlug/reports/:reportId/claim\ndeescalate_report: DELETE /api/v1/communities/:idOrSlug/reports/:reportId/escalation\nlift_restriction: DELETE /api/v1/communities/:idOrSlug/restrictions/:id\ndelete_saved_reply: DELETE /api/v1/communities/:idOrSlug/saved-replies/:id",
+            "description": "unlock_post: DELETE /api/v1/posts/:idOrSlug/lock\ndelete_mod_note: DELETE /api/v1/users/:userId/mod-notes/:noteId\ndismiss_ban_evasion: DELETE /api/v1/communities/:idOrSlug/ban-evasion/:userId\nlift_ban: DELETE /api/v1/communities/:idOrSlug/bans/:banId\nlift_all_bans: DELETE /api/v1/communities/:idOrSlug/bans/users/:userId\nrevoke_invite: DELETE /api/v1/communities/:idOrSlug/invites/:id\nremove_domain_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/domains/:itemId\nremove_post_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/posts/:itemId\nremove_rss_feed_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/rss-feeds/:itemId\nremove_topic_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/topics/:itemId\nremove_url_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/urls/:itemId\nremove_member: DELETE /api/v1/communities/:idOrSlug/members/:userId\nclear_moderator_vacation: DELETE /api/v1/communities/:idOrSlug/moderator-vacation\nrelease_post_claim: DELETE /api/v1/communities/:idOrSlug/posts/:postId/claim\ndeescalate_post: DELETE /api/v1/communities/:idOrSlug/posts/:postId/escalation\nrelease_report_claim: DELETE /api/v1/communities/:idOrSlug/reports/:reportId/claim\ndeescalate_report: DELETE /api/v1/communities/:idOrSlug/reports/:reportId/escalation\nlift_restriction: DELETE /api/v1/communities/:idOrSlug/restrictions/:id\ndelete_saved_reply: DELETE /api/v1/communities/:idOrSlug/saved-replies/:id",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -25381,10 +25500,7 @@
                       "type": "object",
                       "properties": {
                         "noteId": {
-                          "type": "string",
-                          "format": "uuid",
-                          "minLength": 36,
-                          "maxLength": 36
+                          "$ref": "#/$defs/S7"
                         },
                         "userId": {
                           "type": "string",
@@ -25418,6 +25534,29 @@
                       "enum": ["lift_ban"]
                     },
                     "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "banId": {
+                          "$ref": "#/$defs/S7"
+                        }
+                      },
+                      "required": ["community", "banId"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["lift_all_bans"]
+                    },
+                    "arguments": {
                       "$ref": "#/$defs/S2"
                     }
                   },
@@ -25434,7 +25573,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S6"
+                          "$ref": "#/$defs/S3"
                         },
                         "id": {
                           "type": "string"
@@ -25535,7 +25674,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S6"
+                          "$ref": "#/$defs/S3"
                         }
                       },
                       "required": ["community"],
@@ -25552,7 +25691,7 @@
                       "enum": ["release_post_claim"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S5"
+                      "$ref": "#/$defs/S6"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -25565,7 +25704,7 @@
                       "enum": ["deescalate_post"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S5"
+                      "$ref": "#/$defs/S6"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -25578,7 +25717,7 @@
                       "enum": ["release_report_claim"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S3"
+                      "$ref": "#/$defs/S4"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -25591,7 +25730,7 @@
                       "enum": ["deescalate_report"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S3"
+                      "$ref": "#/$defs/S4"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -25604,7 +25743,7 @@
                       "enum": ["lift_restriction"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -25617,7 +25756,7 @@
                       "enum": ["delete_saved_reply"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -25655,11 +25794,14 @@
                   "additionalProperties": false
                 },
                 "S3": {
+                  "type": "string",
+                  "description": "Community id or slug"
+                },
+                "S4": {
                   "type": "object",
                   "properties": {
                     "community": {
-                      "type": "string",
-                      "description": "Community id or slug"
+                      "$ref": "#/$defs/S3"
                     },
                     "reportId": {
                       "type": "string",
@@ -25671,12 +25813,11 @@
                   "required": ["community", "reportId"],
                   "additionalProperties": false
                 },
-                "S4": {
+                "S5": {
                   "type": "object",
                   "properties": {
                     "community": {
-                      "type": "string",
-                      "description": "Community id or slug"
+                      "$ref": "#/$defs/S3"
                     },
                     "id": {
                       "type": "string",
@@ -25688,12 +25829,11 @@
                   "required": ["community", "id"],
                   "additionalProperties": false
                 },
-                "S5": {
+                "S6": {
                   "type": "object",
                   "properties": {
                     "community": {
-                      "type": "string",
-                      "description": "Community id or slug"
+                      "$ref": "#/$defs/S3"
                     },
                     "postId": {
                       "type": "string",
@@ -25703,9 +25843,11 @@
                   "required": ["community", "postId"],
                   "additionalProperties": false
                 },
-                "S6": {
+                "S7": {
                   "type": "string",
-                  "description": "Community id or slug"
+                  "format": "uuid",
+                  "minLength": 36,
+                  "maxLength": 36
                 }
               }
             },
@@ -25731,6 +25873,25 @@
                   },
                   "required": ["ok"],
                   "additionalProperties": false
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "community_id": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "lifted_ban_ids": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["community_id", "user_id", "lifted_ban_ids"],
+                  "type": "object"
                 }
               ]
             },
@@ -25745,7 +25906,8 @@
                 "unlock_post": "#/anyOf/0",
                 "delete_mod_note": "#/anyOf/1",
                 "dismiss_ban_evasion": "#/anyOf/0",
-                "lift_ban": "#/anyOf/0",
+                "lift_ban": "#/anyOf/2",
+                "lift_all_bans": "#/anyOf/2",
                 "revoke_invite": "#/anyOf/0",
                 "remove_domain_from_list": "#/anyOf/0",
                 "remove_post_from_list": "#/anyOf/0",
@@ -25780,7 +25942,11 @@
             },
             {
               "method": "DELETE",
-              "path": "/api/v1/communities/:idOrSlug/bans/:userId"
+              "path": "/api/v1/communities/:idOrSlug/bans/:banId"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/communities/:idOrSlug/bans/users/:userId"
             },
             {
               "method": "DELETE",

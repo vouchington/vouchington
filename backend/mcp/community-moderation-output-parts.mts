@@ -45,6 +45,18 @@ export function changeComponent(
   }
 }
 
+export const banSummary = (): Schema =>
+  object({
+    id: text,
+    community_id: text,
+    user_id: text,
+    banned_by_id: nullOr(text),
+    expires_at: nullOr(text),
+    created_at: text,
+    updated_at: text,
+    lifted_at: nullOr(text),
+    lifted_by_id: nullOr(text),
+  })
 export const ban = (): Schema =>
   object({
     id: text,

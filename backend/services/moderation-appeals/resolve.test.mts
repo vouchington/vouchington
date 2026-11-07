@@ -6,7 +6,6 @@ import {
   insertTestCommunity,
   insertTestPost,
   getPostClearanceStatus,
-  getTestActiveCommunityBan,
   insertTestCommunityPostReview,
   updateTestCommunityPostReviewState,
   getCommunityPostReviewStatus,
@@ -16,6 +15,7 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import { resolveModerationAppealAccept } from './resolve.mts'
+import { getCommunityBanById } from '../communities/bans/get.mts'
 import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 
@@ -157,13 +157,20 @@ describe('resolve moderation appeals', () => {
       })
     })
 
-    it('lifts the community ban when accepting a ban appeal', async () => {
-      const { appeal, community } = await openBanAppeal()
+    it('lifts only the appealed community ban when accepting a ban appeal', async () => {
+      const { appeal, ban, community } = await openBanAppeal()
+      const siblingBan = await insertTestCommunityBan({
+        communityId: community.id,
+        userId: appellant.id,
+        bannedById: staff.id,
+        reason: 'Separate moderation decision',
+      })
       await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
 
-      // Ban should now be lifted — no active ban remains
-      const activeBan = await getTestActiveCommunityBan(community.id, appellant.id)
-      expect(activeBan).toBeNull()
+      const appealedBanAfterResolution = await getCommunityBanById(ban.id)
+      const siblingBanAfterResolution = await getCommunityBanById(siblingBan.id)
+      expect(appealedBanAfterResolution?.lifted_at).not.toBeNull()
+      expect(siblingBanAfterResolution?.lifted_at).toBeNull()
     })
 
     it('approves the post when accepting a post removal appeal', async () => {

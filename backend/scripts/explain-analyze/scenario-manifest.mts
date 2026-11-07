@@ -1,4 +1,5 @@
 import { VOTE_SCORE_SCENARIO_IDS } from './vote-score-scenario-ids.mts'
+import { COMMUNITY_BAN_SCENARIO_IDS } from './community-ban-scenario-ids.mts'
 import { COMMENT_SCENARIO_IDS } from './comment-scenario-ids.mts'
 import { INGESTION_PAGE_SCENARIO_IDS } from './ingestion-page-scenario-ids.mts'
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
@@ -13,6 +14,7 @@ import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
 import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
 import { SESSION_LIMIT_SCENARIO_IDS } from './session-limit-scenario-ids.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
+  ...COMMUNITY_BAN_SCENARIO_IDS,
   ...VOTE_SCORE_SCENARIO_IDS,
   ...VIEW_DRIVEN_SCENARIO_IDS,
   ...BOUNDED_WORK_SCENARIOS,

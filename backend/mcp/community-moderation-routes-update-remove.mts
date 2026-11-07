@@ -55,7 +55,12 @@ export const communityModerationUpdateRemoveRoutes = [
     path: '/api/v1/communities/:idOrSlug/ban-evasion/:userId',
     option: 'dismiss_ban_evasion',
   },
-  { method: 'DELETE', path: '/api/v1/communities/:idOrSlug/bans/:userId', option: 'lift_ban' },
+  { method: 'DELETE', path: '/api/v1/communities/:idOrSlug/bans/:banId', option: 'lift_ban' },
+  {
+    method: 'DELETE',
+    path: '/api/v1/communities/:idOrSlug/bans/users/:userId',
+    option: 'lift_all_bans',
+  },
   { method: 'DELETE', path: '/api/v1/communities/:idOrSlug/invites/:id', option: 'revoke_invite' },
   {
     method: 'DELETE',

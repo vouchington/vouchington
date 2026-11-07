@@ -11,7 +11,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../../types.mts'
 import { banUserFromCommunity } from '../create.mts'
 import { liftCommunityBan } from '../lift.mts'
-import { getActiveCommunityBan } from '../get.mts'
+import { getActiveCommunityBan, getCommunityBanById } from '../get.mts'
 import { searchCommunityBans } from '../search.mts'
 
 describe('banUserFromCommunity', () => {
@@ -142,8 +142,8 @@ describe('banUserFromCommunity', () => {
   it('re-ban after lift inserts fresh row', async () => {
     const member = await createTestUser()
     await insertTestCommunityMember({ communityId: community.id, userId: member.id })
-    await banUserFromCommunity(owner, community.id, member.id)
-    await liftCommunityBan(owner, community.id, member.id)
+    const first = await banUserFromCommunity(owner, community.id, member.id)
+    await liftCommunityBan(owner, community.id, first.id)
 
     await insertTestCommunityMember({ communityId: community.id, userId: member.id })
     const ban2 = await banUserFromCommunity(owner, community.id, member.id)
@@ -168,7 +168,7 @@ describe('banUserFromCommunity', () => {
     const { results } = await searchCommunityBans(community.id)
     const expiredRow = results.find(b => b.id === expired.id)
     expect(expiredRow?.lifted_at).toBeNull()
-    expect(expiredRow?.reason).toBe('temporary')
+    expect((await getCommunityBanById(expired.id))?.reason).toBe('temporary')
 
     // Exactly one currently-active ban (the fresh one).
     const active = await getActiveCommunityBan(community.id, user.id)
@@ -211,7 +211,7 @@ describe('liftCommunityBan issuer privileges', () => {
       createdById: owner!.id,
       visibility: 'public',
     })
-    await Promise.all([
+    const [, , ban] = await Promise.all([
       insertTestCommunityMember({ communityId: community.id, userId: owner!.id, role: 'owner' }),
       insertTestCommunityMember({
         communityId: community.id,
@@ -226,7 +226,7 @@ describe('liftCommunityBan issuer privileges', () => {
     ])
     await softDeleteUser(formerAdmin!.id)
 
-    await liftCommunityBan(moderator!, community.id, target!.id)
+    await liftCommunityBan(moderator!, community.id, ban.id)
 
     await expect(getActiveCommunityBan(community.id, target!.id)).resolves.toBeNull()
   })

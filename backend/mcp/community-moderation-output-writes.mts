@@ -23,7 +23,6 @@ const noContent = new Set([
   'review_application',
   'moderate_post',
   'dismiss_ban_evasion',
-  'lift_ban',
   'revoke_invite',
   'remove_domain_from_list',
   'remove_post_from_list',
@@ -67,6 +66,9 @@ export function communityModerationWriteOutput(option: string): ToolOutputSchema
       return object({ note: component('UserModNote') })
     case 'delete_mod_note':
       return object({ ok: { const: true } })
+    case 'lift_ban':
+    case 'lift_all_bans':
+      return object({ community_id: text, user_id: text, lifted_ban_ids: array(text) })
     case 'ban_user':
       return object({ community_ban: ban() })
     case 'add_domain_to_list':

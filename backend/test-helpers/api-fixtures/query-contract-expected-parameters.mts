@@ -28,6 +28,7 @@ export const newExpectedParameters = {
     'window',
   ],
   'GET:/api/v1/communities/:idOrSlug/bans': ['after', 'limit'],
+  'GET:/api/v1/communities/:idOrSlug/bans/users/:userId': ['after', 'limit'],
   'GET:/api/v1/communities/:idOrSlug/invites': ['after', 'limit'],
   'GET:/api/v1/communities/:idOrSlug/list-items/domains': ['after', 'limit'],
   'GET:/api/v1/communities/:idOrSlug/list-items/posts': ['after', 'limit'],

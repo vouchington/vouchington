@@ -45,6 +45,7 @@ export const backgroundWorkEntries3 = [
       summary_email_batch_size: 'Summary email batch size for communities processing.',
       member_metric_invalidation_page_size:
         'Active memberships processed by one community metric invalidation job.',
+      lift_all_active_ban_limit: 'Maximum active bans one explicit lift-all request may lift.',
     },
   }),
   defineBoundedWorkNamespace({

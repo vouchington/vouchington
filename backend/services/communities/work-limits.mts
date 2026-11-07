@@ -6,6 +6,7 @@ const defaultFields = {
   recovery_page_size: 100,
   summary_email_batch_size: 250,
   member_metric_invalidation_page_size: 500,
+  lift_all_active_ban_limit: 100,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
@@ -14,6 +15,7 @@ export const communitiesWorkMaxValues = {
   recovery_page_size: 1000,
   summary_email_batch_size: 2500,
   member_metric_invalidation_page_size: 5000,
+  lift_all_active_ban_limit: 500,
 }
 
 export const communitiesWorkConfig = new DynamicConfig({
@@ -23,6 +25,7 @@ export const communitiesWorkConfig = new DynamicConfig({
     recovery_page_size: 'number',
     summary_email_batch_size: 'number',
     member_metric_invalidation_page_size: 'number',
+    lift_all_active_ban_limit: 'number',
   },
   defaultFields,
 })

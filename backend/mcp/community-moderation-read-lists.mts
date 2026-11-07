@@ -1,3 +1,4 @@
+import assert from 'http-assert'
 import { getPaginationLimitsForContract } from '@services/pagination'
 import { indexById } from '@modules/utils'
 import {
@@ -11,6 +12,8 @@ import {
   getRaidModeSuggestion,
   searchApplications,
   searchCommunityBans,
+  listActiveCommunityBans,
+  getCommunityBanDetail,
   searchCommunityRestrictions,
   searchInvites,
   loadCommunityForModerator,
@@ -28,15 +31,15 @@ function page(args: CommunityModerationArgs) {
   return { limit: args.limit as number | undefined, after: args.after as string | undefined }
 }
 
-async function readBanPage(communityId: string, args: CommunityModerationArgs) {
-  const result = await searchCommunityBans(communityId, page(args))
+async function readBanPage(communityId: string, args: CommunityModerationArgs, active = false) {
+  const result = await (active
+    ? listActiveCommunityBans(communityId, args.userId as string, page(args))
+    : searchCommunityBans(communityId, page(args)))
   const publicUsers = await getUserPublicByAnyCachedBatch(result.results.map(b => b.user_id))
   return {
     results: result.results.map(b => ({ __entity_type: 'community_ban', id: b.id })),
     page_info: result.page_info,
-    community_bans: Object.fromEntries(
-      result.results.map(({ case_id: _, ...ban }) => [ban.id, ban]),
-    ),
+    community_bans: Object.fromEntries(result.results.map(ban => [ban.id, ban])),
     users: indexById(publicUsers.filter(user => user != null)),
   }
 }
@@ -72,6 +75,19 @@ export const communityModerationReadLists: Record<string, CommunityModerationHan
   async list_bans(user, args) {
     const { community } = await communityWithGuard(user, args.community, 'bans')
     return readBanPage(community.id, args)
+  },
+
+  async list_active_bans(user, args) {
+    const { community } = await communityWithGuard(user, args.community, 'bans')
+    return readBanPage(community.id, args, true)
+  },
+
+  async read_ban(user, args) {
+    const { community } = await communityWithGuard(user, args.community, 'bans')
+    const ban = await getCommunityBanDetail(community.id, args.banId as string)
+    assert(ban, 404, 'Ban not found')
+    const { case_id: _, ...community_ban } = ban
+    return { community_ban }
   },
 
   async list_invites(user, args) {

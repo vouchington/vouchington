@@ -12,6 +12,8 @@ import {
   COPYRIGHT_EMAIL_THREAD_CHANGED,
   COMMUNITY_MEMBERSHIP_LIMIT_REACHED,
   COMMUNITY_MODERATOR_LIMIT_REACHED,
+  COMMUNITY_BAN_LIFT_ALL_FORBIDDEN,
+  COMMUNITY_BAN_LIFT_ALL_LIMIT_REACHED,
   CONTRIBUTION_QUOTA_EXCEEDED,
   IDEMPOTENCY_KEY_REUSED,
   NEUTRAL_REQUIRES_EXISTING_BALLOT,
@@ -132,10 +134,13 @@ export async function callMcpTool(
         COPYRIGHT_EMAIL_THREAD_CHANGED,
         COMMUNITY_MEMBERSHIP_LIMIT_REACHED,
         COMMUNITY_MODERATOR_LIMIT_REACHED,
+        COMMUNITY_BAN_LIFT_ALL_FORBIDDEN,
+        COMMUNITY_BAN_LIFT_ALL_LIMIT_REACHED,
       ]
       const domainCode =
         typeof err['code'] === 'string' && domainCodes.includes(err['code']) ? err['code'] : null
       const retryAfterSeconds = err['retryAfterSeconds']
+      const cap = err['cap']
       const error = {
         status: err.status,
         code: domainCode ?? code,
@@ -143,6 +148,12 @@ export async function callMcpTool(
         retryable: domainCode === CONTRIBUTION_ADMISSION_IN_PROGRESS,
         ...(domainCode && Number.isInteger(retryAfterSeconds) && retryAfterSeconds > 0
           ? { retryAfterSeconds }
+          : {}),
+        ...(domainCode === COMMUNITY_BAN_LIFT_ALL_LIMIT_REACHED &&
+        typeof cap === 'number' &&
+        Number.isSafeInteger(cap) &&
+        cap > 0
+          ? { cap }
           : {}),
       }
       return { isError: true, content: [{ type: 'text', text: JSON.stringify({ error }) }] }

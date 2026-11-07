@@ -1,5 +1,6 @@
 import { runCommunityAgentPromptPageScenarios } from './community-agent-prompt-pages.mts'
 import { runCommunityMembershipCapScenarios } from './community-membership-caps.mts'
+import { runCommunityBanPageScenarios } from './community-ban-pages.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, read } from '@data-stores/psql'
 import { createCommunityLifecycleNotifications } from '@services/notifications'
@@ -113,6 +114,7 @@ async function runCommunityCreate(): Promise<void> {
 }
 
 export async function runCommunityRoundTripScenarios(): Promise<void> {
+  await runCommunityBanPageScenarios()
   await runCommunityMembershipCapScenarios()
   await runCommunityAgentPromptPageScenarios()
   const communityId = await seededCommunityId()

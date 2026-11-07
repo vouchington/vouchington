@@ -18,6 +18,22 @@ export async function getCommunityBanById(id: string): Promise<CommunityBan | nu
   return (rows[0] as CommunityBan) ?? null
 }
 
+export async function getCommunityBanDetail(
+  communityId: string,
+  banId: string,
+): Promise<CommunityBan | null> {
+  const { rows } = await read(
+    sql`/* getCommunityBanDetail */
+    SELECT id, case_id, community_id, user_id, banned_by_id, reason, expires_at,
+      created_at, updated_at, lifted_at, lifted_by_id
+    FROM community_bans
+    WHERE id = ${banId} AND community_id = ${communityId}
+    LIMIT 1
+    `,
+  )
+  return (rows[0] as CommunityBan) ?? null
+}
+
 export async function getActiveCommunityBan(
   communityId: string,
   userId: string,
@@ -31,35 +47,13 @@ export async function getActiveCommunityBan(
     WHERE community_id = ${communityId}
       AND user_id = ${userId}
       AND lifted_at IS NULL
-      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+      AND COALESCE(expires_at, 'infinity'::timestamptz) > CURRENT_TIMESTAMP
     ORDER BY id DESC
     LIMIT 1
     `,
     options,
   )
   return (rows[0] as CommunityBan) ?? null
-}
-
-export async function getActiveCommunityBans(
-  communityId: string,
-  userId: string,
-  options?: QueryOptions,
-): Promise<CommunityBan[]> {
-  const { rows } = await read(
-    sql`/* getActiveCommunityBans */
-    SELECT id, case_id, community_id, user_id, banned_by_id, reason, expires_at,
-      created_at, updated_at, lifted_at, lifted_by_id
-    -- no-mistakes-disable-next-line postgres-bounded-statements: read through partial index idx_community_bans__lookup (community_id, user_id) WHERE lifted_at IS NULL, so it touches only the unlifted bans of one user in one community; each row is a separate moderator ban action (a re-ban inserts a second row) and no write cap exists, but lift authorization must check the issuer of every active ban, and a LIMIT could omit a ban the caller may not lift.
-    FROM community_bans
-    WHERE community_id = ${communityId}
-      AND user_id = ${userId}
-      AND lifted_at IS NULL
-      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-    ORDER BY id DESC
-    `,
-    options,
-  )
-  return rows as CommunityBan[]
 }
 
 export async function assertNotBanned(

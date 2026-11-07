@@ -6,15 +6,19 @@ import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { mergeMessages } from '@/lib/i18n/use-translations'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
+import { ApiError } from '@vouchington/api-client'
 
 // Components use data-pw (not data-testid) per project conventions.
 configure({ testIdAttribute: 'data-pw' })
 
-const { mockLiftBan, mockFetchCommunityBans, mockRefresh } = vi.hoisted(() => ({
-  mockLiftBan: vi.fn<VitestLooseMock>(),
-  mockFetchCommunityBans: vi.fn<VitestLooseMock>(),
-  mockRefresh: vi.fn<() => void>(),
-}))
+const { mockLiftBan, mockLiftAllBans, mockFetchCommunityBan, mockFetchCommunityBans, mockRefresh } =
+  vi.hoisted(() => ({
+    mockLiftBan: vi.fn<VitestLooseMock>(),
+    mockLiftAllBans: vi.fn<VitestLooseMock>(),
+    mockFetchCommunityBan: vi.fn<VitestLooseMock>(),
+    mockFetchCommunityBans: vi.fn<VitestLooseMock>(),
+    mockRefresh: vi.fn<() => void>(),
+  }))
 
 vi.mock(
   import('next/navigation'),
@@ -26,6 +30,8 @@ vi.mock(
 
 vi.mock(import('@/lib/api/client'), () => ({
   liftBan: mockLiftBan,
+  liftAllBans: mockLiftAllBans,
+  fetchCommunityBan: mockFetchCommunityBan,
   fetchCommunityBans: mockFetchCommunityBans,
 }))
 
@@ -38,7 +44,6 @@ function makeBan(overrides: Partial<CommunityBan> = {}): CommunityBan {
     community_id: 'c-1',
     user_id: 'u-1',
     banned_by_id: 'owner-1',
-    case_id: '00000000-0000-0000-0000-000000000001',
     reason: 'spam',
     expires_at: null,
     created_at: '2026-01-01T00:00:00.000Z',
@@ -77,7 +82,8 @@ describe('CommunityBansPanel', () => {
     expect(screen.getByTestId('community-bans-empty')).toBeInTheDocument()
   })
 
-  it('renders an active ban with username, reason, and lift button', () => {
+  it('loads the reason only when details are requested', async () => {
+    mockFetchCommunityBan.mockResolvedValueOnce({ community_ban: makeBan() })
     render(
       <CommunityBansPanel
         community={makeCommunity()}
@@ -85,7 +91,9 @@ describe('CommunityBansPanel', () => {
       />,
     )
     expect(screen.getByText('spammer')).toBeInTheDocument()
-    expect(screen.getByText('Reason: spam')).toBeInTheDocument()
+    expect(screen.queryByText('Reason: spam')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Show details' }))
+    expect(await screen.findByText('Reason: spam')).toBeInTheDocument()
     expect(screen.getByTestId('community-ban-lift')).toBeInTheDocument()
   })
 
@@ -118,7 +126,7 @@ describe('CommunityBansPanel', () => {
   })
 
   it('lifts a ban and refreshes', async () => {
-    mockLiftBan.mockResolvedValueOnce(undefined)
+    mockLiftBan.mockResolvedValueOnce({ lifted_ban_ids: ['ban-1'] })
     render(
       <CommunityBansPanel
         community={makeCommunity()}
@@ -128,14 +136,14 @@ describe('CommunityBansPanel', () => {
 
     fireEvent.click(screen.getByTestId('community-ban-lift'))
 
-    await waitFor(() => expect(mockLiftBan).toHaveBeenCalledWith('test-community', 'u-1'))
+    await waitFor(() => expect(mockLiftBan).toHaveBeenCalledWith('test-community', 'ban-1'))
     await waitFor(() => expect(mockRefresh).toHaveBeenCalled())
     expect(screen.getByText('Lifted')).toBeVisible()
     expect(screen.getByText(/^Lifted: /).textContent).toMatch(/^Lifted: \d{4}-\d{2}-\d{2}$/)
   })
 
-  it('lifts every active ban for the user but keeps an older expired ban Expired', async () => {
-    mockLiftBan.mockResolvedValueOnce(undefined)
+  it('lifts only the selected ban and keeps sibling bans unchanged', async () => {
+    mockLiftBan.mockResolvedValueOnce({ lifted_ban_ids: ['ban-active'] })
     render(
       <CommunityBansPanel
         community={makeCommunity()}
@@ -149,12 +157,78 @@ describe('CommunityBansPanel', () => {
 
     fireEvent.click(screen.getAllByTestId('community-ban-lift')[0]!)
 
-    await waitFor(() => expect(screen.queryByTestId('community-ban-lift')).not.toBeInTheDocument())
+    await waitFor(() => expect(mockLiftBan).toHaveBeenCalledWith('test-community', 'ban-active'))
     const [activeRow, timedRow, expiredRow] = screen.getAllByTestId('community-ban-row')
     expect(activeRow).toHaveTextContent('Lifted')
-    expect(timedRow).toHaveTextContent('Lifted')
+    expect(timedRow).toHaveTextContent('Active')
     expect(expiredRow).toHaveTextContent('Expired')
     expect(expiredRow).not.toHaveTextContent('Lifted')
+  })
+
+  it('disables all lift actions until the pending request completes', async () => {
+    let resolveLift!: (result: { lifted_ban_ids: string[] }) => void
+    mockLiftBan.mockReturnValueOnce(
+      new Promise(resolve => {
+        resolveLift = resolve
+      }),
+    )
+    render(
+      <CommunityBansPanel
+        community={makeCommunity()}
+        initialData={makeData([makeBan(), makeBan({ id: 'ban-2' })])}
+      />,
+    )
+    const buttons = screen.getAllByTestId('community-ban-lift')
+    fireEvent.click(buttons[0]!)
+    expect(buttons[0]).toBeDisabled()
+    expect(buttons[1]).toBeDisabled()
+    for (const button of screen.getAllByRole('button', { name: 'Lift all bans' })) {
+      expect(button).toBeDisabled()
+    }
+    resolveLift({ lifted_ban_ids: ['ban-1'] })
+    await waitFor(() => expect(screen.getByTestId('community-ban-lift')).toBeEnabled())
+  })
+
+  it('confirms lift all and applies only the returned ban ids', async () => {
+    mockLiftAllBans.mockResolvedValueOnce({ lifted_ban_ids: ['ban-1', 'ban-2'] })
+    render(
+      <CommunityBansPanel
+        community={makeCommunity()}
+        initialData={makeData([makeBan(), makeBan({ id: 'ban-2' })])}
+      />,
+    )
+    fireEvent.click(screen.getAllByRole('button', { name: 'Lift all bans' })[0]!)
+    expect(mockLiftAllBans).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('alertdialog').querySelector('button:last-child')!)
+    await waitFor(() => expect(mockLiftAllBans).toHaveBeenCalledWith('test-community', 'u-1'))
+    expect(screen.getAllByText('Lifted')).toHaveLength(2)
+  })
+
+  it.each([
+    [
+      'COMMUNITY_BAN_LIFT_ALL_FORBIDDEN',
+      403,
+      undefined,
+      'Some bans cannot be lifted together. Lift permitted bans individually.',
+    ],
+    [
+      'COMMUNITY_BAN_LIFT_ALL_LIMIT_REACHED',
+      409,
+      3,
+      'More than 3 bans are active. Lift bans individually.',
+    ],
+  ])('shows localized guidance for %s', async (code, status, cap, expected) => {
+    mockLiftAllBans.mockRejectedValueOnce(new ApiError('server message', status, { code, cap }))
+    render(
+      <CommunityBansPanel
+        community={makeCommunity()}
+        initialData={makeData([makeBan()])}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Lift all bans' }))
+    fireEvent.click(screen.getByRole('alertdialog').querySelector('button:last-child')!)
+    expect(await screen.findByText(expected)).toBeVisible()
+    expect(screen.queryByText('server message')).not.toBeInTheDocument()
   })
 
   it('shows an error when lift fails', async () => {

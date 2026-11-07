@@ -9,7 +9,6 @@ function makeBan(overrides: Partial<CommunityBan> = {}): CommunityBan {
     community_id: 'c-1',
     user_id: 'u-1',
     banned_by_id: 'owner-1',
-    case_id: '00000000-0000-0000-0000-000000000001',
     reason: null,
     expires_at: null,
     created_at: '2026-01-01T00:00:00.000Z',

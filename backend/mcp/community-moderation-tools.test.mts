@@ -120,13 +120,18 @@ describe('community moderation MCP tools — real PostgreSQL and Valkey', () => 
       await errorOf(moderator, ADD, 'ban_user', { ...args, user_id: owner.id }, WRITE_SCOPES),
     ).toContain('Community owners cannot be banned')
     expect(await getTestActiveCommunityBan(community.id, owner.id)).toBeNull()
+    const activeBan = await getTestActiveCommunityBan(community.id, member.id)
     const lifted = await callStructuredMcpTool(
       moderator,
       REMOVE,
-      optionArgs('lift_ban', { community: community.id, userId: member.id }),
+      optionArgs('lift_ban', { community: community.id, banId: activeBan!.id }),
       WRITE_SCOPES,
     )
-    expect(lifted).toMatchObject({ success: true })
+    expect(lifted).toMatchObject({
+      community_id: community.id,
+      user_id: member.id,
+      lifted_ban_ids: [activeBan!.id],
+    })
     expect(await getTestActiveCommunityBan(community.id, member.id)).toBeNull()
   })
 

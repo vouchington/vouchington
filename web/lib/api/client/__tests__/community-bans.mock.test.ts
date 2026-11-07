@@ -13,7 +13,14 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
-import { banMember, liftBan, fetchCommunityBans } from '../community-bans'
+import {
+  banMember,
+  liftBan,
+  liftAllBans,
+  fetchCommunityBan,
+  fetchActiveCommunityBans,
+  fetchCommunityBans,
+} from '../community-bans'
 
 const mockGet = vi.mocked(clientApi.get)
 const mockDelete = vi.mocked(clientApi.delete)
@@ -56,9 +63,20 @@ describe('community-bans client', () => {
   it('lifts a ban', async () => {
     mockDelete.mockResolvedValueOnce(undefined)
 
-    await liftBan('credit-cards', 'user-3')
+    await liftBan('credit-cards', 'ban-3')
 
-    expect(mockDelete).toHaveBeenCalledWith('/api/v1/communities/credit-cards/bans/user-3')
+    expect(mockDelete).toHaveBeenCalledWith('/api/v1/communities/credit-cards/bans/ban-3')
+  })
+
+  it('uses separate active-list, detail, and lift-all paths', async () => {
+    await fetchActiveCommunityBans('credit-cards', 'user-3', 'cursor')
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/credit-cards/bans/users/user-3', {
+      searchParams: { after: 'cursor' },
+    })
+    await fetchCommunityBan('credit-cards', 'ban-3')
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/credit-cards/bans/ban-3')
+    await liftAllBans('credit-cards', 'user-3')
+    expect(mockDelete).toHaveBeenCalledWith('/api/v1/communities/credit-cards/bans/users/user-3')
   })
 
   it('fetches bans without a cursor', async () => {

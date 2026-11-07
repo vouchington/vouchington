@@ -2,16 +2,10 @@ import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
-import {
-  parseJsonBody,
-  requireAuth,
-  validateRequestContract,
-  validateUUIDParam,
-} from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   banUserFromCommunity,
   currentUserCanManageCommunityBans,
-  liftCommunityBan,
   loadCommunityWithViewer,
   searchCommunityBans,
 } from '@services/communities'
@@ -55,8 +49,7 @@ app
       results: result.results.map(b => ({ __entity_type: 'community_ban' as const, id: b.id })),
       page_info: result.page_info,
       community_bans: result.results.reduce<Record<string, unknown>>((acc, b) => {
-        const { case_id: _, ...banForResponse } = b
-        acc[b.id] = banForResponse
+        acc[b.id] = b
         return acc
       }, {}),
       users,
@@ -112,26 +105,3 @@ app
     ctx.setStatus(201)
     ctx.json({ community_ban: banForResponse })
   })
-
-app.route('/api/v1/communities/:idOrSlug/bans/:userId').delete(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/communities/:idOrSlug/bans/:userId')
-  assertNotSuspended(currentUser)
-
-  const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const userId = validateUUIDParam(ctx, 'userId')
-
-  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
-
-  ctx.assert(
-    currentUserCanManageCommunityBans(currentUser, community, membership),
-    403,
-    'Forbidden',
-  )
-  validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/bans/:userId', {
-    path: ctx.params,
-  })
-
-  await liftCommunityBan(currentUser, community.id, userId)
-
-  ctx.setStatus(204)
-})
