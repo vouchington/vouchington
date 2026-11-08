@@ -165,6 +165,9 @@ describe('fix-main source state', () => {
     })
 
     const retryPendingStep = classifyJob?.steps?.find(s => s.id === 'retry-pending')
+    expect(retryPendingStep?.run).toBe(
+      'bash --noprofile --norc -e -o pipefail ci/automation-inline/fix-main-retry-pending.sh',
+    )
     expect(readFileSync('ci/automation-inline/fix-main-retry-pending.sh', 'utf8')).toContain(
       'retry_pending=true',
     )
