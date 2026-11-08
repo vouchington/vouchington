@@ -15,7 +15,12 @@ const memberQuery = '/* assertCanAddHouseholdMember */'
 export async function runHouseholdLimitScenarios(): Promise<void> {
   registerScenarioContract('household-individual-bind', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['users_pkey'] },
+      { kind: 'usesIndexes', indexes: ['users_pkey'], queryContains: '/* getIndividual */' },
+      {
+        kind: 'usesIndexes',
+        indexes: ['users_pkey'],
+        queryContains: '/* createRepresentativeIndividual */',
+      },
       { kind: 'maxProcessedRows', relation: 'users', max: 4 },
       { kind: 'maxProcessedRows', relation: 'individuals', max: 4 },
     ],
