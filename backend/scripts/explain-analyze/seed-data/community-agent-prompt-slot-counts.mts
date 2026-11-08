@@ -95,6 +95,13 @@ export async function cleanupCommunityAgentPromptSlotCountNoise(): Promise<void>
     DELETE FROM communities WHERE id = ANY($1::uuid[])`,
     [communityIds],
   )
+  const { rows: individuals } = await query<{ individual_id: string }>(
+    `/* cleanupCommunityAgentPromptSlotCountNoise:individuals */
+    SELECT individual_id FROM users
+    WHERE (id = ANY($1::uuid[]) OR id = ANY($2::uuid[]))
+      AND individual_id IS NOT NULL`,
+    [systemUserIds, creatorIds],
+  )
   await query(
     `/* cleanupCommunityAgentPromptSlotCountNoise:systemUsers */
     DELETE FROM users WHERE id = ANY($1::uuid[])`,
@@ -115,7 +122,12 @@ export async function cleanupCommunityAgentPromptSlotCountNoise(): Promise<void>
     WHERE id = ANY($1::uuid[]) OR id = ANY($2::uuid[])`,
     [systemUserIds, creatorIds],
   )
+  await roots(
+    `/* cleanupCommunityAgentPromptSlotCountNoise:individuals */
+    DELETE FROM individuals WHERE id = ANY($1::uuid[])`,
+    [individuals.map(({ individual_id }) => individual_id)],
+  )
   await roots(`/* cleanupCommunityAgentPromptSlotCountNoise:analyze */
-    ANALYZE users, community_agent_prompt_slot_counts, community_agent_prompts`)
+    ANALYZE users, community_agent_prompt_slot_counts, community_agent_prompts, individuals`)
   await roots.commit()
 }
