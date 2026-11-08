@@ -3,6 +3,7 @@ import { seedUuid } from './common.mts'
 
 const HNSW_INDEX = 'idx_posts__bedrock_nova_multimodal_v1_embedding'
 const SEMANTIC_POST_COUNT = 40_000
+const HNSW_BUILD_WORKERS = 3
 
 /**
  * Representative vector corpus: about five percent of 40k rows match the query threshold.
@@ -10,8 +11,9 @@ const SEMANTIC_POST_COUNT = 40_000
  * Bounded UPDATE pages fill embeddings while the HNSW index is dropped, then one bulk
  * build recreates the identical index with enough maintenance memory to hold the graph.
  * Per-tuple graph inserts cost about 1.2s per 1000 rows (about 50s for the corpus); the
- * serial bulk build over the same rows takes about 27s. Parallel workers are disabled because
- * their shared-memory segment exceeds the CI Postgres container's /dev/shm.
+ * serial bulk build over the same rows takes about 27s, close to the 30s statement timeout.
+ * Parallel workers share the graph through a segment sized by maintenance_work_mem, so the
+ * CI Postgres container declares a matching --shm-size in explain-analyze.yml.
  */
 export async function seedSemanticPosts(): Promise<void> {
   const ids = Array.from({ length: SEMANTIC_POST_COUNT }, (_, index) => seedUuid(index, '05'))
@@ -40,7 +42,9 @@ export async function seedSemanticPosts(): Promise<void> {
     )
   }
   await transaction(`/* seedSemanticPosts */ SET LOCAL maintenance_work_mem = '512MB'`)
-  await transaction(`/* seedSemanticPosts */ SET LOCAL max_parallel_maintenance_workers = 0`)
+  await transaction(
+    `/* seedSemanticPosts */ SET LOCAL max_parallel_maintenance_workers = ${HNSW_BUILD_WORKERS}`,
+  )
   await transaction(
     `/* seedSemanticPosts */ CREATE INDEX ${HNSW_INDEX}
      ON posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)

@@ -123,6 +123,8 @@ export function buildSeededRowCountQuery({ table, column, prefix, pattern }: Tab
   }
 }
 
+const VACUUM_CONCURRENCY = 4
+
 export async function checkpointSeed(label: string): Promise<void> {
   console.log(`Checkpointing seed data after ${label}...`)
   await write('/* seedExplainData */ CHECKPOINT')
@@ -141,7 +143,17 @@ export async function runAnalyze(): Promise<void> {
   console.log('\nRunning VACUUM (ANALYZE) on seeded tables...')
   // Settle first-capture statistics and visibility before autovacuum can choose the plan.
   // PostgreSQL includes default children when vacuuming partitioned parents.
-  for (const table of ANALYZE_TARGETS)
-    await write(`/* seedExplainData */ VACUUM (ANALYZE) "${table}"`)
+  // Tables are independent and VACUUM cannot share a transaction, so separate backends settle
+  // them concurrently; posts (its indexes dominate) starts first.
+  const queue = [...ANALYZE_TARGETS].toSorted(
+    (left, right) => Number(right === 'posts') - Number(left === 'posts'),
+  )
+  await Promise.all(
+    Array.from({ length: VACUUM_CONCURRENCY }, async () => {
+      for (let table = queue.shift(); table !== undefined; table = queue.shift()) {
+        await write(`/* seedExplainData */ VACUUM (ANALYZE) "${table}"`)
+      }
+    }),
+  )
   await printPlanDiagnostics(ANALYZE_TARGETS)
 }

@@ -79,7 +79,12 @@ jobs:
         # The full partition fixture exceeds the former 4GiB tmpfs. Use the image's
         # disk-backed ephemeral /var/lib/postgresql volume for data and WAL; resource
         # samples still capture usage on the same ubuntu-latest runner.
+        #
+        # The parallel HNSW build in seedSemanticPosts shares its graph through a dynamic shared
+        # memory segment as large as its 512MB maintenance_work_mem; Docker's default 64MB
+        # /dev/shm cannot hold it.
         options: >-
+          --shm-size=2g
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
@@ -136,7 +141,8 @@ jobs:
         run: node backend/scripts/seeds/dev-seed.mts
         timeout-minutes: 3
       - name: Seed EXPLAIN data with resource samples
-        # Full seeds completed just over three minutes in runs 42183283644 and 42184560914.
+        # Full seeds took just over three minutes (runs 42183283644, 42184560914) before the seed ran two
+        # concurrent lanes, a parallel HNSW build and concurrent VACUUM.
         timeout-minutes: 4
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}

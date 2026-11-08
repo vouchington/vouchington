@@ -6,7 +6,6 @@ import { cleanupNotificationVisibility } from './seed-data/notification-visibili
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
 import { seedCommunitySearchFixtures } from './seed-data/community-search-fixtures.mts'
 import { seedViewPostsAndUserImportApproval } from './seed-data/user-import-approval.mts'
-import { seedPostCreationModerationBypass } from './seed-data/post-creation-moderation-bypass.mts'
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
 import {
   seedAnchorPostReviewTopicRating,
@@ -26,114 +25,45 @@ import {
   seedVotes,
 } from './seed-data/engagement.mts'
 import {
-  INDIVIDUAL_CARD_SEED_COUNT,
-  POINT_VALUATION_SEED_COUNT,
-  SPENDING_CATEGORY_SEED_COUNT,
   seedEntityRelations,
   seedPublisherTypeRelation,
   seedSavedPostRelations,
-  seedIndividualCards,
-  seedPointValuations,
-  seedSpendingCategories,
-  seedRewardsProgramStatuses,
-  REWARDS_PROGRAM_STATUS_SEED_COUNT,
   seedDisabledRssFeed,
   seedFollowPostRelations,
   seedFollowRelations,
   seedFollowRssFeedRelations,
   seedFollowTopicRelations,
   seedHeavyFollowRelations,
-  seedHostnames,
   seedMuteBlockRelations,
   seedNotifications,
-  seedPosts,
-  seedRemoteFollowers,
-  seedUserRemovedPlatformPosts,
   seedConversations,
   seedConversationPaginationRows,
   seedFriendRecommendation,
   seedPrioritizedReferralPrograms,
   seedRssFeedItemCategories,
-  seedRssFeeds,
-  seedSemanticRssFeedItems,
   seedStoryPostRelatedUrlProjection,
-  seedTopicParentRelations,
-  seedTopics,
-  seedUrls,
-  seedTopicImportAttempts,
   seedUsers,
-  seedUserRoleLookups,
 } from './seed-data/core.mts'
 import { checkpointSeed, printRowCounts, runAnalyze } from './seed-data/maintenance.mts'
 import { seedOAuthClientVerification } from './seed-data/oauth-client-verification.mts'
 import { seedClassifierHumanVoteComparison } from './seed-data/classifier-human-vote-comparison.mts'
-import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
-import { seedAdminEmails } from './seed-data/admin-emails.mts'
-import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
-import { seedHostnameCrawlSweeps } from './seed-data/hostname-crawl-sweeps.mts'
-import {
-  seedHostnameFlags,
-  seedHostnameCacheInvalidationWork,
-} from './seed-data/hostname-flags.mts'
-import {
-  seedBlocklistedDomains,
-  seedCopyrightStaffEvidence,
-  seedUserAgentStrings,
-} from './seed-data/round-trip-shapes.mts'
 import { seedTopHashtags } from './seed-data/top-hashtags.mts'
 import { seedViewDrivenOAuth } from './seed-data/view-driven-oauth.mts'
 import { seedViewDrivenIdentity } from './seed-data/view-driven-identity.mts'
 import { write } from '@data-stores/psql'
 import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
 import { refreshExplainMaterializedViews } from './seed-data/materialized-view-maintenance.mts'
-import { RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT } from './seed-data/common.mts'
-import {
-  seedMembershipRefunds,
-  seedMemberships,
-  seedMembershipProducts,
-} from './seed-data/memberships.mts'
-import { seedMembershipChange } from './seed-data/membership-changes.mts'
 import { seedSharedLoaders } from './seed-data/shared-loaders.mts'
 import { seedModerationReportContexts } from './seed-data/moderation-report-contexts.mts'
 import { assertExplainSeedReady } from './seed-data/seed-preflight.mts'
-import { seedImportRequestRetention } from './seed-data/import-request-retention.mts'
-import { seedPostModerationRetention } from './seed-data/post-moderation-retention.mts'
 import { seedCommentsAndDescendantDepth } from './seed-data/comment-descendant-depth.mts'
+import { seedUsersDependentFixtures } from './seed-data/concurrent-lanes.mts'
 async function main() {
   await assertExplainSeedReady()
   await cleanupPublicationScopePages()
   await cleanupNotificationVisibility()
   await seedUsers(20_000)
-  await seedUserRoleLookups()
-  await seedAdminEmails()
-  await seedTopicImportAttempts()
-  await seedImportRequestRetention()
-  await seedMembershipProducts()
-  await seedMemberships()
-  await seedMembershipChange()
-  await seedMembershipRefunds()
-  await checkpointSeed('memberships')
-  await seedHostnames()
-  await seedHostnameFlags()
-  await seedHostnameCrawlSweeps()
-  await seedBlocklistedDomains()
-  await seedHostnameCacheInvalidationWork()
-  await seedUserAgentStrings()
-  await seedCopyrightStaffEvidence()
-  await seedRemoteFollowers()
-  await seedUrls()
-  await seedTopics(2500)
-  await seedIndividualCards(INDIVIDUAL_CARD_SEED_COUNT)
-  await seedPointValuations(POINT_VALUATION_SEED_COUNT)
-  await seedSpendingCategories(SPENDING_CATEGORY_SEED_COUNT)
-  await seedRewardsProgramStatuses(REWARDS_PROGRAM_STATUS_SEED_COUNT)
-  await seedTopicParentRelations(500)
-  await seedPosts(100_000)
-  await seedPostCreationModerationBypass()
-  await seedPostModerationRetention()
-  await seedSemanticPosts()
-  await seedPostFeedShares()
-  await seedUserRemovedPlatformPosts()
+  await seedUsersDependentFixtures()
   await checkpointSeed('posts')
   await seedEntityRelations(50_000)
   await seedPublisherTypeRelation()
@@ -141,8 +71,6 @@ async function main() {
   await seedFollowPostRelations(5000)
   await seedFollowRelations(10_000)
   await seedMuteBlockRelations(5000)
-  await seedRssFeeds(RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT)
-  await seedSemanticRssFeedItems()
   await seedStoryPostRelatedUrlProjection()
   await seedDisabledRssFeed(2500)
   await seedRssFeedItemCategories(5000)
