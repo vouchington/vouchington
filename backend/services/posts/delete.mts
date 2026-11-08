@@ -49,15 +49,8 @@ export const deletePost = async (
       () => preparePostImageDeliveryMutation(query, { postId: post.id, imageIds: [] }),
       async () => {
         if (options?.delegated) {
-          const communityMemberRole = await lockDelegatedPostThread(query, post.id, deleter.id)
-          await loadWritablePost(
-            deleter,
-            post.id,
-            'delete',
-            { query },
-            undefined,
-            communityMemberRole,
-          )
+          await lockDelegatedPostThread(query, post.id)
+          await loadWritablePost(deleter, post.id, 'delete', { query })
         }
         await lockPostPublication(query, post.id)
       },

@@ -8,7 +8,6 @@ import { POST_THREAD_LOCKED } from '@modules/on-error/error-codes'
 import { getPostByAny } from '../get.mts'
 import { getCommunityWithViewer } from '@services/communities/load-with-viewer'
 import { currentUserCanPostInCommunity } from '@services/communities/authorization'
-import { lockAndAssertNotBanned } from '@services/communities/bans/lock'
 import { assertNotBanned } from '@services/communities/bans/get'
 import { getCommunityPostRestrictionDecision } from '@services/communities/restrictions/enforce'
 import assert from 'http-assert'
@@ -21,16 +20,13 @@ export async function resolvePostScope({
   defaults,
   options,
   updates,
-  communityLockHeld,
   parentPost,
 }: {
   creator: PrivateUser
   defaults: CreatePostDefaults
   options: QueryOptions
   updates: CreatePostInput
-  /** The caller holds this community/user lock in options.query. */
-  communityLockHeld?: boolean
-  /** Parent already read after the delegated thread lock. */
+  /** Parent already checked by delegated parent/root authorization. */
   parentPost?: Post
 }): Promise<PostScope> {
   if (defaults.postType === 'comment') {
@@ -42,7 +38,6 @@ export async function resolvePostScope({
       defaults,
       options,
       updates,
-      communityLockHeld,
     })
   }
   assert(
@@ -58,13 +53,11 @@ async function resolveCommunityPostScope({
   defaults,
   options,
   updates,
-  communityLockHeld,
 }: {
   creator: PrivateUser
   defaults: CreatePostDefaults
   options: QueryOptions
   updates: CreatePostInput
-  communityLockHeld?: boolean
 }): Promise<PostScope> {
   assert(isUUID(updates.community_id!), 422, 'Invalid community_id')
   assert(
@@ -77,10 +70,7 @@ async function resolveCommunityPostScope({
   assert(loaded, 404, 'Community not found')
   const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
-  // Lock + ban check inside the create transaction so a ban committing before the post insert
-  // (later in the same transaction) cannot let a banned user's post through.
-  if (communityLockHeld) await assertNotBanned(updates.community_id!, creator.id, options)
-  else await lockAndAssertNotBanned(updates.community_id!, creator.id, options)
+  await assertNotBanned(updates.community_id!, creator.id, options)
   assert(
     currentUserCanPostInCommunity(creator, community, membership),
     403,

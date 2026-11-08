@@ -14,12 +14,12 @@ import {
   callRejectedMcpTool,
   optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
+import { withConcurrentActorSuspensionForTest } from '@voucha/test-helpers/post-delegated-write-race'
 import {
-  withConcurrentActorSuspensionForTest,
-  withConcurrentCommunityReviewDisableForTest,
-  withConcurrentCommunityDeletionForTest,
-  withConcurrentCommunityArchiveForTest,
-} from '@voucha/test-helpers/post-delegated-write-race'
+  archiveTestCommunity,
+  deleteTestCommunity,
+} from '@voucha/test-helpers/entities/community-archive'
+import { disableTestCommunityReviewPosts } from '@voucha/test-helpers/post-write-context'
 import { loadWritablePost } from '@services/posts/authorization'
 import { deletePost, getPostByAny } from '@services/posts'
 
@@ -97,7 +97,7 @@ describe('delegated post mutation contracts and transaction fences', () => {
     },
   )
 
-  it('rechecks enabled community types after a concurrent settings transaction', async () => {
+  it('checks enabled community types after a committed settings change', async () => {
     const user = await caller()
     const community = await insertTestCommunity({
       createdById: user.id,
@@ -111,11 +111,10 @@ describe('delegated post mutation contracts and transaction fences', () => {
       title: crypto.randomUUID(),
       markdown: 'A useful review with detailed first hand observations. '.repeat(20),
     }
-    expect(
-      await withConcurrentCommunityReviewDisableForTest(community.id, () =>
-        callRejectedMcpTool(user, 'create_post', args, SCOPES),
-      ),
-    ).toContain('review posts are not enabled')
+    await disableTestCommunityReviewPosts(community.id)
+    expect(await callRejectedMcpTool(user, 'create_post', args, SCOPES)).toContain(
+      'review posts are not enabled',
+    )
   })
 
   it('refuses delegated deletion through a stale retained account identity', async () => {
@@ -172,7 +171,7 @@ describe('delegated post mutation contracts and transaction fences', () => {
     },
   )
   it.each(['create_post', 'act_on_post', 'delete_post'])(
-    'refuses %s after community deletion wins the row fence',
+    'refuses %s after community deletion commits',
     async name => {
       const user = await caller()
       const community = await insertTestCommunity({ createdById: user.id })
@@ -204,14 +203,11 @@ describe('delegated post mutation contracts and transaction fences', () => {
           : name === 'act_on_post'
             ? optionArgs('edit', { id: root, title: 'Changed' })
             : { id: root }
-      expect(
-        await withConcurrentCommunityDeletionForTest(community.id, () =>
-          callRejectedMcpTool(user, name, args, SCOPES),
-        ),
-      ).toContain('Post not found')
+      await deleteTestCommunity({ communityId: community.id, deletedById: user.id })
+      expect(await callRejectedMcpTool(user, name, args, SCOPES)).toContain('Post not found')
     },
   )
-  it('refuses a reply after community archiving wins the row fence', async () => {
+  it('refuses a reply after community archiving commits', async () => {
     const user = await caller()
     const community = await insertTestCommunity({ createdById: user.id })
     await insertTestCommunityMember({ communityId: community.id, userId: user.id, role: 'owner' })
@@ -228,19 +224,18 @@ describe('delegated post mutation contracts and transaction fences', () => {
       postId: parent,
       submittedById: user.id,
     })
+    await archiveTestCommunity({ communityId: community.id, archivedById: user.id })
     expect(
-      await withConcurrentCommunityArchiveForTest(community.id, () =>
-        callRejectedMcpTool(
-          user,
-          'create_post',
-          {
-            idempotency_key: crypto.randomUUID(),
-            post_type: 'comment',
-            parent_post_id: parent,
-            markdown: 'Reply',
-          },
-          SCOPES,
-        ),
+      await callRejectedMcpTool(
+        user,
+        'create_post',
+        {
+          idempotency_key: crypto.randomUUID(),
+          post_type: 'comment',
+          parent_post_id: parent,
+          markdown: 'Reply',
+        },
+        SCOPES,
       ),
     ).toContain('Community is archived')
   })

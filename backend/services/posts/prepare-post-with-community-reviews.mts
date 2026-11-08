@@ -130,7 +130,6 @@ export const preparePostWithCommunityReviews = async (
     // ast-grep-ignore: no-three-sequential-awaits -- resolvePostScope returns scope consumed by insertPost; persistPostSourceUrlRelation consumes the insertedPost.id before side effects read that source relation
     const scope = await resolvePostScope({
       ...scopeInput,
-      communityLockHeld: delegated,
       parentPost: delegatedParent,
     })
     const insertedPost = await insertPost({

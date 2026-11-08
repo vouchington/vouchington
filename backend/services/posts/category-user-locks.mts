@@ -1,4 +1,4 @@
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
+import { lockAuthorPublicationLifecycle, lockPostPublication } from '@services/post-publication'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import { assertDelegatedPostActorActive } from './authorization.mts'
 import type { TransactionQuery } from '@data-stores/psql'
@@ -6,10 +6,7 @@ import { lockDelegatedPostThread } from './delegated-write-locks.mts'
 import sql from 'sql-template-strings'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import type { UpdatePostChanges } from './types.mts'
-import {
-  lockPostUpdatePublicationScopes,
-  type PostHashtagIntent,
-} from './update/hashtag-intent.mts'
+import type { PostHashtagIntent } from './update/hashtag-intent.mts'
 
 function postUpdateMayAffectCategories(
   changes: UpdatePostChanges,
@@ -71,8 +68,8 @@ export async function lockPostUpdateMutationScopes(
     await runSequentially([
       () => lockAuthorPublicationLifecycle(query, editorId),
       () => assertDelegatedPostActorActive(editorId, { query }),
-      () => lockDelegatedPostThread(query, postId, editorId),
+      () => lockDelegatedPostThread(query, postId),
     ])
-  await lockPostUpdatePublicationScopes(query, postId, hashtagIntent)
+  await lockPostPublication(query, postId)
   return ownerId
 }

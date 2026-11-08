@@ -1,21 +1,20 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { vi } from 'vitest'
-import { lockDelegatedPostCommunity } from '../services/posts/delegated-write-locks.mts'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
-/** Keep the delegated community fence until the real restriction writer is blocked on it. */
-export async function withHeldDelegatedCommunityFenceForTest<T>(
+/** Stage a community settings write until the restriction writer is blocked on that row. */
+export async function withHeldCommunityUpdateForTest<T>(
   communityId: string,
-  actorId: string,
   operation: () => Promise<T>,
   options: {
     beforeRelease?: (query: TransactionQuery) => Promise<void>
   } = {},
 ): Promise<T> {
   await using query = await beginTransaction()
-  await lockDelegatedPostCommunity(query, communityId, actorId)
+  await query(sql`/* withHeldCommunityUpdateForTest */
+    UPDATE communities SET slug = slug WHERE id = ${communityId}`)
   const processId = await getTestPostgresBackendProcessId(query)
   return await withTestOwnedPostgresWait(
     {

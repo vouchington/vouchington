@@ -133,10 +133,10 @@ describe('delegated post permissions against REST', () => {
     expect(result).toEqual({
       success: true,
     })
-    expect(queries.filter(item => item.text.includes('getCommunityMember'))).toHaveLength(1)
+    expect(queries.filter(item => item.text.includes('getCommunityMember'))).toHaveLength(2)
     expect(
       queries.filter(item => item.text.includes('lockDelegatedPostCommunity.membership')),
-    ).toHaveLength(1)
+    ).toHaveLength(0)
     expect(await getPostByAny(mcpId, { readOnly: false })).toBeNull()
     await request.delete(`/api/v1/posts/${rootId}`).expect(403)
     expect(await rejectedStatus(moderator, 'delete_post', { id: rootId })).toBe(403)

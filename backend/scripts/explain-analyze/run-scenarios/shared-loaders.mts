@@ -3,6 +3,7 @@ import { getPostsWithRootsByAnyBatch } from '@services/posts/get-with-roots-batc
 import { canViewDelegatedPostsBatch } from '@services/posts/check-delegated-access-batch'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { sharedLoaderContract } from './shared-loader-contracts.mts'
+import { runDelegatedWriteContextScenarios } from './delegated-write-context.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { commentSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 import {
@@ -11,6 +12,7 @@ import {
 } from '../seed-data/shared-loaders.mts'
 
 export async function runSharedLoaderScenarios(): Promise<void> {
+  await runDelegatedWriteContextScenarios()
   registerScenarioContract('topic-redirect-batch', sharedLoaderContract('topic-redirect-batch'))
   await runAndCapture('topic-redirect-batch', async () => {
     const results = await getTopicsByAnyWithRedirectBatch([

@@ -7,7 +7,7 @@ import { createCodedError } from '@vouchington/sentry'
 import { POST_THREAD_LOCKED } from '@modules/on-error/error-codes'
 import { getPostByAny } from '../get.mts'
 import { getCommunityMember } from '@services/communities/members/get'
-import { lockAndAssertNotBanned } from '@services/communities/bans/lock'
+import { assertNotBanned } from '@services/communities/bans/get'
 import { getCommunityPostRestrictionDecision } from '@services/communities/restrictions/enforce'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -63,7 +63,7 @@ async function assertCanCommentOnCommunityPost(
   options: QueryOptions,
   updates: CreatePostInput,
 ): Promise<void> {
-  await lockAndAssertNotBanned(communityId, creator.id, options)
+  await assertNotBanned(communityId, creator.id, options)
   const membership = await getCommunityMember(communityId, creator.id, options)
   assert(membership, 403, 'You must be a member of this community to comment in it')
   await getCommunityPostRestrictionDecision({
