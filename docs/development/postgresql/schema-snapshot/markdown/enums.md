@@ -1239,6 +1239,7 @@
 - `story_item_remove`
 - `story_official_item_set`
 - `story_rename`
+- `stripe_purchase_collision_review_dispose`
 - `suspend`
 - `topic_claim_reject`
 - `topic_claim_revoke`
@@ -1328,6 +1329,7 @@
 - `import_batch_create`
 - `preservation_hold_place`
 - `preservation_hold_release`
+- `stripe_purchase_collision_review_dispose`
 
 ## `notification_delete_reasons`
 

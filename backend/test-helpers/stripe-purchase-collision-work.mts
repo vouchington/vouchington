@@ -30,6 +30,7 @@ export async function readTestStripePurchaseCollisionWork(
 }
 
 export type TestStripePurchaseCollisionReview = {
+  id: string
   membership_source_id: string
   membership_provider_lineage_id: string
   membership_lineage_binding_id: string
@@ -48,7 +49,7 @@ export async function readTestStripePurchaseCollisionReview(
 ): Promise<TestStripePurchaseCollisionReview | null> {
   const { rows } = await read<TestStripePurchaseCollisionReview>(sql`
     /* readTestStripePurchaseCollisionReview */
-    SELECT membership_source_id, membership_provider_lineage_id,
+    SELECT id, membership_source_id, membership_provider_lineage_id,
       membership_lineage_binding_id, originating_invoice_id,
       winning_source_kind, winning_plan, collision_at,
       invoice_line_count, mapped_membership_line_count

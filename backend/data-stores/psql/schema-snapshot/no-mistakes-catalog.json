@@ -925,6 +925,7 @@
         "story_item_remove",
         "story_official_item_set",
         "story_rename",
+        "stripe_purchase_collision_review_dispose",
         "suspend",
         "topic_claim_reject",
         "topic_claim_revoke",
@@ -1010,7 +1011,8 @@
         "article_sync_run",
         "import_batch_create",
         "preservation_hold_place",
-        "preservation_hold_release"
+        "preservation_hold_release",
+        "stripe_purchase_collision_review_dispose"
       ]
     },
     "notification_delete_reasons": {
@@ -74431,7 +74433,7 @@
           "ordinalPosition": 6
         }
       },
-      "comment": "Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation or audit history.",
+      "comment": "Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation. The disposition is recorded as a moderator action.",
       "foreignKeys": {
         "fk_membership_stripe_purchase_collision_reviews__binding": {
           "columns": ["membership_lineage_binding_id", "membership_provider_lineage_id"],
@@ -81150,7 +81152,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "hostname_crawler_configuration_id": {
           "comment": "Target crawler created, edited, or deleted by staff.",
@@ -81172,6 +81174,16 @@
           "nullable": false,
           "ordinalPosition": 1
         },
+        "membership_ineligible_purchase_reversal_case_id": {
+          "comment": "Reversal case created by disposing a Stripe purchase collision review. The review id stays in metadata because that review row is deleted.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 29
+        },
         "metadata": {
           "comment": "Structured context snapshot (e.g. role change target role, topic slugs for tags).",
           "dataType": "jsonb",
@@ -81180,7 +81192,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "moderation_appeal_id": {
           "comment": "Target moderation appeal for resolve_appeal/dismiss_appeal actions.",
@@ -81250,7 +81262,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "report_abuse_penalty_id": {
           "comment": "Target report-abuse penalty applied, reviewed or revoked.",
@@ -81381,6 +81393,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["post_id", "id"],
           "referencedTable": "agent_moderations",
+          "validated": true
+        },
+        "fk_moderator_actions__ineligible_purchase_reversal_case_id": {
+          "columns": ["membership_ineligible_purchase_reversal_case_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "membership_ineligible_purchase_reversal_cases",
           "validated": true
         },
         "fk_moderator_actions__moderation_appeal_id": {
@@ -81743,6 +81763,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__ineligible_purchase_reversal_case_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__ineligible_purchase_reversal_case_id ON public.moderator_actions USING btree (membership_ineligible_purchase_reversal_case_id) WHERE (membership_ineligible_purchase_reversal_case_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "membership_ineligible_purchase_reversal_case_id",
+              "descending": false,
+              "expression": "membership_ineligible_purchase_reversal_case_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(membership_ineligible_purchase_reversal_case_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

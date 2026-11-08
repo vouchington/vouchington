@@ -8119,6 +8119,9 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination

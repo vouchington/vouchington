@@ -61,6 +61,7 @@ export async function getModeratorActionRowsForTest(params: {
     report_id: string | null
     review_dispute_id: string | null
     community_application_id: string | null
+    membership_ineligible_purchase_reversal_case_id: string | null
     reason: string | null
     metadata: Record<string, unknown>
     created_at: string
@@ -69,7 +70,8 @@ export async function getModeratorActionRowsForTest(params: {
   const query = sql`/* getModeratorActionRowsForTest */
     SELECT id, community_id, actor_user_id, action_type, post_id, target_user_id,
            report_abuse_penalty_id, vote_weight_penalty_id,
-           report_id, review_dispute_id, community_application_id, reason, metadata, created_at
+           report_id, review_dispute_id, community_application_id,
+           membership_ineligible_purchase_reversal_case_id, reason, metadata, created_at
     FROM moderator_actions
     WHERE TRUE
   `
@@ -98,6 +100,7 @@ export async function getModeratorActionRowsForTest(params: {
     report_id: string | null
     review_dispute_id: string | null
     community_application_id: string | null
+    membership_ineligible_purchase_reversal_case_id: string | null
     reason: string | null
     metadata: Record<string, unknown>
     created_at: string

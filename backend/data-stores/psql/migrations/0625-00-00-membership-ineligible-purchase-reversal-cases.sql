@@ -87,7 +87,7 @@ ALTER TABLE membership_stripe_purchase_collision_reviews
 CREATE TRIGGER trigger_membership_stripe_purchase_collision_reviews_guard
   BEFORE UPDATE ON membership_stripe_purchase_collision_reviews
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
-COMMENT ON TABLE membership_stripe_purchase_collision_reviews IS 'Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation or audit history.';
+COMMENT ON TABLE membership_stripe_purchase_collision_reviews IS 'Current unresolved staff reviews for ambiguous Stripe invoices. Unique lineage/invoice identity preserves evidence without retrying discovery; explicit staff disposition removes the review. This is not financial allocation. The disposition is recorded as a moderator action.';
 COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.id IS 'UUIDv7 staff-review identity; bounded staff inspection orders by this key.';
 COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_source_id IS 'Retained losing Stripe source; this evidence does not authorize a deleted owner.';
 COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.membership_provider_lineage_id IS 'Canonical Stripe lineage identifying the subscription and provider context for staff investigation.';
@@ -120,6 +120,15 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   CHECK (refund_cap_minor_units <= qualifying_amount_minor_units),
   CHECK (period_ends_at >= period_started_at)
 );
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+ALTER TABLE moderator_actions DROP CONSTRAINT IF EXISTS fk_moderator_actions__ineligible_purchase_reversal_case_id;
+ALTER TABLE moderator_actions ADD CONSTRAINT fk_moderator_actions__ineligible_purchase_reversal_case_id
+  FOREIGN KEY (membership_ineligible_purchase_reversal_case_id)
+  REFERENCES membership_ineligible_purchase_reversal_cases (id)
+  ON DELETE SET NULL
+  NOT VALID;
+ALTER TABLE moderator_actions VALIDATE CONSTRAINT fk_moderator_actions__ineligible_purchase_reversal_case_id;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__invoice

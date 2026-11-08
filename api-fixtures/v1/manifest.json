@@ -12115,6 +12115,12 @@
                   "type": "number"
                 }
               },
+              "stripe_purchase_collision_review_dispose": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
               "suspend": {
                 "required": false,
                 "schema": {

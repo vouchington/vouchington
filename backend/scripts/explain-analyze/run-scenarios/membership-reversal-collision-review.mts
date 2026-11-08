@@ -3,6 +3,7 @@ import { recordStripePurchaseCollisionReviews } from '@services/memberships/inel
 import type { StripePurchaseCollisionWork } from '@services/memberships/ineligible-stripe-purchase-reversal/collision-work'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { runMembershipReversalCollisionReviewStaffScenario } from './membership-reversal-collision-review-staff.mts'
 
 export async function runMembershipReversalCollisionReviewScenario(input: {
   source: { id: string; lineageId: string; bindingId: string }
@@ -107,4 +108,5 @@ export async function runMembershipReversalCollisionReviewScenario(input: {
     undefined,
     'recordStripePurchaseCollisionReviews',
   )
+  await runMembershipReversalCollisionReviewStaffScenario({ lineageId: input.source.lineageId })
 }

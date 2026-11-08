@@ -8,6 +8,7 @@ const admin = (guard: string, routes: string[]) =>
 
 export const directStaffExclusions = [
   ...admin('isAdminUser', [
+    'POST /admin/membership-stripe-purchase-collision-reviews/:id/disposition',
     'POST /curated-aside-items',
     'DELETE /curated-aside-items/:id',
     'PUT /curated-aside-items/order',
