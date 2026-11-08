@@ -9,6 +9,7 @@ import { getPostIds } from '../run-services.mts'
 
 const HIDDEN_STORY_COUNT = 200
 const PAGE_LIMIT = 21
+const HOT_POST_MAX = 3010
 /** Hidden stories ranked above the page, the page, and its lookahead row, with join slack. */
 const PROBE_MAX = (HIDDEN_STORY_COUNT + PAGE_LIMIT + 1) * 8
 
@@ -41,13 +42,26 @@ async function captureStorySearch(scenario: string, sort: 'new' | 'best' | 'hot'
 
 function storySearchExpectations(sort: 'new' | 'best' | 'hot'): PlanExpectation[] {
   const expectations: PlanExpectation[] = [
-    { kind: 'maxProcessedRows', relation: 'posts', max: PROBE_MAX },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'posts',
+      max: sort === 'hot' ? HOT_POST_MAX : PROBE_MAX,
+    },
     { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: PROBE_MAX },
     { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: PROBE_MAX },
     { kind: 'maxProcessedRows', relation: 'rss_feeds', max: PROBE_MAX },
     { kind: 'maxProcessedRows', relation: 'stories', max: PROBE_MAX },
     { kind: 'maxProcessedRows', relation: 'story_posts', max: PROBE_MAX },
   ]
-  if (sort === 'hot') expectations.push({ kind: 'noSeqScan', relation: 'posts' })
+  if (sort === 'hot') {
+    expectations.push({
+      kind: 'usesIndexes',
+      indexes: [
+        'posts__default_post_type_case_id_idx',
+        'idx_posts__post_type__stable_hot_rank__id',
+      ],
+      anyOf: true,
+    })
+  }
   return expectations
 }

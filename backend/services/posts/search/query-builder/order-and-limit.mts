@@ -68,6 +68,7 @@ function orderByClause({
       return sql`
     ORDER BY posts.votes_score_sort DESC, posts.id DESC`
     case 'hot':
+    case 'trending':
       return sql`
     ORDER BY hot_score DESC, posts.id DESC`
     case 'relevance':

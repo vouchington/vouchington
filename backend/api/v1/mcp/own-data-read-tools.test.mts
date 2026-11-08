@@ -1,17 +1,14 @@
-import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
 import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import type { ApiScope } from '@modules/scopes'
 import { createApiKey } from '@services/api-keys'
 import { createProfileLink } from '@services/my/profile-links'
 import { createFollowNotification } from '@services/notifications'
-import { prepareTopicRecommendation } from '@services/topic-recommendations'
 import type { PrivateUser } from '@services/users/types'
 import {
   createRandomString,
   createTestUser,
   setUserMarkdown,
   suspendTestUser,
-  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { issueTestOAuthTokens } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
@@ -25,18 +22,8 @@ type ToolCallBody = {
 }
 
 const KINDS = ['api_key', 'oauth'] as const satisfies readonly Kind[]
-const ALL = [
-  'profile:read',
-  'notifications:read',
-  'preferences:read',
-  'topic-recommendations:read',
-] as const
-const TOOLS = [
-  'read_my_notifications',
-  'read_my_profile',
-  'read_my_preferences',
-  'list_my_topic_recommendations',
-]
+const ALL = ['profile:read', 'notifications:read', 'preferences:read'] as const
+const TOOLS = ['read_my_notifications', 'read_my_profile', 'read_my_preferences']
 
 function postMcp(token: string, body: unknown) {
   return createRequest()
@@ -98,16 +85,6 @@ describe('own profile, notification and preference read tools over MCP HTTP', ()
       link_type: 'url',
       url: 'https://example.com/me',
     })
-    const recommendation = await createTestTopicRecommendation(
-      prepareTopicRecommendation,
-      owner,
-      WEB_PROVENANCE,
-      {
-        markdown: 'Why not',
-        topic_title: `Own data ${createRandomString(6)}`,
-        topic_slug: `own-data-${createRandomString(6).toLowerCase()}`,
-      },
-    )
     const token = await issueCredential(kind, owner, ALL)
 
     const page = await readTool(token, 'read_my_notifications', optionArgs('list', {}))
@@ -116,7 +93,6 @@ describe('own profile, notification and preference read tools over MCP HTTP', ()
     const links = await readTool(token, 'read_my_profile', optionArgs('links', {}))
     const emailPreferences = await readTool(token, 'read_my_preferences', optionArgs('email', {}))
     const preferences = await readTool(token, 'read_my_preferences', optionArgs('general', {}))
-    const recommendations = await readTool(token, 'list_my_topic_recommendations')
 
     expect(page).toMatchObject({
       success: true,
@@ -128,11 +104,6 @@ describe('own profile, notification and preference read tools over MCP HTTP', ()
     expect(links).toMatchObject({ success: true, results: [{ id: link.id }] })
     expect(emailPreferences).toMatchObject({ success: true, email_preferences: expect.any(Object) })
     expect(preferences).toMatchObject({ success: true, settings: expect.any(Object) })
-    expect(recommendations).toMatchObject({
-      success: true,
-      results: [{ id: recommendation.id, post_type: 'topic_recommendation' }],
-      page_info: { has_next_page: false },
-    })
   })
 
   it.each(KINDS)('%s lists a tool only with the scope it needs', async kind => {

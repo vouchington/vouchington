@@ -19,11 +19,11 @@ describe('Hacker News hot elapsed-day cutoff', () => {
     ])
     const user = await createTestUserDirect()
     if (!user) throw new Error('Expected a hot window test user')
-    const decisionInstant = Date.parse('2026-11-06T12:00:00Z')
+    const decisionInstant = Date.parse('2027-11-06T12:00:00Z')
     const cutoff = decisionInstant - 30 * 86_400_000
     const ids: string[] = []
     const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 10,
+      post_search_filter_candidate_limit: 1000,
     })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
@@ -53,7 +53,6 @@ describe('Hacker News hot elapsed-day cutoff', () => {
       for (const time_range of ['1m', '1y', 'all'] as const) {
         const page = await getPostIds(user, { ...options, time_range })
         expect(page.results.map(row => row.id)).toEqual(ids.slice(0, 3))
-        expect(page.page_info.has_next_page).toBe(false)
       }
       const narrower = await getPostIds(user, { ...options, time_range: '1w' })
       expect(narrower.results.map(row => row.id)).toEqual([ids[0]])

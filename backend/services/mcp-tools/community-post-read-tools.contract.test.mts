@@ -8,7 +8,6 @@ import {
   deleteTestPost,
   insertTestCommunity,
   insertTestCommunityMember,
-  setMarkdownPostVotesForTest,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
@@ -21,15 +20,8 @@ type PostBody = {
   is_anonymous: boolean
   markdown: string
 }
-type PostsPage = {
-  success: true
-  pinned_post_ids: string[]
-  results: PostBody[]
-  page_info: { has_next_page: boolean; end_cursor: string | null }
-}
 
 const NOT_FOUND = { success: false, error: 'Community not found' }
-const INVALID_CURSOR = { success: false, error: 'Invalid cursor' }
 
 type Caller = PrivateUser & { membership_plan: null }
 
@@ -94,84 +86,28 @@ describe('read_community.posts and read_community.pinned_posts — real DB', () 
         is_anonymous: true,
       }),
     }
-    await Promise.all([
-      setMarkdownPostVotesForTest({ postId: posts.two, countUp: 1 }),
-      setMarkdownPostVotesForTest({ postId: posts.four, countUp: 1 }),
-    ])
     await createCommunityPostFixture(author, communityId, text('Unapproved'))
     await setPinnedPosts(owner, communityId, [posts.one, posts.pinnedAnon, posts.three])
   })
 
-  const listPosts = (args: Body = {}, caller: Caller = author) =>
-    call(
-      caller,
-      'read_community',
-      optionArgs('posts', {
-        community_id: slug,
-        ...args,
-      }),
-    ) as unknown as Promise<PostsPage>
-
-  describe('read_community.posts', () => {
-    it('leaves pinned and unapproved posts out of the page and names the pins once', async () => {
-      const first = await listPosts({ limit: 2 })
-      const second = await listPosts({ limit: 2, after: first.page_info.end_cursor })
-
-      expect(idsOf(first.results)).toEqual([posts.anon, posts.four])
-      expect(first.pinned_post_ids).toEqual([posts.one, posts.pinnedAnon, posts.three])
-      expect(first.page_info.has_next_page).toBe(true)
-      expect(idsOf(second.results)).toEqual([posts.two])
-      expect(second.pinned_post_ids).toEqual([])
-      expect(second.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
-    })
-
-    it('lists pinned posts again, without naming the pins, when q filters the page', async () => {
-      const page = await listPosts({ q: `marker ${random}` })
-
-      expect(new Set(idsOf(page.results))).toEqual(new Set([posts.one, posts.two]))
-      expect(page.pinned_post_ids).toEqual([])
-    })
-
-    it('returns the same page as the signed-out REST route, by id as well as slug', async () => {
-      const response = await createRequest().get(`/api/v1/communities/${slug}/posts`).expect(200)
-
-      const page = await listPosts({ community_id: communityId })
-
-      expect(idsOf(page.results)).toEqual(
-        response.body.results.map((row: { id: string }) => row.id),
-      )
-      expect(page.pinned_post_ids).toEqual(response.body.pinned_post_ids)
-    })
-
-    it('hides the author of an anonymous post from the author and from administrators', async () => {
-      const anonId = posts.anon
-      for (const caller of [author, admin, owner]) {
-        const { results } = await listPosts({}, caller)
-        const anon = results.find(post => post.id === anonId)
-
-        expect(anon).toMatchObject({ is_anonymous: true, created_by_id: null })
-        expect(JSON.stringify(results)).not.toContain(author.id)
-      }
-    })
-
-    it('wraps post text as external content', async () => {
-      const [plain] = (await listPosts({ limit: 1 })).results
-
-      expect(plain?.markdown).toContain(`body ${random}`)
-      expect(plain?.markdown).not.toBe(`Anon body ${random}`)
-    })
-
-    it('sorts by hot and refuses a cursor from the other sort', async () => {
-      const hot = await listPosts({ sort: 'hot', limit: 1 })
-      const recent = await listPosts({ limit: 1 })
-
-      expect(hot.results).toHaveLength(1)
-      expect(await listPosts({ after: hot.page_info.end_cursor })).toEqual(INVALID_CURSOR)
-      expect(await listPosts({ sort: 'hot', after: recent.page_info.end_cursor })).toEqual(
-        INVALID_CURSOR,
-      )
-      expect(await listPosts({ after: 'not-a-cursor' })).toEqual(INVALID_CURSOR)
-    })
+  it('returns the same filtered community post from REST and read_posts search', async () => {
+    const query = `Plain four ${random}`
+    const request = createRequest()
+    await request.authenticateAs(author)
+    const rest = await request
+      .get(`/api/v1/communities/${slug}/posts?q=${encodeURIComponent(query)}`)
+      .expect(200)
+    const result = await callStructuredMcpTool(
+      author,
+      'read_posts',
+      optionArgs('search', { community_id: communityId, q: query, sort: 'new' }),
+      ['posts:read'],
+    )
+    expect((result.results as PostBody[]).map(post => post.id)).toEqual(
+      rest.body.results.map((post: { id: string }) => post.id),
+    )
+    expect((result.results as PostBody[]).map(post => post.id)).toEqual([posts.four])
+    expect(result.page_info).toEqual(rest.body.page_info)
   })
 
   describe('read_community.pinned_posts', () => {
@@ -204,7 +140,8 @@ describe('read_community.posts and read_community.pinned_posts — real DB', () 
       expect(idsOf(pinned_posts)).toEqual(
         response.body.pinned_posts.map((pin: { post_id: string }) => pin.post_id),
       )
-      expect(idsOf(pinned_posts)).toEqual((await listPosts()).pinned_post_ids)
+      const page = await createRequest().get(`/api/v1/communities/${slug}/posts`).expect(200)
+      expect(idsOf(pinned_posts)).toEqual(page.body.pinned_post_ids)
     })
 
     it('leaves out a pinned post the public can no longer read', async () => {
@@ -227,21 +164,18 @@ describe('read_community.posts and read_community.pinned_posts — real DB', () 
   })
 
   describe('a private community', () => {
-    it.each(['posts', 'pinned_posts'] as const)(
-      'is not found by read_community.%s for its member, owner and an administrator',
-      async option => {
-        const community = await communityWithMembers({ visibility: 'private' })
-        const post = await publish(community.id, owner, { broadcast: 'users', privacy: 'private' })
-        await setPinnedPosts(owner, community.id, [post])
+    it('is not found by read_community.pinned_posts for its member, owner and an administrator', async () => {
+      const community = await communityWithMembers({ visibility: 'private' })
+      const post = await publish(community.id, owner, { broadcast: 'users', privacy: 'private' })
+      await setPinnedPosts(owner, community.id, [post])
 
-        for (const caller of [author, owner, admin]) {
-          for (const community_id of [community.id, community.slug]) {
-            expect(
-              await call(caller, 'read_community', optionArgs(option, { community_id })),
-            ).toEqual(NOT_FOUND)
-          }
+      for (const caller of [author, owner, admin]) {
+        for (const community_id of [community.id, community.slug]) {
+          expect(
+            await call(caller, 'read_community', optionArgs('pinned_posts', { community_id })),
+          ).toEqual(NOT_FOUND)
         }
-      },
-    )
+      }
+    })
   })
 })

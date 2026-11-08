@@ -87,7 +87,7 @@ const PLUS_GATED_WRITE_SCOPES: ApiScope[] = [
   'disputes:write',
   'appeals:read',
   'appeals:write',
-  'topic-recommendations:read',
+  'posts:read',
   'topic-recommendations:write',
 ]
 

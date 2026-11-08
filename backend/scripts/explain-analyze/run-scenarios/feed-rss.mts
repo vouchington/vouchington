@@ -69,8 +69,14 @@ export async function runFeedRssScenarios(): Promise<void> {
     getPostIds(seedUser, { sort: 'best', limit: 25, time_range: '1w' }),
   )
   registerScenarioContract('post-search-hot', {
-    expectations: [],
-    crossPartition: { posts: 'Search ranks eligible posts across the requested week.' },
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'posts', max: 3010 },
+      { kind: 'maxBitmapIndexRows', max: 1050 },
+      { kind: 'usesIndexes', indexes: ['posts__default_case_id_idx'] },
+    ],
+    crossPartition: {
+      posts: 'Search ranks eligible posts through a bounded stable-rank candidate window.',
+    },
   })
   await runAndCapture('post-search-hot', () =>
     getPostIds(seedUser, { sort: 'hot', limit: 25, time_range: '1w' }),

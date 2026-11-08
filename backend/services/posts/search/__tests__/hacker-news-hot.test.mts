@@ -8,9 +8,9 @@ import {
 } from '@voucha/test-helpers'
 import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { decodeScopedScoreCursor } from '@modules/pagination'
 import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
 import { getPostIds } from '../get-ids.mts'
-import { decodePostSearchCursor } from '../get-ids-page-info.mts'
 import { buildPostSearchQuery } from '../query-builder.mts'
 import { postsWorkConfig } from '../../work-limits.mts'
 import {
@@ -31,7 +31,7 @@ describe('Hacker News hot search bounds', () => {
     ])
     const ids: string[] = []
     const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 2,
+      post_search_filter_candidate_limit: 1000,
     })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
@@ -56,29 +56,28 @@ describe('Hacker News hot search bounds', () => {
         limit: 1,
       } as const
       const first = await getPostIds(user, options)
-      expect(first.results.map(row => row.id)).toEqual([ids[0]])
+      expect(first.results.map(row => row.id)).toEqual([ids[2]])
       expect(first.page_info.has_next_page).toBe(true)
       const second = await getPostIds(user, {
         ...options,
         after: first.page_info.end_cursor ?? undefined,
       })
-      expect(second.results.map(row => row.id)).toEqual([ids[1]])
-      expect(second.page_info.has_next_page).toBe(false)
+      expect(second.results.map(row => row.id)).toEqual([ids[0]])
       for (const time_range of ['1m', '1y', 'all'] as const) {
         const bounded = await getPostIds(user, { ...options, time_range })
-        expect(bounded.results.map(row => row.id)).toEqual([ids[0]])
-        const cursor = decodePostSearchCursor(
-          { after: bounded.page_info.end_cursor!, time_range },
-          'hot',
-          false,
+        expect(bounded.results.map(row => row.id)).toEqual([ids[2]])
+        const cursor = decodeScopedScoreCursor(
+          bounded.page_info.end_cursor!,
+          'post-hot-stable-2026',
+          'Expected hot cursor',
         )
-        expect(Number.isFinite(cursor.hot_score_lt)).toBe(true)
+        expect(Number.isFinite(cursor.score)).toBe(true)
         const next = await getPostIds(user, {
           ...options,
           time_range,
           after: bounded.page_info.end_cursor ?? undefined,
         })
-        expect(next.results.map(row => row.id)).toEqual([ids[1]])
+        expect(next.results.map(row => row.id)).toEqual([ids[0]])
       }
       const restoreHidden = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
         references_visible: false,
@@ -104,13 +103,13 @@ describe('Hacker News hot search bounds', () => {
       hackerNewsVisibilityConfig.waitForInitialization(),
     ])
     const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 1,
+      post_search_filter_candidate_limit: 1000,
     })
     const ids: string[] = []
     try {
       const approved = await insertTestPost({
         createdById: owner.id,
-        createdAt: new Date(Date.now() - 3 * 60_000),
+        createdAt: new Date('2027-11-06T12:00:00.000Z'),
         title: crypto.randomUUID(),
         slug: crypto.randomUUID(),
         markdown: 'Approved cohort fixture',
@@ -120,7 +119,7 @@ describe('Hacker News hot search bounds', () => {
       await setPostVotesScoreUp(approved, 1)
       const pending = await insertTestPost({
         createdById: owner.id,
-        createdAt: new Date(Date.now() - 2 * 60_000),
+        createdAt: new Date('2027-11-06T12:01:00.000Z'),
         title: crypto.randomUUID(),
         slug: crypto.randomUUID(),
         markdown: 'Pending cohort fixture',
@@ -138,12 +137,15 @@ describe('Hacker News hot search bounds', () => {
       } as const
       expect((await getPostIds(undefined, options)).results.map(row => row.id)).toEqual([approved])
       expect((await getPostIds(other, options)).results.map(row => row.id)).toEqual([approved])
-      expect((await getPostIds(owner, options)).results.map(row => row.id)).toEqual([pending])
+      expect((await getPostIds(owner, options)).results.map(row => row.id)).toEqual([
+        pending,
+        approved,
+      ])
       expect(
         (await getPostIds({ ...other, roles: ['administrator'] }, options)).results.map(
           row => row.id,
         ),
-      ).toEqual([pending])
+      ).toEqual([pending, approved])
     } finally {
       restore()
       await Promise.all(ids.map(id => deleteTestPost(id)))
@@ -158,7 +160,7 @@ describe('Hacker News hot search bounds', () => {
       hackerNewsVisibilityConfig.waitForInitialization(),
     ])
     const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 10,
+      post_search_filter_candidate_limit: 1000,
     })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
@@ -213,7 +215,7 @@ describe('Hacker News hot search bounds', () => {
       await setHackerNewsReferenceFlagsForTest(ids, [])
       const expected = ids.toSorted((a, b) => b.localeCompare(a))
       const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-        hacker_news_hot_candidate_limit: 2,
+        post_search_filter_candidate_limit: 1000,
       })
       const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
         references_visible: true,
@@ -236,7 +238,6 @@ describe('Hacker News hot search bounds', () => {
           after: first.page_info.end_cursor ?? undefined,
         })
         expect(second.results.map(row => row.id)).toEqual(expected.slice(1))
-        expect(second.page_info.has_next_page).toBe(false)
       } finally {
         restoreVisibility()
         restoreCap()
@@ -248,7 +249,7 @@ describe('Hacker News hot search bounds', () => {
   it('enforces the hard maximum in the SQL limit even if config bypasses admin validation', async () => {
     await postsWorkConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 1_000_000,
+      post_search_filter_candidate_limit: 1_000_000,
     })
     try {
       const query = buildPostSearchQuery(undefined, {

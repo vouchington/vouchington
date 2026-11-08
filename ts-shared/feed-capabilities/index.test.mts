@@ -3,6 +3,7 @@ import {
   VALID_COMMUNITY_NEWS_FEED_TYPES,
   VALID_FEED_TIME_RANGES,
   VALID_FILTERABLE_POST_TYPES,
+  VALID_SEARCH_POST_TYPES,
   VALID_POST_FEED_TYPES,
   VALID_RSS_FEED_ITEM_FEED_TYPES,
   VALID_RSS_POST_TYPES,
@@ -36,6 +37,10 @@ describe('feed capability catalogs', () => {
       'story',
     ])
     expect(VALID_RSS_POST_TYPES).toEqual(['discussion', 'review', 'data_point'])
+    expect(VALID_SEARCH_POST_TYPES).toEqual([
+      ...VALID_FILTERABLE_POST_TYPES,
+      'topic_recommendation',
+    ])
     expect(VALID_TRENDING_POST_TYPES).toEqual(['discussion', 'review', 'data_point', 'story'])
   })
 

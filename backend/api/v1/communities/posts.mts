@@ -10,9 +10,17 @@ import {
 import {
   loadCommunityForViewer,
   loadCommunityForPublicationModerator,
-  getCommunityPostsPage,
   searchPendingPosts,
 } from '@services/communities'
+import { getPinnedPostIds } from '@services/communities/publications/pinned'
+import {
+  shouldExcludeCommunityPinnedPosts,
+  shouldIncludeCommunityPinnedPosts,
+} from '@services/communities/publications/pinned-post-filter'
+import { getPostIds } from '@services/posts/search/get-ids'
+import { preparePostsSearchParams, resolvePostsSearchParams } from '@services/search-params'
+import { resolveHashtagTopicSearch } from '@services/search-params/hashtag-topic-search'
+import { VALID_FILTERABLE_POST_TYPES } from '@ts-shared/feed-capabilities'
 import { attachPostClaims } from '@services/moderation-claims'
 import { getBookmarksForEntityGroups } from '@services/bookmarks/get'
 import { attachPostProvenance } from '@services/content-provenance'
@@ -69,15 +77,35 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
     },
   })
 
-  const result = await getCommunityPostsPage(community.id, {
-    currentUser: currentUser ?? null,
+  const hashtags = await resolveHashtagTopicSearch(ctx.query.q)
+  const pinFilter = {
+    hasHashtagFilter: hashtags.hasUnknown || hashtags.filters.length > 0,
+    textSearchQuery: hashtags.textSearchQuery,
+    topicIds: hashtags.topicIds,
+  }
+  const excludedPins = shouldExcludeCommunityPinnedPosts(pinFilter)
+    ? await getPinnedPostIds(community.id, currentUser ?? null)
+    : []
+  const prepared = preparePostsSearchParams({
     q: ctx.query.q,
     sort,
     time_range: ctx.query.time_range as TimeRange | undefined,
-    limit,
+    limit: limit ?? 20,
     after,
   })
-  const pinnedPostIds = result.pinned_post_ids
+  const { shouldReturnEmpty, searchOptions } = await resolvePostsSearchParams(prepared)
+  const result = shouldReturnEmpty
+    ? { results: [], page_info: { has_next_page: false, start_cursor: null, end_cursor: null } }
+    : await getPostIds(currentUser ?? undefined, {
+        ...searchOptions,
+        community_id: community.id,
+        include_archived_communities: true,
+        post_types: [...VALID_FILTERABLE_POST_TYPES],
+        exclude_post_ids: excludedPins,
+      })
+  const pinnedPostIds = shouldIncludeCommunityPinnedPosts({ after, ...pinFilter })
+    ? excludedPins
+    : []
 
   const resultPostIds = result.results.map(p => p.id)
   const allPostIds = [...new Set([...pinnedPostIds, ...resultPostIds])]

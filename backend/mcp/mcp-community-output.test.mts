@@ -4,7 +4,6 @@ import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.
 import { describe, expect, it } from 'vitest'
 import getCommunityMembersTool from './get-community-members.mts'
 import getCommunityPinnedPostsTool from './get-community-pinned-posts.mts'
-import getCommunityPostsTool from './get-community-posts.mts'
 import getCommunityTool from './get-community.mts'
 import { COMMUNITY_PAGE_LIMIT, mcpCommunityEntryProperties } from './mcp-community-output.mts'
 import { mcpPostSchema } from './mcp-post-output.mts'
@@ -47,7 +46,6 @@ function branches(tool: { meta?: Tool['meta'] }): JsonSchema[] {
 const TOOLS = [
   ['discover_communities', searchCommunitiesTool, '/api/v1/communities'],
   ['read_community', getCommunityTool, '/api/v1/communities/{idOrSlug}'],
-  ['read_community', getCommunityPostsTool, '/api/v1/communities/{idOrSlug}/posts'],
   ['read_community', getCommunityPinnedPostsTool, '/api/v1/communities/{idOrSlug}/pinned-posts'],
   ['read_community', getCommunityMembersTool, '/api/v1/communities/{idOrSlug}/members'],
 ] as const
@@ -86,7 +84,6 @@ describe('community read tool output schemas', () => {
 
   it.each([
     ['discover_communities', searchCommunitiesTool],
-    ['read_community', getCommunityPostsTool],
     ['read_community', getCommunityMembersTool],
   ] as const)('takes the page info of %s from the PageInfo contract', (_name, tool) => {
     const found = propertiesOf(branches(tool)[0]!)
@@ -101,10 +98,6 @@ describe('community read tool output schemas', () => {
   it('hydrates posts with the same leaner post shape the post read tools return', () => {
     const posts = propertiesOf(branches(getCommunityPinnedPostsTool)[0]!)['pinned_posts']
     expect((posts as { items: unknown }).items).toEqual(mcpPostSchema())
-    expect(propertiesOf(branches(getCommunityPostsTool)[0]!)['results']).toEqual({
-      type: 'array',
-      items: mcpPostSchema(),
-    })
   })
 
   it.each(TOOLS)('publishes %s as a closed found-or-not-found object', (name, tool) => {
@@ -139,7 +132,6 @@ describe('community read tool output schemas', () => {
 
   it.each([
     ['discover_communities', searchCommunitiesTool],
-    ['read_community', getCommunityPostsTool],
     ['read_community', getCommunityMembersTool],
   ] as const)('bounds the %s page size at the documented maximum', (_name, tool) => {
     const { min, max } = COMMUNITY_PAGE_LIMIT

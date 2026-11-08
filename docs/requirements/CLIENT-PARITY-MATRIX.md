@@ -601,6 +601,17 @@ the explicit web range options, and send a code only for an explicit choice. The
 the returned cursor under the same range. Client work is dependent (vouchington-clients#537) and
 does not gate this repository.
 
+## Shared post discovery filters and ranking
+
+REST post search, community post lists, trending posts, and MCP post search apply the same
+viewer-aware discovery eligibility to community and topic-recommendation filters. Hot and trending
+pagination uses an opaque cursor tied to a fixed-epoch rank; near-tie order can differ from
+request-clock ranking, and cursors from the prior rank are refused. A bounded read may return a
+short or empty page while `has_next_page` is true, so clients follow the returned cursor and treat
+it as an opaque string. Native catalog and result-fixture adoption remains tracked in
+[vouchington-clients#398](https://github.com/vouchington/vouchington-clients/issues/398); this
+producer contract makes no new native UI parity claim.
+
 ## Comment descendant head pagination
 
 REST and MCP page immediate-child heads and attach bounded reply previews. A continuation cursor

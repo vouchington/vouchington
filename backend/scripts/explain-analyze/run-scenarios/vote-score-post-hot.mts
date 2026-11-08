@@ -1,4 +1,4 @@
-import { getPostIds, getPostFeedIds, getTrendingPosts } from '../run-services.mts'
+import { getPostIds, getPostFeedIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { withSeedAnchorClock } from '../seed-clock.mts'
@@ -6,6 +6,7 @@ import { seedVoteScorePostHotFixture } from '../seed-data/vote-score-post-hot.mt
 
 const PAGE_SIZE = 25
 const WEEKLY_POST_SCAN_CAP = 15_000
+const BOUNDED_POST_SEARCH_SCAN_CAP = 3010
 
 export type VoteScorePostHotCursors = Readonly<{
   search: string
@@ -19,6 +20,12 @@ type RankedPage = {
 
 function postScanGate() {
   return [{ kind: 'maxProcessedRows' as const, relation: 'posts', max: WEEKLY_POST_SCAN_CAP }]
+}
+
+function boundedPostSearchScanGate() {
+  return [
+    { kind: 'maxProcessedRows' as const, relation: 'posts', max: BOUNDED_POST_SEARCH_SCAN_CAP },
+  ]
 }
 
 async function prepareCursor<T extends RankedPage>(
@@ -46,7 +53,7 @@ export async function prepareVoteScorePostHotCursors(): Promise<VoteScorePostHot
       }),
     ),
     trending: await prepareCursor('Trending posts', () =>
-      getTrendingPosts({ timeRange: 'week', limit: PAGE_SIZE }),
+      getPostIds(undefined, { sort: 'trending', time_range: 'all', limit: PAGE_SIZE }),
     ),
   }))
 }
@@ -123,20 +130,33 @@ export function getVoteScorePostHotScenarios(
     },
     {
       id: 'vote-score-trending-posts-first',
-      run: () => getTrendingPosts({ timeRange: 'week', limit: PAGE_SIZE }),
+      run: () => getPostIds(undefined, { sort: 'trending', time_range: 'all', limit: PAGE_SIZE }),
     },
     {
       id: 'vote-score-trending-posts-after',
       run: () =>
         requireContinuation('Trending posts', () =>
-          getTrendingPosts({ timeRange: 'week', limit: PAGE_SIZE, after: cursors.trending }),
+          getPostIds(undefined, {
+            sort: 'trending',
+            time_range: 'all',
+            limit: PAGE_SIZE,
+            after: cursors.trending,
+          }),
         ),
     },
   ].map(scenario => ({
     ...scenario,
     contract: {
       expectations: [
-        ...postScanGate(),
+        ...(scenario.id.startsWith('vote-score-trending-posts-')
+          ? [
+              { kind: 'maxProcessedRows' as const, relation: 'posts', max: 3010 },
+              { kind: 'maxBitmapIndexRows' as const, max: 1050 },
+              { kind: 'usesIndexes' as const, indexes: ['posts__default_case_id_idx'] },
+            ]
+          : scenario.id.startsWith('vote-score-post-search-hot-')
+            ? boundedPostSearchScanGate()
+            : postScanGate()),
         ...(scenario.id.startsWith('vote-score-post-feed-hot-')
           ? [{ kind: 'custom' as const, name: 'postTopicMembership' }]
           : []),

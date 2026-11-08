@@ -12,27 +12,52 @@ import {
 import { buildPostRankingScoreExpression } from './query-builder-utils.mts'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
+import { DEFAULT_POST_SEARCH_TIME_RANGE } from '@modules/feed-query-builders'
 import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
 import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
 import { postsWorkConfig } from '../work-limits.mts'
+import { encodeCursor } from '@modules/pagination'
+import { usesBoundedPostSearchCandidates } from './query-builder/bounded-candidates.mts'
+import { stableHotCursorScope } from './stable-hot-rank.mts'
 
 type PostSearchResponse = {
   results: PostSearchResult[]
   page_info: ReturnType<typeof buildPostSearchPageInfo>
 }
 
+type BoundedSearchRow = Omit<PostSearchRow, 'id'> & {
+  id: string | null
+  candidate_has_more?: boolean
+  inspected_id?: string | null
+  inspected_score?: string | number | null
+}
+
 export async function getPostIds(
   currentUser?: BasicUser,
   options: PostSearchOptions = {},
 ): Promise<PostSearchResponse> {
-  if (usesHackerNewsHotCandidates(options)) await postsWorkConfig.waitForInitialization()
   if (options.similar_rss_feed_item_id !== undefined && !isUUID(options.similar_rss_feed_item_id)) {
     throw createHttpError(400, 'similar_rss_feed_item_id must be a valid UUID')
+  }
+  if (options.community_id !== undefined && !isUUID(options.community_id)) {
+    throw createHttpError(400, 'community_id must be a valid UUID')
+  }
+  if (options.trending_topic_id !== undefined && !isUUID(options.trending_topic_id)) {
+    throw createHttpError(400, 'trending_topic_id must be a valid UUID')
+  }
+  if (
+    options.trending_min_score !== undefined &&
+    (!Number.isFinite(options.trending_min_score) || options.trending_min_score < 0)
+  ) {
+    throw createHttpError(400, 'trending_min_score must be nonnegative and finite')
   }
   const limit = clampLimit(options.limit)
   const rawSort = detectSearchSort(options)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
+  if (usesHackerNewsHotCandidates(options) || usesBoundedPostSearchCandidates(options, sort)) {
+    await postsWorkConfig.waitForInitialization()
+  }
   const hasTextSearch = hasTextSearchFn(options)
   // Fetch embedding before cursor decode so hasSemanticSearch and hasRankingScore
   // mirror the builder's SELECT decision (embedding presence required, not just query string).
@@ -41,30 +66,38 @@ export async function getPostIds(
     semanticSearchEmbedding = await getCachedSearchEmbedding(options.semantic_search_query!)
   }
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
+  const boundedCandidates = usesBoundedPostSearchCandidates(
+    { ...options, semanticSearchEmbedding },
+    sort,
+  )
   const hasRankingScore =
     buildPostRankingScoreExpression({ hasTextSearch, hasSemanticSearch }) !== null
-  // An omitted range has no age filter. An explicit finite code keeps the first page's bound.
-  const { id_lt, vote_score_lt, ranking_lt, hot_score_lt, as_of_ms } = decodePostSearchCursor(
+  // Post search is always time-bounded; callers needing the full history pass 'all'. Only an
+  // author's own drafts listing (their user id plus drafts) keeps that full history.
+  const effectiveTimeRange =
+    options.time_range ??
+    (isOwnDraftsListing(currentUser, options) ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
+  const { id_lt, vote_score_lt, ranking_lt, hot_score_lt } = decodePostSearchCursor(
     options,
     sort,
     hasRankingScore,
   )
-  const finiteTimeRange = options.time_range !== undefined && options.time_range !== 'all'
-  const asOfMs = finiteTimeRange ? (as_of_ms ?? Date.now()) : undefined
+  // Build query - pass decoded cursor values and use limit + 1
   const queryOptions: PostSearchOptions = {
     ...options,
+    time_range: effectiveTimeRange,
     semanticSearchEmbedding,
     limit: limit + 1,
-    ...(asOfMs === undefined ? {} : { time_range_as_of: new Date(asOfMs) }),
   }
   if (id_lt !== undefined) queryOptions.id_lt = id_lt
   if (vote_score_lt !== undefined) queryOptions.vote_score_lt = vote_score_lt
   if (ranking_lt !== undefined) queryOptions.ranking_lt = ranking_lt
   if (hot_score_lt !== undefined) queryOptions.hot_score_lt = hot_score_lt
   const query = buildPostSearchQuery(currentUser, queryOptions)
-  const { rows } = await executePostSearchQuery<PostSearchRow>(query, hasSemanticSearch)
-  const typedRows = rows
-  const hasNextPage = typedRows.length > limit
+  const { rows } = await executePostSearchQuery<BoundedSearchRow>(query, hasSemanticSearch)
+  const typedRows = rows.filter((row): row is BoundedSearchRow & PostSearchRow => row.id !== null)
+  const rawHasMore = boundedCandidates && rows[0]?.candidate_has_more === true
+  const hasNextPage = typedRows.length > limit || rawHasMore
   const resultRows = typedRows.slice(0, limit)
   const results: PostSearchResult[] = resultRows.map(row => ({
     __entity_type: 'post',
@@ -77,12 +110,36 @@ export async function getPostIds(
           data_point_vertical: row.data_point_vertical ?? null,
           structured_data: row.structured_data ?? null,
         }),
+    ...(sort === 'trending' && options.include_trending_score
+      ? { trending_score: Number(row.trending_score) }
+      : {}),
   }))
+  let pageInfo = buildPostSearchPageInfo(resultRows, hasNextPage, sort, hasRankingScore)
+  if (rawHasMore && resultRows.length < limit && rows[0]?.inspected_id) {
+    const boundaryId = rows[0].inspected_id
+    const endCursor =
+      sort === 'best'
+        ? encodeCursor({ score: Number(rows[0].inspected_score), id: boundaryId })
+        : sort === 'hot' || sort === 'trending'
+          ? encodeCursor({
+              score: Number(rows[0].inspected_score),
+              id: boundaryId,
+              scope: stableHotCursorScope(sort),
+            })
+          : encodeCursor({ id: boundaryId })
+    pageInfo = { ...pageInfo, end_cursor: endCursor }
+  }
   return {
     results,
-    page_info: buildPostSearchPageInfo(resultRows, hasNextPage, sort, hasRankingScore, {
-      timeRange: options.time_range,
-      asOfMs,
-    }),
+    page_info: pageInfo,
   }
+}
+
+function isOwnDraftsListing(
+  currentUser: BasicUser | undefined,
+  options: PostSearchOptions,
+): boolean {
+  return (
+    options.drafts === true && currentUser?.id !== undefined && currentUser.id === options.user_id
+  )
 }

@@ -14,6 +14,10 @@ import { appendPostSearchWhereClause } from './query-builder/where-clause.mts'
 import { buildSemanticPostCandidates } from './query-builder/semantic-candidates.mts'
 import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
 import { buildHackerNewsHotCandidates } from './query-builder/hacker-news-hot-candidates.mts'
+import {
+  buildBoundedPostSearchQuery,
+  usesBoundedPostSearchCandidates,
+} from './query-builder/bounded-candidates.mts'
 
 export function buildPostSearchQuery(
   currentUser?: BasicUser,
@@ -29,6 +33,19 @@ export function buildPostSearchQuery(
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
   const rawSort = detectSearchSort(options)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
+  if (
+    (sort === 'new' || sort === 'best' || sort === 'hot' || sort === 'trending') &&
+    usesBoundedPostSearchCandidates(options, sort)
+  ) {
+    return buildBoundedPostSearchQuery(
+      currentUser,
+      options,
+      sort,
+      decisionInstant,
+      hasTextSearch,
+      hasSemanticSearch,
+    )
+  }
   const rankingScoreExpression = buildPostRankingScoreExpression({
     hasTextSearch,
     hasSemanticSearch,
@@ -47,7 +64,10 @@ export function buildPostSearchQuery(
   })
   if (hasSemanticSearch)
     ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch, decisionInstant))
-  const useHackerNewsHotCandidates = usesHackerNewsHotCandidates(options)
+  // Facet count queries omit ordering and limits; retain their finite HN cohort.
+  // List queries use the shared bounded rank candidates above.
+  const useHackerNewsHotCandidates =
+    (omitLimit || omitOrderBy) && usesHackerNewsHotCandidates(options)
   if (useHackerNewsHotCandidates) {
     ctes.push(
       buildHackerNewsHotCandidates(
@@ -62,6 +82,7 @@ export function buildPostSearchQuery(
   }
   appendCtes(query, ctes)
   appendPostSearchSelectAndJoins(query, {
+    decisionInstant,
     useSemanticCandidates: hasSemanticSearch,
     useHackerNewsHotCandidates,
     currentUser,

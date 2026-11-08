@@ -14,6 +14,7 @@ import { buildPostHasHackerNewsReferences } from '@modules/feed-query-builders'
 import { appendBaseFilters } from './base-filters.mts'
 import { appendPartitionAndPaginationFilters } from './pagination-filters.mts'
 import { appendSearchAndSimilarityFilters } from './search-filters.mts'
+import { appendPostSearchSpecialFilters } from './special-filters.mts'
 import { appendTopicFilters } from './topic-filters.mts'
 
 export function appendPostSearchWhereClause(
@@ -28,6 +29,7 @@ export function appendPostSearchWhereClause(
     options,
     rankingScoreExpression,
     sort,
+    useBoundedCandidates = false,
   }: {
     currentUser?: BasicUser
     paginationOnly?: boolean
@@ -38,17 +40,19 @@ export function appendPostSearchWhereClause(
     options: PostSearchOptions
     rankingScoreExpression: SQLStatement | null
     sort: string
+    useBoundedCandidates?: boolean
   },
 ): void {
   const filters: SQLStatement[] = []
   // The Hacker News cohort (sort 'new') stays the newest eligible rows so its walk is index-bounded;
   // this filter then trims it in the outer pagination statement.
-  if (sort === 'hot') filters.push(sql`posts.votes_score_net > 0`)
+  if (sort === 'hot' || sort === 'trending') filters.push(sql`posts.votes_score_net > 0`)
   // A materialized eligible cohort already applied these filters in this statement's snapshot.
   if (!paginationOnly) {
     appendBaseFilters(filters, currentUser, options)
-    appendTopicFilters(filters, options)
+    appendTopicFilters(filters, options, useBoundedCandidates)
     appendSimpleColumnFilters(filters, options)
+    appendPostSearchSpecialFilters(filters, options, decisionInstant)
     appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })
   }
   appendPartitionAndPaginationFilters(filters, {

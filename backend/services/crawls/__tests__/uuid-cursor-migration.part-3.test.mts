@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 // when any migrated cursor caller changes; dynamic imports execute the cases below.
 import '../../rss-feed-items/search-filters.mts'
 import '../../topics/search/get-ids-page-info.mts'
-import '../../trending-posts/get-trending-posts.mts'
 import '../../topics/search/get-ids.mts'
+import '../../trending-referral-programs/get-trending-referral-programs.mts'
 import '../../rss-feeds/search-page.mts'
 import '../../trending-topics/get-trending-topics.mts'
 import '../../urls-hostnames/search-query.mts'
@@ -13,7 +13,6 @@ import '../../urls-hostnames/search.mts'
 import '../../urls-hostnames/social.mts'
 import '../../urls/search.mts'
 import '../../user-referral-program-links/get.mts'
-import '../../topic-recommendations/search-topic-recommendations.mts'
 
 const ID = '00000000-0000-4000-8000-000000000001'
 const simple = encodeCursor({ id: ID })
@@ -77,19 +76,17 @@ const cases: CursorCase[] = [
       { hasTextSearch: false, useSemanticRelevanceRanking: false } as never,
     ),
   ),
-  cursorCase('getTrendingPosts', async () =>
-    (await import('../../trending-posts/get-trending-posts.mts')).getTrendingPosts({
-      after: score,
-      limit: 1,
-      timeRange: 'day',
-    }),
-  ),
   cursorCase('getTopicIds link_count', async () =>
     (await import('../../topics/search/get-ids.mts')).getTopicIds({
       sort: 'link_count',
       after: score,
       limit: 1,
     }),
+  ),
+  cursorCase('getTrendingReferralPrograms', async () =>
+    (
+      await import('../../trending-referral-programs/get-trending-referral-programs.mts')
+    ).getTrendingReferralPrograms({ after: score, limit: 1 }),
   ),
   cursorCase('decodeRssFeedsCursor trending', async () =>
     (await import('../../rss-feeds/search-page.mts')).decodeRssFeedsCursor(score, 'trending'),
@@ -139,41 +136,10 @@ const cases: CursorCase[] = [
       { after: simple, limit: 1 },
     ),
   ),
-  cursorCase('searchTopicRecommendations', async () =>
-    (
-      await import('../../topic-recommendations/search-topic-recommendations.mts')
-    ).searchTopicRecommendations({ after: score, limit: 1 }),
-  ),
 ]
 
 describe('migrated UUID cursor services part 3', () => {
   it.each(cases)('does not throw on UUID cursor in %s', async (_name, run) => {
     await expect(Promise.resolve(run())).resolves.toBeDefined()
-  })
-
-  it('rejects malformed UUID cursors in representative migrated services', async () => {
-    await expect(
-      (await import('../../trending-posts/get-trending-posts.mts')).getTrendingPosts({
-        after: 'not-valid-base64!!!',
-        limit: 1,
-        timeRange: 'day',
-      }),
-    ).rejects.toMatchObject({
-      status: 400,
-      message: expect.stringContaining('Invalid cursor format'),
-    })
-  })
-
-  it('rejects non-UUID cursor ids in representative migrated services', async () => {
-    await expect(
-      (await import('../../trending-posts/get-trending-posts.mts')).getTrendingPosts({
-        after: encodeCursor({ score: 1, id: 'not-a-uuid' }),
-        limit: 1,
-        timeRange: 'day',
-      }),
-    ).rejects.toMatchObject({
-      status: 400,
-      message: 'Invalid cursor: id is not a valid UUID',
-    })
   })
 })

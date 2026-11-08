@@ -1,7 +1,8 @@
 import { isUUID } from '@modules/utils'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import { withQueryContract } from '@vouchington/pagination'
-import type { PaginationRuntimeLimitBounds } from '@modules/pagination'
+import { validatePostTypes, type PaginationRuntimeLimitBounds } from '@modules/pagination'
+import { VALID_SEARCH_POST_TYPES } from '@ts-shared/feed-capabilities'
 import {
   getUserIdByAnyCached,
   getPostIdByAnyCached,
@@ -33,7 +34,10 @@ export function preparePostsSearchParams(
   return {
     validationQuery,
     paginationOptions: pagination,
+    postTypes: validatePostTypes(query.post_types, VALID_SEARCH_POST_TYPES),
     creatorIdentifier: extractIdentifier(query, 'creator'),
+    communityIdRaw: typeof query.community_id === 'string' ? query.community_id : undefined,
+    trendingMinScore: query.trending_min_score,
     urlIdentifier: extractIdentifier(query, 'url'),
     similarPostIdentifier: extractIdentifier(query, 'similar_post'),
     similarTopicIdentifier: extractIdentifier(query, 'similar_topic'),
@@ -55,7 +59,10 @@ export async function resolvePostsSearchParams(
 ) {
   const {
     paginationOptions,
+    postTypes,
     creatorIdentifier,
+    communityIdRaw,
+    trendingMinScore,
     urlIdentifier,
     similarPostIdentifier,
     similarTopicIdentifier,
@@ -116,6 +123,7 @@ export async function resolvePostsSearchParams(
       ],
     ) ||
     (storyIdRaw !== undefined && storyId === undefined) ||
+    (communityIdRaw !== undefined && !isUUID(communityIdRaw)) ||
     hashtagSearch.hasUnknown
 
   const universalTopicIds = [...new Set(resolvedTopicIds.filter((id): id is string => id !== null))]
@@ -125,11 +133,14 @@ export async function resolvePostsSearchParams(
 
   const searchOptions = {
     ...paginationOptions,
+    ...(postTypes && { post_types: postTypes }),
     ...(q && !paginationOptions.text_search_query && hashtagSearch.textSearchQuery
       ? { text_search_query: hashtagSearch.textSearchQuery }
       : {}),
     ...(urlId && { url_id: urlId }),
     ...(creatorId && { user_id: creatorId }),
+    ...(communityIdRaw && isUUID(communityIdRaw) && { community_id: communityIdRaw }),
+    ...(trendingMinScore !== undefined && { trending_min_score: Number(trendingMinScore) }),
     ...(similarPostId && { similar_post_id: similarPostId }),
     ...(similarTopicId && { similar_topic_id: similarTopicId }),
     ...(reviewTopicId && { review_topic_ids: [reviewTopicId] }),

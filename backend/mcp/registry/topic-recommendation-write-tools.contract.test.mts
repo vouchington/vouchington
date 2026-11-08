@@ -22,7 +22,7 @@ import { PUBLIC_POST_FIELDS } from '@services/posts/public-post-projection'
 import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
 import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mts'
 
-const SCOPES = ['topic-recommendations:read', 'topic-recommendations:write'] as const
+const SCOPES = ['posts:read', 'topic-recommendations:write'] as const
 
 const INTERNAL_POST_COLUMN = 'is_flagged_by_openai_omni_moderation'
 
@@ -216,9 +216,9 @@ describe('topic recommendation write tools contract — real DB', () => {
     ] as const
 
     for (const [name, args] of calls) {
-      expect(
-        await callRejectedMcpTool(caller, name, args, ['topic-recommendations:read']),
-      ).toContain('Tool requires scopes topic-recommendations:read, topic-recommendations:write')
+      expect(await callRejectedMcpTool(caller, name, args, ['posts:read'])).toContain(
+        'Tool requires scopes posts:read, topic-recommendations:write',
+      )
       expect(await callRejectedMcpTool(free, name, args, SCOPES)).toContain(
         'requires a higher plan',
       )

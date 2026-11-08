@@ -37,7 +37,6 @@
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/topics": "workspace:^",
-    "@services/trending-posts": "workspace:^",
     "@services/trending-topics": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/urls-hostnames": "workspace:^",

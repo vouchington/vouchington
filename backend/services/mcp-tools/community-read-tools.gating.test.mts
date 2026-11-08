@@ -14,14 +14,12 @@ const NO_SUCH_COMMUNITY = `no-such-community-${crypto.randomUUID().slice(0, 8)}`
 const READ_TOOLS = [
   ['discover_communities', optionArgs('search', {})],
   ['read_community', optionArgs('details', { community_id: NO_SUCH_COMMUNITY })],
-  ['read_community', optionArgs('posts', { community_id: NO_SUCH_COMMUNITY })],
   ['read_community', optionArgs('pinned_posts', { community_id: NO_SUCH_COMMUNITY })],
   ['read_community', optionArgs('members', { community_id: NO_SUCH_COMMUNITY })],
 ] as const
 const ID_TOOLS = READ_TOOLS.filter(([name]) => name !== 'discover_communities')
 const PAGED_TOOLS = [
   ['discover_communities', optionArgs('search', {})],
-  ['read_community', optionArgs('posts', { community_id: NO_SUCH_COMMUNITY })],
   ['read_community', optionArgs('members', { community_id: NO_SUCH_COMMUNITY })],
 ] as const
 
@@ -106,7 +104,6 @@ describe('community read tool gating', () => {
 
   it.each([
     ['discover_communities', optionArgs('search', { sort: 'newest' })],
-    ['read_community', optionArgs('posts', { community_id: NO_SUCH_COMMUNITY, sort: 'top' })],
     ['read_community', optionArgs('members', { community_id: NO_SUCH_COMMUNITY, role: 'admin' })],
   ] as const)('rejects %s arguments outside the documented enums', async (name, args) => {
     await expect(call(name, args, ['communities:read'])).rejects.toMatchObject({

@@ -1,3 +1,4 @@
+import { runPostDiscoverySearchScenarios } from './post-discovery-search.mts'
 import { runCrawlerRefreshScenario } from './crawler-refresh.mts'
 import { runRelationVoteReadScenarios } from './relation-vote-reads.mts'
 import { runCommunitySearchScenarios } from './community-search.mts'
@@ -20,7 +21,7 @@ import {
   getPublicUserByAny,
   getRecommendedRssFeeds,
   getTopicByAny,
-  getTrendingPosts,
+  getPostIds,
   searchCommunities,
   searchRssFeeds,
   POST_ELECTION_CONFIG,
@@ -98,20 +99,39 @@ export async function runEntityAndCommunityScenarios() {
     getFollowedUsersByElectionVote(seedUser, seedPostId, 'post_votes', 1),
   )
 
-  // Trending posts — CTE with exponential time-decay scoring
+  // The former dedicated trending endpoint now shares the bounded stable-rank search query.
   registerScenarioContract('trending-posts', {
-    expectations: [],
-    crossPartition: { posts: 'Trending ranks eligible posts from the requested week.' },
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'posts', max: 3010 },
+      { kind: 'maxBitmapIndexRows', max: 1050 },
+      { kind: 'usesIndexes', indexes: ['posts__default_case_id_idx'] },
+    ],
+    crossPartition: {
+      posts: 'Trending ranks eligible posts through a bounded stable-rank candidate window.',
+    },
   })
-  await runAndCapture('trending-posts', () => getTrendingPosts({ timeRange: 'week', limit: 25 }))
+  await runAndCapture('trending-posts', () =>
+    getPostIds(undefined, { sort: 'trending', time_range: 'all', limit: 25 }),
+  )
 
-  // Trending posts filtered by topic
+  // The topic-filtered alias executes the same bounded query before applying its topic filter.
   registerScenarioContract('trending-posts-by-topic', {
-    expectations: [],
-    crossPartition: { posts: 'Topic trending ranks eligible posts from the requested week.' },
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'posts', max: 3010 },
+      { kind: 'maxBitmapIndexRows', max: 1050 },
+      { kind: 'usesIndexes', indexes: ['posts__default_case_id_idx'] },
+    ],
+    crossPartition: {
+      posts: 'Topic trending ranks eligible posts through a bounded stable-rank candidate window.',
+    },
   })
   await runAndCapture('trending-posts-by-topic', () =>
-    getTrendingPosts({ timeRange: 'week', topicId: seedTopicId, limit: 25 }),
+    getPostIds(undefined, {
+      sort: 'trending',
+      time_range: 'all',
+      trending_topic_id: seedTopicId,
+      limit: 25,
+    }),
   )
 
   // Trending communities — one keyset page over the materialized score
@@ -152,6 +172,7 @@ export async function runEntityAndCommunityScenarios() {
   )
 
   await runViewDrivenPostScenarios()
+  await runPostDiscoverySearchScenarios()
 
   await runCommunitySearchScenarios()
   await runEntityTailScenarios()

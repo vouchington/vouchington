@@ -2,12 +2,14 @@ import { assertNever } from '@modules/utils/assert-never'
 import type { BasicUser } from '@services/users/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildHotScoreExpression } from '../query-builder-utils.mts'
+import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
 import type { PostSearchOptions, PostSearchSort } from '../types.mts'
 
 export function appendPostSearchSelectAndJoins(
   query: SQLStatement,
   {
     currentUser,
+    decisionInstant,
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
@@ -15,10 +17,12 @@ export function appendPostSearchSelectAndJoins(
     rankingScoreExpression,
     sort,
     useSemanticCandidates = false,
+    useBoundedCandidates = false,
     useHackerNewsHotCandidates = false,
     includeHotCandidateColumns = false,
   }: {
     currentUser?: BasicUser
+    decisionInstant?: Date
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
     hasTextSearch: boolean
@@ -26,6 +30,7 @@ export function appendPostSearchSelectAndJoins(
     rankingScoreExpression: SQLStatement | null
     sort: PostSearchSort
     useSemanticCandidates?: boolean
+    useBoundedCandidates?: boolean
     useHackerNewsHotCandidates?: boolean
     includeHotCandidateColumns?: boolean
   },
@@ -45,10 +50,19 @@ export function appendPostSearchSelectAndJoins(
   if (rankingScoreExpression) appendSelectExpression(query, rankingScoreExpression, 'ranking_score')
   if (followingRankExpression)
     appendSelectExpression(query, followingRankExpression, 'following_rank')
-  query.append(sortSelectColumn(sort))
+  query.append(sortSelectColumn(sort, decisionInstant))
   if (useHackerNewsHotCandidates) {
     query.append(sql`
       FROM hacker_news_hot_candidates posts
+    `)
+  } else if (useBoundedCandidates) {
+    query.append(sql`
+      FROM bounded_post_search_candidates
+      CROSS JOIN LATERAL (
+        SELECT bounded_post.* FROM posts bounded_post
+        WHERE bounded_post.id = bounded_post_search_candidates.id
+        LIMIT 1
+      ) posts
     `)
   } else if (useSemanticCandidates) {
     // Keep ranking/filter distance work bounded even when a full-table join looks cheaper.
@@ -67,12 +81,18 @@ export function appendPostSearchSelectAndJoins(
   if (sort === 'following_new' && currentUser) appendFollowingJoin(query, currentUser.id)
 }
 
-function sortSelectColumn(sort: PostSearchSort): SQLStatement {
+function sortSelectColumn(sort: PostSearchSort, decisionInstant?: Date): SQLStatement {
   switch (sort) {
     case 'best':
       return sql`,\n      posts.votes_score_sort AS vote_score\n    `
     case 'hot':
-      return sql`,\n    `.append(buildHotScoreExpression()).append(sql` AS hot_score`)
+      return sql`,\n    `.append(buildStablePostHotRankExpression()).append(sql` AS hot_score`)
+    case 'trending':
+      return sql`,\n    `
+        .append(buildStablePostHotRankExpression())
+        .append(sql` AS hot_score,\n    `)
+        .append(buildHotScoreExpression('posts', decisionInstant))
+        .append(sql` AS trending_score`)
     case 'new':
     case 'following_new':
     case 'relevance':

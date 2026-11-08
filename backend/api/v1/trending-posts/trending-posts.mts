@@ -6,16 +6,13 @@ import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../resp
 import { apiQuery } from '../../api-query-contract.mts'
 import { defineQueryContract, queryEnum, queryNumber, queryUuid } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import {
-  getTrendingPosts,
-  trendingPostsPaginationParser,
-  type TrendingPostsPostType,
-} from '@services/trending-posts'
+import { trendingPostsPaginationParser, type TrendingPostsPostType } from '@services/trending-posts'
 import {
   getPostByAnyCachedBatch,
   getPostMetricsByAnyCachedBatch,
   getPostElectionByIdCachedBatch,
 } from '@services/entity-fetch'
+import { getPostIds } from '@services/posts/search/get-ids'
 import { getTrendingPostsCached } from '@services/entity-fetch/search-caches'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { indexById, isUUID } from '@modules/utils'
@@ -27,6 +24,7 @@ import { attachPostProvenance } from '@services/content-provenance'
 import { getPublicPostIds } from '@services/posts'
 import {
   VALID_TRENDING_POST_TYPES,
+  VALID_FILTERABLE_POST_TYPES,
   VALID_TRENDING_TIME_RANGES,
   isCatalogValue,
   type TrendingTimeRange,
@@ -89,17 +87,27 @@ app.route('/api/v1/trending-posts').get(async ctx => {
   validateRequestContract(ctx, 'GET:/api/v1/trending-posts', { query: validationQuery })
 
   const searchOptions = {
-    ...paginationOptions,
-    timeRange,
-    ...(postType !== undefined && { postType }),
-    ...(topicId !== undefined && { topicId }),
-    ...(minScore !== undefined && { minScore }),
+    limit: paginationOptions.limit,
+    after: paginationOptions.after,
+    sort: 'trending' as const,
+    time_range: ({ day: '1d', week: '1w', month: '1m' } as const)[timeRange],
+    post_types:
+      postType === undefined
+        ? VALID_FILTERABLE_POST_TYPES.filter(type => type !== 'comment')
+        : [postType],
+    ...(topicId !== undefined && { trending_topic_id: topicId }),
+    ...(minScore !== undefined && { trending_min_score: minScore }),
+    include_trending_score: true,
   }
   if (!currentUser) searchOptions.limit = clampAnonLimit(searchOptions.limit)
 
-  const result = currentUser
-    ? await getTrendingPosts(searchOptions)
+  const page = currentUser
+    ? await getPostIds(undefined, searchOptions)
     : await getTrendingPostsCached(searchOptions)
+  const result = {
+    results: page.results.map(row => ({ id: row.id, trending_score: row.trending_score! })),
+    page_info: page.page_info,
+  }
   if (!currentUser) {
     const publicPostIds = await getPublicPostIds(result.results.map(postResult => postResult.id))
     result.results = result.results.filter(postResult => publicPostIds.has(postResult.id))

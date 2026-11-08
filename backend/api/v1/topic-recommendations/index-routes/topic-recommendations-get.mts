@@ -14,10 +14,8 @@ import {
 import { attachPostProvenance } from '@services/content-provenance'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
-import {
-  searchTopicRecommendations,
-  type TopicRecommendationStatus,
-} from '@services/topic-recommendations'
+import type { TopicRecommendationStatus } from '@services/topic-recommendations'
+import { getPostIds } from '@services/posts/search/get-ids'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiQuery } from '../../../api-query-contract.mts'
@@ -46,9 +44,12 @@ app.route('/api/v1/topic-recommendations').get(async (ctx: Context) => {
   if (ctx.query.limit !== undefined) query.limit = pagination.limit
   validateRequestContract(ctx, 'GET:/api/v1/topic-recommendations', { query })
 
-  const result = await searchTopicRecommendations({
-    status: ctx.query.status as TopicRecommendationStatus | undefined,
-    q: typeof ctx.query.q === 'string' ? ctx.query.q : undefined,
+  const result = await getPostIds(currentUser, {
+    post_types: ['topic_recommendation'],
+    sort: 'best',
+    time_range: 'all',
+    topic_recommendation_status: ctx.query.status as TopicRecommendationStatus | undefined,
+    topic_recommendation_q: typeof ctx.query.q === 'string' ? ctx.query.q : undefined,
     after: pagination.after,
     limit: pagination.limit,
   })
@@ -58,7 +59,7 @@ app.route('/api/v1/topic-recommendations').get(async (ctx: Context) => {
     attachPostProvenance(posts, currentUser),
   )
   const output: Record<string, unknown> = {
-    results: result.results,
+    results: result.results.map(({ id, post_type }) => ({ __entity_type: 'post', id, post_type })),
     page_info: result.page_info,
     posts: postsPromise.then(indexById),
     posts_metrics: getPostMetricsByAnyCachedBatch(postIds).then(indexById),

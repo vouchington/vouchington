@@ -38,7 +38,7 @@ describe('MCP recommendation capacity envelope', () => {
           topic_title: slug,
           topic_slug: slug,
         },
-        ['topic-recommendations:read', 'topic-recommendations:write'],
+        ['posts:read', 'topic-recommendations:write'],
       ),
     )
     expect(result.error).toMatchObject({

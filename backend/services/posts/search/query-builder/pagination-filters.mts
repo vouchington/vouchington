@@ -1,7 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import createHttpError from 'http-errors'
 import { buildPostSearchTimeRangeFilter } from '../hacker-news-hot-options.mts'
-import { buildHotScoreExpression } from '../query-builder-utils.mts'
+import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
 import type { PostSearchOptions } from '../types.mts'
 
 export function appendPartitionAndPaginationFilters(
@@ -71,10 +71,10 @@ function appendPaginationFilters(
     filters.push(
       sql`(posts.votes_score_sort, posts.id) < (${options.vote_score_lt}, ${options.id_lt})`,
     )
-  } else if (sort === 'hot' && options.hot_score_lt !== undefined) {
+  } else if ((sort === 'hot' || sort === 'trending') && options.hot_score_lt !== undefined) {
     if (!options.id_lt) throw createHttpError(500, 'hot_score_lt requires id_lt')
     appendCompositePagination(filters, {
-      expression: buildHotScoreExpression(),
+      expression: buildStablePostHotRankExpression(),
       idLt: options.id_lt,
       scoreLt: options.hot_score_lt,
       scoreName: 'hot_score_lt',

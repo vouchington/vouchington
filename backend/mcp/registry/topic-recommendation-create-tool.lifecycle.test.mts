@@ -13,7 +13,7 @@ import {
 
 import { countTestPostsCreatedBy } from '@voucha/test-helpers/entities/posts-deletion'
 
-const SCOPES = ['topic-recommendations:read', 'topic-recommendations:write'] as const
+const SCOPES = ['posts:read', 'topic-recommendations:write'] as const
 
 describe('delegated recommendation author lifecycle', () => {
   it.each(['suspension', 'deletion'] as const)(

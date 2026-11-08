@@ -22,6 +22,10 @@ export const VALID_POST_FEED_TYPES = FEED_CAPABILITY_CATALOG.postFeedTypes
 export const VALID_RSS_FEED_ITEM_FEED_TYPES = FEED_CAPABILITY_CATALOG.rssFeedItemFeedTypes
 export const VALID_COMMUNITY_NEWS_FEED_TYPES = FEED_CAPABILITY_CATALOG.communityNewsFeedTypes
 export const VALID_FILTERABLE_POST_TYPES = FEED_CAPABILITY_CATALOG.filterablePostTypes
+export const VALID_SEARCH_POST_TYPES = [
+  ...VALID_FILTERABLE_POST_TYPES,
+  'topic_recommendation',
+] as const
 export const VALID_RSS_POST_TYPES = FEED_CAPABILITY_CATALOG.rssPostTypes
 export const VALID_TRENDING_POST_TYPES = FEED_CAPABILITY_CATALOG.trendingPostTypes
 export const VALID_FEED_TIME_RANGES = FEED_CAPABILITY_CATALOG.feedTimeRanges
@@ -31,6 +35,7 @@ export type PostFeedType = (typeof VALID_POST_FEED_TYPES)[number]
 export type RssFeedItemFeedType = (typeof VALID_RSS_FEED_ITEM_FEED_TYPES)[number]
 export type CommunityNewsFeedType = (typeof VALID_COMMUNITY_NEWS_FEED_TYPES)[number]
 export type FilterablePostType = (typeof VALID_FILTERABLE_POST_TYPES)[number]
+export type SearchPostType = (typeof VALID_SEARCH_POST_TYPES)[number]
 export type RssPostType = (typeof VALID_RSS_POST_TYPES)[number]
 export type TrendingPostType = (typeof VALID_TRENDING_POST_TYPES)[number]
 export type FeedTimeRange = (typeof VALID_FEED_TIME_RANGES)[number]

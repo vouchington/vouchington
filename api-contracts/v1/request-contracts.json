@@ -45873,6 +45873,10 @@
           "category": {
             "type": "string"
           },
+          "community_id": {
+            "format": "uuid",
+            "type": "string"
+          },
           "creator": {
             "type": "string"
           },
@@ -45904,7 +45908,8 @@
                 "link",
                 "article",
                 "blog_post",
-                "story"
+                "story",
+                "topic_recommendation"
               ],
               "type": "string"
             },
@@ -45930,7 +45935,7 @@
             "type": "string"
           },
           "sort": {
-            "enum": ["new", "best", "hot", "relevance", "following_new"],
+            "enum": ["new", "best", "hot", "trending", "relevance", "following_new"],
             "type": "string"
           },
           "story_id": {
@@ -45952,6 +45957,9 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "trending_min_score": {
+            "type": "number"
           },
           "url": {
             "anyOf": [

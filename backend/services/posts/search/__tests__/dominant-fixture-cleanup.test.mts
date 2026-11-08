@@ -5,9 +5,9 @@ import {
   withDominantPostFixtures,
 } from '@voucha/test-helpers/entities/trending-posts'
 import { deleteTestPost, getTestPostDeletedAt } from '@voucha/test-helpers/entities/posts'
-import { getTrendingPosts } from './get-trending-posts.mts'
+import { getPostIds } from '@services/posts/search/get-ids'
 
-describe('getTrendingPosts - dominant fixture cleanup on failure', () => {
+describe('trending post fixture cleanup on failure', () => {
   it('deletes an inserted fixture when creation rejects before returning its ID', async () => {
     let insertedPostId: string | undefined
 
@@ -137,11 +137,12 @@ describe('getTrendingPosts - dominant fixture cleanup on failure', () => {
 
     expect(capturedPostId).toBeDefined()
 
-    const result = await getTrendingPosts({
-      timeRange: 'day',
-      postType: 'data_point',
+    const result = await getPostIds(undefined, {
+      sort: 'trending',
+      time_range: '1d',
+      post_types: ['data_point'],
       limit: 100,
-      minScore: 0.1,
+      trending_min_score: 0.1,
     })
 
     expect(result.results.find(row => row.id === capturedPostId)).toBeUndefined()

@@ -23,15 +23,6 @@ export type CreateTopicRecommendationInput = {
 
 export type UpdateTopicRecommendationInput = Partial<CreateTopicRecommendationInput>
 
-export type TopicRecommendationSearchOptions = {
-  /** Only the recommendations this user submitted. */
-  created_by_id?: string
-  status?: TopicRecommendationStatus
-  q?: string
-  limit?: number
-  after?: string
-}
-
 export type TopicRecommendationFieldsInput = {
   topic_markdown?: string
   topic_hostname?: string

@@ -6942,9 +6942,6 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
-      '@services/trending-posts':
-        specifier: workspace:^
-        version: link:../trending-posts
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../trending-topics
@@ -11069,6 +11066,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@ts-shared/feed-capabilities':
+        specifier: workspace:^
+        version: link:../../../ts-shared/feed-capabilities
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils

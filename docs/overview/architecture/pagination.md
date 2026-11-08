@@ -44,6 +44,10 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
 - UUID-only public cursors whose dataset identity can vary by resource, owner, or filters must carry
   an exact resource scope built from normalized identifiers, filters, and ordering. Reject scoped
   cursors with missing, additional, tampered, or mismatched fields.
+- Post-search hot and trending ranks use a fixed epoch, keeping order stable across requests
+  when vote scores are unchanged. Near ties can differ from the previous age-decayed calculation. Their opaque cursor binds that
+  ordering, and cursors from the prior ranking are intentionally rejected. A bounded candidate walk
+  can return a short or empty page with `has_next_page` true; clients continue with its cursor.
 - Friend recommendation cursors use the exact
   `{"resource":"my-friend-recommendations","owner_id":"…","order":"id-asc"}` scope. Unscoped
   simple ID cursors are rejected.

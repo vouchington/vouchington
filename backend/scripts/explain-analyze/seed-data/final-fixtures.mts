@@ -6,9 +6,11 @@ import { seedRssFeedWeeklyWorkload } from './rss-feed-weekly-workload.mts'
 import { seedRssFeedWeeklyProxy } from './rss-feed-weekly-proxy.mts'
 import { seedCommunitySearchTrending } from './community-search-trending.mts'
 import { seedCommunityBanPages } from './community-ban-pages.mts'
+import { seedPostDiscoverySearchFixture } from './post-discovery-search.mts'
 
 /** Finish the standalone workload cohorts before the seed runner analyzes every relation. */
 export async function seedFinalExplainFixtures(): Promise<void> {
+  await seedPostDiscoverySearchFixture()
   await seedUploadCleanup()
   await seedLandingPageCandidates()
   await seedSessionLimits()

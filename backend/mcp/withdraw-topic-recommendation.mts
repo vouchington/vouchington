@@ -27,7 +27,7 @@ const tool: Tool<TopicRecommendationIdArgs, { success: true }> = {
     audience: 'user',
     title: 'Withdraw Topic Recommendation',
     plan: 'plus',
-    requiredScopes: ['topic-recommendations:read', 'topic-recommendations:write'],
+    requiredScopes: ['posts:read', 'topic-recommendations:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'DELETE', path: '/api/v1/topic-recommendations/:id' }],
     outputSchema: TOPIC_RECOMMENDATION_SUCCESS_SCHEMA,

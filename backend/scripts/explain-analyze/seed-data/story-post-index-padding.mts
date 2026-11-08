@@ -33,6 +33,9 @@ export async function seedStoryPostIndexPadding(initiatedById: string): Promise<
      FROM UNNEST($1::uuid[], $2::uuid[]) AS seed(post_id, story_id)`,
     [postIds, storyIds, initiatedById],
   )
+  await query(`/* seedStoryPostIndexPadding:analyze */ ANALYZE posts, story_posts, stories,
+    rss_feed_items, rss_feed_item_sources, rss_feeds, user_suspensions, communities,
+    community_members, community_post_reviews, relation__user__follow__user`)
   await transaction.commit()
   // Earlier scenarios may analyze an empty, allocated heap. Own the final corpus statistics
   // so each correlated eligibility probe sees the padding cardinality in both plan modes.

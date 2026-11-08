@@ -1,20 +1,23 @@
 import { SEED_PREFIX, runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { searchCommunityPosts, searchPendingPosts } from '@services/communities/publications/get'
+import { searchPendingPosts } from '@services/communities/publications/get'
 import { runPendingReviewDensityScenario } from './pending-review-density.mts'
 import { searchCommunityAgentPromptSimulationPosts } from '@services/community-agent-prompts/simulations'
 import { withSeedAnchorClock } from '../seed-clock.mts'
+import { getPostIds } from '../run-services.mts'
 
 const COMMUNITY_POST_LIMIT = 25
-const COMMUNITY_ID = `${SEED_PREFIX}-1400-7000-8000-000000000000`
+const COMMUNITY_ID = `${SEED_PREFIX}-1400-7000-8000-000000000064`
+const EXISTING_COMMUNITY_ID = `${SEED_PREFIX}-1400-7000-8000-000000000000`
 const COMMUNITY_HOT_GATE = {
   expectations: [
-    { kind: 'queryBinds' as const, token: 'candidate_posts' },
-    { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 720 },
-    { kind: 'maxProcessedRows' as const, relation: 'posts', max: 1200 },
+    { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 2010 },
+    { kind: 'maxProcessedRows' as const, relation: 'posts', max: 3010 },
+    { kind: 'maxBitmapIndexRows' as const, max: 1050 },
+    { kind: 'usesIndexes' as const, indexes: ['posts__default_community_id_case_id_idx'] },
   ],
   crossPartition: {
-    posts: 'Community hot ranking traverses the retained post history with cursor continuation.',
+    posts: 'Community hot ranking traverses a bounded stable-rank candidate window.',
   },
 }
 
@@ -35,7 +38,8 @@ type CommunityHotScenario = Readonly<{
 }>
 
 async function prepareCommunityHotCursor(timeRange?: '1m'): Promise<CommunityHotCursor> {
-  const page = await searchCommunityPosts(COMMUNITY_ID, {
+  const page = await getPostIds(undefined, {
+    community_id: COMMUNITY_ID,
     sort: 'hot',
     ...(timeRange ? { time_range: timeRange } : {}),
     limit: COMMUNITY_POST_LIMIT,
@@ -86,7 +90,8 @@ async function runCommunityHotPage(
   label: string,
 ): Promise<void> {
   await withSeedAnchorClock(async () => {
-    const page = await searchCommunityPosts(COMMUNITY_ID, {
+    const page = await getPostIds(undefined, {
+      community_id: COMMUNITY_ID,
       sort: 'hot',
       ...(timeRange ? { time_range: timeRange } : {}),
       limit: COMMUNITY_POST_LIMIT,
@@ -98,44 +103,63 @@ async function runCommunityHotPage(
   })
 }
 
-function assertCommunityHotPage(
-  page: Awaited<ReturnType<typeof searchCommunityPosts>>,
-  label: string,
-): void {
+function assertCommunityHotPage(page: Awaited<ReturnType<typeof getPostIds>>, label: string): void {
   if (page.results.length !== COMMUNITY_POST_LIMIT || !page.page_info.has_next_page)
     throw new Error(`Community hot ${label} must be a full page with another page`)
 }
 
 export async function runViewDrivenPostScenarios(): Promise<void> {
-  const communityId = `${SEED_PREFIX}-1400-7000-8000-000000000000`
+  const communityId = COMMUNITY_ID
   const scenarios = [
     {
       id: 'search-community-posts',
       description: 'Community search lists posts across the community history.',
-      run: () => searchCommunityPosts(communityId, { limit: 25 }),
+      run: () => getPostIds(undefined, { community_id: communityId, limit: 25 }),
     },
     {
       id: 'search-community-posts-1m',
       description: 'Community search lists posts across the community history.',
-      run: () => searchCommunityPosts(communityId, { time_range: '1m', limit: 25 }),
+      run: () => getPostIds(undefined, { community_id: communityId, time_range: '1m', limit: 25 }),
     },
     {
       id: 'search-community-agent-simulation-posts',
       description: 'Simulation scans the community approval window.',
       run: () =>
-        searchCommunityAgentPromptSimulationPosts(communityId, { timeWindowHours: 720, limit: 25 }),
+        searchCommunityAgentPromptSimulationPosts(EXISTING_COMMUNITY_ID, {
+          timeWindowHours: 720,
+          limit: 25,
+        }),
     },
   ] as const
   for (const scenario of scenarios) {
     registerScenarioContract(scenario.id, {
       expectations: [
-        { kind: 'queryBinds', token: 'candidate_posts' },
-        { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 720 },
-        { kind: 'maxProcessedRows', relation: 'posts', max: 1200 },
+        ...(scenario.id === 'search-community-agent-simulation-posts'
+          ? [
+              { kind: 'queryBinds' as const, token: 'candidate_posts' },
+              { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 720 },
+              { kind: 'maxProcessedRows' as const, relation: 'posts', max: 1200 },
+            ]
+          : [
+              { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 2010 },
+              { kind: 'maxProcessedRows' as const, relation: 'posts', max: 3010 },
+              { kind: 'maxBitmapIndexRows' as const, max: 1050 },
+              {
+                kind: 'usesIndexes' as const,
+                indexes: ['posts__default_community_id_id_idx1'],
+              },
+            ]),
       ],
       crossPartition: { posts: scenario.description },
     })
-    await runAndCapture(scenario.id, scenario.run)
+    await runAndCapture(
+      scenario.id,
+      scenario.run,
+      undefined,
+      scenario.id === 'search-community-agent-simulation-posts'
+        ? undefined
+        : 'buildPostSearchQuery',
+    )
   }
 
   // The pending page is the review keyset, not the approved candidate_posts CTE.
@@ -150,14 +174,14 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
     },
   })
   await runAndCapture('search-pending-community-posts', () =>
-    searchPendingPosts(communityId, { limit: 25 }),
+    searchPendingPosts(EXISTING_COMMUNITY_ID, { limit: 25 }),
   )
 
   const communityHotScenarios = getCommunityHotScenarios(await prepareCommunityHotCursors())
   for (const scenario of communityHotScenarios) {
     registerScenarioContract(scenario.id, scenario.contract)
     // no-mistakes-disable-next-line query-reached-per-item: capture both pages separately.
-    await runAndCapture(scenario.id, scenario.run)
+    await runAndCapture(scenario.id, scenario.run, undefined, 'buildPostSearchQuery')
   }
   await runPendingReviewDensityScenario()
 }

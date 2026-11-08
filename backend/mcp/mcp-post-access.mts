@@ -35,11 +35,8 @@ type ReadableThread = {
  * A deleted or unmoderated requested comment is a `placeholder` when a valid reply sits below it
  * within the look-down limits, and not found otherwise, as in the REST twin.
  *
- * `read_posts (option search)` applies the same rule to its results in SQL (`public_eligibility_only` in
- * backend/services/posts/search/query-builder/base-filters.mts: the root passes, and the comment is
- * not a placeholder), because a per-row check cannot run per result. Discovery is stricter (public
- * audience, unarchived, unsuspended, no community), so a search result is always readable here but
- * not the reverse. Change the rule in both places; the search agreement test compares them.
+ * `read_posts (option search)` follows the REST discovery query and masks returned comments using
+ * the same viewer-aware placeholder rules as the REST response.
  */
 export async function resolveReadableThread(
   currentUser: BasicUser,
