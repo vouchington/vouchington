@@ -8,7 +8,11 @@ import { allocateCommunityAgentPromptSlotInTransaction } from '@services/communi
 import { getUsedSlotsForUser } from '@services/community-agent-prompts/slots'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
-import { COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS } from '../seed-data/community-agent-prompt-slot-counts.mts'
+import {
+  COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS,
+  seedCommunityAgentPromptSlotCountNoise,
+  cleanupCommunityAgentPromptSlotCountNoise,
+} from '../seed-data/community-agent-prompt-slot-counts.mts'
 import {
   COMMUNITY_AGENT_PROMPT_DEEP_BOUNDARY_ID,
   COMMUNITY_AGENT_PROMPT_ALLOCATION_TARGET_ID,
@@ -20,8 +24,7 @@ import {
 import { runSlotRetainedRootCleanupScenario } from './community-agent-prompt-slot-retained-root.mts'
 
 export async function runCommunityAgentPromptPageScenarios(): Promise<void> {
-  const promptSeededRows =
-    COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS + 4
+  const promptSeededRows = COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + 4
   registerScenarioContract('community-agent-prompt-capacity', {
     expectations: [
       { kind: 'usesIndexes', indexes: ['idx_community_agent_prompts__community_creator_id'] },
@@ -55,8 +58,13 @@ export async function runCommunityAgentPromptPageScenarios(): Promise<void> {
       `community:${COMMUNITY_AGENT_PROMPT_PAGE_COMMUNITY_ID}:agent-prompts`,
     ),
   )
-  await runSlotScenarios()
-  await runSlotRetainedRootCleanupScenario()
+  try {
+    await seedCommunityAgentPromptSlotCountNoise()
+    await runSlotScenarios()
+    await runSlotRetainedRootCleanupScenario()
+  } finally {
+    await cleanupCommunityAgentPromptSlotCountNoise()
+  }
 }
 
 async function runSlotScenarios(): Promise<void> {
@@ -138,10 +146,8 @@ async function runListPage(id: string, after?: string): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'agent_prompts', max: 32 },
     ],
     seededRows: {
-      community_agent_prompts:
-        COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS + 4,
-      agent_prompts:
-        COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS + 4,
+      community_agent_prompts: COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + 4,
+      agent_prompts: COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + 4,
     },
   })
   await runAndCapture(

@@ -3,8 +3,7 @@ import { seedUuid } from './common.mts'
 
 export const COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS = 1000
 
-/** Independent owner communities make the creator quota lookup selective. */
-export async function seedCommunityAgentPromptSlotCountNoise(): Promise<void> {
+function slotNoiseIds() {
   const indexes = Array.from(
     { length: COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS },
     (_, i) => i,
@@ -14,7 +13,12 @@ export async function seedCommunityAgentPromptSlotCountNoise(): Promise<void> {
   const systemUserIds = indexes.map(index => seedUuid(index, 'f2'))
   const agentIds = indexes.map(index => seedUuid(index, 'f3'))
   const promptIds = indexes.map(index => seedUuid(index, 'f4'))
+  return { creatorIds, communityIds, systemUserIds, agentIds, promptIds }
+}
 
+/** Independent owner communities make the creator quota lookup selective. */
+export async function seedCommunityAgentPromptSlotCountNoise(): Promise<void> {
+  const { creatorIds, communityIds, systemUserIds, agentIds, promptIds } = slotNoiseIds()
   await using query = await beginTransaction()
   await query(
     `/* seedCommunityAgentPromptSlotCountNoise:creators */
@@ -80,4 +84,38 @@ export async function seedCommunityAgentPromptSlotCountNoise(): Promise<void> {
   await query(`/* seedCommunityAgentPromptSlotCountNoise:analyze */
     ANALYZE community_agent_prompt_slot_counts, community_agent_prompts`)
   await query.commit()
+}
+
+/** Remove only the deterministic quota-noise cohort after its two slot scenarios. */
+export async function cleanupCommunityAgentPromptSlotCountNoise(): Promise<void> {
+  const { creatorIds, communityIds, systemUserIds } = slotNoiseIds()
+  await using query = await beginTransaction()
+  await query(
+    `/* cleanupCommunityAgentPromptSlotCountNoise:communities */
+    DELETE FROM communities WHERE id = ANY($1::uuid[])`,
+    [communityIds],
+  )
+  await query(
+    `/* cleanupCommunityAgentPromptSlotCountNoise:systemUsers */
+    DELETE FROM users WHERE id = ANY($1::uuid[])`,
+    [systemUserIds],
+  )
+  await query(
+    `/* cleanupCommunityAgentPromptSlotCountNoise:creators */
+    DELETE FROM users WHERE id = ANY($1::uuid[])`,
+    [creatorIds],
+  )
+  await query.commit()
+
+  // User deletion's deferred quota cleanup has completed before retiring these owned roots.
+  await using roots = await beginTransaction()
+  await roots(
+    `/* cleanupCommunityAgentPromptSlotCountNoise:retainedUsers */
+    DELETE FROM retained_user_identities
+    WHERE id = ANY($1::uuid[]) OR id = ANY($2::uuid[])`,
+    [systemUserIds, creatorIds],
+  )
+  await roots(`/* cleanupCommunityAgentPromptSlotCountNoise:analyze */
+    ANALYZE users, community_agent_prompt_slot_counts, community_agent_prompts`)
+  await roots.commit()
 }

@@ -1,5 +1,4 @@
 import { seedCommunityAgentPromptPages } from './community-agent-prompt-pages.mts'
-import { seedCommunityAgentPromptSlotCountNoise } from './community-agent-prompt-slot-counts.mts'
 import { seedCommunityMembershipCaps } from './community-membership-caps.mts'
 import { seedPrivateSearchCommunity } from './community-search-exclusions.mts'
 import {
@@ -22,7 +21,6 @@ import { seedCommunityHotPosts } from './community-hot.mts'
 export async function seedCommunitySearchFixtures() {
   await seedCommunityMembershipCaps()
   await seedCommunityAgentPromptPages()
-  await seedCommunityAgentPromptSlotCountNoise()
   await seedCommunities(5, 200)
   await seedRemovedCommunityMemberNoise()
   await seedModerationSummaryRecipient()
