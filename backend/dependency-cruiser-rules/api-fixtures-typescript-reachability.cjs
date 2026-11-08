@@ -1,3 +1,4 @@
+/// <reference lib="esnext" />
 'use strict'
 
 // This rule's coverage of api-fixtures/*.test.mts contract tests depends on an external

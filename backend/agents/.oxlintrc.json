@@ -50,5 +50,21 @@
       }
     ],
     "no-await-in-loop": "off"
-  }
+  },
+  "overrides": [
+    {
+      // Policy: Test fixtures and helpers intentionally model unchecked external and malformed data.
+      "files": [
+        "**/*.test.{mts,ts,tsx}",
+        "**/*.spec.{mts,ts,tsx}",
+        "**/__tests__/**/*.{mts,ts,tsx}",
+        "**/test-helpers/**"
+      ],
+      "rules": {
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-return": "off",
+        "typescript/no-unsafe-argument": "off"
+      }
+    }
+  ]
 }

@@ -9,8 +9,13 @@ import type {
 
 const MAX_PLAYWRIGHT_TEST_TIMEOUT_MS = 30_000
 
-export function playwrightTestTimeout(timeout: number, label: string): number {
-  if (!Number.isFinite(timeout) || timeout <= 0 || timeout > MAX_PLAYWRIGHT_TEST_TIMEOUT_MS) {
+export function playwrightTestTimeout(timeout: unknown, label: string): number {
+  if (
+    typeof timeout !== 'number' ||
+    !Number.isFinite(timeout) ||
+    timeout <= 0 ||
+    timeout > MAX_PLAYWRIGHT_TEST_TIMEOUT_MS
+  ) {
     throw new RangeError(`${label} must be a positive finite number at most 30,000 ms`)
   }
   return timeout
@@ -101,7 +106,7 @@ function protectPublicMethods<T extends object, W extends object>(test: TestType
     use: {
       writable: false,
       configurable: false,
-      value: (fixtures: Parameters<typeof use>[0]) => {
+      value: (fixtures: Parameters<typeof use>[0]): unknown => {
         return Reflect.apply(use, test, [snapshotFixtureTimeouts(fixtures, playwrightTestTimeout)])
       },
     },
@@ -120,7 +125,7 @@ function protectPublicMethods<T extends object, W extends object>(test: TestType
   Object.defineProperty(test.describe, 'configure', {
     writable: false,
     configurable: false,
-    value: (options: Parameters<typeof configure>[0]) => {
+    value: (options: Parameters<typeof configure>[0]): unknown => {
       return Reflect.apply(configure, test.describe, [
         snapshotOptionsTimeout(options, playwrightTestTimeout, 'Playwright suite test timeout'),
       ])

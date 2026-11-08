@@ -54,7 +54,11 @@
         "executorTypeNames": ["TransactionQuery", "QueryExecutor"]
       }
     ],
+    // Policy: This entire subtree contains test-only entity factories and malformed-data fixtures.
     "typescript/no-explicit-any": "off",
+    "typescript/no-unsafe-call": "off",
+    "typescript/no-unsafe-return": "off",
+    "typescript/no-unsafe-argument": "off",
     "no-void": "off",
     "no-await-in-loop": "off",
     "react/jsx-no-target-blank": "off",

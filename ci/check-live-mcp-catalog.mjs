@@ -41,6 +41,7 @@ async function unregisteredMcpToolFiles() {
   ])
   const unregistered = []
   for (const file of files) {
+    /** @type {{default?: unknown}} */
     const mod = await import(pathToFileURL(join(toolsDir, file)).href)
     if (isUnregisteredMcpToolFile(mod.default, registeredNames, sourceCounts))
       unregistered.push(file)

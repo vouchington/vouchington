@@ -60,6 +60,7 @@ export const toolingProjects = [
         'static-code-analysis/__tests__/ast-grep-backend-manifests.test.mts',
         'static-code-analysis/__tests__/no-inline-noop-promise-catch-oxlint.test.mts',
         'static-code-analysis/__tests__/no-explicit-any-oxlint.test.mts',
+        'static-code-analysis/__tests__/no-unsafe-oxlint.test.mts',
       ],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
