@@ -10,10 +10,20 @@ export async function withSeedAnchorClock<T>(callback: () => Promise<T>): Promis
   const { dayAnchorMs } = resolveSeedAnchor(process.env[SEED_ANCHOR_DATE_ENV])
   const RealDate = globalThis.Date
   globalThis.Date = new Proxy(RealDate, {
-    construct: (target, args, newTarget) =>
-      Reflect.construct(target, args.length === 0 ? [dayAnchorMs] : args, newTarget),
-    get: (target, property) =>
-      property === 'now' ? () => dayAnchorMs : Reflect.get(target, property, target),
+    construct: (target, args, newTarget) => {
+      const constructed: unknown = Reflect.construct(
+        target,
+        args.length === 0 ? [dayAnchorMs] : args,
+        newTarget,
+      )
+      if (!(constructed instanceof Date)) throw new TypeError('Expected a Date instance')
+      return constructed
+    },
+    get: (target, property) => {
+      if (property === 'now') return () => dayAnchorMs
+      const value: unknown = Reflect.get(target, property, target)
+      return value
+    },
   })
   try {
     return await callback()

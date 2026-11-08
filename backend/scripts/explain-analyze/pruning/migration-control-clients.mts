@@ -57,8 +57,9 @@ function parseMigrationActivity(payload: string): MigrationActivityRow[] {
   const parsed: unknown = JSON.parse(payload)
   assert.ok(Array.isArray(parsed), 'Expected migration activity JSON array')
   return parsed.map(row => {
-    assert.ok(typeof row === 'object' && row !== null, 'Expected migration activity row')
-    const record = Object.fromEntries(Object.entries(row))
+    const value: unknown = row
+    assert.ok(typeof value === 'object' && value !== null, 'Expected migration activity row')
+    const record = Object.fromEntries(Object.entries(value))
     const pid = record.pid
     assert.ok(
       typeof pid === 'number' && Number.isSafeInteger(pid) && pid > 0,

@@ -76,9 +76,9 @@ export function effectiveRows(plan: unknown): number {
   const removedRows =
     Number(node['Rows Removed by Filter'] ?? 0) + Number(node['Rows Removed by Index Recheck'] ?? 0)
   const own = (Number(node['Actual Rows'] ?? 0) + removedRows) * Number(node['Actual Loops'] ?? 1)
-  const children = [
+  const children: unknown[] = [
     ...(Array.isArray(node.Plans) ? node.Plans : []),
     ...(node.Plan ? [node.Plan] : []),
   ]
-  return children.reduce((sum, child) => sum + effectiveRows(child), own)
+  return children.reduce<number>((sum, child) => sum + effectiveRows(child), own)
 }

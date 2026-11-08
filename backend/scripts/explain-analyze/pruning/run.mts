@@ -120,9 +120,9 @@ async function runPruningProof(): Promise<void> {
               Promise.resolve().then(() => pool.end()),
             ),
           )
-          const failures = settled.flatMap(result =>
-            result.status === 'rejected' ? [result.reason] : [],
-          )
+          const failures: unknown[] = []
+          for (const result of settled)
+            if (result.status === 'rejected') failures.push(result.reason)
           if (failures.length)
             throw new AggregateError(failures, 'Pruning PostgreSQL pool closure failed', {
               cause: failures[0],

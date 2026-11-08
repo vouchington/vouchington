@@ -34,9 +34,8 @@ export async function assertSerializedMigrationRunner(platform: Psql): Promise<v
       applyAllMigrations(root, { logger, platform }),
       applyAllMigrations(root, { logger, platform }),
     ])
-    const failures = settled.flatMap(result =>
-      result.status === 'rejected' ? [result.reason] : [],
-    )
+    const failures: unknown[] = []
+    for (const result of settled) if (result.status === 'rejected') failures.push(result.reason)
     if (failures.length)
       throw new AggregateError(failures, 'Concurrent migrations failed', { cause: failures[0] })
     assert.deepEqual(
