@@ -115,14 +115,6 @@ export async function query<T = Record<string, unknown>>(
   }
 }
 
-export async function refreshViews(): Promise<void> {
-  if (!connectionPromise) return
-  await enqueue(async () => {
-    const connection = await getConnection()
-    await refreshPendingViews(connection)
-  })
-}
-
 export async function closeConnection(): Promise<void> {
   if (!connectionPromise || !instancePromise) return
   // Routed through the same queue as query(): tearing down outside it could disconnect a

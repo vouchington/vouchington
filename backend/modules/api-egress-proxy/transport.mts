@@ -127,7 +127,6 @@ export function createApiEgressProxyTransport(
     installApiEgressProxyRoutingResolver,
     isApiEgressProxyRouteEnabled,
     getProviderFetch,
-    getProxyDispatcher,
     getProviderRequestDispatcher,
     closeApiEgressProxyTransport,
     [Symbol.asyncDispose]: closeApiEgressProxyTransport,
@@ -140,7 +139,6 @@ export const {
   installApiEgressProxyRoutingResolver,
   isApiEgressProxyRouteEnabled,
   getProviderFetch,
-  getProxyDispatcher,
   getProviderRequestDispatcher,
   closeApiEgressProxyTransport,
 } = apiEgressProxyTransport

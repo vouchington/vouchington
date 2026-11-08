@@ -27,7 +27,6 @@ export const FEDIVERSE_MASTODON_ACCESS_TOKEN = readOptionalConfigEnv(
 
 export const FEDIVERSE_PROVIDER_TIMEOUT_MS = 4_000
 export const FEDIVERSE_SEARCH_DEADLINE_MS = 5_000
-export const FEDIVERSE_SEARCH_CACHE_TTL_SECONDS = 90
 
 // Untyped searches chain multiple sub-fetches (e.g. Mastodon accounts then statuses)
 // sequentially within one adapter call. Each sub-fetch is already capped at

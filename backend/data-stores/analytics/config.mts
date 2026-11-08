@@ -17,11 +17,9 @@ export function parseAnalyticsBackend(
   return 'disabled'
 }
 
-export const ANALYTICS_BACKEND: AnalyticsBackend = parseAnalyticsBackend(rawBackend)
+parseAnalyticsBackend(rawBackend)
 
 const env = getDeployEnvironment()
-
-export const ANALYTICS_LOCAL_DIR = process.env.ANALYTICS_LOCAL_DIR ?? './tmp/analytics'
 
 export const ANALYTICS_FIREHOSE_PREFIX =
   process.env.ANALYTICS_FIREHOSE_PREFIX ?? `voucha-analytics-${env}-`
