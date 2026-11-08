@@ -75146,20 +75146,20 @@
         "idx_moderation_reports__active_post_unique": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_post_unique ON public.moderation_reports USING btree (reporter_user_id, post_id) WHERE ((reviewed_at IS NULL) AND (post_id IS NOT NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_post_unique ON public.moderation_reports USING btree (post_id, reporter_user_id) WHERE ((reviewed_at IS NULL) AND (post_id IS NOT NULL))",
           "includedColumns": [],
           "keys": [
-            {
-              "column": "reporter_user_id",
-              "descending": false,
-              "expression": "reporter_user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
             {
               "column": "post_id",
               "descending": false,
               "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "reporter_user_id",
+              "descending": false,
+              "expression": "reporter_user_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
