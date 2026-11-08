@@ -198,8 +198,11 @@ CREATE INDEX IF NOT EXISTS idx_community_members__suspected_ban_evader_dismissed
 CREATE OR REPLACE TRIGGER trigger_community_members_updated_at
   BEFORE UPDATE ON community_members FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- Covers role so a generic plan reads one exact key instead of scanning a community's covering role index.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members__unique ON community_members (community_id, user_id) WHERE removed_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members__unique
+  ON community_members (community_id, user_id) INCLUDE (role)
+  WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__active_community_id_id
   ON community_members (community_id, id) INCLUDE (user_id, role)
