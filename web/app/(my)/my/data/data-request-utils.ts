@@ -22,6 +22,16 @@ export function isStreamPayload(value: unknown): value is StreamPayload {
   )
 }
 
+export function parseStreamPayload(raw: unknown): StreamPayload | null {
+  if (typeof raw !== 'string') return null
+  try {
+    const value: unknown = JSON.parse(raw)
+    return isStreamPayload(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
 function isDataRequestStatus(value: unknown): value is DataRequestStatus {
   return (
     value === 'pending' ||

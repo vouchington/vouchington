@@ -6,7 +6,7 @@ import { createDownloadLinkRetry, needsDownloadLinkRetry } from './data-request-
 import { createClosedStatusProbeRetry } from './data-request-stream-probe-retry'
 import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
 import { shouldKeepStreamReconnecting } from './data-request-stream-transport'
-import { isStreamPayload, loadDataRequest, type StreamPayload } from './data-request-utils'
+import { loadDataRequest, parseStreamPayload, type StreamPayload } from './data-request-utils'
 
 const TERMINAL_STATUSES = new Set(['ready', 'failed', 'expired'])
 
@@ -61,16 +61,8 @@ export function useDataRequestStream({
 
     function onStatus(event: MessageEvent) {
       if (!isCurrent()) return
-      let parsed: unknown
-      const raw: unknown = event.data
-      if (typeof raw !== 'string') return
-      try {
-        parsed = JSON.parse(raw)
-      } catch {
-        return
-      }
-      if (!isStreamPayload(parsed)) return
-      const data: StreamPayload = parsed
+      const data = parseStreamPayload(event.data)
+      if (!data) return
 
       loadDataRequest(userId)
         .then(updated => {

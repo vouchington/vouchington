@@ -1,14 +1,13 @@
-import type { ArticleSyncJobStatus, ArticleSyncResult } from '@/lib/api/client/admin'
+import type { ArticleSyncJobStatus } from '@/lib/api/client/admin'
 import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
 import {
   createArticleSyncStreamRecovery,
+  parseArticleSyncStreamStatus,
   isTransientArticleSyncProbeError,
+  type ArticleSyncStreamStatus,
 } from './article-sync-stream-recovery'
 
 type SyncStream = ReturnType<typeof createRecoverableEventSource>
-type SyncStatus =
-  | { status: 'completed'; result: ArticleSyncResult }
-  | { status: 'failed'; error?: string }
 type TerminalArticleSyncStatus = Exclude<ArticleSyncJobStatus, { status: 'active' }>
 
 /**
@@ -18,7 +17,7 @@ type TerminalArticleSyncStatus = Exclude<ArticleSyncJobStatus, { status: 'active
  */
 export function createArticleSyncStreamSession(options: {
   readStatus: (jobId: string) => Promise<ArticleSyncJobStatus>
-  onTerminal: (status: TerminalArticleSyncStatus | SyncStatus) => void
+  onTerminal: (status: TerminalArticleSyncStatus | ArticleSyncStreamStatus) => void
   onTrackingFailure: (error: unknown) => void
 }) {
   let stream: SyncStream | null = null
@@ -38,7 +37,10 @@ export function createArticleSyncStreamSession(options: {
     endStream()
   }
 
-  function finish(status: TerminalArticleSyncStatus | SyncStatus, current: SyncStream) {
+  function finish(
+    status: TerminalArticleSyncStatus | ArticleSyncStreamStatus,
+    current: SyncStream,
+  ) {
     if (stream !== current) return
     recovery.clear()
     activeJobId = null
@@ -91,17 +93,8 @@ export function createArticleSyncStreamSession(options: {
     stream = current
 
     function handleStatus(event: MessageEvent) {
-      let parsed: unknown
-      const raw: unknown = event.data
-      if (typeof raw !== 'string') return
-      try {
-        parsed = JSON.parse(raw)
-      } catch {
-        return
-      }
-      if (!isSyncStatus(parsed)) return
-      const data: SyncStatus = parsed
-      finish(data, current)
+      const status = parseArticleSyncStreamStatus(event.data)
+      if (status) finish(status, current)
     }
 
     function handleError(source: EventSource) {
@@ -136,34 +129,4 @@ export function createArticleSyncStreamSession(options: {
     },
     stop,
   }
-}
-
-function isSyncStatus(value: unknown): value is SyncStatus {
-  if (!isRecord(value)) return false
-  if (value.status === 'failed') return !('error' in value) || typeof value.error === 'string'
-  if (value.status !== 'completed' || !isRecord(value.result)) return false
-  const { results, summary } = value.result
-  return (
-    Array.isArray(results) &&
-    results.every(
-      item =>
-        isRecord(item) &&
-        typeof item.file === 'string' &&
-        typeof item.slug === 'string' &&
-        (item.action === 'created' ||
-          item.action === 'updated' ||
-          item.action === 'skipped' ||
-          item.action === 'error') &&
-        (!('error' in item) || typeof item.error === 'string'),
-    ) &&
-    isRecord(summary) &&
-    typeof summary.created === 'number' &&
-    typeof summary.updated === 'number' &&
-    typeof summary.skipped === 'number' &&
-    typeof summary.errored === 'number'
-  )
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
