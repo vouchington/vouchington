@@ -29,29 +29,27 @@ export async function assertImagePlacementCapacity(
       FROM (
         SELECT placement_id
         FROM (
-          SELECT binding.placement_id
-          FROM (
-            SELECT placement_id FROM image_placements
-            WHERE image_id = requested.image_id
-            ORDER BY placement_id
-          ) binding
+          (SELECT binding.placement_id
+          FROM image_placements binding
           JOIN LATERAL (
             SELECT retired_at FROM media_placements
             WHERE id = binding.placement_id
             LIMIT 1
           ) placement ON placement.retired_at IS NULL
+          WHERE binding.image_id = requested.image_id
+          ORDER BY binding.placement_id
+          LIMIT ${cap})
           UNION ALL
-          SELECT surface.placement_id
-          FROM (
-            SELECT placement_id FROM image_surface_placements
-            WHERE image_id = requested.image_id
-            ORDER BY placement_id
-          ) surface
+          (SELECT surface.placement_id
+          FROM image_surface_placements surface
           JOIN LATERAL (
             SELECT retired_at FROM media_placements
             WHERE id = surface.placement_id
             LIMIT 1
           ) placement ON placement.retired_at IS NULL
+          WHERE surface.image_id = requested.image_id
+          ORDER BY surface.placement_id
+          LIMIT ${cap})
         ) live_placements
         LIMIT ${cap}
       ) bounded_placements
