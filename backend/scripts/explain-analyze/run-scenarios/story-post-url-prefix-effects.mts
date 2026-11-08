@@ -20,6 +20,8 @@ import { MAXIMUM_LEASE, projectionWork } from './story-post-url-prefix-setup.mts
 
 const RECEIPT_PK = 'story_post_related_url_projection_receipts_pkey'
 const HARD_MAX = relationLimitsMaxValues.post_related_url
+// One post owns this fixture, so a custom plan seq-scans it. Production shares the tables.
+const indexPlan = { enable_seqscan: 'off' }
 
 /** Receipt writes, the pending-crawl read, active relations, and a lowered-cap prune at the hard max. */
 export async function captureStoryPostUrlPrefixEffectScenarios(
@@ -46,15 +48,20 @@ async function captureActiveRelations(
     relationIndexes,
     HARD_MAX,
   )
-  await captureRollback(id, 'storyPostRelatedUrlProjectionActiveRelationIds', async query => {
-    const rows = await readStoryPostRelatedUrlProjectionActiveRelations(
-      query,
-      seed.posts[1]!,
-      seed.user,
-      urlIds,
-    )
-    assert.equal(rows.length, HARD_MAX)
-  })
+  await captureRollback(
+    id,
+    'storyPostRelatedUrlProjectionActiveRelationIds',
+    async query => {
+      const rows = await readStoryPostRelatedUrlProjectionActiveRelations(
+        query,
+        seed.posts[1]!,
+        seed.user,
+        urlIds,
+      )
+      assert.equal(rows.length, HARD_MAX)
+    },
+    indexPlan,
+  )
 }
 
 async function capturePendingCrawls(): Promise<void> {
@@ -70,6 +77,7 @@ async function capturePendingCrawls(): Promise<void> {
     },
     undefined,
     'storyPostRelatedUrlProjectionPendingCrawlEffects',
+    { localSettings: indexPlan },
   )
 }
 
@@ -98,6 +106,7 @@ async function captureReceiptInsert(
           [seed.posts[1]],
         )
       },
+      localSettings: indexPlan,
     },
   )
 }
@@ -107,25 +116,33 @@ async function captureReceiptsWritten(
 ): Promise<void> {
   const id = 'story-post-related-url-receipts-written-maximum'
   registerReceiptContract(id, 'markStoryPostRelatedUrlProjectionRelationsWritten', HARD_MAX * 2)
-  await captureRollback(id, 'markStoryPostRelatedUrlProjectionRelationsWritten', query =>
-    markRelationReceiptsWritten(
-      query,
-      projectionWork(seed.posts[1]!, MAXIMUM_LEASE),
-      receiptDecisions(receipts),
-    ).then(written => assert.equal(written, true)),
+  await captureRollback(
+    id,
+    'markStoryPostRelatedUrlProjectionRelationsWritten',
+    query =>
+      markRelationReceiptsWritten(
+        query,
+        projectionWork(seed.posts[1]!, MAXIMUM_LEASE),
+        receiptDecisions(receipts),
+      ).then(written => assert.equal(written, true)),
+    indexPlan,
   )
 }
 
 async function captureCrawlRequirements(urlIds: readonly string[]): Promise<void> {
   const id = 'story-post-related-url-crawl-requirements-maximum'
   registerReceiptContract(id, 'recordStoryPostRelatedUrlProjectionCrawlRequirements', HARD_MAX * 2)
-  await captureRollback(id, 'recordStoryPostRelatedUrlProjectionCrawlRequirements', query =>
-    recordProjectionCrawlRequirements(
-      query,
-      projectionWork(seed.posts[1]!, MAXIMUM_LEASE),
-      [],
-      new Set(urlIds),
-    ),
+  await captureRollback(
+    id,
+    'recordStoryPostRelatedUrlProjectionCrawlRequirements',
+    query =>
+      recordProjectionCrawlRequirements(
+        query,
+        projectionWork(seed.posts[1]!, MAXIMUM_LEASE),
+        [],
+        new Set(urlIds),
+      ),
+    indexPlan,
   )
 }
 

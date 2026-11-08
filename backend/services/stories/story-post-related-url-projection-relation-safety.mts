@@ -154,7 +154,8 @@ export async function recordProjectionCrawlRequirements(
       FROM unnest($3::uuid[], $4::boolean[], $5::boolean[])
         AS input(url_id, should_crawl, blocked)
       WHERE receipt.post_id = $1 AND receipt.generation = $2
-        AND receipt.url_id = input.url_id`,
+        AND receipt.url_id = input.url_id
+      RETURNING receipt.url_id`,
     [work.post_id, work.generation, urlIds, crawlRequired, blocked],
   )
 }

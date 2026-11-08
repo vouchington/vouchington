@@ -6,9 +6,11 @@ export async function captureRollback(
   id: string,
   annotation: string,
   run: (query: TransactionQuery) => Promise<void>,
+  localSettings?: Readonly<Record<string, string>>,
 ): Promise<void> {
   await using query = await beginTransaction()
   await runAndCapture(id, () => run(query), undefined, annotation, {
     afterCapture: () => query.rollback(),
+    localSettings,
   })
 }

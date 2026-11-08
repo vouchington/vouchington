@@ -37,7 +37,8 @@ export async function markRelationReceiptsWritten(
           SELECT 1 FROM story_post_related_url_projection_jobs job
           WHERE job.post_id = $1 AND job.generation = $2 AND job.lease_token = $4
             AND job.lease_expires_at > clock_timestamp()
-        )`,
+        )
+      RETURNING url_id`,
     [work.post_id, work.generation, urlIds, work.lease_token],
   )
   return rowCount === urlIds.length

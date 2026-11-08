@@ -142,7 +142,8 @@ async function stageStoryPostRelatedUrlProjectionReceiptsOn(
       SELECT $1::uuid AS post_id, $2::bigint AS generation, url_id, source_item_id, is_eligible
       FROM unnest($3::uuid[], $4::uuid[], $5::boolean[]) AS input(url_id, source_item_id, is_eligible)
       ORDER BY post_id, generation, url_id
-      ON CONFLICT (post_id, generation, url_id) DO NOTHING`,
+      ON CONFLICT (post_id, generation, url_id) DO NOTHING
+      RETURNING url_id`,
     [
       work.post_id,
       work.generation,
