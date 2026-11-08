@@ -30,7 +30,7 @@ export async function runTopicLinkCountLifecycleScenarios(): Promise<void> {
         { kind: 'maxProcessedRows', relation: 'topics', max: 2 },
         {
           kind: 'maxFunctionCalls',
-          function: 'fn_refresh_referral_program_link_counts_on_topic_lifecycle',
+          function: 'fn_update_referral_program_link_counts_on_topic_lifecycle',
           max: 1,
         },
         { kind: 'maxFunctionCalls', function: 'fn_project_referral_program_link_counts', max: 1 },

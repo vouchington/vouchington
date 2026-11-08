@@ -30,7 +30,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_project_referral_program_link_counts();
 
 -- A no-op count write takes the same program row lock as ordinary count writers, then invokes
 -- their projection trigger after the topic lifecycle change is visible to this transaction.
-CREATE OR REPLACE FUNCTION fn_refresh_referral_program_link_counts_on_topic_lifecycle()
+CREATE OR REPLACE FUNCTION fn_update_referral_program_link_counts_on_topic_lifecycle()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE referral_program_topics
@@ -40,12 +40,12 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION fn_refresh_referral_program_link_counts_on_topic_lifecycle() IS
+COMMENT ON FUNCTION fn_update_referral_program_link_counts_on_topic_lifecycle() IS
   'Refreshes one referral program search key after its topic is deleted, merged, or restored.';
 
-CREATE OR REPLACE TRIGGER trigger_refresh_referral_program_link_counts_on_topic_lifecycle
+CREATE OR REPLACE TRIGGER trigger_update_referral_program_link_counts_on_topic_lifecycle
 AFTER UPDATE OF deleted_at, merged_into_topic_id ON topics
 FOR EACH ROW
 WHEN (OLD.deleted_at IS DISTINCT FROM NEW.deleted_at
   OR OLD.merged_into_topic_id IS DISTINCT FROM NEW.merged_into_topic_id)
-EXECUTE FUNCTION fn_refresh_referral_program_link_counts_on_topic_lifecycle();
+EXECUTE FUNCTION fn_update_referral_program_link_counts_on_topic_lifecycle();

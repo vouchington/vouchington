@@ -3,7 +3,10 @@ import { fileURLToPath } from 'node:url'
 
 import type { SchemaSnapshot } from 'vouchington-tooling/pg-schema-snapshot'
 
-import { derivedReferences } from '../backend/services/topics/merge-derived-references.mts'
+import {
+  cascadedDerivedReferences,
+  derivedReferences,
+} from '../backend/services/topics/merge-derived-references.mts'
 import {
   TOPIC_MERGE_REFERENCE_GROUPS,
   TOPIC_MERGE_SUBTYPE_TABLES,
@@ -20,15 +23,16 @@ const schemaPath = fileURLToPath(
   new URL('../backend/data-stores/psql/schema-snapshot/schema.json', import.meta.url),
 )
 
-const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
-const failures = topicMergeForeignKeyFailures(schema)
-if (failures.length > 0) {
-  console.error(failures.join('\n'))
-  process.exit(1)
+if (import.meta.main) {
+  const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
+  const failures = topicMergeForeignKeyFailures(schema)
+  if (failures.length > 0) {
+    console.error(failures.join('\n'))
+    process.exitCode = 1
+  }
 }
-process.exit(0)
 
-function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] {
+export function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] {
   const topicFailures: string[] = []
   const targets = new Set<string>(['topics', ...TOPIC_MERGE_SUBTYPE_TABLES])
   const foreignKeys = Object.entries(schemaSnapshot.tables).flatMap(([table, definition]) =>
@@ -50,7 +54,7 @@ function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] 
     )
   }
 
-  const executed = new Map<string, string>([
+  const executedEntries: readonly (readonly [string, string])[] = [
     ...plainReferences.flatMap(({ table, columns }) =>
       columns.map(column => [`${table}.${column}`, 'references'] as const),
     ),
@@ -66,8 +70,15 @@ function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] 
     ...TOPIC_MERGE_SUBTYPE_TABLES.map(table => [`${table}.topic_id`, 'subtype'] as const),
     ['rewards_program_status_topics.lifetime_version_id', 'subtype'],
     ...derivedReferences.map(([table, column]) => [`${table}.${column}`, 'derived'] as const),
+    ...cascadedDerivedReferences.map(
+      ([table, column]) => [`${table}.${column}`, 'derived'] as const,
+    ),
     ['classifier_candidates.topic_id', 'configuration'],
-  ])
+  ]
+  const executed = new Map(executedEntries)
+  if (executed.size !== executedEntries.length) {
+    topicFailures.push('topic merge execution registry contains duplicate references')
+  }
   const activeGroups: string[] = []
   for (const [reference, group] of Object.entries(TOPIC_MERGE_REFERENCE_GROUPS)) {
     if (group === 'history' || group === 'alias') continue
@@ -88,6 +99,21 @@ function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] 
         `only grouped: ${absentFrom(activeGroups, executedKeys).join(', ') || '(none)'}`,
       ].join('\n'),
     )
+  }
+  const subtypeTables = new Set<string>(TOPIC_MERGE_SUBTYPE_TABLES)
+  for (const [table, column, ownerSubtype] of cascadedDerivedReferences) {
+    const foreignKeyMatches = Object.values(schemaSnapshot.tables[table]?.foreignKeys ?? {}).some(
+      foreignKey =>
+        sameList(foreignKey.columns, [column]) &&
+        foreignKey.referencedTable === ownerSubtype &&
+        sameList(foreignKey.referencedColumns, ['topic_id']) &&
+        foreignKey.onDelete === 'cascade',
+    )
+    if (!subtypeTables.has(ownerSubtype) || !foreignKeyMatches) {
+      topicFailures.push(
+        `${table}.${column}: derived cascade must reference merge subtype ${ownerSubtype}.topic_id ON DELETE CASCADE`,
+      )
+    }
   }
   return topicFailures
 }
