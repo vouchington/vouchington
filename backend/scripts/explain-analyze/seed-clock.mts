@@ -16,7 +16,11 @@ export async function withSeedAnchorClock<T>(callback: () => Promise<T>): Promis
         args.length === 0 ? [dayAnchorMs] : args,
         newTarget,
       )
-      if (!(constructed instanceof Date)) throw new TypeError('Expected a Date instance')
+      if (
+        constructed === null ||
+        (typeof constructed !== 'object' && typeof constructed !== 'function')
+      )
+        throw new TypeError('Expected a constructed object')
       return constructed
     },
     get: (target, property) => {
