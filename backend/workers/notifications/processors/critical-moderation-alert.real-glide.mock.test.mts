@@ -12,7 +12,7 @@ import { listNotifications } from '@services/notifications/list'
 import { createTestUser, insertTestModerationReport, insertTestPost } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
-import { createCriticalModerationAlertNotificationHandler } from './processors/critical-moderation-alert.mts'
+import { createCriticalModerationAlertNotificationHandler } from './critical-moderation-alert.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 

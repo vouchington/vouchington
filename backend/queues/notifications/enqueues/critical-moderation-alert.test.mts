@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { PRIORITY_DISPATCH } from '@queues/background/config'
-import { notifications } from './queues.mts'
-import { enqueueContinueCriticalModerationAlertNotification } from './enqueues.mts'
+import { notifications } from '../queues.mts'
+import { enqueueContinueCriticalModerationAlertNotification } from './critical-moderation-alert.mts'
 
 describe('critical moderation alert enqueue', () => {
   it('uses report-and-user cursor identity for recipient continuations', async () => {
