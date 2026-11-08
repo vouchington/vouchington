@@ -1,6 +1,8 @@
 import { write } from '@data-stores/psql'
 import { seedUuid, seedUuidAtTimestamp } from './common.mts'
 
+export { overrideCriticalAlertRecipientPageLimitForTest } from '@voucha/test-helpers/critical-alert-page-config'
+
 export const CRITICAL_ALERT_STAFF_COUNT = 10_000
 const STAFF_START = 10_000
 const HOSTNAME_ID = seedUuidAtTimestamp(Date.parse('2005-09-15T05:25:01Z'), 0)

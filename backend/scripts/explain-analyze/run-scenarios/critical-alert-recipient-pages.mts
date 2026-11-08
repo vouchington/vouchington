@@ -1,15 +1,11 @@
 import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
 import {
-  pagedDispatchConfig,
-  pagedDispatchMaxValues,
-} from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
-import {
   isCriticalAlertReportLive,
   listCriticalAlertRecipientPage,
   writeCriticalAlertCandidatePage,
 } from '@services/notifications/create-critical-moderation-alert-notification'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { getNotificationRecipientDispatchPageHardMax } from '@voucha/test-helpers/critical-alert-page-config'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -17,18 +13,16 @@ import {
   cleanupCriticalAlertRecipientPages,
   criticalAlertStaffIds,
   CRITICAL_ALERT_STAFF_COUNT,
+  overrideCriticalAlertRecipientPageLimitForTest,
   seedCriticalAlertRecipientPages,
 } from '../seed-data/critical-alert-recipient-pages.mts'
 
-const CAP = pagedDispatchMaxValues.notifications_page_size as number
+const CAP = getNotificationRecipientDispatchPageHardMax()
 const PAGE_ROLE_ROWS = 2 * (CAP + 1)
 
 /** Last scenario: its large temporary staff cohort cannot alter earlier plan statistics. */
 export async function runCriticalAlertRecipientPageScenarios(): Promise<void> {
-  await pagedDispatchConfig.waitForInitialization()
-  const restore = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
-    notifications_page_size: CAP,
-  })
+  const restore = await overrideCriticalAlertRecipientPageLimitForTest()
   try {
     await cleanupCriticalAlertRecipientPages()
     const { freshReportId, duplicateReportId } = await seedCriticalAlertRecipientPages()
