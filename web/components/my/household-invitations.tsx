@@ -121,7 +121,7 @@ export function HouseholdInvitations(props: Props) {
     } catch (err) {
       onError(err, {
         fallback: t('settings.householdInvitations.invitationUpdateFailed'),
-        displayMessageByCode: householdLimitDisplayMessages(),
+        displayMessageByCode: householdLimitDisplayMessages(t, 'accept'),
       })
     } finally {
       inFlight.current = false

@@ -19,16 +19,24 @@ import { getHouseholdLimits } from './household-limits-config.mts'
  */
 export const householdMemberAdmissionLockPrefix = 'household-member-admission:'
 export const householdIndividualAdmissionLockPrefix = 'household-individual-admission:'
+/** Serialize household ownership admission with every missing-identity binder. */
+export async function lockHouseholdOwnerAdmission(
+  userId: string,
+  options: QueryOptions,
+): Promise<void> {
+  await write(
+    sql`/* lockHouseholdOwnerAdmission */
+      SELECT pg_advisory_xact_lock(hashtextextended('household-owner-admission:' || ${userId}::uuid::text, 0))`,
+    options,
+  )
+}
+
 export async function assertCanCreateHousehold(
   userId: string,
   options: QueryOptions,
 ): Promise<void> {
   const limits = getHouseholdLimits()
-  await write(
-    sql`/* assertCanCreateHousehold:lock */
-      SELECT pg_advisory_xact_lock(hashtextextended('household-owner-admission:' || ${userId}::uuid::text, 0))`,
-    options,
-  )
+  await lockHouseholdOwnerAdmission(userId, options)
   const { rows: people } = await write<{ individual_id: string | null }>(
     sql`/* assertCanCreateHousehold:individual */
       SELECT individual_id FROM users WHERE id = ${userId} LIMIT 1`,
@@ -64,7 +72,7 @@ export async function assertCanCreateHousehold(
   if (counts.owned_count >= limits.householdsPerUser) {
     throw createCodedError(409, 'Household limit reached', HOUSEHOLD_LIMIT_REACHED)
   }
-  if (individualId && counts.individual_count >= limits.householdsPerIndividual) {
+  if (counts.individual_count >= limits.householdsPerIndividual) {
     throw createCodedError(
       409,
       'Individual household limit reached',

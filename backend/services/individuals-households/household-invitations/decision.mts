@@ -13,6 +13,7 @@ import {
 } from '../households/household-membership-page-row.mts'
 import {
   assertCanAddHouseholdMember,
+  lockHouseholdOwnerAdmission,
   householdIndividualAdmissionLockPrefix,
   householdMemberAdmissionLockPrefix,
 } from '../household-limits.mts'
@@ -60,11 +61,6 @@ async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, opti
       WHERE id = ${currentUser.id} AND individual_id IS NOT NULL`,
     options,
   )
-  await write(
-    sql`/* decideHouseholdInvitation:lock-invitee */
-      SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,
-    options,
-  )
   return getOrCreateIndividual(currentUser, options)
 }
 
@@ -93,6 +89,7 @@ export async function decideHouseholdInvitation(
   validateUUID(invitationId)
   await using transaction = await beginTransaction()
   const options = { query: transaction }
+  if (decision === 'accept') await lockHouseholdOwnerAdmission(currentUser.id, options)
   const { rows: households } = await lockHouseholdForDecision(
     currentUser.id,
     invitationId,

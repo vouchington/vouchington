@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '@vouchington/api-client'
 
 const { mockCreate, mockGetHouseholds, mockGetMemberships, mockRemove, toastMock } = vi.hoisted(
   () => ({
@@ -185,6 +186,15 @@ describe('HouseholdManager rendering and mutations', () => {
     await waitFor(() => expect(toastMock.error).toHaveBeenCalled())
     expect(screen.getByRole('heading', { name: 'Shared household' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Create household' })).toBeVisible()
+  })
+
+  it('uses the translated create-specific message for an individual household limit', async () => {
+    mockCreate.mockRejectedValueOnce(
+      new ApiError('server message', 409, { code: 'INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED' }),
+    )
+    render(<HouseholdManager initialSections={[]} />)
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Create household' })))
+    expect(toastMock.error).toHaveBeenCalledWith('settings.householdLimits.individualCreateLimit')
   })
 
   it('cancels and confirms member removal', async () => {

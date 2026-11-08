@@ -1,20 +1,31 @@
-import { read, write } from '@data-stores/psql'
+import {
+  beginTransaction,
+  read,
+  withTransactionOptions,
+  write,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
+import { lockHouseholdOwnerAdmission } from '../household-limits.mts'
 
 type Individual = { id: string; updated_at: Date }
 
 /**
  * Get the individual that represents this user
  */
-async function getIndividual(currentUser: PrivateUser | null, options: QueryOptions = {}) {
+async function getIndividual(
+  currentUser: PrivateUser | null,
+  options: QueryOptions = {},
+  primary = false,
+) {
   assert(currentUser, 401, 'User not logged in')
 
   const {
     rows: [individual],
-  } = await read<Individual>(
+  } = await (primary ? write : read)<Individual>(
     sql`/* getIndividual */
     SELECT
       individual.id,
@@ -30,52 +41,29 @@ async function getIndividual(currentUser: PrivateUser | null, options: QueryOpti
   return individual?.id ? individual : null
 }
 
-/**
- * Create a new individual
- * If this is the first individual for the user, it will be set as their representative individual
- */
-async function createIndividual(currentUser: PrivateUser | null, options: QueryOptions = {}) {
-  assert(currentUser, 401, 'User not logged in')
-
-  // Check if user already has a representative individual
-  const user = await getRepresentativeIndividualUser(currentUser.id, options)
-
-  const isFirstIndividual = !user?.individual_id
-
-  if (isFirstIndividual) {
-    return createRepresentativeIndividual(currentUser.id, options)
-  }
-
-  return createAdditionalIndividual(options)
-}
-
-/**
- * Get or create individual for the user
- * This ensures the user has an individual (should be automatic via trigger, but this is a fallback)
- */
+/** Get or create the user's representative individual. */
 export async function getOrCreateIndividual(
   currentUser: PrivateUser | null,
   options: QueryOptions = {},
 ) {
+  assert(currentUser, 401, 'User not logged in')
   const existing = await getIndividual(currentUser, options)
   if (existing) return existing
-  return createIndividual(currentUser, options)
-}
 
-async function getRepresentativeIndividualUser(userId: string, options: QueryOptions = {}) {
-  const {
-    rows: [user],
-  } = await read<{ individual_id: string | null }>(
-    sql`/* getRepresentativeIndividualUser */
-    SELECT individual_id
-    FROM users
-    WHERE id = ${userId}
-    LIMIT 1
-  `,
-    options,
-  )
-
-  return user
+  const bind = async (query: TransactionQuery) => {
+    const transactionOptions = { query }
+    await lockHouseholdOwnerAdmission(currentUser.id, transactionOptions)
+    // The initial read can use a replica; recheck on the primary after acquiring the fence.
+    return (
+      (await getIndividual(currentUser, transactionOptions, true)) ??
+      (await createRepresentativeIndividual(currentUser.id, transactionOptions))
+    )
+  }
+  if (options.query || options.client) return withTransactionOptions(options, bind)
+  await using query = await beginTransaction()
+  const individual = await bind(query)
+  await query.commit()
+  return individual
 }
 
 async function createRepresentativeIndividual(userId: string, options: QueryOptions = {}) {
@@ -92,20 +80,6 @@ async function createRepresentativeIndividual(userId: string, options: QueryOpti
     FROM new_individual
     WHERE users.id = ${userId}
     RETURNING new_individual.id, new_individual.updated_at
-  `,
-    options,
-  )
-
-  return individual
-}
-
-async function createAdditionalIndividual(options: QueryOptions = {}) {
-  const {
-    rows: [individual],
-  } = await write<Individual>(
-    sql`/* createAdditionalIndividual */
-    INSERT INTO individuals DEFAULT VALUES
-    RETURNING id, updated_at
   `,
     options,
   )

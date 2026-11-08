@@ -1,3 +1,4 @@
+import { getOrCreateIndividual } from '@services/individuals-households/individuals/individuals'
 import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
 import {
@@ -12,6 +13,29 @@ const countQuery = '/* assertCanCreateHousehold */'
 const memberQuery = '/* assertCanAddHouseholdMember */'
 
 export async function runHouseholdLimitScenarios(): Promise<void> {
+  registerScenarioContract('household-individual-bind', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['users_pkey'] },
+      { kind: 'maxProcessedRows', relation: 'users', max: 4 },
+      { kind: 'maxProcessedRows', relation: 'individuals', max: 4 },
+    ],
+  })
+  await runAndCapture(
+    'household-individual-bind',
+    async () => {
+      await using transaction = await beginTransaction()
+      await transaction(
+        '/* householdIndividualBindFixture */ UPDATE users SET individual_id = NULL WHERE id = $1::uuid',
+        [seedUser.id],
+      )
+      const individual = await getOrCreateIndividual(seedUser, { query: transaction })
+      assert.ok(individual?.id)
+      await transaction.rollback()
+    },
+    undefined,
+    ['getIndividual', 'lockHouseholdOwnerAdmission', 'createRepresentativeIndividual'],
+  )
+
   registerScenarioContract('household-owner-capacity', {
     expectations: [
       {
@@ -39,7 +63,7 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
     },
     undefined,
     [
-      'assertCanCreateHousehold:lock',
+      'lockHouseholdOwnerAdmission',
       'assertCanCreateHousehold:individual',
       'assertCanCreateHousehold:lock-individual',
       'assertCanCreateHousehold',

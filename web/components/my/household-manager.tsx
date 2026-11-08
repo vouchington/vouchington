@@ -15,6 +15,7 @@ import { usePaginatedList } from '@/hooks/use-paginated-list'
 import type { ListResponse, PageInfo } from '@/types/api-responses'
 import { householdLimitDisplayMessages } from '@/lib/api/household-limit-messages'
 import onError, { onSuccess } from '@/lib/on-error'
+import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface Props {
   onHouseholdCreated?: (household: Household) => void
@@ -70,6 +71,7 @@ export function HouseholdManager({
   ownedProbeSucceeded,
   sharedLoadError: initialSharedLoadError,
 }: Props) {
+  const t = useTranslations()
   const [ownedSection, setOwnedSection] = useState(initialOwnedSection)
   const [sharedPage, setSharedPage] = useState(initialSharedPage)
   const [sharedLoadError, setSharedLoadError] = useState(initialSharedLoadError)
@@ -108,7 +110,7 @@ export function HouseholdManager({
     } catch (err) {
       onError(err, {
         fallback: 'Failed to create household',
-        displayMessageByCode: householdLimitDisplayMessages(),
+        displayMessageByCode: householdLimitDisplayMessages(t, 'create'),
       })
     } finally {
       createInFlight.current = false

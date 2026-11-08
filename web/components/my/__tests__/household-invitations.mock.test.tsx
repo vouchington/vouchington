@@ -3,7 +3,6 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { HouseholdInvitations } from '../household-invitations'
 import * as api from '@/lib/api/client/household-invitations'
-import { householdLimitDisplayMessages } from '@/lib/api/household-limit-messages'
 import onError from '@/lib/on-error'
 import {
   makeHouseholdInvitation,
@@ -173,10 +172,11 @@ describe('household invitation actions', () => {
     const invitation = makeHouseholdInvitation()
     vi.mocked(api.createHouseholdInvitation).mockResolvedValueOnce({ invitation })
     const props = { kind: 'sent', householdId: invitation.household_id } as const
+    const emptyPage = () => makeHouseholdInvitationPage([])
     const { rerender } = render(
       <HouseholdInvitations
         {...props}
-        initialPage={makeHouseholdInvitationPage([])}
+        initialPage={emptyPage()}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Select alex' }))
@@ -185,7 +185,7 @@ describe('household invitation actions', () => {
     rerender(
       <HouseholdInvitations
         {...props}
-        initialPage={makeHouseholdInvitationPage([])}
+        initialPage={emptyPage()}
       />,
     )
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
@@ -230,14 +230,14 @@ describe('household invitation actions', () => {
     await act(async () =>
       fireEvent.click(screen.getByRole('button', { name: 'Revoke invitation' })),
     )
-    expect(api.revokeHouseholdInvitation).toHaveBeenCalledExactlyOnceWith(
-      invitation.household_id,
-      invitation.id,
-    )
+    const { household_id, id } = invitation
+    expect(api.revokeHouseholdInvitation).toHaveBeenCalledExactlyOnceWith(household_id, id)
     expect(document.querySelectorAll('[data-pw="household-invitation-row"]')).toHaveLength(1)
     expect(onError).toHaveBeenCalledWith(error, {
       fallback: 'The invitation could not be updated.',
-      displayMessageByCode: householdLimitDisplayMessages(),
+      displayMessageByCode: expect.objectContaining({
+        INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED: "You can't join another household.",
+      }),
     })
     expect(nav.refresh).not.toHaveBeenCalled()
   })
