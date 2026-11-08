@@ -17279,7 +17279,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "community_agent_prompt_slot_counts_pkey": {
           "accessMethod": "btree",
