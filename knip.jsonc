@@ -325,6 +325,9 @@
         "storybook/mocks/languages.ts",
         "storybook/mocks/load-server-messages.ts",
         "storybook/mocks/upgrade-membership-aside.tsx",
+        // Invoked as Node CLI entrypoints by the local and image smoke shell programs.
+        "test-helpers/compile-localization-smoke-catalog.mts",
+        "test-helpers/localization-smoke-backend.mts",
         // Reached only via the `web-storybook-browser` Vitest project's `setupFiles` string
         // (test-helpers/vitest-config/storybook-browser-project.mts), never a static import;
         // same pattern as the root workspace's string-valued Vitest runner entry.
