@@ -1,19 +1,21 @@
 import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
-import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
 import {
-  registerRssFeedCandidateScenario,
+  RSS_FEED_WEEKLY_STORY_ID,
+  RSS_FEED_WEEKLY_STORY_TOKEN,
+  RSS_FEED_WEEKLY_WORKLOAD_RARE_TOKEN,
+} from '../seed-data/rss-feed-weekly-workload.mts'
+import {
+  registerRssFeedPageScenario,
   runRssFeedFirstAndContinuationScenarios,
 } from './rss-feed-pages.mts'
+import { runRssFeedWeeklyFilterScenarios } from './rss-feed-weekly-filters.mts'
+import { runRssFeedWeeklyProxyScenario } from './rss-feed-weekly-proxy.mts'
 
 const { getPostFeedIds, getPostIds, getRssFeedItemFeedIds } = services
 
 export async function runHeavyFollowScenarios() {
-  // Heavy-follow user scenarios — test feed queries with a power user who
-  // follows 1000 users, 200 topics, and 200 RSS feeds.
-  // Results are suffixed with ':heavy' so the comparison table can pair them
-  // with the baseline results above.
   registerScenarioContract('post-feed-heavy-follows', {
     expectations: [],
     crossPartition: {
@@ -99,7 +101,7 @@ export async function runHeavyFollowScenarios() {
     { limit: 25, time_range: '1w' },
     'heavy',
   )
-  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-follow-rss-feeds')
+  registerRssFeedPageScenario('rss-feed-item-feed-heavy-follow-rss-feeds')
   await runAndCapture(
     'rss-feed-item-feed-heavy-follow-rss-feeds',
     () =>
@@ -110,7 +112,7 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-follow-rss-feeds',
   )
-  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-follow-topics')
+  registerRssFeedPageScenario('rss-feed-item-feed-heavy-follow-topics')
   await runAndCapture(
     'rss-feed-item-feed-heavy-follow-topics',
     () =>
@@ -121,7 +123,7 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-follow-topics',
   )
-  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-all')
+  registerRssFeedPageScenario('rss-feed-item-feed-heavy-all')
   await runAndCapture(
     'rss-feed-item-feed-heavy-all',
     () =>
@@ -132,21 +134,35 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-all',
   )
-  registerRssFeedCandidateScenario('rss-feed-item-feed-heavy-story-skew')
+  registerRssFeedPageScenario('rss-feed-item-feed-heavy-story-skew')
   await runAndCapture('rss-feed-item-feed-heavy-story-skew', async () => {
     const page = await getRssFeedItemFeedIds(heavyFollowUser, {
+      feed_type: 'all',
       limit: 25,
       time_range: '1w',
-      text_search_query: STORY_POST_RELATED_URL_PROJECTION_SEED.feedSearchToken,
+      text_search_query: RSS_FEED_WEEKLY_STORY_TOKEN,
     })
     if (
       page.results.length !== 1 ||
-      page.results[0]?.story_id !== STORY_POST_RELATED_URL_PROJECTION_SEED.storyId ||
+      page.results[0]?.story_id !== RSS_FEED_WEEKLY_STORY_ID ||
       page.page_info.has_next_page
     ) {
       throw new Error('RSS story-skew scenario must return one canonical direct representative')
     }
   })
+  registerRssFeedPageScenario('rss-feed-item-feed-weekly-selective-text')
+  await runAndCapture('rss-feed-item-feed-weekly-selective-text', async () => {
+    const page = await getRssFeedItemFeedIds(heavyFollowUser, {
+      feed_type: 'all',
+      limit: 25,
+      time_range: 'all',
+      text_search_query: RSS_FEED_WEEKLY_WORKLOAD_RARE_TOKEN,
+    })
+    if (page.results.length !== 2 || page.page_info.has_next_page)
+      throw new Error('Weekly selective RSS text search must find its two oldest in-window items')
+  })
+  await runRssFeedWeeklyFilterScenarios()
+  await runRssFeedWeeklyProxyScenario()
 
   registerScenarioContract('post-search-heavy-follows', {
     expectations: [],

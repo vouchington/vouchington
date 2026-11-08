@@ -3,7 +3,7 @@ import { COMMENT_SCENARIO_IDS } from './comment-scenario-ids.mts'
 import { INGESTION_PAGE_SCENARIO_IDS } from './ingestion-page-scenario-ids.mts'
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
-import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
+import { RSS_FEED_WEEKLY_SCENARIO_IDS, RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
 import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario-ids.mts'
 import { BOUNDED_WORK_SCENARIOS } from './scenario-manifest-work.mts'
@@ -110,6 +110,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-feed-item-feed-sparse-source-filter-after',
   'rss-feed-item-feed-heavy-follows-after',
   'rss-feed-item-feed-heavy-story-skew',
+  ...RSS_FEED_WEEKLY_SCENARIO_IDS,
   'rss-feed-item-feed-follow-rss-feeds',
   'rss-feed-item-feed-follow-topics',
   'rss-feed-item-feed-heavy-all',

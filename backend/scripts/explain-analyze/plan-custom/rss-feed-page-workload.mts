@@ -1,0 +1,163 @@
+import type { ExplainResult } from '@data-stores/psql'
+import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
+import { SEMANTIC_RSS_STORY_MEMBER_COUNT } from '../seed-data/semantic-rss-feed-items.mts'
+import { STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT } from '../seed-data/story-post-related-url-projection.mts'
+import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { getLargeTableSeqScanRelations } from '../plan-warnings.mts'
+import {
+  RSS_FEED_WEEKLY_STORY_ITEM_COUNT,
+  RSS_FEED_WEEKLY_WORKLOAD_SOURCE_COUNT,
+} from '../seed-data/rss-feed-weekly-workload.mts'
+import { HOSTNAME_COUNT, RSS_FEED_SEED_COUNT } from '../seed-data/common.mts'
+
+const TOTAL_RSS_ITEM_ROWS = SEEDED_ROWS_BY_RELATION.rss_feed_items!
+const MAX_SOURCES_PER_BASE_ITEM = Math.ceil(RSS_FEED_SEED_COUNT / HOSTNAME_COUNT)
+const TOTAL_RSS_SOURCE_ROWS = SEEDED_ROWS_BY_RELATION.rss_feed_item_sources!
+const MAX_SOURCE_MEMBERSHIP_PASSES = 2
+const MAX_CATEGORY_MEMBERSHIP_PASSES = 2
+const ANCILLARY_CATEGORY_ROW_ALLOWANCE = 1_000
+const TOTAL_STORY_MEMBER_ROWS =
+  RSS_FEED_WEEKLY_STORY_ITEM_COUNT +
+  STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT +
+  SEMANTIC_RSS_STORY_MEMBER_COUNT
+
+/** Gates the single-statement personalized feed against the measured seeded item corpus. */
+export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void {
+  if (!result.scenario_id?.startsWith('rss-feed-item-feed')) return
+  const nodes = collectPlanNodes(result.plan)
+  const sequentialRelations = getLargeTableSeqScanRelations(result)
+  if (sequentialRelations.length)
+    throw new Error(
+      `${result.name} must keep the week and membership filters indexed; sequential scans: ${sequentialRelations.join(', ')}`,
+    )
+  const rssItemsProcessed = nodes
+    .filter(node => baseRelationName(node) === 'rss_feed_items')
+    .reduce((sum, node) => sum + processedRows(node), 0)
+  const sourcesProcessed = nodes
+    .filter(node => baseRelationName(node) === 'rss_feed_item_sources')
+    .reduce((sum, node) => sum + processedRows(node), 0)
+  const categoriesProcessed = nodes
+    .filter(node => baseRelationName(node) === 'rss_feed_item_categories')
+    .reduce((sum, node) => sum + processedRows(node), 0)
+  const storyProbeRows = nodes
+    .filter(node => /^feed_story_member(?:_\d+)?$/.test(String(node['Alias'])))
+    .reduce((sum, node) => sum + processedRows(node), 0)
+  const indexNames = new Set(
+    nodes
+      .map(node => (typeof node['Index Name'] === 'string' ? node['Index Name'] : ''))
+      .filter(indexName => indexName.length > 0),
+  )
+  const joinRowsRejected = nodes.reduce(
+    (sum, node) =>
+      sum + Number(node['Rows Removed by Join Filter'] ?? 0) * Number(node['Actual Loops'] ?? 1),
+    0,
+  )
+  const directWalkExecuted = nodes.some(
+    node =>
+      /^feed_item(?:_\d+)?$/.test(String(node['Alias'])) && Number(node['Actual Loops'] ?? 0) > 0,
+  )
+
+  if (rssItemsProcessed > TOTAL_RSS_ITEM_ROWS * 2)
+    throw new Error(
+      `${result.name} processed ${rssItemsProcessed} RSS item rows; seeded corpus contains ${TOTAL_RSS_ITEM_ROWS} items`,
+    )
+  if (sourcesProcessed > TOTAL_RSS_SOURCE_ROWS * MAX_SOURCE_MEMBERSHIP_PASSES)
+    throw new Error(
+      `${result.name} processed ${sourcesProcessed} source rows; the corpus permits ${MAX_SOURCE_MEMBERSHIP_PASSES} membership passes over ${TOTAL_RSS_SOURCE_ROWS} source links`,
+    )
+  // Follow and mute each probe item categories. Winner lookups can revisit the
+  // story cohorts; small ancillary fixtures are outside the base/weekly ledger.
+  const categoryRowCeiling =
+    (SEEDED_ROWS_BY_RELATION.rss_feed_item_categories! +
+      TOTAL_STORY_MEMBER_ROWS +
+      ANCILLARY_CATEGORY_ROW_ALLOWANCE) *
+    MAX_CATEGORY_MEMBERSHIP_PASSES
+  if (categoriesProcessed > categoryRowCeiling)
+    throw new Error(
+      `${result.name} processed ${categoriesProcessed} category rows; the seeded category corpus, story revisits and ancillary fixtures permit ${categoryRowCeiling} follow/mute probes`,
+    )
+  const joinRejectionCeiling =
+    TOTAL_RSS_ITEM_ROWS *
+    MAX_SOURCES_PER_BASE_ITEM *
+    RSS_FEED_WEEKLY_WORKLOAD_SOURCE_COUNT *
+    MAX_SOURCE_MEMBERSHIP_PASSES
+  if (joinRowsRejected > joinRejectionCeiling)
+    throw new Error(
+      `${result.name} rejected ${joinRowsRejected} RSS membership join rows; the corpus/follow-source cross product is at most ${joinRejectionCeiling}`,
+    )
+  if (storyProbeRows > TOTAL_STORY_MEMBER_ROWS * 2)
+    throw new Error(
+      `${result.name} examined ${storyProbeRows} story winner rows; the ${TOTAL_STORY_MEMBER_ROWS} members across the seeded story cohorts must use indexed winner probes`,
+    )
+  if (
+    /\bMATERIALIZED\b/i.test(result.query_text) ||
+    !/ORDER\s+BY\s+feed_item\.published_at\s+DESC,\s*feed_item\.id\s+DESC\s+LIMIT\s+\$/i.test(
+      result.query_text,
+    ) ||
+    !/ORDER\s+BY\s+share\.sort_at\s+DESC,\s*share\.id\s+DESC\s+LIMIT\s+\$/i.test(
+      result.query_text,
+    ) ||
+    !/ORDER\s+BY\s+sort_at\s+DESC,\s*result_id\s+DESC\s+LIMIT\s+\$/i.test(result.query_text) ||
+    !/story_id\s+IS\s+NULL\s+OR\s+NOT\s+EXISTS/i.test(result.query_text) ||
+    /candidate_(?:feed|topic)|source_limit|max_windows_per_page/i.test(result.query_text)
+  ) {
+    throw new Error(
+      `${result.name} must merge ordered, individually limited direct/share walks without materialized pools`,
+    )
+  }
+  // Same-corpus main first page uses 264k custom / 325k generic buffer hits.
+  if (
+    result.scenario_id === 'rss-feed-item-feed-heavy-follow-rss-feeds' &&
+    Number(nodes[0]?.['Shared Hit Blocks'] ?? 0) + Number(nodes[0]?.['Shared Read Blocks'] ?? 0) >
+      250_000
+  ) {
+    throw new Error(`${result.name} must beat main's followed-source first-page buffer work`)
+  }
+  if (Number(nodes[0]?.['Actual Rows'] ?? 0) > 0) {
+    if (!indexNames.has('idx_rss_feed_item_sources__item_feed'))
+      throw new Error(
+        `${result.name} must probe source membership through idx_rss_feed_item_sources__item_feed`,
+      )
+    if (
+      directWalkExecuted &&
+      !result.query_text.includes('search_vector @@') &&
+      !nodes.some(node => {
+        const indexName = node['Index Name']
+        return (
+          /^feed_item(?:_\d+)?$/.test(String(node['Alias'])) &&
+          Number(node['Actual Loops'] ?? 0) > 0 &&
+          typeof indexName === 'string' &&
+          !indexName.includes('story_id') &&
+          (/^(?:idx_rss_feed_items__published_at__id|idx_rss_feed_items__media_type__published)$/.test(
+            indexName,
+          ) ||
+            /(?:^|_)(?:media_type_)?published_at_id_idx$/.test(indexName))
+        )
+      })
+    )
+      throw new Error(`${result.name} must walk recent RSS items through a published_at/id index`)
+    if (
+      storyProbeRows > 0 &&
+      !nodes.some(node => {
+        const indexName = node['Index Name']
+        return (
+          /^feed_story_member(?:_\d+)?$/.test(String(node['Alias'])) &&
+          Number(node['Actual Loops'] ?? 0) > 0 &&
+          typeof indexName === 'string' &&
+          (indexName === 'idx_rss_feed_items__story_id__published_at__id' ||
+            /story_id_published_at_id_idx$/.test(indexName))
+        )
+      })
+    )
+      throw new Error(
+        `${result.name} must probe story winners through a story_id/published_at/id index`,
+      )
+    if (
+      result.scenario_id.includes('follow-topics') &&
+      !indexNames.has('rss_feed_item_categories_pkey')
+    )
+      throw new Error(
+        `${result.name} must probe followed categories by the item-leading rss_feed_item_categories_pkey`,
+      )
+  }
+}

@@ -132551,6 +132551,47 @@
           "unique": false,
           "valid": true
         },
+        "idx_rss_feed_items__story_id__published_at__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__story_id__published_at__id ON ONLY public.rss_feed_items USING btree (story_id, published_at DESC, id DESC) WHERE ((story_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "published_at",
+              "descending": true,
+              "expression": "published_at",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((story_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_rss_feed_items__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,

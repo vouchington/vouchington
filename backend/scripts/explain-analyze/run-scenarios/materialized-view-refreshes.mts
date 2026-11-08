@@ -4,6 +4,9 @@ import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import assert from 'node:assert/strict'
+import { RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT } from '../seed-data/rss-feed-weekly-proxy.mts'
+
+const PROXY_TOPIC_ROW_BOUND = Math.ceil(RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT * 1.2)
 
 export async function runMaterializedViewRefreshScenarios(): Promise<void> {
   for (const [scenarioId, view] of [
@@ -76,7 +79,7 @@ export async function runMaterializedViewRefreshScenarios(): Promise<void> {
   })
 }
 
-// Measured processed rows + 20%; both custom and generic plans must satisfy these bounds.
+// Baseline measurements include headroom; topic bounds also account for the proxy cohort.
 registerScenarioContract('mv-top-hashtags-refresh', {
   expectations: [
     { kind: 'maxProcessedRows', relation: 'posts', max: 216 },
@@ -92,7 +95,7 @@ registerScenarioContract('mv-rss-feed-crawl-tiers-refresh', {
     // CI also seeds development feeds/topics before the EXPLAIN cohort.
     rss_feeds: 3089,
     relation__user__follow__rss_feed: 3239,
-    topics: 5259,
+    topics: Math.max(5259, PROXY_TOPIC_ROW_BOUND),
     memberships: 360,
     membership_products: 5,
     membership_sources: 360,
@@ -154,7 +157,11 @@ registerScenarioContract('mv-platform-stats-refresh', {
   expectations: [
     { kind: 'maxProcessedRows', relation: 'posts', max: 250000 },
     { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 4000 },
-    { kind: 'maxProcessedRows', relation: 'topics', max: 6000 },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'topics',
+      max: Math.max(6000, PROXY_TOPIC_ROW_BOUND),
+    },
   ],
   crossPartition: { posts: 'The snapshot counts all public posts.' },
 })

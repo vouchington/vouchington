@@ -1,9 +1,8 @@
 import { clampLimit } from '@services/pagination'
 import type { PrivateUser } from '@services/users/types'
 import type { RssFeedItemFeedOptions, RssFeedItemFeedResponse } from '../types.mts'
-import sql from 'sql-template-strings'
 import { read } from '@data-stores/psql'
-
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import createHttpError from 'http-errors'
 import {
   buildRssFeedItemFeedPageInfo,
@@ -11,10 +10,7 @@ import {
   parseRssFeedItemFeedCursor,
 } from './cursor.mts'
 import { getCutoffDateForTimeRange } from './query-utils.mts'
-import { appendRelationCTEs } from './get-ids/relation-ctes.mts'
-import { appendEligibleRssFeedItemsCTE } from './get-ids/eligible-items-cte.mts'
-import { appendDeliveryCTEs } from './get-ids/delivery-ctes.mts'
-import { appendFinalSelectCTE, appendPaginationCTEs } from './get-ids/pagination-ctes.mts'
+import { buildRssFeedItemPageQuery } from './get-ids/build-page-query.mts'
 
 export async function getRssFeedItemFeedIds(
   currentUser: PrivateUser | null,
@@ -28,105 +24,63 @@ export async function getRssFeedItemFeedIds(
   const communityId = options.community_id
   const currentUserId = currentUser?.id
   const currentUserIsAdministrator = currentUser?.roles.includes('administrator') ?? false
-  if (!currentUserId && !communityId) {
-    throw createHttpError(401, 'Authentication required')
-  }
-  const media_types = options.media_types ?? []
+  if (!currentUserId && !communityId) throw createHttpError(401, 'Authentication required')
 
-  const DEFAULT_MIN_SCORE_FOLLOW_RSS_FEEDS = -5
-  const DEFAULT_MIN_SCORE_FOLLOW_TOPICS = 0
-
-  const min_score_follow_rss_feeds =
-    options.min_score_follow_rss_feeds ?? DEFAULT_MIN_SCORE_FOLLOW_RSS_FEEDS
-  const min_score_follow_topics = options.min_score_follow_topics ?? DEFAULT_MIN_SCORE_FOLLOW_TOPICS
+  const minScoreFollowRssFeeds = options.min_score_follow_rss_feeds ?? -5
+  const minScoreFollowTopics = options.min_score_follow_topics ?? 0
   const safeLimit = clampLimit(limit)
   const cursorScope = getRssFeedItemFeedCursorScope(currentUserId, {
     ...options,
     feed_type,
     time_range,
-    min_score_follow_rss_feeds,
-    min_score_follow_topics,
+    min_score_follow_rss_feeds: minScoreFollowRssFeeds,
+    min_score_follow_topics: minScoreFollowTopics,
     isAdministrator: currentUserIsAdministrator,
   })
-  const { published_lt, item_id_lt, share_event_id_lt } = parseRssFeedItemFeedCursor(
-    options.after,
-    cursorScope,
-  )
-
+  const { sort_at_lt, id_lt } = parseRssFeedItemFeedCursor(options.after, cursorScope)
+  const requestedCutoff = getCutoffDateForTimeRange(time_range, decisionInstant).cutoffDate
+  const sevenDayCutoff = new Date(decisionInstant.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const cutoffDate =
+    requestedCutoff && requestedCutoff > sevenDayCutoff ? requestedCutoff : sevenDayCutoff
+  const itemCutoffId = getMinUUIDv7ForDate(cutoffDate)
   const includeDirectItems = feed_type !== 'follow_users'
   const includeSharedItems =
     !!currentUserId && !communityId && (feed_type === 'follow_users' || feed_type === 'any')
-  const { cutoffDate, itemCutoffId } = getCutoffDateForTimeRange(time_range, decisionInstant)
 
-  const query = appendRelationCTEs(sql``, { communityId, currentUserId })
-
-  appendEligibleRssFeedItemsCTE(query, {
+  const query = buildRssFeedItemPageQuery({
     communityId,
     currentUserId,
     currentUserIsAdministrator,
     feedType: feed_type,
-    hasRelatedPosts: options.has_related_posts,
-    hasHackerNewsReferences: options.has_hacker_news_references,
-    mediaTypes: media_types,
-    textSearchQuery: options.text_search_query,
-    topicIds: options.topic_ids,
-    hashtagTopicIds: options.hashtag_topic_ids,
-    hashtagAliasIds: options.hashtag_alias_ids,
-    hasUnknownHashtag: options.has_unknown_hashtag,
-  })
-
-  appendDeliveryCTEs(query, {
+    filters: options,
     cutoffDate,
-    currentUserId,
-    currentUserIsAdministrator,
-    feedType: feed_type,
-    hasRelatedPosts: options.has_related_posts,
-    hasHackerNewsReferences: options.has_hacker_news_references,
+    itemCutoffId,
+    cursorSortAt: sort_at_lt,
+    cursorId: id_lt,
+    safeLimit,
+    minScoreFollowRssFeeds,
+    minScoreFollowTopics,
     includeDirectItems,
     includeSharedItems,
-    itemCutoffId,
-    mediaTypes: media_types,
-    minScoreFollowRssFeeds: min_score_follow_rss_feeds,
-    minScoreFollowTopics: min_score_follow_topics,
-    textSearchQuery: options.text_search_query,
-    topicIds: options.topic_ids,
-    hashtagTopicIds: options.hashtag_topic_ids,
-    hashtagAliasIds: options.hashtag_alias_ids,
-    hasUnknownHashtag: options.has_unknown_hashtag,
   })
-  appendPaginationCTEs(query, {
-    itemIdLt: item_id_lt,
-    publishedLt: published_lt,
-    safeLimit,
-    shareEventIdLt: share_event_id_lt,
-  })
-  appendFinalSelectCTE(query)
-
-  const { rows } = await read(
-    `/* getRssFeedItemFeedIds */
-    WITH ${query.text}`,
-    query.values,
-  )
-  const hasNextPage = rows.some(row => row.has_next_page === true)
-
-  const results = rows.map(row => ({
-    __entity_type: 'rss_feed_item' as const,
-    id: row.result_id as string,
-    entity_id: row.entity_id as string,
-    published_at: row.published_at as Date,
-    story_id: (row.story_id as string | null) ?? null,
-    delivery_type: row.delivery_type as 'direct' | 'share',
-    ...(row.shared_by_id ? { shared_by_id: row.shared_by_id as string } : {}),
-    ...(row.shared_at ? { shared_at: row.shared_at as Date } : {}),
-  }))
-
+  const { rows } = await read(`/* getRssFeedItemFeedIds */ WITH ${query.text}`, query.values)
+  const hasNextPage = rows.length > safeLimit
+  const pageRows = rows.slice(0, safeLimit)
   return {
-    results,
+    results: pageRows.map(row => ({
+      __entity_type: 'rss_feed_item' as const,
+      id: row.result_id as string,
+      entity_id: row.entity_id as string,
+      published_at: row.published_at as Date,
+      story_id: (row.story_id as string | null) ?? null,
+      delivery_type: row.delivery_type as 'direct' | 'share',
+      ...(row.shared_by_id ? { shared_by_id: row.shared_by_id as string } : {}),
+      ...(row.shared_at ? { shared_at: row.shared_at as Date } : {}),
+    })),
     page_info: buildRssFeedItemFeedPageInfo(
-      rows.map(row => ({
+      pageRows.map(row => ({
         cursor_sort_at: row.cursor_sort_at as string,
-        sort_rank: row.sort_rank as 0 | 1,
-        cursor_id: (row.share_event_id ?? row.item_id) as string,
+        cursor_id: row.result_id as string,
       })),
       hasNextPage,
       cursorScope,

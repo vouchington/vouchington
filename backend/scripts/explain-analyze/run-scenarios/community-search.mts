@@ -3,9 +3,11 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { searchCommunities } from '../run-services.mts'
 
+const COMMUNITY_SEARCH_PAGE_SIZE = 25
+
 export async function runCommunitySearchScenarios() {
-  // Candidate caps equal observed matches plus 20% in both compare modes and repeat passes:
-  // member/virtual pages 26 → 32, listed page 1 → 2, ordered text walks 27 → 33 and 33 → 40,
+  // Bounds follow fixture cardinality and page size in both modes and repeat passes:
+  // member/virtual pages 26 → 32, listed page 26, ordered text walks 27 → 33 and 33 → 40,
   // member filter 1 → 2. Correlated statistics and key hydration are budgeted independently below.
   registerScenarioContract('search-communities', {
     expectations: [
@@ -41,9 +43,12 @@ export async function runCommunitySearchScenarios() {
   registerScenarioContract('search-communities-has-list-items', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
-      // The listed-community index returns one real match; ceil(1 * 1.2) = 2.
-      // Candidate community hydration remains keyed by the selected page IDs.
-      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 2 },
+      // The listed-community index supplies the page and lookahead; candidates remain keyed.
+      {
+        kind: 'maxProcessedRows',
+        relation: 'community_search_counts',
+        max: COMMUNITY_SEARCH_PAGE_SIZE + 1,
+      },
       { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 484 },
       // One selected community has 252 posts linked through its approved/pending review
       // fixtures (200 base reviews + 50 #3018 view-driven rows + 2 search rows). The
@@ -54,7 +59,12 @@ export async function runCommunitySearchScenarios() {
   })
   await runAndCapture(
     'search-communities-has-list-items',
-    () => searchCommunities({ hasListItems: true, sort: 'virtual_subscriptions', limit: 25 }),
+    () =>
+      searchCommunities({
+        hasListItems: true,
+        sort: 'virtual_subscriptions',
+        limit: COMMUNITY_SEARCH_PAGE_SIZE,
+      }),
     'has-list-items',
   )
 
