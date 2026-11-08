@@ -2,6 +2,7 @@ import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { BACKGROUND_CPU_QUEUE_NAME, PRIORITY_TASK } from '@queues/background-cpu/config'
 import { getBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
+import type { BackgroundCpuJobPayloads } from '@queues/background-cpu/types'
 import type { EnqueueCrawlerJobOptions, EnqueueCrawlUrlEntry } from './types.mts'
 
 type CrawlUrlBulkInput = EnqueueCrawlUrlEntry & {
@@ -53,7 +54,7 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction({
         ...(options?.importDiscoveryGeneration
           ? { import_discovery_generation: options.importDiscoveryGeneration }
           : {}),
-      },
+      } satisfies BackgroundCpuJobPayloads[typeof JOB_NAME],
       opts: {
         priority: priority ?? PRIORITY_TASK,
         deduplication: {

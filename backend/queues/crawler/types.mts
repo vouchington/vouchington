@@ -36,3 +36,20 @@ export type EnqueueCrawlUrlEntry = {
   rateLimitRetryCount?: number
   skipChunks?: boolean
 }
+
+/** Serialized background CPU payload; enqueue options use camel case before this wire boundary. */
+export type CrawlUrlJobData = {
+  url_id: string
+  crawl_timeout_ms?: number
+  ensure_crawler_for_redirects?: boolean
+  should_ignore_robots_txt?: boolean
+  max_response_size_bytes?: number
+  preserve_http_redirects?: boolean
+  rate_limit_retry_count?: number
+  skip_canonical_url?: boolean
+  skip_chunks?: boolean
+  skip_embed_resolution?: boolean
+  skip_created_events_for_redirects?: boolean
+  import_row_id?: string
+  import_discovery_generation?: string
+}

@@ -1,30 +1,34 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import type { Job } from 'glide-mq'
-import type { AIAgentJobData } from '@queues/ai-agents/types'
+import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
+import type { AIAgentJobPayloads } from '@queues/ai-agents/types'
 import { processAIAgent } from './processors.mts'
+
+function runProcessAIAgent(job: unknown) {
+  return processAIAgent(job as NamedQueueJob<AIAgentJobPayloads>)
+}
 
 describe('processAIAgent routing', () => {
   it('rejects unknown ai-agent queue job names', () => {
     expect(() =>
-      processAIAgent({
+      runProcessAIAgent({
         name: 'unknown-agent-job',
         data: {},
-      } as Job<AIAgentJobData>),
+      }),
     ).toThrow('Unknown AI agent job: unknown-agent-job')
   })
 
   it('routes backfill_report_judgements to processBackfillReportJudgements', async () => {
-    const result = await processAIAgent({
+    const result = await runProcessAIAgent({
       name: 'backfill_report_judgements',
       data: {},
-    } as Job<AIAgentJobData>)
+    })
     // No entities missing judgements in a clean test DB → 0 enqueued
     expect(result).toEqual({ enqueued: expect.any(Number) })
   })
 
   it('routes auto-dispatch-judgement to processAutoDispatchJudgement (config disabled → no-op)', async () => {
-    const result = await processAIAgent({
+    const result = await runProcessAIAgent({
       name: 'auto-dispatch-judgement',
       data: {
         judgement_id: randomUUID(),
@@ -32,24 +36,22 @@ describe('processAIAgent routing', () => {
         entity_id: randomUUID(),
         community_id: null,
       },
-    } as Job<AIAgentJobData>)
+    })
     expect(result).toBeUndefined()
   })
 
   it('routes reconcile-auto-dispatch-judgements to processReconcileAutoDispatchJudgements (config disabled → no-op)', async () => {
-    const result = await processAIAgent({
+    const result = await runProcessAIAgent({
       name: 'reconcile-auto-dispatch-judgements',
       data: {},
-    } as Job<AIAgentJobData>)
+    })
     expect(result).toBeUndefined()
   })
 
   it.each(['chat', 'reconcile-chat-runtime-generations'])(
     'rejects the removed hosted-chat job name %s through the unknown-job path',
     name => {
-      expect(() => processAIAgent({ name, data: {} } as Job<AIAgentJobData>)).toThrow(
-        `Unknown AI agent job: ${name}`,
-      )
+      expect(() => runProcessAIAgent({ name, data: {} })).toThrow(`Unknown AI agent job: ${name}`)
     },
   )
 
@@ -61,31 +63,29 @@ describe('processAIAgent routing', () => {
     'story-clustering',
     'autotagger-post',
   ])('rejects the removed scoring-agent job name %s through the unknown-job path', name => {
-    expect(() => processAIAgent({ name, data: {} } as Job<AIAgentJobData>)).toThrow(
-      `Unknown AI agent job: ${name}`,
-    )
+    expect(() => runProcessAIAgent({ name, data: {} })).toThrow(`Unknown AI agent job: ${name}`)
   })
 
   it('treats missing copyright jobs as successful idempotent queue replays', async () => {
     const missing = '00000000-0000-7000-8000-000000000091'
 
     await expect(
-      processAIAgent({
+      runProcessAIAgent({
         name: 'copyright-email-intake',
         data: { intake_id: missing },
-      } as Job<AIAgentJobData>),
+      }),
     ).resolves.toEqual({ success: true })
     await expect(
-      processAIAgent({
+      runProcessAIAgent({
         name: 'copyright-form-screening',
         data: { submission_id: missing },
-      } as Job<AIAgentJobData>),
+      }),
     ).resolves.toEqual({ success: true })
     await expect(
-      processAIAgent({
+      runProcessAIAgent({
         name: 'copyright-appeal-recommendation',
         data: { submission_id: missing },
-      } as Job<AIAgentJobData>),
+      }),
     ).resolves.toEqual({ success: true })
   })
 })

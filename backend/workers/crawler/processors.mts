@@ -1,4 +1,5 @@
 import type { CrawlUrlOptions } from '@services/crawls/crawl-url/types'
+import type { CrawlUrlJobData } from '../../queues/crawler/types.mts'
 import { crawlUrl } from '@services/crawls/crawl-url'
 import { UnrecoverableError, type Job } from 'glide-mq'
 import {
@@ -11,9 +12,10 @@ import { CrawlerRateLimitError } from '@modules/on-error/errors'
 import { normalizeDomainRateLimitMs } from '@services/crawls/domain-rate-limit'
 
 export async function processCrawlerJob(
-  job: Job,
+  rawJob: Job<unknown>,
   dependencies?: CrawlUrlOptions['dependencies'],
 ): Promise<unknown> {
+  const job = rawJob as Job<CrawlUrlJobData>
   switch (job.name) {
     case 'crawl.crawl_url': {
       const urlId = job.data?.url_id

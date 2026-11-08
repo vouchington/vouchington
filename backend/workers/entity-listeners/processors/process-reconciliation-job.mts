@@ -5,7 +5,7 @@ import { parseReconciliationDispatch } from '@queues/entity-listeners/payload/jo
 import { reconcileEntities } from './reconciliation.mts'
 
 export async function processReconciliationJob(
-  job: Pick<Job, 'data' | 'updateData' | 'moveToDelayed'>,
+  job: Pick<Job<unknown>, 'data' | 'updateData' | 'moveToDelayed'>,
   reconcile: (
     data: EntityReconciliationDispatchData,
     save: (data: EntityReconciliationDispatchData) => Promise<void>,

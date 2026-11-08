@@ -16,6 +16,11 @@ export type OAuthAuthorizationExchangeJobData = {
   exchangeProviderRequestArmed?: true
 }
 
+export type OAuthAuthorizationExchangeJobPayloads = {
+  'oauth-authorization-exchange.exchangeOAuthAuthorization': OAuthAuthorizationExchangeJobData
+  'oauth-authorization-exchange.dispatchOAuthAuthorizationExchanges': Record<string, never>
+}
+
 export const OAUTH_AUTHORIZATION_EXCHANGE_JOB =
   defineBackgroundJob<OAuthAuthorizationExchangeJobData>(OAUTH_AUTHORIZATION_EXCHANGE_DOMAIN, {
     name: 'exchangeOAuthAuthorization',

@@ -1,4 +1,4 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
@@ -9,6 +9,8 @@ import {
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
+import { createBackgroundCpuEnqueueFunction } from '@queues/background-cpu/enqueues/typed-job'
+import type { BackgroundCpuJobPayloads } from '@queues/background-cpu/types'
 import type { BedrockEmbeddingsBatchDispatcherJob } from './types.mts'
 
 type CreationJobName = 'topics' | 'posts' | 'rss_feed_items' | 'crawl_chunks' | 'images'
@@ -26,13 +28,7 @@ export {
 } from './enqueues/reconciliation.mts'
 
 function createCreationBatchEnqueue(jobName: CreationJobName, deduplicationId: string) {
-  const job = requireBackgroundCpuJob(`bedrock-embeddings.create_${jobName}`)
-  const enqueue = createEnqueueFunction<Record<string, never>, string>({
-    queue: backgroundCpu,
-    queueName: BACKGROUND_CPU_QUEUE_NAME,
-    jobName: job.name,
-    defaults: job.options,
-  })
+  const enqueue = createBackgroundCpuEnqueueFunction(`bedrock-embeddings.create_${jobName}`)
 
   return (priority?: number): EnqueueReturnType =>
     enqueue({}, creationJobOptions(deduplicationId, priority))
@@ -48,13 +44,14 @@ export function creationJobOptions(
   }
 }
 
+const POLL_BATCH_JOB_NAME = 'bedrock-embeddings.poll_batch'
 const enqueueBulkProcessEmbeddingBatchPollingJobs = createBulkEnqueueFunction({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: 'bedrock-embeddings.poll_batch',
-  defaults: requireBackgroundCpuJob('bedrock-embeddings.poll_batch').options,
+  jobName: POLL_BATCH_JOB_NAME,
+  defaults: requireBackgroundCpuJob(POLL_BATCH_JOB_NAME).options,
   buildJob: (batchId: string) => ({
-    data: { batch_id: batchId },
+    data: { batch_id: batchId } satisfies BackgroundCpuJobPayloads[typeof POLL_BATCH_JOB_NAME],
     opts: {
       deduplication: {
         id: `bedrock-embeddings:batch-polling:${batchId}`,
@@ -66,16 +63,7 @@ const enqueueBulkProcessEmbeddingBatchPollingJobs = createBulkEnqueueFunction({
 })
 
 function createDispatcherEnqueue(jobName: BedrockEmbeddingsBatchDispatcherJob) {
-  const job = requireBackgroundCpuJob(`bedrock-embeddings.${jobName}`)
-  const enqueue = createEnqueueFunction<
-    { cursor?: { afterId: string; throughId: string } },
-    string
-  >({
-    queue: backgroundCpu,
-    queueName: BACKGROUND_CPU_QUEUE_NAME,
-    jobName: job.name,
-    defaults: job.options,
-  })
+  const enqueue = createBackgroundCpuEnqueueFunction(`bedrock-embeddings.${jobName}`)
 
   return (options?: DispatcherOptions): EnqueueReturnType => {
     return enqueue(options?.cursor ? { cursor: options.cursor } : {}, {

@@ -9,3 +9,4 @@ export type ReferralCrawlDispatchData = {
   referralLinkIds?: readonly string[]
   urlId?: string
 }
+export type CrawlReferralLinkEntry = { linkId: string; urlId: string; referralProgramId: string }

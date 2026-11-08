@@ -3,7 +3,7 @@ import onError from '@modules/on-error'
 import { trackJobEnqueue } from '@services/analytics'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
-import type { AutotaggerRssFeedItemJobData } from '../types.mts'
+import type { AIAgentJobPayloads } from '../types.mts'
 
 const FIVE_SECONDS_MS = 5000
 
@@ -13,7 +13,9 @@ export function enqueueBulkAutotaggerRssFeedItems(
   if (items.length === 0) return
   const jobs = items.map(item => ({
     name: 'autotagger-rss-feed-item' as const,
-    data: { rss_feed_item_id: item.rss_feed_item_id } satisfies AutotaggerRssFeedItemJobData,
+    data: {
+      rss_feed_item_id: item.rss_feed_item_id,
+    } satisfies AIAgentJobPayloads['autotagger-rss-feed-item'],
     opts: {
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,

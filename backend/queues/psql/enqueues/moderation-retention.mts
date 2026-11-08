@@ -10,9 +10,12 @@ import {
 } from '../config.mts'
 import type { ScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import { psql } from '../queues.mts'
-import type { ModerationRetentionJobData, PsqlJobs } from '../types.mts'
+import type { ModerationRetentionJobData, PsqlJobPayloads } from '../types.mts'
 
-const enqueueModerationRetentionJob = createEnqueueFunction<ModerationRetentionJobData, PsqlJobs>({
+const enqueueModerationRetentionJob = createEnqueueFunction<
+  PsqlJobPayloads[typeof MODERATION_RETENTION_JOB_NAME],
+  typeof MODERATION_RETENTION_JOB_NAME
+>({
   queue: psql,
   queueName: QUEUE_NAME,
   jobName: MODERATION_RETENTION_JOB_NAME,
@@ -39,7 +42,7 @@ export const moderationRetentionSchedule = {
   repeat: { pattern: DATA_RETENTION_CRON },
   template: {
     name: MODERATION_RETENTION_JOB_NAME,
-    data: {},
+    data: {} satisfies PsqlJobPayloads[typeof MODERATION_RETENTION_JOB_NAME],
     opts: getModerationRetentionJobOptions,
   },
   environment: 'deployed',

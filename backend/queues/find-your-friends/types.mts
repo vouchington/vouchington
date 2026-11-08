@@ -1,7 +1,3 @@
-export type FindYourFriendsDispatcherJobs = 'dispatchFindYourFriends'
-
-export type FindYourFriendsSyncJobs = 'syncFacebookFriends' | 'syncXFriends' | 'syncGithubFriends'
-
 export type FriendsDispatchData = {
   sweepStartedAt?: string
   upperIds?: Record<'facebook' | 'x' | 'github', string | null>
@@ -16,3 +12,17 @@ export type FriendSyncResume = {
   /** Pages phase: Facebook after cursor, GitHub page number, X pagination token. Finalize phase: last deleted stale friend id. */
   cursor?: string
 }
+
+export type FindYourFriendsJobPayloads = {
+  dispatchFindYourFriends: FriendsDispatchData
+  syncFacebookFriends: { facebookAccountId: string; resume?: FriendSyncResume }
+  syncXFriends: { xAccountId: string; resume?: FriendSyncResume }
+  syncGithubFriends: { githubAccountId: string; resume?: FriendSyncResume }
+}
+
+export type FindYourFriendsDispatcherJobs = 'dispatchFindYourFriends'
+
+export type FindYourFriendsSyncJobs = Exclude<
+  keyof FindYourFriendsJobPayloads,
+  FindYourFriendsDispatcherJobs
+>

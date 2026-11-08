@@ -1,4 +1,4 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { createHash } from 'node:crypto'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
@@ -11,31 +11,23 @@ import {
   TOPIC_ALIAS_ORDERING,
 } from '../config.mts'
 import { rssFeedMaintenance } from '../queues.mts'
-import type { TopicAliasJobs, TopicAliasPostInvalidationData } from '../types.mts'
+import type { TopicAliasPostInvalidationData, RssFeedMaintenanceJobPayloads } from '../types.mts'
+import { createRssFeedMaintenanceEnqueue } from './create-enqueue.mts'
 
-const JOB_NAME: TopicAliasJobs = 'processTopicAliasesUpdate'
+const JOB_NAME = 'processTopicAliasesUpdate' as const
 
-const enqueueTopicAliasesUpdateJob = createEnqueueFunction<{ topicId: string }, TopicAliasJobs>({
-  queue: rssFeedMaintenance,
-  queueName: QUEUE_NAME,
-  jobName: JOB_NAME,
-})
+const enqueueTopicAliasesUpdateJob = createRssFeedMaintenanceEnqueue('processTopicAliasesUpdate')
 
-const enqueueReconcileTopicAliasCategoryMappingsJob = createEnqueueFunction<
-  { topicAliasIds?: string[] },
-  TopicAliasJobs
->({
-  queue: rssFeedMaintenance,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcileTopicAliasCategoryMappings',
-})
+const enqueueReconcileTopicAliasCategoryMappingsJob = createRssFeedMaintenanceEnqueue(
+  'processReconcileTopicAliasCategoryMappings',
+)
 
 const enqueueInvalidatePostsForTopicAliasesJobs = createBulkEnqueueFunction({
   queue: rssFeedMaintenance,
   queueName: QUEUE_NAME,
   jobName: 'processInvalidatePostsForTopicAliases',
   buildJob: (data: TopicAliasPostInvalidationData) => ({
-    data,
+    data: data satisfies RssFeedMaintenanceJobPayloads['processInvalidatePostsForTopicAliases'],
     opts: {
       priority: PRIORITY_DEFAULT,
       ordering: TOPIC_ALIAS_ORDERING.post_invalidation,
@@ -56,7 +48,7 @@ const enqueueBulkTopicAliasesUpdateJobs = createBulkEnqueueFunction({
   queueName: QUEUE_NAME,
   jobName: JOB_NAME,
   buildJob: (topicId: string) => ({
-    data: { topicId },
+    data: { topicId } satisfies RssFeedMaintenanceJobPayloads[typeof JOB_NAME],
   }),
 })
 

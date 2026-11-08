@@ -3,10 +3,14 @@ import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { IMAGE_UPLOADS_QUEUE_NAME } from './config.mts'
 import { imageUploadsQueue } from './queues.mts'
+import type { ImageUploadJobPayloads } from './types.mts'
 
 /** Bind recovery admission to its real destination queue. */
 export function createExtractImageMetadataEnqueue(queue: typeof imageUploadsQueue) {
-  const enqueue = createEnqueueFunction<{ id: string }, 'extract-metadata'>({
+  const enqueue = createEnqueueFunction<
+    ImageUploadJobPayloads['extract-metadata'],
+    'extract-metadata'
+  >({
     queue,
     queueName: IMAGE_UPLOADS_QUEUE_NAME,
     jobName: 'extract-metadata',

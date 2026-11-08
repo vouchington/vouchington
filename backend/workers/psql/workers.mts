@@ -17,24 +17,12 @@ import {
   TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
   QUEUE_NAME,
 } from '@queues/psql/config'
-import type {
-  AIRetentionContinuationData,
-  CopyrightAccountClockSyncJobData,
-  CopyrightCasePurgeJobData,
-  ModerationRetentionJobData,
-  PsqlJobs,
-  PsqlPartitionJobData,
-  PsqlRetentionJobData,
-  RefreshMaterializedViewData,
-  TerminalActivityRetentionData,
-  VoteRetentionContinuationData,
-} from '@queues/psql/types'
+import type { PsqlJob } from '@queues/psql/types'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import processPsql from './processors.mts'
 import { processModerationRetentionCleanup } from './processors/moderation-retention.mts'
 import { createAIRetentionContinuationProcessor } from './processors/retention-continuation.mts'
-import type { Job } from 'glide-mq'
 import { processCopyrightCasePurge } from './processors/copyright-case-purge.mts'
 import { processCopyrightAccountClockSync } from './processors/copyright-account-clock-sync.mts'
 
@@ -47,32 +35,26 @@ const operationalTombstoneRetention = createOperationalTombstoneRetentionHandler
   cleanupOperationalTombstones,
 )
 
-async function processPsqlJob(job: Job): Promise<unknown> {
+async function processPsqlJob(job: PsqlJob): Promise<unknown> {
   if (job.name === COPYRIGHT_ACCOUNT_CLOCK_SYNC_JOB_NAME) {
-    return processCopyrightAccountClockSync(job as Job<CopyrightAccountClockSyncJobData>)
+    return processCopyrightAccountClockSync(job)
   }
   if (job.name === COPYRIGHT_CASE_PURGE_JOB_NAME) {
-    return processCopyrightCasePurge(job as Job<CopyrightCasePurgeJobData>)
+    return processCopyrightCasePurge(job)
   }
   if (job.name === TERMINAL_ACTIVITY_RETENTION_JOB_NAME) {
-    return processTerminalActivityRetention(job as Job<TerminalActivityRetentionData>)
+    return processTerminalActivityRetention(job)
   }
   if (job.name === 'moderationRetentionCleanup') {
-    return processModerationRetentionCleanup(job as Job<ModerationRetentionJobData>)
+    return processModerationRetentionCleanup(job)
   }
   if (job.name === 'aiRetentionContinuation') {
-    return processAIRetentionContinuation(job as Job<AIRetentionContinuationData>)
+    return processAIRetentionContinuation(job)
   }
+
+  // The named job union correlates these arguments; the tuple keeps that correlation at dispatch.
   const result = await processPsql(
-    job.name as PsqlJobs,
-    job.data as Partial<
-      RefreshMaterializedViewData &
-        PsqlPartitionJobData &
-        PsqlRetentionJobData &
-        VoteRetentionContinuationData
-    >,
-    undefined,
-    job.id,
+    ...([job.name, job.data, undefined, job.id] as Parameters<typeof processPsql>),
   )
   if (admitsDailyRetentionResults(job)) {
     await admitPendingTerminalActivityRetention(
@@ -82,7 +64,7 @@ async function processPsqlJob(job: Job): Promise<unknown> {
   return result
 }
 
-export const psql = createWorker(
+export const psql = createWorker<unknown, unknown, PsqlJob>(
   QUEUE_NAME,
   createPsqlRetentionDispatcher({
     processRetained: operationalTombstoneRetention.processRetained,

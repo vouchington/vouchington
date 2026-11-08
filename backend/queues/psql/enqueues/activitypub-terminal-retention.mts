@@ -9,7 +9,7 @@ import {
   QUEUE_NAME,
   TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
 } from '../config.mts'
-import type { TerminalActivityRetentionData } from '../types.mts'
+import type { TerminalActivityRetentionData, PsqlJobPayloads } from '../types.mts'
 
 const terminalActivityRetentionJobId = (data: TerminalActivityRetentionData): string =>
   `psql__terminal_activity_retention__${data.family}`
@@ -30,7 +30,7 @@ const enqueueBulk = createBulkEnqueueFunction({
   queue: psql,
   queueName: QUEUE_NAME,
   jobName: TERMINAL_ACTIVITY_RETENTION_JOB_NAME,
-  buildJob: (data: TerminalActivityRetentionData) => ({
+  buildJob: (data: PsqlJobPayloads[typeof TERMINAL_ACTIVITY_RETENTION_JOB_NAME]) => ({
     data,
     opts: getTerminalActivityRetentionJobOptions(data),
   }),

@@ -1,7 +1,6 @@
 import {
   awaitReportedEnqueueAdmission,
   createBulkEnqueueFunction,
-  createEnqueueFunction,
 } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
@@ -12,38 +11,36 @@ import {
   QUEUE_NAME,
 } from '../config.mts'
 import { memberships } from '../queues.mts'
-import type { MembershipsJobs, ProcessSendRenewalPriceIncreaseEmailData } from '../types.mts'
+import type {
+  MembershipsJobPayloads,
+  MembershipsJobs,
+  ProcessSendRenewalPriceIncreaseEmailData,
+} from '../types.mts'
+import { createMembershipEnqueueFunction } from './typed-job.mts'
 
-const ENTITLEMENT_EFFECTS_JOB_NAME: MembershipsJobs = 'deliverMembershipEntitlementEffects'
-const RENEWAL_CHECK_JOB_NAME: MembershipsJobs = 'processRenewalNotificationCheck'
-const RENEWAL_PRICE_INCREASE_JOB_NAME: MembershipsJobs = 'processSendRenewalPriceIncreaseEmail'
+const ENTITLEMENT_EFFECTS_JOB_NAME = 'deliverMembershipEntitlementEffects' satisfies MembershipsJobs
+const RENEWAL_CHECK_JOB_NAME = 'processRenewalNotificationCheck' satisfies MembershipsJobs
+const RENEWAL_PRICE_INCREASE_JOB_NAME =
+  'processSendRenewalPriceIncreaseEmail' satisfies MembershipsJobs
 
-const enqueueRenewalNotificationCheckJob = createEnqueueFunction<
-  { afterId?: string },
-  MembershipsJobs
->({ queue: memberships, queueName: QUEUE_NAME, jobName: RENEWAL_CHECK_JOB_NAME })
+const enqueueRenewalNotificationCheckJob = createMembershipEnqueueFunction(RENEWAL_CHECK_JOB_NAME)
 
-const enqueueDeliverMembershipEntitlementEffectsJob = createEnqueueFunction<
-  Record<string, never>,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: ENTITLEMENT_EFFECTS_JOB_NAME,
-  defaults: {
+const enqueueDeliverMembershipEntitlementEffectsJob = createMembershipEnqueueFunction(
+  ENTITLEMENT_EFFECTS_JOB_NAME,
+  {
     attempts: 3,
     backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
     removeOnComplete: 100,
     removeOnFail: 100,
   },
-})
+)
 
 const enqueueBulkSendRenewalPriceIncreaseEmailJobs = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: RENEWAL_PRICE_INCREASE_JOB_NAME,
   buildJob: (data: ProcessSendRenewalPriceIncreaseEmailData) => ({
-    data,
+    data: data satisfies MembershipsJobPayloads[typeof RENEWAL_PRICE_INCREASE_JOB_NAME],
     opts: {
       deduplication: {
         id: `processSendRenewalPriceIncreaseEmail__${data.membershipId}__${data.membershipProviderObservationId}__${data.generation}`,
@@ -54,7 +51,7 @@ const enqueueBulkSendRenewalPriceIncreaseEmailJobs = createBulkEnqueueFunction({
 })
 
 export function enqueueRenewalNotificationCheck(
-  data: { afterId?: string } = {},
+  data: MembershipsJobPayloads[typeof RENEWAL_CHECK_JOB_NAME] = {},
 ): EnqueueReturnType {
   return enqueueRenewalNotificationCheckJob(data, {
     priority: PRIORITY_DISPATCHER,

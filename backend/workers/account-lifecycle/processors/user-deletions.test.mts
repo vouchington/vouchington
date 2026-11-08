@@ -3,7 +3,6 @@ import {
   readUserDeletionSweepNeighbor,
 } from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import type { Job } from 'glide-mq'
 import { createUserDeletionRequest } from '@services/user-deletions'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
 import { createTestUser } from '@voucha/test-helpers'
@@ -135,11 +134,16 @@ function job(
   data: Record<string, unknown> = {},
   attemptsMade = 0,
   attempts = 3,
-): Job {
-  return { name, data, attemptsMade, opts: { attempts } } as Job
+): Parameters<typeof processUserDeletionJob>[0] {
+  return { name, data, attemptsMade, opts: { attempts } } as unknown as Parameters<
+    typeof processUserDeletionJob
+  >[0]
 }
 
-function deletionJob(request: DeletionAttempt, attemptsMade = 0): Job {
+function deletionJob(
+  request: DeletionAttempt,
+  attemptsMade = 0,
+): Parameters<typeof processUserDeletionJob>[0] {
   return job(
     ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name,
     { requestId: request.id, processingAttemptId: request.processingAttemptId },

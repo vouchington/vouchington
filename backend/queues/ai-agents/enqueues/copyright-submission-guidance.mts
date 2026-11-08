@@ -1,4 +1,5 @@
 import type { JobOptions } from 'glide-mq'
+import { addAIAgentJob } from './create-enqueue.mts'
 import { trackJobEnqueue } from '@services/analytics'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
 import { ai_agents } from '../queues.mts'
@@ -13,7 +14,7 @@ export async function enqueueCopyrightSubmissionGuidance(submissionId: string): 
     deduplication: { id: `copyright_submission_guidance_${submissionId}`, mode: 'simple' },
     ordering: { key: `copyright_submission_guidance_${submissionId}`, concurrency: 1 },
   }
-  await ai_agents.add('copyright-submission-guidance', { submission_id: submissionId }, opts)
+  await addAIAgentJob('copyright-submission-guidance', { submission_id: submissionId }, opts)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'copyright-submission-guidance')
 }
 

@@ -23,7 +23,11 @@ import { processRssFeedMaintenanceJob } from '../processors.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 function runJob(name: string, data: Record<string, unknown>): Promise<unknown> {
-  return runRealRssMaintenanceJob(QUEUE_NAME, name, data, processRssFeedMaintenanceJob)
+  return runRealRssMaintenanceJob(QUEUE_NAME, name, data, job =>
+    processRssFeedMaintenanceJob(
+      job as unknown as Parameters<typeof processRssFeedMaintenanceJob>[0],
+    ),
+  )
 }
 
 async function findOwnedJobs(name: string, match: Record<string, unknown>): Promise<Job[]> {

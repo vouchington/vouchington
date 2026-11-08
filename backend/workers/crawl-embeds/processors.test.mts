@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Job } from 'glide-mq'
+import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
+import type { CrawlEmbedsJobPayloads } from '@queues/crawl-embeds/types'
 import * as crawlEmbedServices from '@services/crawl-embeds'
 import { processCrawlEmbedsJob } from './processors.mts'
 
-function job(name: string, data: Record<string, unknown> = {}): Job {
-  return { name, data } as Job
+function job(
+  name: string,
+  data: Record<string, unknown> = {},
+): NamedQueueJob<CrawlEmbedsJobPayloads> {
+  return { name, data } as unknown as NamedQueueJob<CrawlEmbedsJobPayloads>
 }
 
 describe('processCrawlEmbedsJob', () => {

@@ -1,7 +1,9 @@
-export type RssFeedItemCategoriesJobs =
+export type RssFeedItemCategoriesJobs = Extract<
+  keyof RssFeedMaintenanceJobPayloads,
   | 'processReconcileRssFeedItemCategorySnapshots'
   | 'processBackfillCategoriesForTopicAliases'
   | 'processBackfillRssFeedCategoriesForTopicAlias'
+>
 
 export type TopicTextCategoryCursor = {
   phase: 0 | 1 | 2
@@ -16,13 +18,18 @@ export type TopicTextCategoryJob = {
   cursor?: TopicTextCategoryCursor | null
 }
 
-export type RssFeedDiscoverabilityJobs = 'processEvaluateRssFeedDiscoverability'
+export type RssFeedDiscoverabilityJobs = Extract<
+  keyof RssFeedMaintenanceJobPayloads,
+  'processEvaluateRssFeedDiscoverability'
+>
 
-export type RssFeedHardDeleteJobs =
+export type RssFeedHardDeleteJobs = Extract<
+  keyof RssFeedMaintenanceJobPayloads,
   | 'processHardDeleteRssFeedSourcePage'
   | 'processHardDeleteRssFeedChildPage'
   | 'processFinalizeHardDeleteRssFeed'
   | 'processRecoverRssFeedHardDeletes'
+>
 
 const RSS_FEED_HARD_DELETE_CHILD_PHASES = [
   'setting_changes',
@@ -36,12 +43,14 @@ const RSS_FEED_HARD_DELETE_CHILD_PHASES = [
 ] as const
 export type RssFeedHardDeleteChildPhase = (typeof RSS_FEED_HARD_DELETE_CHILD_PHASES)[number]
 
-export type TopicAliasJobs =
+export type TopicAliasJobs = Extract<
+  keyof RssFeedMaintenanceJobPayloads,
   | 'processTopicAliasesUpdate'
   | 'processInvalidatePostsForTopicAliases'
   | 'processReconcileTopicAliasCategoryMappings'
   | 'processUnlinkTopicAliasPage'
   | 'processRecoverTopicAliasUnlinks'
+>
 
 /** First remaining raw row, revalidated under the feed lock before a destructive page. */
 export type RssFeedHardDeletePageData = { rssFeedId: string; pageCursor: string }
@@ -70,4 +79,22 @@ export type TopicAliasUnlinkPage = {
 
 export type TopicAliasUnlinkRecovery = {
   afterId: string | null
+}
+
+export type RssFeedMaintenanceJobPayloads = {
+  processHardDeleteRssFeedSourcePage: RssFeedHardDeletePageData
+  processHardDeleteRssFeedChildPage: RssFeedHardDeletePageData & {
+    phase: RssFeedHardDeleteChildPhase
+  }
+  processFinalizeHardDeleteRssFeed: RssFeedHardDeletePageData
+  processRecoverRssFeedHardDeletes: { afterId: string | null }
+  processReconcileRssFeedItemCategorySnapshots: { rssFeedItemIds?: string[] }
+  processBackfillCategoriesForTopicAliases: TopicTextCategoryJob
+  processBackfillRssFeedCategoriesForTopicAlias: TopicTextCategoryJob
+  processEvaluateRssFeedDiscoverability: { rssFeedId: string }
+  processTopicAliasesUpdate: { topicId: string; removedTopicAliasId?: string }
+  processInvalidatePostsForTopicAliases: TopicAliasPostInvalidationData
+  processReconcileTopicAliasCategoryMappings: { topicAliasIds?: string[] }
+  processUnlinkTopicAliasPage: TopicAliasUnlinkPage
+  processRecoverTopicAliasUnlinks: TopicAliasUnlinkRecovery
 }

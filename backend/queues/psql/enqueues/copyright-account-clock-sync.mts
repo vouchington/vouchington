@@ -7,14 +7,14 @@ import {
   QUEUE_NAME,
 } from '../config.mts'
 import { psql } from '../queues.mts'
-import type { CopyrightAccountClockSyncJobData } from '../types.mts'
+import type { PsqlJobPayloads } from '../types.mts'
 
 const enqueueBulk = createBulkEnqueueFunction({
   queue: psql,
   queueName: QUEUE_NAME,
   jobName: COPYRIGHT_ACCOUNT_CLOCK_SYNC_JOB_NAME,
   sensitive: true,
-  buildJob: (data: CopyrightAccountClockSyncJobData) => ({
+  buildJob: (data: PsqlJobPayloads[typeof COPYRIGHT_ACCOUNT_CLOCK_SYNC_JOB_NAME]) => ({
     data,
     opts: getCopyrightAccountClockSyncJobOptions(data.accountUserId),
   }),

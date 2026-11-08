@@ -1,9 +1,12 @@
-import type { CrawlEmbedsJobs } from '@queues/crawl-embeds/types'
+import type { CrawlEmbedsJobPayloads } from '@queues/crawl-embeds/types'
+import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import { backfillPendingCrawlEmbeds, resolveCrawlOEmbed } from '@services/crawl-embeds'
-import type { Job } from 'glide-mq'
 
-export async function processCrawlEmbedsJob(job: Job): Promise<void> {
-  switch (job.name as CrawlEmbedsJobs) {
+type CrawlEmbedsJob = NamedQueueJob<CrawlEmbedsJobPayloads>
+
+export async function processCrawlEmbedsJob(job: CrawlEmbedsJob): Promise<void> {
+  const jobName: string = job.name
+  switch (job.name) {
     case 'backfill_crawl_embeds':
       await backfillPendingCrawlEmbeds()
       return
@@ -14,6 +17,6 @@ export async function processCrawlEmbedsJob(job: Job): Promise<void> {
       return
     }
     default:
-      throw new Error(`Crawl embeds job ${job.name} not found`)
+      throw new Error(`Crawl embeds job ${jobName} not found`)
   }
 }

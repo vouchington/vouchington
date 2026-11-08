@@ -2,7 +2,7 @@ import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { PRIORITY_DEFAULT } from '../config.mts'
 import { psql } from '../queues.mts'
-import type { AIRetentionFamily } from '../types.mts'
+import type { AIRetentionFamily, PsqlJobPayloads } from '../types.mts'
 import { aiRetentionOrderingKey, getAIRetentionOrderingConcurrency } from './ordering-config.mts'
 
 const aiRetentionContinuationId = (family: AIRetentionFamily): string =>
@@ -13,7 +13,7 @@ const enqueueBulk = createBulkEnqueueFunction({
   queueName: psql.name,
   jobName: 'aiRetentionContinuation',
   buildJob: (family: AIRetentionFamily) => ({
-    data: { family },
+    data: { family } satisfies PsqlJobPayloads['aiRetentionContinuation'],
     opts: {
       jobId: aiRetentionContinuationId(family),
       priority: PRIORITY_DEFAULT,

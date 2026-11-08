@@ -1,7 +1,8 @@
+import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import type { Job } from 'glide-mq'
 import { processMembershipProviderJob } from './membership-provider-job.mts'
 import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
-import type { MembershipsJobs } from '@queues/memberships/types'
+import type { MembershipsJobPayloads } from '@queues/memberships/types'
 import { reconcileAppleNotification } from '@services/memberships/apple/reconcile-notification'
 import {
   deliverPendingMembershipEntitlementEffects,
@@ -52,17 +53,20 @@ async function dispatchMembershipRefundReconciliation(): Promise<void> {
   )
 }
 
-export function processMembershipJob(job: Job): Promise<void> {
-  return deferPostgresConnectionTimeout(job, () => dispatchMembershipJob(job))
+type MembershipJob = NamedQueueJob<MembershipsJobPayloads>
+
+export function processMembershipJob(job: Job<unknown>): Promise<void> {
+  return deferPostgresConnectionTimeout(job, () => dispatchMembershipJob(job as MembershipJob))
 }
 
-async function dispatchMembershipJob(job: Job): Promise<void> {
-  switch (job.name as MembershipsJobs) {
+async function dispatchMembershipJob(job: MembershipJob): Promise<void> {
+  const jobName: string = job.name
+  switch (job.name) {
     case 'recoverStripePurchaseCollisions':
       await recoverStripePurchaseCollisions(job)
       return
     case 'processStripePurchaseCollisionWork':
-      await processStripePurchaseCollisionWork((job.data as { workId: string }).workId)
+      await processStripePurchaseCollisionWork(job.data.workId)
       return
     case 'deliverMembershipEntitlementEffects':
       await deliverPendingMembershipEntitlementEffects()
@@ -119,7 +123,7 @@ async function dispatchMembershipJob(job: Job): Promise<void> {
       await reconcileStripeMembershipCatalog()
       return
     case 'processRenewalNotificationCheck':
-      await processRenewalNotificationCheckDispatcher(job.data as { afterId?: string })
+      await processRenewalNotificationCheckDispatcher(job.data)
       return
     case 'processSendRenewalPriceIncreaseEmail':
       await processSendRenewalPriceIncreaseEmail(job.data)
@@ -129,8 +133,8 @@ async function dispatchMembershipJob(job: Job): Promise<void> {
       return
     case 'reconcileMembershipRefundOperation':
       await reconcileMembershipRefundOperation({
-        id: (job.data as { operationId: string }).operationId,
-        leaseToken: (job.data as { leaseToken: string }).leaseToken,
+        id: job.data.operationId,
+        leaseToken: job.data.leaseToken,
       })
       return
     case 'dispatchMembershipPauseCollection':
@@ -140,6 +144,6 @@ async function dispatchMembershipJob(job: Job): Promise<void> {
       await syncMembershipPauseCollection(job.data)
       return
     default:
-      throw new Error(`Unknown job name: ${job.name}`)
+      throw new Error(`Unknown job name: ${jobName}`)
   }
 }

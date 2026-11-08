@@ -1,16 +1,26 @@
-import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
+import { processRetainedSweep, type NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import { dispatchReferralLinkCrawls } from '@services/crawler-referral-links'
 import { getCrawlerForReferralProgram } from '@services/crawlers'
 import { crawlUrl } from '@services/crawls/crawl-url'
 import { getUrlById } from '@services/urls/get'
 import type { Job } from 'glide-mq'
+import type { BackgroundCpuJobPayloads } from '../../queues/background-cpu/types.mts'
 import { enqueueCrawlBrowser } from '@queues/crawl-browser/enqueues'
 import {
   handleCrawlReferralLinkError,
   handleCrawlReferralLinkResult,
 } from './processors/outcomes.mts'
 
-export async function processCrawlReferralLinksJob(job: Job): Promise<unknown> {
+type ReferralJob = NamedQueueJob<
+  Pick<
+    BackgroundCpuJobPayloads,
+    'crawl.crawl_referral_link' | 'crawl.crawl_referral_links_dispatcher'
+  >
+>
+
+export async function processCrawlReferralLinksJob(rawJob: Job<unknown>): Promise<unknown> {
+  const job = rawJob as ReferralJob
+  const jobName = rawJob.name
   if (job.name === 'crawl.crawl_referral_links_dispatcher')
     return processRetainedSweep(job, save =>
       dispatchReferralLinkCrawls({ ...job.data, saveProgress: save }),
@@ -47,6 +57,6 @@ export async function processCrawlReferralLinksJob(job: Job): Promise<unknown> {
       return undefined
     }
     default:
-      throw new Error(`Crawl referral link job ${job.name} not found`)
+      throw new Error(`Crawl referral link job ${jobName} not found`)
   }
 }

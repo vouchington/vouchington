@@ -1,26 +1,10 @@
+import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import type {
   ModerationRecordCleanupKind,
   PostModerationRetentionKind,
 } from '@voucha/types/entities/moderation-retention'
 
-export type PsqlJobs =
-  | 'runMigrations'
-  | 'runViews'
-  | 'runConfigDriven'
-  | 'createPartitions'
-  | 'cleanupPartitions'
-  | 'dataRetentionCleanup'
-  | 'cleanupTerminalActivityIdentities'
-  | 'moderationRetentionCleanup'
-  | 'aiRetentionContinuation'
-  | 'continueVoteRetentionCleanup'
-  | 'cleanupDeletedConversations'
-  | 'cleanupOperationalTombstones'
-  | 'continueAgentModerationRetentionCleanup'
-  | 'refreshMaterializedView'
-  | 'reconcileVoteDrift'
-  | 'copyright.case-purge'
-  | 'copyright.account-clock-sync'
+export type PsqlJobs = keyof PsqlJobPayloads
 
 export const PSQL_MANUAL_ONLY_ADMIN_JOB_TYPES = [
   'runMigrations',
@@ -177,3 +161,27 @@ export type VoteRetentionContinuationData = {
   userAgentStrings: boolean
   voteIntegrityDetails: boolean
 }
+
+/** One source of truth for every PSQL job name and its producer payload. */
+export type PsqlJobPayloads = {
+  runMigrations: Record<string, never>
+  runViews: Record<string, never>
+  runConfigDriven: Record<string, never>
+  createPartitions: PsqlPartitionJobData
+  cleanupPartitions: PsqlPartitionJobData
+  dataRetentionCleanup: PsqlRetentionJobData
+  cleanupTerminalActivityIdentities: TerminalActivityRetentionData
+  moderationRetentionCleanup: ModerationRetentionJobData
+  aiRetentionContinuation: AIRetentionContinuationData
+  continueVoteRetentionCleanup: VoteRetentionContinuationData
+  /** Reserved name still rejected by the processor; no current producer. */
+  cleanupDeletedConversations: Record<string, never>
+  cleanupOperationalTombstones: OperationalTombstoneRetentionData
+  continueAgentModerationRetentionCleanup: AgentModerationRetentionContinuationData
+  refreshMaterializedView: RefreshMaterializedViewData
+  reconcileVoteDrift: Record<string, never>
+  'copyright.case-purge': CopyrightCasePurgeJobData
+  'copyright.account-clock-sync': CopyrightAccountClockSyncJobData
+}
+
+export type PsqlJob = NamedQueueJob<PsqlJobPayloads>

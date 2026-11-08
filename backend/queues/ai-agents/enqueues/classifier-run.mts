@@ -9,7 +9,12 @@ import {
   CLASSIFIER_RUN_BACKOFF,
 } from '../config.mts'
 import { ai_agents } from '../queues.mts'
-import type { ClassifierRunDispatcherJobData, ClassifierRunJobData } from '../types.mts'
+import type {
+  AIAgentJobPayloads,
+  ClassifierRunDispatcherJobData,
+  ClassifierRunJobData,
+} from '../types.mts'
+import { addAIAgentJob } from './create-enqueue.mts'
 
 function classifierRunJobId(runId: string): string {
   return `classifier_run_${runId}`
@@ -50,7 +55,10 @@ const enqueueClassifierRunBatch = createBulkEnqueueFunction({
   queue: ai_agents,
   queueName: AI_AGENTS_QUEUE_NAME,
   jobName: 'classifier-run',
-  buildJob: (data: ClassifierRunJobData) => ({ data, opts: classifierRunOptions(data.runId) }),
+  buildJob: (data: ClassifierRunJobData) => ({
+    data: data satisfies AIAgentJobPayloads['classifier-run'],
+    opts: classifierRunOptions(data.runId),
+  }),
 })
 
 const enqueueClassifierRunDispatcherBatch = createBulkEnqueueFunction({
@@ -58,7 +66,7 @@ const enqueueClassifierRunDispatcherBatch = createBulkEnqueueFunction({
   queueName: AI_AGENTS_QUEUE_NAME,
   jobName: 'classifier-run-dispatcher',
   buildJob: (data: ClassifierRunDispatcherJobData) => ({
-    data,
+    data: data satisfies AIAgentJobPayloads['classifier-run-dispatcher'],
     opts: classifierRunDispatcherOptions(data),
   }),
 })
@@ -66,7 +74,7 @@ const enqueueClassifierRunDispatcherBatch = createBulkEnqueueFunction({
 export async function enqueueClassifierRunDispatcher(
   data: ClassifierRunDispatcherJobData,
 ): Promise<void> {
-  await ai_agents.add('classifier-run-dispatcher', data, classifierRunDispatcherOptions(data))
+  await addAIAgentJob('classifier-run-dispatcher', data, classifierRunDispatcherOptions(data))
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'classifier-run-dispatcher')
 }
 
@@ -79,7 +87,7 @@ export async function enqueueBulkClassifierRunDispatchers(
 }
 
 export async function enqueueClassifierRun(data: ClassifierRunJobData): Promise<void> {
-  await ai_agents.add('classifier-run', data, classifierRunOptions(data.runId))
+  await addAIAgentJob('classifier-run', data, classifierRunOptions(data.runId))
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'classifier-run')
 }
 

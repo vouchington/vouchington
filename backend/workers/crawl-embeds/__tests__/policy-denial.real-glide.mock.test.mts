@@ -3,6 +3,8 @@ import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { CRAWL_EMBEDS_DEFAULTS } from '@queues/crawl-embeds/config'
+import type { CrawlEmbedsJobPayloads } from '@queues/crawl-embeds/types'
+import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import { getPendingCrawlEmbed } from '@services/crawl-embeds/get-pending'
 import { isCrawlEmbedBackfillCandidate } from '@voucha/test-helpers/entities/crawl-embeds'
 import { insertTestCrawl } from '@voucha/test-helpers/entities/crawls'
@@ -43,7 +45,7 @@ describe('crawl embeds policy denial through real GlideMQ', () => {
       name,
       async (job: Job) => {
         attempts += 1
-        return processCrawlEmbedsJob(job)
+        return processCrawlEmbedsJob(job as unknown as NamedQueueJob<CrawlEmbedsJobPayloads>)
       },
       { ...connection, blockTimeout: 1000 },
     )

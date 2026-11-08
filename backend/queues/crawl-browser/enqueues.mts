@@ -3,9 +3,12 @@ import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { CRAWL_BROWSER_DEFAULTS, CRAWL_BROWSER_QUEUE_NAME, PRIORITY_DEFAULT } from './config.mts'
 import { crawlBrowserQueue } from './queues.mts'
-import type { CrawlBrowserJobData, CrawlBrowserJobs } from './types.mts'
+import type { CrawlBrowserJobData, CrawlBrowserJobPayloads } from './types.mts'
 
-const enqueueCrawlBrowserJob = createEnqueueFunction<CrawlBrowserJobData, CrawlBrowserJobs>({
+const enqueueCrawlBrowserJob = createEnqueueFunction<
+  CrawlBrowserJobPayloads['crawl_browser'],
+  'crawl_browser'
+>({
   queue: crawlBrowserQueue,
   queueName: CRAWL_BROWSER_QUEUE_NAME,
   jobName: 'crawl_browser',

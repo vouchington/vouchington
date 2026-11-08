@@ -114,7 +114,9 @@ describe('canonical hard-delete recovery pages', () => {
         workerOptions: { blockTimeout: 100 },
         processor: async job => {
           if (job.id === heldId) await release.promise
-          return processRssFeedMaintenanceJob(job)
+          return processRssFeedMaintenanceJob(
+            job as unknown as Parameters<typeof processRssFeedMaintenanceJob>[0],
+          )
         },
       })
       worker.registerBeforeClose(() => release.resolve())

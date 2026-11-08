@@ -1,9 +1,10 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
 import { trackJobEnqueue } from '@services/analytics'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
-import type { BackfillReportJudgementsJobData, ReportJudgementJobData } from '../types.mts'
+import type { AIAgentJobPayloads, ReportJudgementJobData } from '../types.mts'
+import { addAIAgentJob, createAIAgentEnqueue } from './create-enqueue.mts'
 
 type MissingJudgementEntity = { entityType: string; entityId: string; triggeringReportId: string }
 
@@ -23,7 +24,7 @@ function buildReportJudgementJob(
       rerun_by_id: rerunById ?? null,
       run_id: runId ?? null,
       context_hash: contextHash ?? null,
-    } satisfies ReportJudgementJobData,
+    } satisfies AIAgentJobPayloads['report-judgement'],
     opts: {
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
@@ -69,7 +70,7 @@ export async function enqueueReportJudgement(
     contextHash,
     runId,
   )
-  await ai_agents.add('report-judgement', data, opts)
+  await addAIAgentJob('report-judgement', data, opts)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'report-judgement')
 }
 
@@ -92,14 +93,7 @@ export const enqueueReportJudgementBatch = createBulkEnqueueFunction({
   },
 })
 
-const enqueueBackfillReportJudgementsJob = createEnqueueFunction<
-  BackfillReportJudgementsJobData,
-  'backfill_report_judgements'
->({
-  queue: ai_agents,
-  queueName: AI_AGENTS_QUEUE_NAME,
-  jobName: 'backfill_report_judgements',
-})
+const enqueueBackfillReportJudgementsJob = createAIAgentEnqueue('backfill_report_judgements')
 
 export function enqueueBackfillReportJudgements(): ReturnType<
   typeof enqueueBackfillReportJudgementsJob

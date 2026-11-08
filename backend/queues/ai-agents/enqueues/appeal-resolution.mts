@@ -2,8 +2,8 @@ import type { JobOptions } from 'glide-mq'
 import onError from '@modules/on-error'
 import { trackJobEnqueue } from '@services/analytics'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
-import { ai_agents } from '../queues.mts'
 import type { AppealResolutionJobData } from '../types.mts'
+import { addAIAgentJob } from './create-enqueue.mts'
 
 function buildAppealResolutionJob(
   appealId: string,
@@ -54,7 +54,7 @@ export function enqueueAppealResolution(
   rerunById?: string | null,
 ): void {
   const { data, opts } = buildAppealResolutionJob(appealId, requestToken, rerunById)
-  ai_agents.add('appeal-resolution', data, opts).catch(onError)
+  addAIAgentJob('appeal-resolution', data, opts).catch(onError)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'appeal-resolution')
 }
 
@@ -68,7 +68,7 @@ export async function enqueueAppealResolutionQueued(
   rerunById?: string | null,
 ): Promise<string> {
   const { data, opts } = buildAppealResolutionJob(appealId, requestToken, rerunById)
-  const job = await ai_agents.add('appeal-resolution', data, opts)
+  const job = await addAIAgentJob('appeal-resolution', data, opts)
   if (!job) throw new Error('Appeal resolution rerun was not admitted to the queue')
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'appeal-resolution')
   return job.id

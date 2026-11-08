@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import type { Job } from 'glide-mq'
 import {
   OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
   OAUTH_AUTHORIZATION_EXCHANGE_JOB,
@@ -51,6 +50,9 @@ describe('OAuth authorization exchange worker processors', () => {
   })
 })
 
-function job(name: string, data: Record<string, unknown>): Job {
-  return { name, data } as unknown as Job
+function job(
+  name: string,
+  data: Record<string, unknown>,
+): Parameters<typeof processOAuthAuthorizationExchangeJob>[0] {
+  return { name, data } as unknown as Parameters<typeof processOAuthAuthorizationExchangeJob>[0]
 }

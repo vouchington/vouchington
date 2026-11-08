@@ -12,14 +12,36 @@ import {
 import { dispatchCrawlHostnames } from '@services/crawls/dispatch-crawl-hostnames'
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from '@services/crawls/dispatch-tier-urls'
 import { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-hostname'
-import { createEnqueueFunction, processRetainedSweep } from '@data-stores/valkey-glide-mq'
+import {
+  createEnqueueFunction,
+  processRetainedSweep,
+  type NamedQueueJob,
+} from '@data-stores/valkey-glide-mq'
 import { enqueueBulkRefreshHostnameCrawler } from '@queues/crawl-dispatch/enqueues/hostnames'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { computeRateLimitForHostname } from '@services/crawls/hostname-rate-limit'
 import { runBoundedBatches } from '@services/data-retention/run-bounded-batches'
 import type { Job } from 'glide-mq'
+import type { BackgroundCpuJobPayloads } from '@queues/background-cpu/types'
 
-async function processCrawlCleanup(job: Job, crawlIds?: readonly string[], batchSize?: number) {
+type CrawlHostnamesJob = NamedQueueJob<
+  Pick<
+    BackgroundCpuJobPayloads,
+    | 'crawl.crawl_hostnames_dispatcher'
+    | 'crawl.crawl_urls_per_hostname_dispatcher'
+    | 'crawl.crawl_tier1_dispatcher'
+    | 'crawl.crawl_tier2_dispatcher'
+    | 'crawl.refresh_hostname_crawler_dispatcher'
+    | 'crawl.refresh_hostname_crawler'
+    | 'crawl.crawl_cleanup'
+  >
+>
+
+async function processCrawlCleanup(
+  job: Extract<CrawlHostnamesJob, { name: 'crawl.crawl_cleanup' }>,
+  crawlIds?: readonly string[],
+  batchSize?: number,
+) {
   const cutoffId = job.data?.cutoffId ?? getCrawlCleanupCutoff()
   await job.updateData({ cutoffId })
   return processRetainedSweep(job, async () => {
@@ -72,10 +94,12 @@ async function processRefreshHostnameCrawler(hostnameId: string) {
 }
 
 export async function processCrawlHostnamesJob(
-  job: Job,
+  rawJob: Job<unknown>,
   crawlIds?: readonly string[],
   batchSize?: number,
 ): Promise<unknown> {
+  const job = rawJob as CrawlHostnamesJob
+  const jobName = rawJob.name
   switch (job.name) {
     case 'crawl.crawl_hostnames_dispatcher':
       return processPagedDispatcher<{ cursor?: CrawlHostnameDispatchCursor }, unknown>(job, {
@@ -132,10 +156,7 @@ export async function processCrawlHostnamesJob(
       return processCrawlCleanup(job, crawlIds, batchSize)
     case 'crawl.refresh_hostname_crawler_dispatcher':
       return processRetainedSweep(job, save =>
-        dispatchWeeklyHostnameCrawlerRefresh(
-          job.data?.cursor as HostnameCrawlerRefreshCursor | undefined,
-          cursor => save({ cursor }),
-        ),
+        dispatchWeeklyHostnameCrawlerRefresh(job.data?.cursor, cursor => save({ cursor })),
       )
     case 'crawl.refresh_hostname_crawler': {
       const hostnameId = job.data?.hostname_id
@@ -143,6 +164,6 @@ export async function processCrawlHostnamesJob(
       return processRefreshHostnameCrawler(hostnameId)
     }
     default:
-      throw new Error(`Crawl hostnames job ${job.name} not found`)
+      throw new Error(`Crawl hostnames job ${jobName} not found`)
   }
 }

@@ -1,7 +1,6 @@
 import {
   awaitReportedEnqueueAdmission,
   createBulkEnqueueFunction,
-  createEnqueueFunction,
 } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
@@ -9,41 +8,19 @@ import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
-import type { UnfurlDispatchCursor } from './types.mts'
-
-type UnfurlReferralLinkEntry = { parentLinkId: string }
-type RemoveUnfurledChildrenForUserEntry = { userId: string }
+import { createBackgroundCpuEnqueueFunction } from '@queues/background-cpu/enqueues/typed-job'
+import type { BackgroundCpuJobPayloads } from '@queues/background-cpu/types'
+import type { UnfurlDispatchCursor, UnfurlReferralLinkEntry } from './types.mts'
 
 const UNFURL_JOB_NAME = 'crawl.unfurl_referral_link'
 const DISPATCHER_JOB_NAME = 'crawl.unfurl_referral_links_dispatcher'
 const REMOVE_CHILDREN_JOB_NAME = 'crawl.remove_unfurled_children_for_user'
 
-const enqueueUnfurlReferralLinkJob = createEnqueueFunction<UnfurlReferralLinkEntry, string>({
-  queue: backgroundCpu,
-  queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: UNFURL_JOB_NAME,
-  defaults: requireBackgroundCpuJob(UNFURL_JOB_NAME).options,
-})
-
-const enqueueUnfurlReferralLinksDispatcherJob = createEnqueueFunction<
-  { cursor?: UnfurlDispatchCursor },
-  string
->({
-  queue: backgroundCpu,
-  queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: DISPATCHER_JOB_NAME,
-  defaults: requireBackgroundCpuJob(DISPATCHER_JOB_NAME).options,
-})
-
-const enqueueRemoveUnfurledChildrenForUserJob = createEnqueueFunction<
-  RemoveUnfurledChildrenForUserEntry,
-  string
->({
-  queue: backgroundCpu,
-  queueName: BACKGROUND_CPU_QUEUE_NAME,
-  jobName: REMOVE_CHILDREN_JOB_NAME,
-  defaults: requireBackgroundCpuJob(REMOVE_CHILDREN_JOB_NAME).options,
-})
+const enqueueUnfurlReferralLinkJob = createBackgroundCpuEnqueueFunction(UNFURL_JOB_NAME)
+const enqueueUnfurlReferralLinksDispatcherJob =
+  createBackgroundCpuEnqueueFunction(DISPATCHER_JOB_NAME)
+const enqueueRemoveUnfurledChildrenForUserJob =
+  createBackgroundCpuEnqueueFunction(REMOVE_CHILDREN_JOB_NAME)
 
 function unfurlReferralLinkJobOptions(data: UnfurlReferralLinkEntry) {
   return {
@@ -62,7 +39,10 @@ export const enqueueBulkUnfurlReferralLinks = createBulkEnqueueFunction({
   queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: UNFURL_JOB_NAME,
   defaults: requireBackgroundCpuJob(UNFURL_JOB_NAME).options,
-  buildJob: (data: UnfurlReferralLinkEntry) => ({ data, opts: unfurlReferralLinkJobOptions(data) }),
+  buildJob: (data: UnfurlReferralLinkEntry) => ({
+    data: data satisfies BackgroundCpuJobPayloads[typeof UNFURL_JOB_NAME],
+    opts: unfurlReferralLinkJobOptions(data),
+  }),
 })
 
 /** Logical dedup id `unfurl_referral_link__<parentLinkId>` (debounce) -- a burst of re-requests

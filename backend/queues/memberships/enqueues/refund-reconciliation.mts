@@ -1,4 +1,3 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import onError from '@modules/on-error'
@@ -6,33 +5,21 @@ import {
   MEMBERSHIP_REFUND_RECONCILIATION_INTERVAL_MS,
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
-  QUEUE_NAME,
 } from '../config.mts'
-import { memberships } from '../queues.mts'
 import type { MembershipsJobs, ReconcileMembershipRefundOperationData } from '../types.mts'
 
-const DISPATCH_JOB_NAME: MembershipsJobs = 'dispatchMembershipRefundReconciliation'
-const RECONCILIATION_JOB_NAME: MembershipsJobs = 'reconcileMembershipRefundOperation'
+import { createMembershipEnqueueFunction } from './typed-job.mts'
+
+const DISPATCH_JOB_NAME = 'dispatchMembershipRefundReconciliation' satisfies MembershipsJobs
+const RECONCILIATION_JOB_NAME = 'reconcileMembershipRefundOperation' satisfies MembershipsJobs
 const INTERVAL_MS = 300_000
 
-const enqueueDispatchJob = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: DISPATCH_JOB_NAME,
-})
-const enqueueReconciliationJob = createEnqueueFunction<
-  ReconcileMembershipRefundOperationData,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: RECONCILIATION_JOB_NAME,
-  defaults: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-  },
+const enqueueDispatchJob = createMembershipEnqueueFunction(DISPATCH_JOB_NAME)
+const enqueueReconciliationJob = createMembershipEnqueueFunction(RECONCILIATION_JOB_NAME, {
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+  removeOnComplete: 100,
+  removeOnFail: 100,
 })
 
 export function enqueueDispatchMembershipRefundReconciliation(

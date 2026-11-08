@@ -1,4 +1,4 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
@@ -8,10 +8,15 @@ import {
   QUEUE_NAME,
 } from '../config.mts'
 import { memberships } from '../queues.mts'
-import type { MembershipsJobs, ProcessAppleNotificationData } from '../types.mts'
+import type {
+  MembershipsJobPayloads,
+  MembershipsJobs,
+  ProcessAppleNotificationData,
+} from '../types.mts'
+import { createMembershipEnqueueFunction } from './typed-job.mts'
 
-const JOB_NAME: MembershipsJobs = 'processAppleNotification'
-const RECOVERY_JOB_NAME: MembershipsJobs = 'recoverAppleNotifications'
+const JOB_NAME = 'processAppleNotification' satisfies MembershipsJobs
+const RECOVERY_JOB_NAME = 'recoverAppleNotifications' satisfies MembershipsJobs
 
 const appleNotificationDefaults = {
   attempts: 10,
@@ -20,15 +25,10 @@ const appleNotificationDefaults = {
   removeOnFail: true,
 }
 
-const enqueueAppleNotificationJob = createEnqueueFunction<
-  ProcessAppleNotificationData,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: JOB_NAME,
-  defaults: appleNotificationDefaults,
-})
+const enqueueAppleNotificationJob = createMembershipEnqueueFunction(
+  JOB_NAME,
+  appleNotificationDefaults,
+)
 
 export const enqueueBulkProcessAppleNotifications = createBulkEnqueueFunction({
   queue: memberships,
@@ -36,20 +36,15 @@ export const enqueueBulkProcessAppleNotifications = createBulkEnqueueFunction({
   jobName: JOB_NAME,
   defaults: appleNotificationDefaults,
   buildJob: (data: ProcessAppleNotificationData) => ({
-    data,
+    data: data satisfies MembershipsJobPayloads[typeof JOB_NAME],
     opts: appleNotificationJobOptions(data),
   }),
 })
 
-const enqueueRecoverAppleNotificationsJob = createEnqueueFunction<
-  Record<string, never>,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: RECOVERY_JOB_NAME,
-  defaults: appleNotificationDefaults,
-})
+const enqueueRecoverAppleNotificationsJob = createMembershipEnqueueFunction(
+  RECOVERY_JOB_NAME,
+  appleNotificationDefaults,
+)
 
 export function enqueueProcessAppleNotification(
   data: ProcessAppleNotificationData,
