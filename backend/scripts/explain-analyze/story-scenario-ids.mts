@@ -1,0 +1,15 @@
+export const STORY_SCENARIO_IDS = [
+  'story-members-preview-1-first',
+  'story-hydration-preview-1-first',
+  'story-members-preview-1-after',
+  'story-hydration-preview-1-after',
+  'story-members-preview-3-first',
+  'story-hydration-preview-3-first',
+  'story-members-preview-3-after',
+  'story-hydration-preview-3-after',
+  'story-members-detail-25-first',
+  'story-hydration-detail-25-first',
+  'story-members-detail-25-after',
+  'story-hydration-detail-25-after',
+  'story-by-id',
+] as const
