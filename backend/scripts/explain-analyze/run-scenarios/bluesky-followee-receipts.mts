@@ -12,6 +12,7 @@ import { seedUuid } from '../seed-data/common.mts'
 // Large enough that the planner probes rows by ctid instead of scanning the whole table.
 const FOLLOWER_COUNT = 15_000
 const FOLLOWEE_ID = seedUuid(5, '01')
+const OTHER_FOLLOWEE_IDS = Array.from({ length: 20 }, (_, index) => seedUuid(20 + index, '01'))
 const HOLDER_USER_ID = seedUuid(9, '01')
 const AUTHORIZATION_ID = seedUuid(0, 'b1')
 const HOLDER_DID = 'did:plc:explainblueskyreceipts'
@@ -34,18 +35,22 @@ async function seedFolloweeReceipts(): Promise<void> {
     [AUTHORIZATION_ID, HOLDER_DID, HOLDER_USER_ID],
   )
   for (let offset = 0; offset < FOLLOWER_COUNT; offset += 500) {
+    // Interleave popular followees for each follower to exercise a dense follower-first index.
+    // This distribution exposes plans that walk that index instead of the followee range.
     // Each autocommit batch releases the active-user advisory locks before the next batch.
     await write(
       `/* seedExplainBlueskyReceipts:receipts */ INSERT INTO bluesky_follow_records
          (follower_user_id, followee_user_id, follower_account_link_authorization_id, record_uri)
-       SELECT follower_id, $2::uuid, $3::uuid, 'at://' || $4::text || '/app.bsky.graph.follow/' || (ordinal + $5::int)
+       SELECT follower_id, followee_id, $3::uuid,
+         'at://' || $4::text || '/app.bsky.graph.follow/' || (ordinal + $5::int) || '-' || followee_id
        FROM unnest($1::uuid[]) WITH ORDINALITY AS input(follower_id, ordinal)
+       CROSS JOIN unnest($2::uuid[]) AS followee(followee_id)
        ON CONFLICT DO NOTHING`,
       [
         Array.from({ length: Math.min(500, FOLLOWER_COUNT - offset) }, (_, index) =>
           seedUuid(100 + offset + index, '01'),
         ),
-        FOLLOWEE_ID,
+        [FOLLOWEE_ID, ...OTHER_FOLLOWEE_IDS],
         AUTHORIZATION_ID,
         HOLDER_DID,
         offset,
@@ -96,15 +101,14 @@ export async function runBlueskyFolloweeReceiptScenarios(): Promise<void> {
       expectations: [
         {
           kind: 'usesIndexes',
-          indexes: ['idx_bluesky_follow_records__followee_follower', 'bluesky_follow_records_pkey'],
-          anyOf: true,
+          indexes: ['idx_bluesky_follow_records__followee_follower'],
           noSort: true,
         },
         // Each page row is counted by three nodes: the ordered index scan, the ctid fetch, and the
         // Delete itself. Anything near FOLLOWER_COUNT would mean the page walked the whole followee.
         { kind: 'maxProcessedRows', relation: 'bluesky_follow_records', max: 3 * pageSize },
       ],
-      seededRows: { bluesky_follow_records: FOLLOWER_COUNT },
+      seededRows: { bluesky_follow_records: FOLLOWER_COUNT * (1 + OTHER_FOLLOWEE_IDS.length) },
     })
   }
   try {

@@ -131,6 +131,7 @@ export async function listBlueskyFollowReceiptsForFollower(
   followerBlueskyDid: string,
   followerAuthorizationId: string,
   cursor: string | null,
+  batchSize: number,
   options: QueryOptions = {},
 ): Promise<BlueskyFollowReceipt[]> {
   const { rows } = await write<BlueskyFollowReceipt>(
@@ -147,7 +148,7 @@ export async function listBlueskyFollowReceiptsForFollower(
         AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}
         AND receipt.followee_user_id > ${cursor ?? START_OF_IDS}::uuid
       ORDER BY receipt.followee_user_id
-      LIMIT ${getBlueskyFollowsWorkLimit('disconnect_batch_size')}`,
+      LIMIT ${batchSize}`,
     options,
   )
   return rows
@@ -167,15 +168,17 @@ export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPa
   options: QueryOptions = {},
 ): Promise<{ lastFollowerUserId: string | null; hasMore: boolean }> {
   const batchSize = getBlueskyFollowsWorkLimit('backfill_batch_size')
+  // The closed range selects one followee while preserving the reverse index's ordering key.
   const { rows } = await write(
     sql`/* deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage */
       WITH page AS MATERIALIZED (
         SELECT ctid AS row_id
         FROM bluesky_follow_records
-        WHERE followee_user_id = ${followeeUserId}
+        WHERE followee_user_id >= ${followeeUserId}::uuid
+          AND followee_user_id <= ${followeeUserId}::uuid
           AND follower_user_id <> ${followeeUserId}
           AND follower_user_id > ${afterFollowerUserId}::uuid
-        ORDER BY follower_user_id
+        ORDER BY followee_user_id, follower_user_id
         LIMIT ${batchSize}
         FOR UPDATE
       )

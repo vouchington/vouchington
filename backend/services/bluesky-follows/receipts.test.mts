@@ -1,6 +1,6 @@
 import { describe, it, expect, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { blueskyFollowsWorkConfig } from './work-limits.mts'
+import { blueskyFollowsWorkConfig, getBlueskyFollowsWorkLimit } from './work-limits.mts'
 import {
   createRandomString,
   createTestUserDirect,
@@ -44,12 +44,18 @@ function fakeRecordUri(): string {
 
 describe('bluesky follow receipt ownership', () => {
   it('pages follower receipts and deletes only other followers of the target', async () => {
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, {
-        backfill_batch_size: 1,
-        disconnect_batch_size: 1,
-      }),
-    )
+    const restoreInitialConfig = overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, {
+      backfill_batch_size: 1,
+      disconnect_batch_size: 1,
+    })
+    const batchSize = getBlueskyFollowsWorkLimit('disconnect_batch_size')
+    const restoreChangedConfig = overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, {
+      disconnect_batch_size: 2,
+    })
+    onTestFinished(() => {
+      restoreChangedConfig()
+      restoreInitialConfig()
+    })
     const follower = await createTestUserDirect()
     const target = await createTestUserDirect()
     const other = await createTestUserDirect()
@@ -59,19 +65,17 @@ describe('bluesky follow receipt ownership', () => {
     await saveBlueskyFollowReceipt(target.id, target.id, fakeRecordUri())
     await saveBlueskyFollowReceipt(other.id, target.id, fakeRecordUri())
 
-    const first = await listBlueskyFollowReceiptsForFollower(
-      follower.id,
-      account.bluesky_did,
-      account.link_authorization_id,
-      null,
-    )
+    const readPage = (cursor: string | null) =>
+      listBlueskyFollowReceiptsForFollower(
+        follower.id,
+        account.bluesky_did,
+        account.link_authorization_id,
+        cursor,
+        batchSize,
+      )
+    const first = await readPage(null)
     expect(first).toHaveLength(1)
-    const second = await listBlueskyFollowReceiptsForFollower(
-      follower.id,
-      account.bluesky_did,
-      account.link_authorization_id,
-      first[0]!.followee_user_id,
-    )
+    const second = await readPage(first[0]!.followee_user_id)
     expect(second).toHaveLength(1)
     expect([first[0]!.followee_user_id, second[0]!.followee_user_id].toSorted()).toEqual(
       [target.id, other.id].toSorted(),
@@ -229,6 +233,7 @@ describe('bluesky follow receipt ownership', () => {
         account.bluesky_did,
         account.link_authorization_id,
         null,
+        1,
       ),
     ).resolves.toHaveLength(1)
     await expect(

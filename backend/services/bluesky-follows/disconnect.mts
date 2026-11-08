@@ -131,6 +131,7 @@ async function cleanupFollowerRoleBeforeDisconnect(
     linked.bluesky_did,
     linked.link_authorization_id,
     afterFolloweeUserId,
+    batchSize,
   )
   if (receipts.length === 0) return { lastFolloweeUserId: null, hasMore: false }
   return runWithAttachedBlueskySession(userId, linked.link_authorization_id, async () => {

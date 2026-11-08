@@ -77,6 +77,7 @@ describe('paged Bluesky disconnect', () => {
         account.bluesky_did,
         account.link_authorization_id,
         null,
+        2,
       ),
     ).toHaveLength(2)
     await disconnectAcceptedBlueskyAccountAndCleanupFollows(follower.id, request)

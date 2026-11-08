@@ -93,6 +93,7 @@ export async function runBlueskyFollowerReceiptScenarios(): Promise<void> {
             FOLLOWER_DID,
             AUTHORIZATION_ID,
             cursor,
+            pageSize,
           )
           const expected = id === 'bluesky-follower-receipts-empty' ? 0 : pageSize
           if (page.length !== expected) throw new Error(`Expected ${expected} follower receipts`)
