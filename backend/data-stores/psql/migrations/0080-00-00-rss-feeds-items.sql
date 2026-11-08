@@ -483,12 +483,15 @@ DECLARE
   next_published_at TIMESTAMPTZ;
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    -- A new item can only raise the maximum. The row update serializes with
-    -- downward recomputes without locking the hostname or an item read set.
+    -- A new item can only raise the maximum. The write is unconditional so
+    -- every insert row-locks its URL even when it is older than the current
+    -- maximum; that lock is what serializes inserts with downward recomputes
+    -- (a skipped write would let a concurrent delete recompute without seeing
+    -- the uncommitted item). GREATEST ignores NULLs. No hostname or item
+    -- read-set locks are taken.
     UPDATE urls
-    SET latest_published_at = NEW.published_at
-    WHERE id = NEW.url_id
-      AND (latest_published_at IS NULL OR latest_published_at < NEW.published_at);
+    SET latest_published_at = GREATEST(latest_published_at, NEW.published_at)
+    WHERE id = NEW.url_id;
     RETURN NULL;
   END IF;
 
