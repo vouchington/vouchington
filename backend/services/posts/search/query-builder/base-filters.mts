@@ -33,37 +33,29 @@ export function appendBaseFilters(
   // administrator widens what they see. The exclusions below still follow `currentUser`.
   const viewer = public_eligibility_only ? undefined : currentUser
   const isAdmin = isAdminUser(viewer ?? null)
-  if (viewer) {
-    const viewerEligibility = sql`EXISTS (
-      SELECT 1
-      FROM posts root_post
-      WHERE root_post.id = COALESCE(posts.root_post_id, posts.id)
-        AND `
-    viewerEligibility.append(
-      buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
+  const rootEligibility = (rootAlias: 'posts' | 'root_post'): SQLStatement => {
+    if (viewer)
+      return buildViewerPostDiscoveryEligibilityFilter('posts', rootAlias, {
         currentUserId: viewer.id,
         isAdministrator: isAdmin,
-      }),
-    ).append(sql`
-    )`)
-    filters.push(viewerEligibility)
-  } else {
-    const publicEligibility = sql`EXISTS (
-      SELECT 1
-      FROM posts root_post
-      WHERE root_post.id = COALESCE(posts.root_post_id, posts.id)
-        AND `
-    publicEligibility.append(buildPublicPostEligibilityFilter('posts', 'root_post'))
+      })
+    const eligibility = buildPublicPostEligibilityFilter('posts', rootAlias)
     // A reply is readable when it and the thread root are, so only the root's type can block a
     // comment. Comments are searched only when asked for, so only then does the root need judging.
-    if (public_eligibility_only && post_types?.includes('comment')) {
-      publicEligibility.append(sql`
-        AND (posts.post_type <> 'comment' OR root_post.post_type::text <> ALL(${[...BLOCKED_POST_TYPES]}::text[]))`)
-    }
-    publicEligibility.append(sql`
-    )`)
-    filters.push(publicEligibility)
+    if (public_eligibility_only && post_types?.includes('comment'))
+      eligibility
+        .append(sql` AND (posts.post_type <> 'comment' OR `)
+        .append(rootAlias)
+        .append(sql`.post_type::text <> ALL(${[...BLOCKED_POST_TYPES]}::text[]))`)
+    return eligibility
   }
+  // Root posts already supply their own access row; only replies need a keyed root probe.
+  const discoveryEligibility = sql`CASE WHEN posts.root_post_id IS NULL THEN `
+  discoveryEligibility.append(rootEligibility('posts')).append(sql` ELSE EXISTS (
+    SELECT 1 FROM posts root_post
+    WHERE root_post.id = posts.root_post_id AND `)
+  discoveryEligibility.append(rootEligibility('root_post')).append(sql`) END`)
+  filters.push(discoveryEligibility)
   if (exclude_for_user_id) appendUserExclusionFilters(filters)
   if (user_id) {
     appendUserFilter(filters, {
