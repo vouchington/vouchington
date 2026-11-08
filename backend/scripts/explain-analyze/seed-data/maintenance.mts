@@ -104,6 +104,10 @@ export const ANALYZE_TARGETS = [
     'relation__topic__category__topic',
     'relation__post__category__topic_alias',
     'relation__rss_feed_item__category__topic_alias',
+    // mv_trending_communities counts these per community. Without statistics the planner
+    // rescans their aggregates for every trending community and its refresh times out.
+    'relation__user__proxy_follow__community',
+    'relation__user__proxy_mute__community',
     // Triggers populate counts while the community seed runs; it has no direct row-count target.
     'community_search_counts',
   ]),

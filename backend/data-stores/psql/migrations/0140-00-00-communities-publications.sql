@@ -529,6 +529,13 @@ CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__approved_visible
     AND unpublished_at IS NULL
     AND rejected_at IS NULL;
 
+-- Approved post lookups can use community and post ids without scanning approval-time order.
+CREATE INDEX IF NOT EXISTS idx_community_post_reviews__approved_visible_post
+  ON community_post_reviews (community_id, post_id)
+  WHERE approved_at IS NOT NULL
+    AND unpublished_at IS NULL
+    AND rejected_at IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__user_removed
   ON community_post_reviews (submitted_by_id, unpublished_at DESC, post_id DESC)

@@ -1,4 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { appendCommunityTextProbe } from './text-filter.mts'
 
 /**
  * The candidate query for sort=trending: the materialized 30-day score joined to communities,
@@ -12,14 +13,8 @@ export function startTrendingCommunityCandidates(
   memberUserId?: string,
 ): SQLStatement {
   const query = sql`/* searchCommunities */ WITH `
-  if (search)
-    query.append(sql`search_matches AS MATERIALIZED (
-      SELECT id FROM communities
-      WHERE deleted_at IS NULL
-        AND search_vector @@ websearch_to_tsquery('voucha_english', ${search})
-    ), `)
   if (memberUserId)
-    query.append(sql`member_matches AS MATERIALIZED (
+    query.append(sql`member_matches AS (
       SELECT community_id AS id FROM community_members
       WHERE user_id = ${memberUserId} AND removed_at IS NULL
     ), `)
@@ -27,9 +22,9 @@ export function startTrendingCommunityCandidates(
       SELECT c.id, c.name, trending.trending_score
       FROM mv_trending_communities trending
       JOIN communities c ON c.id = trending.id`)
-  if (search) query.append(sql` JOIN search_matches matched ON matched.id = c.id`)
   if (memberUserId) query.append(sql` JOIN member_matches member_match ON member_match.id = c.id`)
   if (hasListItems)
     query.append(sql` JOIN community_search_counts counts ON counts.community_id = c.id`)
+  if (search) appendCommunityTextProbe(query, search)
   return query.append(sql` WHERE c.deleted_at IS NULL`)
 }

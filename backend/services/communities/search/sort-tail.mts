@@ -32,11 +32,11 @@ export function communityCandidateSortTail(
       return virtualSubscriptionTail(cursorScore, cursorId, limit, listedVirtual)
     case 'trending':
       return cursorScore !== undefined && cursorId !== undefined
-        ? sql` AND (trending.trending_score, c.id) < (${cursorScore}, ${cursorId})
-    ORDER BY trending.trending_score DESC, c.id DESC
+        ? sql` AND (trending.trending_score, trending.id) < (${cursorScore}, ${cursorId})
+    ORDER BY trending.trending_score DESC, trending.id DESC
     LIMIT ${limit + 1}`
         : sql`
-    ORDER BY trending.trending_score DESC, c.id DESC
+    ORDER BY trending.trending_score DESC, trending.id DESC
     LIMIT ${limit + 1}`
     default:
       return assertNever(sort, 'Unknown community sort')
