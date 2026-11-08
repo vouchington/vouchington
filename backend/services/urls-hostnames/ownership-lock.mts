@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { hostnameBlockStripeSetLockSql } from '@services/hostname-blocking/hostname-block-lock'
 import { createTransactionLockOnce } from '@vouchington/postgres'
 import sql from 'sql-template-strings'
+import { hostnameBlockStripeSetLockSql } from './hostname-block-lock.mts'
 
 // Hostname ownership hashes bare UUIDs; the custom acquisition preserves that key.
 const hostnameOwnershipLocks = createTransactionLockOnce({
