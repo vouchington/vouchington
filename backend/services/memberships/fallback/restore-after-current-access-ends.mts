@@ -1,7 +1,7 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { recordMembershipChange } from '../changes.mts'
-import { activateOldestQueuedGrant } from '../grants/activate-queued.mts'
+import { recordMembershipChanges, type MembershipChangeInput } from '../changes.mts'
+import { activateOldestQueuedGrantForLockedUser } from '../grants/activate-queued.mts'
 import { pauseOpenGrantActivations } from '../grants/pause-open-activations.mts'
 import type { MembershipPlanSlug } from '../types.mts'
 import {
@@ -10,14 +10,12 @@ import {
 } from './renewal-notification-state.mts'
 import { retainOldestQueuedGrantPerPlan } from './retain-oldest-queued-grant-per-plan.mts'
 import { selectHighestPriorityMembershipSource } from './select-highest-priority-source.mts'
-
 type CurrentMembership = {
   access_ended_at: Date
   id: string
   membership_product_id: string
   membership_source_id: string
 }
-
 type ValidFallbackSource = {
   should_auto_renew: boolean
   effective_at: Date
@@ -30,7 +28,6 @@ type ValidFallbackSource = {
   plan: MembershipPlanSlug
   source_kind: 'admin_grant' | 'direct' | 'family'
 }
-
 /**
  * Reprojects the highest-priority valid source after a terminal current projection. This preserves
  * a retained direct term or active administrator grant when a family source is invalidated.
@@ -43,22 +40,39 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
 ): Promise<boolean> {
   await query(sql`/* restoreFallbackAfterCurrentAccessEnds: lock user */
     SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
+  const change = await restoreFallbackAfterCurrentAccessEndsForLockedUser(
+    userId,
+    membershipId,
+    query,
+    options,
+  )
+  if (!change) return false
+  await recordMembershipChanges([change], { query })
+  return true
+}
+/** Reprojects a fallback under the caller's user lock and returns its pending history fact. */
+export async function restoreFallbackAfterCurrentAccessEndsForLockedUser(
+  userId: string,
+  membershipId: string,
+  query: QueryExecutor,
+  options: { membershipSourceId?: string } = {},
+): Promise<MembershipChangeInput | null> {
   const current = await getTerminalCurrentMembership(userId, membershipId, query)
-  if (!current) return false
+  if (!current) return null
   const fallback = await getHighestPriorityFallbackSource(
     userId,
     current.membership_source_id,
     query,
     options.membershipSourceId,
   )
-  if (!fallback) return false
+  if (!fallback) return null
   if (
     fallback.source_kind === 'direct' ||
     (fallback.source_kind === 'admin_grant' && !fallback.has_open_grant_activation)
   )
     await pauseOpenGrantActivations(userId, current.access_ended_at, query)
   if (fallback.source_kind === 'admin_grant' && !fallback.has_open_grant_activation)
-    return activateOldestQueuedGrant(
+    return activateOldestQueuedGrantForLockedUser(
       userId,
       {
         id: current.id,
@@ -88,10 +102,10 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
       ${fallback.source_kind === 'direct' && !fallback.should_auto_renew}
     ) RETURNING id`)
   const restored = rows[0] as { id: string } | undefined
-  if (!restored) return false
+  if (!restored) return null
   if (renewalNotification)
     await restoreRenewalPriceIncreaseNotificationState(restored.id, renewalNotification, query)
-  await recordMembershipChange({
+  return {
     membershipId: restored.id,
     userId,
     membershipSourceId: fallback.membership_source_id,
@@ -100,9 +114,7 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
     toSkuId: fallback.membership_product_id,
     pastDueAt: fallback.source_kind === 'direct' ? fallback.past_due_at : null,
     cancelAtPeriodEnd: fallback.source_kind === 'direct' && !fallback.should_auto_renew,
-    query,
-  })
-  return true
+  }
 }
 async function getTerminalCurrentMembership(
   userId: string,
@@ -118,8 +130,7 @@ async function getTerminalCurrentMembership(
       ) AS access_ended_at
     FROM memberships membership
     INNER JOIN membership_sources source ON source.id = membership.membership_source_id
-    INNER JOIN membership_source_states source_state
-      ON source_state.membership_source_id = source.id
+    INNER JOIN membership_source_states source_state ON source_state.membership_source_id = source.id
     WHERE membership.id = ${membershipId} AND membership.user_id = ${userId}
       AND membership.projection_ended_at IS NULL
       AND (
@@ -134,7 +145,6 @@ async function getTerminalCurrentMembership(
     FOR UPDATE OF membership`)
   return rows[0] as CurrentMembership | undefined
 }
-
 async function getHighestPriorityFallbackSource(
   userId: string,
   currentSourceId: string,
@@ -150,10 +160,8 @@ async function getHighestPriorityFallbackSource(
     INNER JOIN membership_source_states source_state
       ON source_state.membership_source_id = source.id
     INNER JOIN membership_products product ON product.id = source_state.membership_product_id
-    LEFT JOIN membership_provider_observations observation
-      ON observation.id = source_state.membership_provider_observation_id
-    LEFT JOIN membership_provider_contexts observation_context
-      ON observation_context.id = observation.membership_provider_context_id
+    LEFT JOIN membership_provider_observations observation ON observation.id = source_state.membership_provider_observation_id
+    LEFT JOIN membership_provider_contexts observation_context ON observation_context.id = observation.membership_provider_context_id
     LEFT JOIN membership_provider_evidence_records evidence
       ON evidence.id = observation.membership_provider_evidence_record_id
     LEFT JOIN membership_grants grant_row ON grant_row.membership_source_id = source.id
