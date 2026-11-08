@@ -3,6 +3,10 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { isUUID, isUsername } from '@modules/utils'
 import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
+import {
+  lockActiveUserSubjectsForMutation,
+  lockUserSubjectMutationFences,
+} from '@services/user-deletions/active-user-mutation-lock'
 import { enqueueReferralClickNotification } from '@queues/notifications/enqueues'
 
 export async function createSessionReferralAttribution({
@@ -56,28 +60,16 @@ export async function createSessionReferralAttribution({
       (id): id is string => typeof id === 'string',
     ),
   )
-  const lockedUserIds = [...candidateUserIds].toSorted()
-  const activeOwnerIds = new Set<string>()
-  for (const candidateUserId of lockedUserIds) {
-    if (candidateUserId === userId) {
-      // oxlint-disable-next-line no-await-in-loop -- locks are ordered by user id before the attribution mutation.
-      await query(
-        sql`/* createSessionReferralAttribution */ SELECT fn_lock_active_user_for_mutation(${candidateUserId})`,
-      )
-      activeOwnerIds.add(candidateUserId)
-      continue
-    }
-    // oxlint-disable-next-line no-await-in-loop -- locks are ordered by user id before the attribution mutation.
-    const { rowCount } = await query(
-      sql`/* createSessionReferralAttribution: lock prior owner if still active */
-        SELECT fn_lock_active_user_for_mutation(users.id)
-        FROM users
-        WHERE users.id = ${candidateUserId}
-          AND users.deleted_at IS NULL
-      `,
-    )
-    if ((rowCount ?? 0) > 0) activeOwnerIds.add(candidateUserId)
-  }
+  // Every candidate's deletion fence is taken in user-id order; the new owner must be active (the
+  // lock raises otherwise) while a prior owner that has since been deleted is simply skipped.
+  await lockUserSubjectMutationFences(query, [...candidateUserIds])
+  if (typeof userId === 'string') await lockActiveUserSubjectsForMutation(query, [userId])
+  const { rows: activeRows } = await query<{ id: string }>(
+    sql`/* createSessionReferralAttribution: read active owners */
+      SELECT id FROM users WHERE id = ANY(${[...candidateUserIds]}::uuid[]) AND deleted_at IS NULL
+    `,
+  )
+  const activeOwnerIds = new Set(activeRows.map(row => row.id))
   const { rows: replacedRows } = await query<{
     user_id: string | null
   }>(sql`/* createSessionReferralAttribution: remove prior unconverted click for this pair */

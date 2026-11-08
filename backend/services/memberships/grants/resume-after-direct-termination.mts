@@ -1,6 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { recordMembershipChange } from '../changes.mts'
+import { expireExhaustedPausedGrants } from './expire-exhausted-paused-grants.mts'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../fallback/restore-after-current-access-ends.mts'
 import { activateOldestQueuedGrant } from './activate-queued.mts'
 import { getCurrentMembershipProjection } from './current-projection.mts'
@@ -40,63 +40,7 @@ export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
     | undefined
   if (!direct)
     return { activeFamily: false, activeGrant: false, changed: false, retainsPaidAccess: false }
-  const { rows: exhaustedRows } =
-    await query(sql`/* resumeGrantAfterDirectTermination: expire exhausted paused grants */
-    WITH exhausted AS (
-      UPDATE membership_source_states source_state
-      SET effective_at = LEAST(source_state.effective_at, ${direct.access_suspended_at}),
-        cancelled_at = NULL, expired_at = ${direct.access_suspended_at},
-        past_due_at = NULL, paused_at = NULL, should_auto_renew = false
-      FROM membership_grants grant_row
-      WHERE grant_row.membership_source_id = source_state.membership_source_id
-        AND grant_row.user_id = ${userId} AND grant_row.revoked_at IS NULL
-        AND source_state.paused_at IS NOT NULL
-        AND fn_membership_grant_remaining_duration(grant_row.id) < INTERVAL '1 millisecond'
-        AND NOT EXISTS (
-          SELECT 1 FROM membership_grant_activation_periods activation
-          WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL
-        )
-      RETURNING grant_row.id AS membership_grant_id, grant_row.membership_product_id,
-        source_state.membership_source_id, source_state.expired_at
-    )
-    SELECT exhausted.*, membership.id AS membership_id
-    FROM exhausted
-    INNER JOIN LATERAL (
-      SELECT id FROM memberships
-      WHERE membership_source_id = exhausted.membership_source_id
-      ORDER BY projection_ended_at DESC NULLS LAST, id DESC
-      LIMIT 1
-    ) membership ON true`)
-  for (const exhausted of exhaustedRows as Array<{
-    expired_at: Date
-    membership_grant_id: string
-    membership_id: string
-    membership_product_id: string
-    membership_source_id: string
-  }>) {
-    // eslint-disable-next-line no-await-in-loop
-    await recordMembershipChange({
-      membershipId: exhausted.membership_id,
-      userId,
-      membershipSourceId: exhausted.membership_source_id,
-      membershipGrantId: exhausted.membership_grant_id,
-      changeType: 'expiration',
-      fromSkuId: exhausted.membership_product_id,
-      expiredAt: exhausted.expired_at,
-      query,
-    })
-  }
-  await query(sql`/* resumeGrantAfterDirectTermination: release viable paused grant */
-    UPDATE membership_source_states source_state
-    SET paused_at = NULL
-    FROM membership_grants grant_row
-    WHERE grant_row.membership_source_id = source_state.membership_source_id
-      AND grant_row.user_id = ${userId} AND grant_row.revoked_at IS NULL
-      AND source_state.paused_at IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM membership_grant_activation_periods activation
-        WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL
-      )`)
+  const expiredCount = await expireExhaustedPausedGrants(userId, direct.access_suspended_at, query)
   const replacement = await selectDirectTerminationReplacement(
     userId,
     direct.membership_source_id,
@@ -159,7 +103,7 @@ export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
   return {
     activeGrant: finalProjection?.active === true && finalProjection.source_kind === 'admin_grant',
     activeFamily: finalProjection?.active === true && finalProjection.source_kind === 'family',
-    changed: exhaustedRows.length > 0 || resumedActiveGrant || activated || restoredFallback,
+    changed: expiredCount > 0 || resumedActiveGrant || activated || restoredFallback,
     retainsPaidAccess: finalProjection?.active === true,
   }
 }

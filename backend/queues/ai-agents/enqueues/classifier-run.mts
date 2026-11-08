@@ -101,7 +101,10 @@ export async function enqueueBulkClassifierRuns(
   })
 }
 
-/** Whether the run's stable-id job is still retained in any queue state. */
-export async function classifierRunJobExists(runId: string): Promise<boolean> {
-  return (await ai_agents.getJob(classifierRunJobId(runId), { excludeData: true })) !== null
+/** The runs whose stable-id job is still retained in any queue state. */
+export async function classifierRunJobsExist(runIds: readonly string[]): Promise<Set<string>> {
+  const jobs = await Promise.all(
+    runIds.map(runId => ai_agents.getJob(classifierRunJobId(runId), { excludeData: true })),
+  )
+  return new Set(runIds.filter((_, index) => jobs[index] !== null))
 }

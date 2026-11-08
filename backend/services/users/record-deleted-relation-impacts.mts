@@ -4,6 +4,9 @@ import { addUserDeletionRelationEffects } from '@services/user-deletions/externa
 import type { EntityRelationVoteTarget } from './delete-entity-relation-votes.mts'
 import { getElectedRelationMetadata } from './relation-impact-targets.mts'
 
+/** Orphan GC can only race a pin when it commits between the insert and the pin; a few attempts suffice. */
+const MAX_RETAINED_IDENTITY_PIN_ATTEMPTS = 5
+
 /** The deleted vote tuple, not a pre-delete candidate, authorizes each retained relation identity. */
 export async function recordDeletedRelationImpacts(
   query: TransactionQuery,
@@ -22,15 +25,18 @@ export async function recordDeletedRelationImpacts(
     targets.push(target)
     byTable.set(target.relationTable, targets)
   }
-  for (const root of [...rootPins.values()].toSorted(
+  const roots = [...rootPins.values()].toSorted(
     (left, right) => left.family.localeCompare(right.family) || left.id.localeCompare(right.id),
-  )) {
-    // oxlint-disable-next-line no-await-in-loop -- all concrete roots are pinned in stable order before dependent tuples.
+  )
+  // All concrete roots are pinned in one statement, in stable order, before dependent tuples.
+  if (roots.length > 0)
     await query(
-      `/* pinDeletedRelationSubjectRoot */ SELECT fn_ensure_retained_identity($1::retained_identity_families, $2::uuid)`,
-      [root.family, root.id],
+      `/* pinDeletedRelationSubjectRoots */
+       SELECT fn_ensure_retained_identity(root.family::retained_identity_families, root.id)
+       FROM unnest($1::text[], $2::uuid[]) WITH ORDINALITY AS root(family, id, position)
+       ORDER BY root.position`,
+      [roots.map(root => root.family), roots.map(root => root.id)],
     )
-  }
   for (const [relationTable, targets] of [...byTable].toSorted(([left], [right]) =>
     left.localeCompare(right),
   )) {
@@ -57,7 +63,8 @@ async function recordRelationTableImpacts(
   const relations = unique.map(target => target.entityRelationId)
   // A conflicting orphan may disappear between ON CONFLICT and the pin while the
   // separate cleanup transaction runs. Retry until every target holds KEY SHARE.
-  while (true) {
+  let pinned = false
+  for (let attempt = 0; attempt < MAX_RETAINED_IDENTITY_PIN_ATTEMPTS && !pinned; attempt++) {
     // oxlint-disable-next-line no-await-in-loop -- the retry closes the concurrent orphan-GC gap.
     await query(
       `/* ensureDeletedRelationIdentities */
@@ -75,8 +82,9 @@ async function recordRelationTableImpacts(
        ORDER BY owner.subject_id, owner.id FOR KEY SHARE OF owner`,
       [subjects, relations],
     )
-    if (rows.length === unique.length) break
+    pinned = rows.length === unique.length
   }
+  if (!pinned) throw new Error(`Deleted relation identities were not pinned for ${relationTable}`)
 
   await query(
     `/* insertDeletedRelationImpacts */

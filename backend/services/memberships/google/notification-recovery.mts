@@ -61,11 +61,9 @@ export async function findRecoverableGooglePlayNotificationJobs(): Promise<Googl
       }
     return { notification: null, retryable: false }
   })
-  await Promise.all(
+  await rejectMalformedRecoveryEvidence(
     rows.flatMap((row, index) =>
-      parsed[index]?.notification || parsed[index]?.retryable
-        ? []
-        : [rejectMalformedRecoveryEvidence(row.id)],
+      parsed[index]?.notification || parsed[index]?.retryable ? [] : [row.id],
     ),
   )
   return {
@@ -124,8 +122,9 @@ export async function advanceGooglePlayNotificationRecoveryCursor(
 ): Promise<void> {
   await advanceGooglePlayRecoverySweep({ cursorId: 'notifications', ...batch })
 }
-async function rejectMalformedRecoveryEvidence(evidenceId: string): Promise<void> {
+async function rejectMalformedRecoveryEvidence(evidenceIds: readonly string[]): Promise<void> {
+  if (evidenceIds.length === 0) return
   await write(
-    sql`/* rejectMalformedGooglePlayRecoveryEvidence */ UPDATE membership_provider_evidence_records SET rejected_at = CURRENT_TIMESTAMP, rejection_reason = 'invalid_google_rtdn' WHERE id = ${evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`,
+    sql`/* rejectMalformedGooglePlayRecoveryEvidence */ UPDATE membership_provider_evidence_records SET rejected_at = CURRENT_TIMESTAMP, rejection_reason = 'invalid_google_rtdn' FROM unnest(${evidenceIds}::uuid[]) AS malformed(id) WHERE membership_provider_evidence_records.id = malformed.id AND verified_at IS NULL AND rejected_at IS NULL`,
   )
 }

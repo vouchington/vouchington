@@ -2,14 +2,14 @@ import { recordClassifierRunAlarm } from '@modules/on-error'
 import {
   enqueueBulkClassifierRunDispatchers,
   enqueueBulkClassifierRuns,
-  classifierRunJobExists,
+  classifierRunJobsExist,
 } from '@queues/ai-agents/enqueues/classifier-run'
 import { enqueueReconcileClassifierRunsPage } from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
 import type { ReconcileClassifierRunsJobData } from '@queues/ai-agents/types'
 import { evaluateSpendCapBreach } from '@services/ai-usage'
 import {
   CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND,
-  abandonClassifierRunSweep,
+  abandonClassifierRunSweeps,
   listIncompleteClassifierRuns,
   recordClassifierRunSweepEnqueues,
   type IncompleteClassifierRun,
@@ -114,31 +114,35 @@ async function sweepIncomplete(
   const addedIds = new Set(await enqueueBulkClassifierRuns(pending.map(toRunJobData)))
   const added = pending.filter(run => addedIds.has(run.runId))
   await recordClassifierRunSweepEnqueues(added.map(run => run.runId))
-  const outcomes = await Promise.all(exhausted.map(giveUpSweepRun))
+  const abandoned = await giveUpSweepRuns(exhausted)
   if (page.next) {
     await enqueueReconcileClassifierRunsPage({ phase: 'incomplete', after: page.next })
   }
   return {
     kind: 'incomplete',
     enqueued: added.length,
-    abandoned: outcomes.filter(outcome => outcome === 'abandoned').length,
+    abandoned: abandoned.length,
     hasNext: page.next !== null,
   }
 }
 
-/** Gives up a run at the bound once its last job is gone, and leaves it be while that job lives. */
-async function giveUpSweepRun(
-  run: IncompleteClassifierRun,
-): Promise<'abandoned' | 'in-flight' | 'settled'> {
-  if (await classifierRunJobExists(run.runId)) return 'in-flight'
-  if ((await abandonClassifierRunSweep(run.runId)) === 'skipped') return 'settled'
-  recordClassifierRunAlarm({
-    kind: 'sweep-bound-exceeded',
-    classifier: run.classifier,
-    runId: run.runId,
-    sweepEnqueueCount: run.sweepEnqueueCount,
-  })
-  return 'abandoned'
+/** Gives up runs at the bound once their last job is gone, and leaves a run be while its job lives. */
+async function giveUpSweepRuns(
+  exhausted: readonly IncompleteClassifierRun[],
+): Promise<IncompleteClassifierRun[]> {
+  const live = await classifierRunJobsExist(exhausted.map(run => run.runId))
+  const gone = exhausted.filter(run => !live.has(run.runId))
+  const abandonedIds = new Set(await abandonClassifierRunSweeps(gone.map(run => run.runId)))
+  const abandoned = gone.filter(run => abandonedIds.has(run.runId))
+  for (const run of abandoned) {
+    recordClassifierRunAlarm({
+      kind: 'sweep-bound-exceeded',
+      classifier: run.classifier,
+      runId: run.runId,
+      sweepEnqueueCount: run.sweepEnqueueCount,
+    })
+  }
+  return abandoned
 }
 
 function toRunJobData(run: IncompleteClassifierRun) {

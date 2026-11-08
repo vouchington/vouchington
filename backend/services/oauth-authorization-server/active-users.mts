@@ -12,14 +12,14 @@ export async function lockOAuthParticipantUsers(
 ): Promise<Set<string>> {
   const participantIds = [...new Set(userIds.filter((userId): userId is string => userId !== null))]
   participantIds.sort()
-  for (const userId of participantIds) {
-    // oxlint-disable-next-line no-await-in-loop -- lifecycle locks must be acquired in UUID order.
-    await query(
-      `/* lockOAuthParticipantUsers */ SELECT pg_advisory_xact_lock_shared(hashtextextended($1, 0))`,
-      [userId],
-    )
-  }
   if (participantIds.length === 0) return new Set()
+  // One statement takes the shared lifecycle locks in the sorted (UUID) order of the input array.
+  await query(
+    `/* lockOAuthParticipantUsers */ SELECT pg_advisory_xact_lock_shared(hashtextextended(lock_key.id, 0))
+     FROM unnest($1::text[]) WITH ORDINALITY AS lock_key(id, position)
+     ORDER BY lock_key.position`,
+    [participantIds],
+  )
   const result = await query<{ id: string }>(
     `/* lockOAuthParticipantUsers active */ SELECT id
      FROM users

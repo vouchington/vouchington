@@ -237,11 +237,6 @@
       - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }
       # Dev-only login helper: mints one deep link per persona of the closed ALL_PERSONAS list (login-as/run.mts:121). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/scripts/login-as/run.mts, callee: 'mintDeepLink' }
-      # FIX (P2): per-user lifecycle lock query in an ordered loop (recovery.mts:45); batch as one `SELECT ... FROM unnest($ids) ORDER BY` lock statement (pattern in post-publication/capture-posts.mts). Remove this entry with the fix.
-      - {
-          file: backend/services/account-data-requests/recovery.mts,
-          callee: 'lockActiveDataRequestUser',
-        }
       # Closed set: one export cursor per user bookmark relation of the static entityRelationMetadatum list (stream-bookmarks.mts:18); each cursor streams its own table. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/account-data-requests/stream-bookmarks.mts,
@@ -423,11 +418,6 @@
           file: backend/services/memberships/google/lineage.mts,
           callee: 'getKnownGooglePlayCanonicalRoot',
         }
-      # FIX (P2): batch as one UPDATE … FROM unnest($ids); it runs one identical UPDATE per malformed evidence row (notification-recovery.mts:65). Remove this entry with the fix.
-      - {
-          file: backend/services/memberships/google/notification-recovery.mts,
-          callee: 'rejectMalformedRecoveryEvidence',
-        }
       # FIX (P2): per-user locked expiry transaction (expire-elapsed-batch.mts:60); the P2b memberships layer reworks it together with the expire-elapsed entries below.
       - {
           file: backend/services/memberships/grants/expire-elapsed-batch.mts,
@@ -446,11 +436,6 @@
       - {
           file: backend/services/memberships/grants/expire-elapsed.mts,
           callee: 'restoreFallbackAfterCurrentAccessEndsInTransaction',
-        }
-      # FIX (P2): per-grant recordMembershipChange inside the user transaction; batch per page.
-      - {
-          file: backend/services/memberships/grants/resume-after-direct-termination.mts,
-          callee: 'recordMembershipChange',
         }
       # Failure path over the pending reversal operations plus the cancellation of one purchase (execute.mts:50), a handful per reversal. UNVERIFIED: no constant cap on pending operations.
       - {
@@ -619,11 +604,6 @@
           file: backend/services/users/record-deleted-relation-impacts.mts,
           callee: 'recordRelationTableImpacts',
         }
-      # FIX (P2): giveUpSweepRun runs three effects per exhausted run (job-exists check, one identical abandonClassifierRunSweep UPDATE, one alarm) and none differ per run beyond the id; batch the job check, run one UPDATE … FROM unnest($ids) RETURNING id, and alarm from the returned rows. The set is at most one listIncompleteClassifierRuns page, capped by discovery_page_size (classifier-runs/run-discovery.mts:50). Remove this entry with the fix.
-      - {
-          file: backend/workers/ai-agents/processors/process-reconcile-classifier-runs.mts,
-          callee: 'giveUpSweepRun',
-        }
       # Capped page loop: `for (batch < maxBatches)` (api-key-expiry.mts:22), one keyset page per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/workers/email-digests/processors/api-key-expiry.mts,
@@ -655,35 +635,19 @@
           file: playwright/tests/tags/tag-voting-helpers.mts,
           callee: 'softDeleteScoredPostTopicCategoryRelation',
         }
-      # FIX (P2): per-user ordered lock loop; batch as one `SELECT fn_lock_active_user_for_mutation(...) FROM unnest(...) ORDER BY`. Remove these entries with the fix.
-      - { file: backend/services/attribution/create.mts, callee: 'query', line: 64 }
-      - { file: backend/services/attribution/create.mts, callee: 'query', line: 71 }
-      # FIX (P2): per-key advisory lock loops; batch as one `pg_advisory_xact_lock(...) FROM unnest($ids) ORDER BY id` (pattern in post-publication/capture-posts.mts). Remove these entries with the fix.
-      - {
-          file: backend/services/oauth-authorization-server/active-users.mts,
-          callee: 'query',
-          line: 17,
-        }
-      # FIX (P2): per-alias-token UPDATE inside the canonical lineage lock; batch the markFetched updates. Remove this entry with the fix.
-      - { file: backend/services/memberships/google/lineage.mts, callee: 'query', line: 163 }
       # FIX (P2): per-membership source/activation updates inside the user lock; batch per page with unnest. Remove these entries with the fix.
       - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 63 }
       - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 70 }
-      # FIX (P2): per-root fn_ensure_retained_identity loop (batch with unnest) and an uncapped while(true) retry loop (add a constant retry cap). Remove these entries with the fix.
+      # Capped retry, not a per-item or chunked lock loop: the pass repeats the same two set statements over unnest at most MAX_RETAINED_IDENTITY_PIN_ATTEMPTS = 5 times (record-deleted-relation-impacts.mts:8) and throws on exhaustion, so the lock work is bounded by that constant.
       - {
           file: backend/services/users/record-deleted-relation-impacts.mts,
           callee: 'query',
-          line: 29,
+          line: 69,
         }
       - {
           file: backend/services/users/record-deleted-relation-impacts.mts,
           callee: 'query',
-          line: 62,
-        }
-      - {
-          file: backend/services/users/record-deleted-relation-impacts.mts,
-          callee: 'query',
-          line: 70,
+          line: 77,
         }
       # FIX (P2): bare while(true) keyset page loop with no constant page cap; add a maxBatches-style cap and continuation. Remove these entries with the fix.
       - {

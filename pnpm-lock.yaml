@@ -4555,6 +4555,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
+      '@services/user-deletions':
+        specifier: workspace:^
+        version: link:../user-deletions
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types

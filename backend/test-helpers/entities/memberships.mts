@@ -15,6 +15,7 @@ export {
 export { getTestMembershipProviderEvidenceId } from './memberships/provider-evidence.mts'
 export { createTestUnprojectedStripeProductionProviderObservation } from './memberships/unprojected-provider-observations.mts'
 export { createTestFamilyMembership } from './memberships/family.mts'
+export { readTestMembershipExpirationChanges } from './membership-expiry.mts'
 export { createTestLaunchedNativeMembershipPurchaseIntent } from './memberships/purchase-intents-native.mts'
 export {
   createTestNativeMembershipProviderProduct,

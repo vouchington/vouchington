@@ -1,7 +1,7 @@
 import { getAccountDataRequestsWorkLimit, getDataRequestLimits } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { lockActiveDataRequestUser } from './active-user-lock.mts'
+import { lockActiveDataRequestUsers } from './active-user-lock.mts'
 
 export type RecoverableDataRequest = {
   requestId: string
@@ -40,15 +40,13 @@ export async function claimRecoverableDataRequests(
     LIMIT ${batchSize}
   `)
   const selectedIds = candidateRows.map(row => row.id)
-  const activeUserIds: string[] = []
-  const deletedUserIds: string[] = []
-  for (const userId of [
+  // Sorted lifecycle locks fence every candidate before a request-row lock.
+  const candidateUserIds = [
     ...new Set(candidateRows.flatMap(row => (row.user_id ? [row.user_id] : []))),
-  ].toSorted()) {
-    // oxlint-disable-next-line no-await-in-loop -- sorted lifecycle locks fence every candidate before a request-row lock.
-    if (await lockActiveDataRequestUser(transaction, userId)) activeUserIds.push(userId)
-    else deletedUserIds.push(userId)
-  }
+  ]
+  const activeUsers = await lockActiveDataRequestUsers(transaction, candidateUserIds)
+  const activeUserIds = candidateUserIds.filter(userId => activeUsers.has(userId))
+  const deletedUserIds = candidateUserIds.filter(userId => !activeUsers.has(userId))
   const { rowCount: deletedCount } =
     await transaction(sql`/* claimRecoverableDataRequests:deletedUsers */
     WITH candidates AS (
