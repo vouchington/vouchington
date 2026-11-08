@@ -21589,8 +21589,8 @@
         "idx_community_members__unique": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_community_members__unique ON public.community_members USING btree (community_id, user_id) WHERE (removed_at IS NULL)",
-          "includedColumns": [],
+          "definition": "CREATE UNIQUE INDEX idx_community_members__unique ON public.community_members USING btree (community_id, user_id) INCLUDE (role) WHERE (removed_at IS NULL)",
+          "includedColumns": ["role"],
           "keys": [
             {
               "column": "community_id",
