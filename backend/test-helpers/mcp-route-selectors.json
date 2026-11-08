@@ -1,5 +1,15 @@
 [
   {
+    "tool": "get_referral_links",
+    "arguments": {},
+    "routes": ["GET:/api/v1/referral-links"]
+  },
+  {
+    "tool": "get_referral_links",
+    "arguments": { "topic_id": "example-topic" },
+    "routes": ["GET:/api/v1/topics/:id/prioritized-referral-links"]
+  },
+  {
     "tool": "manage_my_cards",
     "arguments": {
       "action": "add"

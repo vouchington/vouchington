@@ -21,7 +21,7 @@
       },
       "Plus": {
         "on": {
-          "count": 70,
+          "count": 69,
           "list": 236000,
           "core": 110000,
           "output": 240000
@@ -274,17 +274,17 @@
     },
     "legal": {
       "all": {
-        "on": {
-          "count": 24,
-          "list": 54000,
-          "core": 16000,
-          "output": 48000
-        },
         "off": {
           "count": 9,
           "list": 30000,
           "core": 3000,
           "output": 29000
+        },
+        "on": {
+          "count": 24,
+          "list": 54000,
+          "core": 16000,
+          "output": 48000
         }
       },
       "Reader": {
@@ -336,17 +336,17 @@
         }
       },
       "LegalWrite": {
-        "on": {
-          "count": 24,
-          "list": 54000,
-          "core": 16000,
-          "output": 48000
-        },
         "off": {
           "count": 9,
           "list": 30000,
           "core": 3000,
           "output": 29000
+        },
+        "on": {
+          "count": 24,
+          "list": 54000,
+          "core": 16000,
+          "output": 48000
         }
       }
     }

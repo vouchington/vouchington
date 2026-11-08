@@ -7,15 +7,22 @@ import {
   getPrioritizedReferralLinks,
 } from '@services/prioritized-referral-links'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
-import { nullable, objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { nullable, objectSchema } from '@vouchington/mcp-server/schema'
 import { componentPropertySchema } from './route-response-schema.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { clampToolLimit } from './search-system.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type SearchPageInfo } from './paged-search.mts'
+import {
+  getUserReferralLinksPage,
+  USER_REFERRAL_LINK_PAGE_SCHEMA,
+  type UserReferralLinksArgs,
+} from './get-referral-links-user-page.mts'
+import { closedObject } from './read-tool-output-schema.mts'
 
 // The REST twin documents its body inline and carries more per link, so the tool owns this schema.
 // `priority_group` comes from the documented link; `username` and `display_name` flatten its users.
-const OUTPUT_SCHEMA = outcomeSchema('success', {
+const TOPIC_PAGE_SCHEMA = closedObject({
+  success: { const: true },
   referral_program_id: { type: 'string' },
   links: {
     type: 'array',
@@ -34,11 +41,21 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
   page_info: pageInfoSchema(),
 })
 
-type ToolArgs = {
-  topic_id: string
+const OUTPUT_SCHEMA = {
+  type: 'object' as const,
+  oneOf: [
+    TOPIC_PAGE_SCHEMA,
+    USER_REFERRAL_LINK_PAGE_SCHEMA,
+    closedObject({ success: { const: false }, error: { type: 'string' } }),
+  ],
+}
+
+const PERSONAL_API = { method: 'GET' as const, path: '/api/v1/referral-links' }
+const TOPIC_API = { method: 'GET' as const, path: '/api/v1/topics/:id/prioritized-referral-links' }
+
+type ToolArgs = UserReferralLinksArgs & {
+  topic_id?: string
   all?: boolean
-  limit?: number
-  after?: string
 }
 
 type ReferralLinkEntry = {
@@ -52,6 +69,7 @@ type ReferralLinkEntry = {
 }
 
 type ToolResult =
+  | Awaited<ReturnType<typeof getUserReferralLinksPage>>
   | {
       success: true
       referral_program_id: string
@@ -68,28 +86,36 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_referral_links',
     type: 'function',
     description:
-      'Get prioritized referral links for a topic. Ranks links by social connections: mutual follows, follows, referrers, positive-choice authors, then official Voucha links, then everyone else.',
+      'List your referral links newest first when topic_id is omitted. With topic_id, get prioritized links for that topic, ranked by social connections; all lists every visible link newest first.',
     parameters: {
       type: 'object',
       properties: {
         topic_id: topicReferenceSchema,
+        user_id: {
+          type: 'string',
+          description: 'Personal-list mode: user id, defaulting to the caller.',
+        },
+        referral_program_id: {
+          type: 'string',
+          description: 'Personal-list mode: filter by referral program id.',
+        },
         all: {
           type: 'boolean',
-          description: 'List every visible link newest first, paged by after and limit.',
+          description:
+            'Topic mode: list every visible link newest first, paged by after and limit.',
         },
         limit: {
           type: 'integer',
-          minimum: 1,
           description:
-            'Default 5, max 25; with all, default 25, max 100. Larger values are clamped.',
+            'Personal list: default 100, max 100. Topic ranking: default 5, max 25; with all, default 25, max 100. Larger values are clamped.',
         },
         after: {
           type: 'string',
           description:
-            'page_info.end_cursor of the previous page. The list can change; on an invalid cursor, restart. Own-network links ignore it.',
+            'page_info.end_cursor of the previous page. On an invalid cursor, restart. Topic own-network links ignore it.',
         },
       },
-      required: ['topic_id'],
+      required: [],
     },
     strict: null,
   },
@@ -98,12 +124,14 @@ const tool: Tool<ToolArgs, ToolResult> = {
     title: 'Get Referral Links',
     requiredScopes: ['referral-links:read'],
     annotations: { readOnlyHint: true },
-    api: [{ method: 'GET', path: '/api/v1/topics/:id/prioritized-referral-links' }],
+    api: [PERSONAL_API, TOPIC_API],
+    selectApi: args => [args['topic_id'] === undefined ? PERSONAL_API : TOPIC_API],
     outputSchema: OUTPUT_SCHEMA,
   },
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      if (args.topic_id === undefined) return getUserReferralLinksPage(currentUser, args)
       // Same rule as REST: below 1 or not an integer is rejected, above the maximum is clamped.
       if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1)) {
         return { success: false, error: 'Invalid limit' }

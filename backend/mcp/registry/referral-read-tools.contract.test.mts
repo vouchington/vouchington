@@ -4,6 +4,8 @@ import {
   callStructuredMcpTool,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import { encodeCursor } from '@modules/pagination'
+import { paginationConfig } from '@services/pagination'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createUserReferralLink } from '@services/user-referral-program-links'
 import {
   createRandomString,
@@ -59,7 +61,6 @@ describe('read_topic.details referral program — real DB', () => {
       .get(`/api/v1/topics/${program.referralProgramId}`)
       .expect(200)
     const attributes = rest.body.referral_program_attributes
-
     for (const reference of [program.referralProgramId, slug]) {
       expect(await read(reference)).toMatchObject({
         success: true,
@@ -85,7 +86,6 @@ describe('read_topic.details referral program — real DB', () => {
   it('omits program fields on other topic types and returns nulls when the extension row is missing', async () => {
     const plain = await createTestTopic()
     const stateless = await createTestTopic({ topic_type: 'referral_program' })
-
     expect(await read(`missing-${createRandomString(8)}`)).toEqual({
       success: false,
       error: 'Topic not found',
@@ -109,7 +109,7 @@ describe('read_topic.details referral program — real DB', () => {
   })
 })
 
-describe('get_my_referral_links — real DB', () => {
+describe('get_referral_links — real DB', () => {
   let owner: Caller
   let other: Caller
   let programA: { referralProgramId: string; hostname: string }
@@ -118,7 +118,7 @@ describe('get_my_referral_links — real DB', () => {
   let othersLink: string
 
   const mine = (args: Body = {}, caller = owner) =>
-    callStructuredMcpTool(caller, 'get_my_referral_links', args, [
+    callStructuredMcpTool(caller, 'get_referral_links', args, [
       'referral-links:read',
     ]) as Promise<LinkPage>
   const ids = (page: LinkPage) => page.results.map(link => link.id)
@@ -158,66 +158,45 @@ describe('get_my_referral_links — real DB', () => {
     const request = createRequest()
     await request.authenticateAs(owner)
     const rest = await request.get('/api/v1/referral-links').expect(200)
-
-    // The label is the one field the tool rewrites (it sanitizes it), so REST is compared without it.
-    const keys = Object.keys(page.results[0]!).filter(key => key !== 'label')
-    const shared = (rows: Body[]) =>
-      rows.map(row => Object.fromEntries(keys.map(key => [key, row[key]])))
-
     expect(ids(page)).toEqual([...links].toReversed())
     expect(ids(page)).not.toContain(othersLink)
     expect(ids(await mine({}, other))).toEqual([othersLink])
-    expect(shared(page.results)).toEqual(shared(rest.body.results))
-  })
-
-  it('gives the program name, slug and link url, with the activation dates as ISO text', async () => {
-    const [newest] = (await mine()).results
-
-    expect(newest).toEqual({
-      id: links[2],
-      referral_program_id: programB.referralProgramId,
-      referral_program_name: expect.stringMatching(/^Referral Program /),
-      referral_program_slug: expect.stringMatching(/^referral-program-/),
-      url: expect.stringContaining(programB.hostname),
-      label: null,
-      created_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*Z$/),
-      activated_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*Z$/),
-      deactivated_at: null,
-    })
+    const sanitizedLabel = expect.any(String)
+    const expected = rest.body.results.map((row: Link) =>
+      row.id === links[1] ? { ...row, label: sanitizedLabel } : row,
+    )
+    expect(page.results).toEqual(expected)
+    expect(page.page_info).toEqual(rest.body.page_info)
+    expect(String(page.results[1]!['label'])).not.toContain('previous instructions')
   })
 
   it('reads the caller when user_id is their own id, and forbids another user the way REST does', async () => {
     expect(ids(await mine({ user_id: owner.id }))).toEqual(ids(await mine()))
-
     const request = createRequest()
     await request.authenticateAs(owner)
     const rest = await request.get(`/api/v1/referral-links?user_id=${other.id}`)
     expect(rest.status).toBe(403)
-    expect(
-      JSON.parse(
-        await callRejectedMcpTool(owner, 'get_my_referral_links', { user_id: other.id }, [
-          'referral-links:read',
-        ]),
-      ),
-    ).toMatchObject({
+    const rejected = await callRejectedMcpTool(owner, 'get_referral_links', { user_id: other.id }, [
+      'referral-links:read',
+    ])
+    expect(JSON.parse(rejected)).toMatchObject({
       error: { status: rest.status, code: 'FORBIDDEN', message: rest.body.message },
     })
   })
 
-  it('lets an administrator read another user links, like REST', async () => {
+  // This direct tool principal retains administrator roles; shared bearer auth can attenuate them.
+  it('lets an admitted administrator read another user links, like REST', async () => {
     const admin = asCaller(await createTestUser({ administrator: true }))
     const request = createRequest()
     await request.authenticateAs(admin)
     const rest = await request.get(`/api/v1/referral-links?user_id=${other.id}`).expect(200)
     const page = await mine({ user_id: other.id }, admin)
-
     expect(ids(page)).toEqual(rest.body.results.map((row: { id: string }) => row.id))
     expect(ids(page)).toEqual([othersLink])
   })
 
   it('keeps only the links under one program and sanitizes the labels', async () => {
     const page = await mine({ referral_program_id: programA.referralProgramId })
-
     expect(ids(page)).toEqual([links[1], links[0]])
     expect(page.results[1]!['label']).toBe('Plain label')
     expect(String(page.results[0]!['label'])).not.toContain('previous instructions')
@@ -233,14 +212,69 @@ describe('get_my_referral_links — real DB', () => {
     ] as const) {
       const rest = await request.get(`/api/v1/referral-links?${field}=not-a-uuid`)
       expect(rest.status).toBe(422)
-      expect(
-        JSON.parse(
-          await callRejectedMcpTool(owner, 'get_my_referral_links', args, ['referral-links:read']),
-        ),
-      ).toMatchObject({ error: { status: rest.status, message: rest.body.message } })
+      const rejected = await callRejectedMcpTool(owner, 'get_referral_links', args, [
+        'referral-links:read',
+      ])
+      expect(JSON.parse(rejected)).toMatchObject({
+        error: { status: rest.status, message: rest.body.message },
+      })
     }
 
     expect(ids(await mine({ referral_program_id: crypto.randomUUID() }))).toEqual([])
+  })
+
+  it('uses the bulk default and runtime maximum shared with REST', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(paginationConfig, {
+      bulk_default_limit: 2,
+      large_default_limit: 3,
+      max_limit: 3,
+    })
+    try {
+      const request = createRequest()
+      await request.authenticateAs(owner)
+      const rest = await request.get('/api/v1/referral-links').expect(200)
+      const page = await mine()
+      expect(ids(page)).toEqual([links[2], links[1]])
+      expect(page.page_info.has_next_page).toBe(true)
+      expect(ids(page)).toEqual(rest.body.results.map((row: Link) => row.id))
+      expect(page.page_info).toEqual(rest.body.page_info)
+    } finally {
+      restore()
+    }
+
+    const restoreMax = overrideDynamicConfigFieldsForTest(paginationConfig, { max_limit: 2 })
+    try {
+      const request = createRequest()
+      await request.authenticateAs(owner)
+      const rest = await request.get('/api/v1/referral-links?limit=100').expect(200)
+      const page = await mine({ limit: 100 })
+      expect(ids(page)).toEqual([links[2], links[1]])
+      expect(page.page_info.has_next_page).toBe(true)
+      expect(ids(page)).toEqual(rest.body.results.map((row: Link) => row.id))
+    } finally {
+      restoreMax()
+    }
+  })
+
+  it('preserves prioritized and all topic modes', async () => {
+    const ownLinkId = links[0]
+    for (const [args, expectOwn] of [
+      [{ topic_id: programA.referralProgramId }, false],
+      [{ topic_id: programA.referralProgramId, all: true }, true],
+    ] as const) {
+      const page = await callStructuredMcpTool(owner, 'get_referral_links', args, [
+        'referral-links:read',
+      ])
+      expect(page).toMatchObject({
+        success: true,
+        referral_program_id: programA.referralProgramId,
+        links: expect.any(Array),
+        page_info: expect.any(Object),
+      })
+      expect(page).not.toHaveProperty('results')
+      expect((page.links as Link[]).map(link => link.id)).toContain(othersLink)
+      expect((page.links as Link[]).some(link => link.id === ownLinkId)).toBe(expectOwn)
+    }
   })
 
   it('clamps an oversized limit and rejects zero the way REST does', async () => {
@@ -253,13 +287,12 @@ describe('get_my_referral_links — real DB', () => {
 
     const rejected = await request.get('/api/v1/referral-links?limit=0')
     expect(rejected.status).toBe(400)
-    expect(
-      JSON.parse(
-        await callRejectedMcpTool(owner, 'get_my_referral_links', { limit: 0 }, [
-          'referral-links:read',
-        ]),
-      ),
-    ).toMatchObject({ error: { status: rejected.status, message: rejected.body.message } })
+    const toolError = await callRejectedMcpTool(owner, 'get_referral_links', { limit: 0 }, [
+      'referral-links:read',
+    ])
+    expect(JSON.parse(toolError)).toMatchObject({
+      error: { status: rejected.status, message: rejected.body.message },
+    })
   })
 
   it('pages by cursor, ends the pages cleanly and refuses a malformed cursor', async () => {

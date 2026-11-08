@@ -3,26 +3,6 @@
   "formula": "ceil(measured * 1.015 / 1000) * 1000",
   "servers": {
     "user": {
-      "read_my_households": {
-        "measured": {
-          "list": 5684,
-          "core": 2477
-        },
-        "max": {
-          "list": 6000,
-          "core": 3000
-        }
-      },
-      "manage_my_households": {
-        "measured": {
-          "list": 5784,
-          "core": 3226
-        },
-        "max": {
-          "list": 6000,
-          "core": 4000
-        }
-      },
       "read_my_messages": {
         "measured": {
           "list": 4794,
@@ -41,6 +21,26 @@
         "max": {
           "list": 6000,
           "core": 3000
+        }
+      },
+      "read_my_households": {
+        "measured": {
+          "list": 5684,
+          "core": 2477
+        },
+        "max": {
+          "list": 6000,
+          "core": 3000
+        }
+      },
+      "manage_my_households": {
+        "measured": {
+          "list": 5784,
+          "core": 3226
+        },
+        "max": {
+          "list": 6000,
+          "core": 4000
         }
       },
       "read_community": {
@@ -493,16 +493,6 @@
           "core": 1000
         }
       },
-      "get_my_referral_links": {
-        "measured": {
-          "list": 1992,
-          "core": 673
-        },
-        "max": {
-          "list": 3000,
-          "core": 1000
-        }
-      },
       "search_web": {
         "measured": {
           "list": 1945,
@@ -655,12 +645,12 @@
       },
       "get_referral_links": {
         "measured": {
-          "list": 2030,
-          "core": 811
+          "list": 3756,
+          "core": 1046
         },
         "max": {
-          "list": 3000,
-          "core": 1000
+          "list": 4000,
+          "core": 2000
         }
       },
       "get_story": {
@@ -827,16 +817,6 @@
       }
     },
     "brand": {
-      "manage_topic_claim": {
-        "measured": {
-          "list": 4977,
-          "core": 2065
-        },
-        "max": {
-          "list": 6000,
-          "core": 3000
-        }
-      },
       "read_my_topic_claims": {
         "measured": {
           "list": 3838,
@@ -845,6 +825,16 @@
         "max": {
           "list": 4000,
           "core": 2000
+        }
+      },
+      "manage_topic_claim": {
+        "measured": {
+          "list": 4977,
+          "core": 2065
+        },
+        "max": {
+          "list": 6000,
+          "core": 3000
         }
       }
     },
@@ -966,6 +956,16 @@
         },
         "max": {
           "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_landing_page_identity": {
+        "measured": {
+          "list": 668,
+          "core": 265
+        },
+        "max": {
+          "list": 1000,
           "core": 1000
         }
       },
@@ -1461,6 +1461,16 @@
           "core": 1000
         }
       },
+      "get_copyright_claimant_misuse_summary": {
+        "measured": {
+          "list": 1660,
+          "core": 367
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
       "list_copyright_email_intakes": {
         "measured": {
           "list": 1628,
@@ -1645,16 +1655,6 @@
         "measured": {
           "list": 1206,
           "core": 849
-        },
-        "max": {
-          "list": 2000,
-          "core": 1000
-        }
-      },
-      "get_copyright_claimant_misuse_summary": {
-        "measured": {
-          "list": 1660,
-          "core": 367
         },
         "max": {
           "list": 2000,

@@ -26,7 +26,7 @@ export async function getUserReferralLinks(
 
   assert(currentUserCanAccessUserReferralLinks(currentUser, userId), 403, 'Forbidden')
 
-  const limit = options?.limit ?? 50
+  const limit = options?.limit ?? 100
   const after = options?.after
   const referralProgramId = options?.referral_program_id
 
