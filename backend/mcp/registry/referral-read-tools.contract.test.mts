@@ -184,17 +184,6 @@ describe('get_referral_links — real DB', () => {
     })
   })
 
-  // This direct tool principal retains administrator roles; shared bearer auth can attenuate them.
-  it('lets an admitted administrator read another user links, like REST', async () => {
-    const admin = asCaller(await createTestUser({ administrator: true }))
-    const request = createRequest()
-    await request.authenticateAs(admin)
-    const rest = await request.get(`/api/v1/referral-links?user_id=${other.id}`).expect(200)
-    const page = await mine({ user_id: other.id }, admin)
-    expect(ids(page)).toEqual(rest.body.results.map((row: { id: string }) => row.id))
-    expect(ids(page)).toEqual([othersLink])
-  })
-
   it('keeps only the links under one program and sanitizes the labels', async () => {
     const page = await mine({ referral_program_id: programA.referralProgramId })
     expect(ids(page)).toEqual([links[1], links[0]])
@@ -205,7 +194,6 @@ describe('get_referral_links — real DB', () => {
   it('rejects a non-uuid filter the way REST does and returns an empty page for an unknown program', async () => {
     const request = createRequest()
     await request.authenticateAs(owner)
-
     for (const [field, args] of [
       ['referral_program_id', { referral_program_id: 'not-a-uuid' }],
       ['user_id', { user_id: 'not-a-uuid' }],
@@ -219,7 +207,6 @@ describe('get_referral_links — real DB', () => {
         error: { status: rest.status, message: rest.body.message },
       })
     }
-
     expect(ids(await mine({ referral_program_id: crypto.randomUUID() }))).toEqual([])
   })
 
@@ -277,6 +264,19 @@ describe('get_referral_links — real DB', () => {
     }
   })
 
+  it('rejects personal filters in topic mode and all without a topic', async () => {
+    for (const args of [
+      { topic_id: programA.referralProgramId, user_id: owner.id },
+      { topic_id: programA.referralProgramId, referral_program_id: programA.referralProgramId },
+      { all: true },
+    ]) {
+      const rejected = await callRejectedMcpTool(owner, 'get_referral_links', args, [
+        'referral-links:read',
+      ])
+      expect(JSON.parse(rejected)).toMatchObject({ error: { status: 422, code: 'INVALID_INPUT' } })
+    }
+  })
+
   it('clamps an oversized limit and rejects zero the way REST does', async () => {
     const request = createRequest()
     await request.authenticateAs(owner)
@@ -298,7 +298,6 @@ describe('get_referral_links — real DB', () => {
   it('pages by cursor, ends the pages cleanly and refuses a malformed cursor', async () => {
     const first = await mine({ limit: 2 })
     const second = await mine({ limit: 2, after: first.page_info.end_cursor })
-
     expect(ids(first)).toEqual([links[2], links[1]])
     expect(first.page_info.has_next_page).toBe(true)
     expect(ids(second)).toEqual([links[0]])

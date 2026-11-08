@@ -3,26 +3,6 @@
   "formula": "ceil(measured * 1.015 / 1000) * 1000",
   "servers": {
     "user": {
-      "read_my_messages": {
-        "measured": {
-          "list": 4794,
-          "core": 1736
-        },
-        "max": {
-          "list": 5000,
-          "core": 2000
-        }
-      },
-      "manage_my_messages": {
-        "measured": {
-          "list": 4975,
-          "core": 2267
-        },
-        "max": {
-          "list": 6000,
-          "core": 3000
-        }
-      },
       "read_my_households": {
         "measured": {
           "list": 5684,
@@ -41,6 +21,26 @@
         "max": {
           "list": 6000,
           "core": 4000
+        }
+      },
+      "read_my_messages": {
+        "measured": {
+          "list": 4794,
+          "core": 1736
+        },
+        "max": {
+          "list": 5000,
+          "core": 2000
+        }
+      },
+      "manage_my_messages": {
+        "measured": {
+          "list": 4975,
+          "core": 2267
+        },
+        "max": {
+          "list": 6000,
+          "core": 3000
         }
       },
       "read_community": {
@@ -817,16 +817,6 @@
       }
     },
     "brand": {
-      "read_my_topic_claims": {
-        "measured": {
-          "list": 3838,
-          "core": 1253
-        },
-        "max": {
-          "list": 4000,
-          "core": 2000
-        }
-      },
       "manage_topic_claim": {
         "measured": {
           "list": 4977,
@@ -835,6 +825,16 @@
         "max": {
           "list": 6000,
           "core": 3000
+        }
+      },
+      "read_my_topic_claims": {
+        "measured": {
+          "list": 3838,
+          "core": 1253
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
         }
       }
     },
@@ -956,16 +956,6 @@
         },
         "max": {
           "list": 2000,
-          "core": 1000
-        }
-      },
-      "get_landing_page_identity": {
-        "measured": {
-          "list": 668,
-          "core": 265
-        },
-        "max": {
-          "list": 1000,
           "core": 1000
         }
       },
@@ -1461,16 +1451,6 @@
           "core": 1000
         }
       },
-      "get_copyright_claimant_misuse_summary": {
-        "measured": {
-          "list": 1660,
-          "core": 367
-        },
-        "max": {
-          "list": 2000,
-          "core": 1000
-        }
-      },
       "list_copyright_email_intakes": {
         "measured": {
           "list": 1628,
@@ -1655,6 +1635,16 @@
         "measured": {
           "list": 1206,
           "core": 849
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_copyright_claimant_misuse_summary": {
+        "measured": {
+          "list": 1660,
+          "core": 367
         },
         "max": {
           "list": 2000,

@@ -1,5 +1,6 @@
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
+import assert from 'http-assert'
 import { resolveTopic } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import {
@@ -131,6 +132,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const personal = args.user_id !== undefined || args.referral_program_id !== undefined
+      assert(args.topic_id === undefined || !personal, 422, 'topic_id excludes personal filters')
+      assert(args.topic_id !== undefined || args.all !== true, 422, 'all requires topic_id')
       if (args.topic_id === undefined) return getUserReferralLinksPage(currentUser, args)
       // Same rule as REST: below 1 or not an integer is rejected, above the maximum is clamped.
       if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1)) {
