@@ -36,6 +36,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   'story-projection-global-claim',
   'crawl-invalid-retention',
   'crawler-boilerplate-candidates',
+  'crawler-boilerplate-parent-paths',
   'crawler-refresh-candidates',
   'crawler-refresh-backlog',
   'crawler-refresh-attempt-write',
