@@ -3,7 +3,7 @@ import type { TopicAliasUnlinkPage } from '@queues/rss-feed-maintenance/types'
 import type {
   PostSourceRow,
   RelationRow,
-  StagedTopicAliasUnlinkPage,
+  StagedTopicAliasUnlinkChildPage,
 } from './unlink-topic-alias-stage.mts'
 import { clearRssItemCategories } from './unlink-topic-alias-category-phase.mts'
 
@@ -78,18 +78,15 @@ export async function deleteTopicAliasUnlinkPhase(
   query: TransactionQuery,
   alias: AliasUnlinkRow,
   page: TopicAliasUnlinkPage,
-  staged: StagedTopicAliasUnlinkPage,
+  staged: StagedTopicAliasUnlinkChildPage,
 ): Promise<{ postIds: string[]; rssFeedItemIds: string[] }> {
-  if (page.phase !== staged.phase) return { postIds: [], rssFeedItemIds: [] }
   if (staged.phase === 'post_sources')
     return deletePostSources(query, alias.id, page.pageCursor, staged.rows)
   if (staged.phase === 'post_relations')
     return deletePostRelations(query, alias.id, page.pageCursor, staged.rows)
   if (staged.phase === 'rss_item_categories')
     return clearRssItemCategories(query, alias.id, page.pageCursor, staged.rows)
-  if (staged.phase === 'rss_item_relations')
-    return deleteRssItemRelations(query, alias.id, page.pageCursor, staged.rows)
-  return { postIds: [], rssFeedItemIds: [] }
+  return deleteRssItemRelations(query, alias.id, page.pageCursor, staged.rows)
 }
 
 async function deletePostSources(

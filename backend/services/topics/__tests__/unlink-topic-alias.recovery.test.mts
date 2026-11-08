@@ -14,6 +14,8 @@ import {
   insertTestRssFeedDirect,
   applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
 } from '@voucha/test-helpers'
+import { read } from '@data-stores/psql'
+import { answerPostgresWritesForTest } from '@voucha/test-helpers/injected-failures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { describe, expect, it, onTestFinished } from 'vitest'
@@ -169,5 +171,35 @@ describe('topic alias unlink recovery', () => {
     for (let n = 0; n < 8 && next; n += 1) next = await applyTopicAliasUnlinkPage(next)
 
     await expect(getTopicAliasIdByKey(alias.alias)).resolves.toBeUndefined()
+  })
+
+  it('keeps item categories when the staged page no longer matches the live cursor', async () => {
+    const user = await createTestUser({ administrator: true })
+    const topic = await createTestTopic({ user, name: `Unlink staged ${crypto.randomUUID()}` })
+    const [alias] = await createTopicAliases(topic.id, `staged alias ${crypto.randomUUID()}`)
+    if (!alias) throw new Error('Expected ordinary alias')
+    const feed = await insertTestRssFeedDirect({ topicId: topic.id })
+    const item = await createTestRssFeedItemWithUrl(feed.id)
+    await createTopHashtagRssSourceForTest({
+      rssFeedItemId: item.id,
+      topicAliasId: alias.id,
+      authoredToken: `staged-${crypto.randomUUID()}`,
+    })
+    await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id })
+    await using lookup = await beginTransaction()
+    const page = await selectTopicAliasUnlinkNextPage(lookup, alias.id, false)
+    await lookup.rollback()
+    expect(page.phase).toBe('rss_item_categories')
+
+    // The staging read ran before the live rows changed, so it no longer holds this page.
+    onTestFinished(answerPostgresWritesForTest('stageTopicAliasUnlinkItemCategories', [[]]))
+    await expect(applyTopicAliasUnlinkPage(page)).resolves.toEqual(page)
+
+    const { rows } = await read<{ topic_alias_id: string | null }>(
+      `/* unlinkStaged categories */
+       SELECT topic_alias_id FROM rss_feed_item_categories WHERE rss_feed_item_id = $1::uuid`,
+      [item.id],
+    )
+    expect(rows).toEqual([{ topic_alias_id: alias.id }])
   })
 })

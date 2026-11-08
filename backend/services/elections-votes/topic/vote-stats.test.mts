@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestTopic, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
-import { listTopicPublicationFeedsPage } from '@services/post-publication/topic-feed-pages'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { updateTopicElectionVoteStats } from './vote-stats.mts'
 import { updateElectionStatsIfChanged } from '../shared/vote-stats-update.mts'
@@ -35,13 +34,11 @@ describe('topic vote stats side effects', () => {
     }
   })
 
-  it('uses a staged page in a caller transaction without acquiring feed scope locks', async () => {
+  it('updates in a caller transaction without acquiring feed scope locks', async () => {
     const topic = await createTestTopic({
       hostname: `vote-stage-${crypto.randomUUID()}.example.com`,
     })
     const feed = await insertTestRssFeedDirect({ topicId: topic.id })
-    const staged = await listTopicPublicationFeedsPage([topic.id], null)
-    expect(staged).toEqual({ ids: [feed.id], hasMore: false, cursor: null })
     await using holder = await beginTransaction()
     await holder(
       `/* holdUnrelatedFeedScope */ SELECT pg_advisory_xact_lock(hashtextextended('rss_feed:' || $1::uuid::text, 0))`,
@@ -54,7 +51,6 @@ describe('topic vote stats side effects', () => {
         topic.id,
         statsForNetScore(1),
         transaction,
-        staged,
       ),
     ).resolves.toBeDefined()
     await transaction.commit()

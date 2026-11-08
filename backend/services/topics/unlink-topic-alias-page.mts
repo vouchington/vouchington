@@ -38,7 +38,7 @@ export async function applyTopicAliasUnlinkPage(
     const preservesHashtag = Boolean(normalizeHashtag(alias.alias))
     const current = await selectTopicAliasUnlinkNextPage(query, alias.id, preservesHashtag)
     if (current.phase !== page.phase || current.pageCursor !== page.pageCursor) return current
-    if (current.phase === 'finalize') {
+    if (staged.phase === 'finalize') {
       const finalized = await finalizeTopicAliasUnlink(query, alias, preservesHashtag)
       return finalized ? null : selectTopicAliasUnlinkNextPage(query, alias.id, preservesHashtag)
     }

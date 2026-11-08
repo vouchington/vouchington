@@ -51,9 +51,9 @@ the rows that transaction actually changed. This preserves deleted-row impacts w
 locks on unrelated topic, feed, item, or story context. Replayed or stale pages resume the remaining
 work rather than making alias size a reason to reject the unlink.
 
-Topic publication fanout walks the supplied topic set in bounded pages while preserving the
-one-active-feed-per-topic invariant. Continuation work carries its position so a large supplied set
-does not extend the metadata writer's transaction or serialize unrelated feed mutations.
+Topic feed discoverability fanout walks the supplied topic set in bounded pages while preserving
+the one-active-feed-per-topic invariant. Continuation work carries its position so a large supplied
+set does not extend the metadata writer's transaction or serialize unrelated feed mutations.
 
 ## Merge lifecycle
 

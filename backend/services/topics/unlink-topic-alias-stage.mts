@@ -11,6 +11,10 @@ export type StagedTopicAliasUnlinkPage =
   | { phase: 'post_relations' | 'rss_item_relations'; rows: RelationRow[] }
   | { phase: 'rss_item_categories'; rows: ItemCategoryRow[] }
   | { phase: 'finalize'; rows: [] }
+export type StagedTopicAliasUnlinkChildPage = Exclude<
+  StagedTopicAliasUnlinkPage,
+  { phase: 'finalize' }
+>
 
 /** Reads one bounded child page from the primary before its mutation transaction starts. */
 export async function stageTopicAliasUnlinkPage(

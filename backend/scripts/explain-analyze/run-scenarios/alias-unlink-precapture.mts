@@ -77,6 +77,7 @@ export async function captureAliasUnlinkPrecaptureScenarios(): Promise<void> {
       const page = { topicAliasId: seed.alias, phase, pageCursor: '' } as TopicAliasUnlinkPage
       // no-mistakes-disable-next-line query-reached-per-item: four fixed phase fixtures each need their actual staged key page.
       const staged = await stageTopicAliasUnlinkPage(page)
+      assert(staged.phase !== 'finalize', `${phase} fixture stages a child page`)
       assert.equal(staged.rows.length, PAGE_SIZE, `hot ${phase} fixture needs a full page`)
       const first = staged.rows[0]!
       page.pageCursor =
