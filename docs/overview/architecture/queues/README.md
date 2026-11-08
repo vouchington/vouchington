@@ -7,6 +7,17 @@ and why they are shaped this way. Authoring rules live in the
 [queue checklist](../../../checklists/backend-queues.md) and
 [`backend/queues/AGENTS.md`](../../../../backend/queues/AGENTS.md).
 
+Publisher-type relation changes register feed-publication work on the owning transaction.
+After commit, a publisher-type capture dispatcher in the publication domain pages the immutable
+changed-topic descriptor and resolves surviving feeds from primary state. Each mutation admits one snapshot root,
+independently of its topic count; each dispatcher reads only the next bounded slice.
+Retried pages reuse the change identity and cursor so effect admissions deduplicate. Capture successors keep their dispatcher lane, separate
+from the effects they generate. Missing feeds do not stall topic progress; attachment and deletion writers own their corresponding publication
+captures. This capture carries feed identities rather than a discoverability preimage.
+Post-commit admission failure cannot undo the relation mutation. No reconciler reconstructs this
+publisher-relation snapshot: loss before root admission or after terminal queue loss is accepted,
+consistent with direct publication delivery; it must not be described as recovered by a sweep.
+
 ## Topology
 
 ```mermaid

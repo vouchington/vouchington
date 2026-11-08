@@ -14623,6 +14623,9 @@ importers:
 
   backend/workers/post-publication:
     dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background

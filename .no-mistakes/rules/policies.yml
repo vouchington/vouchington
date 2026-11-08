@@ -559,7 +559,7 @@
       - {
           file: backend/services/entity-relations/post-topic-publication.mts,
           callee: 'query',
-          line: 177,
+          line: 139,
         }
       # no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed: Promise.all over claim-token groups of one claim call; each group completes its whole id batch with one UPDATE.
       - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query', line: 79 }

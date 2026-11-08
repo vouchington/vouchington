@@ -1,4 +1,5 @@
 export const PUBLICATION_SCOPE_SCENARIO_IDS = [
+  'publication-publisher-type-feed-page',
   'publication-author-page',
   'publication-community-page',
   'publication-descendant-page',
