@@ -8,6 +8,7 @@ import { appendPostSearchOrderAndLimit } from './order-and-limit.mts'
 import { appendPostSearchSelectAndJoins } from './select-and-joins.mts'
 import { appendPostSearchWhereClause } from './where-clause.mts'
 import { buildRawCandidates, candidateCap } from './bounded-candidate-raw.mts'
+import { candidateLimitLiteral } from './bounded-candidate-indexes.mts'
 import { candidateOrder, candidateReverseOrder } from './bounded-candidate-cursor.mts'
 import { indexServedDataPointTopicId, usesTopicBestCohort } from '../topic-best-cohort.mts'
 
@@ -40,12 +41,19 @@ export function buildBoundedPostSearchQuery(
 ): SQLStatement {
   const cap = candidateCap(options)
   const rawSort = usesTopicBestCohort(options, sort) ? 'relevance' : sort
+  // Hacker News new/best scans can carry their bounded post rows into the visibility pass.
+  const includePostRows =
+    options.has_hacker_news_references === true &&
+    (sort === 'new' || sort === 'best') &&
+    !indexServedDataPointTopicId(options, sort)
   const ctes = buildPostSearchCtes({ ...options, hasSemanticSearch, hasTextSearch })
-  ctes.push(buildRawCandidates(options, rawSort, cap, rawSort !== sort))
+  ctes.push(buildRawCandidates(options, rawSort, cap, rawSort !== sort, includePostRows))
   ctes.push(
     sql`bounded_post_search_candidates AS MATERIALIZED (
-      SELECT * FROM raw_post_search_candidates ORDER BY `.append(candidateOrder(rawSort))
-      .append(sql` LIMIT ${cap}
+      SELECT * FROM raw_post_search_candidates ORDER BY `
+      .append(candidateOrder(rawSort))
+      .append(sql` LIMIT `)
+      .append(candidateLimitLiteral(cap)).append(sql`
     )`),
   )
   ctes.push(buildBoundaryCte(rawSort))
@@ -68,7 +76,11 @@ export function buildBoundedPostSearchQuery(
     rankingScoreExpression: buildPostRankingScoreExpression({ hasTextSearch, hasSemanticSearch }),
     sort,
   }
-  appendPostSearchSelectAndJoins(query, { ...context, useBoundedCandidates: true })
+  appendPostSearchSelectAndJoins(query, {
+    ...context,
+    useBoundedCandidates: true,
+    includeBoundedPostRows: includePostRows,
+  })
   appendPostSearchWhereClause(query, {
     ...context,
     sort: sort === 'following_new' ? 'new' : sort,
@@ -113,10 +125,13 @@ function appendFollowingPhase(
 ): void {
   if (!currentUser) throw new Error('following_new requires currentUser')
   const membership = sql`EXISTS (
-    SELECT 1 FROM relation__user__follow__user viewer_following
-    WHERE viewer_following.subject_id = ${currentUser.id}
-      AND viewer_following.object_id = posts.created_by_id
-      AND viewer_following.deleted_at IS NULL
+    SELECT 1 FROM LATERAL (
+      SELECT follow_edge.deleted_at FROM relation__user__follow__user follow_edge
+      WHERE follow_edge.subject_id = ${currentUser.id}
+        AND follow_edge.object_id = posts.created_by_id
+      LIMIT 1
+    ) viewer_following
+    WHERE viewer_following.deleted_at IS NULL
   )`
   query.append(
     phase === 'other' ? sql` AND NOT `.append(membership) : sql` AND `.append(membership),

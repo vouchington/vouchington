@@ -1,5 +1,17 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PostSearchOptions, PostSearchSort } from '../types.mts'
+import { postsWorkMaxValues } from '../../work-limits.mts'
+
+/** A checked numeric SQL literal lets generic plans cost the finite raw index walk. */
+export function candidateLimitLiteral(limit: number): string {
+  if (
+    !Number.isSafeInteger(limit) ||
+    limit < 1 ||
+    limit > postsWorkMaxValues.post_search_filter_candidate_limit + 1
+  )
+    throw new Error('Invalid bounded post candidate limit')
+  return String(limit)
+}
 
 /** An absent similarity source makes the candidate page conclusively empty. */
 export function appendSourceEmbeddingGuards(query: SQLStatement, options: PostSearchOptions): void {
@@ -27,7 +39,9 @@ export function buildDataPointTopicRawCandidates(
     query.append(sql` AND topic_post.post_id < ${options.cohort_before_id}`)
   else if (options.id_lt) query.append(sql` AND topic_post.post_id < ${options.id_lt}`)
   appendSourceEmbeddingGuards(query, options)
-  return query.append(sql` ORDER BY topic_post.post_id DESC LIMIT ${cap + 1}
+  return query
+    .append(sql` ORDER BY topic_post.post_id DESC LIMIT `)
+    .append(candidateLimitLiteral(cap + 1)).append(sql`
   )`)
 }
 

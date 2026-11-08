@@ -123,3 +123,37 @@ export async function seedPostDiscoverySearchFixture(): Promise<void> {
   )
   await transaction.commit()
 }
+
+/** Remove only the rows owned by this late-running EXPLAIN cohort. */
+export async function cleanupPostDiscoverySearchFixture(): Promise<void> {
+  const communityPostIds = Array.from(
+    { length: COMMUNITY_POSTS_PER_COMMUNITY * COMMUNITY_COUNT },
+    (_, index) => fixturePostId(START_INDEX + index),
+  )
+  const recommendationPostIds = Array.from({ length: RECOMMENDATION_COUNT }, (_, index) =>
+    fixturePostId(START_INDEX + COMMUNITY_POSTS_PER_COMMUNITY * COMMUNITY_COUNT + index),
+  )
+  const allPostIds = [...communityPostIds, ...recommendationPostIds]
+  const communityIds = Array.from({ length: COMMUNITY_COUNT }, (_, index) =>
+    seedUuid(100 + index, '14'),
+  )
+
+  await using transaction = await beginTransaction()
+  await transaction(
+    '/* cleanupPostDiscoverySearchFixture:community-reviews */ DELETE FROM community_post_reviews WHERE post_id = ANY($1::uuid[])',
+    [communityPostIds],
+  )
+  await transaction(
+    '/* cleanupPostDiscoverySearchFixture:recommendations */ DELETE FROM post_topic_recommendations WHERE post_id = ANY($1::uuid[])',
+    [recommendationPostIds],
+  )
+  await transaction(
+    '/* cleanupPostDiscoverySearchFixture:posts */ DELETE FROM posts WHERE id = ANY($1::uuid[])',
+    [allPostIds],
+  )
+  await transaction(
+    '/* cleanupPostDiscoverySearchFixture:communities */ DELETE FROM communities WHERE id = ANY($1::uuid[])',
+    [communityIds],
+  )
+  await transaction.commit()
+}

@@ -1,4 +1,3 @@
-import { runPostDiscoverySearchScenarios } from './post-discovery-search.mts'
 import { runCrawlerRefreshScenario } from './crawler-refresh.mts'
 import { runRelationVoteReadScenarios } from './relation-vote-reads.mts'
 import { runCommunitySearchScenarios } from './community-search.mts'
@@ -172,8 +171,6 @@ export async function runEntityAndCommunityScenarios() {
   )
 
   await runViewDrivenPostScenarios()
-  await runPostDiscoverySearchScenarios()
-
   await runCommunitySearchScenarios()
   await runEntityTailScenarios()
 }

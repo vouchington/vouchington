@@ -157,7 +157,7 @@ describe('query-builder (basic)', () => {
     expect(query.sql).toContain('alias.topic_id = ANY')
     expect(query.sql).toContain('AND deleted_at IS NULL')
     expect(query.sql).toContain('AND votes_score_net > 0')
-    expect(query.sql.match(/UNION/g)).toHaveLength(3)
+    expect(query.sql.match(/\bUNION\b(?!\s+ALL\b)/g)).toHaveLength(3)
     expect(query.sql).toContain('GROUP BY universal_topic_candidates.post_id')
     expect(query.sql).toContain('HAVING COUNT(*) =')
     expect(query.sql).not.toContain('ptc.subject_id = posts.id')

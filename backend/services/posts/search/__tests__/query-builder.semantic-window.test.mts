@@ -46,7 +46,7 @@ describe('semantic candidate window', () => {
     expect(query.sql.slice(outerStart)).toContain(
       'semantic_selected_post.id = semantic_post_candidates.id',
     )
-    expect(query.values).toContain(SEMANTIC_POST_CANDIDATE_LIMIT)
+    expect(query.sql).toContain(`LIMIT ${SEMANTIC_POST_CANDIDATE_LIMIT}`)
     expect(query.values).toContain(26)
   })
 
@@ -58,7 +58,7 @@ describe('semantic candidate window', () => {
       omitOrderBy: true,
     })
     expect(query.sql.match(/LIMIT/g)).toHaveLength(3)
-    expect(query.values).toContain(SEMANTIC_POST_CANDIDATE_LIMIT)
+    expect(query.sql).toContain(`LIMIT ${SEMANTIC_POST_CANDIDATE_LIMIT}`)
   })
 
   it('preserves text-only and similar-item query paths', () => {

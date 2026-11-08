@@ -18,6 +18,7 @@ export function appendPostSearchSelectAndJoins(
     sort,
     useSemanticCandidates = false,
     useBoundedCandidates = false,
+    includeBoundedPostRows = false,
     useHackerNewsHotCandidates = false,
     includeHotCandidateColumns = false,
   }: {
@@ -31,6 +32,7 @@ export function appendPostSearchSelectAndJoins(
     sort: PostSearchSort
     useSemanticCandidates?: boolean
     useBoundedCandidates?: boolean
+    includeBoundedPostRows?: boolean
     useHackerNewsHotCandidates?: boolean
     includeHotCandidateColumns?: boolean
   },
@@ -56,7 +58,10 @@ export function appendPostSearchSelectAndJoins(
       FROM hacker_news_hot_candidates posts
     `)
   } else if (useBoundedCandidates) {
-    query.append(sql`
+    if (includeBoundedPostRows)
+      query.append(sql`\n      FROM bounded_post_search_candidates posts\n    `)
+    else
+      query.append(sql`
       FROM bounded_post_search_candidates
       CROSS JOIN LATERAL (
         SELECT bounded_post.* FROM posts bounded_post

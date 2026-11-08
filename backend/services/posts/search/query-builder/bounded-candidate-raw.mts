@@ -6,6 +6,7 @@ import { appendCandidateCursor, candidateOrder } from './bounded-candidate-curso
 import {
   appendSourceEmbeddingGuards,
   buildDataPointTopicRawCandidates,
+  candidateLimitLiteral,
   indexServedDataPointFilter,
   indexServedPostType,
 } from './bounded-candidate-indexes.mts'
@@ -21,12 +22,14 @@ export function buildRawCandidates(
   sort: PostSearchSort,
   cap: number,
   topicBestCohort = false,
+  includePostRows = false,
 ): SQLStatement {
   const topicId = indexServedDataPointTopicId(options, topicBestCohort ? 'best' : sort)
   if (topicId) return buildDataPointTopicRawCandidates(topicId, cap, options, topicBestCohort)
   const query = sql`raw_post_search_candidates AS MATERIALIZED (
-    SELECT posts.id`
-  if (sort === 'best') query.append(sql`, posts.votes_score_sort`)
+    SELECT `
+  query.append(includePostRows ? sql`posts.*` : sql`posts.id`)
+  if (sort === 'best' && !includePostRows) query.append(sql`, posts.votes_score_sort`)
   if (sort === 'hot' || sort === 'trending') {
     query
       .append(sql`, `)
@@ -46,15 +49,25 @@ export function buildRawCandidates(
     !options.community_id &&
     !postTypeFilter &&
     !dataPointFilter
+  const communityIdAxis = Boolean(
+    options.community_id && (sort === 'new' || sort === 'relevance' || sort === 'following_new'),
+  )
   if (authorAxis) query.append(sql` FROM posts WHERE posts.created_by_id = ${options.user_id}`)
+  else if (communityIdAxis)
+    query.append(sql` FROM posts WHERE posts.community_id = ${options.community_id}`)
   else if (globalIdAxis) query.append(sql` FROM posts WHERE TRUE`)
   else query.append(sql` FROM posts WHERE posts.deleted_at IS NULL`)
   if (sort === 'hot' || sort === 'trending') query.append(sql` AND posts.votes_score_net > 0`)
-  if (options.community_id) query.append(sql` AND posts.community_id = ${options.community_id}`)
+  if (options.community_id && !communityIdAxis)
+    query.append(sql` AND posts.community_id = ${options.community_id}`)
   if (postTypeFilter) query.append(postTypeFilter)
   if (dataPointFilter) query.append(dataPointFilter)
   appendSourceEmbeddingGuards(query, options)
   appendCandidateCursor(query, options, sort)
-  return query.append(sql` ORDER BY `).append(candidateOrder(sort)).append(sql` LIMIT ${cap + 1}
+  return query
+    .append(sql` ORDER BY `)
+    .append(candidateOrder(sort))
+    .append(sql` LIMIT `)
+    .append(candidateLimitLiteral(cap + 1)).append(sql`
   )`)
 }

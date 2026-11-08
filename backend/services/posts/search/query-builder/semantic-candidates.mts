@@ -60,10 +60,16 @@ export function buildSemanticPostCandidates(
     decisionInstant,
   )
   if (timeRangeFilter) query.append(sql` AND `).append(timeRangeFilter)
-  query.append(sql`
+  const candidateLimit = getPostsWorkLimit('semantic_post_candidate_limit')
+  if (!Number.isSafeInteger(candidateLimit) || candidateLimit < 1)
+    throw new Error('Invalid semantic post candidate limit')
+  // A generic plan needs the actual bounded window size to price the ANN index.
+  query
+    .append(sql`
     ORDER BY semantic_vector_post.bedrock_nova_multimodal_v1_embedding <=>
       semantic_search_embedding.embedding
-    LIMIT ${getPostsWorkLimit('semantic_post_candidate_limit')}
+    LIMIT `)
+    .append(String(candidateLimit)).append(sql`
   )`)
   return query
 }
