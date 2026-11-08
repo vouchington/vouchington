@@ -42,7 +42,6 @@ export async function getUserModerationContext(
     SELECT
       (
         SELECT count(*)::int FROM (
-          -- no-mistakes-disable-next-line postgres-required-predicates: no-mistakes FP jonathanong/no-mistakes#3112; remove when fixed. The count reads at most CONTENT_REMOVAL_COUNT_CAP rows via idx_posts__created_by_id (created_by_id, id); one author's posts are not an id range
           SELECT 1 FROM posts
           WHERE created_by_id = ${targetUser.id}
             AND deleted_by_id IS NOT NULL

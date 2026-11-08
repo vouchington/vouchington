@@ -12,7 +12,6 @@ export async function isFirstCommunityPost(
   const { rows } = await read<{ is_first: boolean }>(sql`/* isFirstCommunityPost */
     SELECT (
       SELECT id
-      -- no-mistakes-disable-next-line postgres-required-predicates: an earlier post can be attached to this community later, so finding the first post requires all ID partitions
       FROM posts
       WHERE created_by_id = ${userId}
         AND community_id = ${communityId}

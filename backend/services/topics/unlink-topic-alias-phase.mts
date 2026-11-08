@@ -102,7 +102,6 @@ async function deletePostRelations(
   const { rows } = await query<{ subject_id: string; id: string }>(
     `/* deletePostRelations */
     SELECT subject_id, id
-    -- no-mistakes-disable-next-line postgres-required-predicates: unlink drains soft-deleted alias edges before the alias row can go
     FROM relation__post__category__topic_alias
     WHERE object_id = $1::uuid
     ORDER BY subject_id, id

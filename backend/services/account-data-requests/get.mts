@@ -28,7 +28,6 @@ export async function getLatestDataRequest(
       expires_at,
       uuid_extract_timestamp(id) AS created_at,
       updated_at
-    -- no-mistakes-disable-next-line postgres-required-predicates: the latest subject/requester request can be in any retained range
     FROM user_data_requests
     WHERE user_id = ${userId}
       AND requested_by_id = ${requestedById}
