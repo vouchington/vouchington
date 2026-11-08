@@ -923,7 +923,7 @@ Current post response projection; callers enforce publication, deletion and audi
            FROM post_moderation_dispositions disposition
           WHERE ((disposition.version_id = ( SELECT version.id
                    FROM post_moderation_versions version
-                  WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text)))) AND (disposition.source = 'openai_omni'::post_moderation_sources))
+                  WHERE (ROW(version.post_id, version.content_sha256, version.policy_revision)::post_moderation_version_keys = ROW(posts.id, posts.llm_moderation_content_sha256, '2026-09-09.1'::text)::post_moderation_version_keys))) AND (disposition.source = 'openai_omni'::post_moderation_sources))
           ORDER BY disposition.id DESC
          LIMIT 1) openai_moderation ON (true))
      LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,
