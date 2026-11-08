@@ -1,6 +1,10 @@
 /* v8 ignore start -- declarative schema-test allowlist has no executable branches */
 export const RSS_CATEGORY_SNAPSHOT_UUID_COLUMNS_WITHOUT_KEYS = [
   [
+    'rss_feed_item_category_projection_results.change_id',
+    'Opaque notification identity of the completed snapshot with no owning entity row; retained after pending reconciliation acknowledgement for exact replay.',
+  ],
+  [
     'rss_feed_item_category_snapshot_reconciliations.change_id',
     'Opaque notification change token with no owning entity row; stable across replay and fresh for each desired snapshot.',
   ],

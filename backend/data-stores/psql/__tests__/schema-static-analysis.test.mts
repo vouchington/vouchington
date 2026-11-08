@@ -26,18 +26,19 @@ describe('PostgreSQL schema static analysis', () => {
     await onGracefulShutdown()
   })
 
-  it.each([['operational_tombstone_retention_cursors', 'cursor_record_id']])(
-    'limits the reviewed %s.%s UUID cursor exception to its exact table',
-    (table, name) => {
-      const problem = 'uuid-column-without-key-constraint'
-      expect(
-        isAllowedUuidConventionViolation({ table_name: table, column_name: name, problem }),
-      ).toBe(true)
-      expect(
-        isAllowedUuidConventionViolation({ table_name: 'new_records', column_name: name, problem }),
-      ).toBe(false)
-    },
-  )
+  it.each([
+    ['operational_tombstone_retention_cursors', 'cursor_record_id'],
+    ['rss_feed_item_category_projection_results', 'change_id'],
+    ['rss_feed_item_category_snapshot_reconciliations', 'change_id'],
+  ])('limits the reviewed %s.%s UUID exception to its exact table', (table, name) => {
+    const problem = 'uuid-column-without-key-constraint'
+    expect(
+      isAllowedUuidConventionViolation({ table_name: table, column_name: name, problem }),
+    ).toBe(true)
+    expect(
+      isAllowedUuidConventionViolation({ table_name: 'new_records', column_name: name, problem }),
+    ).toBe(false)
+  })
 
   it('uses jsonb instead of json columns', async () => {
     const violations = await getTypeViolations('json')
